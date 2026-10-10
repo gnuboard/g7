@@ -222,8 +222,8 @@ test.describe('@layout-editor 텍스트 propControl 동적 다국어 (부록7 7-
   // 가로 스크롤 회귀 — 속성 모달 본문은 긴 텍스트 입력·🌐 펼침 폼에서도 가로로
   // 넘치지 않아야 한다. 컨트롤
   // 행/위젯 컨테이너 + 펼침 폼의 minWidth:0 가드를 라이브 브라우저로 잠근다.
-  // 축 요약(마커 아님 — 평문): property_modal_no_horizontal_scroll_on_long_input, property_modal_no_horizontal_scroll_on_expand.
-  /** @effects control_row_and_widget_minwidth0_prevent_body_horizontal_scroll, expand_locale_form_minwidth0_prevents_body_horizontal_scroll */
+  // @scenario property_modal_no_horizontal_scroll_on_long_input, property_modal_no_horizontal_scroll_on_expand
+  // @effects control_row_and_widget_minwidth0_prevent_body_horizontal_scroll, expand_locale_form_minwidth0_prevents_body_horizontal_scroll
   test('속성 모달 본문은 긴 입력·🌐 펼침에서도 가로 스크롤이 없다', async ({ page }) => {
     await gotoEditor(page);
     const vdiv = await addEmptyDiv(page);

@@ -37,6 +37,8 @@ import footerActions from '../../../extensions/notification_template_form_footer
 import ko from '../../../lang/ko.json';
 import en from '../../../lang/en.json';
 import { findById, findAllByName, type AnyNode, evalBinding } from './helpers';
+// 굽기는 단일 원소 actions/lifecycle 배열을 객체로 접는다 — 모양에 기대지 않고 헬퍼로 읽는다.
+import { actionsOf, asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const overlay = coreOverlay;
 const bannerRoot = {
@@ -116,6 +118,7 @@ const mapScope = (row: Record<string, unknown> | undefined) => ({
 });
 
 describe('lifecycle UI — 파일 분리(Overlay vs ExtensionPoint 3종)', () => {
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('overlay 는 target_layout=admin_settings 이고 extension_point·modals 키가 없다(모달 폐지)', () => {
         expect((overlay as { target_layout?: string }).target_layout).toBe('admin_settings');
         expect((overlay as Record<string, unknown>).extension_point).toBeUndefined();
@@ -124,11 +127,13 @@ describe('lifecycle UI — 파일 분리(Overlay vs ExtensionPoint 3종)', () =>
         }
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('footer 는 extension_point=notification_definition_row_footer 이고 target_layout 이 없다', () => {
         expect((footer as { extension_point?: string }).extension_point).toBe('notification_definition_row_footer');
         expect((footer as Record<string, unknown>).target_layout).toBeUndefined();
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('섹션·푸터 액션은 코어 편집 모달의 extension_point 2종에 주입된다(3면 공유 1본)', () => {
         expect((sections as { extension_point?: string }).extension_point).toBe('notification_template_form_sections');
         expect((footerActions as { extension_point?: string }).extension_point).toBe('notification_template_form_footer_actions');
@@ -136,6 +141,7 @@ describe('lifecycle UI — 파일 분리(Overlay vs ExtensionPoint 3종)', () =>
         expect((footerActions as Record<string, unknown>).target_layout).toBeUndefined();
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('섹션·푸터 액션 루트는 alimtalk 채널 템플릿을 편집할 때만 노출된다(메일·사이트내 알림 모달 무오염)', () => {
         for (const root of [findById(sectionsRoot, 'bizppurio_tpl_sections'), findById(actionsRoot, 'bizppurio_tpl_footer_actions')]) {
             expect(root).toBeTruthy();
@@ -148,25 +154,34 @@ describe('lifecycle UI — 파일 분리(Overlay vs ExtensionPoint 3종)', () =>
 });
 
 describe('lifecycle UI — 데이터소스 3종', () => {
-    const sources = ((overlay as { data_sources?: Array<Record<string, unknown>> }).data_sources ?? []);
+    // 데이터소스는 오버레이가 아니라 [편집] 모달 섹션 확장점 조각이 싣는다 — 같은 모달을 둔 플러그인 설정 화면
+    // (GDPR, 환율)에도 실리게 하려고 옮겼다(notification_template_plugin_hosts.test.ts).
+    const sources = ((sections as { data_sources?: Array<Record<string, unknown>> }).data_sources ?? []);
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('bizppurioTemplates / bizppurioCategories / bizppurioProfiles 3종을 등록한다', () => {
         expect(sources.map((d) => d.id)).toEqual(['bizppurioTemplates', 'bizppurioCategories', 'bizppurioProfiles']);
+        expect((overlay as { data_sources?: unknown[] }).data_sources ?? []).toEqual([]);
     });
 
-    it('3종 모두 auto_fetch:false — 설정 페이지 다른 탭에서 자동 호출되지 않는다', () => {
-        for (const ds of sources) expect(ds.auto_fetch, `${ds.id} auto_fetch`).toBe(false);
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
+    it('카테고리·발신프로필은 auto_fetch:false — 섹션이 마운트될 때만 받는다', () => {
+        for (const id of ['bizppurioCategories', 'bizppurioProfiles']) {
+            expect(sources.find((d) => d.id === id)?.auto_fetch, `${id} auto_fetch`).toBe(false);
+        }
     });
 
-    it('요약 맵은 GET templates/map 이고 탭 진입 init_actions 로만 조회된다', () => {
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
+    it('요약 맵은 GET templates/map 이고 화면을 열 때 한 번 받는다(오버레이 init 없이)', () => {
         const map = sources.find((d) => d.id === 'bizppurioTemplates');
         expect(map?.endpoint).toBe('/api/plugins/sirsoft-message_bizppurio/admin/templates/map');
         expect(map?.method).toBe('GET');
+        expect(map?.auto_fetch).toBe(true);
         const inits = (overlay as { init_actions?: AnyNode[] }).init_actions ?? [];
-        const refetch = inits.find((a) => a.handler === 'refetchDataSource');
-        expect((refetch?.params as { dataSourceId?: string })?.dataSourceId).toBe('bizppurioTemplates');
+        expect(inits.find((a) => a.handler === 'refetchDataSource')).toBeUndefined();
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('카테고리·발신프로필은 실패를 suppress 하고 load_failed fallback 을 둔다(자격증명 미설정 422 방어)', () => {
         for (const id of ['bizppurioCategories', 'bizppurioProfiles']) {
             const ds = sources.find((d) => d.id === id);
@@ -178,6 +193,7 @@ describe('lifecycle UI — 데이터소스 3종', () => {
 });
 
 describe('lifecycle UI — 상태 배너 + 안내 박스', () => {
+    /** @effects approval_badge_two_tier */
     it('배너는 sms·alimtalk 탭 정체성에서 문제(readiness 미충족 / test_mode)일 때만 노출된다', () => {
         const banner = findById(bannerRoot, 'bizppurio_status_banner');
         expect(banner).toBeTruthy();
@@ -188,6 +204,7 @@ describe('lifecycle UI — 상태 배너 + 안내 박스', () => {
         expect(cond).toContain('is_test_mode === true');
     });
 
+    /** @effects approval_badge_two_tier */
     it('readiness 미충족 배너에 설정하기 이동 버튼이 있다', () => {
         const raw = JSON.stringify(findById(bannerRoot, 'bizppurio_banner_not_ready'));
         expect(raw).toContain('banner.not_ready');
@@ -195,6 +212,7 @@ describe('lifecycle UI — 상태 배너 + 안내 박스', () => {
         expect(raw).toContain('/admin/plugins/sirsoft-message_bizppurio/settings');
     });
 
+    /** @effects approval_badge_two_tier */
     it('검수 모드 배너는 readiness 와 무관하게 is_test_mode 만으로 노출된다(회귀 유지)', () => {
         const banner = findById(bannerRoot, 'bizppurio_banner_test_mode');
         expect(banner).toBeTruthy();
@@ -203,6 +221,7 @@ describe('lifecycle UI — 상태 배너 + 안내 박스', () => {
         expect(cond).toContain('is_test_mode === true');
     });
 
+    /** @effects approval_badge_two_tier */
     it('알림톡 탭 상시 안내 박스가 [편집] 모달 통합 안내(tab_guide)를 노출한다', () => {
         const guide = findById(bannerRoot, 'bizppurio_alimtalk_guide');
         expect(guide).toBeTruthy();
@@ -215,12 +234,14 @@ describe('lifecycle UI — 상태 배너 + 안내 박스', () => {
 describe('lifecycle UI — 행 하단은 상태 요약만 (버튼 0)', () => {
     const row = findById(footerRoot, 'bizppurio_row_lifecycle') as AnyNode;
 
+    /** @effects row_footer_shows_status_summary_only */
     it('행 UI 는 activeChannel === alimtalk 일 때만 노출된다', () => {
         expect(row).toBeTruthy();
         expect(evalBinding((row as { if?: string }).if ?? '', { extensionPointProps: { activeChannel: 'alimtalk' } })).toBe(true);
         expect(evalBinding((row as { if?: string }).if ?? '', { extensionPointProps: { activeChannel: 'mail' } })).toBe(false);
     });
 
+    /** @effects row_footer_shows_status_summary_only */
     it('행 하단에는 버튼·체크박스·apiCall 이 없다 — 조작은 코어 [편집] 모달로 일원화', () => {
         expect(findAllByName(row, 'Button')).toHaveLength(0);
         expect(findAllByName(row, 'Checkbox')).toHaveLength(0);
@@ -229,6 +250,7 @@ describe('lifecycle UI — 행 하단은 상태 요약만 (버튼 0)', () => {
         expect(JSON.stringify(row)).not.toContain('openModal');
     });
 
+    /** @effects row_footer_shows_status_summary_only */
     it('SMS 요약 줄은 대체/단독 사용 여부와 서버 미리보기(has_sms_body / sms_body_preview)를 읽는다', () => {
         const raw = JSON.stringify(row);
         expect(raw).toContain(`${MAP_PATH}?.fallback_sms_enabled`);
@@ -239,6 +261,7 @@ describe('lifecycle UI — 행 하단은 상태 요약만 (버튼 0)', () => {
         expect(raw).not.toContain('.slice(0, 40)');
     });
 
+    /** @effects row_footer_shows_status_summary_only */
     it('SMS 상태 3종은 문구가 아니라 배지다 — 사용=초록/미사용=회색(승인 배지와 같은 모양), 본문 미설정=외곽선 칩 (제품 결정 2026-08-23)', () => {
         const APPROVED_SET = 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200';
         const GRAY_SET = 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300';
@@ -292,6 +315,7 @@ describe('lifecycle UI — 승인 여부 2단 배지 실평가 (행 하단 + 섹
         _global: { bz_tpl_modal: row ? { id: row.id, status: row.status, has_content: row.has_content } : { id: null } },
     });
 
+    /** @effects approval_badge_two_tier */
     it.each([
         ['행 하단', footerRoot, mapScope],
         ['섹션 헤더', sectionsRoot, modalScope],
@@ -316,9 +340,10 @@ describe('lifecycle UI — 승인 여부 2단 배지 실평가 (행 하단 + 섹
 
 describe('lifecycle UI — [편집] 모달 섹션: 시딩(onMount) + 편집/잠금 분기 실평가', () => {
     const root = findById(sectionsRoot, 'bizppurio_tpl_sections') as AnyNode;
-    const onMount = ((root.lifecycle as { onMount?: AnyNode[] })?.onMount ?? []);
-    const steps = ((onMount[0]?.params as { actions?: AnyNode[] })?.actions ?? []);
+    const onMount = asArray((root.lifecycle as { onMount?: AnyNode[] | AnyNode })?.onMount);
+    const steps = actionsOf(onMount[0]);
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('마운트 시 sequence 1개: 상태 시딩 → 상세 GET(행 있을 때) → 카테고리·발신프로필 조회', () => {
         expect(onMount).toHaveLength(1);
         expect(onMount[0].handler).toBe('sequence');
@@ -329,6 +354,7 @@ describe('lifecycle UI — [편집] 모달 섹션: 시딩(onMount) + 편집/잠�
         expect((steps[3].params as { dataSourceId: string }).dataSourceId).toBe('bizppurioProfiles');
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('상세 GET 은 요약 맵의 행 id 로 판정·호출한다(같은 sequence 의 setState 값은 다음 액션 if 에 반영되지 않는다 — 실측)', () => {
         const detail = steps[1];
         expect(detail.target).toBe(`/api/plugins/sirsoft-message_bizppurio/admin/templates/{{${MAP_PATH}?.id}}`);
@@ -342,6 +368,7 @@ describe('lifecycle UI — [편집] 모달 섹션: 시딩(onMount) + 편집/잠�
         expect(onSuccess).toContain('bz_tpl_modal.has_content');
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('시딩값: SMS 본문·토글은 요약 맵에서, 알림톡 본문 프리필은 코어 alimtalk 템플릿 body 에서(#{var} 변환)', () => {
         const seed = steps[0].params as { bz_tpl_modal: Record<string, unknown>; bz_sms_modal: Record<string, unknown> };
         expect(seed.bz_sms_modal.body).toBe(`{{Object.assign({}, ${MAP_PATH}?.sms_body)}}`);
@@ -362,6 +389,7 @@ describe('lifecycle UI — [편집] 모달 섹션: 시딩(onMount) + 편집/잠�
         extensionPointProps: { definition: { type: 'welcome' }, channel: 'alimtalk' },
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it.each([
         ['draft', true], ['rejected', true], [undefined, true],
         ['requested', false], ['approved', false], ['dormant', false], ['stopped', false], ['blocked', false],
@@ -371,6 +399,7 @@ describe('lifecycle UI — [편집] 모달 섹션: 시딩(onMount) + 편집/잠�
         expect(evalBinding(String(locked.if), scope)).toBe(!editable);
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('READY(자기 유형 시딩 + 상세 GET 완료) 전에는 작성 폼·잠금 요약이 모두 숨고 로딩 안내만 보인다 — 시딩 전/이전 알림 상태로 저장되는 경쟁 차단', () => {
         expect(loadingNotice).toBeTruthy();
         const seed = (steps[0].params as { bz_tpl_modal: Record<string, unknown> }).bz_tpl_modal;
@@ -396,6 +425,7 @@ describe('lifecycle UI — [편집] 모달 섹션: 시딩(onMount) + 편집/잠�
         }
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('모달이 닫히면(언마운트) 폼 상태를 비워 다음 오픈이 시딩 전에서 시작한다', () => {
         const root = findById(sectionsRoot, 'bizppurio_tpl_sections') as AnyNode;
         const onUnmount = ((root.lifecycle as { onUnmount?: AnyNode[] })?.onUnmount ?? []);
@@ -406,6 +436,7 @@ describe('lifecycle UI — [편집] 모달 섹션: 시딩(onMount) + 편집/잠�
         expect(params.bz_sms_modal).toBeNull();
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('작성 폼에는 구 작성 모달의 필드 전부가 이식됐다(유형·강조·본문·버튼·바로연결·업로드)', () => {
         const raw = JSON.stringify(editor);
         for (const needle of ['templateMessageType', 'templateEmphasizeType', 'bz_template_content', 'buttons', 'quickReplies', 'sirsoft-message_bizppurio.uploadTemplateImage', 'templateImageUrl', 'templateItem']) {
@@ -413,6 +444,7 @@ describe('lifecycle UI — [편집] 모달 섹션: 시딩(onMount) + 편집/잠�
         }
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('상태 액션 4종의 노출 조건이 상태별로 정확히 평가된다', () => {
         const BUTTONS: Record<string, (s: Record<string, unknown>) => boolean> = {
             'template.row.btn_refresh': (s) => Boolean(s.template_code),
@@ -431,6 +463,7 @@ describe('lifecycle UI — [편집] 모달 섹션: 시딩(onMount) + 편집/잠�
         }
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('승인 취소는 인라인 확인 박스(모달 중첩 없음) — 확정 시 POST .../cancel-approval 후 draft 로 되돌린다', () => {
         const confirmBtn = findButtonByTextKey(sectionsRoot, 'template.cancel_approval.btn_confirm');
         expect(confirmBtn).toBeTruthy();
@@ -441,6 +474,7 @@ describe('lifecycle UI — [편집] 모달 섹션: 시딩(onMount) + 편집/잠�
         expect(JSON.stringify(sectionsRoot)).toContain('template.cancel_approval.warning');
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('발송 토글(알림톡 사용·대체 SMS·SMS 단독)은 상태에만 쓰고 즉시 저장하지 않는다(통합 저장 원칙)', () => {
         const boxes = findAllByName(sectionsRoot, 'Checkbox');
         const bound = boxes.map((c) => String((c.props as { checked?: string })?.checked ?? ''));
@@ -449,11 +483,12 @@ describe('lifecycle UI — [편집] 모달 섹션: 시딩(onMount) + 편집/잠�
         expect(bound.some((b) => b.includes('bz_sms_modal?.sms_only'))).toBe(true);
         for (const c of boxes) {
             expect((c.props as { autoBinding?: boolean }).autoBinding).toBe(false);
-            const change = (c.actions as AnyNode[]).find((a) => a.type === 'change') as AnyNode;
+            const change = actionsOf(c).find((a) => a.type === 'change') as AnyNode;
             expect(change.handler, '토글은 setState 만').toBe('setState');
         }
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('반려 배너는 inspection_detail 스냅샷을 반복 렌더한다(반려 사유 모달 대체)', () => {
         const raw = JSON.stringify(sectionsRoot);
         expect(raw).toContain('template.form.rejected_banner');
@@ -466,6 +501,7 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
     const saveBtn = buttons.find((b) => !b.text && JSON.stringify(b).includes('$t:common.save')) as AnyNode;
     const requestBtn = findButtonByTextKey(actionsRoot, 'template.form.btn_save_request') as AnyNode;
 
+    /** @effects unified_save_chain_alimtalk_then_core_recipients */
     it('[저장] + [저장 후 검수 신청] 두 버튼이며, 검수 신청은 수정 가능 상태 + 본문 입력이 있을 때만 노출된다', () => {
         expect(buttons).toHaveLength(2);
         expect(saveBtn).toBeTruthy();
@@ -482,9 +518,10 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
         expect(evalBinding(cond, sc({ status: 'draft', loading: true, content: { templateContent: '본문' } })), '상세 GET 전').toBe(false);
     });
 
+    /** @effects unified_save_chain_alimtalk_then_core_recipients */
     it('두 버튼 모두 클릭 if 재진입 가드 + isSaving/uploading disabled 바인딩을 갖는다', () => {
         for (const b of [saveBtn, requestBtn]) {
-            const click = (b.actions as AnyNode[])[0];
+            const click = actionsOf(b)[0];
             expect(click.type).toBe('click');
             expect(click.if).toMatch(/!\(_global\.bz_tpl_modal\?\.isSaving \?\? false\)/);
             const disabled = String((b.props as { disabled?: string }).disabled);
@@ -515,8 +552,9 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
         ['dormant(잠금)', { id: 1, status: 'dormant', content: { templateContent: '본문' } }, 3],
     ];
 
+    /** @effects unified_save_chain_alimtalk_then_core_recipients */
     it.each(MATRIX)('[저장] %s → 분기 정확히 하나만 실행된다', (_label, modal, want) => {
-        const steps = ((saveBtn.actions as AnyNode[])[0].params as { actions: AnyNode[] }).actions;
+        const steps = actionsOf(actionsOf(saveBtn)[0]);
         expect(steps[0].handler).toBe('setState');
         const branches = steps.slice(1);
         expect(branches).toHaveLength(3);
@@ -525,8 +563,9 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
         expect(fired.indexOf(true) + 1).toBe(want);
     });
 
+    /** @effects unified_save_chain_alimtalk_then_core_recipients */
     it('분기 엔드포인트/메서드: ① POST templates ② PUT templates/{id} ③ PUT templates/delivery/{type} — delivery 필드 4종은 셋 다 싣는다', () => {
-        const steps = ((saveBtn.actions as AnyNode[])[0].params as { actions: AnyNode[] }).actions.slice(1);
+        const steps = actionsOf(actionsOf(saveBtn)[0]).slice(1);
         expect([steps[0].target, (steps[0].params as { method: string }).method]).toEqual(['/api/plugins/sirsoft-message_bizppurio/admin/templates', 'POST']);
         expect([steps[1].target, (steps[1].params as { method: string }).method]).toEqual(['/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}', 'PUT']);
         expect([steps[2].target, (steps[2].params as { method: string }).method]).toEqual(['/api/plugins/sirsoft-message_bizppurio/admin/templates/delivery/{{_global.bz_tpl_modal?.notification_type}}', 'PUT']);
@@ -540,10 +579,11 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
         expect((steps[2].params as { body: Record<string, string> }).body.content, '잠금 상태에서는 content 를 보내지 않는다(422 content_locked 회피)').toBeUndefined();
     });
 
+    /** @effects unified_save_chain_alimtalk_then_core_recipients */
     it('각 분기 성공 후: 수신자 규칙이 바뀐 경우에만 코어 PUT(extensionPointProps.saveEndpoint) → 마무리, 아니면 바로 마무리', () => {
-        const steps = ((saveBtn.actions as AnyNode[])[0].params as { actions: AnyNode[] }).actions.slice(1);
+        const steps = actionsOf(actionsOf(saveBtn)[0]).slice(1);
         for (const s of steps) {
-            const tail = s.onSuccess as AnyNode[];
+            const tail = callbacksOf(s, 'onSuccess');
             expect(tail).toHaveLength(2);
             const [corePut, skip] = tail;
             expect(corePut.handler).toBe('apiCall');
@@ -561,7 +601,7 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
             expect(Object.keys(body).sort()).toEqual(['body', 'click_url', 'recipients', 'subject']);
             for (const v of Object.values(body)) expect(v).toContain('_global?.[extensionPointProps.stateKey]');
             // 마무리: 요약 맵 + 면별 정의 목록 재조회 → 토스트 → closeModal
-            for (const fin of [corePut.onSuccess as AnyNode[], (skip.params as { actions: AnyNode[] }).actions]) {
+            for (const fin of [callbacksOf(corePut, 'onSuccess'), actionsOf(skip)]) {
                 const handlers = fin.map((a) => a.handler);
                 expect(handlers).toEqual(['setState', 'refetchDataSource', 'refetchDataSource', 'toast', 'closeModal']);
                 expect((fin[1].params as { dataSourceId: string }).dataSourceId).toBe('bizppurioTemplates');
@@ -570,24 +610,26 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
         }
     });
 
+    /** @effects unified_save_chain_alimtalk_then_core_recipients */
     it('[저장 후 검수 신청]: 알림톡 upsert(①/②) 성공 → POST .../request → 코어 PUT(조건) → 마무리; delivery 전용 분기 ③ 은 없다', () => {
-        const steps = ((requestBtn.actions as AnyNode[])[0].params as { actions: AnyNode[] }).actions.slice(1);
+        const steps = actionsOf(actionsOf(requestBtn)[0]).slice(1);
         expect(steps).toHaveLength(2);
         const [create, update] = steps;
-        const createReq = (create.onSuccess as AnyNode[])[0];
+        const createReq = callbacksOf(create, 'onSuccess')[0];
         expect(createReq.target).toBe('/api/plugins/sirsoft-message_bizppurio/admin/templates/{{response.data?.template?.id}}/request');
-        const updateReq = (update.onSuccess as AnyNode[])[0];
+        const updateReq = callbacksOf(update, 'onSuccess')[0];
         expect(updateReq.target).toBe('/api/plugins/sirsoft-message_bizppurio/admin/templates/{{_global.bz_tpl_modal?.id}}/request');
         for (const req of [createReq, updateReq]) {
             expect((req.params as { method: string }).method).toBe('POST');
-            expect((req.onSuccess as AnyNode[])[0].target).toBe('{{extensionPointProps.saveEndpoint}}');
+            expect(callbacksOf(req, 'onSuccess')[0].target).toBe('{{extensionPointProps.saveEndpoint}}');
             expect(JSON.stringify(req.onSuccess)).toContain('template.form.requested_toast');
         }
     });
 
+    /** @effects unified_save_chain_alimtalk_then_core_recipients */
     it('[저장 후 검수 신청]의 request 2노드는 검수자 전달 의견(bz_tpl_modal.request_comment)을 comment 로 싣는다 (#597 §18.7)', () => {
-        const steps = ((requestBtn.actions as AnyNode[])[0].params as { actions: AnyNode[] }).actions.slice(1);
-        const reqs = steps.map((s) => (s.onSuccess as AnyNode[])[0]);
+        const steps = actionsOf(actionsOf(requestBtn)[0]).slice(1);
+        const reqs = steps.map((s) => callbacksOf(s, 'onSuccess')[0]);
         expect(reqs).toHaveLength(2);
         for (const req of reqs) {
             const body = (req.params as { body: Record<string, string> }).body;
@@ -596,10 +638,11 @@ describe('lifecycle UI — 통합 [저장] 체인 (푸터 액션)', () => {
             expect(evalExpr(body.comment, { _global: { bz_tpl_modal: {} } }), '미입력 시 빈 문자열(서버가 미전달로 처리)').toBe('');
         }
         // 일반 [저장] 3분기에는 request 호출 자체가 없으므로 comment 도 없다
-        const saveSteps = ((saveBtn.actions as AnyNode[])[0].params as { actions: AnyNode[] }).actions.slice(1);
+        const saveSteps = actionsOf(actionsOf(saveBtn)[0]).slice(1);
         expect(JSON.stringify(saveSteps)).not.toContain('/request"');
     });
 
+    /** @effects unified_save_chain_alimtalk_then_core_recipients */
     it('실패 시 isSaving 해제 + 사유(bizppurio_message 우선)·필드 오류 객체를 상태에 싣는다(토스트가 아니라 섹션 배너가 표시)', () => {
         const fails = collectActions(actionsRoot).filter((a) => a.handler === 'apiCall').map((a) => JSON.stringify(a.onError));
         expect(fails.length).toBeGreaterThan(0);
@@ -617,24 +660,27 @@ describe('lifecycle UI — 검수자 전달 의견 입력란 (#597 §18.7, 제�
     const editor = findById(sectionsRoot, 'bizppurio_tpl_editor') as AnyNode;
     const block = findById(editor, 'bizppurio_tpl_request_comment') as AnyNode;
 
+    /** @effects inspection_request_carries_reviewer_comment */
     it('작성 폼(bizppurio_tpl_editor) 안에만 있다 — 잠금 요약에는 없다', () => {
         expect(block).toBeTruthy();
         expect(findById(findById(sectionsRoot, 'bizppurio_tpl_locked') as AnyNode, 'bizppurio_tpl_request_comment')).toBeFalsy();
     });
 
+    /** @effects inspection_request_carries_reviewer_comment */
     it('Textarea(bz_request_comment, ≤500) 가 bz_tpl_modal.request_comment 를 읽고 쓰며 카운터가 /500 이다', () => {
         const ta = findAllByName(block, 'Textarea')[0] as AnyNode;
         const props = ta.props as Record<string, unknown>;
         expect(props.name).toBe('bz_request_comment');
         expect(props.maxLength).toBe(500);
         expect(props.value).toBe("{{_global.bz_tpl_modal?.request_comment ?? ''}}");
-        const change = (ta.actions as AnyNode[])[0];
+        const change = actionsOf(ta)[0];
         expect(change.type).toBe('change');
         expect((change.params as Record<string, string>)['bz_tpl_modal.request_comment']).toBe('{{$event.target.value}}');
         const counter = findAllByName(block, 'Span').map((s) => String(s.text)).find((t) => t.endsWith('/500')) as string;
         expect(evalExpr(counter.replace('/500', ''), { _global: { bz_tpl_modal: { request_comment: '12345' } } })).toBe(5);
     });
 
+    /** @effects inspection_request_carries_reviewer_comment */
     it('모달 시딩이 request_comment 를 빈 문자열로 초기화한다(이전 알림의 의견 이월 금지)', () => {
         const seeds = collectActions(sectionsRoot)
             .filter((a) => a.handler === 'setState' && (a.params as Record<string, unknown>)?.bz_tpl_modal);
@@ -644,6 +690,7 @@ describe('lifecycle UI — 검수자 전달 의견 입력란 (#597 §18.7, 제�
         }
     });
 
+    /** @effects inspection_request_carries_reviewer_comment */
     it('라벨·placeholder·안내 키가 ko/en 에 존재한다', () => {
         for (const key of ['request_comment', 'request_comment_placeholder', 'request_comment_hint']) {
             expect(resolve(ko, `sirsoft-message_bizppurio.template.form.${key}`), `ko ${key}`).toBeTruthy();
@@ -661,6 +708,7 @@ describe('lifecycle UI — 검수자 전달 의견 입력란 (#597 §18.7, 제�
         return null;
     };
 
+    /** @effects inspection_request_carries_reviewer_comment */
     it('바로연결 블록(헤더+목록) 바로 뒤 형제로 놓이고, 라벨+[바로연결 추가] flex 행 안에 끼지 않는다 (회귀: 화면 검수 지적 2026-08-23)', () => {
         const chain = ancestorsOf(editor, 'bizppurio_tpl_request_comment') as AnyNode[];
         expect(chain).toBeTruthy();
@@ -679,6 +727,7 @@ describe('lifecycle UI — 검수자 전달 의견 입력란 (#597 §18.7, 제�
 });
 
 describe('lifecycle UI — 코어 계약 준수 + i18n 정합', () => {
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('플러그인 파일 어디에도 코어 엔드포인트·코어 모달 상태 키 리터럴이 없다(전부 extensionPointProps 간접 참조)', () => {
         const all = JSON.stringify([overlay, footer, sections, footerActions]);
         expect(all).not.toContain('/api/admin/notification-templates/');
@@ -686,6 +735,7 @@ describe('lifecycle UI — 코어 계약 준수 + i18n 정합', () => {
         expect(all).not.toContain('modal_notification_template_form');
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('참조하는 모든 플러그인 i18n 정적 키가 ko·en 에 존재한다', () => {
         const keys = [overlay, footer, sections, footerActions].flatMap(collectPluginKeys);
         expect(keys.length).toBeGreaterThan(0);
@@ -695,6 +745,7 @@ describe('lifecycle UI — 코어 계약 준수 + i18n 정합', () => {
         }
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it("동적 접두 'template.status.' 8종 + 'template.approval.' 2종이 ko·en 에 모두 존재한다", () => {
         const statuses = ['unwritten', 'draft', 'requested', 'approved', 'rejected', 'stopped', 'blocked', 'dormant'];
         for (const dict of [ko, en] as Array<Record<string, any>>) {
@@ -704,6 +755,7 @@ describe('lifecycle UI — 코어 계약 준수 + i18n 정합', () => {
         }
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it("동적 접두 'templates.link_type.' 가족: 작성 폼이 사용하는 링크 유형 코드가 ko·en 에 모두 존재한다", () => {
         const used = ['WL', 'AL', 'DS', 'BK', 'MD', 'AC', 'BC', 'BT', 'P1', 'P2', 'P3', 'TN', 'MP'];
         for (const dict of [ko, en] as Array<Record<string, any>>) {
@@ -718,6 +770,7 @@ describe('lifecycle UI — 바인딩 브레이스 위생 (회귀: 프리필 끝 
         ['footer', footer], ['sections', sections], ['footerActions', footerActions],
     ] as const;
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('문자열 값 어디에도 4연속 브레이스(}}}}·{{{{)가 없다', () => {
         for (const [name, json] of FILES) {
             const offenders = collectStrings(json).filter((v) => v.includes('}}}}') || v.includes('{{{{'));
@@ -725,6 +778,7 @@ describe('lifecycle UI — 바인딩 브레이스 위생 (회귀: 프리필 끝 
         }
     });
 
+    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
     it('표현식 $t 를 2-인자(파라미터 객체)로 호출하지 않는다 — 엔진은 단일 인자만 지원', () => {
         for (const [name, json] of FILES) {
             const offenders = collectStrings(json).filter((v) => /\$t\([^)]*,\s*\{/.test(v));
@@ -737,6 +791,7 @@ describe('lifecycle UI — 바인딩 브레이스 위생 (회귀: 프리필 끝 
  * @effects upload_in_progress_locks_save_buttons_not_cancel
  */
 describe('lifecycle UI — 이미지 업로드 상태 배선', () => {
+    /** @effects upload_in_progress_locks_save_buttons_not_cancel */
     it('업로드 진행 중에는 통합 저장 계열 버튼이 잠긴다(취소는 코어 버튼이라 플러그인이 잠글 수 없다)', () => {
         const buttons = findAllByName(actionsRoot, 'Button');
         expect(buttons).toHaveLength(2);
@@ -749,6 +804,7 @@ describe('lifecycle UI — 이미지 업로드 상태 배선', () => {
         expect(JSON.stringify(actionsRoot)).not.toContain('$t:common.cancel');
     });
 
+    /** @effects upload_in_progress_locks_save_buttons_not_cancel */
     it('업로드 실패 배너는 상태에서만 읽고 fallback 을 가진다', () => {
         expect(JSON.stringify(sectionsRoot)).toContain("_global.bz_tpl_upload?.error ?? ''");
     });
@@ -757,6 +813,7 @@ describe('lifecycle UI — 이미지 업로드 상태 배선', () => {
 describe('lifecycle UI — SMS 본문 다국어', () => {
     const raw = JSON.stringify(sectionsRoot);
 
+    /** @effects sms_modal_edits_body_per_locale_tab */
     it('SMS 섹션은 로케일 탭을 제공하고 본문을 로케일별로 읽는다', () => {
         const tabs = findById(sectionsRoot, 'bz_sms_lang_tabs');
         expect(tabs, 'SMS 본문 언어 탭이 없으면 ko 한 벌만 입력된다').toBeTruthy();
@@ -764,6 +821,7 @@ describe('lifecycle UI — SMS 본문 다국어', () => {
         expect(raw).toContain('bz_sms_modal?.body?.[_global.bz_sms_modal?.editLang ?? $locale]');
     });
 
+    /** @effects sms_modal_edits_body_per_locale_tab */
     it('변수 삽입 대상 경로가 현재 편집 로케일을 가리킨다', () => {
         expect(raw).toContain("'bz_sms_modal.body.' + (_global.bz_sms_modal?.editLang ?? $locale)");
     });
@@ -771,7 +829,8 @@ describe('lifecycle UI — SMS 본문 다국어', () => {
 
 describe('compose form — 유형 전환·반복 입력 실평가 (#597 §14.2 T7 / §6.2)', () => {
     const evalWithModal = (expr: string, modal: Record<string, unknown>): boolean =>
-        evalBinding(expr, { _global: { bz_tpl_modal: modal, bz_tpl_upload: {} } });
+        // 권한 있는 관리자 기준 — 권한 잠금은 plugin-abilities-gate 테스트가 따로 본다
+        evalBinding(expr, { _global: { bz_tpl_modal: modal, bz_tpl_upload: {} }, bizppurioTemplates: { data: { abilities: { can_manage_messaging: true } } } });
 
     const conditionalBlocks = (): Record<string, string> => {
         const found: Record<string, string> = {};
@@ -788,6 +847,7 @@ describe('compose form — 유형 전환·반복 입력 실평가 (#597 §14.2 T
         return found;
     };
 
+    /** @effects compose_modal_switches_conditional_fields_by_type */
     it.each(['TEXT', 'IMAGE', 'ITEM_LIST'])('강조유형 %s 블록은 그 유형에서만 노출된다', (type) => {
         const expr = conditionalBlocks()[type];
         expect(expr, `${type} 조건부 블록이 섹션에 없다`).toBeTruthy();
@@ -796,12 +856,14 @@ describe('compose form — 유형 전환·반복 입력 실평가 (#597 §14.2 T
         }
     });
 
+    /** @effects compose_modal_switches_conditional_fields_by_type */
     it('부가정보(templateExtra) 는 EX·MI 메시지 유형에서만 노출된다', () => {
         expect(JSON.stringify(sectionsRoot)).toContain("_global.bz_tpl_modal?.content?.templateMessageType === 'EX' || _global.bz_tpl_modal?.content?.templateMessageType === 'MI'");
     });
 
     const REPEAT_CAPS: Array<[string, number]> = [['templateItem?.list', 10], ['buttons', 5], ['quickReplies', 10]];
 
+    /** @effects compose_modal_switches_conditional_fields_by_type */
     it.each(REPEAT_CAPS)('반복 입력 %s 는 상한 %i 에 도달하면 추가가 잠긴다', (pathFragment, cap) => {
         const addBtn = findAllByName(sectionsRoot, 'Button').find((b) => {
             const d = String((b.props as { disabled?: string } | undefined)?.disabled ?? '');
@@ -820,6 +882,7 @@ describe('compose form — 유형 전환·반복 입력 실평가 (#597 §14.2 T
         expect(evalWithModal(expr, { content: {} })).toBe(false);
     });
 
+    /** @effects compose_modal_switches_conditional_fields_by_type */
     it('버튼 linkType 별 조건부 링크 필드가 선택한 유형에서만 노출된다(부록 A-3 대응표 기준)', () => {
         const EXPECTED_FOR_FIELD: Record<string, string[]> = {
             linkMo: ['WL'], linkPc: ['WL'], linkAnd: ['AL'], linkIos: ['AL'], telNumber: ['TN'], pluginId: ['P1', 'P2', 'P3'],

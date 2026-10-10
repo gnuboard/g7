@@ -1,0 +1,168 @@
+<!-- 신고 내용 카드 — 위는 신고당한 글·댓글의 스냅숏, 아래는 그 대상을 신고한 사람들의 목록이다. 한 대상에 여럿이 붙을 수 있어 신고자 쪽만 따로 페이지를 넘긴다 -->
+<partial description="Report Info Card for Admin Report Detail View">
+  <div data-ref="card_report_info" class="card-stack">
+    <div data-ref="reported_content_card" class="card-stack-item">
+      <div>
+        <div data-ref="reported_content_header" class="">
+          <div class="flex-between mb-3">
+            <div class="flex-center gap-2">
+              <h2 class="text-primary text-lg font-bold">$t:sirsoft-board.admin.reports.detail.report_info_title</h2>
+              <span data-if="{{report_detail?.data}}" class="{{report_detail?.data?.target_type === 'comment' ? 'inline-flex items-center px-3 py-1.5 rounded text-xs font-bold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 'inline-flex items-center px-3 py-1.5 rounded text-xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'}}">$t:sirsoft-board.enums.report_type.{{report_detail?.data?.target_type}}</span>
+            </div>
+          </div>
+          <div class="flex-center flex-wrap gap-x-4 gap-y-2 text-label bg-gray-50 dark:bg-gray-900 rounded-lg px-3 py-3">
+            <div class="flex-center text-primary gap-1.5">
+              <icon name="chart-bar" class="text-base"/>
+              <span class="font-bold">$t:sirsoft-board.admin.reports.detail.report_summary_label</span>
+              <span class="text-xs">{{report_detail?.data?.reason_summary ?? '-'}}</span>
+            </div>
+            <div class="w-px h-4 bg-gray-300 dark:bg-gray-600"/>
+            <div class="flex-center text-primary gap-1.5">
+              <icon name="calendar" class="text-base"/>
+              <span class="font-bold">$t:sirsoft-board.admin.reports.detail.first_reported_at_label</span>
+              <span class="text-xs">{{report_detail?.data?.first_reported_at ?? '-'}}</span>
+            </div>
+            <div class="w-px h-4 bg-gray-300 dark:bg-gray-600"/>
+            <div data-ref="target_status_info" data-if="{{report_detail?.data?.target_status}}" class="flex-center text-primary gap-1.5">
+              <icon name="circle-info" class="text-base"/>
+              <span class="font-bold">$t:sirsoft-board.admin.reports.detail.target_status_label</span>
+              <span class="text-xs {{report_detail?.data?.target_status === 'published' ? 'text-green-600 dark:text-green-400' : report_detail?.data?.target_status === 'blinded' ? 'text-orange-600 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}}">{{report_detail?.data?.target_status_label ?? report_detail?.data?.target_status ?? '-'}}</span>
+              <span data-if="{{report_detail?.data?.target_status === 'blinded' &amp;&amp; report_detail?.data?.blind_trigger_type_label}}" class="text-tertiary">({{report_detail?.data?.blind_trigger_type_label}})</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="reported_content_grid" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div data-ref="field_author">
+          <span class="text-tertiary block font-medium mb-1">{{report_detail?.data?.target_type === 'post' ? '$t:sirsoft-board.admin.reports.detail.content_author_label' : '$t:sirsoft-board.admin.reports.detail.comment_author_label'}}</span>
+          <!-- 회원 작성자: ActionMenu로 사용자 정보 드롭다운 -->
+          <action-menu data-type="composite" data-if="{{!(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest)}}" triggerLabel="{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name}}" triggerIconName="" position="right">
+            <prop name="items">
+              <item id="view_author" label="$t:sirsoft-board.admin.reports.detail.user_info" iconName="user"/>
+            </prop>
+            <on type="click" event="onItemClick">
+              <switch>
+                <case when="view_author">
+                  <navigate path="/admin/users/{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.uuid : report_detail?.data?.comment?.author?.uuid}}"/>
+                </case>
+              </switch>
+            </on>
+          </action-menu>
+          <!-- 비회원 작성자: 이름 + 배지 (드롭다운 없음) -->
+          <div data-if="{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest}}" class="flex-center gap-2">
+            <span class="text-heading">{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name}}</span>
+            <badge data-type="composite" color="yellow" size="sm">$t:sirsoft-board.admin.reports.guest_badge</badge>
+          </div>
+          <span data-if="{{(report_detail?.data?.target_type === 'post' &amp;&amp; report_detail?.data?.post?.author?.email) || (report_detail?.data?.target_type === 'comment' &amp;&amp; report_detail?.data?.comment?.author?.email)}}" class="form-hint">{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.email : report_detail?.data?.comment?.author?.email}}</span>
+        </div>
+        <div data-ref="field_board">
+          <label class="text-label-subtle block font-medium mb-1">$t:sirsoft-board.admin.reports.detail.board_label</label>
+          <span data-if="{{report_detail?.data?.board?.slug}}" class="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group">
+            <on type="click">
+              <navigate path="/admin/board/{{report_detail?.data?.board?.slug}}"/>
+            </on>
+            <span class="border-b border-transparent board-link-underline transition-all">{{report_detail?.data?.board?.name}}</span>
+            <icon name="arrow-up-right-from-square" class="text-xs"/>
+          </span>
+          <span data-if="{{!report_detail?.data?.board?.slug}}" class="inline-flex items-center gap-1.5 text-label-subtle">
+            <span>{{report_detail?.data?.board?.name}}</span>
+            <span class="text-xs board-muted-note">($t:sirsoft-board.admin.reports.detail.board_deleted)</span>
+          </span>
+        </div>
+        <div data-ref="field_post_title" data-if="{{report_detail?.data?.target_type === 'comment'}}">
+          <label class="text-label-subtle block font-medium mb-1">$t:sirsoft-board.admin.reports.detail.post_title_label</label>
+          <span data-if="{{report_detail?.data?.board?.slug &amp;&amp; report_detail?.data?.post?.id}}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group">
+            <on type="click">
+              <navigate path="/admin/board/{{report_detail?.data?.board?.slug}}/post/{{report_detail?.data?.post?.id}}"/>
+            </on>
+            <span class="border-b border-transparent board-link-underline transition-all">{{report_detail?.data?.post?.title}}</span>
+            <icon name="arrow-up-right-from-square" class="text-xs board-external-icon transition-all"/>
+          </span>
+          <span data-if="{{!report_detail?.data?.board?.slug || !report_detail?.data?.post?.id}}" class="text-primary text-sm">{{report_detail?.data?.post?.title}}</span>
+        </div>
+        <div data-ref="field_title" data-if="{{report_detail?.data?.target_type === 'post'}}">
+          <label class="text-label-subtle block font-medium mb-1">$t:sirsoft-board.admin.reports.detail.title_label</label>
+          <span data-if="{{report_detail?.data?.board?.slug &amp;&amp; report_detail?.data?.post?.id}}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group">
+            <on type="click">
+              <navigate path="/admin/board/{{report_detail?.data?.board?.slug}}/post/{{report_detail?.data?.post?.id}}"/>
+            </on>
+            <span class="border-b border-transparent board-link-underline transition-all">{{report_detail?.data?.post?.title}}</span>
+            <icon name="arrow-up-right-from-square" class="text-xs board-external-icon transition-all"/>
+          </span>
+          <span data-if="{{!report_detail?.data?.board?.slug || !report_detail?.data?.post?.id}}" class="text-primary text-sm">{{report_detail?.data?.post?.title}}</span>
+        </div>
+        <div data-ref="field_created_at">
+          <label class="text-label-subtle block font-medium mb-1">{{report_detail?.data?.target_type === 'post' ? '$t:sirsoft-board.admin.reports.detail.post_created_at_label' : '$t:sirsoft-board.admin.reports.detail.comment_created_at_label'}}</label>
+          <div class="text-primary flex-center gap-2 text-sm">
+            <icon name="clock" class="text-base text-gray-500 dark:text-gray-400"/>
+            <span>{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.created_at : report_detail?.data?.comment?.created_at}}</span>
+          </div>
+        </div>
+      </div>
+      <div data-ref="reported_content_section" class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+        <label class="text-label-subtle block font-medium mb-2">$t:sirsoft-board.admin.reports.detail.reported_content_label</label>
+        <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+          <extension-point name="html_content" data-ref="report_target_html" content="{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.content : report_detail?.data?.comment?.content}}" isHtml="{{report_detail?.data?.target_type === 'post' &amp;&amp; (report_detail?.data?.post?.content_mode ?? 'text') === 'html'}}" class="text-sm text-gray-900 dark:text-gray-100">
+            <default>
+              <html-content data-type="composite" content="{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.content : report_detail?.data?.comment?.content}}" isHtml="{{report_detail?.data?.target_type === 'post' &amp;&amp; (report_detail?.data?.post?.content_mode ?? 'text') === 'html'}}" class="text-sm text-gray-900 dark:text-gray-100"/>
+            </default>
+          </extension-point>
+        </div>
+      </div>
+    </div>
+    <div data-ref="reporters_list_card" class="card-stack-item">
+      <div data-ref="reporters_list_header" class="flex-center gap-2 mb-4">
+        <h2 class="text-primary text-lg font-bold">$t:sirsoft-board.admin.reports.detail.reports_title</h2>
+        <span data-if="{{report_detail?.data}}" class="inline-flex items-center px-3 py-1.5 rounded text-xs font-bold bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">$t:sirsoft-board.admin.reports.detail.report_count_with_unit|count={{reporters_list?.data?.pagination?.total ?? report_detail?.data?.report_count ?? 0}}</span>
+      </div>
+      <div class="row-stack">
+        <div data-ref="reporters_list_container_{{reporterIdx}}" data-each="reporter, reporterIdx in reporters_list?.data?.data ?? report_detail?.data?.reporters ?? []" data-blur-until-loaded="{{_local.reporters_loading}}" class="">
+          <div data-ref="reporter_item_card_{{reporterIdx}}" class="admin-card">
+            <div data-ref="card_inner_grid_{{reporterIdx}}" class="grid-2col lg:grid-cols-5">
+              <div data-ref="reporter_field_{{reporterIdx}}">
+                <span class="text-tertiary block font-medium mb-1">$t:sirsoft-board.admin.reports.detail.reporter_label</span>
+                <action-menu data-type="composite" data-if="{{reporter.reporter}}" triggerLabel="{{reporter.reporter?.name ?? '-'}}" triggerIconName="" position="right">
+                  <prop name="items">
+                    <item id="view_reporter" label="$t:sirsoft-board.admin.reports.detail.user_info" iconName="user"/>
+                  </prop>
+                  <on type="click" event="onItemClick">
+                    <!-- 신고한 사람의 관리자 상세로 — 탈퇴해 회원이 남지 않은 신고는 이 메뉴 대신 「삭제된 사용자」 문구가 선다 -->
+                    <switch>
+                      <case when="view_reporter">
+                        <navigate path="/admin/users/{{reporter.reporter?.uuid}}"/>
+                      </case>
+                    </switch>
+                  </on>
+                </action-menu>
+                <span data-if="{{!reporter.reporter}}" class="text-label-subtle">$t:sirsoft-board.admin.reports.detail.deleted_user</span>
+                <span data-if="{{reporter.reporter?.email}}" class="form-hint">{{reporter.reporter?.email}}</span>
+              </div>
+              <div data-ref="reported_at_field_{{reporterIdx}}">
+                <span class="text-tertiary block font-medium mb-1">$t:sirsoft-board.admin.reports.detail.reported_at_label</span>
+                <span class="text-primary text-sm">{{reporter.reported_at}}</span>
+              </div>
+              <div data-ref="reason_type_field_{{reporterIdx}}">
+                <span class="text-tertiary block font-medium mb-1">$t:sirsoft-board.admin.reports.detail.reason_type_label</span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">$t:sirsoft-board.enums.report_reason_type.{{reporter.reason_type}}</span>
+              </div>
+              <div data-ref="reporter_item_reason_{{reporterIdx}}" class="md:col-span-2">
+                <span class="text-tertiary block font-medium mb-1">$t:sirsoft-board.admin.reports.detail.reason_detail_label</span>
+                <p class="text-body line-clamp-3">{{reporter.reason_detail}}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <pagination data-type="composite" data-ref="reporters_pagination" data-if="{{((reporters_list?.data?.pagination?.last_page ?? 0) > 1) || (reporters_list?.data?.pagination?.has_more_pages === true) || ((reporters_list?.data?.pagination?.current_page ?? 1) > 1)}}" currentPage="{{reporters_list?.data?.pagination?.current_page ?? 1}}" totalPages="{{reporters_list?.data?.pagination?.last_page ?? null}}" hasMorePages="{{reporters_list?.data?.pagination?.has_more_pages ?? false}}" class="mt-4 justify-end">
+          <on event="onPageChange">
+            <!-- 신고자 목록만 페이지를 넘긴다 — 쪽수를 지역 상태에 적으면 데이터소스가 그것을 읽으므로 URL 은 건드리지 않는다(신고 상세 자체는 제자리에 머문다). 읽는 동안 목록을 흐리게 두려고 앞뒤로 표시를 켜고 끈다 -->
+            <sequence>
+              <set-state target="local" reporters_page="{{$args[0]}}" :reporters_loading="true"/>
+              <refetch-data-source dataSourceId="reporters_list"/>
+              <set-state target="local" :reporters_loading="false"/>
+            </sequence>
+          </on>
+        </pagination>
+      </div>
+    </div>
+  </div>
+</partial>

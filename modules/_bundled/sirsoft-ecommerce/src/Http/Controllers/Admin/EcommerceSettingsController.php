@@ -1,47 +1,49 @@
 <?php
 
+// audit:allow api-doc-coverage reason: develop-7.1.0 리베이스 후속 — 설정 응답 조립(공개 자산 디스크 카탈로그 정리·마일리지 알림 채널 후보)을 EcommerceSettingsAdminService 로 옮긴 내부 정리. 요청/응답 계약 불변(docs/api/settings.md 가 이미 같은 응답을 서술)
+
 namespace Modules\Sirsoft\Ecommerce\Http\Controllers\Admin;
 
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Privacy\PrivacyRetentionManager;
 use App\Seo\Contracts\SeoCacheManagerInterface;
-use App\Services\DriverRegistryService;
-use App\Services\NotificationChannelService;
-use App\Services\NotificationDefinitionService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingApiAuthType;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingApiHttpMethod;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingApiRequestField;
-use Modules\Sirsoft\Ecommerce\Enums\ShippingApiResponseType;
+use Modules\Sirsoft\Ecommerce\Exceptions\ClaimReasonException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ShippingCarrierOperationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\ShippingTypeOperationException;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\GetSettingRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreBanksRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\StoreEcommerceSettingsRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateSettingRequest;
-use Modules\Sirsoft\Ecommerce\Services\ClaimReasonService;
+use Modules\Sirsoft\Ecommerce\Privacy\OrderRetentionHandler;
+use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsAdminService;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
-use Modules\Sirsoft\Ecommerce\Services\ShippingCarrierService;
-use Modules\Sirsoft\Ecommerce\Services\ShippingTypeService;
 
 /**
  * 이커머스 모듈 환경설정 컨트롤러
  *
  * 이커머스 모듈의 환경설정을 관리하는 API를 제공합니다.
+ * 설정 JSON 과 DB 카탈로그의 저장·조회 조립은 EcommerceSettingsAdminService 가 맡고,
+ * 이 컨트롤러는 "관리자가 설정을 저장했다" 는 훅 발화와 응답 구성만 한다.
  */
 class EcommerceSettingsController extends AdminBaseController
 {
+    /**
+     * 설정 화면의 도메인 서비스를 주입합니다.
+     *
+     * @param  EcommerceSettingsService  $settingsService  환경설정 서비스
+     * @param  EcommerceSettingsAdminService  $adminSettingsService  관리자 설정 저장·조회 조립 서비스
+     */
     public function __construct(
         private EcommerceSettingsService $settingsService,
-        private ShippingCarrierService $carrierService,
-        private ShippingTypeService $shippingTypeService,
-        private ClaimReasonService $claimReasonService
+        private EcommerceSettingsAdminService $adminSettingsService
     ) {}
 
     /**
@@ -52,19 +54,7 @@ class EcommerceSettingsController extends AdminBaseController
     public function index(): JsonResponse
     {
         try {
-            $settings = $this->settingsService->getAllSettings();
-            $settings = $this->appendCarriersToSettings($settings);
-            $settings = $this->appendShippingTypesToSettings($settings);
-            $settings = $this->appendShippingApiRequestFieldsToSettings($settings);
-            $settings = $this->appendClaimReasonsToSettings($settings);
-            $settings = $this->appendMileageNotificationChannelsToSettings($settings);
-            $settings['available_pg_providers'] = $this->settingsService->getRegisteredPgProviders();
-            // 현금영수증 발급 프로바이더 후보 — 결제 플러그인이 훅으로 자신을 등록한다.
-            // 발급 PG 와 결제 PG 는 독립 선택이므로 목록도 별도로 내린다 (KG 결제 + 토스 발급 등).
-            $settings['available_cash_receipt_providers'] = $this->settingsService->getRegisteredCashReceiptProviders();
-            // 공개 자산 디스크 선택지 — 카탈로그 SSoT 는 코어 DriverRegistryService 게터 한 곳
-            $settings['available_public_asset_disks'] = app(DriverRegistryService::class)
-                ->getAvailableDrivers('public_asset');
+            $settings = $this->adminSettingsService->getSettingsWithProviders();
             $settings['abilities'] = [
                 'can_update' => PermissionHelper::check('sirsoft-ecommerce.settings.update', request()->user()),
             ];
@@ -96,7 +86,7 @@ class EcommerceSettingsController extends AdminBaseController
     public function show(string $category): JsonResponse
     {
         try {
-            $settings = $this->settingsService->getSettings($category);
+            $settings = $this->adminSettingsService->getSettingsForAdmin()[$category] ?? [];
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -127,94 +117,26 @@ class EcommerceSettingsController extends AdminBaseController
     public function store(StoreEcommerceSettingsRequest $request): JsonResponse
     {
         try {
-            $settings = $request->validatedSettings();
+            $outcome = $this->adminSettingsService->saveSettings($request->validatedSettings());
 
-            // shipping.carriers는 DB 관리 대상 — JSON 저장에서 제외
-            $carriers = null;
-            if (isset($settings['shipping']['carriers'])) {
-                $carriers = $settings['shipping']['carriers'];
-                unset($settings['shipping']['carriers']);
-            }
-
-            // shipping.types는 DB 관리 대상 — JSON 저장에서 제외
-            $shippingTypes = null;
-            if (isset($settings['shipping']['types'])) {
-                $shippingTypes = $settings['shipping']['types'];
-                unset($settings['shipping']['types']);
-            }
-
-            // claim.refund_reasons는 DB 관리 대상 — JSON 저장에서 제외
-            $refundReasons = null;
-            if (isset($settings['claim']['refund_reasons'])) {
-                $refundReasons = $settings['claim']['refund_reasons'];
-                unset($settings['claim']['refund_reasons']);
-            }
-
-            $result = $this->settingsService->saveSettings($settings);
-
-            // carriers DB 동기화
-            if ($result && $carriers !== null) {
-                $this->carrierService->syncCarriers($carriers);
-            }
-
-            // shipping types DB 동기화
-            if ($result && $shippingTypes !== null) {
-                $this->shippingTypeService->syncShippingTypes($shippingTypes);
-            }
-
-            // claim reasons DB 동기화
-            if ($result && $refundReasons !== null) {
-                $this->claimReasonService->syncReasons('refund', $refundReasons);
-            }
-
-            if ($result) {
-                // 설정 저장 활동로그 (저장된 카테고리 목록 전달)
-                HookManager::doAction('sirsoft-ecommerce.settings.after_save', array_keys($settings));
-
-                // 코어 모듈 설정 저장 훅 — SEO 캐시 무효화 등 코어/타 확장 리스너가 구독한다.
-                // 발화 지점을 서비스가 아니라 관리자 컨트롤러에 두는 이유: 훅 의미가
-                // "관리자가 설정을 저장했다" 이고, 서비스에 두면 내부 저장 호출 전부가
-                // 활동로그·캐시 무효화를 유발한다.
-                HookManager::doAction('core.module_settings.after_save', 'sirsoft-ecommerce', $settings, $result);
-
-                // 저장 후 전체 설정 반환 (관리자 UI 상태 업데이트용)
-                $updatedSettings = $this->settingsService->getAllSettings();
-                $updatedSettings = $this->appendCarriersToSettings($updatedSettings);
-                $updatedSettings = $this->appendShippingTypesToSettings($updatedSettings);
-                $updatedSettings = $this->appendShippingApiRequestFieldsToSettings($updatedSettings);
-                $updatedSettings = $this->appendClaimReasonsToSettings($updatedSettings);
-                $updatedSettings = $this->appendMileageNotificationChannelsToSettings($updatedSettings);
-                $updatedSettings['available_pg_providers'] = $this->settingsService->getRegisteredPgProviders();
-                $updatedSettings['available_cash_receipt_providers'] = $this->settingsService->getRegisteredCashReceiptProviders();
-                // 공개 자산 디스크 선택지 — 저장 응답에도 재부착 (관리자 UI 상태 갱신용)
-                $updatedSettings['available_public_asset_disks'] = app(DriverRegistryService::class)
-                    ->getAvailableDrivers('public_asset');
-
-                return ResponseHelper::moduleSuccess(
-                    'sirsoft-ecommerce',
-                    'messages.settings.save_success',
-                    $updatedSettings
-                );
-            } else {
+            if (! $outcome['result']) {
                 return ResponseHelper::moduleError(
                     'sirsoft-ecommerce',
                     'messages.settings.save_failed',
                     400
                 );
             }
-        } catch (ShippingTypeOperationException|ShippingCarrierOperationException $e) {
-            // 도메인 실패(사용 중이라 삭제 불가 등)는 운영자가 조치할 수 있는 사유다.
-            // generic 500 으로 뭉개면 "왜" 저장이 실패했는지 화면에서 알 수 없다.
-            // 키가 이미 `sirsoft-ecommerce::` 로 정규화돼 있어 moduleError 가 아닌 error 를 쓴다
-            // (ShippingCarrierController::destroy 와 동형).
-            $messageKey = $e->getMessageKey();
 
-            return ResponseHelper::error(
-                $messageKey,
-                400,
-                null,
-                $e->getMessageParams()
+            $this->fireAfterSaveHooks($outcome);
+
+            // 저장 후 전체 설정 반환 (관리자 UI 상태 업데이트용)
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.settings.save_success',
+                $this->adminSettingsService->getSettingsWithProviders()
             );
+        } catch (ClaimReasonException|ShippingTypeOperationException|ShippingCarrierOperationException $e) {
+            return $this->catalogDomainErrorResponse($e);
         } catch (Exception $e) {
             Log::error('이커머스 설정 저장 실패', [
                 'user_id' => Auth::id(),
@@ -227,6 +149,52 @@ class EcommerceSettingsController extends AdminBaseController
                 500
             );
         }
+    }
+
+    /**
+     * 관리자 설정 저장 훅을 발화합니다.
+     *
+     * 발화 지점을 서비스가 아니라 관리자 컨트롤러에 두는 이유: 훅 의미가
+     * "관리자가 설정을 저장했다" 이고, 서비스에 두면 내부 저장 호출 전부가
+     * 활동로그·캐시 무효화를 유발한다. `settings.after_save` 를 서비스에서 발행하면
+     * 그 훅을 구독하는 환율 제공자 플러그인과 무한 재귀하기도 한다.
+     *
+     * @param  array{result: bool, saved_categories: array<int, string>, settings: array}  $outcome  서비스 저장 결과
+     * @return void 반환값 없음
+     */
+    private function fireAfterSaveHooks(array $outcome): void
+    {
+        // 설정 저장 활동로그 (저장된 카테고리 목록 전달)
+        HookManager::doAction('sirsoft-ecommerce.settings.after_save', $outcome['saved_categories']);
+
+        // 코어 모듈 설정 저장 훅 — SEO 캐시 무효화 등 코어/타 확장 리스너가 구독한다.
+        HookManager::doAction('core.module_settings.after_save', 'sirsoft-ecommerce', $outcome['settings'], $outcome['result']);
+    }
+
+    /**
+     * DB 카탈로그 도메인 실패를 운영자가 조치할 수 있는 400 응답으로 바꿉니다.
+     *
+     * 사용 중인 사유를 지우려 한 것은 운영자가 조치할 수 있는 도메인 실패다.
+     * 상세 삭제 경로(ClaimReasonController::destroy)와 같은 400·같은 메시지 키를 쓴다 —
+     * 두 경로의 안내가 갈리면 같은 거절이 화면마다 다르게 보인다.
+     * 배송유형·배송사의 도메인 실패(사용 중이라 삭제 불가 등)도 같다 — generic 500 으로
+     * 뭉개면 "왜" 저장이 실패했는지 화면에서 알 수 없다. 키가 이미 `sirsoft-ecommerce::` 로
+     * 정규화돼 있어 moduleError 가 아닌 error 를 쓴다 (ShippingCarrierController::destroy 와 동형).
+     *
+     * @param  ClaimReasonException|ShippingTypeOperationException|ShippingCarrierOperationException  $e  카탈로그 도메인 예외
+     * @return JsonResponse 400 오류 응답
+     */
+    private function catalogDomainErrorResponse(
+        ClaimReasonException|ShippingTypeOperationException|ShippingCarrierOperationException $e
+    ): JsonResponse {
+        $messageKey = $e->getMessageKey();
+
+        return ResponseHelper::error(
+            $messageKey,
+            400,
+            null,
+            $e->getMessageParams()
+        );
     }
 
     /**
@@ -284,7 +252,7 @@ class EcommerceSettingsController extends AdminBaseController
         try {
             $key = $request->validated('key');
 
-            $value = $this->settingsService->getSetting($key);
+            $value = Arr::get($this->adminSettingsService->getSettingsForAdmin(), $key);
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -312,29 +280,29 @@ class EcommerceSettingsController extends AdminBaseController
     public function updateSetting(UpdateSettingRequest $request): JsonResponse
     {
         try {
-            $key = $request->validated('key');
-            $value = $request->validated('value');
+            $outcome = $this->adminSettingsService->updateSetting(
+                $request->validated('key'),
+                $request->validated('value')
+            );
 
-            $result = $this->settingsService->setSetting($key, $value);
-
-            if ($result) {
-                // dot-key 를 카테고리 하위 구조로 되돌려 벌크 저장과 같은 payload 형태로 만든다
-                $payload = [];
-                Arr::set($payload, $key, $value);
-                HookManager::doAction('core.module_settings.after_save', 'sirsoft-ecommerce', $payload, $result);
-
-                return ResponseHelper::moduleSuccess(
-                    'sirsoft-ecommerce',
-                    'messages.settings.update_success',
-                    ['updated' => true]
-                );
-            } else {
+            if (! $outcome['result']) {
                 return ResponseHelper::moduleError(
                     'sirsoft-ecommerce',
                     'messages.settings.update_failed',
                     400
                 );
             }
+
+            // 단건 저장도 dot-key 를 카테고리 하위 구조로 되돌린 벌크 저장과 같은 payload 형태로 발화한다.
+            $this->fireAfterSaveHooks($outcome);
+
+            return ResponseHelper::moduleSuccess(
+                'sirsoft-ecommerce',
+                'messages.settings.update_success',
+                ['updated' => true]
+            );
+        } catch (ClaimReasonException|ShippingTypeOperationException|ShippingCarrierOperationException $e) {
+            return $this->catalogDomainErrorResponse($e);
         } catch (Exception $e) {
             return ResponseHelper::moduleError(
                 'sirsoft-ecommerce',
@@ -430,115 +398,32 @@ class EcommerceSettingsController extends AdminBaseController
     }
 
     /**
-     * 설정 응답에 배송사 목록을 추가합니다.
+     * 종결 주문 개인정보 보유기간 처리 대상 건수를 미리 조회합니다 (이슈 #636).
      *
-     * DB 관리 대상인 carriers를 shipping 섹션에 포함시킵니다.
+     * 설정 화면의 대상 건수 뱃지가 쓰는 값이며, 코어 보유기간 커맨드의 `--dry-run` 과 **같은
+     * 조건식**({@see OrderRetentionHandler::preview()})을 지납니다. **저장된 설정** 기준이라 화면에서
+     * 값을 바꾸고 저장하기 전에는 이전 설정의 건수입니다. **꺼져 있어도 건수를 셉니다**(켜기 전에
+     * 규모를 본다 — 2026-09-23 확정). 「꺼짐」과 「대상 0건」은 `enabled` 로 구분합니다.
+     * `can_view_targets` 는 요청 관리자가 「더보기」 명단(코어 목록 API)을 볼 권한이 있는지입니다.
      *
-     * @param  array  $settings  설정 배열
-     * @return array carriers가 추가된 설정 배열
+     * 읽기 전용이며 입력이 없어 FormRequest 를 두지 않습니다 (`seoCacheInfo` 와 동형).
+     *
+     * @param  OrderRetentionHandler  $handler  종결 주문 보유기간 핸들러
+     * @param  PrivacyRetentionManager  $retentionManager  코어 보유기간 수집기 (목록 권한 판정)
+     * @return JsonResponse 대상 건수 JSON 응답
      */
-    private function appendCarriersToSettings(array $settings): array
+    public function privacyRetentionPreview(OrderRetentionHandler $handler, PrivacyRetentionManager $retentionManager): JsonResponse
     {
-        $carriers = $this->carrierService->getAllCarriers();
-
-        $settings['shipping']['carriers'] = $carriers->map(fn ($c) => [
-            'id' => $c->id,
-            'code' => $c->code,
-            'name' => $c->name,
-            'type' => $c->type,
-            'tracking_url' => $c->tracking_url,
-            'is_active' => $c->is_active,
-            'sort_order' => $c->sort_order,
-        ])->values()->toArray();
-
-        return $settings;
-    }
-
-    /**
-     * 설정 응답에 배송유형 목록을 추가합니다.
-     *
-     * DB 관리 대상인 shipping types를 shipping 섹션에 포함시킵니다.
-     *
-     * @param  array  $settings  설정 배열
-     * @return array shipping types가 추가된 설정 배열
-     */
-    private function appendShippingTypesToSettings(array $settings): array
-    {
-        $settings['shipping']['types'] = $this->shippingTypeService->getTypesForSettings();
-
-        return $settings;
-    }
-
-    /**
-     * 설정 응답에 배송 계산 API 요청 참고 필드 후보 목록을 추가합니다.
-     *
-     * 배송정책 폼의 "API 전송 필드" 후보(체크박스)는 프론트 하드코딩이 아니라
-     * 백엔드 SSoT enum(ShippingApiRequestField)에서 번역된 {value, label} 로 내려갑니다.
-     *
-     * @param  array  $settings  설정 배열
-     * @return array 후보 목록이 추가된 설정 배열
-     */
-    private function appendShippingApiRequestFieldsToSettings(array $settings): array
-    {
-        $settings['shipping']['api_request_fields'] = ShippingApiRequestField::options();
-        // 계산 API 고급 설정 옵션 — 프론트 하드코딩이 아닌 백엔드 enum SSoT 에서 번역되어 내려감
-        $settings['shipping']['api_http_methods'] = ShippingApiHttpMethod::options();
-        $settings['shipping']['api_auth_types'] = ShippingApiAuthType::options();
-        $settings['shipping']['api_response_types'] = ShippingApiResponseType::options();
-
-        return $settings;
-    }
-
-    /**
-     * 설정 응답에 클레임 사유 목록을 추가합니다.
-     *
-     * DB 관리 대상인 claim reasons를 claim 섹션에 포함시킵니다.
-     *
-     * @param  array  $settings  설정 배열
-     * @return array claim reasons가 추가된 설정 배열
-     */
-    private function appendClaimReasonsToSettings(array $settings): array
-    {
-        $settings['claim']['refund_reasons'] = $this->claimReasonService->getReasonsForSettings('refund');
-
-        return $settings;
-    }
-
-    /**
-     * 마일리지 소멸 예정 알림의 실제 활성 채널을 설정 응답에 병합합니다.
-     *
-     * 설정 카드의 "활성 채널" 칩은 선언 고정값이 아니라 관리자가 알림 설정에서 켜고 끈
-     * 실제 활성 채널을 보여줍니다. GenericNotification::via() 와 동일하게 도출합니다:
-     * definition resolve → notification.channels 필터 → 확장 단위 채널 활성 여부.
-     *
-     * @param  array  $settings  설정 배열
-     * @return array 활성 채널이 병합된 설정 배열
-     */
-    private function appendMileageNotificationChannelsToSettings(array $settings): array
-    {
-        $type = 'mileage_expiring_soon';
-
         try {
-            $definition = app(NotificationDefinitionService::class)->resolve($type);
-            $channels = $definition?->channels ?? ['mail', 'database'];
-
-            $channels = HookManager::applyFilters(
-                'sirsoft-ecommerce.notification.channels',
-                $channels,
-                $type
-            );
-
-            $channelService = app(NotificationChannelService::class);
-            $active = array_values(array_filter(
-                $channels,
-                fn (string $channel) => $channelService->isChannelEnabledForExtension('module', 'sirsoft-ecommerce', $channel)
-            ));
-        } catch (Exception) {
-            $active = [];
+            return ResponseHelper::moduleSuccess('sirsoft-ecommerce', 'messages.settings.fetch_success', [
+                'orders' => $handler->preview(),
+                'enabled' => $handler->isEnabled(),
+                'mode' => $handler->mode(),
+                'retention_years' => $handler->retentionYears(),
+                'can_view_targets' => $retentionManager->canViewTargets($handler, $this->getCurrentUser()),
+            ]);
+        } catch (Exception $e) {
+            return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.settings.fetch_failed', 500);
         }
-
-        $settings['mileage']['notification_channels'] = $active;
-
-        return $settings;
     }
 }

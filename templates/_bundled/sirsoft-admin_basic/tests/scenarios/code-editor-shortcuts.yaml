@@ -1,0 +1,70 @@
+feature: 코드 편집기의 단축키
+
+description: |
+  코드 편집기에 단축키가 **0건**이었다 — Ctrl+S 조차 없었다(#476). 같은 저장소의 위지윅 레이아웃
+  편집기에는 단축키 SSoT 와 도움말 모달이 완비돼 있는데 이 화면만 빠져 있었다(D11).
+
+  정의는 src/spec/codeEditorShortcuts.ts **한 곳**이고 매칭과 도움말이 같은 배열을 읽는다 —
+  단축키 추가 = 한 곳 수정. 코어의 맵을 import 하지 않는 이유는 템플릿이 독립 IIFE 번들이라
+  코어에서 import 할 수 없기 때문이고, 두 편집기는 다루는 대상이 달라(위지윅은 노드, 여기는 문서·파일)
+  같은 키가 같은 뜻일 수 없다.
+
+  브라우저·OS 가 선점한 조합은 **등록하지 않는다**. mod+w 를 등록해 두면 사용자는 그 키가 동작할
+  것이라 믿고 누르고, 작업 중인 브라우저 탭이 통째로 닫힌다.
+
+axes:
+  combo: [mod_only, mod_alt, single_key]
+  focus: [editor, search_input, document]
+
+axis_notes:
+  combo: >-
+    mod_only = `Ctrl+S` 류, mod_alt = `Ctrl+Alt+←` 류, single_key = `?`·`Esc` 류.
+    «입력 중 오발동 금지» 계약이 갈리는 지점이 정확히 이 셋이다.
+  focus: >-
+    editor = Monaco 안, search_input = 좌측 검색창, document = 아무 입력도 잡지 않은 상태.
+    `mod` 없는 단일 키는 입력 자리에서 무시돼야 한다(`?` 가 검색어로 찍혀야 한다).
+  removed_platform: >-
+    `platform`(win_linux / mac) 은 축에서 뺐다 — 이 저장소에 mac 러너가 없어 **잴 수 없는 칸**이
+    절반이 된다. 플랫폼 차이는 조합이 아니라 표기 변환 한 곳(`formatCodeCombo` 의 `mod` → Ctrl/⌘)에
+    모여 있으므로 그 함수의 단위 테스트로 잠근다.
+
+effects:
+  # 7.1.0 abilities 게이트(G26) — 읽기 전용이면 쓰기 단축키 무시
+  - code_workspace_read_only_blocks_write_shortcuts
+  - code_shortcuts_have_unique_combos                  # 같은 조합이 두 액션에 걸리지 않는다
+  - code_shortcuts_avoid_browser_reserved_combos       # mod+w · mod+tab 미등록
+  - code_shortcuts_register_alternate_for_new_file     # mod+n 은 대체 조합을 함께
+  - code_shortcuts_leave_find_in_file_to_the_editor    # mod+f 는 Monaco 에 양보하고 도움말에만
+  - code_shortcuts_match_exact_modifier_sets           # 네 자리를 모두 본다
+  - code_workspace_ctrl_s_saves                        # 저장 + 브라우저 기본 동작 차단
+  - code_workspace_ignores_single_keys_while_typing    # 입력 자리에서 단일 키 무시
+  - code_workspace_still_saves_while_typing            # 입력 자리에서도 mod 조합은 동작
+  - code_workspace_escape_closes_help_before_exiting   # Esc 우선순위
+  - code_workspace_alt_z_toggles_word_wrap             # 줄바꿈 토글 + 기억
+  - code_workspace_help_lists_every_shortcut_from_the_ssot # 도움말은 SSoT 를 그대로 읽는다
+  - code_workspace_dispatches_every_ssot_action        # SSoT 배열에서 파생한 모집단으로 액션 전건 발화 (§9.2 "SSoT 14종 매칭")
+  - code_editor_fallback_textarea_follows_word_wrap    # Monaco 실패 시 textarea 폴백도 wrap 토글을 따른다 (§9.2)
+  - code_workspace_ctrl_plus_minus_adjusts_font_size   # Ctrl+= / Ctrl+- 로 12~20px 조절 + 기억 (§7.6)
+  - code_shortcuts_format_per_platform                 # `mod` 표기를 플랫폼별(Ctrl / ⌘)로 바꾼다
+  - code_workspace_question_mark_opens_help            # 입력 자리 밖에서 `?` 는 도움말을 연다
+  - code_workspace_tab_navigation_shortcuts_cycle      # Ctrl+Alt+←/→ 가 이웃 탭으로 전환을 요청한다
+  - code_workspace_escape_defers_to_open_dialog        # 레이아웃이 소유한 창이 열려 있으면 Esc 는 그 창에 양보한다
+  # --- 편집기 표시 옵션 (CodeEditor.wordWrap.test.tsx) — 단축키가 바꾸는 값을 편집기가 받는 쪽
+  - code_editor_word_wrap_defaults_to_off              # 줄바꿈 기본값은 끔
+  - code_editor_word_wrap_maps_to_monaco_option        # wordWrap 이 Monaco 옵션으로 전달된다
+  - code_editor_font_size_is_configurable              # 글자 크기를 prop 으로 바꿀 수 있다
+  - code_editor_auto_theme_follows_dark_class          # auto 테마는 처음 뜰 때부터 문서 dark 클래스를 따른다
+  - code_editor_auto_theme_reacts_without_rerender     # 테마 토글을 관측해 다시 그리지 않아도 따라간다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CodeWorkspace.shortcuts.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CodeEditor.wordWrap.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-shortcuts.spec.ts
+
+validation:
+  note: |
+    단위 테스트가 SSoT 의 성질(중복 없음·예약 조합 회피·정확한 수식어 매칭)과 오발동 금지를 잠근다.
+
+    브라우저에서만 드러나는 것은 둘이다 — preventDefault 가 실제로 브라우저의 "페이지 저장"
+    대화상자를 막는가, 그리고 Monaco 안에 포커스가 있을 때도 같은 동작이 나는가. 창 리스너만 달면
+    편집기에 포커스가 있을 때 동작이 갈린다.

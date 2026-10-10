@@ -126,6 +126,20 @@ export function installUnloadGuard(): void {
 }
 
 /**
+ * 문서가 곧 떠난다고 표시합니다 — 코드가 직접 다른 문서로 옮길 때(`window.location.href = …`).
+ *
+ * `pagehide`·`beforeunload` 는 새 문서 응답이 와야 발화하므로, 그 사이(수백 ms)에 끝나는 같은 원인의
+ * 실패(세션 만료 401 등)가 떠날 문서에 오류 토스트를 그린다. 세션 만료로 로그인 화면으로 옮기는
+ * 경로는 이동을 시작하기 직전에 이 함수를 불러 이탈 가드를 미리 켠다.
+ *
+ * @return void
+ * @since engine-v1.78.2
+ */
+export function markDocumentLeaving(): void {
+    unloading = true;
+}
+
+/**
  * 테스트 전용 — unload 가드 상태를 초기화합니다.
  *
  * @return void

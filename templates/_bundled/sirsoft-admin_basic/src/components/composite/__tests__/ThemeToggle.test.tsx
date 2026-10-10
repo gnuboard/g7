@@ -39,12 +39,20 @@ describe('ThemeToggle', () => {
     vi.clearAllMocks();
   });
 
+  /**
+   * @scenario component=theme_toggle
+   * @effects theme_toggle_button_named_by_locale
+   */
   it('테마 토글 버튼이 렌더링되어야 함', () => {
     render(<ThemeToggle />);
-    const button = screen.getByRole('button', { name: /toggle theme/i });
+    const button = screen.getByRole('button', { name: 'Theme' });
     expect(button).toBeInTheDocument();
   });
 
+  /**
+   * @scenario component=theme_toggle
+   * @effects theme_toggle_applies_and_persists_selected_mode
+   */
   it('초기 테마가 localStorage에서 로드되어야 함', () => {
     localStorageMock['g7_color_scheme'] = 'dark';
     render(<ThemeToggle />);
@@ -53,10 +61,14 @@ describe('ThemeToggle', () => {
     expect(screen.getByRole('button')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario component=theme_toggle
+   * @effects theme_toggle_dropdown_opens_closes_and_marks_current
+   */
   it('버튼 클릭 시 드롭다운 메뉴가 표시되어야 함', async () => {
     render(<ThemeToggle autoText="Auto" lightText="Light" darkText="Dark" />);
 
-    const toggleButton = screen.getByRole('button', { name: /toggle theme/i });
+    const toggleButton = screen.getByRole('button', { name: 'Theme' });
     fireEvent.click(toggleButton);
 
     await waitFor(() => {
@@ -66,6 +78,10 @@ describe('ThemeToggle', () => {
     });
   });
 
+  /**
+   * @scenario component=theme_toggle
+   * @effects theme_toggle_applies_and_persists_selected_mode
+   */
   it('라이트 모드 선택 시 테마가 변경되어야 함', async () => {
     const onThemeChange = vi.fn();
     render(
@@ -78,7 +94,7 @@ describe('ThemeToggle', () => {
     );
 
     // 드롭다운 열기
-    const toggleButton = screen.getByRole('button', { name: /toggle theme/i });
+    const toggleButton = screen.getByRole('button', { name: 'Theme' });
     fireEvent.click(toggleButton);
 
     // 라이트 모드 선택
@@ -93,6 +109,10 @@ describe('ThemeToggle', () => {
     });
   });
 
+  /**
+   * @scenario component=theme_toggle
+   * @effects theme_toggle_applies_and_persists_selected_mode
+   */
   it('다크 모드 선택 시 테마가 변경되어야 함', async () => {
     const onThemeChange = vi.fn();
     render(
@@ -105,7 +125,7 @@ describe('ThemeToggle', () => {
     );
 
     // 드롭다운 열기
-    const toggleButton = screen.getByRole('button', { name: /toggle theme/i });
+    const toggleButton = screen.getByRole('button', { name: 'Theme' });
     fireEvent.click(toggleButton);
 
     // 다크 모드 선택
@@ -120,6 +140,10 @@ describe('ThemeToggle', () => {
     });
   });
 
+  /**
+   * @scenario component=theme_toggle
+   * @effects theme_toggle_applies_and_persists_selected_mode
+   */
   it('자동 모드 선택 시 시스템 설정을 따라야 함', async () => {
     // 시스템이 다크 모드인 경우
     matchMediaMock.mockImplementation((query) => ({
@@ -142,7 +166,7 @@ describe('ThemeToggle', () => {
     );
 
     // 드롭다운 열기
-    const toggleButton = screen.getByRole('button', { name: /toggle theme/i });
+    const toggleButton = screen.getByRole('button', { name: 'Theme' });
     fireEvent.click(toggleButton);
 
     // 자동 모드 선택
@@ -158,11 +182,15 @@ describe('ThemeToggle', () => {
     });
   });
 
+  /**
+   * @scenario component=theme_toggle
+   * @effects theme_toggle_dropdown_opens_closes_and_marks_current
+   */
   it('외부 클릭 시 드롭다운이 닫혀야 함', async () => {
     render(<ThemeToggle autoText="Auto" lightText="Light" darkText="Dark" />);
 
     // 드롭다운 열기
-    const toggleButton = screen.getByRole('button', { name: /toggle theme/i });
+    const toggleButton = screen.getByRole('button', { name: 'Theme' });
     fireEvent.click(toggleButton);
 
     // 드롭다운이 표시됨
@@ -176,12 +204,16 @@ describe('ThemeToggle', () => {
     });
   });
 
+  /**
+   * @scenario component=theme_toggle
+   * @effects theme_toggle_dropdown_opens_closes_and_marks_current
+   */
   it('현재 선택된 모드에 체크 아이콘이 표시되어야 함', async () => {
     localStorageMock['g7_color_scheme'] = 'light';
     render(<ThemeToggle autoText="Auto" lightText="Light" darkText="Dark" />);
 
     // 드롭다운 열기
-    const toggleButton = screen.getByRole('button', { name: /toggle theme/i });
+    const toggleButton = screen.getByRole('button', { name: 'Theme' });
     fireEvent.click(toggleButton);
 
     // 라이트 모드가 선택되어 있어야 함 (bg-gray-50 클래스 확인)
@@ -189,6 +221,10 @@ describe('ThemeToggle', () => {
     expect(lightButton.closest('button')).toHaveClass('bg-gray-50');
   });
 
+  /**
+   * @scenario component=theme_toggle
+   * @effects theme_toggle_dropdown_opens_closes_and_marks_current
+   */
   it('커스텀 텍스트가 올바르게 표시되어야 함', async () => {
     render(
       <ThemeToggle
@@ -198,7 +234,7 @@ describe('ThemeToggle', () => {
       />
     );
 
-    const toggleButton = screen.getByRole('button', { name: /toggle theme/i });
+    const toggleButton = screen.getByRole('button', { name: 'Theme' });
     fireEvent.click(toggleButton);
 
     await waitFor(() => {
@@ -208,6 +244,10 @@ describe('ThemeToggle', () => {
     });
   });
 
+  /**
+   * @scenario component=theme_toggle
+   * @effects theme_toggle_applies_and_persists_selected_mode
+   */
   it('잘못된 localStorage 값이 있어도 오류가 발생하지 않아야 함', () => {
     localStorageMock['g7_color_scheme'] = 'invalid';
 

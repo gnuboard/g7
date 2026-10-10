@@ -1,0 +1,22 @@
+feature: 나이스페이먼츠 영수증 조회 API — 회원·비회원 접근 판정과 영수증 주소
+
+description: |
+  마이페이지·비회원 주문 상세의 영수증 링크와 현금영수증 버튼이 부르는 API 다. 회원이면 본인 주문만,
+  비로그인이면 조회 토큰 헤더(X-Guest-Order-Token) 또는 결제 직후 발급한 영수증 쿠키로만 통과하고,
+  그 밖에는 모두 404(대상 없음)다. 로그인한 회원은 비회원 조회 토큰을 실어도 회원 분기가 먼저라
+  비회원 주문에 닿지 않는다.
+
+  응답의 `receipt_url` 은 매출전표(type=0), `payment_receipt_url` 은 마이페이지 「결제 영수증」 링크가
+  첫 출시부터 열어 온 주소(type=2)다 — 레이아웃이 결제사 주소를 적지 않도록 서버가 내려준다.
+
+axes:
+  viewer: [guest_header_token, guest_cookie, guest_invalid_token, guest_other_order_token, member_with_guest_token]
+
+effects:
+  - receipt_urls_returned
+  - payment_receipt_link_url_returned
+  - lookup_denied_as_not_found
+  - response_uses_common_envelope
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/UserReceiptControllerTest.php

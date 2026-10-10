@@ -1,0 +1,15 @@
+feature: 플러그인 설정 화면 읽기 전용 — 코어 설정 응답 abilities.can_update (7.1.0 abilities 게이트 G19)
+
+description: |
+  코어 플러그인 설정 응답 `data.abilities.can_update`(= core.plugins.update)가 true 가 아니면(응답 전·키 없음 포함, fail-closed)
+  읽기 전용 안내를 보이고 설정 입력·저장·쓰기 버튼을 잠근다. 저장 PUT 은 코어가 요청 본문의 abilities 를 버린다.
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/plugin-settings-read-only.test.ts
+
+axes:
+  case:
+    - plugin_settings_without_update
+
+effects:
+  - plugin_settings_locked_read_only

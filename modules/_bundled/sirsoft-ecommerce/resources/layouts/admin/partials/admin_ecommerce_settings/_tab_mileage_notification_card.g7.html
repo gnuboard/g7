@@ -1,0 +1,57 @@
+<!-- 쇼핑몰 설정 — 마일리지 알림 카드. 적립·소멸 알림을 언제 보낼지 정한다.
+  값 입력은 폼 자동 바인딩이고, 이 조각의 유일한 동작은 알림 설정 화면으로 건너가는 것이다. -->
+<partial description="마일리지 설정 - 소멸 예정 알림 카드 (활성 채널 동적 표시)">
+  <div data-ref="mileage_expiry_notification_card" class="admin-card">
+    <h3 class="section-heading mb-4">$t:sirsoft-ecommerce.admin.mileage_settings.notification.title</h3>
+    <div class="flex-between py-3">
+      <div>
+        <label class="block text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.mileage_settings.notification.enabled</label>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:sirsoft-ecommerce.admin.mileage_settings.notification.enabled_hint</p>
+      </div>
+      <toggle data-type="composite" name="mileage.expiry_notification_enabled" value="{{_local.form?.mileage?.expiry_notification_enabled ?? true}}" disabled="{{_computed.isReadOnly}}"/>
+    </div>
+    <div data-if="{{_local.form?.mileage?.expiry_notification_enabled ?? true}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">$t:sirsoft-ecommerce.admin.mileage_settings.notification.days_before</label>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.notification.days_before_prefix</span>
+          <input type="number" name="mileage.expiry_notification_days_before" value="{{_local.form?.mileage?.expiry_notification_days_before ?? 7}}" min="{{_local?.form?._meta?.limits?.expiry_notification_days_before_min ?? 1}}" class="input w-20 text-center" disabled="{{_computed.isReadOnly}}"/>
+          <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.notification.days_before_suffix|count={{_local.form?.mileage?.expiry_notification_days_before ?? 7}}</span>
+        </div>
+      </div>
+      <div data-ref="template_status_block" class="border-t border-gray-100 dark:border-gray-700/50 pt-4">
+        <span class="block text-sm font-medium text-gray-900 dark:text-white mb-2">$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_title</span>
+        <div data-ref="template_status_list" class="space-y-2">
+          <div data-ref="template_status_row_{{tplIndex}}" data-each="tpl, tplIndex in (((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'mileage_expiring_soon')?.templates) ?? [])" class="flex-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/40">
+            <div class="flex items-center gap-2 min-w-0">
+              <icon name="{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}" size="sm" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+              <div class="min-w-0">
+                <span class="block text-xs font-medium text-gray-500 dark:text-gray-400">{{tpl.channel === 'mail' ? $t('sirsoft-ecommerce.admin.mileage_settings.notification.channel_mail') : (tpl.channel === 'database' ? $t('sirsoft-ecommerce.admin.mileage_settings.notification.channel_database') : tpl.channel)}}</span>
+                <span class="block text-sm text-gray-800 dark:text-gray-200 truncate">{{tpl.subject?.[$locale] ?? tpl.subject?.ko ?? $t('sirsoft-ecommerce.admin.mileage_settings.notification.template_status_empty')}}</span>
+              </div>
+            </div>
+            <span class="{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0">{{tpl.is_active ? $t('sirsoft-ecommerce.admin.mileage_settings.notification.template_status_active') : $t('sirsoft-ecommerce.admin.mileage_settings.notification.template_status_inactive')}}</span>
+          </div>
+          <div data-if="{{(((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'mileage_expiring_soon')?.templates) ?? []).length === 0}}" class="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_empty</div>
+        </div>
+        <div class="flex-between gap-2 flex-wrap mt-3">
+          <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_hint</p>
+          <button data-ref="go_to_notification_settings" type="button" class="flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <on type="click">
+              <!-- 알림 설정 화면으로 이동. 마일리지 알림의 실제 문구·채널은 그쪽에서 정하므로 여기서는 자리만 안내한다. -->
+              <sequence>
+                <set-state target="global" activeEcommerceSettingsTab="notification_definitions"/>
+                <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
+                <navigate path="/admin/ecommerce/settings" :replace="true">
+                  <query tab="notification_definitions"/>
+                </navigate>
+              </sequence>
+            </on>
+            <icon name="arrow-up-right-from-square" size="sm"/>
+            <span>$t:sirsoft-ecommerce.admin.mileage_settings.notification.go_to_notification_settings</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

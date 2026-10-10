@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * @file board-index-empty-states.test.tsx
  * @description 게시판 목록 - 빈 상태 / 로딩 / 오류 / 글쓰기 버튼 레이아웃 JSON 구조 검증
@@ -13,6 +14,7 @@ import { describe, it, expect } from 'vitest';
 import emptyStatesPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/board/index/_empty_states.json';
 import loadingErrorPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/board/index/_loading_error.json';
 import writeButtonPartial from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/board/index/_write_button.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /**
  * 컴포넌트 트리에서 if 표현식이 특정 패턴을 포함하는 첫 노드를 찾는다.
@@ -70,8 +72,8 @@ describe('게시판 목록 - 빈 상태 / 로딩 / 오류 (JSON 구조 검증)',
             const goFirstBtn = findByName(node, 'Button');
             expect(goFirstBtn).not.toBeNull();
             expect(goFirstBtn.text).toContain('go_to_first_page');
-            expect(goFirstBtn.actions[0].handler).toBe('navigate');
-            expect(goFirstBtn.actions[0].params.path).toContain('/board/');
+            expect(actionsOf(goFirstBtn)[0].handler).toBe('navigate');
+            expect(actionsOf(goFirstBtn)[0].params.path).toContain('/board/');
         });
 
         it('게시글 없음 (검색/카테고리 없이 total === 0) 분기가 정의되어 있다', () => {
@@ -94,7 +96,7 @@ describe('게시판 목록 - 빈 상태 / 로딩 / 오류 (JSON 구조 검증)',
             const clearBtn = findByName(node, 'Button');
             expect(clearBtn).not.toBeNull();
             expect(clearBtn.text).toContain('clear_search');
-            expect(clearBtn.actions[0].handler).toBe('navigate');
+            expect(actionsOf(clearBtn)[0].handler).toBe('navigate');
         });
 
         it('세 분기는 서로 배타적인 if 조건을 사용한다 (page>1 / 검색없음 / 검색있음)', () => {
@@ -138,7 +140,7 @@ describe('게시판 목록 - 빈 상태 / 로딩 / 오류 (JSON 구조 검증)',
             // 새로고침 버튼 (refresh handler)
             const reloadBtn = findByName(errorNode, 'Button');
             expect(reloadBtn).not.toBeNull();
-            expect(reloadBtn.actions[0].handler).toBe('refresh');
+            expect(actionsOf(reloadBtn)[0].handler).toBe('refresh');
         });
 
         it('로딩과 오류 분기는 서로 배타적이다 (오류 시 로딩 미표시)', () => {

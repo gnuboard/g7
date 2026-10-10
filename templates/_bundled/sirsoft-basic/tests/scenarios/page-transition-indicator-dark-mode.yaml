@@ -1,0 +1,16 @@
+feature: 페이지 전환 로딩 막대 다크 모드 색
+
+description: |
+  페이지 전환 중 상단에 뜨는 로딩 막대의 움직이는 띠가 라이트 색(bg-blue-700) 하나뿐이라 다크 모드 배경에서 대비가 낮았다.
+  다크 모드 색(dark:bg-blue-400)을 짝으로 둔다.
+
+  수정 이력: 이커머스 전수 실측 S5 검증(darkmode-class-pair, 2026-10-07).
+
+axes:
+  case: [bar_dark_pair]
+
+effects:
+  - loading_bar_has_dark_color   # 띠가 다크 모드 색을 함께 갖는다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/PageTransitionIndicatorDarkMode.test.tsx

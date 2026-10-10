@@ -2,11 +2,13 @@
 
 namespace Tests\Feature\Services;
 
+use App\Contracts\Extension\TemplateManagerInterface;
 use App\Extension\HookManager;
 use App\Models\Template;
 use App\Services\TemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class TemplateServiceActivationTest extends TestCase
@@ -20,6 +22,11 @@ class TemplateServiceActivationTest extends TestCase
      */
     private array $createdTemplates = [];
 
+    /**
+     * 템플릿 서비스를 준비하고 이전 테스트의 빌드 디렉토리를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -32,6 +39,8 @@ class TemplateServiceActivationTest extends TestCase
 
     /**
      * 테스트 종료 후 생성된 템플릿 및 빌드 디렉토리 정리
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -48,6 +57,12 @@ class TemplateServiceActivationTest extends TestCase
 
     /**
      * 템플릿 활성화 시 기존 활성 템플릿이 비활성화되는지 테스트
+     *
+     * @scenario operation=activate
+     *
+     * @effects same_type_active_template_is_replaced
+     *
+     * @return void 반환값 없음
      */
     public function test_activating_template_deactivates_current_active_template(): void
     {
@@ -85,6 +100,12 @@ class TemplateServiceActivationTest extends TestCase
 
     /**
      * 템플릿 활성화 시 파일이 public/build/template/{type}/로 복사되는지 테스트
+     *
+     * @scenario operation=activate
+     *
+     * @effects template_activated_in_database
+     *
+     * @return void 반환값 없음
      */
     public function test_activating_template_copies_files_to_public(): void
     {
@@ -108,19 +129,13 @@ class TemplateServiceActivationTest extends TestCase
     }
 
     /**
-     * 파일 복사 실패 시 DB 트랜잭션이 롤백되는지 테스트
-     *
-     * NOTE: TemplateManager에 위임한 후, 파일 복사 로직은 TemplateManager에서 처리되므로
-     * 이 테스트는 TemplateManager의 테스트로 이동되어야 합니다.
-     * 현재는 TemplateManager가 dist 디렉토리가 없어도 예외를 던지지 않으므로 skip합니다.
-     */
-    public function test_file_copy_failure_rolls_back_database_transaction(): void
-    {
-        $this->markTestSkipped('TemplateManager에 위임 후, 이 테스트는 TemplateManager 테스트로 이동 필요');
-    }
-
-    /**
      * 훅이 올바른 순서로 실행되는지 테스트
+     *
+     * @scenario operation=activate
+     *
+     * @effects lifecycle_hooks_fire_before_then_after
+     *
+     * @return void 반환값 없음
      */
     public function test_hooks_are_executed_in_correct_order(): void
     {
@@ -160,6 +175,12 @@ class TemplateServiceActivationTest extends TestCase
 
     /**
      * 다른 타입의 템플릿은 영향받지 않는지 테스트
+     *
+     * @scenario operation=activate
+     *
+     * @effects other_type_template_untouched
+     *
+     * @return void 반환값 없음
      */
     public function test_different_type_templates_are_not_affected(): void
     {
@@ -206,6 +227,12 @@ class TemplateServiceActivationTest extends TestCase
 
     /**
      * assets 디렉토리가 있을 경우 함께 복사되는지 테스트
+     *
+     * @scenario operation=activate
+     *
+     * @effects template_activated_in_database
+     *
+     * @return void 반환값 없음
      */
     public function test_assets_directory_is_copied_if_exists(): void
     {
@@ -231,6 +258,12 @@ class TemplateServiceActivationTest extends TestCase
 
     /**
      * 템플릿 활성화 시 identifier로 호출 가능한지 테스트
+     *
+     * @scenario operation=activate
+     *
+     * @effects template_activated_in_database
+     *
+     * @return void 반환값 없음
      */
     public function test_can_activate_template_with_identifier(): void
     {
@@ -260,6 +293,12 @@ class TemplateServiceActivationTest extends TestCase
 
     /**
      * 템플릿 활성화 시 ID로 호출 가능한지 테스트
+     *
+     * @scenario operation=activate
+     *
+     * @effects template_activated_in_database
+     *
+     * @return void 반환값 없음
      */
     public function test_can_activate_template_with_id(): void
     {
@@ -289,32 +328,56 @@ class TemplateServiceActivationTest extends TestCase
 
     /**
      * 존재하지 않는 identifier로 활성화 시도 시 예외 발생 테스트
+     *
+     * @scenario operation=activate
+     *
+     * @effects unknown_template_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_activate_template_with_invalid_identifier_throws_exception(): void
     {
         // Arrange & Act & Assert
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $this->expectException(ValidationException::class);
         $this->templateService->activateTemplate('non-existent-template');
     }
 
     /**
      * 존재하지 않는 ID로 활성화 시도 시 예외 발생 테스트
+     *
+     * @scenario operation=activate
+     *
+     * @effects unknown_template_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_activate_template_with_invalid_id_throws_exception(): void
     {
         // Arrange & Act & Assert
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $this->expectException(ValidationException::class);
         $this->templateService->activateTemplate(99999);
     }
 
     /**
      * 템플릿 비활성화 시 identifier로 호출 가능한지 테스트
+     *
+     * @scenario operation=deactivate
+     *
+     * @effects template_deactivated_in_database
+     *
+     * @return void 반환값 없음
      */
     public function test_can_deactivate_template_with_identifier(): void
     {
         // Arrange
         $template = Template::factory()->create([
             'identifier' => 'test-deactivateidentifier',
+            'type' => 'admin',
+            'status' => 'active',
+        ]);
+        // 유형의 마지막 활성 템플릿은 끌 수 없다(#703) — 같은 유형의 다른 활성 템플릿을 남긴다
+        Template::factory()->create([
+            'identifier' => 'test-deactivateidentifier-peer',
             'type' => 'admin',
             'status' => 'active',
         ]);
@@ -336,12 +399,24 @@ class TemplateServiceActivationTest extends TestCase
 
     /**
      * 템플릿 비활성화 시 ID로 호출 가능한지 테스트
+     *
+     * @scenario operation=deactivate
+     *
+     * @effects template_deactivated_in_database
+     *
+     * @return void 반환값 없음
      */
     public function test_can_deactivate_template_with_id(): void
     {
         // Arrange
         $template = Template::factory()->create([
             'identifier' => 'test-deactivateid',
+            'type' => 'admin',
+            'status' => 'active',
+        ]);
+        // 유형의 마지막 활성 템플릿은 끌 수 없다(#703) — 같은 유형의 다른 활성 템플릿을 남긴다
+        Template::factory()->create([
+            'identifier' => 'test-deactivateid-peer',
             'type' => 'admin',
             'status' => 'active',
         ]);
@@ -363,26 +438,41 @@ class TemplateServiceActivationTest extends TestCase
 
     /**
      * 존재하지 않는 identifier로 비활성화 시도 시 예외 발생 테스트
+     *
+     * @scenario operation=deactivate
+     *
+     * @effects unknown_template_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_deactivate_template_with_invalid_identifier_throws_exception(): void
     {
         // Arrange & Act & Assert
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $this->expectException(ValidationException::class);
         $this->templateService->deactivateTemplate('non-existent-template');
     }
 
     /**
      * 존재하지 않는 ID로 비활성화 시도 시 예외 발생 테스트
+     *
+     * @scenario operation=deactivate
+     *
+     * @effects unknown_template_rejected
+     *
+     * @return void 반환값 없음
      */
     public function test_deactivate_template_with_invalid_id_throws_exception(): void
     {
         // Arrange & Act & Assert
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $this->expectException(ValidationException::class);
         $this->templateService->deactivateTemplate(99999);
     }
 
     /**
      * 헬퍼 메서드: 템플릿 dist 디렉토리 생성
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return void 반환값 없음
      */
     private function createTemplateDistDirectory(string $identifier): void
     {
@@ -395,25 +485,7 @@ class TemplateServiceActivationTest extends TestCase
         $this->createTemplateJson($templatePath, $identifier);
 
         // TemplateManager의 템플릿 목록 재로드
-        app(\App\Contracts\Extension\TemplateManagerInterface::class)->loadTemplates();
-
-        // 생성된 템플릿 추적 (tearDown에서 자동 정리)
-        $this->createdTemplates[] = $identifier;
-    }
-
-    /**
-     * 헬퍼 메서드: template.json만 생성 (dist 디렉토리 없음)
-     */
-    private function createTemplateJsonOnly(string $identifier): void
-    {
-        $templatePath = base_path("templates/{$identifier}");
-        File::makeDirectory($templatePath, 0755, true);
-
-        // template.json 파일 생성
-        $this->createTemplateJson($templatePath, $identifier);
-
-        // TemplateManager에 템플릿 로드
-        app(\App\Contracts\Extension\TemplateManagerInterface::class)->loadTemplates();
+        app(TemplateManagerInterface::class)->loadTemplates();
 
         // 생성된 템플릿 추적 (tearDown에서 자동 정리)
         $this->createdTemplates[] = $identifier;
@@ -421,6 +493,10 @@ class TemplateServiceActivationTest extends TestCase
 
     /**
      * 헬퍼 메서드: template.json 파일 생성
+     *
+     * @param  string  $templatePath  템플릿 디렉토리 절대 경로
+     * @param  string  $identifier  템플릿 식별자 (vendor-name)
+     * @return void 반환값 없음
      */
     private function createTemplateJson(string $templatePath, string $identifier): void
     {
@@ -444,6 +520,9 @@ class TemplateServiceActivationTest extends TestCase
      * 헬퍼 메서드: 템플릿 assets 디렉토리 생성
      *
      * 주의: createTemplateDistDirectory를 먼저 호출해야 함
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return void 반환값 없음
      */
     private function createTemplateAssetsDirectory(string $identifier): void
     {
@@ -454,6 +533,9 @@ class TemplateServiceActivationTest extends TestCase
 
     /**
      * 헬퍼 메서드: 템플릿 디렉토리 정리
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return void 반환값 없음
      */
     private function cleanupTemplateDirectory(string $identifier): void
     {
@@ -465,6 +547,8 @@ class TemplateServiceActivationTest extends TestCase
 
     /**
      * 헬퍼 메서드: public/build/template/ 디렉토리 정리
+     *
+     * @return void 반환값 없음
      */
     private function cleanupPublicBuildDirectory(): void
     {

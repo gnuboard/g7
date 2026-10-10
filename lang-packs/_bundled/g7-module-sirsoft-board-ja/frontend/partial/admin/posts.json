@@ -50,8 +50,8 @@
     "guest_password_verify_message": "非会員の投稿を編集するには、パスワードを入力してください。",
     "password_placeholder": "パスワードを入力してください",
     "password_incorrect": "パスワードが一致しません。",
-    "show_replies": "返信 {{count}}件を表示",
-    "hide_replies": "返信を非表示",
+    "show_replies": "返信コメント {{count}}件を表示",
+    "hide_replies": "返信コメントを非表示",
     "reply_blocked_blinded_post": "ブラインド処理された投稿には返信を作成できません。",
     "reply_blocked_deleted_post": "削除された投稿には返信を作成できません。",
     "user_info": "ユーザー情報",
@@ -78,6 +78,7 @@
     "blinded_comment_notice": "ブラインド処理されたコメントです",
     "blinded_comment_description": "運営ポリシーに基づいて、コメントが非表示にされました",
     "deleted_comment_notice": "削除されたコメントです",
+    "secret_comment_notice": "非公開コメントです",
     "blind_reason_label": "理由:",
     "blinded_at": "ブラインド処理日: {{date}}",
     "view_original_content": "元の内容を表示",
@@ -144,7 +145,9 @@
       "error": "通報受付に失敗しました。",
       "report_target": "通報対象: ",
       "comment_by_author": "{{author}}さんのコメント"
-    }
+    },
+    "reaction_total": "反応 {{count}}",
+    "download_failed": "添付ファイルをダウンロードできませんでした。"
   },
   "form": {
     "description": "投稿を作成または編集します",
@@ -175,6 +178,7 @@
     "no_content_preview": "内容を入力するとプレビューが表示されます",
     "attachments": "添付ファイル",
     "attachments_desc": "最大{{maxFiles}}個、各{{maxSize}}MB以下",
+    "attachments_no_permission": "添付ファイルのアップロード権限がないため、ファイルを追加・削除できません。",
     "attached_files": "添付ファイル",
     "confirm_remove_attachment_title": "添付ファイル削除",
     "confirm_remove_attachment_message": "ファイルは即座に削除されます。投稿の保存とは関係なく、復元できません。",
@@ -202,12 +206,15 @@
     "category": "カテゴリー",
     "author": "投稿者",
     "view_count": "閲覧数",
-    "created_at": "作成日"
+    "created_at": "作成日",
+    "reaction_total": "反応"
   },
   "search_fields": {
     "all": "すべて",
     "title_content": "タイトル+内容",
-    "author": "投稿者(名前、メールアドレス)"
+    "author": "投稿者(名前、メールアドレス)",
+    "title": "タイトル",
+    "content": "内容"
   },
   "filters": {
     "category_label": "カテゴリー",
@@ -284,5 +291,27 @@
     "30": "30件ずつ表示",
     "50": "50件ずつ表示",
     "100": "100件ずつ表示"
+  },
+  "bulk": {
+    "selected_count": "{{count}}個選択されました",
+    "delete": "削除",
+    "blind": "ブラインド",
+    "restore": "復元",
+    "modal": {
+      "delete_title": "選択した投稿を削除しますか？",
+      "delete_confirm": "選択した{{count}}個の投稿を削除しますか？",
+      "replies_notice": "返信がある投稿は、返信削除ポリシーに従ってスキップされる場合があります。",
+      "blind_title": "選択した投稿をブラインド処理しますか？",
+      "blind_confirm": "選択した{{count}}個の投稿をブラインド処理しますか？",
+      "restore_title": "選択した投稿を復元しますか？",
+      "restore_confirm": "選択した{{count}}個の投稿を復元しますか？",
+      "reason_label": "理由（選択）",
+      "reason_placeholder": "処理理由を入力してください",
+      "processing": "処理中..."
+    },
+    "skipped": {
+      "title": "スキップされた投稿",
+      "description": "以下の{{count}}件の投稿は処理されませんでした。"
+    }
   }
 }

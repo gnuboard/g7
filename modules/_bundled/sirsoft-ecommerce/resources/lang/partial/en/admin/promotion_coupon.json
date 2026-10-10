@@ -118,6 +118,7 @@
       "valid_to_desc": "Valid Date (Latest)"
     },
     "per_page": "{{count}} items",
+    "per_page_one": "{{count}} item",
     "columns": {
       "checkbox": "Select",
       "target_type": "Target Type",
@@ -138,36 +139,22 @@
       "actions": "Actions"
     }
   },
-  "mobile": {
-    "benefit_label": "Benefit",
-    "target_type_label": "Target Type",
-    "issue_label": "Issue",
-    "validity_period_label": "Validity Period",
-    "issue_period_label": "Issue Period",
-    "issue_count_label": "Issue Count",
-    "status_label": "Status",
-    "creator_label": "Creator",
-    "target_type:": "Target:",
-    "issue:": "Issue:",
-    "valid_period: ": "Valid Period: ",
-    "issue_period: ": "Issue Period: ",
-    "issue_count: ": "Issue Count: ",
-    "status:": "Status:"
-  },
   "modal": {
     "status_change": {
       "title": "Change issue status?",
-      "message": "The issue status of {{count}} selected coupons will be changed to {{status}}."
+      "message": "The issue status of {{count}} selected coupons will be changed to {{status}}.",
+      "message_one": "The issue status of {{count}} selected coupon will be changed to {{status}}."
     },
     "delete": {
       "title": "Delete coupon?",
-      "message": "This action cannot be undone. The coupon and all related posts will be permanently deleted.",
+      "message": "This action cannot be undone. The coupon and its product and category assignments will be deleted.",
       "warning": "Deleted coupons cannot be recovered.",
       "delete": "Delete"
     },
     "issue_history": {
       "title": "Coupon Issue History",
       "subtitle": "Total {{count}} issue records",
+      "subtitle_one": "Total {{count}} issue record",
       "total": "Total {{count}}",
       "empty": "No issue history.",
       "description": "List of users who received this coupon. (Total: 12)",
@@ -206,7 +193,8 @@
       "search_failed": "Member search failed.",
       "add": "Add",
       "added": "Added",
-      "selected": "{{count}} member(s) selected",
+      "selected": "{{count}} members selected",
+      "selected_one": "{{count}} member selected",
       "issue_btn": "Issue",
       "issue_failed": "Failed to issue the coupon."
     }
@@ -304,6 +292,7 @@
       "coupon_name": "Coupon Name",
       "coupon_description": "Coupon Description",
       "benefit_amount": "Benefit Amount",
+      "discount_unit": "Discount unit",
       "max_discount": "Max Discount",
       "min_order_amount": "Min Order Amount",
       "validity_period": "Validity Period",

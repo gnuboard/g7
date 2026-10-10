@@ -1,0 +1,78 @@
+<!-- 분류 화면 왼쪽 트리. 브랜드 목록과 뼈대는 같지만 **드래그 정렬이 살아 있다**는 점이 다르다 —
+  분류는 순서 자체가 쇼핑몰에 노출되는 값이라 정렬 조건이 아니라 손으로 정하는 것이다.
+  그래서 검색·정렬 UI 가 없고, 대신 드래그·노출토글 두 이벤트가 각각 서버로 나간다.
+  드래그와 토글 모두 **성공·실패 양쪽에서 트리를 다시 부른다** — 화면이 먼저 움직인 뒤 서버가
+  거부하면 되돌릴 방법이 재조회뿐이기 때문이다.
+  드래그 가능 여부와 토글 잠금은 서버 권한(`abilities.can_update`)이 정한다. -->
+<partial description="Category List Panel - Hierarchical Tree with Drag &amp; Drop">
+  <div data-ref="category_list_panel" class="admin-card col-span-1-lg flex flex-col">
+    <div data-ref="category_list_header" class="px-4 panel-header flex-between">
+      <div class="flex-center gap-2">
+        <icon name="folder" class="text-xl text-gray-700 dark:text-gray-300"/>
+        <h3 class="text-heading">$t:sirsoft-ecommerce.admin.category.tree.title</h3>
+      </div>
+    </div>
+    <div>
+      <sortable-menu-list data-type="composite" data-ref="sortable_category_list" data-if="{{(categories?.data?.data?.length ?? 0) > 0}}" items="{{categories?.data?.data ?? []}}" selectedId="{{_global.selectedCategoryId}}" enableDrag="{{categories?.data?.abilities?.can_update === true}}" toggleDisabled="{{categories?.data?.abilities?.can_update !== true}}" class="p-2 max-h-[calc(90vh-140px)] overflow-y-auto" itemClassName="py-1 px-3 mb-1 rounded-lg border" itemSelectedClassName="bg-blue-50 dark:bg-blue-900/30 border-blue-500" itemDefaultClassName="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600" childrenContainerClassName="bg-gray-50 dark:bg-gray-900/50">
+        <on type="action" event="onSelect">
+          <!-- 분류 선택 — 트리가 들고 있는 행 전체를 전역에 옮긴다. 오른쪽 보기 패널은 이 값만 읽고
+            상세를 따로 부르지 않는다.
+            주소는 `replace-url` 로 갈아끼워 새로고침·공유에는 남기되 뒤로가기 이력은 늘리지 않는다. -->
+          <sequence>
+            <set-state target="global" selectedCategoryId="{{$args[0]?.id}}" selectedCategory="{{$args[0]}}" panelMode="view"/>
+            <!-- 선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75). -->
+            <replace-url :mergeQuery="true">
+              <query id="{{$args[0]?.id}}" mode="view"/>
+            </replace-url>
+          </sequence>
+        </on>
+        <on type="action" event="onOrderChange">
+          <!-- 드래그로 순서·상위분류가 바뀐 결과. 컴포넌트가 만든 배치 본문(`$args[0]`)을 그대로
+            보내므로 여기서 트리를 다시 계산하지 않는다.
+            성공·실패 어느 쪽이든 트리를 다시 부른다 — 화면은 놓는 순간 이미 움직였고, 서버가
+            거부했을 때 그 움직임을 되돌릴 유일한 방법이 재조회다. -->
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/categories/order" method="PUT" body="{{$args[0]}}">
+            <success>
+              <parallel>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.category.messages.order_updated"/>
+                <refetch-data-source dataSourceId="categories"/>
+              </parallel>
+            </success>
+            <fail>
+              <parallel>
+                <toast type="error" message="{{error.message ?? '$t:sirsoft-ecommerce.admin.category.messages.order_update_failed'}}"/>
+                <refetch-data-source dataSourceId="categories"/>
+              </parallel>
+            </fail>
+          </api-call>
+        </on>
+        <on type="action" event="onToggleStatus">
+          <!-- 행의 노출 스위치. 드래그와 같은 이유로 성공·실패 양쪽에서 트리를 다시 부른다.
+            알림 문구만 갈린다 — 성공은 고정 문구, 실패는 서버가 준 사유를 그대로 보인다
+            (하위 분류가 있어 숨길 수 없다 같은 이유가 여기로 온다). -->
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/categories/{{$args[0]}}/toggle-status" method="PATCH">
+            <success>
+              <parallel>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.category.messages.status_changed"/>
+                <refetch-data-source dataSourceId="categories"/>
+              </parallel>
+            </success>
+            <fail>
+              <parallel>
+                <toast type="error" message="{{error.message}}"/>
+                <refetch-data-source dataSourceId="categories"/>
+              </parallel>
+            </fail>
+          </api-call>
+        </on>
+        <on event="mount">
+          <action handler="sirsoft-ecommerce.initCategoryFromUrl"/>
+        </on>
+      </sortable-menu-list>
+    </div>
+    <div data-ref="empty_category_state" data-if="{{(categories?.data?.data?.length ?? 0) === 0}}" class="flex-center flex-1 justify-center gap-3 px-4">
+      <icon name="folder" class="text-xl text-gray-400 dark:text-gray-500"/>
+      <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.category.tree.empty</p>
+    </div>
+  </div>
+</partial>

@@ -8,7 +8,8 @@
             "label": "Editor",
             "style_label": "Editor styles",
             "fallback_notice": "Could not load the editor. Switched to a plain text box. What you write is still saved."
-        }
+        },
+        "upload_failed": "Couldn't upload file: {{name}}."
     },
     "admin": {
         "uploads": {
@@ -18,6 +19,7 @@
             "open_settings": "Open cleanup settings",
             "reference_notice": "Reference status is determined by scanning registered content such as posts, pages, and product descriptions. An image used only by an external extension that has not registered a reference source may appear as \"Unreferenced\", so verify before deleting.",
             "scan_limited_notice": "The reference status filter evaluates the most recent {{count}} uploads. Older images are not shown in this list.",
+            "scan_limited_notice_one": "The reference status filter evaluates only the most recent upload. Older images are not shown in this list.",
             "empty": "No uploaded images.",
             "col": {
                 "thumbnail": "Preview",
@@ -52,7 +54,8 @@
                 "button": "Delete selected",
                 "selected": "{{count}} selected",
                 "confirm_title": "Delete the selected images?",
-                "confirm_message": "The files and records of the {{count}} selected images will both be deleted. This cannot be undone."
+                "confirm_message": "The files and records of the {{count}} selected images will both be deleted. This cannot be undone.",
+                "confirm_message_one": "The files and records of the {{count}} selected image will both be deleted. This cannot be undone."
             }
         }
     },
@@ -93,7 +96,8 @@
             "public_asset_disk": {
                 "label": "Public Asset Disk",
                 "hint": "Select to use a different disk for this plugin only. Leave empty to follow the core public asset disk setting.",
-                "follow_core": "Follow core setting"
+                "follow_core": "Follow core setting",
+                "unavailable": "The saved disk ({disk}) is no longer available, so editor images are being streamed. Select another disk and save to change it."
             },
             "editor_height": {
                 "label": "Editor Height (px)",
@@ -108,5 +112,6 @@
             "step4": "Changes take effect immediately after saving. No page refresh is required.",
             "step5": "When deactivated, editors revert to the default HtmlEditor and content display reverts to the default HtmlContent."
         }
-    }
+    },
+    "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
 }

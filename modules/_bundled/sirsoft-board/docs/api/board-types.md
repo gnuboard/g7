@@ -21,7 +21,7 @@
 <!-- @generated:start:api.modules.sirsoft-board.admin.board-types.index -->
 - **라우트명**: `api.modules.sirsoft-board.admin.board-types.index`
 - **컨트롤러**: `Modules\Sirsoft\Board\Http\Controllers\Admin\BoardTypeController@index`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.boards.create`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-board.boards.create|sirsoft-board.settings.read` (OR)
 
 **요청 파라미터**
 
@@ -88,11 +88,11 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-board.boards.create`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-board.boards.create` 또는 `sirsoft-board.settings.read`)이 모두 없는 경우 |
 
 <!-- @generated:end -->
 
-**설명** 관리자가 게시판 생성/편집 화면에서 선택할 수 있는 게시판 유형(basic, card, gallery 등) 목록을 반환합니다. `auth:sanctum` 인증과 `sirsoft-board.boards.create` 권한이 필요하며, 게시판 생성 권한을 재사용해 접근을 통제합니다. `name` 은 다국어 객체로 반환되므로 표시 시 현재 로케일 키를 선택해야 합니다.
+**설명** 관리자가 게시판 생성/편집 화면에서 선택할 수 있는 게시판 유형(basic, card, gallery 등) 목록을 반환합니다. `auth:sanctum` 인증과 `sirsoft-board.boards.create` 권한이 필요하며, 게시판 생성 권한을 재사용해 접근을 통제합니다. `name` 은 다국어 객체로 반환되므로 표시 시 현재 로케일 키를 선택해야 합니다. 7.1.0 부터 환경설정 「기본 유형」 선택지로도 쓰여 환경설정 조회 권한으로도 읽습니다(추가·수정·삭제는 그대로 게시판 생성 권한).
 
 
 ### POST /api/modules/sirsoft-board/admin/board-types
@@ -160,7 +160,7 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
-**설명** 새 게시판 유형을 생성합니다. `slug` 는 유형을 식별하는 고유 문자열(최대 50자)이고 `name` 은 유형명입니다. `auth:sanctum` 인증과 `sirsoft-board.boards.create` 권한이 필요하며, 성공 시 생성된 유형 리소스와 함께 201 을 반환합니다.
+**설명** 새 게시판 유형을 생성합니다. `slug` 는 유형을 식별하는 고유 문자열(최대 50자)이고 `name` 은 유형명입니다. `auth:sanctum` 인증과 `sirsoft-board.boards.create` 권한이 필요하며, 성공 시 생성된 유형 리소스와 함께 201 을 반환합니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「게시판 유형 이름의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the Board Type Name field is required.").
 
 
 ### DELETE /api/modules/sirsoft-board/admin/board-types/{id}
@@ -278,6 +278,6 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
-**설명** 지정한 `id` 의 게시판 유형명을 수정합니다. `slug` 는 변경되지 않으며 `name` 만 갱신합니다. `auth:sanctum` 인증과 `sirsoft-board.boards.create` 권한이 필요하고, 존재하지 않는 id 는 404 를 반환합니다.
+**설명** 지정한 `id` 의 게시판 유형명을 수정합니다. `slug` 는 변경되지 않으며 `name` 만 갱신합니다. `auth:sanctum` 인증과 `sirsoft-board.boards.create` 권한이 필요하고, 존재하지 않는 id 는 404 를 반환합니다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「게시판 유형 이름의 한국어(ko) 값은 필수입니다.」).
 
 

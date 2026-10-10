@@ -234,7 +234,7 @@ interface PostRepositoryInterface
      * @param  string  $direction  정렬 방향 (asc, desc)
      * @param  int  $perPage  페이지당 항목 수
      * @param  int  $page  페이지 번호
-     * @return array{total: int, items: Collection}
+     * @return array{total: int, items: Collection} 결과 객체
      */
     public function searchAcrossBoards(
         array $boardIds,
@@ -291,11 +291,13 @@ interface PostRepositoryInterface
      * 기존 getUserActivityStats()와 다른 점:
      * - status='published' 조건 적용
      * - comments_count = 실제 작성한 댓글 수 (댓글 단 게시글 수가 아님)
+     * - 비활성 게시판과 $excludeBoardIds(보는 사람이 읽을 수 없는 게시판)의 글·댓글은 세지 않음
      *
      * @param  int  $userId  사용자 ID
+     * @param  array<int>  $excludeBoardIds  세지 않을 게시판 ID 목록
      * @return array{posts_count: int, comments_count: int} 공개 게시글/댓글 통계
      */
-    public function getUserPublicStats(int $userId): array;
+    public function getUserPublicStats(int $userId, array $excludeBoardIds = []): array;
 
     /**
      * 게시판 ID와 게시글 ID로 게시글을 조회합니다 (삭제 포함).
@@ -336,6 +338,31 @@ interface PostRepositoryInterface
      * @return int 삭제된 게시글 수
      */
     public function forceDeleteByBoardId(int $boardId): int;
+
+    /**
+     * 지정한 게시글과 그 답변 글(자손 전체)을 하위 데이터와 함께 영구 삭제합니다 (소프트 삭제된 글 포함).
+     *
+     * 이커머스 샘플 시더의 재시드 정리(`sirsoft-ecommerce.inquiry.purge_sample_posts` 훅)에서
+     * 사용합니다. 넘겨받은 ID 의 글과 그 글에 달린 답변만 지우고, 같은 게시판의 다른 글(운영자 답변·
+     * 실제 문의)은 건드리지 않습니다. 댓글·첨부 행·반응·스크랩도 함께 지웁니다.
+     * 운영 경로의 삭제는 PostService 를 거칩니다.
+     *
+     * @param  int  $boardId  게시판 ID (다른 게시판의 같은 ID 는 지우지 않는다)
+     * @param  array<int, int>  $ids  삭제할 원글 ID 목록
+     * @return int 삭제된 게시글 수 (답변 포함)
+     */
+    public function forceDeleteWithRepliesByIds(int $boardId, array $ids): int;
+
+    /**
+     * 지정한 게시글(그 게시판 안의 것만)과 자손 답글 전체의 ID 를 모읍니다 (소프트 삭제된 글 포함).
+     *
+     * 영구 삭제 전에 첨부 파일을 먼저 정리할 대상을 고를 때 씁니다.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @param  array<int, int>  $ids  원글 ID 목록
+     * @return array<int, int> 원글 + 자손 답글 ID
+     */
+    public function collectWithRepliesIds(int $boardId, array $ids): array;
 
     /**
      * ID로 게시글을 조회합니다 (게시판 슬러그 불필요, board 관계 포함).
@@ -418,6 +445,7 @@ interface PostRepositoryInterface
      * @param  int  $boardId  게시판 ID
      * @param  int  $size  청크 크기
      * @param  callable  $callback  청크마다 호출될 콜백 (int[] $postIds)
+     * @return void 반환값 없음
      */
     public function eachIdChunkByBoardId(int $boardId, int $size, callable $callback): void;
 
@@ -430,6 +458,27 @@ interface PostRepositoryInterface
      * @return int 갱신된 카운트 값
      */
     public function recalculateCommentsCount(int $postId): int;
+
+    /**
+     * 게시글의 scrap_count 를 1 증가시키고 갱신된 값을 반환합니다.
+     *
+     * 스크랩 등록 시 PostScrapService 가 호출하는 영속 단일 진입점.
+     * 반환값은 낙관적 UI 없이 화면 수치를 서버 응답으로 갱신하는 데 쓰인다.
+     *
+     * @param  int  $postId  게시글 ID
+     * @return int 증가 후 scrap_count
+     */
+    public function incrementScrapCount(int $postId): int;
+
+    /**
+     * 게시글의 scrap_count 를 1 감소시키고 갱신된 값을 반환합니다 (0 미만으로 내려가지 않음).
+     *
+     * 스크랩 해제 시 PostScrapService 가 호출하는 영속 단일 진입점.
+     *
+     * @param  int  $postId  게시글 ID
+     * @return int 감소 후 scrap_count
+     */
+    public function decrementScrapCount(int $postId): int;
 
     /**
      * 게시글의 attachments_count 컬럼을 활성 첨부파일 수로 재계산해 갱신합니다.
@@ -452,7 +501,7 @@ interface PostRepositoryInterface
      *
      * 삭제되지 않은(deleted_at IS NULL) 게시글만 카운트합니다.
      *
-     * @param  string  $date  집계 기준 날짜 (Y-m-d)
+     * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시)
      * @return int 해당 날짜 작성 게시글 수
      */
     public function countCreatedOnDate(string $date): int;

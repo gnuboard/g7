@@ -7,6 +7,7 @@ import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import type { EditorAttrs } from '../../types';
+import { getSiteLocale } from '../../support/siteLocale';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -15,11 +16,6 @@ const t = (key: string, params?: Record<string, string | number>) =>
 // G7Core에서 지원 언어 목록 가져오기
 const getSupportedLocales = (): string[] => {
   return (window as any).G7Core?.locale?.supported?.() ?? ['ko', 'en'];
-};
-
-// G7Core에서 현재 언어 가져오기
-const getCurrentLocale = (): string => {
-  return (window as any).G7Core?.locale?.current?.() ?? 'ko';
 };
 
 // 언어 코드로 언어명 가져오기 (다국어 키 사용)
@@ -39,6 +35,18 @@ const getLocaleNameByCode = (code: string): string => {
   }
 
   return translatedName;
+};
+
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
+// 언어 지우기 단추 이름 — 단추 안 아이콘은 꾸밈이라 이름을 단추에 직접 단다(7.1.0 O-C3b-3)
+const removeLanguageLabel = (code: string): string => {
+  const language = getLocaleNameByCode(code);
+  return tOr('common.remove_language', `Remove ${language}`, { language });
 };
 
 // 시스템 언어 목록을 LocaleOption[]으로 변환
@@ -137,8 +145,10 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
     return availableLocales ?? getSystemLocaleOptions();
   }, [availableLocales]);
 
+  // 기본(필수) 언어 칸 — 보는 언어가 아니라 사이트 기본 언어다. 서버 필수 규칙(LocaleRequiredTranslatable)이
+  // 같은 값을 보므로, 다른 언어로 보는 관리자도 같은 칸을 채워야 저장된다.
   const actualDefaultLocale = useMemo(() => {
-    return defaultLocale ?? getCurrentLocale();
+    return defaultLocale ?? getSiteLocale();
   }, [defaultLocale]);
 
   // ── 로컬 상태 버퍼 (debounce 대기 중 사용자 입력값 보존) ──
@@ -193,15 +203,11 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
       return [actualDefaultLocale];
     }
 
-    // 기본 언어를 맨 앞에 배치
-    const locales: string[] = [];
+    // 기본 언어는 값에 키가 없어도 맨 앞에 둔다 — 꺼진 언어팩의 번역만 남은 값이면 기본 언어 칸과
+    // 그 옆의 「언어 추가」 버튼이 함께 사라져 기본 언어를 다시 입력할 수 없게 된다.
+    const locales: string[] = [actualDefaultLocale];
 
-    // 1. 기본 언어가 있으면 맨 앞에 추가
-    if (valueKeys.includes(actualDefaultLocale)) {
-      locales.push(actualDefaultLocale);
-    }
-
-    // 2. 나머지 언어들 추가 (기본 언어 제외)
+    // 나머지 언어들 추가 (기본 언어 제외)
     valueKeys.forEach(key => {
       if (key !== actualDefaultLocale) {
         locales.push(key);
@@ -245,15 +251,10 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
     }
 
     // value에 있는 언어들로 activeLocales 구성
-    // 기본 언어를 맨 앞에 배치
-    const newLocales: string[] = [];
+    // 기본 언어는 값에 키가 없어도 맨 앞에 둔다 (초기 상태 계산과 같은 이유)
+    const newLocales: string[] = [actualDefaultLocale];
 
-    // 1. 기본 언어가 있으면 맨 앞에 추가
-    if (valueKeys.includes(actualDefaultLocale)) {
-      newLocales.push(actualDefaultLocale);
-    }
-
-    // 2. 나머지 언어들 추가 (기본 언어 제외)
+    // 나머지 언어들 추가 (기본 언어 제외)
     valueKeys.forEach(key => {
       if (key !== actualDefaultLocale) {
         newLocales.push(key);
@@ -393,6 +394,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 className="ml-0.5 p-0.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                 onClick={() => handleRemoveLocale(localeCode)}
                 disabled={disabled}
+                aria-label={removeLanguageLabel(localeCode)}
               >
                 <Icon name="xmark" className="w-3 h-3" />
               </Button>
@@ -487,12 +489,12 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
       {/* 언어 탭들 + 추가 버튼 (Pill Badge 스타일) */}
       {/* flex-wrap: 로케일이 3개 이상이면 md 미만 뷰포트에서 탭 행이 컨테이너를 넘친다. */}
       <Div className="flex flex-wrap items-center gap-2 mb-3">
+        {/* 탭 한 칸 = 선택 버튼 + 삭제 버튼. 버튼 안에 버튼을 두면 HTML 규격 위반이라 둘을 나란히 둔다. */}
         {activeLocales.map(localeCode => (
-          <Button
+          <Span
             key={localeCode}
-            type="button"
             className={`
-              inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all
+              inline-flex items-center gap-0.5 rounded-full text-xs font-semibold transition-all
               ${currentLocale === localeCode
                 ? localeCode === actualDefaultLocale
                   ? 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white shadow-md scale-105'
@@ -502,36 +504,39 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                   : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }
             `}
-            onClick={() => setCurrentLocale(localeCode)}
           >
-            {/* 다국어 아이콘 */}
-            <Icon name="globe" className="w-3 h-3" />
-            {/* showCodeOnMobile: 모바일에서는 언어 코드, 데스크탑에서는 전체 언어명 표시 */}
-            {showCodeOnMobile ? (
-              <>
-                <Span className="hidden md:inline">{getLocaleName(localeCode)}</Span>
-                <Span className="inline md:hidden">{localeCode.toUpperCase()}</Span>
-              </>
-            ) : (
-              getLocaleName(localeCode)
-            )}
-            {localeCode === actualDefaultLocale && (
-              <Span className="text-red-500 dark:text-red-400">*</Span>
-            )}
-            {/* 입력 완료 표시 */}
-            {hasValue(localeCode) && currentLocale !== localeCode && (
-              <Icon name="check" className="w-3 h-3 text-green-500 dark:text-green-400" />
-            )}
-            {/* 삭제 버튼 (기본 언어 제외) - 배지 안에 */}
+            <Button
+              type="button"
+              className={`inline-flex items-center gap-1.5 py-1.5 pl-3 ${localeCode === actualDefaultLocale ? 'pr-3' : 'pr-0.5'}`}
+              onClick={() => setCurrentLocale(localeCode)}
+            >
+              {/* 다국어 아이콘 */}
+              <Icon name="globe" className="w-3 h-3" />
+              {/* showCodeOnMobile: 모바일에서는 언어 코드, 데스크탑에서는 전체 언어명 표시 */}
+              {showCodeOnMobile ? (
+                <>
+                  <Span className="hidden md:inline">{getLocaleName(localeCode)}</Span>
+                  <Span className="inline md:hidden">{localeCode.toUpperCase()}</Span>
+                </>
+              ) : (
+                getLocaleName(localeCode)
+              )}
+              {localeCode === actualDefaultLocale && (
+                <Span className="text-red-500 dark:text-red-400">*</Span>
+              )}
+              {/* 입력 완료 표시 */}
+              {hasValue(localeCode) && currentLocale !== localeCode && (
+                <Icon name="check" className="w-3 h-3 text-green-500 dark:text-green-400" />
+              )}
+            </Button>
+            {/* 삭제 버튼 (기본 언어 제외) */}
             {localeCode !== actualDefaultLocale && (
               <Button
                 type="button"
-                className="ml-0.5 p-0.5 rounded-full hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemoveLocale(localeCode);
-                }}
+                className="mr-2 p-0.5 rounded-full hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+                onClick={() => handleRemoveLocale(localeCode)}
                 disabled={disabled}
+                aria-label={removeLanguageLabel(localeCode)}
               >
                 <Icon
                   name="xmark"
@@ -539,7 +544,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 />
               </Button>
             )}
-          </Button>
+          </Span>
         ))}
 
         {/* 언어 추가 버튼 */}
@@ -584,7 +589,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
               >
                 {localeCode.toUpperCase()}
                 {localeCode === actualDefaultLocale && (
-                  <Span className="text-red-400 ml-0.5">*</Span>
+                  <Span className="text-red-400 dark:text-red-300 ml-0.5">*</Span>
                 )}
               </Button>
             ))}

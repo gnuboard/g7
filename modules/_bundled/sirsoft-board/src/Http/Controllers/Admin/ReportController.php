@@ -56,7 +56,7 @@ class ReportController extends AdminBaseController
                 return $this->forbidden('sirsoft-board::messages.reports.permission_denied');
             }
 
-            // filters 배열에서 검색 조건 추출 (admin_user_list.json과 동일한 구조)
+            // filters 배열에서 검색 조건 추출 (admin_user_list.g7.html과 동일한 구조)
             $filtersParam = $request->input('filters', []);
             $searchField = $filtersParam[0]['field'] ?? 'all';
             $searchValue = $filtersParam[0]['value'] ?? null;
@@ -265,14 +265,14 @@ class ReportController extends AdminBaseController
             $statusLabel = $statusEnum->label();
 
             // 성공 메시지 생성
-            $successMessage = __('sirsoft-board::messages.reports.bulk_status_updated_with_count', [
+            $successMessage = trans_count('sirsoft-board::messages.reports.bulk_status_updated_with_count', [
                 'count' => $affectedCount,
                 'status' => $statusLabel,
             ]);
 
             // 수동 블라인드 복구 안내 메시지 추가
             if ($result['manual_blind_restored'] > 0) {
-                $successMessage .= ' '.__('sirsoft-board::messages.reports.manual_blind_restored_notice', [
+                $successMessage .= ' '.trans_count('sirsoft-board::messages.reports.manual_blind_restored_notice', [
                     'count' => $result['manual_blind_restored'],
                 ]);
             }

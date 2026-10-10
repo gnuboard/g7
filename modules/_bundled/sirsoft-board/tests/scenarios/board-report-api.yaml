@@ -1,0 +1,46 @@
+feature: 게시판 신고 API 와 신고 모델 범위
+
+description: |
+  사용자의 게시글, 댓글 신고 API 와 신고 모델의 조회 범위(scope)를 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
+  축 operation 은 신고 접수(게시글, 댓글)와 접수된 신고 조회, condition 은 접수 때 대상의 상태 또는 조회 때 거르는 조건이다.
+  미인증 요청자, 신고를 끈 게시판, 중복 신고, 잘못된 사유 같은 요청 단위 거절은 reportable_target 칸 안에서 갈라 본다.
+
+axes:
+  operation: [submit_post_report, submit_comment_report, query_reports]
+  condition: [reportable_target, own_target, blinded_target, by_status, by_type, by_board, by_date_range, chained_filters]
+
+exclusions:
+  - { operation: [submit_post_report, submit_comment_report], condition: [by_status, by_type, by_board, by_date_range, chained_filters],
+      reason: "조회 거르개는 접수된 신고를 읽을 때 쓰는 조건이라 신고 접수 요청의 입력이 아니다." }
+  - { operation: query_reports, condition: [reportable_target, own_target, blinded_target],
+      reason: "조회 범위는 이미 접수된 신고 행을 거르므로 접수 단계에서 판정하는 대상 상태를 입력으로 받지 않는다." }
+
+effects:
+  - authenticated_user_can_report_post
+  - unauthenticated_cannot_report_post
+  - report_disabled_board_returns_403
+  - cannot_report_own_post
+  - cannot_report_blinded_post
+  - duplicate_post_report_returns_409
+  - invalid_reason_type_returns_422
+  - missing_reason_detail_returns_422
+  - authenticated_user_can_report_comment
+  - cannot_report_own_comment
+  - cannot_report_blinded_comment
+  - report_create_activity_log_carries_reason_and_target_type
+  - scope_by_status_with_enum
+  - scope_by_status_with_string
+  - scope_by_status_returns_empty_when_no_match
+  - scope_by_type_post
+  - scope_by_type_with_string
+  - scope_by_board_filters_correctly
+  - scope_by_board_returns_empty_for_nonexistent_board
+  - scope_by_date_range_includes_records_in_range
+  - scope_by_date_range_excludes_records_outside_range
+  - chaining_by_board_and_by_status
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/UserReportApiTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Models/ReportModelScopeTest.php

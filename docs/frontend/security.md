@@ -53,9 +53,9 @@
 | 검증 영역 | Rule | 핵심 |
 |----------|------|------|
 | JSON 구조 | ValidLayoutStructure | 필수 필드, 깊이 10단계 제한, 타입 검증 |
-| 컴포넌트 | ComponentExists | components.json 매니페스트 대조 |
+| 컴포넌트 | ComponentExists | components.json 매니페스트 대조 (확장 컴포넌트 `식별자.이름` 은 제외 — 편집기 검사가 설치 확장 선언으로 경고) |
 | API 엔드포인트 | WhitelistedEndpoint | `/api/(admin\|auth\|public)/` 패턴만 허용 |
-| 외부 URL | NoExternalUrls | http, data, javascript 등 7개 위험 스킴 차단. 사이트 자기 host·선언된 공개 자산 디스크 host 의 http(s) 절대 URL 은 외부가 아니다(서버가 발급하는 첨부 주소) |
+| 외부 URL | NoExternalUrls | http, data, javascript 등 7개 위험 스킴 차단. 사이트 자기 host·선언된 공개 자산 디스크 host 의 http(s) 절대 URL 은 외부가 아니다(서버가 발급하는 첨부 주소). 컴포넌트 prop 의 입력 안내 문구(`placeholder`)·링크(`href`)와 액션 요청 본문(`params.body`)은 http(s) 웹 주소 허용(실행 스킴·`//`·`ftp:` 는 차단, 자리로 판정). 확장 조각 `injections[].components`·`props` 도 같은 규칙 |
 | 상속 | ValidParentLayout | 순환 참조 방지, 상속 깊이 10 제한 |
 | 슬롯 | ValidSlotStructure | 부모에서 정의된 슬롯만 허용 |
 | 데이터소스 | ValidDataSourceMerge | 상속 체인 ID 고유성 |
@@ -129,11 +129,11 @@ HTML을 렌더링해야 하는 경우 (게시판 본문, 상품 설명 등) **�
 
 템플릿 엔진은 `{{expression}}` 내부를 **화이트리스트 AST 평가기**(`SafeExpressionEvaluator`)로 해석합니다. `new Function()`·`with(ctx)` 를 사용하지 않으므로, `''.constructor.constructor('code')()` 같은 프로토타입 체인 우회로 임의 코드를 실행할 수 없습니다.
 
-평가기는 프로퍼티/옵셔널체이닝 접근, 산술·비교·논리·삼항·nullish, 배열/객체/문자열 리터럴, 화살표 함수·템플릿 리터럴·스프레드, 그리고 화이트리스트 전역(`Math`/`JSON`/`Date`/`Array`/`Object`/`Number`/`String` 등)만 허용합니다. `constructor`/`__proto__`/`prototype` 프로퍼티 접근, `Function(`/`eval(`/`import(` 는 파싱·평가 양쪽에서 거부됩니다.
+평가기는 프로퍼티/옵셔널체이닝 접근, 산술·비교·논리·삼항·nullish, 배열/객체/문자열 리터럴, 화살표 함수·템플릿 리터럴·스프레드, 그리고 화이트리스트 전역(`Math`/`JSON`/`Date`/`Array`/`Object`/`Number`/`String`/`encodeURIComponent` 등)만 허용합니다. `constructor`/`__proto__`/`prototype` 프로퍼티 접근, `Function(`/`eval(`/`import(` 는 파싱·평가 양쪽에서 거부됩니다.
 
 ### 표현식 샌드박스 우회 토큰
 
-레이아웃 표현식 문자열에는 다음 토큰을 넣지 않습니다 — 저장 시점 검증과 정적 검사가 함께 차단합니다.
+레이아웃 표현식 문자열에는 다음 토큰을 넣지 않습니다 — 저장 시점 검증과 자동 검증이 함께 차단합니다.
 
 | 차단 대상 | 이유 |
 |----------|------|
@@ -145,9 +145,61 @@ HTML을 렌더링해야 하는 경우 (게시판 본문, 상품 설명 등) **�
 
 화살표 함수(`=>`)와 템플릿 리터럴(백틱)은 정상 표현식에서 널리 쓰이므로 차단하지 않습니다 — 평가기가 인터프리터로 안전하게 해석합니다.
 
+호스트 객체 그래프도 같은 이유로 막힙니다. `ownerDocument`·`defaultView`·`XMLHttpRequest`·`fetch(`·`localStorage.getItem(` 같은
+저장소 호출은 저장 시점에 거부됩니다(`localStorage` 단어 자체는 설정 키 이름으로 쓰이므로 호출 형태만 봅니다).
+
+### 호스트 객체 타입 경계
+
+금지 이름 목록만으로는 DOM 요소에서 출발해 `.ownerDocument.defaultView.localStorage` 로 브라우저 창에 닿는 경로를
+막을 수 없습니다. 평가기는 이름이 아니라 **값의 종류**로 막습니다.
+
+- 표현식이 식별자·프로퍼티 읽기·함수 호출 결과로 **브라우저 객체**(화면 요소·문서·창·저장소·주소·방문 기록·Promise 등)를 쥐는
+  순간 평가를 거부합니다. 호출 없는 경로 바인딩(`{{a.b.c}}`)과 `$get(obj, [경로])` 도우미도 경로 한 단계마다 같은 기준으로
+  끊겨, 중간의 브라우저 객체를 건너뛰어 값을 꺼낼 수 없습니다(폴백 값을 돌려줌).
+- 함수는 **순수 계산 함수만** 호출합니다 — 평가기가 만든 화살표 함수, 문자열·숫자·배열·날짜·Map/Set 메서드,
+  `Math`/`JSON`/`Number`/`String`/`Array`/`Date`/`Object` 의 정적 함수, 엔진이 컨텍스트에 넣는 도우미(`$t`·`$get` 등).
+  `call`/`apply`/`bind`, 리플렉션, 브라우저 API 는 호출되지 않습니다.
+
+### 표현식에 전달되는 이벤트·오류·콜백 값
+
+액션 표현식의 `$event`·`error`·`$args` 는 원본 객체가 아니라 **값 사본**입니다.
+
+| 값 | 담기는 것 |
+|----|----------|
+| `$event` | 이벤트 종류·키·좌표 같은 값, `target` 의 `value`·`checked`·`name`·`type`·`tagName`·`id`·`dataset`·`files`·`selectedOptions`(scroll 이벤트면 스크롤 위치, 폼 제출이면 이름 있는 입력칸 `target.<이름>.value`). 합성 컴포넌트가 넘긴 데이터는 그대로 복사 |
+| `error` | `message`·`name` 과 오류에 실린 필드(`status`·`errors`·`response`·`code` 등). 스택은 담지 않음 |
+| `$args` | 콜백 인자의 사본. 인자 속 이벤트·화면 요소는 위 형태로, 브라우저 객체는 `null` |
+
+화면 요소의 메서드 호출이나 요소를 거친 탐색(`$event.target.closest(...)`)은 되지 않습니다. 원본 이벤트가 필요한 처리는
+**동작 처리기(핸들러)** 에서 하세요 — 처리기는 종전대로 원본 이벤트를 받습니다.
+
+### 이동 주소 검증
+
+같은 탭 이동(`navigate` 의 라우트 미매칭 폴백, `openWindow` `target: '_self'`, `redirect`)은 **사이트 안의 절대 경로**만 따라갑니다.
+외부 주소·`//host`·`javascript:` 같은 실행 스킴은 첫 화면(`/`)으로 대체됩니다. 로그인 후 복귀 경로도 같은 기준입니다.
+새 창(`openWindow` 기본)과 화면에 그려지는 링크(`href`)·폼 제출 주소는 정상 외부 링크가 있으므로 실행 스킴만 무해화합니다.
+`query` 로 받은 주소를 이동에 쓰는 화면을 만들 때도 이 기준에 기대면 되지만, 외부 origin 으로 같은 탭 이동이 필요한 흐름은
+처리기에서 허용 대상을 명시해 다루세요.
+
+### API 호출의 인증 정보
+
+`apiCall` 은 로그인 토큰(`Authorization: Bearer`)과 CSRF 헤더(`X-XSRF-TOKEN`)를 **사이트와 같은 출처의 주소**로 보낼 때만
+싣습니다(`auth_required`·`auth_mode` 를 지정해도 마찬가지). 요청 주소는 표현식으로 만들 수 있어 저장 시점 검사가 모든 외부 주소를
+잡지 못하므로, 보내는 자리에서 판정합니다. 외부 API 호출 자체는 막지 않지만 토큰은 실리지 않습니다 — 외부 서비스 인증이
+필요하면 서버 API 를 거치세요. 데이터 소스도 같은 원칙입니다. 레이아웃 저장 시에는 이동·호출 대상(`target`·`params.path`·
+`params.url`)의 외부 주소를 화면 정의의 어느 위치에 있든 거부합니다.
+
+외부 주소의 **응답**도 인증 흐름을 움직이지 못합니다. 외부 주소가 돌려준 428(본인인증 필요)은 본인인증 창을 열지 않고,
+401 은 토큰 갱신·재시도·로그아웃 처리를 일으키지 않습니다. 응답이 지정한 주소로 토큰을 싣거나 갱신한 토큰을 같은 외부
+주소로 다시 보내던 경로입니다.
+
+확장 컴포넌트·처리기가 `fetch` 로 직접 요청하면서 `G7Core.api.getToken()` 을 실을 때도 같은 원칙을 지키세요. 대상 주소가
+prop 이나 응답 본문처럼 바깥에서 정해지는 값이면, `G7Core.api.isSameOriginUrl(url)` 이 true 일 때만 토큰을 싣습니다.
+prop 으로 받은 주소로 직접 이동(`location.href`)할 때도 같은 판정을 거치세요.
+
 ### 레이아웃 밖에서 저장되는 표현식
 
-표현식을 평가하는 것은 레이아웃 JSON 만이 아닙니다. 커스텀 번역 문구, 알림 템플릿, 본인인증 메시지 템플릿처럼 **레이아웃보다 낮은 권한으로 저장되는 콘텐츠**도 최종적으로 같은 엔진 평가 경로(`DataBindingEngine.evaluateExpression`)에 도달합니다.
+표현식을 평가하는 것은 레이아웃 JSON 만이 아닙니다. 커스텀 번역 문구, 알림 템플릿(본인인증 알림 포함)처럼 **레이아웃보다 낮은 권한으로 저장되는 콘텐츠**도 최종적으로 같은 엔진 평가 경로(`DataBindingEngine.evaluateExpression`)에 도달합니다.
 
 이 경로의 방어는 **런타임 평가기 한 겹**입니다.
 
@@ -216,7 +268,7 @@ HTML을 렌더링해야 하는 경우 (게시판 본문, 상품 설명 등) **�
 
 `G7Core.asset.isAllowedScriptSrc(url)` 로 같은 판정을 직접 물어볼 수 있습니다. 로더를 쓸 수 없는 주입(iframe `document.write` 등)은 이 함수로 같은 게이트를 재사용합니다.
 
-구동에 필요한 자산은 확장이 함께 담아 자체 제공하는 것이 원칙입니다. 자체 제공이 불가능한 경우 — 라이브러리가 아니라 그 회사 서버와 통신하는 **서비스 SDK**(예: Daum 우편번호 → `t1.daumcdn.net`) — 에만 외부 호스트를 씁니다. 이런 확장은 자신의 manifest 에 신뢰 호스트를 **선언**하고, 코어가 활성 확장 전수에서 이 목록을 집계해 `window.G7Config.trustedScriptHosts` 로 노출합니다. 런타임 로더·저장측 검증·정적 검사는 모두 이 목록에 속한 호스트만 예외로 허용합니다.
+구동에 필요한 자산은 확장이 함께 담아 자체 제공하는 것이 원칙입니다. 자체 제공이 불가능한 경우 — 라이브러리가 아니라 그 회사 서버와 통신하는 **서비스 SDK**(예: Daum 우편번호 → `t1.daumcdn.net`) — 에만 외부 호스트를 씁니다. 이런 확장은 자신의 manifest 에 신뢰 호스트를 **선언**하고, 코어가 활성 확장 전수에서 이 목록을 집계해 `window.G7Config.trustedScriptHosts` 로 노출합니다. 런타임 로더·저장측 검증·자동 검증은 모두 이 목록에 속한 호스트만 예외로 허용합니다.
 
 ```json
 // 확장 manifest (module.json / plugin.json / template.json)
@@ -253,7 +305,7 @@ HTML을 렌더링해야 하는 경우 (게시판 본문, 상품 설명 등) **�
 
 판정 전에 **tab·LF·CR 를 제거하고, 백슬래시를 슬래시로 바꾸고, 선행 슬래시 런을 접은** 뒤 접두 검사를 적용합니다. 브라우저는 선행 슬래시가 몇 개든 authority 시작으로 접습니다(`///host` ≡ `//host`, `https:///host` ≡ `https://host`). 경로 중간의 백슬래시·탭·연속 슬래시는 authority 를 만들지 않으므로 그대로 통과합니다.
 
-이 정규화는 런타임 로더·저장측 검증·정적 검사 **세 계층이 공유**해야 합니다. 런타임 쪽 구현은 한 곳(`resources/js/core/support/scriptSrcPolicy.ts`)에 있고 위 표의 주입 경로가 모두 그것을 씁니다 — 사본이 생기면 그 차집합이 그대로 우회로가 됩니다. 세 계층이 같은 판정 로직을 쓰므로, 한쪽만 고치면 나머지가 우회로로 남고 반대로 한 형태로 셋이 함께 뚫립니다. 새 URL 검증 지점을 추가할 때 접두 검사를 직접 작성하지 말고 기존 정규화를 경유하세요.
+이 정규화는 런타임 로더·저장측 검증·자동 검증 **세 계층이 공유**해야 합니다. 런타임 쪽 구현은 한 곳(`resources/js/core/support/scriptSrcPolicy.ts`)에 있고 위 표의 주입 경로가 모두 그것을 씁니다 — 사본이 생기면 그 차집합이 그대로 우회로가 됩니다. 세 계층이 같은 판정 로직을 쓰므로, 한쪽만 고치면 나머지가 우회로로 남고 반대로 한 형태로 셋이 함께 뚫립니다. 새 URL 검증 지점을 추가할 때 접두 검사를 직접 작성하지 말고 기존 정규화를 경유하세요.
 
 **same-origin 판정과 신뢰 출처 판정도 같은 정규화를 씁니다.** 두 판정은 한 조건문에서 이어집니다("내 사이트 경로인가, 아니면 신뢰 출처인가"). 한쪽만 정규화하면 신뢰 출처 이름을 userinfo 자리에 끼워 넣은 주소(`https://evil.com\@cdn.신뢰.com/x.js`)가 저장 단계에서만 신뢰 출처로 보여 통과하고, 반대로 브라우저가 신뢰 출처로 읽는 형태를 저장 단계만 거부하는 과차단도 생깁니다. 호스트 추출은 반드시 정규화를 경유하세요.
 
@@ -350,11 +402,12 @@ AuthManager.refreshToken()
 | 필드 `expose: false` | 해당 필드만 미노출 |
 | 필드 `sensitive: true` | 해당 필드 미노출 (비밀번호, 토큰 등) |
 
-#### 노출 차단 카테고리
+#### 노출 차단·제한 카테고리
 
 | 카테고리 | expose | 사유 |
 |----------|--------|------|
-| `security` | `false` | 로그인 시도 제한, 비밀번호 정책 등 공격자 정보 제공 위험 |
+| `security` | `true` + `fields` 10키 | 비밀번호 작성·재사용 규칙 10키(`password_min_length`·`require_password_special_char`·`password_require_char_types`·`password_block_*`·`password_*_chars_length`·`password_reuse_*`)만 노출 — 가입·변경·재설정 화면이 실제 정책대로 안내하기 위함. 로그인 시도 제한·잠금·비밀번호 만료·IP 제한·2단계 인증·토큰 키는 `fields` 에 선언하지 않아 내보내지 않는다(공격자 정보 제공 위험) |
+| `general` | `true` + `fields` | `site_url`·`admin_email`·`language` 는 필드 `expose: false`(프론트 미참조). `timezone` 은 노출한다 — 관리자 화면의 빠른 기간 버튼·통계 기간이 「오늘」을 계정 시간대(회원 시간대 → 없으면 이 값)·사이트 표준시로 정하는 데 쓴다(민감 정보 아님). 값은 저장된 설정값이라 `.env` 우선 모드(`G7_ENV_PRIORITY`)로 시간대가 잠긴 설치에서는 서버가 쓰는 유효값과 다를 수 있다 |
 | `mail` | `false` | SMTP password, API secret 포함 |
 | `seo` | `false` | 프론트엔드 미참조 (관리자 환경설정은 API 데이터 기반) |
 | `drivers` | `false` | S3 secret, Redis password 등 인프라 자격증명 포함 |
@@ -373,8 +426,12 @@ AuthManager.refreshToken()
       }
     },
     "security": {
-      "expose": false,
-      "_comment": "보안 정책은 프론트엔드에서 미참조 — 노출 시 공격자에게 정보 제공 위험"
+      "expose": true,
+      "_comment": "비밀번호 작성·재사용 규칙만 노출(예시는 10키 중 2개) — 만료·IP·2FA·토큰·잠금 키는 fields 에 선언하지 않아 내보내지 않는다",
+      "fields": {
+        "password_min_length": { "type": "integer", "sensitive": false },
+        "require_password_special_char": { "type": "boolean", "sensitive": false }
+      }
     },
     "mail": {
       "expose": false,

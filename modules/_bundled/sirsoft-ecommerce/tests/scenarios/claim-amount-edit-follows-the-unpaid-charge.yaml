@@ -1,0 +1,49 @@
+# 시나리오 매니페스트 — 금액 수정은 아직 안 낸 청구를 따라간다 (#599 3차 실측 L-6·L-7)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: claim_amount_edit_follows_the_unpaid_charge
+
+description: >-
+  운영자가 클레임 상세에서 청구액을 고치면 신청서의 금액 컬럼은 바뀌는데 **결제행은 그대로
+  남았다.** 화면이 말하는 금액과 구매자가 실제로 낼 수 있는 금액이 갈리는 자리다.
+
+  두 방향 모두 사고가 된다. 깎은 쪽에서는 안 받기로 한 돈의 결제창이 살아남아 구매자가 그 돈을
+  낼 수 있고(회수비 3,000원 → 0원으로 낮춰도 3,000원 결제 버튼이 남았다), 올린 쪽에서는 화면이
+  「미수납 4,000원」이라 적는데 `claim_payments` 에 행이 없어 낼 자리가 아예 없다.
+
+  원인은 관리자 경로에 차액 정산이 연결돼 있지 않은 것이다 — `settleChargeDifference()` 를 부르는
+  곳은 구매자 수정(`UserClaimService::update()`)뿐이었고, `AdminClaimService::updateAmounts()` 는
+  금액 컬럼을 갱신하고 활동로그 훅을 쏜 뒤 끝났다.
+
+  **이미 결제한 건은 이 매니페스트의 대상이 아니다**(운영 결정 2026-09-23). 초과 수납이 생겨도
+  자동 환급하지 않고 운영이 처리한다 — 관리자 금액 수정에 자동 환급을 하기로 한 합의가 없었고
+  (`modules/_bundled/sirsoft-ecommerce/docs/api/admin-claims.md` 의 `updateAmounts` 응답에 환급 기술이 없다), 금액을 고치는 것은
+  대개 운영상의 판단이기 때문이다. 그래서 정산은 **수납액이 0 일 때만** 부르고, 그 조건에서는
+  차액이 `total − 0` 이라 음수가 될 수 없어 환급 경로를 구조적으로 타지 않는다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/AdminClaimAmountSyncsUnpaidPaymentTest.php
+
+coverage_strategy: pairwise
+
+axes:
+  direction:
+    - down_to_zero   # 청구액을 0 으로
+    - down           # 청구액을 내림(양수 유지)
+    - up_from_zero   # 청구 0원 신청서를 양수로
+  payment_state:
+    - unpaid         # 아직 내지 않음 — 결제행이 새 금액을 따라간다
+    - paid           # 이미 냄 — 손대지 않는다(운영)
+
+exclusions:
+  - { direction: down_to_zero, payment_state: paid, reason: "지불 완료 축은 방향과 무관하게 「건드리지 않는다」 하나로 닫힌다 — paid 대표 케이스 1건이 세 방향을 함께 덮는다" }
+  - { direction: up_from_zero, payment_state: paid, reason: "같은 이유 — 이미 낸 건의 청구액 인상은 미수납을 만들 뿐 결제행을 새로 만들지 않는다(운영 영역)" }
+
+effects:
+  - claim_amount_edit_cancels_the_unpaid_payment_when_charge_drops_to_zero  # 0 으로 내리면 대기 결제행이 닫힌다
+  - claim_amount_edit_moves_the_unpaid_payment_with_the_charge              # 내리면 대기 결제행 금액도 따라 내려간다
+  - claim_amount_edit_opens_a_payment_when_the_charge_rises_from_zero       # 올리면 낼 결제행이 생긴다
+  - claim_amount_edit_leaves_the_paid_payment_untouched                     # 이미 결제한 건은 건드리지 않는다
+
+validation:
+  audit_rule: test-scenario-coverage

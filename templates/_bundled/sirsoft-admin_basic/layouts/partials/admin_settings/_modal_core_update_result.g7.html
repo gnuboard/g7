@@ -1,0 +1,53 @@
+<!-- 코어 새 버전 확인 결과 창 — 있으면 버전과 이력을, 없으면 최신이라는 안내를 보여 준다.
+  올리는 것은 여기서 하지 않고 안내 창(`_modal_core_update_guide`)으로 넘긴다. -->
+<partial description="코어 업데이트 확인 결과 모달" editor_label="$t:admin.modal_label.admin_settings.core_update_result_modal">
+  <modal data-type="composite" data-ref="core_update_result_modal" title="$t:admin.settings.info.update_result_title" size="md">
+    <div class="row-stack">
+      <div class="flex-between border-b border-gray-100 dark:border-gray-700">
+        <span class="text-label">$t:admin.settings.info.current_version</span>
+        <span class="text-heading">{{$parent._local.coreUpdateInfo?.current_version ?? '-'}}</span>
+      </div>
+      <div class="flex-between border-b border-gray-100 dark:border-gray-700">
+        <span class="text-label">$t:admin.settings.info.latest_version</span>
+        <span class="text-heading">{{$parent._local.coreUpdateInfo?.latest_version ?? '-'}}</span>
+      </div>
+      <div data-ref="update_available_section" data-if="{{$parent._local.coreUpdateInfo?.update_available}}" class="space-y-3">
+        <div class="alert-success">
+          <p class="text-success-soft">$t:admin.settings.info.update_available_message</p>
+        </div>
+        <div class="flex gap-2 justify-end">
+          <button type="button" class="px-3 py-1.5 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+            <on type="click">
+              <!-- 변경 이력 보기 — 현재↔최신 두 버전 사이의 이력을 받아 이력 창을 연다. 실패해도 빈 이력으로
+     창을 연다(이력이 없다고 안내 자체를 막지 않는다). 받은 값은 **부모 화면의 상태**로 담기고
+     이력 창이 그것을 `$parent` 로 읽는다. -->
+              <api-call :auth_required="true" target="/api/admin/core-update/changelog" method="GET">
+                <success>
+                  <set-state target="local" coreChangelog="{{result.data.changelog ?? []}}"/>
+                  <open-modal target="core_changelog_modal"/>
+                </success>
+                <fail>
+                  <set-state target="local" :coreChangelog="[]"/>
+                  <open-modal target="core_changelog_modal"/>
+                </fail>
+                <query from_version="{{$parent._local.coreUpdateInfo?.current_version ?? ''}}" to_version="{{$parent._local.coreUpdateInfo?.latest_version ?? ''}}"/>
+              </api-call>
+            </on>
+            $t:admin.settings.info.view_changelog
+          </button>
+          <button type="button" class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+            <on type="click">
+              <open-modal target="core_update_guide_modal"/>
+            </on>
+            $t:admin.settings.info.how_to_update
+          </button>
+        </div>
+      </div>
+      <div data-ref="no_update_section" data-if="{{!$parent._local.coreUpdateInfo?.update_available}}" class="">
+        <div class="alert-info">
+          <p class="text-info-soft">$t:admin.settings.info.no_update_message</p>
+        </div>
+      </div>
+    </div>
+  </modal>
+</partial>

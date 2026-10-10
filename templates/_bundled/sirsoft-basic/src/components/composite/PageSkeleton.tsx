@@ -1,5 +1,11 @@
 import React from 'react';
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
 /**
  * 레이아웃 컴포넌트 정의 (엔진에서 전달하는 트리 구조)
  */
@@ -757,7 +763,7 @@ export const PageSkeleton: React.FC<PageSkeletonProps> = ({ components, options 
             className="w-full"
             role="status"
             aria-busy="true"
-            aria-label="Loading..."
+            aria-label={tOr('common.loading', 'Loading...')}
         >
             {renderChildren(components, animClass, options.iteration_count, width)}
         </div>

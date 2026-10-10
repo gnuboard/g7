@@ -1,6 +1,6 @@
 # Service-Repository 패턴
 
-> **백엔드 가이드** | [목차로 돌아가기](index.md)
+> **백엔드 가이드** | [목차로 돌아가기](README.md)
 
 ---
 
@@ -609,7 +609,7 @@ public function bulkUpdateStatus(array $ids, string $status): int
 
 ### 상태 변경 타임스탬프 자동 설정
 
-상태 변경 시 관련 타임스탬프를 `match` 표현식으로 자동 설정합니다:
+상태에 딸린 타임스탬프의 짝은 **Enum 한 곳**(`UserStatus::transitionTimestamps()`)이 소유합니다. 호출부에서 `match` 를 펼치지 마십시오 — 상태를 하나 더할 때 그 `match` 를 쓴 자리를 전부 찾아 고쳐야 하고, 한 곳이라도 빠지면 새 상태의 시각 칸이 채워지지 않거나 낡은 칸이 남습니다:
 
 ```php
 // 상태 변경 감지 및 타임스탬프 자동 설정
@@ -617,17 +617,14 @@ $oldStatus = $user->status;
 $newStatus = $data['status'] ?? null;
 
 if ($newStatus && $newStatus !== $oldStatus) {
-    $newStatusEnum = UserStatus::from($newStatus);
-    $data = match ($newStatusEnum) {
-        UserStatus::Blocked => array_merge($data, ['blocked_at' => now()]),
-        UserStatus::Withdrawn => array_merge($data, ['withdrawn_at' => now()]),
-        UserStatus::Active => array_merge($data, ['blocked_at' => null, 'withdrawn_at' => null]),
-        UserStatus::Inactive => $data,  // 타임스탬프 변경 없음
-    };
+    // 채울 칸과 비울 칸을 Enum 이 함께 돌려준다 (없는 상태는 빈 배열).
+    $data = array_merge($data, UserStatus::from($newStatus)->transitionTimestamps());
 }
 
 $this->userRepository->update($user, $data);
 ```
+
+같은 표를 읽는 쓰기 경로는 다음과 같습니다 — 관리자 생성(`UserService::createUser()`), 수정(`updateUser()`), 일괄 상태 변경(`bulkUpdateStatus()`), 휴면 회원의 로그인 해제(`AuthService::restoreDormantAccount()`), 본인인증 완료 시 활성화(`ActivateUserOnIdentityVerified`). 짝 표를 바꿀 때는 이 경로 전부가 영향 범위입니다. 상태를 신설할 때는 `transitionTimestamps()` 의 `match` 에 갈래를 더하는 것으로 끝나고, **`default` 갈래가 있어 빠뜨린 상태가 500 을 내지 않습니다.**
 
 ### 상태 변경 시 토큰 자동 삭제
 
@@ -890,7 +887,7 @@ public function getAll(): Collection
 
 판정 기준은 단순하다. **꺼내는 값이 Model 이면 Eloquent, 컬렉션·배열이면 Support.** `*Keyed` 류 메서드 대부분은 평면 `id => Model` 맵이라 Eloquent 선언이 정당하고 실제로 지켜진다. 중첩 맵을 만들면서 옆 메서드의 평면 맵 선언을 복사하는 것이 전형적인 실수다.
 
-정적 검사가 이 불일치를 차단하지만, 정규식 기반이라 강등 여부를 의미적으로 판정하지는 못한다. 권위 있는 가드는 **저장소 단위 테스트**다 — 반환 타입을 바꾸거나 중첩 맵을 새로 만들 때는 `assertInstanceOf` / `assertNotInstanceOf` 로 외곽과 내부 항목의 타입을 함께 고정한다.
+자동 검증이 이 불일치를 차단하지만, 정규식 기반이라 강등 여부를 의미적으로 판정하지는 못한다. 권위 있는 가드는 **저장소 단위 테스트**다 — 반환 타입을 바꾸거나 중첩 맵을 새로 만들 때는 `assertInstanceOf` / `assertNotInstanceOf` 로 외곽과 내부 항목의 타입을 함께 고정한다.
 
 ### 목록의 eager load 는 목록이 직렬화하는 관계만
 
@@ -1108,7 +1105,7 @@ enum ConsentSource: string
 
 라벨은 **백엔드와 프론트 두 표면 모두**에 정의한다. 관리자 화면의 `$t:` 는 `resources/lang/{locale}.json` 에서 해석되므로 `lang/{locale}/messages.php` 만 채우면 화면에는 여전히 원시 키가 남는다. 치환 문법도 다르다 — 백엔드는 `:name`, 프론트 엔진(`TranslationEngine.replaceParams`)은 `{name}` / `{{name}}` 만 치환한다.
 
-어느 enum 이 어느 화면의 어휘인지는 의미 추론이 필요해 정적 검출이 어렵다(`coverage.json` 의 `filter-vocabulary-enum-parity` = `manual-only`). 확장별로 정합 테스트를 둔다 — 예: `ConsentSourceVocabularyParityTest` (기록 리터럴 ⊆ enum / 화면 옵션 = enum / ko·en × 백엔드·프론트 라벨 전수).
+어느 enum 이 어느 화면의 어휘인지는 의미 추론이 필요해 자동 검출이 어렵다. 확장별로 정합 테스트를 둔다 — 예: `ConsentSourceVocabularyParityTest` (기록 리터럴 ⊆ enum / 화면 옵션 = enum / ko·en × 백엔드·프론트 라벨 전수).
 
 ### 목록에 `last_page > 1` 이면 화면에도 페이저가 있어야 한다
 
@@ -1281,7 +1278,7 @@ $query->orderBy('created_at', 'desc')->orderBy('id', 'desc')->paginate($perPage)
 
 모듈/플러그인 프로파일은 **그 확장의 테스트 스위트에서** 검사한다. 확장 테이블은 그 스위트에서만 마이그레이션되므로 코어 스위트에 몰면 테이블이 없어 건너뛰고 초록인 채 미검사가 된다. 같은 이유로 "테이블이 없으면 skip" 도 하지 않고 실패로 보고한다.
 
-### 정적 검사 대상
+### 자동 검증 대상
 
 | 검출 대상 | 처리 |
 |---|---|
@@ -1605,7 +1602,7 @@ public function findOrFail(string $slug, int $id, ?int $postId = null): Comment
 | --- | --- |
 | 방어 위치 | Repository where 절 (SSoT) + Service 가 상위 ID 를 전달 |
 | 파라미터 형태 | **선택 파라미터**(`?int $postId = null`) — 필수화는 Interface breaking 이라 이 확장에 의존하는 확장을 전부 흔든다 |
-| 전달 누락 방지 | 컨트롤러가 라우트 파라미터를 실제로 소비하는지 정적 검사가 감시 (경고) |
+| 전달 누락 방지 | 컨트롤러가 라우트 파라미터를 실제로 소비하는지 자동 검증이 감시 (경고) |
 | 응답 코드 | 조회 실패이므로 404. 요청 본문 배열 항목의 스코프 위반은 422 (validation.md "배열 항목의 상위 스코프") |
 | 공통 추상화 | 도입하지 않는다 — 모듈마다 상위 키와 조회 경로가 다르고(`board_id`+`post_id` / `product_id` / `page_id` / `order_id`), 코어 표면이 늘면 확장 버전 제약 동기화가 연쇄된다 |
 
@@ -1674,7 +1671,7 @@ $data['depth'] = ($parent->depth ?? 0) + 1;
 값이 상한을 넘으면 조용히 깎지 말고 422 로 거절해야 한다.
 
 이 패턴은 리터럴과 설정 키를 잇는 의미 추론이 필요해 정적 검출이 어렵다
-(`coverage.json` 의 `service-hardcoded-limit-vs-settings` = `not-applicable`).
+(자동 검증 대상이 아니다).
 코드 리뷰에서 리터럴 상한을 볼 때마다 "이 값을 정하는 설정이 따로 있는가" 를 확인한다.
 
 ---
@@ -1693,4 +1690,4 @@ $data['depth'] = ($parent->depth ?? 0) + 1;
 - [컨트롤러 계층 구조](controllers.md) - Controller에서 Service 사용
 - [검증 로직 구현](validation.md) - FormRequest 검증 규칙
 - [DTO 사용 규칙](dto.md) - Service 가 반환하는 DTO 의 두 패턴 (Value Object / Data Carrier)
-- [index.md](index.md) - 백엔드 가이드 전체 목차
+- [README.md](README.md) - 백엔드 가이드 전체 목차

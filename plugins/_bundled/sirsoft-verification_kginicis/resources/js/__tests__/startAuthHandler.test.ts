@@ -6,13 +6,17 @@
  *  - popup 직접 닫음 → resolveIdentityChallenge dispatch 안 됨, providerInProgress 만 false (재시도 가능)
  *  - popup blocker → toast 발행, providerInProgress 미set
  *  - public_payload 누락 → toast 발행, popup 미진입
- *  - origin 불일치 postMessage 무시
+ *  - 출처(사이트 origin)·발신 창(열린 팝업)·challenge_id 불일치 postMessage 무시
+ *  - 결과 수신 주소(successUrl·failUrl)는 서버가 내려준 사이트 주소만 사용(window.location.origin 비의존)
  *  - listener / polling 모든 분기에서 cleanup
  *
  * 외부 부수효과 (window.open / form.submit / postMessage 채널) 는 vi.spy 로 대체.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { startAuthHandler, MODAL_ID } from '../index';
+
+const SITE_ORIGIN = 'https://shop.example.test';
+const CALLBACK_URL = `${SITE_ORIGIN}/plugins/sirsoft-verification_kginicis/plugin/inicis/callback`;
 
 describe('startAuthHandler', () => {
     let dispatchMock: ReturnType<typeof vi.fn>;
@@ -25,7 +29,10 @@ describe('startAuthHandler', () => {
 
     const validChallenge = {
         provider_id: 'inicis',
+        challenge_id: 'chal-1',
         public_payload: {
+            callbackUrl: CALLBACK_URL,
+            siteOrigin: SITE_ORIGIN,
             mid: 'INIiasTest',
             mtxid: 'mtx-1',
             authHash: 'hash-1',
@@ -77,11 +84,18 @@ describe('startAuthHandler', () => {
         return calls.find((c) => c[0]?.handler === 'sequence')?.[0];
     }
 
-    function postBridgeMessage(data: Record<string, unknown>): void {
+    function postBridgeMessage(
+        data: Record<string, unknown>,
+        opts: { origin?: string; source?: unknown } = {},
+    ): void {
+        const payload = data.verification_token && data.challenge_id === undefined
+            ? { ...data, challenge_id: 'chal-1' }
+            : data;
         const ev = new MessageEvent('message', {
-            data,
-            origin: window.location.origin,
+            data: payload,
+            origin: opts.origin ?? SITE_ORIGIN,
         });
+        Object.defineProperty(ev, 'source', { value: 'source' in opts ? opts.source : mockPopup });
         window.dispatchEvent(ev);
     }
 
@@ -265,14 +279,11 @@ describe('startAuthHandler', () => {
         });
     });
 
-    it('window.location.origin 외 origin 의 postMessage 는 무시됨', async () => {
+    // @effects bridge_postmessage_origin_check_against_site_origin_strict_equality
+    it('사이트 origin 외 origin 의 postMessage 는 무시됨', async () => {
         await startAuthHandler();
 
-        const ev = new MessageEvent('message', {
-            data: { type: 'identity_result', verification_token: 'evil' },
-            origin: 'https://evil.example.com',
-        });
-        window.dispatchEvent(ev);
+        postBridgeMessage({ type: 'identity_result', verification_token: 'evil' }, { origin: 'https://evil.example.com' });
 
         // sequence dispatch 가 일어나지 않았어야 함
         expect(lastSequenceDispatch()).toBeUndefined();

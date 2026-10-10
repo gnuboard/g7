@@ -1,0 +1,19 @@
+<!-- 서버 예외로 요청이 끝나지 못했을 때의 에러 화면.
+  원인 문구를 화면에 싣지 않는다 — 예외 상세는 서버 로그에만 남기고 여기서는 일반 안내만 준다. -->
+<layout name="errors/500" version="1.0.0" extends="_admin_base">
+  <meta title="$t:errors.500.title" :is_error_layout="true" :error_code="500"/>
+  <slot name="content">
+    <div data-ref="error_container" class="flex-center flex-col justify-center min-h-[60vh] text-center p-8">
+      <icon data-ref="error_icon" name="server" class="text-8xl text-orange-400 dark:text-orange-500 mb-6"/>
+      <h1 data-ref="error_code" class="text-primary text-6xl font-bold mb-4">500</h1>
+      <h2 data-ref="error_title" class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2">$t:errors.500.title</h2>
+      <p data-ref="error_message" class="text-gray-500 dark:text-gray-400 mb-8 max-w-md">$t:errors.500.message</p>
+      <button data-ref="back_button" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+        <on type="click">
+          <navigate path="/admin"/>
+        </on>
+        $t:errors.back_home
+      </button>
+    </div>
+  </slot>
+</layout>

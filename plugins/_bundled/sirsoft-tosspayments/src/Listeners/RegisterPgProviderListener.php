@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Tosspayments\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Support\SiteUrl;
 use Plugins\Sirsoft\Tosspayments\Concerns\MapsTossPaymentMethods;
 
 /**
@@ -42,6 +43,7 @@ class RegisterPgProviderListener implements HookListenerInterface
      * 기본 핸들러 (미사용)
      *
      * @param  mixed  ...$args  인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -61,7 +63,10 @@ class RegisterPgProviderListener implements HookListenerInterface
             'name_key' => 'sirsoft-tosspayments::provider.name',
             'name' => localized_label(nameKey: 'sirsoft-tosspayments::provider.name'),
             'icon' => 'credit-card',
-            'supported_methods' => ['card', 'virtual_account', 'bank_transfer', 'mobile'],
+            // 어휘는 **코어 결제수단 ID** 다(P18). 토스 API 의 이름(`virtual_account` 등)을 그대로
+            // 적으면 코어가 그 문자열을 자기 수단 목록과 대조하지 못해, 가상계좌·계좌이체·휴대폰에
+            // 토스를 PG 로 지정할 수 없다 — 설정 화면의 선택지에서 조용히 빠진다.
+            'supported_methods' => ['card', 'vbank', 'bank', 'phone'],
             // 프론트 결제 진입 핸들러 — HandlesOrderCreation::resolvePgPaymentHandler() 가 이 키를
             // 응답의 pg_payment_handler 로 내려 템플릿이 dispatch 한다. 미선언 시 PG 분기가
             // 발화하지 못하고 결제창 없이 완료 페이지로 navigate 하던 결함을 정공법으로 해소한다.
@@ -103,9 +108,10 @@ class RegisterPgProviderListener implements HookListenerInterface
                 'cash_receipt_type' => (string) ($settings['vbank_cash_receipt_type'] ?? ''),
             ],
             'use_escrow' => (string) ($settings['use_escrow'] ?? 'off'),
+            // 보안: PG 로 보내는 결과 수신 주소 — 브라우저 현재 주소가 아니라 사이트 주소로 만든 절대 URL.
             'callback_urls' => [
-                'success' => '/plugins/sirsoft-tosspayments/payment/success',
-                'fail' => '/plugins/sirsoft-tosspayments/payment/fail',
+                'success' => SiteUrl::absolute('/plugins/sirsoft-tosspayments/payment/success'),
+                'fail' => SiteUrl::absolute('/plugins/sirsoft-tosspayments/payment/fail'),
             ],
         ]);
     }

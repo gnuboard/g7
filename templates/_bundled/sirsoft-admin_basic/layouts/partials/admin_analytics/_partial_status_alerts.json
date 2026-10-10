@@ -1,0 +1,580 @@
+{
+    "comment": "통계 화면 공통 상단 경고 세 줄. 수집이 꺼져 있으면 숫자가 멈춘 이유를, 동의 모드인데 물어볼 곳이 없으면\n  익명으로 모으고 있다는 사실을, 큐가 밀리면 비콘이 204 를 받고도 원장에 닿지 않는다는 것을 그 화면에서\n  바로 알린다. 세 값은 진단 API(`analytics_status`)에서 오므로 이 조각을 쓰는 화면은 그 소스를 `background`\n  로 함께 받는다 — 첫 그림을 늦추지 않되 경고가 화면마다 빠지지 않게.",
+    "meta": {
+        "is_partial": true,
+        "description": "방문자 통계 공통 상단 경고 — 수집 꺼짐·동의 폴백·큐 적체"
+    },
+    "id": "analytics_status_alerts",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "space-y-2 mb-4"
+    },
+    "children": [
+        {
+            "id": "alert_collection_disabled",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{analytics_status?.data?.collection?.enabled === false}}",
+            "props": {
+                "className": "alert-warning"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-warning-soft flex-1"
+                            },
+                            "text": "$t:admin.analytics.alerts.collection_disabled"
+                        },
+                        {
+                            "comment": "안내 버튼은 그 화면에 갈 수 있는 계정에게만 그린다 — 권한이 없으면 눌러도 「필요 권한」 페이지뿐이라\n        안내가 막다른 길이 된다(#682 S3 라운드 3). 문구는 남겨 사실은 계속 알린다.",
+                            "id": "collection_disabled_link",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.update'))}}",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/analytics/settings",
+                                        "query": {
+                                            "tab": "collection"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "text-sm font-medium underline text-yellow-800 dark:text-yellow-200"
+                            },
+                            "text": "$t:admin.analytics.alerts.collection_disabled_link"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "익명으로 내려간 사유가 실리면 띄운다 — 운영자가 고른 모드로 가두지 않는다.\n      `consent_plugin_blocks_cookies` 는 서버가 **`full` 모드에서만** 만든다(`AnalyticsConfig::anonymousFallbackReason`).\n      종전 게이트는 `mode === 'consent'` 를 함께 요구해 그 사유와 서로 배타적이었고, 그래서\n      「전체 수집 + GDPR 플러그인」 사이트는 실제로 익명 수집 중인데 12면 어디에도 안내가 뜨지 않았다\n      (#682 S3 라운드 8 실측: 설정 full · effective anonymous · 화면 안내 0건).",
+            "id": "alert_consent_fallback",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!!analytics_status?.data?.collection?.anonymous_fallback_reason}}",
+            "props": {
+                "className": "alert-info"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-info",
+                                "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-info-soft flex-1"
+                            },
+                            "text": "{{analytics_status?.data?.collection?.anonymous_fallback_reason === 'consent_plugin_blocks_cookies' ? $t('admin.analytics.alerts.consent_cookie_fallback') : $t('admin.analytics.alerts.consent_fallback')}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "통계의 집계 경계는 사이트 표준시 자정에 잠겨 있고 시각 표기도 사이트 기준이다(설계 결정).\n      보는 사람의 시간대가 그와 다르면 「오늘」의 숫자와 자기 시계가 어긋나 보이므로 그 사실을\n      알린다. 같은 시간대면 군더더기라 띄우지 않는다(#682 S3 라운드 6).",
+            "id": "alert_site_timezone",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{analytics_status?.data?.timezone_differs === true}}",
+            "props": {
+                "className": "alert-info"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "clock",
+                                "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-info-soft flex-1"
+                            },
+                            "text": "$t:admin.analytics.alerts.site_timezone|timezone={{analytics_status?.data?.timezone}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "alert_queue_backlog",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{analytics_status?.data?.queue?.backlogged === true}}",
+            "props": {
+                "className": "alert-danger"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-error-soft flex-1"
+                            },
+                            "text": "$t:admin.analytics.alerts.queue_backlog|count={{(analytics_status?.data?.queue?.pending_jobs ?? 0) | number}}"
+                        },
+                        {
+                            "id": "queue_backlog_link",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read'))}}",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/analytics/diagnostics"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "text-sm font-medium underline text-red-800 dark:text-red-200"
+                            },
+                            "text": "$t:admin.analytics.alerts.queue_backlog_link"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "아래 세 줄은 집계 신선도 경고다. 값은 집계 응답의 `data.freshness` 를 화면이 `_computed.archiveFreshness` 로\n      넘겨 준 것 — 원장 화면은 그 값을 두지 않아 세 줄 모두 숨는다. 스케줄러가 멈추면 숫자가 한 시각에 멈춘 채\n      정상처럼 보이고 알림이 진단 화면 배지뿐이었으므로, 집계 화면 어디서든 상단에서 알린다.\n      첫째 줄 스케줄러 미가동 — 화면 열 때 집계가 숫자는 맞추지만 어제 확정·정리·메일 보고서는 멈춘다는 사실을 알린다.\n      판정 근거가 없을 때(`alive === null`, 설치 직후)는 띄우지 않는다.",
+            "id": "alert_scheduler_missing",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_computed.archiveFreshness?.scheduler?.alive === false && _computed.archiveFreshness?.on_view?.enabled === true}}",
+            "props": {
+                "className": "alert-info"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3 flex-wrap"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-info",
+                                "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-info-soft flex-1 min-w-0"
+                            },
+                            "text": "$t:admin.analytics.alerts.scheduler_missing"
+                        },
+                        {
+                            "id": "scheduler_missing_link",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read'))}}",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/analytics/diagnostics"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "text-sm font-medium underline text-blue-800 dark:text-blue-200"
+                            },
+                            "text": "$t:admin.analytics.alerts.scheduler_missing_link"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "화면 열 때 집계를 끈 사이트에서 집계가 2시간 넘게 멈췄다 — 숫자가 그 시각에 멈춰 있다.",
+            "id": "alert_archive_stale",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_computed.archiveFreshness?.stale === true && _computed.archiveFreshness?.on_view?.enabled === false}}",
+            "props": {
+                "className": "alert-warning"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3 flex-wrap"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_computed.archiveFreshness?.last_run_at != null}}",
+                            "props": {
+                                "className": "text-warning-soft flex-1 min-w-0"
+                            },
+                            "text": "$t:admin.analytics.alerts.archive_stale|count={{Math.floor((_computed.archiveFreshness?.lag_minutes ?? 0) / 60)}}|hours={{Math.floor((_computed.archiveFreshness?.lag_minutes ?? 0) / 60)}}|at={{(_computed.archiveFreshness?.last_run_at ?? '').slice(5, 16).replace('-', '/')}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_computed.archiveFreshness?.last_run_at == null}}",
+                            "props": {
+                                "className": "text-warning-soft flex-1 min-w-0"
+                            },
+                            "text": "$t:admin.analytics.alerts.archive_never"
+                        },
+                        {
+                            "comment": "「지금 집계」 — 오늘치를 그 자리에서 다시 계산한다(진단 화면의 같은 버튼과 같은 API). 설정을 바꿀 수 있는 계정만\n          누를 수 있다(`core.analytics.update`) — 보기 전용 계정에게는 문구만 남긴다. 끝나면 이 화면의 소스와 상태를 다시 받는다.",
+                            "id": "alert_archive_now_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.update'))}}",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "archiveNowRunning": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/analytics/archive-runs",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST",
+                                                "body": {
+                                                    "run_type": "hour"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "archiveNowRunning": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "if": "{{response?.data?.status !== 'skipped'}}",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:admin.analytics.diagnostics.started_toast"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "if": "{{response?.data?.status === 'skipped'}}",
+                                                    "params": {
+                                                        "type": "info",
+                                                        "message": "$t:admin.analytics.diagnostics.skipped_toast"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "{{_local.periodSource}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "analytics_status"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "archiveNowRunning": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary btn-sm flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_local.archiveNowRunning === true}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.archiveNowRunning === true}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "spin": true,
+                                        "className": "text-sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.archiveNowRunning !== true}}",
+                                    "props": {
+                                        "name": "clock",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.analytics.alerts.archive_now"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "오늘 방문이 상한을 넘어 화면 열 때 집계를 건너뛰었다 — 스케줄러가 살아 있으면 곧 맞춰지므로 띄우지 않는다.",
+            "id": "alert_on_view_too_many",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_computed.archiveFreshness?.on_view?.status === 'too_many_visits' && _computed.archiveFreshness?.scheduler?.alive !== true}}",
+            "props": {
+                "className": "alert-warning"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3 flex-wrap"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-warning-soft flex-1 min-w-0"
+                            },
+                            "text": "$t:admin.analytics.alerts.on_view_too_many|max={{(_computed.archiveFreshness?.on_view?.max_visits ?? 0) | number}}|at={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16) || '-'}}"
+                        },
+                        {
+                            "comment": "「지금 집계」 — 오늘치를 그 자리에서 다시 계산한다(진단 화면의 같은 버튼과 같은 API). 설정을 바꿀 수 있는 계정만\n          누를 수 있다(`core.analytics.update`) — 보기 전용 계정에게는 문구만 남긴다. 끝나면 이 화면의 소스와 상태를 다시 받는다.",
+                            "id": "alert_too_many_archive_now_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.update'))}}",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "archiveNowRunning": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/analytics/archive-runs",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST",
+                                                "body": {
+                                                    "run_type": "hour"
+                                                }
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "archiveNowRunning": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "if": "{{response?.data?.status !== 'skipped'}}",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:admin.analytics.diagnostics.started_toast"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "if": "{{response?.data?.status === 'skipped'}}",
+                                                    "params": {
+                                                        "type": "info",
+                                                        "message": "$t:admin.analytics.diagnostics.skipped_toast"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "{{_local.periodSource}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "analytics_status"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "archiveNowRunning": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary btn-sm flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_local.archiveNowRunning === true}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.archiveNowRunning === true}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "spin": true,
+                                        "className": "text-sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.archiveNowRunning !== true}}",
+                                    "props": {
+                                        "name": "clock",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.analytics.alerts.archive_now"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

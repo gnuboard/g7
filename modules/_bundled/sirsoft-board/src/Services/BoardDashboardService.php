@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Services;
 
+use App\Helpers\TimezoneHelper;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardStatRepositoryInterface;
@@ -41,12 +42,14 @@ class BoardDashboardService
      * 오늘 새 글/새 댓글 수를 집계 테이블에서 조회합니다.
      *
      * board_stats 의 오늘 행을 읽으며, 행이 없으면 0 으로 반환합니다 (최대 1시간 지연 허용).
+     * 「오늘」과 집계 행의 날짜는 사이트 표준시의 하루다(siteToday) — 앱 시간대(UTC)로 자르면 한국
+     * 사이트에서는 오전 9시에 날짜가 바뀌고 새벽 글이 전날로 집계된다.
      *
      * @return array{today_posts: int, today_comments: int} 오늘 집계
      */
     public function getOverview(): array
     {
-        $today = CarbonImmutable::today()->toDateString();
+        $today = $this->siteToday()->toDateString();
         $row = $this->boardStatRepository->findByDate($today);
 
         return [
@@ -75,7 +78,7 @@ class BoardDashboardService
      */
     public function getPostGraph(int $graphDays = 7): array
     {
-        $today = CarbonImmutable::today();
+        $today = $this->siteToday();
         $currentStart = $today->subDays($graphDays - 1);
         $previousStart = $today->subDays($graphDays * 2 - 1);
         $previousEnd = $currentStart->subDay();
@@ -161,13 +164,14 @@ class BoardDashboardService
      * 최근 N일치(오늘 포함) 집계 행을 board_stats 에 upsert 합니다.
      *
      * 그 이전 날짜 행은 건드리지 않아 과거 추세가 보존됩니다. date unique 로 멱등합니다.
+     * 날짜는 사이트 표준시의 하루다(저장소의 countCreatedOnDate 가 그 하루를 UTC 범위로 바꿔 센다).
      *
      * @param  int  $days  집계 대상 일수 (오늘 포함, 기본 7)
      * @return array<int, array{date: string, post_count: int, comment_count: int}> 갱신된 집계 목록
      */
     public function aggregateRecentDays(int $days = 7): array
     {
-        $today = CarbonImmutable::today();
+        $today = $this->siteToday();
         $result = [];
 
         for ($i = 0; $i < $days; $i++) {
@@ -185,6 +189,20 @@ class BoardDashboardService
         }
 
         return $result;
+    }
+
+    /**
+     * 사이트 표준시의 오늘(0시)을 돌려줍니다.
+     *
+     * 집계 표(board_stats)는 모든 운영자가 함께 보는 하루 1행이라 보는 사람마다 하루 경계를 달리할 수 없다.
+     * 방문자 통계처럼 사이트 표준시의 하루로 행을 만들고 읽는다 — UTC 자정으로 자르면 한국 시간 새벽 0~9시 글이
+     * 전날 행에 들어가고 「오늘」 카드가 아침 9시까지 어제 행을 읽는다(7.1.0 O-CF3).
+     *
+     * @return CarbonImmutable 사이트 표준시 오늘 0시
+     */
+    public function siteToday(): CarbonImmutable
+    {
+        return CarbonImmutable::now(TimezoneHelper::getSiteTimezone() ?: 'UTC')->startOfDay();
     }
 
     /**

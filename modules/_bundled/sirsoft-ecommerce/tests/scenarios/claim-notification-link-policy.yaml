@@ -1,0 +1,61 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   축(수신자 × 신청번호 유무)의 조합마다 테스트를 두지 않는다 — 이 기능의 커버리지 단위는
+#   **알림 정의 전수 순회**이고, 한 테스트가 그 전수를 한 번에 돈다. effects 축은 면제하지
+#   않는다(선언한 부수효과는 전부 마킹으로 덮여야 한다).
+feature: ecommerce_notification_link_policy
+
+description: |
+  이커머스 알림(클레임·주문)의 링크가 **유형 이름이 아니라 수신자**를 따라간다.
+
+  클레임과 주문을 한 매니페스트가 소유한다 — 정책이 하나이고, 나누면 한쪽만 낡는다.
+
+  핵심 동작:
+    - 추출 단계의 `claim_url` 기본값은 언제나 고객 링크다(회원 상세 / 비회원 조회 화면).
+    - 운영자에게 보낼 관리자 주소는 수신자가 정해진 뒤 `personalize_data` 가 올린다.
+    - 승격 판정은 역할 이름이 아니라 **그 사람이 클레임 화면을 열 수 있는가**
+      (`sirsoft-ecommerce.claims.read`)다 — 상점이 새 역할을 만들어도 리스너를 고칠 일이 없고,
+      권한 없는 사람에게 관리자 주소를 주지 않는다.
+    - 신청번호를 해석할 수 없어도 운영자는 관리자 목록으로 간다(종전에는 고객 폴백이
+      관리자 판정보다 먼저 와서 운영자가 마이페이지로 밀려났다).
+    - 운영자 대리 접수(`requested_by` 가 null)여도 수신자는 주문의 주인이다.
+    - 주문 축도 같은 형태다 — 승격 판정은 `sirsoft-ecommerce.orders.read` 이고, 주문번호를
+      해석할 수 없으면 승격하지 않는다(번호 없는 관리자 주소는 404 다). `order_url` 이 없는
+      알림은 건드리지 않는다 — 없는 키를 만들면 1층 계약이 미선언 변수로 잡는다.
+
+axes:
+  recipient:
+    - staff_with_claim_permission
+    - staff_without_claim_permission
+    - member
+    - guest
+  claim_number:
+    - present
+    - empty
+
+exclusions:
+  - { recipient: guest, claim_number: empty, reason: "비회원은 승격 대상이 아니라 번호 유무가 링크를 가르지 않는다" }
+  - { recipient: member, claim_number: empty, reason: "회원도 승격 대상이 아니라 번호 유무가 링크를 가르지 않는다" }
+  - { recipient: staff_without_claim_permission, claim_number: empty, reason: "권한이 없으면 번호와 무관하게 승격되지 않는다" }
+
+effects:
+  - claim_links_follow_the_recipient_not_the_notification_type
+  - empty_claim_number_still_keeps_staff_on_the_admin_side
+  - staff_without_claim_permission_is_not_promoted
+  - capability_memoizes_per_request
+  - extracted_claim_link_defaults_to_the_customer_screen
+  - staff_filed_claim_still_notifies_the_order_owner
+  - staff_requested_alert_only_for_customer_requests  # 운영자 「신청 접수」 알림은 고객이 낸 신청에만 (2026-10-07 실측 — 반품 발 환불에 21명)
+  # 주문 축 (클레임과 동형)
+  - order_links_follow_the_recipient_not_the_notification_type
+  - empty_order_number_is_not_promoted
+  - staff_without_order_permission_is_not_promoted
+  - personalize_leaves_notifications_without_an_order_url_alone
+  - order_capability_memoizes_per_request
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Notifications/ClaimNotificationLinkPolicyTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/ClaimNotificationDataListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Notifications/OrderNotificationLinkPolicyTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

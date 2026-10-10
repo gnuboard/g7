@@ -1,0 +1,53 @@
+feature: 비즈뿌리오 알림톡 편집 창 참조 조회(분류, 발신 프로필)와 카카오 관리 API 실패 응답
+
+description: |
+  알림톡 편집 창의 참조 조회(분류, 발신 프로필)와 템플릿 관리 화면의 라이프사이클 액션은
+  카카오 관리 API(kapi)를 부른다. 비즈뿌리오 서버에 닿지 못하면(타임아웃, DNS, 프록시 실패)
+  예외는 BizppurioApiException 이 아니라 ConnectionException 으로 올라온다.
+
+  핵심 동작:
+    - 참조 조회는 view 권한으로 data.categories, data.profiles 봉투를 돌려준다. 비인증은 401,
+      view 권한이 없으면 403 이다.
+    - kapi 가 실패를 응답하면 카카오 사유와 결과코드를 errors 에 담은 422 로 전파한다.
+    - 연결 실패는 서버 오류(500)가 아니라 연결 실패 안내 422 다. 연결 확인
+      (TokenCheckController)과 같은 메시지 키(messages.error.connection_failed)를 쓴다.
+    - 라이프사이클 액션(새로고침 등)이 연결에 실패하면 행 상태는 바뀌지 않는다.
+    - 템플릿 삭제는 422 가 아니라 200 이다. 카카오측 삭제가 연결에 실패해도 DB 행은 지우고,
+      응답의 kakao_skip_reason 에 연결 실패 안내를 적는다(카카오 사유로 실패할 때와 같은 계약).
+    - 예약 동기화(bizppurio:sync-template-status)는 연결이 끊겨도 명령을 성공으로 끝내고 그 주기만
+      건너뛴다. 반려 사유 조회만 끊기면 반려 전이는 마치고 사유를 비워 둔다.
+    - 원인은 경고 로그로 남긴다(기록 여부는 운영 로그 레벨을 따른다).
+
+  axis 설계 노트:
+    - endpoint 는 kapi 를 부르는 경로다. 분류, 발신 프로필, 새로고침은 두 가드(GuardsKakaoRequests,
+      guardLifecycle)를 지나고, 삭제와 예약 동기화는 가드 밖에서 서비스가 연결 실패를 잡는다.
+      분류와 발신 프로필은 같은 가드지만 편집 창이 둘을 함께 조회하므로 둘 다 본다.
+    - outcome 은 참조 조회 응답의 갈래다. 새로고침(sync)의 성공, kapi 실패, 권한 경계는
+      bizppurio-template-lifecycle.yaml 이 검증하므로 여기서는 연결 실패만 본다. 삭제(delete)와
+      예약 동기화(scheduled_sync)도 같은 이유로 연결 실패만 본다.
+
+axes:
+  endpoint: [categories, profiles, sync, delete, scheduled_sync]
+  outcome: [success, kapi_failure, connection_failure, unauthenticated, forbidden]
+
+exclusions:
+  - { endpoint: [sync], outcome: [success, kapi_failure, unauthenticated, forbidden], reason: "새로고침의 성공, kapi 실패, 권한 경계는 bizppurio-template-lifecycle.yaml 이 검증한다" }
+  - { endpoint: [delete], outcome: [success, kapi_failure, unauthenticated, forbidden], reason: "삭제의 성공과 권한 경계는 bizppurio-template-lifecycle.yaml 이, 카카오 사유 실패 분기는 서비스 단위 시험(BizppurioTemplateServiceTest)이 검증한다" }
+  - { endpoint: [scheduled_sync], outcome: [success, kapi_failure, unauthenticated, forbidden], reason: "예약 동기화의 성공과 카카오 실패 코드는 bizppurio-template-lifecycle.yaml(SyncTemplateStatusCommandTest)이 검증하고, 인증과 권한은 명령행 경로라 해당하지 않는다" }
+  - { endpoint: [profiles], outcome: [unauthenticated, forbidden], reason: "분류와 발신 프로필은 같은 라우트 그룹 미들웨어를 지나며, 401 과 403 테스트가 두 라우트를 한 테스트에서 함께 단언한다" }
+
+effects:
+  # 참조 조회 계약 (봉투, 인증, 권한)
+  - reference_lookup_returns_envelope_for_view_permission
+  - reference_lookup_requires_authentication
+  - reference_lookup_requires_view_permission
+  # kapi 실패 응답
+  - kapi_failure_reason_surfaced_as_422
+  - kapi_connection_failure_returns_422_not_500
+  - lifecycle_state_unchanged_on_connection_failure
+  - delete_removes_row_and_reports_reason_on_connection_failure
+  - scheduled_sync_skips_cycle_on_connection_failure
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Template/KakaoConnectionFailureTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/AlimtalkTemplate/AlimtalkTemplateControllerTest.php

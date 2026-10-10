@@ -1,0 +1,25 @@
+feature: 환불수단 거절 안내 문구는 한 곳에서 나온다
+
+description: |
+  결제행과 어긋난 환불수단으로 [환불하기]를 실행하면 422 가 돌아온다. 한때 실행 게이트는
+  `validation.claims.refund_method.payment_mismatch`(`:expected` 에 수단 라벨을 끼우는 문구)를
+  썼는데, 라벨 셋이 전부 「환불」로 끝나 「PG사 환불 환불만」 으로 조립되는 결함이 있었다(S0-D3).
+
+  2026-09-23 결정으로 실행 게이트가 [금액 수정]과 같은 선택지(`refundMethodOptions()`)를 쓰게
+  되면서 거절 문구도 금액 수정 경로와 같은 `exceptions.claim_refund_method_unavailable` 로 모였다.
+  옛 키는 읽는 곳이 없는 죽은 키가 되어 세 언어에서 걷어 냈다.
+
+  계약: 실행 게이트와 금액 수정 경로가 같은 키로 거절하고, 옛 키는 ko·en·ja 어디에도 남지 않는다.
+
+axes:
+  surface: [rejection_copy_source, retired_key]
+
+effects:
+  - refund_method_rejection_uses_one_message_key_on_both_paths
+  - retired_payment_mismatch_key_is_removed_from_every_locale
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Lang/RefundMethodMismatchMessageTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

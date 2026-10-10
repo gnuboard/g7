@@ -32,6 +32,7 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
     <?php } ?>
 
     <form method="POST" id="config-form" class="installer-form">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(installer_csrf_token()) ?>">
         <!-- 데이터베이스 설정 (Write DB) -->
         <div class="requirement-card">
             <div class="requirement-card-header">
@@ -183,6 +184,7 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
                     <div class="form-group">
                         <label class="form-label"><?= htmlspecialchars(lang('app_url')) ?> *</label>
                         <input type="url" name="app_url" id="app_url" value="<?= htmlspecialchars($formData['app_url']) ?>"
+                               data-autofill="<?= ! empty($formData['app_url_autofill']) ? '1' : '0' ?>"
                                class="form-input" required
                                aria-invalid="false" aria-describedby="app_url-error">
                         <div id="app_url-error" class="field-error" role="alert"></div>

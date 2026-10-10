@@ -26,27 +26,33 @@ const logger = (window as any).G7Core?.createLogger?.('Handler:DownloadAttachmen
  * ActionDispatcher 는 handler(action, context) 형태로 호출한다.
  * params 는 resolveParams 로 이미 표현식이 해석된 값을 받는다.
  *
- * @param action 액션 정의 (params.url=다운로드 URL, params.filename=저장 파일명)
+ * `method: "POST"` 와 `body` 를 주면 POST 본문으로 요청한다 — 방문자 통계의 정보주체 내보내기처럼
+ * 서버가 파일을 POST 응답으로 흘려보내는 경로용이다(GET 이 기본이며 종전 호출은 그대로 동작한다).
+ *
+ * @param action 액션 정의 (params.url=다운로드 URL, params.filename=저장 파일명, params.method=GET|POST, params.body=POST 본문)
  * @param _context 액션 컨텍스트 (미사용)
  * @return Promise<void>
  */
 export async function downloadAttachmentHandler(action?: any, _context?: any): Promise<void> {
   const G7Core = (window as any).G7Core;
-  const { url, filename } = action?.params || {};
+  const { url, filename, method, body } = action?.params || {};
+  const usePost = typeof method === 'string' && method.toUpperCase() === 'POST';
 
   if (!url) {
     logger.warn('다운로드 URL 이 없어 요청을 건너뜁니다.');
     return;
   }
 
-  if (!G7Core?.api?.get) {
-    logger.error('G7Core.api.get 이 초기화되지 않아 다운로드를 실행할 수 없습니다.');
+  if (!G7Core?.api?.get || (usePost && !G7Core?.api?.post)) {
+    logger.error('G7Core.api 가 초기화되지 않아 다운로드를 실행할 수 없습니다.');
     return;
   }
 
   try {
     // 코어 ApiClient 경로 → Authorization(Bearer) 헤더 자동 첨부 → 관리자 토큰이 실린다.
-    const blob = await G7Core.api.get(url, { responseType: 'blob' });
+    const blob = usePost
+      ? await G7Core.api.post(url, body ?? {}, { responseType: 'blob' })
+      : await G7Core.api.get(url, { responseType: 'blob' });
 
     if (blob) {
       const objectUrl = URL.createObjectURL(blob);

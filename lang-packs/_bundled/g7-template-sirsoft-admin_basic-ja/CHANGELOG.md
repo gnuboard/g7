@@ -4,6 +4,153 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.0] - 2026-10-10
+
+### Added
+
+#### 공통 화면 요소
+- 목록 필터 기간 칸의 읽기 이름 「{{label}} 開始日」·「{{label}} 終了日」(`common.range_start`·`common.range_end`)의 일본어 번역을 추가했습니다.
+- 화면 읽기 프로그램이 읽는 공통 단추·영역 이름과 컴포넌트 기본 문구의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 화면 읽기 프로그램이 이 이름들을 한국어로 읽습니다.
+  - 머리글 테마 전환 단추(`common.theme_select` — 「画面テーマ」), 알림 삭제 단추(`common.delete_notification` — 「通知を削除」), 안내 메시지 닫기 단추(`common.close_alert` — 「メッセージを閉じる」), 현재 위치 경로 영역(`common.breadcrumb` — 「パンくずリスト」), 태그 지우기 단추(`common.tag_input.remove` — 「{{label}}を削除」)
+  - 전체 선택·행 선택·더보기·선택 지우기·사용자 메뉴·값 보기와 숨기기·파일 고르개·언어 삭제·수신자 규칙 삭제 단추 이름
+  - 컴포넌트 기본 문구(파일 선택, 로그아웃 중, 검색어 입력 안내, 빈 화면 그림, 로고, 선택한 항목 없음)
+- 아이콘 버튼의 읽기 이름 「外す」(`common.remove` — 칩·선택 해제)의 일본어 번역을 추가했습니다.
+- 화면 이동 중 로딩 막대의 읽기 이름 「ページ読み込み中」(`common.page_loading`)의 일본어 번역을 추가했습니다.
+- 다국어 입력칸 언어 제거 버튼의 읽기 이름 「{{language}} の入力を削除」(`common.remove_language`)의 일본어 번역을 추가했습니다.
+- 다국어 태그 칸의 태그 제거 버튼 읽기 이름 「{{tag}} を外す」(`common.remove_tag`)의 일본어 번역을 추가했습니다.
+- 권한이 없는 관리자 화면에 뜨는 안내 문구 「権限がありません。」(`auth.permission_denied`)의 일본어 번역을 추가했습니다. 한국어·영어에는 있었으나 일본어에만 빠져 있어, 일본어 로케일에서는 그 자리에 키가 그대로 노출됐습니다. 회원 알림함을 비롯해 이 문구를 쓰는 관리자 화면 5벌에 함께 적용됩니다.
+- 관리자 기본 레이아웃 페이지 제목(`admin.base_layout_title`)과 언어팩 manifest 미리보기 실패 안내(`admin.language_packs.messages.preview_failed`)의 일본어 번역을 추가했습니다.
+- 상태 뱃지의 기본 라벨 10종(「成功」·「警告」·「エラー」 등)과 코드 편집기의 이름·로딩 문구(「コードエディター」·「エディターを読み込み中...」)의 일본어 번역을 추가했습니다. 종전에는 이 문구들이 컴포넌트 안에 한국어로 박혀 있어 일본어 관리자 화면에도 한국어가 떴습니다.
+- 관리자 첨부 업로더가 고른 파일을 거절하거나 업로드 응답을 해석하지 못할 때의 안내 문구를 일본어로 번역했습니다 — 0바이트 파일(`attachment.empty_file`)·용량 초과(`attachment.file_too_large`)·허용되지 않는 형식(`attachment.type_not_allowed`)·업로드 응답 해석 실패(`attachment.upload_response_invalid`). 없으면 일본어 화면에서 이 안내만 영어로 보입니다.
+
+#### 환경설정·보안
+- 환경설정의 탭 전환 확인 창 문구(`admin.settings.unsaved_tab_modal.*` — 제목, 본문, 「이 탭에 머무르기」, 「저장하지 않고 이동」)의 일본어 번역을 추가했습니다.
+- 보안 탭 「활동 로그(접속기록) 보관」 카드 문구(`admin.settings.security.activity_log_retention.*` — 제목·설명·보관 기간 칸·법정 최소 안내)의 일본어 번역을 추가했습니다. 없으면 일본어 관리자 화면에서 이 카드만 한국어로 보입니다.
+- 보안 탭 「비밀번호 정책」·「비밀번호 만료」 카드와 직권 실행 확인 창, 관리자 로그인 비밀번호 변경 단계, 회원 등록/수정·상세·역할 수정의 비밀번호 칸 문구(`admin.settings.security.password_policy.*`·`password_expiry.*`·`admin.users.form.password_policy.*`·`admin.users.detail.password.*`·`admin.roles.form.password_expiry*`·`auth.login.password_change.*`·`auth.password_rules.*`·편집기 데이터 소스 이름 2종)를 일본어로 번역했습니다.
+- 환경설정 > 보안의 「IP 접근 제한」 카드와 규칙 편집 창 문구를 일본어로 번역했습니다(`settings.security.ip_restriction.*`·`modal_label.admin_settings.ip_restriction_rule_form_modal`). 없으면 일본어 로케일의 보안 탭에 한국어가 섞여 보입니다.
+  - 카드 제목·설명, 신뢰 프록시 경고, 현재 접속 IP 뱃지와 「현재 IP 추가」, 허용 IP 입력 안내
+  - 규칙 표의 열 이름과 빈 목록 안내, 외부 콜백 주의와 서버 해제 안내, 규칙 창의 입력 라벨·도움말·오류 문구
+  - 편집기 상태 목록의 「보안 탭 — IP 접근 제한」 미리보기 이름(`editor.state.settings_security_ip_restriction`)
+- 관리자 로그인의 인증 앱(OTP) 단계와 환경설정 > 보안의 2단계 인증 적용 범위 문구를 일본어로 번역했습니다 — 앱 코드 입력 안내·라벨·입력 예시·백업 코드 안내(`login.two_factor.*`)와 범위 선택 항목(`settings.security.two_factor_scope*`) 입니다. 없으면 일본어 로케일의 관리자 로그인 화면과 보안 설정에 한국어가 섞여 보입니다.
+- 환경설정 > 개인정보 탭의 「동의 관리 제공자」 카드 문구(`settings.privacy.consent_provider.*` — 제목·설명·자동 선택·제공자 2개 이상/선택 제공자 비활성/제공자 없음/동의 수집 꺼짐 안내), 확장 상세 창의 「함께 쓰면 연동되는 확장」 절(`extension_integrations.*`), 방문자 통계 설정의 「제공자 선택 필요」·「개인정보 탭에서 고르기」(`analytics.settings.privacy.consent_source_needs_selection`·`consent_source_choose`)의 일본어 번역을 추가했습니다.
+- 정보 탭 「Write Only」 값(`admin.settings.info.write_only`)을 「Write 単一」 로 번역했습니다.
+
+#### 개인정보·휴면
+- 레이아웃 편집기에 쓰이는 개인정보 조치 대상·직권 실행 창 이름의 일본어 번역을 추가했습니다.
+- 레이아웃 편집기 「화면 상태」 고르개의 「개인정보 보유기간 탭」 항목 이름(`editor.state.tab.privacy_retention`, 「個人情報の保有期間タブ」)의 일본어 번역을 추가했습니다.
+- 환경설정 > 개인정보 탭의 「지금 실행」 버튼(탈퇴 회원 잔여정보 파기·휴면 4단계)과 직권 실행 창 문구의 일본어 번역을 추가했습니다.
+  - 직권 실행 확인 창(대상 건수·처리 방식·대기기간 생략 체크·되돌릴 수 없음 경고)·진행 상태 줄 문구(`admin.settings.privacy.manual_run.*`), 편집기 데이터 소스 이름
+  - 조치 대상을 단계마다 한 줄로 정리하면서 줄 이름(`admin.settings.privacy.targets.rows.*`, 「休眠転換事前通知」 등)과 공용 「対象を表示」(`targets.view`)를 더하고, 쓰지 않게 된 단계별 보기 버튼·합산 배지 문구는 뺐습니다.
+- 환경설정 > 개인정보 탭의 「대상 보기」 버튼과 조치 대상 명단 창 문구를 일본어로 번역했습니다. 휴면은 같은 화면의 다른 문구와 같은 「休眠」으로 적었습니다.
+  - 탈퇴 회원 잔여정보 파기와 휴면 4단계(사전 안내·전환·탈퇴 예고·자동 탈퇴)별 버튼과 창 제목
+  - 안내·합계·빈 목록·불러오는 중·닫기(`settings.privacy.targets.*`), 레이아웃 편집기의 데이터 소스 이름(`editor.data_source.privacyTargets`)
+- 관리자 로그인에서 휴면이 풀렸을 때 뜨는 안내 문구를 일본어로 번역했습니다(`dormancy_restored`). 관리자 계정도 휴면 전환 대상이라 이 화면으로 돌아옵니다.
+  - 같은 문구를 이미 쓰고 있는 사용자 템플릿 팩(`g7-template-sirsoft-basic-ja`)과 표기를 맞췄습니다 — 두 화면이 다른 말을 하면 같은 사건이 다른 일처럼 읽힙니다.
+- 「휴면 후 자동 탈퇴」 옆 처리 대상 건수 뱃지 문구를 일본어로 번역했습니다
+  (`settings.privacy.dormant.withdraw_stage_counts`). 없으면 일본어 로케일에서 그 뱃지만 한국어로 남습니다.
+- 환경설정의 「개인정보」 탭 문구를 일본어로 번역했습니다(`settings.tabs.privacy`·`settings.privacy.*`). 없으면 일본어 로케일의 개인정보 탭에 한국어가 섞여 보입니다.
+  - 탭 이름, 켜기 전 처리방침 선행 고지, 탈퇴 회원 잔여정보 파기 카드와 휴면 계정 카드의 제목·설명·토글·기간 입력 안내, 되돌릴 수 없다는 경고, 처리 대상 건수 뱃지 문구
+  - 회원 상세의 「휴면 전환일」과 회원 수정 폼의 상태 항목 「휴면」·「가입대기」
+  - 레이아웃 편집기의 개인정보 미리보기 데이터 이름(`editor.data_source.privacyPreview`)
+
+#### 회원·역할·메뉴
+- 회원 목록 역할 일괄 변경 창의 「변경 없음」 결과 줄·사유(`admin.users.bulk_roles.result_unchanged`·`reason_already_assigned`·`reason_not_assigned`)와 제거 창 안내(`remove_hint`), 검색편집 체크박스 읽기 이름(`admin.users.filter.show_in_basic`), 태그 입력 화면 읽기 안내문(`common.tag_input.*`)의 일본어 번역을 추가했습니다.
+- 회원관리 목록의 새 필터 영역 문구를 일본어로 번역했습니다. 상태 이름은 코어 팩(`user.status.*`)과 같은 표기로 맞췄습니다.
+  - 필터 행 이름 12개(계정 상태·권한 그룹·가입일·최근 로그인·관리자 여부·계정 잠금·휴면 전환일·상태 변경일·언어·국가·이메일 인증·본인인증, `admin.users.filter.*`)와 선택지
+  - 빠른 기간 버튼, 권한 그룹 검색 안내 문구, 상세 영역 제목, 상세검색·검색편집·초기화 버튼
+  - 새 검색 대상(휴대폰/전화·회원번호/고유ID·관리자 메모), 계정 상태 4종(ブロック·退会·登録待機中·休眠)
+  - 새 열 이름(닉네임·이메일 인증일·본인인증일)과 이름 정렬
+- 회원 일괄 상태 변경의 일부·전부 실패 안내, 회원 등록 폼의 기본 역할 안내, 보호 역할 안내, 본인인증 메시지 「정의 추가」 창의 정책 소진 안내, 모듈·플러그인·템플릿을 다시 켤 때 함께 꺼졌던 언어팩을 되살리는 창(제목·본문·성공·실패), 편집기 데이터 소스 이름(`editor.data_source.identityMessagePolicyScopes`)의 일본어 번역을 추가했습니다.
+- 역할 편집 「접근 가능 메뉴」(「アクセス可能なメニュー」) 카드, 메뉴 관리 「여러 개 선택」(「複数選択」) 일괄 역할 판·확인 창, 메뉴 목록 행 역할 배지(「付与されたロール」「他{{count}}件」「ロールなし」), 회원 목록 「역할 추가·제거」(「ロール追加」「ロール削除」) 창·결과 문구와 편집기 라벨의 일본어 번역을 추가했습니다(`admin.roles.form.menus_*`·`admin.menus.bulk.*`·`admin.menus.list_roles_*`·`admin.users.bulk_roles.*` 등).
+- 회원 목록 정렬 선택 칸의 이메일, 국가, 언어, 상태 오름차순과 내림차순 항목(`admin.users.sort.*` 8개) 일본어 번역을 추가했습니다.
+- 레이아웃 편집기 회원 수정 화면의 상태 이름 「退会の確認」(`editor.state.withdraw_confirm`)를 추가했습니다. 탈퇴 확인 창을 편집기에서 미리 보는 상태입니다.
+- 역할 목록의 보호 역할 안내(`admin.roles.protected_roles_hint`)만 「役割」 로 쓰던 용어를 다른 역할 화면 문구와 같은 「ロール」 로 맞췄습니다.
+- 회원 알림함 관리 화면의 일본어 번역 50건을 추가했습니다. 목록 제목과 설명, 읽음/안읽음 필터와 검색 대상(수신자·제목·본문), 표 머리글, 알림 상세 펼침의 본문·링크·종류 라벨, 삭제와 일괄 삭제 확인 모달이 일본어로 표시됩니다. 회원 상세의 알림 탭(전체·안읽음 건수, 알림함으로 이동)도 함께 번역했습니다.
+- 7.1.0 권한 정비에 맞춘 안내 문구의 일본어 번역을 추가했습니다 — 대시보드 경고 처리 권한 없음(`admin.dashboard.alert_action_no_permission`), 회원 목록 삭제 단추가 꺼진 사유(`admin.users.actions.delete_disabled_reason`), 모듈·플러그인·템플릿 설치 창에서 함께 설치할 항목의 「権限なし」 표시와 안내(`admin.{modules,plugins,templates}.modals.cascade_no_permission`·`cascade_no_permission_hint`), 최고관리자 역할 사용 여부 잠금 안내(`admin.roles.form.is_active_locked_hint`), 편집기 데이터 소스 이름 「会員登録権限の確認」(`editor.data_source.user_check`)입니다.
+
+#### 알림
+- 상한에 걸린 총 건수 표시(`admin.member_notification.total_at_least`·`admin.notification_log.total_at_least`·`admin.identity.logs.total_at_least`·`admin.users.total_at_least` 「合計{{count}}件以上」)와 알림 템플릿 수신자 칩 빼기 단추 이름(`admin.settings.notification_definitions.recipients.remove_selected`)의 일본어 번역을 추가했습니다.
+- 알림 정의 목록의 새 알림 이름 2종(비밀번호 만료 사전 안내·비밀번호 만료, `admin.settings.notification_definitions.types.*`)을 일본어로 번역했습니다.
+- 알림 설정 화면의 휴면 알림 3종 제목을 일본어로 번역했습니다 — 「休眠転換事前通知」·「休眠転換完了」·「休眠アカウント退会予定通知」(`settings.notification_definitions.types.dormant_*`).
+  - 없으면 일본어 로케일의 알림 설정 목록에서 이 세 줄만 제목 자리에 내부 키 문자열이 그대로 보입니다.
+  - 코어 알림 정의의 일본어 이름과 같은 표기를 씁니다.
+- 알림 설정의 분류 칩·본인인증 카드 안내·정책별 문구 추가·삭제 창·메일 채널 끄기 확인 창, 본인인증 탭의 「알림 설정으로 옮겨졌다」 안내의 일본어 번역을 추가했습니다.
+- 알림 템플릿 수정 창에서 역할을 검색했을 때 일치하는 역할이 없음을 알리는 문구의 일본어 번역을 추가했습니다.
+- 알림 템플릿 수정 창의 수신자 규칙 문구 4종의 일본어 번역을 추가했습니다 — 관련 사용자 관계 선택 안내(「関係を選択してください」), 이 알림이 지원하지 않는 관계를 알리는 경고, 역할·회원을 여럿 골랐을 때의 선택 수 표시(「{count}件のロールを選択」·「{count}名選択」).
+
+#### 방문자 통계
+- 방문자 통계의 「마스킹 전 기록」 표시(`admin.analytics.common.ip_not_masked`)와 봇 「최근 요청」 기간 안내(`admin.analytics.bots.recent_hint`)의 일본어 번역을 추가했습니다.
+- 방문자 통계의 집계 신선도(기간 줄 「마지막 집계」·스케줄러 미가동/집계 멈춤/상한 초과 경고·「지금 집계」), 한 항목 추이 창,
+  신규·재방문 선과 카드, 새 탭 다섯(캠페인 매체·검색 탭·이벤트·체류시간 구간·본 페이지 수 구간), 설정 「집계」 묶음,
+  진단의 스케줄러 표시·실행 주체 「화면 열 때」 문구(`admin.analytics.freshness.*`·`alerts.*`·`row_trend.*` 등)의 일본어
+  번역을 추가했습니다. 없으면 ja 화면에 원문 키가 그대로 보입니다.
+- 방문자 통계 정보주체 요청 화면에서 검색 전에 보이는 안내 카드 문구(`analytics.privacy_requests.prompt_title`·`prompt_description`)를 일본어로 번역했습니다.
+  없으면 일본어 로케일에서 이 카드만 번역되지 않은 채 보입니다.
+- 방문자 통계 화면이 저장 코드 대신 보일 이름의 일본어 번역을 추가했습니다 — 집계 실행 주체(`analytics.diagnostics.run_triggers.*`)·
+  큐 연결(`analytics.diagnostics.queue_connections.*`)·봇 캐시 상태(`analytics.bots.cache_statuses.*`).
+- 수집 진단 화면의 확장 선언 경고 줄(`analytics.diagnostics.declaration_warnings_title`·`declaration_warnings_description`)과
+  검색어 탭 안내(`analytics.referrers.keywords_https_hint`)의 일본어 번역을 추가했습니다.
+- 행동 화면 「커스텀 차원」 탭에 등록된 차원이 없을 때의 안내 2종(`analytics.actions.dimensions_none_title`·`dimensions_none_description`)과 편집기 데이터 소스 이름표 「登録済みの拡張ディメンション・コンバージョン」(`data_source.analytics_registered`)의 일본어 번역을 추가했습니다.
+- 수집 진단·설정 화면의 시간대 안내 배지(`analytics.common.site_timezone_badge`) 일본어 번역을
+  더했습니다 — 보는 사람의 시간대가 사이트와 다를 때 시각의 기준을 알립니다.
+- 통계 설정 화면의 큐 적체 배지(`analytics.common.queue_backlog_badge`) 일본어 문구를 더했습니다.
+- 방문자 통계 화면의 결함을 고치면서 생긴 문구 6종의 일본어 번역을 추가했습니다 — 수집 진단의 TrustedProxy 「警告」 배지, 설정 › 개인정보의 「確認権限なし」 배지, 개요의 「訪問者(ユニーク)は日別ユニーク訪問者の合計です」 설명, 리포트 빈 표의 「収集診断を開く」 버튼, 개요 TOP 목록의 「リストの展開・折りたたみ」, 방문자 상세 카드의 「会員」·「再訪問」(「再訪問」/「初回訪問」)입니다.
+- 방문자 통계 화면에 이번에 생긴 문구 15종의 일본어 번역을 추가했습니다 — 유입 경로의 「{{host}} の流入アドレス」 목록(제목·돌아가기·열 이름·안내·빈 상태), 방문자 목록의 「会員」 칸과 「会員情報を表示」·「この会員で検索」 메뉴, 방문자 상세의 「流入アドレス」, 그리고 알림 설정에서 키가 그대로 보이던 방문자 통계 알림 다섯 종의 이름입니다. 편집기의 데이터 소스 라벨 1종도 함께 넣었습니다.
+- 관리자 **방문자 통계** 화면 열넷과 대시보드 통계 카드의 일본어 번역을 추가했습니다. 지표명·차원명·기간 프리셋·상태 안내·모달 문구가 일본어 로케일에서 그대로 나옵니다.
+  - 화면: 개요·페이지·유입 경로·환경·지역·이용 패턴·행동·실시간·방문자·방문자 상세·봇·진단·정보주체·설정
+  - 레이아웃 편집기의 선 차트·기간 프리셋 핸들러 라벨과 대시보드 알림의 「바로 가기」 버튼 문구도 함께 번역했습니다.
+
+#### 확장 관리
+- 확장 설치 창에서 함께 고른 언어팩을 설치하지 못했을 때의 경고 문구(`extensions.alerts.language_pack_install_failed`)를 일본어로 번역했습니다.
+- 확장 설치 창에서 함께 고른 언어팩이 꺼진 채 설치됐을 때의 안내(`extensions.alerts.language_pack_awaiting_host`)와 언어팩 관리 번들 설치 창의 「대상 확장이 꺼져 있어 꺼진 채 설치됨」 안내(`admin.language_packs.modals.install_notice_target_inactive`)를 일본어로 번역했습니다. 이 안내로 바뀐 옛 설치 차단 문구(`install_blocked_target_inactive`)의 번역은 지웠습니다.
+- 확장 목록을 새 카드 그리드로 바꾸면서 생긴 편집기 속성 라벨 5종(보기 방식·카드 최소 폭·
+  최대 열 수·페이지네이션·컴포넌트 이름)의 일본어 번역을 추가했습니다.
+- 확장 관리 화면의 갤러리, 목록 보기 전환과 아이콘 관련 문구의 일본어 번역을 추가했습니다.
+- 모듈·플러그인을 켜거나 템플릿을 설치할 때 7.0 JSON 레이아웃의 찾을 수 없는 조각 참조 건수를 알리는 경고 문구(`extensions.alerts.layout_include_skipped`)를 일본어로 번역했습니다.
+
+#### 레이아웃 편집기
+- 코드 편집기 경고·오류 항목의 줄 이동 안내(`admin.templates.layout_edit.go_to_line` 「{{line}} 行目へ移動」)와 휴대폰 폭 파일 정보 펼치기·접기(`info_toggle_show`·`info_toggle_hide`)의 일본어 번역을 추가했습니다.
+- 레이아웃 편집기 「화면 상태」 고르개의 새 항목 이름 3건(「제거 완료」·「일반 게시글」·「첨부·답글 펼침」, `editor.state.*`)을 일본어로 번역했습니다.
+- 코드 편집기 탭 닫기 창의 「저장하고 닫기」 실패 안내(`admin.templates.layout_edit.draft.close_failed`)의 일본어 번역을 추가했습니다.
+- 미저장 탭 닫기 3지선다 창(제목·질문·「保存して閉じる」·「保存せずに閉じる」·「キャンセル」·저장 중 안내)과 충돌 안내의 「差分を見る」 창(제목·범례·닫기) 문구 10종의 일본어 번역을 추가했습니다.
+- 라우트가 걸린 파일의 삭제 확인 2단계 버튼 「それでも削除」(`file.delete_anyway`)와 글자 크기 단축키 도움말 「文字を大きく」·「文字を小さく」(`shortcuts.font_size_up`·`font_size_down`) 3종의 일본어 번역을 추가했습니다.
+- 없어진 파일의 편집분을 다루는 새 문구 6종의 일본어 번역을 추가했습니다 — 「このファイルが見つかりません」(안내 제목·토스트), 탭의 「存在しないファイル」 표시, 읽기 전용 안내문, 그리고 [新しい名前で保存]·[破棄] 버튼입니다.
+- 레이아웃 코드 편집기 개편에 따른 새 문구의 일본어 번역을 추가했습니다 — 파일 목록이 평면 목록에서 **폴더 트리**로 바뀌고, **열린 파일 탭**과 **파일 생성·삭제·이름변경**, **파일명·내용 검색**, **단축키**가 들어오면서 생긴 문구입니다.
+  - 트리(목록 이름표·미저장 표시와 개수·빈 폴더·「편집 가능한 레이아웃이 없습니다」·폭 조절), 탭(목록 이름표·닫기)
+  - 검색(입력 안내·결과 요약·결과 없음·지우기·해당 줄로 이동)
+  - 파일 조작(새 파일·새 폴더·이름변경·삭제와 각 확인 문구, 그리고 모듈 원본이거나 다른 화면이 참조 중이라 막혔을 때의 사유 안내)
+  - 단축키 20종의 이름과 도움말 제목
+  - 미저장 초안 복원 배너(복원·버리기·이탈 경고·판본 되돌리기 전 경고), 서버 본문이 더 새로울 때의 충돌 바(「내 것 유지」·「서버 것으로」), 자동 줄바꿈 토글
+  - 새 모달 2종(파일 만들기·이름변경, 삭제 확인)의 제목
+- 레이아웃 코드 편집기의 HTML(`.g7.html`) 기본화에 따른 새 문구(HTML/JSON 서브탭, JSON 읽기 전용 안내와 「오래됨」 배지, 컴파일 오류·경고 패널 제목, 설치본 편집 안내, `.g7.html` 내려받기·복사 버튼과 결과 알림, 조각 식별자 라벨)의 일본어 번역을 추가했습니다.
+- 파일명·내용 검색이 쓰는 데이터 소스 이름표(`data_source.layout_search`)의 일본어 번역을 추가했습니다.
+- 레이아웃 편집기의 데이터소스 목록에 「회원 알림함」(`data_source.memberNotifications`) 이름을 추가했습니다.
+- 레이아웃 편집기 「화면 상태」 고르개의 새 항목 이름 41건을 일본어로 번역했습니다(`editor.state.*`). 없으면 일본어 로케일의 편집기 상태 목록에 한국어가 섞여 보입니다.
+  - 비즈뿌리오 탭·템플릿 작성 창, 수출입은행 설정·이력 탭, GDPR 정책 이력·쿠키 분류 펼침, CKEditor5 업로드 선택·삭제 확인
+  - 마케팅 채널 창, 인증 앱 등록 단계, 우편번호 표시 방식, 페이지 버전 미리보기
+  - 공통 항목인 「창 내용 채움」·「화면 상태 채움」
+
+### Changed
+
+- 모듈·플러그인·템플릿의 설치·제거·업데이트·레이아웃 갱신·활성화·비활성화 확인 문구가 이름 뒤에 종류 단어를 붙이지 않고 이름을 「」로 묶습니다(`admin.{modules,plugins,templates}.modals.*_confirm`). 이름에 종류가 들어 있는 확장이 「Hello モジュールモジュール」처럼 겹쳐 보였습니다. 업데이트 창 코어 호환 경고(`extensions.update_modal.compat_warning_message`)도 제약식 뒤에 「以上」을 붙이지 않습니다.
+- 업데이트 화면의 「수정 유지」 설명, 수정한 레이아웃 목록 제목, 안내 문구를 수정한 부분만 남기고 새 버전의 변경을 반영하는 실제 동작에 맞게 바꿨습니다.
+- 관리자 로그인 화면의 무기한 잠김 안내(`auth.login.locked_permanent`)가 비밀번호 재설정으로도 풀 수 있음을 알리도록 고쳤습니다.
+- 메뉴 편집의 역할 안내(`admin.menus.form.roles_hint`)를 「선택하지 않으면 모든 역할이 접근」 에서 「관리자 역할은 항상 포함」(「管理者ロールは常に含まれます」)으로 바꿨고, 더 이상 쓰지 않는 「すべてのロール」(`admin.menus.info.all_roles`)를 지우고 「ロール未指定」(`admin.menus.info.no_roles`)를 추가했습니다 — 메뉴 역할 저장 시 관리자 역할이 항상 남도록 바뀐 동작에 맞췄습니다.
+- 레이아웃 편집 화면 설명(`admin.templates.layout_edit.description`·`page_description`)을 「JSONファイルを編集して…」에서 「画面マークアップ（.g7.html）を編集して…」로 고쳤습니다 — 코드 편집기가 마크업을 열고 저장하며 JSON 은 읽기 전용 산출물이 된 동작에 맞췄습니다.
+- 확장 관리 > 플러그인 정보 창 「훅」·「필터」 칸의 설명과 빈 상태 문구(`admin.plugins.modals.hooks_description`·`no_hooks`·`filters_description`·`no_filters`)를 「다른 확장에 제공하는 훅」 뜻에 맞춰 고쳐 번역했습니다.
+- 역할 수정 화면의 사용 여부 안내(`admin.roles.form.is_active_hint`)를 「끄면 이 역할로 받은 권한이 즉시 회수되고 새 사용자에게 할당할 수 없다」는 뜻으로 고쳐 번역했습니다 — 역할을 끄면 그 역할의 권한이 바로 빠지도록 바뀐 동작에 맞췄습니다.
+
+### Removed
+
+- 쓰이지 않던 옛 메일 템플릿 편집 창의 레이아웃 편집기 이름(`admin.modal_label.admin_settings.modal_mail_template_form`)
+  일본어 번역을 지웠습니다 — 원본 언어 파일에서 같은 키가 빠졌습니다(그 창 조각이 제거됐습니다).
+- 방문자 목록의 쓰이지 않는 열 이름(`analytics.visitors.columns.timeline`) 일본어 번역을 지웠습니다 — 원본
+  언어 파일에서 같은 키가 빠졌습니다(방문자 목록에 그 열이 없습니다).
+- 통계 설정 「적재 방식」 항목의 일본어 번역 4종(`analytics.settings.collection.dispatch_mode`·
+  `.dispatch_mode_hint`·`.dispatch_modes.queue`·`.dispatch_modes.sync`)을 지웠습니다 — 설정 항목
+  자체가 없어졌습니다.
+- 본인인증 메시지 전용 창 5개의 번역 — 관리자 템플릿에서 그 창이 없어졌습니다.
+
 ## [1.0.9] - 2026-09-09
 
 ### Added

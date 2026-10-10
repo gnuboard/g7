@@ -2,9 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
-use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -19,8 +19,12 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewRepositoryInte
  */
 class ProductReviewRepository implements ProductReviewRepositoryInterface
 {
+    use FiltersByDateRange;
     use PaginatesWithDeferredJoin;
 
+    /**
+     * @param  ProductReview  $model  리뷰 모델
+     */
     public function __construct(
         protected ProductReview $model
     ) {}
@@ -107,12 +111,8 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
         // 기간 필터 — whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 못 쓰게 만든다.
         // 같은 결과를 내는 범위 조건으로 바꿔 created_at 인덱스를 살린다
         // (종료일은 그날 23:59:59.999999 까지 포함해야 whereDate 와 동일한 경계를 갖는다).
-        if (! empty($filters['start_date'])) {
-            $query->where('created_at', '>=', Carbon::parse($filters['start_date'])->startOfDay());
-        }
-        if (! empty($filters['end_date'])) {
-            $query->where('created_at', '<=', Carbon::parse($filters['end_date'])->endOfDay());
-        }
+        // 목록이 작성일을 보는 사람의 시간대로 그리므로 그 하루로 자른다.
+        $this->applyViewerDateRangeFilter($query, 'created_at', $filters['start_date'] ?? null, $filters['end_date'] ?? null);
 
         // 정렬 — 선택지가 닫힌 집합이라 match 로 충분하다
         $sort = match ($filters['sort'] ?? 'created_at_desc') {
@@ -421,5 +421,32 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
             ->orderByDesc('created_at')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getWithTrashedByOrderOptionIds(array $orderOptionIds): Collection
+    {
+        if ($orderOptionIds === []) {
+            return new Collection;
+        }
+
+        return $this->model->newQuery()
+            ->withTrashed()
+            ->with(['images' => fn ($query) => $query->withTrashed()])
+            ->whereIn('order_option_id', $orderOptionIds)
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function forceDeleteWithImages(ProductReview $review): bool
+    {
+        // 이미지 레코드를 먼저 — DB CASCADE 에 기대지 않고 명시 삭제한다.
+        $review->images()->withTrashed()->forceDelete();
+
+        return (bool) $review->forceDelete();
     }
 }

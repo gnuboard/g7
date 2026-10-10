@@ -1,0 +1,19 @@
+feature: CardGrid 카드 메뉴 문자열 onClick 을 코어 공개 API 로 실행 (D3-2, 7.1.0 출시 점검)
+
+description: |
+  카드 셀의 ActionMenu 가 `actions` 배열과 `items[].onClick: "<액션 id>"` 로 선언되면 CardGrid 가
+  onClick 을 함수로 바꿔 그 액션을 실행한다. 종전 구현은 코어에 없는 `G7Core.ActionDispatcher` 멤버를
+  찾았고 `?.` 가드에 걸려 조용히 건너뛰었다 — 메뉴를 눌러도 아무 일도 일어나지 않았고 콘솔 오류도 없었다.
+  실행 경로를 코어 공개 API `G7Core.dispatch(action, { componentContext })` 로 바꾸고, 카드 행 컨텍스트
+  (`row`·`$value`·`index`)를 바인딩 데이터로 넘긴다.
+
+axes:
+  surface:
+    - card_action_menu_string_onclick
+
+effects:
+  - card_action_runs_via_core_dispatch_with_row_context   # 누르면 G7Core.dispatch(액션 정의, { componentContext: { data: 행 컨텍스트 } })
+  - card_action_left_untouched_without_core_dispatch      # 코어 dispatch 가 없으면 항목을 바꾸지 않고, 없는 멤버를 찾지 않는다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CardGrid.actionDispatch.test.tsx

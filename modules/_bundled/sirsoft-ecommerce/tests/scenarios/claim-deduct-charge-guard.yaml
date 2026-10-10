@@ -1,0 +1,22 @@
+# e2e:allow 화면 변경 없음 — 거절 메시지는 기존 오류 토스트로 나온다(서버 기능 테스트가 메시지 키까지 잰다).
+feature: 「환불금에서 차감」 은 환불액이 청구액을 덮을 때만 — 금액 수정·완료에서도 (S4) — #747 C6
+
+description: |
+  신청 경로는 차감 가능 여부를 비교했지만 관리자 금액 수정은 허용 목록만 보았다. 환불액 2,000원인 반품의 청구를 차감
+  6,000원으로 바꾸면 환불은 0원이 되고 부족분 4,000원은 어디에도 청구되지 않았다.
+
+    - 반품·교환 금액 수정은 결과 청구 방식이 차감이면 차감 전 환불액과 청구액을 비교해 모자라면 422 로 거절한다.
+    - 반품 완료는 상품 반려로 줄어든 완료 대상의 환불액이 차감 청구액보다 작으면 거절한다.
+
+axes:
+  claim_type: [return, exchange]
+  stage: [amount_update, completion]
+
+exclusions:
+  - { claim_type: exchange, stage: completion, reason: "교환 완료는 차액 환불을 다시 산정하지 않는다 — 금액 수정 시점 가드가 유일한 입구다" }
+
+effects:
+  - deduct_charge_rejected_when_refund_is_smaller
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/DeductChargeGuardTest.php

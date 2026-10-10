@@ -59,6 +59,7 @@ exclusions:
   - { caller: unauthenticated_browser, threat: cli_injection, reason: "CLI 인수는 상점 설정·주문 저장값에서 오고 브라우저 입력이 아니다" }
 
 effects:
+  - vbank_issue_clears_ordered_cart_items   # 가상계좌 계좌 발급 시 주문한 장바구니 항목 정리(입금 전)
   # Replay defense — PreventsReplayCallback trait
   - replay_detected_on_second_arrival
   - replay_response_is_idempotent_ok
@@ -94,6 +95,7 @@ effects:
   - forged_vbank_callback_cannot_cancel_a_card_order
   - forged_vbank_callback_cannot_write_an_account_number_to_the_order
   - mobile_vbank_issuance_failure_does_not_mutate_the_order
+  - vbank_issuance_failure_message_follows_locale   # 발급 정보 없고 PG 문구도 없을 때 실패 안내가 화면 언어(한국어 고정 아님)
   - pc_vbank_cli_exception_does_not_mutate_the_order
   - vbank_save_failure_mutates_only_on_pc_server_confirmed_issuance
   - cancelled_order_is_restored_only_after_approval_or_issuance_is_confirmed
@@ -106,9 +108,77 @@ effects:
   - net_cancel_sends_pg_cancel_api_call
   - net_cancel_passes_approved_tno
   - net_cancel_passes_full_amount
+  # KVE-2026-2434 — 결제창 닫힘 보고·재결제 준비·결제 인증 콜백의 주문 소유자 확인과 승인-주문 결속
+  - mobile_vbank_callback_with_matching_state_persists_account
+  - issued_state_round_trips_through_the_callback
+  - card_approval_key_does_not_issue_a_vbank_state
+  - mobile_vbank_approval_key_issues_and_persists_the_session_state
+  - state_is_single_use_and_replay_is_rejected
+  - forged_callback_cannot_overwrite_an_issued_account
+  - mobile_vbank_callback_with_mismatched_state_is_rejected
+  - mobile_vbank_callback_without_stored_state_cannot_persist_account
+  - close_report_ignores_order_when_payment_already_paid
+  - close_report_ignores_issued_vbank_waiting_deposit
+  - kcp_vbank_issue_marks_payment_waiting_deposit
+  - close_report_ignores_order_that_is_no_longer_payable
+  - close_report_rejects_matching_buyer_contact_without_ownership
+  - close_report_rejects_invalid_payment_currency_without_server_error
+  - close_report_rejects_amount_mismatch
+  - close_report_marks_pending_order_failed_and_payment_cancelled
+  - forged_guest_token_is_rejected
+  - expired_guest_token_is_rejected
+  - guest_token_of_another_order_is_rejected
+  - guest_with_order_token_can_report_close
+  - member_owner_can_report_close
+  - member_order_cannot_be_reported_without_login
+  - other_member_cannot_report_close_of_member_order
+  - order_without_address_is_rejected_without_ownership
+  - unauthenticated_request_with_matching_buyer_contact_is_rejected
+  - retry_rejects_guest_order_without_token
+  - retry_restores_guest_order_with_order_token
+  - retry_rejects_other_member
+  - retry_rejects_matching_buyer_contact_without_ownership
+  - retry_rejects_amount_mismatch_failure_order
+  - retry_restores_cancelled_kcp_failure_order
+  - retry_rejects_invalid_payment_currency_without_server_error
+  - retry_returns_ready_for_pending_order
+  # 결제 인증 콜백 기본 동작 — 승인 완료·사전 거절·리다이렉트·응답 원문 정제
+  - kcp_auth_callback_stores_easy_pay_method_meta
+  - kcp_auth_callback_skips_cli_approval_for_already_paid_order
+  - kcp_auth_callback_rejects_non_krw_order_before_cli_approval
+  - kcp_auth_callback_rejects_invalid_payment_currency_before_cli_approval
+  - kcp_auth_callback_stores_only_sanitized_pg_response_fields
+  - kcp_auth_callback_completes_order_regardless_of_tax_composition
+  - kcp_auth_callback_redirects_to_fail_with_the_pg_result_code
+  - kcp_auth_callback_user_cancel_redirects_without_an_error
+  - kcp_auth_callback_empty_result_code_redirects_without_an_error
+  - kcp_auth_callback_redirects_to_fail_on_order_not_found
+  - kcp_auth_callback_redirects_to_fail_on_missing_params
+  - kcp_auth_callback_redirects_to_custom_success_url
+  - kcp_auth_callback_records_mobile_payment_device
+  # 가상계좌 발급·입금 통보 — 발급 기록 대조와 KCP 재통보 응답
+  - kcp_vbank_pc_issuance_with_account_data_succeeds
+  - kcp_vbank_issue_stores_only_sanitized_pg_response_fields
+  - kcp_vbank_notify_completes_payment_on_deposit
+  - kcp_vbank_notify_resend_is_acknowledged_idempotently
+  - kcp_vbank_notify_network_cancel_is_logged_without_completion
+  - kcp_vbank_notify_ignores_non_deposit_transaction_codes
+  - kcp_vbank_notify_acknowledges_unknown_order
+  - kcp_vbank_notify_accepts_the_official_payload_keys
+  - kcp_vbank_notify_stores_only_sanitized_pg_response_fields
+  - kcp_vbank_notify_retries_when_issuance_was_not_recorded
+  - kcp_vbank_notify_retries_on_tno_mismatch
+  - kcp_vbank_notify_retries_on_account_mismatch
+  - kcp_vbank_notify_retries_on_site_cd_mismatch
+  - kcp_vbank_notify_retries_on_missing_site_cd
+  - kcp_vbank_notify_retries_on_amount_mismatch
 
 test_files:
   - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/PaymentCallbackControllerTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/MobileVbankCallbackBindingTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/PaymentCloseReportControllerTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/PaymentCloseReportOwnershipTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/PaymentRetryControllerTest.php
 
 manual_verification:
   - description: "위조 콜백 PoC — 남의 주문번호로 결제 실패 유도"

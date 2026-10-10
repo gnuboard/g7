@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 
@@ -29,10 +30,11 @@ use Modules\Sirsoft\Board\Enums\TriggerType;
  * @property TriggerType|null $trigger_type
  * @property array|null $action_logs
  * @property int $depth
- * @property string $ip_address
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property array|null $reaction_counts
+ * @property string|null $ip_address 작성 IP (보유기간 경과 시 NULL 로 파기)
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  */
 class Comment extends Model
 {
@@ -42,7 +44,7 @@ class Comment extends Model
     public static array $activityLogFields = [
         'content' => ['label_key' => 'sirsoft-board::activity_log.fields.content', 'type' => 'text'],
         'is_secret' => ['label_key' => 'sirsoft-board::activity_log.fields.is_secret', 'type' => 'boolean'],
-        'status' => ['label_key' => 'sirsoft-board::activity_log.fields.status', 'type' => 'enum', 'enum' => \Modules\Sirsoft\Board\Enums\PostStatus::class],
+        'status' => ['label_key' => 'sirsoft-board::activity_log.fields.status', 'type' => 'enum', 'enum' => PostStatus::class],
     ];
 
     /**
@@ -85,10 +87,13 @@ class Comment extends Model
         'depth',
         'ip_address',
         'replies_count',
+        'reaction_counts',
     ];
 
     /**
      * 속성 캐스팅
+     *
+     * @return array<string, mixed> 캐스팅 정의
      */
     protected function casts(): array
     {
@@ -100,6 +105,8 @@ class Comment extends Model
             'action_logs' => 'array',
             'depth' => 'integer',
             'replies_count' => 'integer',
+            // 반응 유형별 개수 캐시 (키는 유형 ID 문자열 — board_posts.reaction_counts 와 같은 규약)
+            'reaction_counts' => 'array',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -108,6 +115,8 @@ class Comment extends Model
 
     /**
      * 게시판과의 관계를 정의합니다.
+     *
+     * @return BelongsTo<Board, Comment> 게시판 관계
      */
     public function board(): BelongsTo
     {
@@ -116,6 +125,8 @@ class Comment extends Model
 
     /**
      * 게시글과의 관계를 정의합니다.
+     *
+     * @return BelongsTo<Post, Comment> 게시글 관계
      */
     public function post(): BelongsTo
     {
@@ -124,6 +135,8 @@ class Comment extends Model
 
     /**
      * 작성자와의 관계를 정의합니다 (회원).
+     *
+     * @return BelongsTo<User, Comment> 작성자 관계
      */
     public function user(): BelongsTo
     {
@@ -132,6 +145,8 @@ class Comment extends Model
 
     /**
      * 부모 댓글과의 관계를 정의합니다 (답글용).
+     *
+     * @return BelongsTo<Comment, Comment> 부모 댓글 관계
      */
     public function parent(): BelongsTo
     {
@@ -143,6 +158,8 @@ class Comment extends Model
      *
      * board_id 조건은 Eager loading 호환을 위해 관계에서 제외하고
      * Repository의 Eager loading 클로저에서 명시적으로 전달합니다.
+     *
+     * @return HasMany<Comment> 답글 목록 관계
      */
     public function replies(): HasMany
     {

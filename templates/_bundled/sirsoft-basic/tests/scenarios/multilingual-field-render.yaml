@@ -1,0 +1,25 @@
+feature: 다국어 객체 필드 출력 — 엔진이 정한 로케일 선택만 인정 (레이아웃 정적 스캔)
+
+description: |
+  API 가 다국어 객체({ko, en, …})로 내리는 필드를 레이아웃이 출력할 때는 엔진이 정한 로케일 선택
+  `$localized(…)` 를 거쳐야 한다. 강제 대상 필드는 PHP 코드가 getCountryLocalizedName() 결과를 담는
+  키에서 파생하고, getCountryName() 으로 문자열도 내는 키는 레이아웃 글자만으로 구분되지 않아 뺀다.
+
+  템플릿 레이아웃이 `_global.locale` 을 유일한 로케일 출처로 쓰면, 그 키는 어디서도 세워지지 않아
+  `x?.[_global.locale] ?? x?.ko` 가 예외 없이 한국어로 고착된다 — 한국어 화면에서는 정상으로 보이는
+  결함이다. 활성 로케일은 엔진이 렌더 컨텍스트 최상위에 넣는 `$locale` 이 든다.
+
+  정적 스캔 테스트는 모집단이 비면 아무것도 재지 않고 통과하므로, PHP 파생 키와 레이아웃 모집단
+  (템플릿·모듈·플러그인 세 종류)의 하한을 함께 고정한다.
+
+axes:
+  output_form: [localized_helper, global_locale_sole_source]   # 출력식이 로케일을 고르는 방식
+
+effects:
+  - multilingual_field_keys_derived_from_php_resources       # PHP 코드에서 다국어 객체 키·문자열 키를 실제로 뽑아낸다
+  - layout_population_spans_templates_modules_plugins        # 레이아웃 스캔 모집단에 템플릿·모듈·플러그인이 모두 든다
+  - template_layouts_never_use_global_locale_as_sole_source  # 템플릿 레이아웃에 `_global.locale` 단독 로케일 출처 0
+  - multilingual_field_output_uses_localized_helper          # 강제 대상 필드의 출력 지점 전부가 `$localized(…)` 경유
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/multilingualFieldRender.test.tsx

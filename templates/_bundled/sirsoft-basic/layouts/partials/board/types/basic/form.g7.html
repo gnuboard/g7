@@ -1,0 +1,39 @@
+<!-- 일반 게시판 글쓰기 화면 틀 — 머리말(뒤로가기·제목·작성자 배지)만 여기서 그리고 실제 입력은 폼 조각에 맡긴다. 갤러리·카드 게시판도 지금은 이 파일을 함께 쓴다. -->
+<partial description="basic 유형 게시글 작성/수정 폼. 헤더(뒤로 버튼+제목+작성자 배지) + 답글 원글 + 폼 본문">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <div class="mb-6">
+      <div class="flex items-center gap-4">
+        <button type="button" aria-label="$t:common.back" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer">
+          <on type="click">
+            <!-- 취소. 수정 중이면 그 글로, 새 글이면 게시판 목록으로 돌아가며 보던 목록 상태를 이고 간다 -->
+            <navigate path="{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          <icon name="arrow-left"/>
+        </button>
+        <div class="flex-1">
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-bold">{{route.id ? '$t:board.edit' : '$t:board.write'}}</h1>
+            <span class="text-sm text-gray-500 dark:text-gray-400">{{form_meta?.data?.board?.name}}</span>
+          </div>
+        </div>
+      </div>
+      <!-- 인라인 배지 스타일 -->
+      <div data-if="{{route.id &amp;&amp; form_meta?.data?.author}}" class="mt-3 flex items-center gap-2 text-sm">
+        <div class="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-1">
+          <icon name="user" size="xs" class="text-gray-500 dark:text-gray-400"/>
+          <span class="text-gray-700 dark:text-gray-300 font-medium">{{form_meta?.data?.author?.name}}</span>
+          <!-- 비회원 표시 배지 -->
+          <span data-if="{{form_meta?.data?.is_guest_post}}" class="ml-1 text-xs text-gray-500 dark:text-gray-400">($t:userinfo.guest_badge)</span>
+        </div>
+        <div class="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-1">
+          <icon name="clock" size="xs" class="text-gray-500 dark:text-gray-400"/>
+          <span class="text-gray-600 dark:text-gray-400">{{form_meta?.data?.created_at}}</span>
+        </div>
+      </div>
+    </div>
+    <include src="partials/board/form/_parent_post.g7.html"/>
+    <include src="partials/board/form/_post_form.g7.html"/>
+  </div>
+</partial>

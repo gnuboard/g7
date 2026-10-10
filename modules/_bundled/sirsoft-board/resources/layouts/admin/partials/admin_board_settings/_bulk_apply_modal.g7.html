@@ -1,0 +1,121 @@
+<!-- 설정 기본값을 이미 있는 게시판들에 소급 적용하는 확인 창. 무엇을·어디에 적용할지는 창을 열기 «전»에 찍어 둔 스냅숏(`_global.bulkApplySnapshot`)이 들고 있어, 창이 떠 있는 동안 뒤 화면의 폼을 만져도 적용 대상이 흔들리지 않는다. 실행은 두 단이다 — 설정 자체를 먼저 저장하고, 그 다음 게시판들에 뿌린다 -->
+<partial description="게시판 설정 일괄 적용 확인 모달">
+  <modal data-type="composite" data-ref="bulk_apply_confirm_modal" title="$t:sirsoft-board.admin.settings.bulk_apply_modal.title" size="lg">
+    <div class="flex flex-col gap-4 pt-2">
+      <!-- 저장/되돌릴수없음 경고 배너 -->
+      <div class="alert-warning">
+        <icon name="triangle-exclamation" class="text-amber-600 dark:text-amber-400 flex-shrink-0" size="sm"/>
+        <p class="text-warning-soft">$t:sirsoft-board.admin.settings.bulk_apply_modal.message</p>
+      </div>
+      <!-- 권한 항목 선택 시 안내 배너 -->
+      <div data-if="{{(function() { const fields = _global.bulkApplySnapshot?.fields ?? []; return fields.some(f => f.includes('.') || f === 'manager'); })()}}" class="alert-info">
+        <icon name="circle-info" class="text-blue-600 dark:text-blue-400 flex-shrink-0" size="sm"/>
+        <p class="text-info-soft">$t:sirsoft-board.admin.settings.bulk_apply_modal.permission_notice</p>
+      </div>
+      <!-- 선택된 항목 목록 (섹션별 그루핑) -->
+      <div class="toggle-group">
+        <div class="px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 flex-center gap-2">
+          <icon name="list-check" size="sm" class="text-gray-500 dark:text-gray-400"/>
+          <span class="text-body font-medium">$t:sirsoft-board.admin.settings.bulk_apply_modal.selected_fields</span>
+          <span class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-full">{{(_global.bulkApplySnapshot?.fields ?? []).length}}</span>
+        </div>
+        <div class="max-h-48 overflow-y-auto">
+          <span data-if="{{!(_global.bulkApplySnapshot?.fields ?? []).length}}" class="block p-3 text-sm text-gray-400 dark:text-gray-500 italic">$t:sirsoft-board.admin.settings.bulk_apply_modal.no_fields</span>
+          <!-- 섹션별 그루핑 iteration. 표현식 평가기는 콜백 안의 멤버 대입(grouped[sk] = [] / .push())을 허용하지 않는다 — 쓰면 식 전체가 평가에 실패해 iteration source 가 배열이 아니게 되고, 이 목록이 오류 없이 통째로 렌더되지 않는다. 누산기 없이 map + filter 로만 구성한다. -->
+          <div data-each="sectionGroup in (function() { const fields = _global.bulkApplySnapshot?.fields ?? []; const sectionMap = { type:'basic', show_view_count:'basic', secret_mode:'basic', use_comment:'basic', use_reply:'basic', use_report:'basic', use_reaction:'basic', use_comment_reaction:'basic', use_scrap:'basic', per_page:'list', per_page_mobile:'list', order_by:'list', order_direction:'list', min_title_length:'post', max_title_length:'post', min_content_length:'post', max_content_length:'post', max_reply_depth:'post', blocked_keywords:'post', new_display_hours:'post', comment_order:'comment', min_comment_length:'comment', max_comment_length:'comment', max_comment_depth:'comment', use_file_upload:'attachment', max_file_size:'attachment', max_file_count:'attachment', allowed_extensions:'attachment', notify_admin_on_post:'notification', notify_author:'notification', manager:'permissions' }; const sectionOrder = ['basic','list','post','comment','attachment','notification','permissions']; return sectionOrder.map(sk => ({ sectionKey: sk, items: fields.filter(k => (k.includes('.') ? 'permissions' : (sectionMap[k] ?? 'basic')) === sk) })).filter(g => g.items.length > 0); })()" class="border-b board-bulk-apply-group last:border-b-0">
+            <div class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700">
+              <span class="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">$t:sirsoft-board.admin.settings.sections.{{sectionGroup.sectionKey}}</span>
+            </div>
+            <div class="px-3 py-2 flex flex-wrap gap-1.5">
+              <div data-each="fieldKey in sectionGroup.items" class="inline-flex items-center px-2 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs rounded">
+                <span data-if="{{!fieldKey.includes('.') &amp;&amp; fieldKey !== 'manager'}}">$t:sirsoft-board.admin.settings.bulk_apply.field_labels.{{fieldKey}}</span>
+                <span data-if="{{fieldKey.includes('.') || fieldKey === 'manager'}}">$t:sirsoft-board.board.permissions.{{fieldKey}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 선택된 게시판 목록 (전체/선택 무관 항상 표시) -->
+      <div class="toggle-group">
+        <div class="px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 flex-center gap-2">
+          <icon name="table-columns" size="sm" class="text-gray-500 dark:text-gray-400"/>
+          <span class="text-body font-medium">$t:sirsoft-board.admin.settings.bulk_apply_modal.selected_boards</span>
+          <!-- 선택 게시판 개수 배지 -->
+          <span data-if="{{_global.bulkApplySnapshot?.applyAll === false}}" class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-full">{{(_global.bulkApplySnapshot?.boardIds ?? []).length}}</span>
+        </div>
+        <div class="p-3 flex flex-wrap gap-1.5 min-h-12">
+          <span data-if="{{_global.bulkApplySnapshot?.applyAll !== false}}" class="text-label-subtle italic">$t:sirsoft-board.admin.settings.bulk_apply_modal.all_boards</span>
+          <span data-if="{{_global.bulkApplySnapshot?.applyAll === false &amp;&amp; !(_global.bulkApplySnapshot?.boardIds ?? []).length}}" class="text-sm text-gray-400 dark:text-gray-500 italic">$t:sirsoft-board.admin.settings.bulk_apply_modal.no_boards</span>
+          <div data-if="{{_global.bulkApplySnapshot?.applyAll === false}}" data-each="boardName in (_global.bulkApplySnapshot?.boardIds ?? []).map(id => { const opt = ($parent._computed.boardOptions ?? []).find(o => o.value == id); return opt ? opt.label : id; })" class="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-medium rounded-full">
+            <span>{{boardName}}</span>
+          </div>
+        </div>
+      </div>
+      <!-- 저장 실패 에러 표시 -->
+      <div data-if="{{$parent._local.bulkApplySaveError}}" class="alert-danger text-red-600 dark:text-red-400">
+        <icon name="circle-exclamation" class="flex-shrink-0" size="sm"/>
+        <span>$t:sirsoft-board.admin.settings.bulk_apply_modal.save_error</span>
+      </div>
+      <!-- 일괄 적용 중단(전체 롤백) 안내 - rolled_back 응답 시 모달 미닫힘 + 오류(red) 박스 -->
+      <div data-if="{{$parent._local.bulkApplyAborted}}" class="alert-danger">
+        <icon name="circle-exclamation" class="text-red-600 dark:text-red-400 flex-shrink-0" size="sm"/>
+        <!-- 권한 실패(board 있음) — 게시판명을 굵게 강조 + suffix 문구 -->
+        <span data-if="{{$parent._local.bulkApplyAbortedBoard}}" class="text-red-700 dark:text-red-300">
+          <span class="font-bold">{{$parent._local.bulkApplyAbortedBoard}}</span>
+          <span>$t:sirsoft-board.admin.settings.bulk_apply_modal.aborted_message_suffix</span>
+        </span>
+        <!-- 컬럼 등 기타 실패(board null) — generic 문구 -->
+        <span data-if="{{!$parent._local.bulkApplyAbortedBoard}}" class="text-red-700 dark:text-red-300">$t:sirsoft-board.admin.settings.bulk_apply_modal.aborted_message_generic</span>
+      </div>
+      <div class="flex justify-end gap-3">
+        <button type="button" disabled="{{$parent._local.isBulkApplying}}" class="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="bulk_apply_confirm_button" type="button" disabled="{{$parent._local.isBulkApplying || !(_global.bulkApplySnapshot?.fields ?? []).length || (_global.bulkApplySnapshot?.applyAll === false &amp;&amp; !(_global.bulkApplySnapshot?.boardIds ?? []).length)}}" class="flex-center gap-1.5 px-4 py-2 bg-amber-600 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 일괄 적용 실행 — 뿌리기는 전부-아니면-전무다. 한 게시판에서 막히면 서버가 통째로 되돌리고(`rolled_back`) 그때는 창을 닫지 않은 채 어디서 막혔는지 알린다. 성공했을 때만 스냅숏을 지우고 창을 닫는다 -->
+            <sequence>
+              <!-- 스냅샷은 모달 열기 전(탭 버튼 클릭 시) 이미 _global에 저장됨 - 여기서는 진행 상태 변경 + 직전 롤백 안내 초기화(재시도 대비) -->
+              <set-state target="$parent._local" :isBulkApplying="true" :bulkApplySaveError="false" :bulkApplyAborted="false" :bulkApplyAbortedBoard="null"/>
+              <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/settings" method="PUT" body="{{(function() { const snap = _global.bulkApplySnapshot || {}; const tab = snap.tab || 'basic_defaults'; const form = snap.form || {}; if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}">
+                <success>
+                  <set-state target="$parent._local" :hasChanges="false"/>
+                  <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/settings/bulk-apply" method="POST" body="{{(function() { const snap = _global.bulkApplySnapshot || {}; return { fields: snap.fields ?? [], apply_all: snap.applyAll !== false, board_ids: snap.applyAll !== false ? [] : (snap.boardIds ?? []) }; })()}}">
+                    <success>
+                      <!-- 성공/롤백 공통 — 진행 상태 해제 -->
+                      <set-state target="$parent._local" :isBulkApplying="false"/>
+                      <!-- 성공(rolled_back=false): 적용 완료 → 상태 초기화 + 스냅샷 정리 + 모달 닫고 success 토스트 -->
+                      <set-state if="{{!response?.data?.rolled_back}}" target="$parent._local" :bulkApplyFields="[]" :bulkApplyAll="true" :bulkApplyAborted="false" :bulkApplyAbortedBoard="null"/>
+                      <set-state if="{{!response?.data?.rolled_back}}" target="global" :bulkApplySnapshot="null"/>
+                      <close-modal if="{{!response?.data?.rolled_back}}"/>
+                      <toast if="{{!response?.data?.rolled_back}}" type="success" message="$t:sirsoft-board.admin.settings.bulk_apply_modal.success|count={{response?.data?.updated_count ?? 0}}"/>
+                      <!-- 롤백(rolled_back=true): 전체 취소됨 → 모달 유지 + 안내 박스 표시(board 유무로 문구 분기) + warning 토스트 -->
+                      <set-state if="{{response?.data?.rolled_back}}" target="$parent._local" :bulkApplyAborted="true" bulkApplyAbortedBoard="{{response?.data?.board?.name ?? null}}"/>
+                      <toast if="{{response?.data?.rolled_back}}" type="error" message="$t:sirsoft-board.admin.settings.bulk_apply_modal.aborted_toast"/>
+                    </success>
+                    <fail>
+                      <!-- 실패(권한 부여 상한 403 등) — 창이 떠 있으므로 스냅숏은 두어 방금 시도한 항목·게시판을 그대로 보여 준다(지우면 「0개 · 전체 게시판」으로 바뀐다). 사유는 서버 메시지 토스트로 -->
+                      <set-state target="$parent._local" :isBulkApplying="false"/>
+                      <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.settings.bulk_apply_modal.error'}}"/>
+                    </fail>
+                  </api-call>
+                </success>
+                <fail>
+                  <!-- 저장 실패(기본 권한 상한 403 등) — 창의 안내 박스는 「저장 실패로 중단」만 말하므로 거부 사유를 토스트로 함께 알린다. 스냅숏은 두어 시도한 내용을 그대로 보여 준다 -->
+                  <set-state target="$parent._local" :isBulkApplying="false" :bulkApplySaveError="true"/>
+                  <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.settings.bulk_apply_modal.save_error'}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{$parent._local.isBulkApplying}}" name="spinner" class="spinner-sm"/>
+          <span data-if="{{!$parent._local.isBulkApplying}}">$t:sirsoft-board.admin.settings.bulk_apply_modal.confirm</span>
+          <span data-if="{{$parent._local.isBulkApplying}}">$t:sirsoft-board.admin.settings.bulk_apply_modal.processing</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

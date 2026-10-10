@@ -24,7 +24,7 @@ class ActivityLogCollection extends BaseApiCollection
     /**
      * 활동 로그 컬렉션을 배열로 변환합니다.
      *
-     * @param Request $request HTTP 요청 객체
+     * @param  Request  $request  HTTP 요청 객체
      * @return array<int|string, mixed> 변환된 컬렉션 배열
      */
     public function toArray(Request $request): array

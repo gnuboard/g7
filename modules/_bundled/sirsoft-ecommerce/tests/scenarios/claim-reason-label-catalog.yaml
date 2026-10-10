@@ -1,0 +1,30 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   신청서 종류 × 파생 출처의 조합 중 실제로 생기는 것만 잰다 — 취소 이력(CN)은 교환 발 환불도
+#   반품 발과 같은 위임(`OrderRefund::reasonCatalogType`)을 타므로 반품 대표 1건으로 덮는다.
+#   effects 축은 면제하지 않는다.
+feature: 파생 환불신청서·취소 이력의 사유 라벨 카탈로그 (S17 트랙 A F-2 · #747 C12)
+
+description: |
+  사유 카탈로그는 교환·반품·환불 유형별로 나뉘어 있다. 교환·반품에서 파생된 환불신청서와, 그 환불
+  실행이 남긴 취소 이력(CN)은 부모의 사유 코드를 그대로 물려받는다. 라벨을 환불 카탈로그에서만 찾으면
+  매칭에 실패하고 원시 코드(`defective_product`)가 화면에 나온다 —
+
+    - 환불신청서는 파생 출처의 카탈로그를 본다(`OrderRefund::reasonCatalogType`).
+    - 취소 이력은 연결된 환불신청서의 판정을 따른다(`OrderCancel::reasonCatalogType`). 연결이 없으면 환불 카탈로그.
+    - 단건 게터·리소스·목록 라벨 맵 세 경로가 같은 판정을 쓴다.
+    - 어느 카탈로그에도 없는 코드는 지어내지 않고 코드를 그대로 둔다.
+
+axes:
+  claim_kind: [refund, cancel]
+  source: [exchange, return, direct, none]
+
+effects:
+  - derived_refund_reads_exchange_reason_catalog
+  - derived_refund_reads_return_reason_catalog
+  - direct_refund_reads_refund_reason_catalog
+  - unknown_reason_code_falls_back_to_raw_code
+  - cancel_record_from_return_refund_reads_return_reason_catalog
+  - cancel_record_without_derived_refund_reads_refund_reason_catalog
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/ClaimDerivedRefundReasonLabelTest.php

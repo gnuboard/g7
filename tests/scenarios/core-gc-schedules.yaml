@@ -41,6 +41,11 @@ axes:
     - activity_logs
     - notification_logs
     - ecommerce_temp_orders
+    # 개인정보 보유기간·휴면 (#636 S4) — 이 매니페스트가 재는 것은 **예약 등록·허용목록·
+    # 대시보드 노출**이다. 도메인 동작(무엇을 어떻게 지우는가)은 전용 매니페스트
+    # privacy-retention.yaml · dormant-account.yaml 이 소유한다.
+    - privacy_withdrawn_users
+    - privacy_dormant_accounts
   row_age: [within_retention, beyond_retention]
   schedule_axis: [code_registered, admin_registered]
   timezone_setting: [configured, empty]
@@ -58,6 +63,8 @@ axes:
 exclusions:
   - { target: identity_challenges, row_age: beyond_retention, reason: "상태 전환만 수행하며 삭제하지 않음 — 만료 여부는 expires_at 이 판정" }
   - { schedule_axis: admin_registered, target: sanctum_tokens, reason: "관리자 등록 축은 시각 기준만 검증 (대상별 동작은 코드 예약 축이 커버)" }
+  - { target: privacy_withdrawn_users, schedule_axis: admin_registered, reason: "관리자 화면에서 등록하는 축이 아니다 — 실행 진입점은 코드 예약과 환경설정 토글뿐" }
+  - { target: privacy_dormant_accounts, schedule_axis: admin_registered, reason: "같은 이유 — 휴면 전환은 설정 토글로만 켠다" }
 
 effects:
   - all_gc_commands_are_registered_in_schedule

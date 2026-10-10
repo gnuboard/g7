@@ -23,7 +23,7 @@ class ProductLabelOperationException extends RuntimeException
         private string $messageKey,
         private array $replace = []
     ) {
-        parent::__construct(__($messageKey, $replace));
+        parent::__construct(trans_count($messageKey, $replace));
     }
 
     /**

@@ -42,16 +42,17 @@
       },
       "popup_width": {
         "label": "Popup Width (px)",
-        "hint": "Window width used in popup mode."
+        "hint": "Window width used in popup mode. (100–2000)"
       },
       "popup_height": {
         "label": "Popup Height (px)",
-        "hint": "Window height used in popup mode."
+        "hint": "Window height used in popup mode. (100–2000)"
       },
       "theme_color": {
         "label": "Theme Color",
         "hint": "Theme color for the postcode search window. (e.g., #1D4ED8)"
       }
     }
-  }
+  },
+  "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
 }

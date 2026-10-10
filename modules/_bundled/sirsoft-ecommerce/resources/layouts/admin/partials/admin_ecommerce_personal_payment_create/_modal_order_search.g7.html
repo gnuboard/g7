@@ -1,0 +1,98 @@
+<!-- 개인결제를 이어 붙일 기존 주문을 찾는 창. 검색 대상(주문번호·회원명·상품명)과 기간을 고른다.
+  **아직 시안이다** — 두 선택칸과 검색어가 어디에도 매이지 않았고, 결과 건수("7개의 주문이…")와
+  목록은 마크업에 박힌 예시다. 행을 눌러도 고른 주문이 폼으로 전달되지 않는다.
+  옆의 회원 검색 창과 짝이고 상태도 같다. -->
+<partial description="Personal Payment Create - Order Search Modal">
+  <modal data-type="composite" data-ref="modal_order_search" title="$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.title" size="lg">
+    <div data-ref="order_search_filters" class="space-y-3 mb-4">
+      <div data-ref="search_field_row" class="flex gap-2">
+        <select class="select w-32 flex-shrink-0">
+          <option value="">$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.search_field_all</option>
+          <option value="order_number">$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.search_field_order_number</option>
+          <option value="member_name">$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.search_field_member_name</option>
+          <option value="product_name">$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.search_field_product_name</option>
+        </select>
+        <input type="text" class="input flex-1" placeholder="$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.search_placeholder"/>
+      </div>
+      <div data-ref="order_date_row">
+        <select class="select w-full">
+          <option value="">$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.order_date_all</option>
+          <option value="7">$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.order_date_last_7_days</option>
+          <option value="30">$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.order_date_last_30_days</option>
+          <option value="90">$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.order_date_last_90_days</option>
+        </select>
+      </div>
+    </div>
+    <div data-ref="order_search_result_count" class="text-sm text-secondary mb-3">7개의 주문이 검색되었습니다</div>
+    <div data-ref="order_search_results" class="card-stack">
+      <div data-ref="order_item_1" class="flex-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <div class="flex-center w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg justify-center flex-shrink-0">
+          <icon name="file-text" class="text-xl text-gray-500 dark:text-gray-400"/>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex-center gap-2 mb-1">
+            <span class="font-medium text-heading">ORD20251027-1234</span>
+            <span class="badge badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
+          </div>
+          <div class="text-secondary text-sm">2025-10-27 · 김철수</div>
+          <div class="text-secondary text-sm truncate">프리미엄 멤버십 1년</div>
+        </div>
+        <div class="text-heading font-medium flex-shrink-0">₩120,000</div>
+      </div>
+      <div data-ref="order_item_2" class="flex-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <div class="flex-center w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg justify-center flex-shrink-0">
+          <icon name="file-text" class="text-xl text-gray-500 dark:text-gray-400"/>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex-center gap-2 mb-1">
+            <span class="font-medium text-heading">ORD20251027-1235</span>
+            <span class="badge badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
+          </div>
+          <div class="text-secondary text-sm">2025-10-27 · 이영희</div>
+          <div class="text-secondary text-sm truncate">스탠다드 플랜 6개월</div>
+        </div>
+        <div class="text-heading font-medium flex-shrink-0">₩50,000</div>
+      </div>
+      <div data-ref="order_item_3" class="flex-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <div class="flex-center w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg justify-center flex-shrink-0">
+          <icon name="file-text" class="text-xl text-gray-500 dark:text-gray-400"/>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex-center gap-2 mb-1">
+            <span class="font-medium text-heading">ORD20251026-9876</span>
+            <span class="badge badge-green">$t:sirsoft-ecommerce.admin.personal_payment.status.completed</span>
+          </div>
+          <div class="text-secondary text-sm">2025-10-26 · 박민수</div>
+          <div class="text-secondary text-sm truncate">베이직 플랜 3개월</div>
+        </div>
+        <div class="text-heading font-medium flex-shrink-0">₩30,000</div>
+      </div>
+      <div data-ref="order_item_4" class="flex-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <div class="flex-center w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg justify-center flex-shrink-0">
+          <icon name="file-text" class="text-xl text-gray-500 dark:text-gray-400"/>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex-center gap-2 mb-1">
+            <span class="font-medium text-heading">ORD20251026-5432</span>
+            <span class="badge badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
+          </div>
+          <div class="text-secondary text-sm">2025-10-26 · 정수진</div>
+          <div class="text-secondary text-sm truncate">프로페셔널 플랜 1년</div>
+        </div>
+        <div class="text-heading font-medium flex-shrink-0">₩200,000</div>
+      </div>
+    </div>
+  </modal>
+</partial>

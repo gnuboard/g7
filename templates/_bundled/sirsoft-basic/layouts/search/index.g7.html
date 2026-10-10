@@ -1,0 +1,77 @@
+<!-- 통합 검색 — 글·상품·문서를 한 번에 찾는다. 검색어만 URL 질의에 남기고 탭·정렬·게시판 필터·페이지는 전역 상태에 두는데, 그것들을 바꿀 때마다 요청 주소가 다시 조립돼 결과를 새로 받는다(그래서 조건을 바꾼 뒤에는 반드시 다시 받기까지 해야 한다). -->
+<layout name="search/index" version="1.0.0" extends="_user_base">
+  <meta>
+    <seo :enabled="true" page_type="search" toggle_setting="$module_settings:sirsoft-ecommerce:seo.seo_search_result" :priority="0.3" changefreq="daily">
+      <extensions>
+        <item type="module" id="sirsoft-ecommerce"/>
+      </extensions>
+      <data-sources>
+        <item>searchResults</item>
+      </data-sources>
+      <vars site_name="$core_settings:general.site_name"/>
+      <og type="website" title="{{_seo.search.title ?? ''}}"/>
+      <structured-data @type="SearchResultsPage" name="{{_seo.search.title ?? ''}}"/>
+    </seo>
+  </meta>
+  <!-- 탭·게시판필터·정렬·페이지·커서는 전역 상태가 아니라 URL 쿼리를 읽는다. 전역 상태에 두면 주소가 바뀌지 않아 새로고침·뒤로가기에서 전부 초기값으로 돌아가고 결과를 그대로 공유할 수도 없다. cursor 는 커서로 넘길 수 있는 정렬(최신순 등)에서 이전/다음 이동 시 채워진다. 비어 있으면 서버가 첫 페이지로 읽고 다음 커서를 발급한다 — 관련도순은 계산값 정렬이라 서버가 커서를 발급하지 않고 page 로만 움직인다. auth_mode=optional: 검색 라우트는 optional.sanctum 으로 로그인 회원의 열람 범위(회원 전용 게시판 포함)를 해석하므로, 토큰이 있으면 반드시 실어 보낸다 — 미선언(none)이면 로그인 회원도 비회원 범위로 검색되어 서버측 권한 해석이 무력화된다 -->
+  <data-source id="searchResults" label_key="$t:editor.data_source.searchResults" type="api" endpoint="/api/search?q={{query?.q}}&amp;type={{query?.type ?? 'all'}}&amp;board_slug={{query?.board_slug ?? ''}}&amp;sort={{query?.sort ?? 'relevance'}}&amp;page={{query?.page ?? 1}}&amp;cursor={{query?.cursor ?? ''}}&amp;per_page={{(query?.type === 'products') ? 12 : 10}}" method="GET" auth_mode="optional" :auto_fetch="true" loading_strategy="progressive" condition="{{query?.q}}">
+    <fallback>
+      <field name="data">
+        <field name="keyword" value=""/>
+        <field name="total" :value="0"/>
+        <field name="results">
+          <field name="posts">
+            <field name="total" :value="0"/>
+            <field name="items" :value="[]"/>
+          </field>
+          <field name="products">
+            <field name="total" :value="0"/>
+            <field name="items" :value="[]"/>
+          </field>
+          <field name="pages">
+            <field name="total" :value="0"/>
+            <field name="items" :value="[]"/>
+          </field>
+        </field>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="q" value=""/>
+  </init-local>
+  <permissions/>
+  <init>
+    <set-state target="global">
+      <field name="_local">
+        <field name="q" value="{{query?.q || ''}}"/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <container data-type="layout" class="py-4">
+      <responsive on="desktop" class="py-8"/>
+      <!-- 페이지 헤더 -->
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <icon name="search" size="lg"/>
+          <span>$t:search.title</span>
+        </h1>
+      </div>
+      <include src="partials/search/_search_input.g7.html"/>
+      <include src="partials/search/_search_tabs.g7.html"/>
+      <include src="partials/search/_search_filters.g7.html"/>
+      <include src="partials/search/_search_states.g7.html"/>
+      <include src="partials/search/_search_results.g7.html"/>
+      <!-- 페이지네이션 — 총 건수가 상한에 걸리면 last_page 가 null 로 온다. 그때는 페이지 번호 목록과 마지막 페이지 점프가 사라지고 이전/다음만 남으며, 다음 이동은 has_more_pages 로 끝까지 열려 있다 -->
+      <pagination data-type="composite" data-if="{{query?.q &amp;&amp; (query?.type ?? 'all') !== 'all' &amp;&amp; ((searchResults?.data?.last_page ?? 0) > 1 || searchResults?.data?.has_more_pages === true || (searchResults?.data?.current_page ?? 1) > 1)}}" currentPage="{{Number(query?.page ?? searchResults?.data?.current_page ?? 1)}}" totalPages="{{searchResults?.data?.last_page ?? null}}" hasMorePages="{{searchResults?.data?.has_more_pages ?? false}}" class="mt-6 flex justify-center">
+        <prop name="comment">"커서로 넘길 때 서버는 페이지 번호를 세지 않으므로 표시용 번호는 화면이 센다"</prop>
+        <on event="onPageChange">
+          <!-- 같은 검색 안에서의 페이지 이동이라 mergeQuery 로 검색어·탭·정렬·게시판필터를 그대로 승계한다. 커서는 이동 방향으로 정한다 — 이 시점의 query.page 는 아직 이동 전 값이라 앞뒤를 알 수 있고, 서버가 커서를 발급하지 않는 정렬(관련도순)에서는 빈 값이 되어 키가 지워지고 page 로만 움직인다 -->
+          <navigate path="/search" :mergeQuery="true">
+            <query page="{{$args[0]}}" cursor="{{$args[0] > Number(query?.page ?? 1) ? (searchResults?.data?.next_cursor ?? '') : ($args[0] < Number(query?.page ?? 1) ? (searchResults?.data?.prev_cursor ?? '') : '')}}"/>
+          </navigate>
+        </on>
+      </pagination>
+    </container>
+  </slot>
+</layout>

@@ -9,7 +9,9 @@
  *          untouched_field_unaffected_by_tab_roundtrip,
  *          prune_never_reintroduces_values,
  *          readonly_permission_disables_inputs,
- *          tab_roundtrip_emits_no_console_errors
+ *          tab_roundtrip_emits_no_console_errors,
+ *          tab_roundtrip_clears_has_changes,
+ *          unrelated_refetch_keeps_has_changes
  *
  * 배경: `_localInit` 적용 여부를 전역 해시(`__g7LocalInitTracking`)로만 판정했는데, 실제 리셋
  * 대상인 `localDynamicState`(저장소 A)는 렌더러 인스턴스별이다. 먼저 effect 가 도는 인스턴스가
@@ -34,6 +36,10 @@
  *
  * 회귀 배경: 탭 왕복 후 initLocal 동기화가 편집 중이던 입력칸의 값을 되돌려, 먼저 편집한
  * 입력칸에만 옛 값이 남던 결함 (engine-v1.54.7 에서 수정).
+ *
+ * 후속(engine-v1.77.2, 트러블슈팅 state-global initLocal 사례 8): 같은 정리(prune) 경로가 「변경
+ * 있음」(hasChanges)은 남겨 탭 왕복 뒤 저장 버튼이 활성으로 남았고, 반대로 폼과 무관한 initLocal
+ * (알림 목록 페이지 정보) 재조회는 편집 중인 폼의 저장 버튼을 껐다. 두 축을 마지막 두 테스트가 잠근다.
  */
 import { test, expect, issueToken, issueScopedToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
@@ -97,13 +103,39 @@ async function typeInto(page: Page, selector: string, value: string): Promise<vo
  * `page.goto` 를 쓰면 안 된다 — 전체 새로고침이라 모든 렌더러가 새로 마운트되고 전역 추적도
  * 초기화되어 재현 조건이 통째로 사라진다(실측: goto 왕복으로는 수정 전에도 결함이 안 뜬다).
  * 결함은 SPA 라우팅(탭 클릭)으로 URL 만 바뀌어 보존 컴포넌트의 저장소 A 가 살아남을 때 드러난다.
+ *
+ * 고친 것이 있으면 탭을 누를 때 「저장되지 않은 변경사항」 확인 창이 먼저 뜬다(7.1.0 조치 G2).
+ * - `confirm`: 사용자 경로 그대로 — 탭 클릭 → 확인 창 「저장하지 않고 이동」. 이 버튼은 「변경 있음」을 레이아웃에서 바로 끈다.
+ * - `direct`: 확인 창을 거치지 않고 고친 것이 없을 때의 바로 옮기기 순서(전역 탭 + navigate replace)를 그대로
+ *   실행한다. 「변경 있음」 정리가 레이아웃이 아니라 엔진(initLocal 정리, engine-v1.77.2)에서 오는지 볼 때 쓴다.
  */
-async function tabRoundTrip(page: Page): Promise<void> {
-  await page.getByRole('tab', { name: '마일리지' }).click();
+async function switchTab(page: Page, label: string, tab: string, via: 'confirm' | 'direct'): Promise<void> {
+  if (via === 'direct') {
+    await page.evaluate(async (t) => {
+      await (window as any).G7Core.dispatch({
+        handler: 'sequence',
+        actions: [
+          { handler: 'setState', params: { target: 'global', activeEcommerceSettingsTab: t } },
+          { handler: 'navigate', params: { path: '/admin/ecommerce/settings', replace: true, query: { tab: t } } },
+        ],
+      });
+    }, tab);
+    return;
+  }
+  await page.getByRole('tab', { name: label }).click();
+}
+
+async function tabRoundTrip(page: Page, via: 'confirm' | 'direct' = 'confirm'): Promise<void> {
+  await switchTab(page, '마일리지', 'mileage', via);
+  if (via === 'confirm') {
+    const leave = page.getByTestId('ecommerce-settings-unsaved-tab-leave');
+    await expect(leave).toBeVisible({ timeout: 10_000 });
+    await leave.click();
+  }
   await expect(page).toHaveURL(/tab=mileage/, { timeout: 15_000 });
   await expect(page.locator(FIELD_B)).toHaveCount(0, { timeout: 15_000 });
 
-  await page.getByRole('tab', { name: '주문설정' }).click();
+  await switchTab(page, '주문설정', 'order_settings', via);
   await expect(page).toHaveURL(/tab=order_settings/, { timeout: 15_000 });
   await expect(page.locator(FIELD_B)).toBeAttached({ timeout: 20_000 });
   await expect(page.locator(FIELD_A)).toBeAttached({ timeout: 20_000 });
@@ -243,4 +275,67 @@ test.describe('탭 왕복 후 저장소 A/B 동기화 (engine-v1.54.7)', () => {
 
     expect(errors).toEqual([]);
   });
+  /**
+   * @scenario edit_order=first_edited
+   *
+   * @effects tab_roundtrip_clears_has_changes
+   */
+  test('편집 후 탭을 왕복하면 칸이 서버값으로 돌아오고 저장 버튼도 비활성이 된다 (engine-v1.77.2)', async ({ page }) => {
+    await authenticatePage(page, issueToken(...SETTINGS_PERMISSIONS));
+    await gotoOrderTab(page);
+    const save = page.getByTestId('ecommerce-settings-save');
+    await expect(save).toBeDisabled();
+
+    const serverA = await page.locator(FIELD_A).inputValue();
+    await typeInto(page, FIELD_A, other(serverA));
+    await expect(save).toBeEnabled();
+
+    // 확인 창의 「저장하지 않고 이동」은 레이아웃에서 「변경 있음」을 바로 끈다. 엔진 정리 경로만 보려고
+    // 확인 창을 거치지 않는 바로 옮기기 순서로 왕복한다
+    await tabRoundTrip(page, 'direct');
+
+    await expect(page.locator(FIELD_A)).toHaveValue(serverA);
+    // 수정 전에는 폼 소유 렌더러 저장소 A 의 hasChanges=true 가 남아 활성이었다
+    await expect(save).toBeDisabled();
+  });
+
+  /**
+   * @scenario edit_order=untouched
+   *
+   * @effects unrelated_refetch_keeps_has_changes
+   */
+  test('알림 탭에서 채널을 바꾼 뒤 알림 정의를 켜고 꺼도 저장 버튼이 유지된다 (engine-v1.77.2)', async ({ page }) => {
+    await authenticatePage(page, issueToken(...SETTINGS_PERMISSIONS));
+    await page.goto('/admin/ecommerce/settings?tab=notification_definitions');
+    await expect.poll(async () => await page.locator('[role=switch]').count(), { timeout: 20_000 }).toBeGreaterThanOrEqual(5);
+    const save = page.getByTestId('ecommerce-settings-save');
+    const channel = page.locator('[role=switch]').nth(2);
+    const definition = page.locator('[role=switch]').nth(4);
+    const before = await definition.getAttribute('aria-checked');
+
+    await channel.click(); // 저장해야 반영되는 채널 변경 → 「변경 있음」
+    await expect(save).toBeEnabled();
+
+    try {
+      // 정의 사용 스위치는 즉시 저장(PATCH) + 알림 목록 재조회(폼과 무관한 initLocal)
+      await Promise.all([
+        page.waitForResponse(r => r.request().method() === 'PATCH' && /toggle-active/.test(r.url())),
+        definition.click(),
+      ]);
+      await expect(definition).not.toHaveAttribute('aria-checked', before ?? '', { timeout: 10_000 });
+      await page.waitForTimeout(1_500);
+      // 수정 전에는 재조회가 hasChanges 를 지워 채널 변경을 저장할 수 없게 됐다
+      await expect(save).toBeEnabled();
+    } finally {
+      // 실데이터 원복 — 정의 스위치를 처음 상태로 되돌린다 (채널 변경은 저장하지 않으므로 버려진다)
+      if ((await definition.getAttribute('aria-checked')) !== before) {
+        await Promise.all([
+          page.waitForResponse(r => r.request().method() === 'PATCH' && /toggle-active/.test(r.url())),
+          definition.click(),
+        ]);
+        await expect(definition).toHaveAttribute('aria-checked', before ?? '', { timeout: 10_000 });
+      }
+    }
+  });
 });
+

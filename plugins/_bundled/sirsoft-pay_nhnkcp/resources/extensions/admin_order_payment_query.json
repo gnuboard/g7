@@ -1,4 +1,5 @@
 {
+    "comment": "주문 상세에 NHN KCP 전용 결제 도구를 붙이는 조각 — 거래 상태 확인과 에스크로 배송 등록을 다룬다",
     "target_layout": "admin_ecommerce_order_detail",
     "data_sources": [
         {
@@ -8,7 +9,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_nhnkcp/admin/orders/{{route.orderNumber}}/transaction-status",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "이 주문의 KCP 결제 상태 — 테스트 결제 배너의 근거이기도 하다"
         },
         {
             "id": "kcp_escrow_delivery",
@@ -17,7 +19,8 @@
             "endpoint": "/api/plugins/sirsoft-pay_nhnkcp/admin/orders/{{route.orderNumber}}/escrow-delivery",
             "method": "GET",
             "auto_fetch": true,
-            "auth_required": true
+            "auth_required": true,
+            "comment": "에스크로 배송 등록 상태 — 등록 폼을 띄울지 여기서 정한다"
         }
     ],
     "injections": [
@@ -29,23 +32,32 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{kcp_status.data?._is_test_mode === true}}",
-                    "props": { "className": "mx-6 mb-3 px-3 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg flex-center gap-2" },
+                    "props": {
+                        "className": "mx-6 mb-3 px-3 py-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg flex items-center gap-2"
+                    },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Icon",
-                            "props": { "name": "flask-conical", "className": "w-4 h-4 text-orange-600 dark:text-orange-400 flex-shrink-0" }
+                            "props": {
+                                "name": "flask",
+                                "className": "text-base text-orange-600 dark:text-orange-400 flex-shrink-0"
+                            }
                         },
                         {
                             "type": "basic",
                             "name": "Span",
-                            "props": { "className": "text-sm font-semibold text-orange-800 dark:text-orange-300" },
+                            "props": {
+                                "className": "text-sm font-semibold text-orange-800 dark:text-orange-300"
+                            },
                             "text": "$t:sirsoft-pay_nhnkcp.admin.test_mode_badge"
                         },
                         {
                             "type": "basic",
                             "name": "Span",
-                            "props": { "className": "text-sm text-orange-700 dark:text-orange-400" },
+                            "props": {
+                                "className": "text-sm text-orange-700 dark:text-orange-400"
+                            },
                             "text": "$t:sirsoft-pay_nhnkcp.admin.test_mode_order_notice"
                         }
                     ]
@@ -61,70 +73,92 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{!!kcp_status.data?.tno}}",
-                    "props": { "className": "admin-card" },
+                    "props": {
+                        "className": "admin-card"
+                    },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "flex-center gap-2 mb-4" },
+                            "props": {
+                                "className": "flex items-center gap-2 mb-4"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": { "className": "w-1.5 h-4 bg-blue-500 rounded-full flex-shrink-0" }
+                                    "props": {
+                                        "className": "w-1.5 h-4 bg-blue-500 rounded-full flex-shrink-0"
+                                    }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "H3",
-                                    "props": { "className": "text-sm font-semibold text-gray-800 dark:text-gray-200" },
+                                    "props": {
+                                        "className": "text-sm font-semibold text-gray-800 dark:text-gray-200"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.order_info_title"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-hint hidden sm:inline" },
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500 hidden sm:inline"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.order_info_description"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{kcp_status.data?.refund_status === 'completed' && (kcp_status.data?.payment_status === 'cancelled' || kcp_status.data?.payment_status === 'partial_cancelled')}}",
-                                    "props": { "className": "ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" },
+                                    "props": {
+                                        "className": "ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.pay_status_cancel_completed"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{kcp_status.data?.payment_status === 'partial_cancelled' && kcp_status.data?.refund_status !== 'completed'}}",
-                                    "props": { "className": "ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" },
+                                    "props": {
+                                        "className": "ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.pay_status_partial_cancelled"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{kcp_status.data?.payment_status === 'cancelled' && kcp_status.data?.refund_status !== 'completed'}}",
-                                    "props": { "className": "ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" },
+                                    "props": {
+                                        "className": "ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.pay_status_cancelled"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{kcp_status.data?.payment_status === 'paid' && kcp_status.data?.res_cd === '0000'}}",
-                                    "props": { "className": "ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" },
+                                    "props": {
+                                        "className": "ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.pay_status_approved"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{!(kcp_status.data?.refund_status === 'completed' && (kcp_status.data?.payment_status === 'cancelled' || kcp_status.data?.payment_status === 'partial_cancelled')) && kcp_status.data?.payment_status !== 'cancelled' && kcp_status.data?.payment_status !== 'partial_cancelled' && !(kcp_status.data?.payment_status === 'paid' && kcp_status.data?.res_cd === '0000')}}",
-                                    "props": { "className": "ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" },
+                                    "props": {
+                                        "className": "ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.pay_status_unknown"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{kcp_escrow_delivery.data?.has_escrow_payment === true}}",
-                                    "props": { "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300" },
+                                    "props": {
+                                        "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.escrow_badge"
                                 }
                             ]
@@ -132,134 +166,196 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "grid grid-cols-2 gap-x-4 gap-y-2 text-xs" },
+                            "props": {
+                                "className": "grid grid-cols-2 gap-x-4 gap-y-2 text-xs"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-gray-500 dark:text-gray-400" },
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.result_payment_status"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-gray-900 dark:text-gray-100" },
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-gray-100"
+                                    },
                                     "text": "{{kcp_status.data?.payment_status_label ?? '-'}}"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-gray-500 dark:text-gray-400" },
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.result_tno"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "font-mono text-gray-900 dark:text-gray-100 break-all" },
+                                    "props": {
+                                        "className": "font-mono text-gray-900 dark:text-gray-100 break-all"
+                                    },
                                     "text": "{{kcp_status.data?.tno ?? '-'}}"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-gray-500 dark:text-gray-400" },
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.result_app_no"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "font-mono text-gray-900 dark:text-gray-100" },
+                                    "props": {
+                                        "className": "font-mono text-gray-900 dark:text-gray-100"
+                                    },
                                     "text": "{{kcp_status.data?.app_no ?? '-'}}"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-gray-500 dark:text-gray-400" },
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.result_app_time"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "font-mono text-gray-900 dark:text-gray-100" },
+                                    "props": {
+                                        "className": "font-mono text-gray-900 dark:text-gray-100"
+                                    },
                                     "text": "{{kcp_status.data?.app_time ?? '-'}}"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-gray-500 dark:text-gray-400" },
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.result_pay_method"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-gray-900 dark:text-gray-100" },
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-gray-100"
+                                    },
                                     "text": "{{kcp_status.data?.card_name ?? kcp_status.data?.bank_name ?? kcp_status.data?.use_pay_method ?? '-'}}"
+                                },
+                                {
+                                    "comment": "간편결제 원 수단(PAYCO·네이버페이·카카오페이·애플페이) — 이커머스 결제수단 칸은 PG 를 모르므로 이 패널이 보여 준다. 남의 화면 글자를 고치지 않는다",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!!kcp_status.data?._embedded_pg_provider_label}}",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-pay_nhnkcp.admin.result_easy_pay"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-gray-500 dark:text-gray-400" },
+                                    "if": "{{!!kcp_status.data?._embedded_pg_provider_label}}",
+                                    "props": {
+                                        "data-testid": "nhnkcp-admin-easy-pay-label",
+                                        "className": "text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "{{kcp_status.data?._embedded_pg_provider_label}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.result_res_cd"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "font-mono text-gray-900 dark:text-gray-100" },
+                                    "props": {
+                                        "className": "font-mono text-gray-900 dark:text-gray-100"
+                                    },
                                     "text": "{{kcp_status.data?.res_cd ?? '-'}}"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{(kcp_status.data?.cancelled_amount ?? 0) > 0}}",
-                                    "props": { "className": "text-gray-500 dark:text-gray-400" },
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.result_cancelled_amount"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{(kcp_status.data?.cancelled_amount ?? 0) > 0}}",
-                                    "props": { "className": "font-mono text-gray-900 dark:text-gray-100" },
+                                    "props": {
+                                        "className": "font-mono text-gray-900 dark:text-gray-100"
+                                    },
                                     "text": "{{kcp_status.data?.cancelled_amount_formatted ?? '-'}}"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{!!kcp_status.data?.cancelled_at}}",
-                                    "props": { "className": "text-gray-500 dark:text-gray-400" },
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.result_cancelled_at"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{!!kcp_status.data?.cancelled_at}}",
-                                    "props": { "className": "font-mono text-gray-900 dark:text-gray-100" },
+                                    "props": {
+                                        "className": "font-mono text-gray-900 dark:text-gray-100"
+                                    },
                                     "text": "{{kcp_status.data?.cancelled_at ?? '-'}}"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{!!kcp_status.data?.refund_status}}",
-                                    "props": { "className": "text-gray-500 dark:text-gray-400" },
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.result_refund_status"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{!!kcp_status.data?.refund_status}}",
-                                    "props": { "className": "text-gray-900 dark:text-gray-100" },
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-gray-100"
+                                    },
                                     "text": "{{kcp_status.data?.refund_status_label ?? kcp_status.data?.refund_status ?? '-'}}"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{!!kcp_status.data?.refund_number}}",
-                                    "props": { "className": "text-gray-500 dark:text-gray-400" },
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.result_refund_number"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "if": "{{!!kcp_status.data?.refund_number}}",
-                                    "props": { "className": "font-mono text-gray-900 dark:text-gray-100 break-all" },
+                                    "props": {
+                                        "className": "font-mono text-gray-900 dark:text-gray-100 break-all"
+                                    },
                                     "text": "{{kcp_status.data?.refund_number ?? '-'}}"
                                 }
                             ]
@@ -271,28 +367,38 @@
                     "type": "basic",
                     "name": "Div",
                     "if": "{{kcp_escrow_delivery.data?.has_escrow_payment === true}}",
-                    "props": { "className": "admin-card mt-4" },
+                    "props": {
+                        "className": "admin-card mt-4"
+                    },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "flex-center gap-2 mb-4" },
+                            "props": {
+                                "className": "flex items-center gap-2 mb-4"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": { "className": "w-1.5 h-4 bg-purple-500 rounded-full flex-shrink-0" }
+                                    "props": {
+                                        "className": "w-1.5 h-4 bg-purple-500 rounded-full flex-shrink-0"
+                                    }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "H3",
-                                    "props": { "className": "text-sm font-semibold text-gray-800 dark:text-gray-200" },
+                                    "props": {
+                                        "className": "text-sm font-semibold text-gray-800 dark:text-gray-200"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_title"
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "props": { "className": "text-hint hidden sm:inline" },
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500 hidden sm:inline"
+                                    },
                                     "text": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_description"
                                 }
                             ]
@@ -301,22 +407,31 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{kcp_escrow_delivery.data?.registered_delivery}}",
-                            "props": { "className": "mb-4 p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-700/50" },
+                            "props": {
+                                "className": "mb-4 p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-700/50"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": { "className": "flex-center gap-2 mb-2" },
+                                    "props": {
+                                        "className": "flex items-center gap-2 mb-2"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Icon",
-                                            "props": { "name": "truck", "className": "w-3.5 h-3.5 text-purple-600 dark:text-purple-400 flex-shrink-0" }
+                                            "props": {
+                                                "name": "truck",
+                                                "className": "text-sm text-purple-600 dark:text-purple-400 flex-shrink-0"
+                                            }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "props": { "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300" },
+                                            "props": {
+                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+                                            },
                                             "text": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_already_registered"
                                         }
                                     ]
@@ -324,42 +439,56 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": { "className": "grid grid-cols-2 gap-x-4 gap-y-1 text-xs" },
+                                    "props": {
+                                        "className": "grid grid-cols-2 gap-x-4 gap-y-1 text-xs"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "props": { "className": "text-gray-500 dark:text-gray-400" },
+                                            "props": {
+                                                "className": "text-gray-500 dark:text-gray-400"
+                                            },
                                             "text": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_registered_at"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "props": { "className": "text-gray-900 dark:text-gray-100 font-mono" },
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-gray-100 font-mono"
+                                            },
                                             "text": "{{kcp_escrow_delivery.data.registered_delivery.registered_at ?? '-'}}"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "props": { "className": "text-gray-500 dark:text-gray-400" },
+                                            "props": {
+                                                "className": "text-gray-500 dark:text-gray-400"
+                                            },
                                             "text": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_invoice_info"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "props": { "className": "text-gray-900 dark:text-gray-100 font-mono" },
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-gray-100 font-mono"
+                                            },
                                             "text": "{{kcp_escrow_delivery.data.registered_delivery.deli_numb ?? '-'}}"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "props": { "className": "text-gray-500 dark:text-gray-400" },
+                                            "props": {
+                                                "className": "text-gray-500 dark:text-gray-400"
+                                            },
                                             "text": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_info"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "props": { "className": "text-gray-900 dark:text-gray-100" },
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-gray-100"
+                                            },
                                             "text": "{{kcp_escrow_delivery.data.registered_delivery.courier_name ?? '-'}}"
                                         }
                                     ]
@@ -369,75 +498,186 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": { "className": "space-y-2" },
+                            "props": {
+                                "className": "space-y-2"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": { "className": "flex-center gap-2" },
+                                    "props": {
+                                        "className": "flex items-center gap-2"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Label",
-                                            "props": { "className": "text-tertiary w-20 flex-shrink-0" },
+                                            "props": {
+                                                "className": "text-xs text-gray-500 dark:text-gray-400 w-20 flex-shrink-0"
+                                            },
                                             "text": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_invoice_label"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "에스크로 배송 등록에 쓸 송장번호 — 등록 버튼을 누를 때까지 화면 안에만 둔다",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "_ked_deli_numb": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
                                             "props": {
                                                 "type": "text",
                                                 "placeholder": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_invoice_placeholder",
-                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono"
-                                            },
-                                            "actions": [
-                                                {
-                                                    "type": "change",
-                                                    "handler": "setState",
-                                                    "params": { "target": "local", "_ked_deli_numb": "{{$event.target.value}}" }
-                                                }
-                                            ]
+                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-mono",
+                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}"
+                                            }
                                         }
                                     ]
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": { "className": "flex-center gap-2" },
+                                    "props": {
+                                        "className": "flex items-center gap-2"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Label",
-                                            "props": { "className": "text-tertiary w-20 flex-shrink-0" },
+                                            "props": {
+                                                "className": "text-xs text-gray-500 dark:text-gray-400 w-20 flex-shrink-0"
+                                            },
                                             "text": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_label"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Select",
-                                            "props": {
-                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "택배사 — KCP 가 정한 코드값으로 보낸다(표시 이름과 코드가 다르다)",
                                                     "type": "change",
                                                     "handler": "setState",
-                                                    "params": { "target": "local", "_ked_deli_corp": "{{$event.target.value}}" }
+                                                    "params": {
+                                                        "target": "local",
+                                                        "_ked_deli_corp": "{{$event.target.value}}"
+                                                    }
                                                 }
                                             ],
+                                            "props": {
+                                                "className": "flex-1 text-xs px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100",
+                                                "disabled": "{{order?.data?.abilities?.can_update !== true}}"
+                                            },
                                             "children": [
-                                                { "type": "basic", "name": "Option", "props": { "value": "" }, "text": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_placeholder" },
-                                                { "type": "basic", "name": "Option", "props": { "value": "04" }, "text": "CJ대한통운" },
-                                                { "type": "basic", "name": "Option", "props": { "value": "05" }, "text": "한진택배" },
-                                                { "type": "basic", "name": "Option", "props": { "value": "06" }, "text": "로젠택배" },
-                                                { "type": "basic", "name": "Option", "props": { "value": "08" }, "text": "롯데택배" },
-                                                { "type": "basic", "name": "Option", "props": { "value": "09" }, "text": "우체국택배" },
-                                                { "type": "basic", "name": "Option", "props": { "value": "11" }, "text": "경동택배" },
-                                                { "type": "basic", "name": "Option", "props": { "value": "13" }, "text": "일양로지스" },
-                                                { "type": "basic", "name": "Option", "props": { "value": "14" }, "text": "합동택배" },
-                                                { "type": "basic", "name": "Option", "props": { "value": "20" }, "text": "드림택배" },
-                                                { "type": "basic", "name": "Option", "props": { "value": "23" }, "text": "천일택배" },
-                                                { "type": "basic", "name": "Option", "props": { "value": "26" }, "text": "건영택배" },
-                                                { "type": "basic", "name": "Option", "props": { "value": "40" }, "text": "기타" }
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": ""
+                                                    },
+                                                    "text": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_placeholder"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "04"
+                                                    },
+                                                    "text": "CJ대한통운"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "05"
+                                                    },
+                                                    "text": "한진택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "06"
+                                                    },
+                                                    "text": "로젠택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "08"
+                                                    },
+                                                    "text": "롯데택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "09"
+                                                    },
+                                                    "text": "우체국택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "11"
+                                                    },
+                                                    "text": "경동택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "13"
+                                                    },
+                                                    "text": "일양로지스"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "14"
+                                                    },
+                                                    "text": "합동택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "20"
+                                                    },
+                                                    "text": "드림택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "23"
+                                                    },
+                                                    "text": "천일택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "26"
+                                                    },
+                                                    "text": "건영택배"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "40"
+                                                    },
+                                                    "text": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_courier_etc"
+                                                }
                                             ]
                                         }
                                     ]
@@ -445,28 +685,31 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "props": { "className": "flex justify-end" },
+                                    "props": {
+                                        "className": "flex justify-end"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Button",
-                                            "props": {
-                                                "disabled": "{{_local._ked_registering}}",
-                                                "className": "flex-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                            },
                                             "actions": [
                                                 {
+                                                    "comment": "에스크로 배송 등록 — 위에서 입력한 송장번호·택배사 코드를 보내고, 끝나면 등록 상태를 다시 받는다",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
                                                         {
                                                             "handler": "setState",
-                                                            "params": { "target": "local", "_ked_registering": true, "_ked_error": null }
+                                                            "params": {
+                                                                "target": "local",
+                                                                "_ked_registering": true,
+                                                                "_ked_error": null
+                                                            }
                                                         },
                                                         {
                                                             "handler": "apiCall",
-                                                            "auth_required": true,
                                                             "target": "/api/plugins/sirsoft-pay_nhnkcp/admin/orders/{{route.orderNumber}}/escrow-delivery",
+                                                            "auth_required": true,
                                                             "params": {
                                                                 "method": "POST",
                                                                 "body": {
@@ -477,37 +720,50 @@
                                                             "onSuccess": [
                                                                 {
                                                                     "handler": "setState",
-                                                                    "params": { "target": "local", "_ked_registering": false }
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "_ked_registering": false
+                                                                    }
                                                                 },
                                                                 {
                                                                     "handler": "toast",
-                                                                    "params": { "type": "success", "message": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_success" }
+                                                                    "params": {
+                                                                        "type": "success",
+                                                                        "message": "$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_success"
+                                                                    }
                                                                 },
                                                                 {
                                                                     "handler": "refetchDataSource",
-                                                                    "params": { "dataSourceId": "kcp_escrow_delivery" }
-                                                                }
-                                                            ],
-                                                            "onError": [
-                                                                {
-                                                                    "handler": "setState",
                                                                     "params": {
-                                                                        "target": "local",
-                                                                        "_ked_registering": false,
-                                                                        "_ked_error": "{{response?.errors?.deli_numb?.[0] ?? response?.errors?.deli_corp?.[0] ?? response?.errors?.message?.[0] ?? '$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_error'}}"
+                                                                        "dataSourceId": "kcp_escrow_delivery"
                                                                     }
                                                                 }
-                                                            ]
+                                                            ],
+                                                            "onError": {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "_ked_registering": false,
+                                                                    "_ked_error": "{{error.errors?.deli_numb?.[0] ?? error.errors?.deli_corp?.[0] ?? Object.values(error.errors ?? {}).flat()[0] ?? '$t:sirsoft-pay_nhnkcp.admin.escrow_delivery_error'}}"
+                                                                }
+                                                            }
                                                         }
                                                     ]
                                                 }
                                             ],
+                                            "props": {
+                                                "disabled": "{{order?.data?.abilities?.can_update !== true || (_local._ked_registering || String(_local._ked_deli_numb ?? '').trim() === '' || String(_local._ked_deli_corp ?? '').trim() === '')}}",
+                                                "className": "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Icon",
                                                     "if": "{{_local._ked_registering}}",
-                                                    "props": { "name": "spinner", "className": "w-3 h-3 animate-spin" }
+                                                    "props": {
+                                                        "name": "spinner",
+                                                        "className": "text-xs animate-spin"
+                                                    }
                                                 },
                                                 {
                                                     "type": "basic",
@@ -535,7 +791,9 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "if": "{{_local._ked_error}}",
-                                    "props": { "className": "text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5" },
+                                    "props": {
+                                        "className": "text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5"
+                                    },
                                     "text": "{{_local._ked_error}}"
                                 }
                             ]

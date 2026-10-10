@@ -1,0 +1,23 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   잠금을 켜지 않은 버튼(lock=off)은 disabled 전환과 무관하게 종전 버튼과 같다 — off × disabled_then_enabled 는 검증할
+#   동작이 없어 케이스로 두지 않고 default_button_unchanged 로 잠근다.
+
+feature: admin_basic 기본 버튼(Button) — 연타 잠금
+
+description: |
+  `lockRepeatClick` 을 켠 버튼은 첫 클릭 즉시 스스로 잠가, 처리 중 표시(`disabled`)가 화면에 그려지기 전의 두 번째 클릭
+  (더블클릭)을 무시한다. 화면이 `disabled` 를 그리면 그 판정에 넘기고, 끝내 오지 않으면 잠시 뒤 풀린다. 켜지 않은 버튼은
+  종전과 같다(#736 S2 P10 — 비밀번호 만료 「지금 실행」 확인 창의 이중 접수).
+
+axes:
+  lock: [on, off]
+  rerender: [none, disabled_then_enabled]
+
+effects:
+  - repeat_click_ignored_before_disabled_renders
+  - lock_hands_over_to_disabled_and_reopens
+  - lock_released_by_fallback_timer
+  - default_button_unchanged
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/Button.repeatClick.test.tsx

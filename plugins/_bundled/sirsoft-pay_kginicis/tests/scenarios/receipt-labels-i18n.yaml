@@ -1,0 +1,29 @@
+feature: KG이니시스 영수증 표시 글자 — 요청 언어로 번역하고 화면 스크립트는 고정 키로 항목을 찾는다
+
+description: |
+  영수증 조회 API 가 보내는 버튼 이름·확인서 제목·안내·항목 이름·상태·결제수단·간편결제 이름이 요청 언어를 따른다.
+  종전에는 한국어로 박혀 있어 영어·일본어 화면의 주문 상세·주문 완료·신청서 상세에 한국어가 섞였다.
+  확인서 항목에는 언어와 무관한 고정 키(key)가 붙고, 일본 편의점 입금 안내 패널은 번역되는 이름 대신 그 키로 값을 찾는다
+  (이름으로 찾으면 영어·일본어 화면에서 패널이 빈다). 패널·확인서 팝업의 고정 글자도 번역 키로 그린다.
+
+axes:
+  locale: [ko, en]
+  surface: [api_cbt_cvs, api_domestic, cvs_panel, cvs_panel_detection, popup, button_fallback]
+
+exclusions:
+  - { locale: ko, surface: api_domestic, reason: "한국어 일반 결제 이름은 UserReceiptControllerTest(user-receipt-lookup.yaml)의 기존 조합이 잠근다" }
+  - { locale: ko, surface: cvs_panel, reason: "한국어는 서버 이름과 패널이 종전과 같아 키 조회 여부를 가르지 못한다 — en 조합이 키 조회를 잠근다" }
+  - { locale: ko, surface: cvs_panel_detection, reason: "한국어는 종전 이름 판정으로도 통과해 코드 판정 여부를 가르지 못한다 — en 조합이 잠근다" }
+  - { locale: ko, surface: popup, reason: "한국어는 종전 고정 글자와 같아 번역 여부를 가르지 못한다 — en 조합이 잠근다" }
+  - { locale: ko, surface: button_fallback, reason: "한국어는 종전 고정 글자와 같아 번역 여부를 가르지 못한다 — en 조합이 잠근다" }
+
+effects:
+  - receipt_labels_follow_request_locale
+  - receipt_fields_carry_stable_key
+  - cvs_panel_reads_fields_by_key
+  - cvs_panel_detected_by_pay_method_code
+  - panel_and_popup_text_translated
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/UserReceiptLabelLocaleTest.php
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/receiptLabelsI18n.test.tsx

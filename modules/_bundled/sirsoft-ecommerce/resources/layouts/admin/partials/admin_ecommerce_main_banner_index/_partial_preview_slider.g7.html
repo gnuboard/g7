@@ -1,0 +1,43 @@
+<!-- 배너가 쇼핑몰에서 어떻게 보일지 미리 보여 주는 자리. 언어를 골라 그 언어의 배너를 확인한다.
+  **아직 시안이다** — 캐러셀 자리는 회색 상자이고 실제 배너를 그리지 않는다. 살아 있는 것은
+  언어 선택뿐이며, 그 선택도 `_local.previewLanguage` 에만 남을 뿐 아래 미리보기를 바꾸지 않는다.
+  언어 목록은 하드코딩이 아니라 앱 설정의 지원 로케일에서 온다 — 이 부분은 배선 후에도 그대로 쓴다. -->
+<partial description="Main Banner Preview Slider Partial">
+  <div data-ref="preview_slider_section" class="admin-card mb-6">
+    <div data-ref="preview_header" class="flex-between mb-4">
+      <h3 class="card-title">$t:sirsoft-ecommerce.admin.main_banner.preview.title</h3>
+      <select name="previewLanguage" class="w-28" value="{{_local.previewLanguage}}" options="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}">
+        <on type="change">
+          <!-- 미리보기 언어 선택. 값만 지역 상태에 남고 아래 캐러셀은 아직 이 값을 읽지 않는다(시안). -->
+          <set-state target="_local" previewLanguage="{{$event.target.value}}"/>
+        </on>
+      </select>
+    </div>
+    <div data-ref="carousel_placeholder" class="relative bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden">
+      <div class="flex-center aspect-[3/1] justify-center">
+        <div class="absolute inset-0 bg-gradient-to-r from-gray-700 to-gray-600"/>
+        <div class="relative z-10 text-center text-white">
+          <p class="text-2xl font-bold mb-2">Always On Event</p>
+          <p class="text-sm opacity-80">Special benefits available anytime</p>
+        </div>
+        <button data-ref="carousel_nav_prev" type="button" class="flex-center absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 justify-center text-white z-20" aria-label="$t:common.prev">
+          <icon name="chevron-left" class="text-xl"/>
+        </button>
+        <button data-ref="carousel_nav_next" type="button" class="flex-center absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 justify-center text-white z-20" aria-label="$t:common.next">
+          <icon name="chevron-right" class="text-xl"/>
+        </button>
+        <div data-ref="carousel_dots" class="absolute bottom-4 left-1/2 -translate-x-1/2 flex-center gap-2 z-20">
+          <span class="w-2 h-2 rounded-full bg-white/50"/>
+          <span class="w-2 h-2 rounded-full bg-white/50"/>
+          <span class="w-2 h-2 rounded-full bg-white/50"/>
+          <span class="w-2 h-2 rounded-full bg-white dark:bg-gray-800"/>
+        </div>
+      </div>
+    </div>
+    <div data-ref="preview_info" class="mt-3 text-sm text-secondary">
+      <span>총 </span>
+      <span class="text-blue-600 dark:text-blue-400 font-medium">4개</span>
+      <span>의 배너 · 3초 간격 자동 전환</span>
+    </div>
+  </div>
+</partial>

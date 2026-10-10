@@ -1,290 +1,296 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "무통장 계좌번호 설정 - Desktop 테이블"
-  },
-  "id": "bank_accounts_table",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "border border-gray-200 dark:border-gray-700 rounded-lg"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Table",
-      "props": {
-        "className": "table"
-      },
-      "children": [
+    "comment": "쇼핑몰 설정 — 무통장 입금계좌, 넓은 화면용 표. 좁은 화면용 카드(`_bank_accounts_cards`)와\n  같은 배열을 같은 방식으로 편집한다(한쪽만 고치면 화면 폭에 따라 동작이 갈린다).\n  입력칸 이름과 오류 키를 만드는 `_idx` 규약도 카드 쪽과 같다.",
+    "meta": {
+        "is_partial": true,
+        "description": "무통장 계좌번호 설정 - Desktop 테이블"
+    },
+    "id": "bank_accounts_table",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "border border-gray-200 dark:border-gray-700 rounded-lg"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Thead",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Tr",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Th",
-                  "props": {
-                    "className": "w-16 text-center"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.is_default"
-                },
-                {
-                  "type": "basic",
-                  "name": "Th",
-                  "props": {
-                    "className": "w-40"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.bank"
-                },
-                {
-                  "type": "basic",
-                  "name": "Th",
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number"
-                },
-                {
-                  "type": "basic",
-                  "name": "Th",
-                  "props": {
-                    "className": "w-32"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder"
-                },
-                {
-                  "type": "basic",
-                  "name": "Th",
-                  "props": {
-                    "className": "w-20 text-center"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.is_active"
-                },
-                {
-                  "type": "basic",
-                  "name": "Th",
-                  "props": {
-                    "className": "w-16 text-center"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Tbody",
-          "children": [
-            {
-              "id": "no_accounts_message",
-              "type": "basic",
-              "name": "Tr",
-              "if": "{{!_local.form?.order_settings?.bank_accounts || _local.form.order_settings.bank_accounts.length === 0}}",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Td",
-                  "props": {
-                    "colSpan": 6,
-                    "className": "text-center py-8 text-tertiary"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.empty"
-                }
-              ]
+            "type": "basic",
+            "name": "Table",
+            "props": {
+                "className": "table"
             },
-            {
-              "type": "basic",
-              "name": "Tr",
-              "iteration": {
-                "source": "(Array.isArray(_local.form?.order_settings?.bank_accounts) ? _local.form.order_settings.bank_accounts : []).map((a, i) => ({...a, _idx: i}))",
-                "item_var": "account",
-                "index_var": "accountIndex"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Td",
-                  "props": {
-                    "className": "text-center"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "type": "button",
-                        "className": "btn-icon disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      },
-                      "actions": [
+                    "type": "basic",
+                    "name": "Thead",
+                    "children": [
                         {
-                          "type": "click",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "form.order_settings.bank_accounts": "{{(_local.form?.order_settings?.bank_accounts ?? []).map((a, i) => ({...a, is_default: i === account._idx}))}}",
-                            "hasChanges": true
-                          }
+                            "type": "basic",
+                            "name": "Tr",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Th",
+                                    "props": {
+                                        "className": "w-16 text-center"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.is_default"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Th",
+                                    "props": {
+                                        "className": "w-40"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.bank"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Th",
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Th",
+                                    "props": {
+                                        "className": "w-32"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Th",
+                                    "props": {
+                                        "className": "w-20 text-center"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.is_active"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Th",
+                                    "props": {
+                                        "className": "w-16 text-center"
+                                    }
+                                }
+                            ]
                         }
-                      ],
-                      "children": [
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Tbody",
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": {
-                            "name": "{{account.is_default ? 'circle-dot' : 'circle'}}",
-                            "className": "{{account.is_default ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}}"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Td",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Select",
-                      "props": {
-                        "name": "{{'order_settings.bank_accounts.' + account._idx + '.bank_code'}}",
-                        "value": "{{account.bank_code}}",
-                        "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code'] ? 'w-full input-error' : 'w-full'}}",
-                        "options": "{{(_local.form?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: typeof b.name === 'object' ? $localized(b.name) : b.name }))}}",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']}}",
-                      "props": {
-                        "className": "form-error"
-                      },
-                      "text": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']?.[0] ?? ''}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Td",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "text",
-                        "name": "{{'order_settings.bank_accounts.' + account._idx + '.account_number'}}",
-                        "value": "{{account.account_number ?? ''}}",
-                        "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number_placeholder",
-                        "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number'] ? 'input input-error' : 'input'}}",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']}}",
-                      "props": {
-                        "className": "form-error"
-                      },
-                      "text": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']?.[0] ?? ''}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Td",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "text",
-                        "name": "{{'order_settings.bank_accounts.' + account._idx + '.account_holder'}}",
-                        "value": "{{account.account_holder ?? ''}}",
-                        "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder_placeholder",
-                        "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder'] ? 'input input-error' : 'input'}}",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']}}",
-                      "props": {
-                        "className": "form-error"
-                      },
-                      "text": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']?.[0] ?? ''}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Td",
-                  "props": {
-                    "className": "text-center"
-                  },
-                  "children": [
-                    {
-                      "type": "composite",
-                      "name": "Toggle",
-                      "props": {
-                        "name": "{{'order_settings.bank_accounts.' + account._idx + '.is_active'}}",
-                        "value": "{{account.is_active}}",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Td",
-                  "props": {
-                    "className": "text-center"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "if": "{{(_local.form?.order_settings?.bank_accounts ?? []).length > 1}}",
-                      "props": {
-                        "type": "button",
-                        "className": "btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      },
-                      "actions": [
+                            "id": "no_accounts_message",
+                            "type": "basic",
+                            "name": "Tr",
+                            "if": "{{!_local.form?.order_settings?.bank_accounts || _local.form.order_settings.bank_accounts.length === 0}}",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Td",
+                                    "props": {
+                                        "colSpan": 6,
+                                        "className": "text-center py-8 text-tertiary"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.empty"
+                                }
+                            ]
+                        },
                         {
-                          "type": "click",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "form.order_settings.bank_accounts": "{{(_local.form?.order_settings?.bank_accounts ?? []).filter((_, i) => i !== account._idx)}}",
-                            "hasChanges": true
-                          }
+                            "type": "basic",
+                            "name": "Tr",
+                            "iteration": {
+                                "source": "(Array.isArray(_local.form?.order_settings?.bank_accounts) ? _local.form.order_settings.bank_accounts : []).map((a, i) => ({...a, _idx: i}))",
+                                "item_var": "account",
+                                "index_var": "accountIndex"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Td",
+                                    "props": {
+                                        "className": "text-center"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "대표 계좌 지정. 배열 전체를 다시 만들면서 고른 것만 참으로 둔다 — 대표는 하나뿐이라 끄는 동작이 없다.",
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.order_settings.bank_accounts": "{{(_local.form?.order_settings?.bank_accounts ?? []).map((a, i) => ({...a, is_default: i === account._idx}))}}",
+                                                        "hasChanges": true
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn-icon disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.is_default",
+                                                "aria-pressed": "{{account.is_default ? 'true' : 'false'}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "{{account.is_default ? 'circle-dot' : 'circle'}}",
+                                                        "className": "{{account.is_default ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Td",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "{{'order_settings.bank_accounts.' + account._idx + '.bank_code'}}",
+                                                "value": "{{account.bank_code}}",
+                                                "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code'] ? 'w-full input-error' : 'w-full'}}",
+                                                "options": "{{(_local.form?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: typeof b.name === 'object' ? $localized(b.name) : b.name }))}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Td",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "text",
+                                                "name": "{{'order_settings.bank_accounts.' + account._idx + '.account_number'}}",
+                                                "value": "{{account.account_number ?? ''}}",
+                                                "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number_placeholder",
+                                                "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number'] ? 'input input-error' : 'input'}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Td",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "text",
+                                                "name": "{{'order_settings.bank_accounts.' + account._idx + '.account_holder'}}",
+                                                "value": "{{account.account_holder ?? ''}}",
+                                                "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder_placeholder",
+                                                "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder'] ? 'input input-error' : 'input'}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Td",
+                                    "props": {
+                                        "className": "text-center"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "{{'order_settings.bank_accounts.' + account._idx + '.is_active'}}",
+                                                "value": "{{account.is_active}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Td",
+                                    "props": {
+                                        "className": "text-center"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "if": "{{(_local.form?.order_settings?.bank_accounts ?? []).length > 1}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "계좌 삭제. 마지막 한 줄은 버튼이 뜨지 않는다 — 계좌가 0개면 무통장 결제를 받을 수 없다.",
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.order_settings.bank_accounts": "{{(_local.form?.order_settings?.bank_accounts ?? []).filter((_, i) => i !== account._idx)}}",
+                                                        "hasChanges": true
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "aria-label": "$t:common.delete"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "trash",
+                                                        "className": "text-sm"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
                         }
-                      ],
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": {
-                            "name": "trash",
-                            "className": "text-sm"
-                          }
-                        }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

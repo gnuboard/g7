@@ -1,6 +1,6 @@
 # Enum 사용 규칙
 
-> **관련 문서**: [백엔드 가이드 인덱스](./index.md) | [검증 로직](./validation.md)
+> **관련 문서**: [백엔드 가이드 인덱스](./README.md) | [검증 로직](./validation.md)
 
 ---
 
@@ -340,4 +340,4 @@ enum UserStatus: string
 
 - [검증 로직](./validation.md) - FormRequest에서 Enum 검증
 - [데이터베이스 가이드](../database-guide.md) - 마이그레이션 규칙
-- [백엔드 가이드 인덱스](./index.md) - 전체 목차
+- [백엔드 가이드 인덱스](./README.md) - 전체 목차

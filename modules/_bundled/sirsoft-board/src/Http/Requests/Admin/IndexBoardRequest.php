@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 
 /**
  * 관리자 게시판 목록 조회 요청을 검증합니다.
@@ -14,6 +15,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class IndexBoardRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
+
     /**
      * 요청 권한 — permission 미들웨어 체인이 담당.
      *
@@ -28,6 +31,8 @@ class IndexBoardRequest extends FormRequest
      * 검증 전 입력 데이터 정규화
      *
      * 정렬 방향을 소문자로 정규화합니다 (asc/ASC 혼용 클라이언트 수용).
+     *
+     * @return void 반환값 없음
      */
     protected function prepareForValidation(): void
     {

@@ -35,7 +35,8 @@ class PlaywrightSeedGdprGuestLogin extends Command
     use IssuesGuestSessionCookie;
 
     protected $signature = 'playwright:seed-gdpr-guest-login
-        {--json : 결과를 JSON 으로 출력}';
+        {--json : 결과를 JSON 으로 출력}
+        {--suffix= : 병렬로 도는 spec 끼리 시드 주체(게스트 세션·회원)가 겹치지 않게 붙이는 꼬리(영숫자 12자 이내)}';
 
     protected $description = 'Playwright E2E 용 GDPR 게스트→로그인 배너 재노출 시나리오 데이터 시드 (CLI + G7_PLAYWRIGHT_BYPASS 가드)';
 
@@ -68,9 +69,13 @@ class PlaywrightSeedGdprGuestLogin extends Command
         // 배너 자체가 꺼져 있으면 재현이 불가능하므로 명시적으로 켠다.
         $pluginSettings->save('sirsoft-gdpr', ['banner_enabled' => true]);
 
+        // 시드 주체는 지우고 다시 만드는 고정값이라, 같은 시드를 쓰는 spec 이 다른 워커에서 동시에 돌면
+        // 서로의 세션 이력·회원을 지운다. spec 마다 다른 꼬리를 받아 주체를 가른다(없으면 종전 고정값).
+        $suffix = substr((string) preg_replace('/[^a-z0-9]/i', '', (string) $this->option('suffix')), 0, 12);
+
         // 게스트 세션: 고정 session_id 사용 — 재실행 시 기존 이력을 먼저 삭제해
         // gdpr_user_consent_histories 가 무한히 누적되지 않도록 한다(멱등성 보장).
-        $guestSessionId = 'e2e-gdpr-guest-login-fixed-session';
+        $guestSessionId = 'e2e-gdpr-guest-login-fixed-session'.($suffix !== '' ? '-'.$suffix : '');
         GdprUserConsentHistory::where('session_id', $guestSessionId)->delete();
         $signedCookieValue = $this->signGuestSessionId($guestSessionId);
         $consentService->updateConsents(
@@ -84,7 +89,7 @@ class PlaywrightSeedGdprGuestLogin extends Command
         // 기존 계정을 먼저 삭제해 계정이 무한히 누적되지 않도록 한다(멱등성 보장).
         // 비밀번호는 실행마다 무작위 생성 — 고정값이 코드에 남아있으면 실수로 프로덕션 DB
         // 에서 실행됐을 때 알려진 비밀번호로 로그인 가능한 계정이 남는다.
-        $email = 'e2e-gdpr-guest-login@example.test';
+        $email = 'e2e-gdpr-guest-login'.($suffix !== '' ? '-'.$suffix : '').'@example.test';
         User::where('email', $email)->delete();
         $plainPassword = Str::random(32);
         $member = User::factory()->create([

@@ -1,197 +1,212 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "템플릿 재활성화 후 cascade 비활성화됐던 언어팩 일괄 활성화 확인 모달 (요구사항 #7)",
-    "editor_label": "$t:admin.modal_label.admin_template_list.template_reactivate_language_packs_modal"
-  },
-  "id": "template_reactivate_language_packs_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:admin.templates.modals.reactivate_language_packs_title",
-    "size": "sm"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "py-2"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-label mb-3"
-          },
-          "text": "$t:admin.templates.modals.reactivate_language_packs_message"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "iteration": {
-                "source": "_global.reactivateLanguagePacksData ?? []",
-                "item_var": "pack"
-              },
-              "props": {
-                "className": "flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "language",
-                    "className": "text-base text-gray-500 dark:text-gray-400"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-body font-medium"
-                  },
-                  "text": "{{pack.locale_native_name}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-tertiary"
-                  },
-                  "text": "({{pack.locale}})"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "템플릿을 다시 켰을 때 **함께 꺼졌던 언어팩**을 되살릴지 묻는 창.\n  거절하는 쪽이 \"취소\" 가 아니라 \"건너뛰기\" 인 것이 성격을 말해 준다 — 템플릿 활성은 이미 끝났고\n  여기서 무엇을 하든 되돌아가지 않는다. 모듈 쪽 같은 이름 조각과 짝이다.",
+    "meta": {
+        "is_partial": true,
+        "description": "템플릿 재활성화 후 cascade 비활성화됐던 언어팩 일괄 활성화 확인 모달 (요구사항 #7)",
+        "editor_label": "$t:admin.modal_label.admin_template_list.template_reactivate_language_packs_modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
+    "id": "template_reactivate_language_packs_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.templates.modals.reactivate_language_packs_title",
+        "size": "sm"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "btn btn-secondary",
-            "disabled": "{{_global.isBulkActivatingLanguagePacks}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "py-2"
+            },
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "reactivateLanguagePacksData": null
-                  }
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-label mb-3"
+                    },
+                    "text": "$t:admin.templates.modals.reactivate_language_packs_message"
                 },
                 {
-                  "handler": "closeModal"
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "_global.reactivateLanguagePacksData ?? []",
+                                "item_var": "pack"
+                            },
+                            "props": {
+                                "className": "flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-700/50 rounded"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "language",
+                                        "className": "text-base text-gray-500 dark:text-gray-400"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body font-medium"
+                                    },
+                                    "text": "{{pack.locale_native_name}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-tertiary"
+                                    },
+                                    "text": "({{pack.locale}})"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:common.skip"
-            }
-          ]
+            ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isBulkActivatingLanguagePacks}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isBulkActivatingLanguagePacks": true
-                  }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "건너뛰기 — 대상 목록만 비우고 닫는다(언어팩은 꺼진 채로 남는다).\n               관리자 템플릿을 켠 직후라면 미뤄 둔 새로 고침을 여기서 한다(활성 창이 창을 띄우느라 미뤘다).",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "reactivateLanguagePacksData": null
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal"
+                                },
+                                {
+                                    "handler": "refresh",
+                                    "if": "{{_global.reactivateLanguagePacksRefreshAfter === true}}",
+                                    "params": {
+                                        "delayMs": 300
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.isBulkActivatingLanguagePacks}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.skip"
+                        }
+                    ]
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/admin/language-packs/bulk-activate",
-                  "params": {
-                    "method": "POST",
-                    "body": {
-                      "ids": "{{_global.reactivateLanguagePacksData?.map(p => p.id) ?? []}}"
-                    }
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isBulkActivatingLanguagePacks": false,
-                        "reactivateLanguagePacksData": null
-                      }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "일괄 활성 실행 — 보여 준 목록의 id 를 그대로 보낸다. 성공해도 이 화면(템플릿 목록)에는\n               언어팩 상태가 보이지 않으므로 목록을 다시 받지 않는다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isBulkActivatingLanguagePacks": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/language-packs/bulk-activate",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "ids": "{{_global.reactivateLanguagePacksData?.map(p => p.id) ?? []}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isBulkActivatingLanguagePacks": false,
+                                                "reactivateLanguagePacksData": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "message": "$t:admin.templates.modals.reactivate_language_packs_success",
+                                                "type": "success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "refresh",
+                                            "if": "{{_global.reactivateLanguagePacksRefreshAfter === true}}",
+                                            "params": {
+                                                "delayMs": 800
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isBulkActivatingLanguagePacks": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "message": "{{error.message ?? '$t:admin.templates.modals.reactivate_language_packs_failed'}}",
+                                                "type": "error"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isBulkActivatingLanguagePacks}}"
                     },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "message": "$t:admin.templates.modals.reactivate_language_packs_success",
-                        "type": "success"
-                      }
-                    },
-                    {
-                      "handler": "closeModal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isBulkActivatingLanguagePacks": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "message": "{{error.message ?? '$t:admin.templates.modals.reactivate_language_packs_failed'}}",
-                        "type": "error"
-                      }
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.activate"
+                        }
+                    ]
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:common.activate"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

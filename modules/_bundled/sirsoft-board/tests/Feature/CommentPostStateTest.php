@@ -9,6 +9,7 @@ use App\Models\User;
 use Modules\Sirsoft\Board\Exceptions\PostNotCommentableException;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 댓글 작성 불가 게시글 상태 응답 계약 테스트
@@ -20,19 +21,29 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 깊이 상한(B1)·첨부 개수(B3)와 같은 구조다 — 요청 단계는 UX 선차단, Service 가 최종 불변조건.
  * Service 가 베이스 `\Exception` 을 던지면 컨트롤러의 제네릭 catch 에 걸려 500 + 일반 문구가 되어
  * 사유가 사라지므로, 전용 예외를 두어 422 로 매핑한다.
- *
- * @group board
- * @group comment
  */
+#[Group('board')]
+#[Group('comment')]
 class CommentPostStateTest extends BoardTestCase
 {
     private User $memberUser;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'comment-post-state';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -44,6 +55,11 @@ class CommentPostStateTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -65,6 +81,8 @@ class CommentPostStateTest extends BoardTestCase
      * @scenario entity=board_comment, post_state=blinded
      *
      * @effects blinded_post_comment_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_request_path_rejects_comment_on_blinded_post(): void
     {
@@ -83,6 +101,8 @@ class CommentPostStateTest extends BoardTestCase
      * @scenario entity=board_comment, post_state=deleted
      *
      * @effects deleted_post_comment_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_request_path_rejects_comment_on_deleted_post(): void
     {
@@ -103,6 +123,8 @@ class CommentPostStateTest extends BoardTestCase
      * @scenario entity=board_comment, post_state=blinded
      *
      * @effects blinded_post_comment_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_service_direct_call_rejects_comment_on_blinded_post(): void
     {
@@ -124,6 +146,8 @@ class CommentPostStateTest extends BoardTestCase
      * @scenario entity=board_comment, post_state=deleted
      *
      * @effects deleted_post_comment_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_service_direct_call_rejects_comment_on_deleted_post(): void
     {
@@ -145,6 +169,8 @@ class CommentPostStateTest extends BoardTestCase
      * @scenario entity=board_comment, post_state=soft_deleted
      *
      * @effects deleted_post_comment_rejected_422
+     *
+     * @return void 반환값 없음
      */
     public function test_service_direct_call_rejects_comment_on_soft_deleted_post(): void
     {
@@ -166,6 +192,8 @@ class CommentPostStateTest extends BoardTestCase
      * @scenario entity=board_comment, post_state=published
      *
      * @effects published_post_comment_allowed
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_on_published_post_still_passes(): void
     {

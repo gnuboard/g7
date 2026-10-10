@@ -4,6 +4,8 @@ import { EditorAttrs } from '../../types';
 export interface IconButtonProps {
     iconName: IconName;
     label?: string;
+    /** 글자 없는 버튼의 접근 가능한 이름(+툴팁). 비우면 아이콘별 기본 이름(새로고침·추가·닫기 등) */
+    ariaLabel?: string;
     onClick?: () => void;
     variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
     size?: 'sm' | 'md' | 'lg';

@@ -54,6 +54,10 @@ class LayoutExtensionServiceEditingTest extends TestCase
     /**
      * updateExtension - content 갱신 + 버전 2건 생성
      */
+    /**
+     * @effects update_extension_persists_content
+     * @effects update_extension_creates_two_versions_prev_and_current
+     */
     public function test_update_extension_saves_content_and_creates_two_versions(): void
     {
         $extension = LayoutExtension::factory()->create([
@@ -73,6 +77,9 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
     /**
      * updateExtension - original_content_hash 는 불변
+     */
+    /**
+     * @effects update_extension_keeps_original_content_hash_unchanged
      */
     public function test_update_extension_keeps_original_content_hash(): void
     {
@@ -99,6 +106,9 @@ class LayoutExtensionServiceEditingTest extends TestCase
     /**
      * hasModifiedExtensions - 사용자 수정 확장 감지
      */
+    /**
+     * @effects has_modified_extensions_detects_hash_mismatch
+     */
     public function test_has_modified_extensions_detects_user_edits(): void
     {
         // 미수정 확장 (현재 content 해시 = original)
@@ -124,6 +134,9 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
     /**
      * registerExtension preserveModified=true - 사용자 수정 확장은 SKIP
+     */
+    /**
+     * @effects register_extension_preserve_modified_skips_user_edited_returns_skipped
      */
     public function test_register_extension_preserve_modified_skips_user_edited(): void
     {
@@ -165,6 +178,9 @@ class LayoutExtensionServiceEditingTest extends TestCase
     /**
      * registerExtension preserveModified=true - 미수정 확장은 덮어쓰기 + 해시 갱신
      */
+    /**
+     * @effects register_extension_preserve_modified_overwrites_unmodified_and_refreshes_hash
+     */
     public function test_register_extension_preserve_modified_overwrites_unmodified(): void
     {
         $originalContent = ['extension_point' => 'header', 'priority' => 100, 'components' => []];
@@ -199,6 +215,9 @@ class LayoutExtensionServiceEditingTest extends TestCase
     /**
      * registerExtension - 신규 생성 시 original_content_hash 함께 저장
      */
+    /**
+     * @effects register_extension_creates_with_original_content_hash
+     */
     public function test_register_extension_creates_with_original_hash(): void
     {
         $content = ['target_layout' => 'admin/dashboard', 'injections' => []];
@@ -222,6 +241,9 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
     /**
      * getExtensionsByTemplateId - 출처별 그룹핑
+     */
+    /**
+     * @effects index_returns_source_grouped_extensions
      */
     public function test_get_extensions_grouped_by_source(): void
     {
@@ -249,6 +271,9 @@ class LayoutExtensionServiceEditingTest extends TestCase
      *
      * 오버라이드 행은 트리에서 일반 확장과 동일하게 출처 기준으로 묶이되,
      * is_override=true 로 오버라이드 상황이 별도 표시되어야 한다.
+     */
+    /**
+     * @effects index_groups_override_rows_under_override_target_source
      */
     public function test_get_extensions_marks_override_rows(): void
     {
@@ -287,6 +312,9 @@ class LayoutExtensionServiceEditingTest extends TestCase
     /**
      * isExtensionApplicableToTemplate - overlay: 대상 레이아웃 존재 시 true
      */
+    /**
+     * @effects overlay_is_applicable_when_target_layout_exists
+     */
     public function test_overlay_applicable_when_target_layout_exists(): void
     {
         TemplateLayout::factory()->create([
@@ -302,6 +330,9 @@ class LayoutExtensionServiceEditingTest extends TestCase
     /**
      * isExtensionApplicableToTemplate - overlay: 대상 레이아웃 부재 시 false
      */
+    /**
+     * @effects overlay_is_not_applicable_when_target_layout_is_missing
+     */
     public function test_overlay_not_applicable_when_target_layout_missing(): void
     {
         $content = ['target_layout' => 'admin_user_detail', 'injections' => []];
@@ -312,6 +343,9 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
     /**
      * isExtensionApplicableToTemplate - extension_point: 확장점 정의 존재 시 true
+     */
+    /**
+     * @effects extension_point_is_applicable_when_the_layout_defines_it
      */
     public function test_extension_point_applicable_when_defined_in_layout(): void
     {
@@ -341,6 +375,9 @@ class LayoutExtensionServiceEditingTest extends TestCase
     /**
      * isExtensionApplicableToTemplate - extension_point: 정의 부재 시 false
      */
+    /**
+     * @effects extension_point_is_not_applicable_when_undefined
+     */
     public function test_extension_point_not_applicable_when_undefined(): void
     {
         TemplateLayout::factory()->create([
@@ -363,6 +400,9 @@ class LayoutExtensionServiceEditingTest extends TestCase
      *
      * cross-template 가드: "이 템플릿엔 부재" 만으로 삭제하지 않는다. 같은 4키 확장이
      * 다른 템플릿(여기선 user, 대상 레이아웃 존재)엔 적용 가능하면 이 행이 오등록 → 삭제.
+     */
+    /**
+     * @effects inapplicable_extension_row_is_soft_deleted
      */
     public function test_remove_inapplicable_extension_soft_deletes_orphan_row(): void
     {
@@ -409,6 +449,9 @@ class LayoutExtensionServiceEditingTest extends TestCase
      * 등록 템플릿에서 동시에 "부재" 가 될 때, 이는 오등록이 아니므로 정상 확장을 보존한다
      * (관리자 대시보드 위젯 소실 회귀 차단).
      */
+    /**
+     * @effects inapplicable_removal_is_skipped_when_every_template_is_stale
+     */
     public function test_remove_inapplicable_extension_preserves_when_all_templates_stale(): void
     {
         // admin·user 양쪽에 같은 확장 등록 + 어느 템플릿에도 대상 레이아웃 없음(전부 부재)
@@ -445,6 +488,9 @@ class LayoutExtensionServiceEditingTest extends TestCase
     /**
      * removeInapplicableExtension - 해당 행이 없으면 false
      */
+    /**
+     * @effects inapplicable_removal_reports_false_when_there_is_no_row
+     */
     public function test_remove_inapplicable_extension_returns_false_when_no_row(): void
     {
         $content = ['target_layout' => 'admin_user_detail', 'injections' => []];
@@ -457,5 +503,74 @@ class LayoutExtensionServiceEditingTest extends TestCase
         );
 
         $this->assertFalse($removed);
+    }
+
+    /**
+     * 조각 식별자(`fragment_key`)가 고유 키를 가른다 — 같은 대상에 조각 둘이면 두 행 (C13).
+     *
+     * @effects register_extension_keeps_two_rows_for_two_fragments_of_the_same_target
+     */
+    public function test_register_extension_keeps_two_rows_for_two_fragments_of_the_same_target(): void
+    {
+        $content = ['target_layout' => 'admin_user_form', 'priority' => 100, 'injections' => []];
+
+        $first = $this->service->registerExtension($content, LayoutSourceType::Module, 'sirsoft-ecommerce', $this->template->id, false, 'admin-user-currency-field');
+        $second = $this->service->registerExtension($content, LayoutSourceType::Module, 'sirsoft-ecommerce', $this->template->id, false, 'admin-user-shipping-country-field');
+
+        $this->assertSame('created', $first);
+        $this->assertSame('created', $second);
+        $this->assertSame(
+            ['admin-user-currency-field', 'admin-user-shipping-country-field'],
+            LayoutExtension::where('target_name', 'admin_user_form')->orderBy('fragment_key')->pluck('fragment_key')->all()
+        );
+    }
+
+    /**
+     * 키 없는 호환 호출은 같은 대상의 기존 행이 하나면 그 키를 잇는다 — 새 행을 만들지 않는다.
+     *
+     * @effects register_extension_without_key_reuses_the_single_existing_row
+     */
+    public function test_register_extension_without_key_reuses_the_single_existing_row(): void
+    {
+        $content = ['target_layout' => 'admin_user_form', 'priority' => 100, 'injections' => []];
+        $this->service->registerExtension($content, LayoutSourceType::Plugin, 'sirsoft-pay', $this->template->id, false, 'admin_order_payment');
+
+        $result = $this->service->registerExtension($content + ['priority' => 7], LayoutSourceType::Plugin, 'sirsoft-pay', $this->template->id);
+
+        $this->assertSame('updated', $result);
+        $this->assertSame(1, LayoutExtension::count());
+        $this->assertSame('admin_order_payment', LayoutExtension::firstOrFail()->fragment_key);
+    }
+
+    /**
+     * 키 없는 호환 호출은 같은 대상에 행이 둘 이상이면 어느 조각인지 알 수 없어 처리하지 않는다 (null).
+     *
+     * @effects register_extension_without_key_is_skipped_when_target_is_ambiguous
+     */
+    public function test_register_extension_without_key_is_skipped_when_target_is_ambiguous(): void
+    {
+        $content = ['target_layout' => 'admin_user_form', 'priority' => 100, 'injections' => []];
+        $this->service->registerExtension($content, LayoutSourceType::Module, 'sirsoft-ecommerce', $this->template->id, false, 'a-field');
+        $this->service->registerExtension($content, LayoutSourceType::Module, 'sirsoft-ecommerce', $this->template->id, false, 'b-field');
+
+        $result = $this->service->registerExtension($content, LayoutSourceType::Module, 'sirsoft-ecommerce', $this->template->id);
+
+        $this->assertNull($result);
+        $this->assertSame(2, LayoutExtension::count(), '키 없는 호출이 옛 5축 키로 세 번째 행을 만들면 안 된다');
+    }
+
+    /**
+     * 키 없는 호환 호출에 기존 행이 없으면 대상 이름을 키로 만든다 (갱신 경로가 파일 키로 정정한다).
+     *
+     * @effects register_extension_without_key_falls_back_to_target_name
+     */
+    public function test_register_extension_without_key_falls_back_to_target_name(): void
+    {
+        $content = ['extension_point' => 'admin.dashboard.widgets', 'priority' => 100, 'components' => []];
+
+        $result = $this->service->registerExtension($content, LayoutSourceType::Module, 'sirsoft-test', $this->template->id);
+
+        $this->assertSame('created', $result);
+        $this->assertSame('admin.dashboard.widgets', LayoutExtension::firstOrFail()->fragment_key);
     }
 }

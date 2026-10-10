@@ -1,0 +1,25 @@
+feature: sirsoft-basic Header — 데스크톱 언어 메뉴의 listbox 구조·키보드와 아이콘 단추 이름
+
+description: |
+  관리자 템플릿 언어 메뉴를 listbox 패턴으로 맞추면서(7.1.0 O-PF-1, 결정 ⑬) 사용자 헤더도 같은 계약을 둔다.
+  목록은 이름 있는 role="listbox"(단추가 aria-controls 로 가리킴), 항목은 role="option" + aria-selected 다.
+  단추에서 ↓/↑·Enter 로 열면 현재 언어 항목에 초점이 가고, 목록 안에서 ↓/↑/Home/End 로 옮기며 Enter 로 고른다.
+  Esc 는 목록을 닫고 단추로 초점을 돌린다. 아이콘만 있던 장바구니 단추는 담긴 수를 함께 말하는 이름을, 좁은 폭에서 그리는 메뉴 단추는 「메뉴」 이름을 갖는다(O-C1-3).
+
+axes:
+  case: [open_by_click, open_by_arrow, arrow_and_enter, escape, cart_name, mobile_menu_name]
+
+effects:
+  - listbox_named
+  - options_have_role
+  - selected_marked
+  - trigger_controls_listbox
+  - focus_on_selected_option
+  - arrow_moves_focus
+  - enter_selects
+  - escape_closes_and_returns_focus
+  - cart_named_with_count
+  - mobile_menu_named
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/HeaderLanguageListbox.test.tsx

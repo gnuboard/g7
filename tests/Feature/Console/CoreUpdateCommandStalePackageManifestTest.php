@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 use Tests\TestCase;
 
 /**
- * [case:backend-31] stale 패키지 매니페스트로 인한 spawn 자식 부팅 실패 회귀 테스트 (dev-g7 #658).
+ * [case:backend-32] stale 패키지 매니페스트로 인한 spawn 자식 부팅 실패 회귀 테스트 (dev-g7 #658).
  *
  * 회귀 시나리오 (sir.kr 제보, 7.0.9 → 7.0.10):
  *   운영 사이트가 `composer install`(옵션 없음)로 깔린 dev 설치본이면

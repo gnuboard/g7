@@ -1,0 +1,7 @@
+[
+  {"result":1,"cur_unit":"KRW","cur_nm":"한국 원","deal_bas_r":"1","ttb":"1","tts":"1"},
+  {"result":1,"cur_unit":"USD","cur_nm":"미국 달러","deal_bas_r":"1,380","ttb":"1,370","tts":"1,390"},
+  {"result":1,"cur_unit":"JPY(100)","cur_nm":"일본 엔","deal_bas_r":"951.05","ttb":"940","tts":"960"},
+  {"result":1,"cur_unit":"EUR","cur_nm":"유로","deal_bas_r":"1,500","ttb":"1,490","tts":"1,510"},
+  {"result":1,"cur_unit":"CNH","cur_nm":"중국 위안","deal_bas_r":"190","ttb":"189","tts":"191"}
+]

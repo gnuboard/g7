@@ -21,7 +21,7 @@
 <!-- @generated:start:api.admin.extensions.auto-deactivated -->
 - **라우트명**: `api.admin.extensions.auto-deactivated`
 - **컨트롤러**: `App\Http\Controllers\Api\Admin\ExtensionRecoveryController@autoDeactivated`
-- **인증/권한**: `auth:sanctum` + `permission:core.plugins.activate`
+- **인증/권한**: `auth:sanctum` + `permission:core.plugins.activate|core.modules.activate|core.templates.activate,false` (셋 중 하나)
 
 **요청 파라미터**
 
@@ -43,7 +43,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | items | object | `{"plugins":[],"modules":[],"templates":[]}` | 코어 비호환으로 자동 비활성화된 확장을 타입별(`plugins`/`modules`/`templates`)로 묶은 목록. 각 원소는 식별자(`identifier`), 비호환 요구 버전(`incompatible_required_version`), 비활성화 시각(`deactivated_at`)을 가지며, 사용자가 dismiss했거나 hidden(학습용 샘플) 확장은 제외됨 |
-| current_core_version | string | `7.0.6` | 현재 설치된 코어 버전 |
+| current_core_version | string | `7.1.0` | 현재 설치된 코어 버전 |
 
 **응답 예시**
 
@@ -61,7 +61,7 @@ HTTP/1.1 200
             "modules": [],
             "templates": []
         },
-        "current_core_version": "7.0.6"
+        "current_core_version": "7.1.0"
     }
 }
 ```
@@ -71,18 +71,19 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.activate`)이 없는 경우 |
+| 403 | Forbidden | 세 종류의 활성화 권한이 하나도 없는 경우 |
 
 <!-- @generated:end -->
 
 **설명** 코어 버전 비호환으로 자동 비활성화된 확장 목록을 타입별(`plugins`/`modules`/`templates`)로 반환합니다. 각 항목에는 식별자, 비호환 요구 버전, 비활성화 시각과 함께 현재 코어 버전이 담깁니다. 사용자가 dismiss한 알림과 hidden(학습용 샘플) 확장은 결과에서 제외됩니다. `core.plugins.activate` 권한이 필요하며, 상단 배너·대시보드 카드의 데이터 소스로 사용됩니다.
 
+**권한(7.1.0)** 응답의 `items.{plugins|modules|templates}` 는 현재 사용자가 그 종류의 활성화 권한(`core.{type}s.activate`)을 가진 경우에만 채워지고, 없으면 빈 목록이다.
 
 ### POST /api/admin/extensions/{type}/{identifier}/dismiss
 <!-- @generated:start:api.admin.extensions.dismiss -->
 - **라우트명**: `api.admin.extensions.dismiss`
 - **컨트롤러**: `App\Http\Controllers\Api\Admin\ExtensionRecoveryController@dismiss`
-- **인증/권한**: `auth:sanctum` + `permission:core.plugins.activate`
+- **인증/권한**: `auth:sanctum` + `permission:core.{type}s.activate` (확장 종류의 활성화 권한)
 
 **요청 파라미터**
 
@@ -129,7 +130,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.activate`)이 없는 경우 |
+| 403 | Forbidden | 그 확장 종류의 활성화 권한(`core.plugins.activate`·`core.modules.activate`·`core.templates.activate`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
@@ -141,7 +142,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.admin.extensions.recover -->
 - **라우트명**: `api.admin.extensions.recover`
 - **컨트롤러**: `App\Http\Controllers\Api\Admin\ExtensionRecoveryController@recover`
-- **인증/권한**: `auth:sanctum` + `permission:core.plugins.activate`
+- **인증/권한**: `auth:sanctum` + `permission:core.{type}s.activate` (확장 종류의 활성화 권한)
 
 **요청 파라미터**
 
@@ -190,7 +191,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.plugins.activate`)이 없는 경우 |
+| 403 | Forbidden | 그 확장 종류의 활성화 권한(`core.plugins.activate`·`core.modules.activate`·`core.templates.activate`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 (`extensions.errors.not_found`) |
 | 422 | Unprocessable Entity | 재검증 결과 여전히 코어 버전이 요구 버전에 미달하는 경우 — 글로벌 핸들러가 `core_version_mismatch` 로 변환 |
 
@@ -474,6 +475,95 @@ fonts
 **설명** 폰트·이미지 등 바이너리를 포함한 파일을 올립니다. 파일명은 안전한 문자(`A-Z a-z 0-9 . _ -`)로 정규화되며, 허용 확장자는 자산 서빙 화이트리스트(`AllowedTemplateFileType`)와 동일합니다 — 여기만 넓히면 올릴 수는 있는데 서빙되지 않는 파일이 생기고, 여기만 좁히면 서빙 규칙이 사문화됩니다.
 
 
+### POST /api/admin/extensions/{type}/{identifier}/custom-assets/rename
+- **라우트명**: `api.admin.extensions.custom-assets.rename`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\AdminExtensionCustomAssetController@rename`
+- **인증/권한**: `auth:sanctum` + `permission:core.extensions.custom_assets.manage`
+
+`custom/` 안의 파일 이름을 바꿉니다(= 이동).
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 용도 |
+| --- | --- | --- | --- | --- |
+| type | path | string | 예 | `module` \| `plugin` \| `template` |
+| identifier | path | string | 예 | 확장 식별자 |
+| from | body | string | 예 | 현재 `custom/` 기준 상대 경로 |
+| to | body | string | 예 | 새 상대 경로 (`from` 과 달라야 한다) |
+
+두 경로 모두 `App\Rules\SafeCustomAssetPath` 를 지납니다 — 한쪽만 검사하면 안전한 원본을
+`../` 대상으로 옮기는 경로가 열립니다.
+
+**요청 예시**
+
+```http
+POST /api/admin/extensions/template/sirsoft-admin_basic/custom-assets/rename HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {YOUR_TOKEN}
+
+{ "from": "10-overrides.css", "to": "css/10-overrides.css" }
+```
+
+**응답**
+
+| 상태 | 조건 |
+| --- | --- |
+| 200 | 바뀐 파일 정보 (`data.path`, `data.previous_path`, `data.size`, `data.modified_at`) |
+| 409 | 대상 경로에 이미 파일이 있음 (`custom_assets.errors.rename_target_exists`) |
+| 422 | 경로 무효 · 확장자가 바뀜 (`custom_assets.errors.rename_extension_changed`) |
+| 403 | `core.extensions.custom_assets.manage` 미보유 |
+
+대상이 이미 있으면 **덮어쓰지 않고 막습니다**. PHP `rename()` 은 대상이 있어도 조용히 덮어쓰므로,
+그대로 두면 운영자가 올린 다른 파일이 경고 없이 사라집니다. 입력 오류가 아니라 상태 충돌이라
+409 로 가릅니다 — 화면이 "덮어쓸까요?" 를 물을지 "경로를 고치세요" 를 말할지 판단할 수 있습니다.
+
+확장자를 바꾸는 이름변경도 막습니다. `style.css` → `style.txt` 는 그 파일이 더 이상 서빙되지
+않는다는 뜻인데 화면에는 그대로 보이므로, 운영자는 "고쳤는데 반영이 안 된다" 만 겪습니다.
+
+---
+
+### GET /api/admin/extensions/{type}/{identifier}/custom-assets/search
+- **라우트명**: `api.admin.extensions.custom-assets.search`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\AdminExtensionCustomAssetController@search`
+- **인증/권한**: `auth:sanctum` + `permission:core.extensions.custom_assets.manage`
+
+파일명·본문에서 검색어를 찾습니다.
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| q | query | string | 예 | 2~200자 | 검색어 |
+
+본문을 여는 대상은 `CustomAssetService::EDITABLE_EXTENSIONS`(`css`·`js`·`mjs`·`json`)뿐이고
+`MAX_TEXT_BYTES`(512KB) 이하 파일만 읽습니다 — 폰트·이미지를 텍스트로 훑으면 바이너리가 우연히
+검색어와 일치해 쓸모없는 결과가 섞이고, 큰 파일을 통째로 메모리에 올립니다.
+파일명 매칭은 확장자와 무관하게 모든 파일이 대상입니다.
+
+**응답 예시**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "path": "css/theme.css",
+      "name_matched": false,
+      "match_count": 2,
+      "lines": [{ "line": 12, "column": 3, "preview": ".brand { color: red; }" }]
+    }
+  ]
+}
+```
+
+| 상태 | 조건 |
+| --- | --- |
+| 200 | 검색 결과 (0건이면 빈 배열) |
+| 422 | `q` 가 2자 미만 |
+| 403 | 권한 미보유 |
+
+---
+
 ### DELETE /api/admin/extensions/{type}/{identifier}/custom-assets
 <!-- @generated:start:api.admin.extensions.custom-assets.destroy -->
 - **라우트명**: `api.admin.extensions.custom-assets.destroy`
@@ -529,3 +619,63 @@ Authorization: Bearer {YOUR_TOKEN}
 **설명** 파일을 삭제합니다. 편집 불가 형식(폰트·이미지)도 삭제 대상입니다 — 삭제까지 편집 확장자로 좁히면 올린 폰트를 지울 방법이 없어집니다. 삭제 후 확장 캐시 버전이 올라 정적 게시본에서도 제거됩니다.
 
 
+
+---
+
+### GET /api/extensions/{type}/{identifier}/icon
+
+- **라우트명**: `api.public.extensions.icon`
+- **컨트롤러**: `App\Http\Controllers\Api\Public\PublicExtensionIconController@show`
+- **인증/권한**: **없음 (공개)**
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- | --- |
+| type | path | string | 필수 | 확장 유형. `module` · `plugin` · `template` · `language-pack` 넷만 라우트에 매칭됩니다 |
+| identifier | path | string | 필수 | 확장 식별자. 언어팩은 `{namespace}-{scope}-{target}-{locale}` 형식, 그 외는 `vendor-name` 형식 |
+| v | query | string | 선택 | 캐시 무효화용 버전 문자열. 값 자체는 응답에 영향을 주지 않고 URL 을 다르게 만들기 위한 것입니다 |
+
+**요청 예시**
+
+```http
+GET /api/extensions/plugin/sirsoft-gdpr/icon?v=1.1.0 HTTP/1.1
+Host: api.example.com
+Accept: image/svg+xml
+```
+
+**응답**
+
+JSON envelope 이 아니라 **이미지 파일 본문**을 그대로 돌려줍니다. 화면은 이 주소를 `<img src>`
+로만 씁니다.
+
+| 헤더 | 값 | 용도 |
+| --- | --- | --- |
+| Content-Type | `image/svg+xml` · `image/png` · `image/webp` | 아이콘 파일 형식 |
+| ETag | 파일 수정 시각·크기 해시 | `If-None-Match` 로 304 판정 |
+| Cache-Control | 운영: `public, max-age=31536000, immutable` / 개발: `no-cache` | 환경별 캐싱 정책 |
+| X-Content-Type-Options | `nosniff` | 브라우저의 MIME 추측 차단 |
+| Content-Security-Policy | `default-src 'none'; style-src 'unsafe-inline'` (SVG 응답에만) | 주소를 직접 열어도 스크립트가 실행되지 않게 하는 이중 방어 |
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 304 | Not Modified | `If-None-Match` 가 현재 ETag 와 같은 경우 |
+| 404 | Not Found | 아이콘 파일이 없거나, 규격을 지키지 않아 서빙 대상이 아닌 경우. 허용 유형 밖의 `type` 도 라우트 매칭 실패로 404 |
+| 422 | Unprocessable Entity | 식별자 형식이 규칙에 맞지 않는 경우 |
+
+**설명** 확장·언어팩에 동봉된 아이콘 파일을 서빙합니다. 규정 원문은
+[확장 아이콘](../../extension/extension-icons.md)입니다.
+
+이 엔드포인트가 **공개**인 이유는 둘입니다. 첫째, 관리자 화면이 이 주소를 `<img src>` 로 부르는데
+관리자 API 는 Bearer 토큰 인증이라 이미지 태그가 쓸 수 없습니다. 둘째, **아직 설치하지 않은 번들
+확장**의 아이콘도 목록에 보여야 하므로 설치 상태·인증을 판정 재료로 삼지 않습니다.
+
+아이콘 파일은 활성 디렉터리 → 대기(`_pending`) → 번들(`_bundled`) 순으로 찾습니다. 기존 확장 자산
+서빙 주소가 활성 디렉터리만 보는 것과 다른 점입니다.
+
+규격(정사각·100KB 이하·스크립트 없는 SVG)을 지키지 않은 파일은 **서빙하지 않고 404** 입니다.
+설치를 막지는 않으며, 그런 확장은 목록에서 종류별 기본 그림으로 표시됩니다.
+
+이 주소는 정적 게시 대상이 아닙니다.

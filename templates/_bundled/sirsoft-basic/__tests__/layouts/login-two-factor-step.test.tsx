@@ -18,6 +18,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 import loginForm from '../../layouts/partials/auth/_login_form.json';
 import loginPage from '../../layouts/auth/login.json';
@@ -54,9 +55,10 @@ function flatten(node: Node | Node[] | undefined): Node[] {
 }
 
 /** 시퀀스를 평탄화해 모든 액션을 모은다. */
-function flattenActions(actions: Action[] | undefined): Action[] {
+// 컴파일러가 원소 하나짜리 배열을 객체로 접으므로(D67) 배열 모양을 단정하지 않는다 — asArray 로 정규화.
+function flattenActions(actions: Action[] | Action | undefined): Action[] {
   if (!actions) return [];
-  return actions.flatMap((a) => [
+  return asArray<Action>(actions).flatMap((a) => [
     a,
     ...flattenActions(a.actions),
     ...flattenActions(a.onSuccess),
@@ -75,7 +77,9 @@ describe('sirsoft-basic 로그인 2단계 인증 단계', () => {
    */
   it('1단계 입력과 2단계 블록의 조건이 상보적이다', () => {
     // 두 블록이 같은 조건을 쓰면 인증번호 단계에서 이메일·비밀번호가 함께 보인다.
-    const stepOne = nodes.filter((n) => n.if === '{{!_global.twoFactor?.required}}');
+    // #736 이후 1단계는 2단계 인증·비밀번호 변경 두 단계가 모두 아닐 때만 보인다(세 단계 상보 — 변경 단계 쪽은
+    // login-password-change-step.test.tsx 가 잠근다).
+    const stepOne = nodes.filter((n) => n.if === '{{!_global.twoFactor?.required && !_global.passwordChange?.required}}');
     const stepTwo = nodes.filter((n) => n.if === '{{_global.twoFactor?.required}}');
 
     expect(stepOne.length).toBeGreaterThanOrEqual(3);
@@ -111,7 +115,7 @@ describe('sirsoft-basic 로그인 2단계 인증 단계', () => {
     const login = allActions.find((a) => a.handler === 'login');
     const verify = allActions.find((a) => a.handler === 'loginTwoFactor');
 
-    expect(login?.if).toBe('{{!_global.twoFactor?.required}}');
+    expect(login?.if).toBe('{{!_global.twoFactor?.required && !_global.passwordChange?.required}}');
     expect(verify?.if).toBe('{{_global.twoFactor?.required}}');
     // 조건이 빠지면 인증번호 단계에서 Enter 를 누를 때 새 challenge 가 발급된다.
     expect(login?.target).toBe('user');
@@ -172,7 +176,7 @@ describe('sirsoft-basic 로그인 2단계 인증 단계', () => {
     expect(resendAction?.target).toBe('user');
     expect(resendAction?.params?.body?.challenge_id).toBe('{{_global.twoFactor?.challenge_id}}');
 
-    const success = resendAction?.onSuccess?.[0];
+    const success = asArray<Action>(resendAction?.onSuccess)[0];
     expect(success?.params?.twoFactor?.challenge_id).toBe('{{response.challenge_id}}');
     // 이전 코드가 남아 있으면 새 코드를 받았는데 옛 코드로 제출된다.
     expect(success?.params?.twoFactor?.code).toBe('');

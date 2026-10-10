@@ -1,0 +1,23 @@
+feature: 코드 편집기 검사 경고·보안 위반의 소스 줄 위치
+
+description: |
+  레이아웃 코드 편집기(.g7.html)의 lint 경고와 보안 검사 위반은 산출 JSON 을 검사하므로 소스 줄을 몰랐다 —
+  경고 패널에 좌표가 없고 편집기 마커가 1행에 접혔다(7.1.0 R-07 → P16 결정: 줄 위치 연결).
+
+  lint: 위치 없는 경고가 나오면 노드·액션 배열에 소스 위치 표식(`[줄, 칸]`)을 붙여 한 번 더 컴파일하고 그 결과로
+  lint 를 다시 돈다 — 경고가 판정한 노드·액션 태그의 줄·칸을 싣는다. 표식 JSON 은 lint 에만 쓰고 버린다.
+  보안 위반: 규칙이 문제 값(주소·표현식)을 기록하고 그 값이 소스에 처음 적힌 자리를 `compile_error` 의 줄·칸으로 싣는다.
+  경고·오류 패널의 줄 있는 항목을 누르면 코드 편집기가 그 줄로 간다(`editorRevealAt`).
+
+  축 issue_kind 는 위치를 싣는 문제 종류다 — lint 경고(lint_warning), 보안 위반(security_violation).
+
+axes:
+  issue_kind: [lint_warning, security_violation]
+
+effects:
+  - lint_warning_carries_source_line
+  - security_violation_carries_source_line
+  - returned_json_has_no_position_markers
+
+test_files:
+  - tests/Feature/Api/Admin/LayoutMarkupIssueLocationTest.php

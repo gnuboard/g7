@@ -1,0 +1,72 @@
+<partial description="e2e:allow 상태 Select 폭 클래스(w-48)만 변경 — Chrome MCP 매트릭스(이력 20260913_2132)가 대체 커버. Claim List - Bulk Action Section (S8b)">
+  <!-- 일괄 상태 변경 바. 취소 유형에는 그리지 않는다 — 게이트(`BulkClaimStatusRequest`)의 `type` 어휘가 교환·반품·환불 셋뿐이라 취소는 일괄 전이 대상 자체가 아니다. 송장(택배사·송장번호)은 여기에 두지 않는다 — 일괄 전이 엔드포인트가 그 두 값을 받지 않고, 회수·재발송 송장은 신청서마다 회수지가 달라 상세의 배송 정보 섹션이 소유한다. -->
+  <div data-ref="claim_bulk_action_section" data-if="{{(query.type ?? 'exchange') !== 'cancel'}}" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mt-6 mb-4 flex-wrap gap-3">
+    <span data-ref="cb_001_selected_count" class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.claim.bulk.selected_count|count={{(_local.selectedItems ?? []).length}}</span>
+    <div class="flex-center flex-wrap gap-2">
+      <!-- 상태 어휘는 유형이 정한다 — 게이트가 `ExchangeStatusEnum::adminAssignableValues()`(신청·결제완료·철회 제외 11종)로 거르므로, 다른 유형의 값을 보내면 목록이 아니라 요청 전체가 422 가 된다. 유형마다 셀렉트를 따로 두어 어휘가 섞이지 않게 한다. -->
+      <select data-ref="cb_002_status_select_exchange" data-if="{{(query.type ?? 'exchange') === 'exchange'}}" name="bulkClaimStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkClaimStatus ?? ''}}" disabled="{{claims?.data?.abilities?.can_update_status !== true}}">
+        <options>
+          <option value="" disabled>$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder</option>
+          <option value="payment_pending">$t:sirsoft-ecommerce.enums.exchange_status.payment_pending</option>
+          <option value="approved">$t:sirsoft-ecommerce.enums.exchange_status.approved</option>
+          <option value="on_hold">$t:sirsoft-ecommerce.enums.exchange_status.on_hold</option>
+          <option value="rejected">$t:sirsoft-ecommerce.enums.exchange_status.rejected</option>
+          <option value="collection_ready">$t:sirsoft-ecommerce.enums.exchange_status.collection_ready</option>
+          <option value="collecting">$t:sirsoft-ecommerce.enums.exchange_status.collecting</option>
+          <option value="collected">$t:sirsoft-ecommerce.enums.exchange_status.collected</option>
+          <option value="redelivery_ready">$t:sirsoft-ecommerce.enums.exchange_status.redelivery_ready</option>
+          <option value="redelivering">$t:sirsoft-ecommerce.enums.exchange_status.redelivering</option>
+          <option value="redelivered">$t:sirsoft-ecommerce.enums.exchange_status.redelivered</option>
+          <option value="completed">$t:sirsoft-ecommerce.enums.exchange_status.completed</option>
+        </options>
+        <on type="change">
+          <set-state target="_local" bulkClaimStatus="{{$event.target.value}}"/>
+        </on>
+      </select>
+      <!-- 반품 탭의 상태 어휘 — 게이트가 받는 반품 관리자 지정 8종이며, 반품에는 재발송이 없어 교환 셀렉트에서 재발송 3단계가 빠진다. 신청·결제완료·철회는 각자 만드는 경로가 따로 있어 목록에서 고를 수 없다. -->
+      <select data-ref="cb_003_status_select_return" data-if="{{(query.type ?? 'exchange') === 'return'}}" name="bulkClaimStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkClaimStatus ?? ''}}" disabled="{{claims?.data?.abilities?.can_update_status !== true}}">
+        <options>
+          <option value="" disabled>$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder</option>
+          <option value="payment_pending">$t:sirsoft-ecommerce.enums.return_status.payment_pending</option>
+          <option value="approved">$t:sirsoft-ecommerce.enums.return_status.approved</option>
+          <option value="on_hold">$t:sirsoft-ecommerce.enums.return_status.on_hold</option>
+          <option value="rejected">$t:sirsoft-ecommerce.enums.return_status.rejected</option>
+          <option value="collection_ready">$t:sirsoft-ecommerce.enums.return_status.collection_ready</option>
+          <option value="collecting">$t:sirsoft-ecommerce.enums.return_status.collecting</option>
+          <option value="collected">$t:sirsoft-ecommerce.enums.return_status.collected</option>
+          <option value="completed">$t:sirsoft-ecommerce.enums.return_status.completed</option>
+        </options>
+        <on type="change">
+          <set-state target="_local" bulkClaimStatus="{{$event.target.value}}"/>
+        </on>
+      </select>
+      <!-- 환불의 관리자 지정 어휘는 승인·보류·반려 3종뿐이다 — `processing`(PG 요청 중)·`completed` 는 환불 실행이 옮기는 상태라 목록에서 지정할 수 없다. -->
+      <select data-ref="cb_004_status_select_refund" data-if="{{(query.type ?? 'exchange') === 'refund'}}" name="bulkClaimStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkClaimStatus ?? ''}}" disabled="{{claims?.data?.abilities?.can_update_status !== true}}">
+        <options>
+          <option value="" disabled>$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder</option>
+          <option value="approved">$t:sirsoft-ecommerce.enums.refund_status.approved</option>
+          <option value="on_hold">$t:sirsoft-ecommerce.enums.refund_status.on_hold</option>
+          <option value="rejected">$t:sirsoft-ecommerce.enums.refund_status.rejected</option>
+        </options>
+        <on type="change">
+          <set-state target="_local" bulkClaimStatus="{{$event.target.value}}"/>
+        </on>
+      </select>
+    </div>
+    <!-- 반려 사유 (#599 후속 운영 결정). 목록 일괄 반려도 사유가 정본이다 — 비워 보내면 구매자 화면의 반려 사유가 빈 칸으로 남는다. 고른 신청서 전부에 같은 사유가 들어간다. 반려를 고른 순간에만 연다(상세 두 칸과 같은 규칙). -->
+    <input data-ref="cb_006_reject_reason" data-if="{{(_local.bulkClaimStatus ?? '') === 'rejected'}}" type="text" name="bulkRejectReason" class="flex-1 min-w-[16rem] px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.transition.reject_reason_placeholder" value="{{_local.bulkRejectReason ?? ''}}">
+      <on type="change">
+        <set-state target="_local" bulkRejectReason="{{$event.target.value}}"/>
+      </on>
+    </input>
+    <div class="flex-1"/>
+    <button data-ref="cb_005_bulk_apply_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_local.selectedItems ?? []).length === 0 || claims?.data?.abilities?.can_update_status !== true}}">
+      <responsive on="portable" class="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">$t:sirsoft-ecommerce.admin.claim.bulk.apply_full</responsive>
+      <on type="click">
+        <!-- 완료 전이는 곧바로 실행하지 않고 완료 처리 모달을 연다 (D26) — 분기는 핸들러가 한다. 모달의 초기 선택값(`completeDefaults`)은 목록 응답이 나른다 — 설정 엔드포인트는 `settings.read` 게이트인데 이 화면은 `claims.read` 라, 설정 응답에서 읽으면 클레임 권한만 가진 운영자(기본 역할 manager)에게 403 이 되어 상점이 꺼 둔 기본값이 조용히 무시된다. -->
+        <action handler="sirsoft-ecommerce.buildClaimBulkConfirmData" claimType="{{query.type ?? 'exchange'}}" status="{{_local.bulkClaimStatus ?? ''}}" rejectReason="{{_local.bulkRejectReason ?? ''}}" ids="{{_local.selectedItems ?? []}}" rows="{{claims?.data?.data ?? []}}" completeDefaults="{{claims?.data?.complete_defaults ?? {} }}" carriers="{{claims?.data?.carriers ?? []}}"/>
+      </on>
+      $t:sirsoft-ecommerce.admin.claim.bulk.apply
+    </button>
+  </div>
+</partial>

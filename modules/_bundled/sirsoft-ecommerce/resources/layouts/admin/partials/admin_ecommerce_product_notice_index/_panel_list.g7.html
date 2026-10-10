@@ -1,0 +1,94 @@
+<!-- 공지 템플릿 화면 왼쪽 목록. 공통정보 목록과 같은 무한 스크롤 구조이고, 검색어는 URL 에 남는다.
+  **다른 점 하나** — 항목을 고를 때 편집 중인지 묻지 않는다. 공통정보 목록은 편집 중이면 이탈
+  확인 창을 열지만, 여기서는 곧바로 선택이 바뀐다(같은 이름의 이탈 확인 창이 이 화면에도 있으나
+  목록에서 열리지 않는다).
+  선택은 `replace-url` 로 주소에 남겨 새로고침·공유에는 살아 있되 뒤로가기 이력은 늘리지 않는다.
+  행의 노출 스위치는 클릭이 행 선택으로 번지지 않도록 전파를 끊는다. -->
+<partial description="Product Notice Template List Panel - Left Sidebar with Search">
+  <div data-ref="template_list_panel" class="admin-card col-span-1-lg flex flex-col">
+    <on event="mount">
+      <action handler="sirsoft-ecommerce.initNoticeFromUrl"/>
+    </on>
+    <div data-ref="template_list_header" class="px-4 panel-header">
+      <div class="flex-center gap-2">
+        <icon name="file-alt" class="text-gray-700 dark:text-gray-300" size="md"/>
+        <h3 class="text-heading">$t:sirsoft-ecommerce.admin.product_notice_template.list.title</h3>
+        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">{{templates?.data?.pagination?.total ?? templates?.data?.data?.length ?? 0}}</span>
+      </div>
+    </div>
+    <div data-ref="search_area" class="px-4 panel-header">
+      <search-bar data-type="composite" placeholder="$t:sirsoft-ecommerce.admin.product_notice_template.list.search_placeholder" value="{{query.search || ''}}" class="w-full">
+        <on type="submit">
+          <!-- 검색 — 조건을 URL 에 실어 다시 들어간다. 화면이 다시 뜨면서 무한 스크롤 상태도 처음으로 돌아간다. -->
+          <navigate path="/admin/ecommerce/product-notices" :mergeQuery="true">
+            <query search="{{$event.target.search.value}}"/>
+          </navigate>
+        </on>
+      </search-bar>
+    </div>
+    <div data-ref="template_list" data-if="{{(templates?.data?.data?.length ?? 0) > 0}}" class="p-2 max-h-[calc(90vh-140px)] overflow-y-auto">
+      <on type="scroll">
+        <!-- 무한 스크롤. 대기시간(200ms) 뒤에도 세 조건이 모두 참일 때만 요청한다 — 바닥 100px 안에
+          닿았고 · 더 받을 것이 남았고 · 지금 받는 중이 아님. 받은 쪽은 갈아끼우지 않고 뒤에 잇는다.
+          실패해도 '받는 중' 깃발은 반드시 푼다 — 안 풀면 조건이 영영 거짓이라 스크롤이 죽는다. -->
+        <sequence :debounce="200">
+          <switch on="{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 &amp;&amp; _global.infiniteScroll.hasMore &amp;&amp; !_global.infiniteScroll.isLoadingMore}}">
+            <case when="true">
+              <set-state target="global" :infiniteScroll.isLoadingMore="true"/>
+              <scroll-into-view selector="#loading_indicator" scrollContainer="#template_list" behavior="smooth" block="end" :waitForElement="true" :timeout="2000"/>
+              <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/product-notice-templates" method="GET">
+                <success>
+                  <append-data-source dataSourceId="templates" dataPath="data.data" newData="{{response.data.data}}"/>
+                  <set-state target="global" infiniteScroll.currentPage="{{_global.infiniteScroll.currentPage + 1}}" infiniteScroll.hasMore="{{response.data?.pagination?.has_more_pages ?? false}}" :infiniteScroll.isLoadingMore="false"/>
+                </success>
+                <fail>
+                  <set-state target="global" :infiniteScroll.isLoadingMore="false"/>
+                </fail>
+                <query page="{{_global.infiniteScroll.currentPage + 1}}" :per_page="20" search="{{query.search || ''}}"/>
+              </api-call>
+            </case>
+          </switch>
+        </sequence>
+      </on>
+      <div data-ref="template_list_items_{{templateIdx}}" data-each="template, templateIdx in {{templates?.data?.data ?? []}}">
+        <div data-ref="template_item_{{template.id}}" class="{{_global.selectedTemplateId === template.id ? 'admin-card-selected' : 'admin-card-clickable'}}">
+          <on type="click">
+            <!-- 항목 선택 — 목록이 들고 있는 행 전체를 전역에 옮기고 주소를 갈아끼운다. 편집 중인지는 묻지 않는다(공통정보 목록과 갈리는 자리). -->
+            <sequence>
+              <set-state target="global" selectedTemplateId="{{template.id}}" selectedTemplate="{{template}}" panelMode="view"/>
+              <!-- 선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어는 그대로 둔다 (#75). -->
+              <replace-url :mergeQuery="true">
+                <query id="{{template.id}}" mode="view"/>
+              </replace-url>
+            </sequence>
+          </on>
+          <div class="flex-between">
+            <span class="text-primary text-sm font-medium">{{$localized(template.name)}}</span>
+            <div class="flex-center gap-2">
+              <span class="text-secondary px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700">{{template.fields_count ?? 0}}</span>
+              <toggle data-type="composite" size="sm" checked="{{template.is_active}}" disabled="{{!template.abilities?.can_update}}">
+                <on type="change">
+                  <!-- 행의 노출 스위치. `stopPropagation` 이 없으면 이 클릭이 행 선택으로 번져, 스위치를 눌렀을 뿐인데 오른쪽 패널이 바뀐다. -->
+                  <api-call :stopPropagation="true" :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/product-notice-templates/{{template.id}}/toggle-active" method="PATCH">
+                    <success>
+                      <refetch-data-source dataSourceId="templates"/>
+                      <toast type="success" message="{{response.message}}"/>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
+                  </api-call>
+                </on>
+              </toggle>
+            </div>
+          </div>
+        </div>
+      </div>
+      <loading-spinner data-type="composite" data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:sirsoft-ecommerce.common.loading" color="text-blue-600 dark:text-blue-400" class="py-3"/>
+    </div>
+    <div data-ref="empty_template_state" data-if="{{(templates?.data?.data?.length ?? 0) === 0}}" class="flex-center flex-1 justify-center gap-3 px-4 py-8">
+      <icon name="file-alt" class="text-gray-400 dark:text-gray-500" size="md"/>
+      <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.product_notice_template.list.empty</p>
+    </div>
+  </div>
+</partial>

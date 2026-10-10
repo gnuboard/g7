@@ -1,0 +1,39 @@
+<layout name="admin_dashboard">
+  <permissions>
+    <permission>dashboard.read</permission>
+    <permission>reports.read</permission>
+  </permissions>
+
+  <computed name="total">{{a + b}}</computed>
+  <computed name="hasItems">{{items.length > 0}}</computed>
+
+  <defines>
+    <define name="statuses">["active", "inactive", "pending"]</define>
+  </defines>
+
+  <init-global><field name="dashboardReady" :value="false"/></init-global>
+
+  <init>
+    <set-state target="local" :isLoading="false"/>
+  </init>
+
+  <action name="refreshDashboard">
+    <refetch-data-source dataSourceId="stats"/>
+  </action>
+
+  <error-handling>
+    <on-code code="403"><show-error-page target="content"/></on-code>
+    <default><toast message="{{error.message}}" type="error"/></default>
+  </error-handling>
+
+  <global-headers>
+    <match pattern="*" X-Dashboard="{{_global.dashboardKey}}"/>
+  </global-headers>
+
+  <transition-overlay style="spinner" target="content_area">
+    <wait-for>stats</wait-for>
+    <spinner component="PageLoading"/>
+  </transition-overlay>
+
+  <script src="//t1.daumcdn.net/mapjsapi/js/main.js" id="daum-map" label="$t:core.assets.layout_script" :async="true"/>
+</layout>

@@ -1,0 +1,66 @@
+feature: guest_order_token_tamper
+
+description: |
+  비회원 조회 토큰의 **만료시각 파트를 고쳐도 통하지 않는가** (#599 계획서 1011 · 2-C ⑤)
+
+  토큰 형식은 `{expiresTs}|{HMAC-SHA256}` 2-파트이고 **만료시각이 평문으로 노출된다**
+  (`GuestOrderAuthService` 독블록 — 주문번호·주문ID·비밀번호 해시는 HMAC 입력으로만
+  쓰여 평문에 없다). 그래서 토큰을 손에 넣은 사람이 가장 먼저 해 볼 일이 정해져 있다:
+
+    서명은 그대로 두고 **앞의 숫자만 늘려 본다.**
+
+  그것이 통하면 30분짜리 조회 토큰이 **영구 토큰**이 된다 — 공유 PC, 유출된 링크,
+  어깨너머로 본 주소에서 남의 주문을 계속 들여다볼 수 있다. 세션 탈취 계열이다.
+
+  방어의 근거는 HMAC 입력에 `expiresTs` 가 **포함**된다는 점이다 — 만료시각도 서명 대상의
+  일부라, 그 숫자를 고치는 순간 서명이 어긋난다. 누군가 HMAC 입력에서 만료시각을 빼면
+  이 계약이 조용히 깨지므로 잠근다.
+
+  **형제 테스트가 덮지 못하는 자리다**:
+
+    - `test_verify_token_fails_when_forged`   서명 자체가 가짜(`aaa…`)다.
+                                              진짜 서명을 그대로 쓰는 이 공격과 다르다.
+    - `test_verify_token_fails_when_expired`  토큰을 고치지 않고 시간을 흘린다.
+                                              「시간이 지나면 막힌다」는 보지만
+                                              「만료를 고쳐 오면 막힌다」는 보지 않는다.
+
+  2026-09-16 브라우저 실측(주문 20260915-1222302405)에서 확인한 값:
+
+    정상 토큰                 → 200
+    만료 파트 1년 연장        → 404
+    만료 파트 과거화          → 404
+    토큰 헤더 없음            → 404
+    토큰 값 변조(뒤 4자)      → 404
+    다른 주문에 같은 토큰     → 404
+
+  거부가 모두 **404 "Order not found"** 인 것이 설계다 — 403 이면 「그 주문은 있다」를
+  알려 주는 셈이라, 주문번호 존재 여부까지 감춘다.
+
+  로컬(`sessionStorage` 3키)의 만료 폐기는 **편의**이지 방어선이 아니다. 서버가 토큰 안의
+  만료시각을 독립으로 판정하므로, 로컬을 지우지 않아도 만료된 토큰은 서버가 막는다.
+
+  **이 매니페스트가 파일 전체를 맡는다.** 이 파일에는 전화번호 정규화·인증·토큰 검증
+  세 갈래가 함께 살고 있었는데 소유 매니페스트가 없었다(감사 「테스트를 소유하는 시나리오
+  매니페스트가 없습니다」 1건). 만료 조작 축만 얹으면 나머지 18건이 계속 주인 없이
+  남으므로, 파일이 실제로 잠그는 축을 모두 적는다.
+
+  축은 **하나로 둔다.** 「전화번호 정규화」와 「만료 조작」을 각각 축으로 세우면 둘이
+  교차곱으로 엮여 `phone_normalization × expiry_tamper` 같은 뜻 없는 칸을 요구한다.
+  이 파일이 실제로 나누는 것은 **어느 관문을 재는가** 하나뿐이다.
+
+axes:
+  guest_auth_gate:
+    - phone_normalization  # 전화번호 표기 차이를 흡수해 본인 확인
+    - issue_and_verify     # 발급·검증 정상 경로와 재사용·위조·만료·형식 거부
+    - expiry_tamper        # 평문 만료시각 조작
+
+effects:
+  # 평문 만료시각을 늘려도 토큰 수명이 늘지 않는다 (HMAC 입력에 만료시각 포함)
+  - extending_the_plaintext_expiry_does_not_extend_the_token
+  # 토큰은 발급된 주문·비밀번호·유효시간 안에서만 통한다
+  - token_is_valid_only_for_its_own_order_password_and_lifetime
+  # 표기가 달라도 같은 번호면 본인으로 확인된다
+  - phone_numbers_compare_equal_regardless_of_formatting
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/GuestOrderAuthServiceTest.php

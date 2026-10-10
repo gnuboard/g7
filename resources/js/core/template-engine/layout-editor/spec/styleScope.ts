@@ -28,6 +28,7 @@ import type { EditorNode } from '../utils/layoutTreeUtils';
 import { clonePropsWithStyle } from './recipeEngine';
 import type { RecipeApply } from './recipeEngine';
 import type { PreviewDevice } from '../LayoutEditorContext';
+import { resolveDeviceWidth, DEFAULT_PREVIEW_CUSTOM_WIDTH } from './deviceList';
 
 /** 색 모드 — base = 라이트(공통), dark = 다크 variant */
 export type ColorScheme = 'base' | 'dark';
@@ -178,15 +179,16 @@ export function resolveBranchSeparationMode(
       curMin = range.min;
       curMax = range.max;
     } else {
-      // 파싱 불가 — 안전하게 현재 너비 단일폭으로 폴백.
-      const w = typeof customWidth === 'number' ? customWidth : responsiveManager.getWidth();
+      // 파싱 불가 — 폭이 오면 그 단일폭, 없으면 기기 키의 기본 폭으로 폴백한다.
+      // 창 폭으로 폴백하지 않는다 — 편집기 미리보기에서 창 폭은 미리보기 폭과 무관하다(#141).
+      const w = typeof customWidth === 'number' ? customWidth : resolveDeviceWidth(device);
       curKey = `${w}-${w}`;
       curMin = w;
       curMax = w;
     }
   } else {
-    // custom — 폭 기준. 키는 단일폭 범위 문자열.
-    const w = typeof customWidth === 'number' ? customWidth : responsiveManager.getWidth();
+    // custom — 폭 기준. 키는 단일폭 범위 문자열. 폭이 없으면 사용자 지정 기본 폭(창 폭 아님, #141).
+    const w = typeof customWidth === 'number' ? customWidth : DEFAULT_PREVIEW_CUSTOM_WIDTH;
     curMin = w;
     curMax = w;
     curKey = `${w}-${w}`;

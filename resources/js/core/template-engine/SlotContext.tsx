@@ -23,6 +23,7 @@
 import React, { createContext, useContext, useCallback, useRef, useMemo, useLayoutEffect } from 'react';
 import type { ComponentDefinition } from './DynamicRenderer';
 import type { FormContextValue } from './FormContext';
+import type { RenderEnvironment } from './helpers/RenderEnvironment';
 import { createLogger } from '../utils/Logger';
 
 const logger = createLogger('SlotContext');
@@ -63,6 +64,26 @@ export interface SlotRegistration {
 
   /** 컴포넌트 등록 시점의 고유 키 (중복 등록 방지용) */
   registrationKey: string;
+
+  /**
+   * 등록 렌더러의 렌더 환경 getter (호출 시점의 최신 값)
+   *
+   * SlotContainer 는 이 환경(레지스트리·엔진·dispatcher·편집 모드)으로 슬롯 내용을 그린다.
+   * 레이아웃 편집기 미리보기에서 호스트 값 대신 미리보기 값을 따르게 하는 통로다(#141).
+   *
+   * @since engine-v1.75.2
+   */
+  getRenderEnv?: () => RenderEnvironment | null;
+
+  /**
+   * 슬롯 노드의 원본 편집 경로 (레이아웃 편집기용)
+   *
+   * SlotContainer 가 DynamicRenderer 의 `componentPath` 로 넘겨, 편집 캔버스에서 슬롯 내용의
+   * 편집 마커(`data-editor-path`)가 원본 노드 경로를 가리키게 한다.
+   *
+   * @since engine-v1.75.2
+   */
+  componentPath?: string;
 }
 
 /**

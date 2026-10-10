@@ -171,7 +171,7 @@ G7은 레이아웃 JSON 보안을 위해 **10개의 Custom Validation Rule**을 
 **검증 방법**:
 1. 템플릿의 `components.json` 매니페스트 로드
 2. **3개 카테고리**: `basic`, `composite`, `layout` 컴포넌트를 Set으로 구축
-3. 레이아웃 JSON의 모든 `name` 필드를 매니페스트와 대조
+3. 레이아웃 JSON의 모든 `name` 필드를 매니페스트와 대조 — 단 확장 컴포넌트(`확장식별자.이름`, 점 포함)는 템플릿 목록 대조에서 뺀다. 그 컴포넌트는 확장이 제공하고, 편집기 컴파일 검사가 설치된 확장 선언까지 합쳐 판정한다(목록에 없으면 경고, 저장 허용 — 2026-09-28 결정)
 4. 재귀적으로 `children` 배열 검증
 
 **캐싱 전략**:
@@ -225,6 +225,15 @@ G7은 레이아웃 JSON 보안을 위해 **10개의 Custom Validation Rule**을 
 
 **추가 차단**: `//`로 시작하는 프로토콜 상대 URL
 
+**안내 문구·링크 예외**: 컴포넌트 prop 객체의 입력창 안내 문구(`placeholder`)·링크(`href`) 글자 값과, 액션(`handler` 보유 객체)의
+요청 본문(`params.body`) 아래 값은 `http://`·`https://` 웹 주소를 허용합니다. 안내 문구는 글자로만 그려지고, 링크는 사용자가 눌러야
+이동하며, 요청 본문 값은 요청 대상이 아니라 데이터이기 때문입니다. 번들 관리자 화면(모듈·플러그인·템플릿·언어팩
+목록, 환경설정)이 이런 값을 담고 있어, 이 예외가 없으면 편집기로 열어 그대로 저장해도 422 가 납니다. 이 자리라도
+실행 스킴(`javascript:` 등)·프로토콜 상대 URL·`ftp:` 는 차단하고, 자원을 불러오는 prop(`src` 등)과 액션의
+이동·요청 대상(`target`·`params.path`·`params.url`)은 종전대로 외부 URL 을 차단합니다. 허용은 키 이름이 아니라 자리로
+판정합니다 — 액션의 `params.href`·prop 이름이 `params` 인 객체의 `body` 는 허용되지 않습니다. 확장 조각이 끼워 넣는
+컴포넌트(`injections[].components`)와 대상 prop 덧씌우기(`injections[].props`)도 화면 컴포넌트와 같은 규칙을 받습니다.
+
 **외부의 기준**: 사이트 자기 host(`app.url`)와 운영자가 「공개 자산 스토리지」로 선언한 디스크의 host 는
 외부가 아닙니다. 레이아웃 첨부 API 가 스스로 발급하는 주소(공개 서빙 URL·직접 URL)가 그 host 를
 쓰므로, 여기서 차단하면 image 위젯으로 올린 파일이 업로드는 되고 저장은 422 가 됩니다. 판정은
@@ -236,6 +245,18 @@ G7은 레이아웃 JSON 보안을 위해 **10개의 Custom Validation Rule**을 
 **검증 범위**: `components[]` → `props`, `actions`, `lifecycle`, `onComponentEvent`, `slots`, `component_layout`,
 `responsive` 와 최상위 `init_actions`/`modals`/`named_actions`/`errorHandling` 내 모든 문자열 값을 재귀적으로 스캔.
 `style` 은 스캔 대상이 아닙니다 — 배경 이미지(`backgroundImage`)가 절대 URL 이어도 통과하는 이유입니다.
+
+**실행 스킴은 트리 전체**: `javascript:`·`vbscript:`·`data:`·`file:` 은 위 범위와 별개로 레이아웃 JSON **모든 키**
+(최상위 `slots`·`children`·`computed`·`state`·`data_sources` 포함)에서 차단합니다. 값이 나중에 어느 자리로 흘러가도
+곧 스크립트 실행이라 정당한 용례가 없기 때문입니다. `{{ ... }}` 표현식 안의 문자열 리터럴(`{{ ok ? '/x' : 'javascript:…' }}`)도
+검사 대상이며, 스킴 비교는 브라우저와 같이 선행 제어문자·tab·개행을 제거한 뒤 합니다(`java\tscript:` 도 차단).
+반면 `http(s)://` 외부 주소는 위 sink 범위에서만 막습니다 — 데이터 계층·안내 문구의 정상 외부 링크(문서 링크·입력 예시)를
+깨지 않기 위해서입니다. 단 **액션의 이동·요청 대상**(`target`·`params.path`·`params.url`)은 액션이 트리 어디에 있든
+(최상위 `slots`·확장 `injections`·`itemTemplate` 포함) 실행되는 sink 이므로 위치와 무관하게 외부 주소·`//host` 를 차단합니다.
+표현식으로 조립한 대상은 정적 검사로 다 잡을 수 없으므로, 인증 토큰 유출은 엔진이 막습니다 — `apiCall` 은
+`Authorization`·`X-XSRF-TOKEN` 을 동일 출처 대상에만 싣습니다(데이터 소스의 ApiClient 와 같은 원칙).
+교차 출처 응답의 428(본인인증 요구)·401(토큰 갱신)은 따르지 않으며, 번들 템플릿이 직접 요청하는 컴포넌트·본인인증 시작도
+`G7Core.api.isSameOriginUrl` 로 동일 출처 대상에만 토큰을 싣습니다.
 
 ### 5. ValidParentLayout
 
@@ -334,7 +355,7 @@ G7은 레이아웃 CRUD 작업별로 **7개 FormRequest**를 운용합니다. �
 | **UpdateLayoutContentRequest** | 콘텐츠만 수정 | ✅ | | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **StoreLayoutInheritanceRequest** | 상속 레이아웃 생성 | | | | | ✅ | ✅ | ✅ | |
 | **UpdateLayoutInheritanceRequest** | 상속 레이아웃 수정 | | | | | ✅ | ✅ | ✅ | |
-| **StoreLayoutPreviewRequest** | 미리보기 | | | | | | | | |
+| **StoreLayoutPreviewRequest** | 미리보기 | | | | ✅ | | | | |
 | **GetLayoutRequest** | 레이아웃 조회 | | | | | | | | |
 
 **범례**: VLS=ValidLayoutStructure, CE=ComponentExists, WE=WhitelistedEndpoint, NEU=NoExternalUrls, VPL=ValidParentLayout, VSS=ValidSlotStructure, VDM=ValidDataSourceMerge, VPS=ValidPermissionStructure
@@ -345,6 +366,11 @@ G7은 레이아웃 CRUD 작업별로 **7개 FormRequest**를 운용합니다. �
 - **StoreLayoutRequest / UpdateLayoutRequest**: 기본 4개 Rule (구조, 컴포넌트, 엔드포인트, URL)
 - **UpdateLayoutContentRequest**: 가장 엄격 — 상속 관련 4개 Rule 추가 (총 8개)
 - **StoreLayoutInheritanceRequest / UpdateLayoutInheritanceRequest**: 상속 전용 3개 Rule
+- **미리보기·마크업 변환도 저장과 같은 보안 게이트**: 미리보기는 content 를 저장해 미리보기 주소로 렌더하므로
+  `NoExternalUrls`·`SafeLayoutExpressions` 를 저장 경로와 똑같이 거칩니다(확장 조각 미리보기 포함). 코드 편집기의
+  마크업 변환(`markup-compile`)은 저장하지 않지만 그 결과가 미리보기·저장에 그대로 쓰이므로 컴파일 산출물에 같은
+  두 규칙을 적용해 422 로 알립니다. 한 경로만 빠져도 그 경로가 우회로가 됩니다.
+- 강화 이전에 저장된 레이아웃은 `php artisan layout:audit-expressions` 로 다시 훑어 위반 위치를 확인합니다(보고 전용).
 - **StoreLayoutPreviewRequest**: 최소 검증 (`content: required, array`)
 - **GetLayoutRequest**: 조회 전용 (보안 Rule 없음)
 
@@ -477,7 +503,7 @@ HookManager::addFilter(
 ```
 
 > 참고: Filter 훅이므로 리스너에서 `type: 'filter'` 명시 필수 (미지정 시 반환값 무시)
-> 상세: [훅 시스템](../extension/hooks.md)
+> 상세: [훅 시스템](extension/hooks.md)
 
 ---
 
@@ -512,6 +538,7 @@ HookManager::addFilter(
 
 악의적 사용자가 여러 공격 기법을 조합하더라도, 각 계층에서 독립적으로 검증하므로 하나의 공격이 통과하더라도 다음 계층에서 차단됩니다.
 
+<!-- pair:skip 차단되어야 하는 공격 입력의 예시 — 소스로 승격하면 막히는 형태를 정본으로 가르치게 된다 -->
 ```json
 {
   "version": "1.0.0",

@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Enums\CashReceiptIdentifierType;
 use Modules\Sirsoft\Ecommerce\Enums\CashReceiptType;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Rules\CashReceiptIdentifier;
+use Modules\Sirsoft\Ecommerce\Services\CheckoutPaymentMethodFilter;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 
 /**
@@ -50,7 +51,9 @@ class CreateOrderRequest extends FormRequest
             // 국내 배송 주소 (국내인 경우 필수)
             'shipping.zipcode' => 'required_without:shipping.intl_postal_code|nullable|string|max:10',
             'shipping.address' => 'required_without:shipping.address_line_1|nullable|string|max:255',
-            'shipping.address_detail' => 'required|string|max:255',
+            // 상세주소는 국내 폼에만 있다 — 해외 폼은 주소 1·2행으로 대신하고 배송국가를 바꾸면 이 값이 비워지므로
+            // 기본 주소(address)와 같은 짝(해외 주소 1행이 없을 때만 필수)으로 판정한다.
+            'shipping.address_detail' => 'required_without:shipping.address_line_1|nullable|string|max:255',
             'shipping.address_type_code' => 'nullable|string|in:R,J',
 
             // 해외 배송 주소 (해외인 경우 필수)
@@ -78,6 +81,44 @@ class CreateOrderRequest extends FormRequest
                         $fail(__('sirsoft-ecommerce::validation.order.payment_method_unavailable'));
                     }
                 },
+                // 고객이 직접 고를 수 없는 수단 차단 (P10 — `point`/`deposit`/`free`).
+                //
+                // 코어에는 이 수단들의 **결제 실행 경로가 없다**. 실결제액이 0보다 큰 주문에
+                // 고르면 주문은 `PENDING_ORDER` 에 영구 정박한다 — 결제도 취소도 되지 않는
+                // 주문이 남고, 어떤 화면에도 그 이유가 뜨지 않는다. 화이트리스트
+                // (`allValidIds`)는 조이지 않는다: 과거 주문 목록 필터가 같은 목록을 쓰므로
+                // 조이면 예전 수단으로 결제한 주문을 조회할 수 없다.
+                //
+                // `free` 만 예외다 — **결제할 것이 없는 0원 주문**은 시스템이 이 수단을 고르고
+                // 그 경로는 정상 동작한다. 그래서 금액이 0 인 요청에서만 통과시킨다.
+                function (string $attribute, mixed $value, callable $fail) {
+                    if (! is_string($value) || app(PaymentMethodResolver::class)->isCustomerSelectable($value)) {
+                        return;
+                    }
+
+                    $isFreeZeroAmountOrder = $value === PaymentMethodEnum::FREE->value
+                        && (float) $this->input('expected_total_amount', 0) <= 0.0;
+
+                    if ($isFreeZeroAmountOrder) {
+                        return;
+                    }
+
+                    $fail(__('sirsoft-ecommerce::validation.order.payment_method_not_selectable'));
+                },
+                // 결제 통화에서 고를 수 없는 수단 차단 (#639 D17). 주문서 표시가 쓰는 판정
+                // (CheckoutPaymentMethodFilter, 체크아웃 응답 `allowed_payment_methods`)과 같다 — 표시만 거르면
+                // 직접 POST 로 우회된다. 통화는 주문 생성과 같은 규칙(회원 영속 통화 → X-Currency → 기본 통화)으로 구한다.
+                function (string $attribute, mixed $value, callable $fail) {
+                    if (! is_string($value)) {
+                        return;
+                    }
+
+                    $filter = app(CheckoutPaymentMethodFilter::class);
+                    $currency = $filter->currentCurrency();
+                    if (! $filter->isAllowed($value, $currency)) {
+                        $fail(__('sirsoft-ecommerce::validation.order.payment_method_not_allowed_for_currency', ['currency' => $currency]));
+                    }
+                },
             ],
             'expected_total_amount' => 'required|numeric|min:0',
 
@@ -95,6 +136,9 @@ class CreateOrderRequest extends FormRequest
 
             // 배송지 저장
             'save_shipping_address' => 'nullable|boolean',
+            // 주문서에서 고른 배송지를 «그 자리에서 고쳤을 때» 그 행을 갱신한다. 소유권은
+            // 컨트롤러가 확인한다 — 여기서는 형식만 본다(남의 행 ID 를 실어도 갱신되지 않는다).
+            'save_shipping_address_id' => 'nullable|integer|min:1',
 
             // 현금영수증 신청 (무통장입금 전용 — 신청 시에만 하위 3키 필수)
             'cash_receipt_requested' => 'nullable|boolean',
@@ -141,6 +185,7 @@ class CreateOrderRequest extends FormRequest
      * 따라서 "전부 비었거나 전부 채워졌거나" 둘 중 하나만 허용합니다.
      *
      * @param  Validator  $validator  검증기
+     * @return void 반환값 없음
      */
     public function withValidator(Validator $validator): void
     {
@@ -237,7 +282,7 @@ class CreateOrderRequest extends FormRequest
             'shipping.recipient_tel.required_without' => __('sirsoft-ecommerce::validation.order.recipient_tel_required_without'),
             'shipping.zipcode.required_without' => __('sirsoft-ecommerce::validation.order.zipcode_required'),
             'shipping.address.required_without' => __('sirsoft-ecommerce::validation.order.address_required'),
-            'shipping.address_detail.required' => __('sirsoft-ecommerce::validation.order.address_detail_required'),
+            'shipping.address_detail.required_without' => __('sirsoft-ecommerce::validation.order.address_detail_required'),
             'shipping.address_line_1.required_without' => __('sirsoft-ecommerce::validation.order.address_line_1_required'),
             'shipping.intl_city.required_with' => __('sirsoft-ecommerce::validation.order.intl_city_required'),
             'shipping.intl_postal_code.required_with' => __('sirsoft-ecommerce::validation.order.intl_postal_code_required'),
@@ -266,6 +311,18 @@ class CreateOrderRequest extends FormRequest
             'guest_lookup_password.min' => __('sirsoft-ecommerce::validation.order.guest_lookup_password_min'),
             'guest_lookup_password.confirmed' => __('sirsoft-ecommerce::validation.order.guest_lookup_password_confirmed'),
             'guest_lookup_password_confirmation.required' => __('sirsoft-ecommerce::validation.order.guest_lookup_password_confirmation_required'),
+        ];
+    }
+
+    /**
+     * 검증 오류 문구에 쓰는 필드 표시명
+     *
+     * @return array<string, string> 필드 키 → 표시명
+     */
+    public function attributes(): array
+    {
+        return [
+            'save_shipping_address_id' => __('sirsoft-ecommerce::validation.request_attributes.save_shipping_address'),
         ];
     }
 

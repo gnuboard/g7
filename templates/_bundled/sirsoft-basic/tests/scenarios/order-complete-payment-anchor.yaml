@@ -1,0 +1,22 @@
+feature: 주문 완료 화면 결제 금액 요약의 결제 플러그인 확장 자리 (#639)
+
+description: |
+  결제 플러그인(KG이니시스·NHN KCP·나이스페이먼츠)의 주문 완료 조각은 템플릿이 단 id
+  `order_complete_payment_summary` 에 붙어 간편결제 이름과 영수증·매출전표 보기를 그린다.
+  이 화면에 그 id 가 없어서 NHN KCP·나이스페이먼츠 조각은 한 번도 그려지지 않았고, 주소 글자로
+  화면을 찾던 주입 스크립트를 없앤 뒤로는 영수증 표시가 사라졌다. 조각은 오류도 경고도 남기지 않으므로
+  자리 id 와 그 자리를 쓰는 조각의 붙는 방식을 잠근다.
+
+axes:
+  surface:
+    - template_anchor
+    - plugin_fragments
+    - route_path
+
+effects:
+  - payment_summary_anchor_present        # 결제 금액 요약 Div 에 order_complete_payment_summary id 가 있다
+  - plugin_fragments_append_to_anchor     # 이 id 를 쓰는 플러그인 조각은 모두 shop/order_complete 에 append_child 로 붙는다
+  - plugin_fragments_render_under_any_shop_path # 쇼핑몰 경로를 바꿔도 주문 완료 라우트가 같은 레이아웃을 써 조각이 붙는다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/orderCompletePaymentSummaryAnchor.test.ts

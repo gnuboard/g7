@@ -1,0 +1,105 @@
+feature: 게시판 권한(ACL)·담당자 지정의 권한 부여 상한 (KVE-2026-2367 + 형제)
+
+description: |
+  게시판 권한에 역할을 붙이거나 게시판 관리자·스텝 역할에 회원을 넣는 것은 그 권한을 주는
+  조작이라, 코어 역할 편집·회원 역할 배정과 같은 상한(PermissionEscalationGuard)을 받는다.
+  상한 검사가 없어 게시판 수정 권한만 가진 위임 관리자가 자기 역할을 admin.manage·비밀글 열람에
+  붙이거나(ACL) 자기를 담당자로 넣어(명단) 타인 글을 블라인드할 수 있었다.
+
+  - ACL: 게시판 수정(PUT)·게시판 생성(POST)·환경설정 일괄 적용(저장된 기본 권한)이 모두 같은
+    판정을 받는다 — 역할이 바뀌는 권한마다 액터가 그 권한을 전체 범위로 가져야 한다. 게시판을 새로
+    만들 때 설정 기본값이 정한 역할(기본 ACL)은 시스템 기준이라 검사하지 않고, 그 위에 얹는
+    역할만 기본 ACL 이 붙은 뒤의 액터 권한으로 판정한다.
+  - 명단: board_manager_ids·board_step_ids 가 바뀌면 회원 역할 배정 상한을 받는다. 게시판 생성
+    시 최초 담당자 지정도 같다 — 단 새로 만드는 게시판에 **생성자 본인 한 명만** 관리자로 두는 것은
+    허용한다(기존 게시판에 대한 상승이 아니다, 7.1.0 실측 K4F-2·PO 결정 2026-10-08). 다른 회원을 함께
+    넣거나 스텝을 지정하면 그대로 상한을 받는다. 그래서 게시판 생성·복사 폼은 새 게시판의 기본 ACL 을
+    받지 못하는 액터에게 본인 한 명만 관리자로 채우고 스텝은 비우며 `_meta.can_assign_board_members=false`
+    로 다른 담당자는 지정할 수 없음을 알린다(화면은 안내 문구를 보이고 명단 칸을 잠근다). 기본 ACL 을 받는
+    관리자·슈퍼관리자에게는 종전처럼 본인을 미리 채우고 칸을 열어 둔다.
+  - 신고 관리 권한의 역할 재할당(환경설정 저장)도 같은 상한을 받고, 설정 파일을 쓰기 전에 거부한다.
+  - 환경설정의 게시판 기본 권한(새 게시판에 붙는 역할 목록)도 바뀌는 키마다 액터가 기존 모든
+    게시판에서 그 권한을 가져야 저장된다 — 게시판 생성 시 기본 권한을 검사하지 않는 대신 여기서 막는다.
+  - 거부는 원자적이다 — 같은 요청의 이름 변경·앞선 키의 매핑·새 게시판 행이 남지 않는다.
+  - 변경이 없는 재전송(관리자 폼의 평소 저장)·보유 권한의 부여·슈퍼관리자는 그대로 된다.
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardPermissionEscalationTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardManagerSelfAssignTest.php
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/admin/board-acl-escalation-ceiling.spec.ts
+
+axes:
+  case:
+    - update_self_grant_blocked
+    - update_without_acl_change_allowed
+    - update_holder_grant_allowed
+    - update_super_admin_allowed
+    - create_extra_grant_blocked
+    - create_extra_grant_by_default_acl_holder_allowed
+    - create_without_default_settings_board_roles_allowed
+    - bulk_apply_self_grant_blocked
+    - bulk_apply_super_admin_allowed
+    - report_permission_self_grant_blocked
+    - report_permission_unchanged_or_super_allowed
+    - default_permissions_self_grant_blocked
+    - default_permissions_unchanged_or_holder_allowed
+    - update_manager_self_assign_blocked
+    - update_manager_other_assign_blocked
+    - update_step_self_assign_blocked
+    - update_unchanged_members_allowed
+    - existing_manager_assigns_allowed
+    - super_admin_assigns_allowed
+    - create_manager_self_assign_blocked
+    - create_manager_by_default_acl_holder_allowed
+    - create_manager_self_only_allowed
+    - create_form_prefill_skipped_for_non_holder
+    - copy_form_prefill_skipped_for_non_holder
+    - create_form_prefill_kept_for_holder
+    # E2E — 실서버에서 같은 차단·허용
+    - e2e_board_acl_self_grant_blocked
+    - e2e_board_manager_self_assign_blocked
+    - e2e_board_super_admin_allowed
+    - e2e_default_permissions_self_grant_blocked
+    - e2e_bulk_apply_rejection_keeps_modal
+
+effects:
+  # 차단 축
+  - update_acl_self_grant_rejected
+  - create_acl_self_grant_rejected
+  - bulk_apply_acl_self_grant_rejected
+  - report_permission_self_grant_rejected
+  - default_permissions_self_grant_rejected
+  - manager_self_assign_rejected
+  - manager_other_assign_rejected
+  - step_self_assign_rejected
+  - create_manager_self_assign_rejected
+  # 저장할 수 없는 값을 폼이 미리 채우지 않는다 (7.1.0 전수 실측 O-K4-3) — 위임 관리자에게는 본인 한 명만 (K4F-2)
+  - create_form_does_not_prefill_unassignable_manager
+  - copy_form_does_not_prefill_unassignable_members
+  # 거부의 원자성 — 403 만 단언하면 부분 저장(이름 변경·반쪽 게시판)을 놓친다.
+  - rejected_update_leaves_no_partial_state
+  - rejected_create_leaves_no_board
+  - rejected_assignment_leaves_no_partial_state
+  # 과차단 회귀 축
+  - unchanged_acl_resubmission_allowed
+  - holder_can_grant_held_board_permission
+  - default_acl_holder_can_add_roles_on_create
+  - board_own_roles_attach_without_default_settings
+  - unchanged_member_resubmission_allowed
+  - existing_board_manager_can_assign_members
+  - default_acl_holder_can_name_manager_on_create
+  # 새 게시판에 생성자 본인 한 명만 관리자로 두는 것은 허용 (K4F-2, 결정 2026-10-08)
+  - create_board_creator_self_manager_allowed
+  - report_permission_unchanged_or_super_admin_allowed
+  - default_permissions_unchanged_or_holder_allowed
+  - create_form_prefills_self_for_assignable_actor
+  # 무회귀
+  - super_admin_edits_board_acl_freely
+  - super_admin_bulk_apply_acl_applies
+  - super_admin_assigns_members_freely
+  # E2E
+  - e2e_delegate_acl_grant_rejected_and_unchanged
+  - e2e_delegate_self_assign_rejected_and_unchanged
+  - e2e_super_admin_acl_grant_applies
+  - e2e_delegate_default_permissions_grant_rejected_and_unchanged
+  - e2e_bulk_apply_rejection_shows_reason_and_keeps_targets

@@ -1,0 +1,38 @@
+feature: 취소된 주문에는 미수금이 남지 않는다
+
+description: |
+  `total_due_amount` 는 「아직 받아야 할 돈」이다. 주문 생성 시 결제예정금액으로 채워지고,
+  결제가 성사되면 `OrderProcessingService::completePayment()` 가 0 으로 내린다.
+
+  그런데 **그 0 으로 내리는 곳이 거기 하나뿐이다.** 결제 전에 취소된 주문은 그 경로를
+  지나지 않는다 — 무통장 미입금 주문을 취소하면 돌려줄 돈이 없어 환불신청서조차 만들어지지
+  않고(RF 0건) 취소신청서만 생기므로, 금액 재계산 경로도 타지 않는다.
+
+  결과는 조용하다. 주문 상태는 `cancelled`, 결제행도 `cancelled`, 수납액은 0 인데
+  **미수금만 결제예정금액 그대로 남는다.** 어디에도 오류가 뜨지 않지만 장부는 계속
+  「이 취소된 주문에서 받을 돈이 있다」고 말한다.
+
+  실측(#599 통합실측 세션1 · 주문 20260915-1506049952): 무통장 상품 5,000 + 배송비 5,000 =
+  `total_due_amount 10,000` 으로 생성 → 미입금 상태에서 취소 → `order_status=cancelled` ·
+  `payment_status=cancelled` · `paid_amount_local=0` 인데 **`total_due_amount=10,000` 유지**.
+  같은 DB 의 다른 취소 주문 9건은 전부 `due=0` 이었다 — 그 9건은 모두 결제를 거쳤기 때문이다.
+  즉 데이터가 갈리는 축은 취소 여부가 아니라 **결제를 거쳤는가**였다.
+
+  그리고 `CANCELLED` 로 가는 길은 **둘**이다 — 전체취소 확정(`OrderCancellationService`)과,
+  부분취소가 누적되어 잔여 활성 옵션이 0 이 되는 경우(`syncParentOrderStatus` →
+  `transitionOrderStatus`). 한 입구만 닫으면 다른 입구로 들어올 때 또 미수금이 남는다.
+
+  계약: 전체취소로 확정되는 순간 미수금은 0 이다. 판정은 `order_status` 를 `CANCELLED` 로
+  확정하는 바로 그 자리에서 함께 한다 — 결제 경로를 거쳤는지와 무관하게 성립해야 하기 때문이다.
+
+axes:
+  payment_state:
+    - unpaid                      # 결제 전 전체취소 (미수금이 남던 경로)
+    - unpaid_partial_accumulated  # 부분취소 누적으로 잔여 0 → CANCELLED (다른 입구)
+    - paid                        # 결제 후 취소 (이미 0 이던 대조군 — 과잉 변경 방지)
+
+effects:
+  - cancelled_order_has_no_outstanding_due   # 전체취소 확정 시 미수금 0 · 결제 후 취소도 0 유지
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/CancelledOrderDueAmountTest.php

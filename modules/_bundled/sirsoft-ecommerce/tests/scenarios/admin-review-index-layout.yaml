@@ -1,0 +1,26 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   축은 이 화면의 영역 목록이고 조합마다 다른 동작이 갈리는 분기가 아니다 — 영역별 테스트가 각 효과를 잰다.
+
+feature: 관리자 리뷰 관리 목록 레이아웃 (admin_ecommerce_product_review_index)
+
+description: |
+  리뷰 관리 목록 화면의 레이아웃 계약을 고정한다. 이 레이아웃 테스트는 매니페스트 없이 존재했고,
+  2026-09-28 기존 레이아웃 위반 정리(DataGrid 가 읽지 않는 `loading` prop 을 엔진의 첫 로딩 블러
+  `blur_until_loaded` 로 옮김)에서 테스트가 바뀌며 함께 등재한다.
+
+axes:
+  area: [bulk, datasource, filter, grid, header, i18n, pagination, permission, state]
+
+effects:
+  - review_admin_list_bulk_action_targets_selected_reviews
+  - review_admin_list_datasource_reads_every_filter_param
+  - review_admin_list_filter_controls_bind_to_query_params
+  - review_admin_list_grid_binds_reviews_and_blurs_until_first_load
+  - review_admin_list_header_renders_title_and_description
+  - review_admin_list_pagination_follows_response_meta
+  - review_admin_list_requires_read_permission_and_extends_admin_base
+  - review_admin_list_selection_state_starts_empty
+  - review_admin_list_translation_keys_exist_in_module_lang
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceProductReviewIndex.test.tsx

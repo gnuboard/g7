@@ -7,7 +7,7 @@ use App\Extension\HookManager;
 /**
  * 코어 시더 보일러플레이트 추상화 — config/core.php SSoT 직독 + lang pack 필터 발화.
  *
- * `NotificationDefinitionSeeder`, `IdentityMessageDefinitionSeeder`, `IdentityPolicySeeder` 등
+ * `NotificationDefinitionSeeder`, `IdentityPolicySeeder` 등
  * config 의 i18n SSoT 블록을 DB 로 동기화하는 시더가 공통으로 사용하는 패턴을 단일 진입점으로 흡수.
  *
  * 사용 예:

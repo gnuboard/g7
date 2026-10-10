@@ -27,23 +27,23 @@ class AdminRoutePermissionTest extends PluginTestCase
     /**
      * 라우트 선언에 세부권한 미들웨어가 부착되어 있는지 확인합니다.
      *
-     * @return void
+     * 1.1.0 에서 제거한 간편결제 표시 맵 경로가 다시 등록되지 않았는지도 함께 확인합니다.
+     *
+     * @effects admin_routes_declare_ecommerce_permission_middleware, removed_easy_pay_display_map_route_is_not_registered
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_routes_declare_ecommerce_permission_middleware(): void
     {
         $expected = [
             'api.plugins.sirsoft-pay_nhnkcp.admin.orders.test-mode-map' => 'permission:admin,sirsoft-ecommerce.orders.read',
-            'api.plugins.sirsoft-pay_nhnkcp.admin.orders.easy-pay-display-map' => 'permission:admin,sirsoft-ecommerce.orders.read',
             'api.plugins.sirsoft-pay_nhnkcp.admin.orders.transaction-status' => 'permission:admin,sirsoft-ecommerce.orders.read',
             'api.plugins.sirsoft-pay_nhnkcp.admin.orders.escrow-delivery.form' => 'permission:admin,sirsoft-ecommerce.orders.read',
             'api.plugins.sirsoft-pay_nhnkcp.admin.orders.escrow-delivery.register' => 'permission:admin,sirsoft-ecommerce.orders.update',
             'api.plugins.sirsoft-pay_nhnkcp.admin.vbank.notify.url' => 'permission:admin,sirsoft-ecommerce.settings.read',
-            'api.plugins.sirsoft-pay_nhnkcp.admin.health' => 'permission:admin,sirsoft-ecommerce.settings.read',
+            // 시스템 점검은 플러그인 설정 화면 카드라 화면 권한(core.plugins.update)으로도 읽는다(OR, 7.1.0 abilities 게이트 N4)
+            'api.plugins.sirsoft-pay_nhnkcp.admin.health' => 'permission:admin,sirsoft-ecommerce.settings.read|core.plugins.update,false',
         ];
-
-        // 이름 조회표는 앱 부팅 시점에 한 번 갱신된다. 테스트는 부팅 이후(setUp)에 라우트를
-        // 등록하므로 그 표에 반영되지 않는다 — 조회 전에 명시적으로 다시 만든다.
-        Route::getRoutes()->refreshNameLookups();
 
         foreach ($expected as $routeName => $permissionMiddleware) {
             $route = Route::getRoutes()->getByName($routeName);
@@ -54,12 +54,22 @@ class AdminRoutePermissionTest extends PluginTestCase
                 "Route [{$routeName}] should require [{$permissionMiddleware}]."
             );
         }
+
+        // 주문 목록 결제수단 이름은 이커머스 응답이 싣는다 — 별도 표시 맵 경로는 제거됐다.
+        $this->assertNull(
+            Route::getRoutes()->getByName('api.plugins.sirsoft-pay_nhnkcp.admin.orders.easy-pay-display-map'),
+            '제거한 간편결제 표시 맵 경로가 다시 등록되면 안 된다.'
+        );
     }
 
     /**
      * 업무 권한이 없는 관리자는 주문 관련 전 경로에서 403 을 받아야 합니다.
      *
-     * @return void
+     * @scenario permission=none
+     *
+     * @effects admin_without_business_permission_is_denied_on_order_routes
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_without_business_permission_is_denied_on_every_order_route(): void
     {
@@ -68,7 +78,6 @@ class AdminRoutePermissionTest extends PluginTestCase
         $base = '/api/plugins/sirsoft-pay_nhnkcp/admin';
 
         $this->actingAs($admin)->getJson($base.'/orders/test-mode-map')->assertForbidden();
-        $this->actingAs($admin)->getJson($base.'/orders/easy-pay-display-map')->assertForbidden();
         $this->actingAs($admin)->getJson($base."/orders/{$order->order_number}/transaction-status")->assertForbidden();
         $this->actingAs($admin)->getJson($base."/orders/{$order->order_number}/escrow-delivery")->assertForbidden();
         $this->actingAs($admin)->postJson($base."/orders/{$order->order_number}/escrow-delivery", [
@@ -82,7 +91,11 @@ class AdminRoutePermissionTest extends PluginTestCase
     /**
      * 403 은 가드 선행이어야 하며, 거부된 등록 요청은 결제 메타를 변경하지 않아야 합니다.
      *
-     * @return void
+     * @scenario permission=orders_read
+     *
+     * @effects denied_escrow_register_leaves_payment_meta_untouched
+     *
+     * @return void 반환값 없음
      */
     public function test_denied_escrow_register_leaves_payment_meta_untouched(): void
     {
@@ -105,7 +118,11 @@ class AdminRoutePermissionTest extends PluginTestCase
     /**
      * 읽기 권한 보유 관리자는 조회 경로에 도달해야 합니다 (수정이 정상 관리자를 깨지 않음).
      *
-     * @return void
+     * @scenario permission=orders_read
+     *
+     * @effects orders_read_admin_reaches_read_routes
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_with_orders_read_can_reach_read_routes(): void
     {
@@ -114,14 +131,17 @@ class AdminRoutePermissionTest extends PluginTestCase
         $base = '/api/plugins/sirsoft-pay_nhnkcp/admin';
 
         $this->actingAs($admin)->getJson($base.'/orders/test-mode-map')->assertOk();
-        $this->actingAs($admin)->getJson($base.'/orders/easy-pay-display-map')->assertOk();
         $this->actingAs($admin)->getJson($base."/orders/{$order->order_number}/escrow-delivery")->assertOk();
     }
 
     /**
      * 수정 권한 보유 관리자는 배송등록에 도달해야 합니다.
      *
-     * @return void
+     * @scenario permission=orders_update
+     *
+     * @effects orders_update_admin_reaches_escrow_register
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_with_orders_update_can_register_escrow_delivery(): void
     {
@@ -150,7 +170,11 @@ class AdminRoutePermissionTest extends PluginTestCase
     /**
      * 설정 읽기 권한 보유 관리자는 설정성 경로에 도달해야 합니다.
      *
-     * @return void
+     * @scenario permission=settings_read
+     *
+     * @effects settings_read_admin_reaches_settings_routes
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_with_settings_read_can_reach_settings_routes(): void
     {

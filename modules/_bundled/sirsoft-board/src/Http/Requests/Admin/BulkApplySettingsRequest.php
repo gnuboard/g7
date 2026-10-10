@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Http\Requests\Admin;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Models\Board;
 
@@ -16,6 +17,7 @@ use Modules\Sirsoft\Board\Models\Board;
  */
 class BulkApplySettingsRequest extends FormRequest
 {
+    use ProvidesFallbackRuleMessages;
     use ReadsBoardLimits;
 
     /**
@@ -36,6 +38,10 @@ class BulkApplySettingsRequest extends FormRequest
         'comment_order',
         'show_view_count',
         'use_report',
+        'use_scrap',
+        'use_reaction',
+        'use_comment_reaction',
+        'active_reaction_types',
         'min_title_length',
         'max_title_length',
         'min_content_length',

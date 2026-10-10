@@ -1,0 +1,117 @@
+feature: 반응 유형 인라인 관리 (추가·수정·순서·삭제 + 아이콘 이미지)
+
+description: |
+  이슈 #525 후속 — 게시판 모듈이 쓰는 반응 유형(추천/비추천/…)을 운영자가 직접 관리한다.
+  전용 CRUD 화면을 만들지 않고 **게시판 환경설정 › 기본 설정 안 인라인 편집기**로 다룬다
+  (결정 R2) — 유형을 만들고 그 자리에서 체크해 활성화하는 흐름이 한 번의 저장으로 끝나야
+  하기 때문이다. 행 배열이 설정 저장 페이로드에 동승하고 서버가 DB 와 맞춘다
+  (sirsoft-ecommerce ShippingTypeService::syncShippingTypes 와 같은 방식).
+
+  핵심 동작 (확정):
+    - 행 배열의 **순서가 곧 display_order** — 서버가 인덱스로 재부여한다
+    - code 는 `^[a-z][a-z0-9_]{1,49}$`, 중복 불가, **추가 후 불변**(결정 R12)
+    - 이름은 로케일 맵이며 화면(요청) 언어 값이 필수 — 게시판 유형 이름과 같은 계약(7.1.0 S2 #9, 한국어 고정 필수였음)
+    - 반응이 1건이라도 남은 유형은 삭제 불가 → 422 + 유형명·건수, 비활성화만 가능(결정 R5)
+    - 삭제된 유형 code 는 모든 게시판의 active_reaction_types 에서 함께 빠진다
+    - 422 면 설정 JSON 은 저장하지 않는다(부분 저장 금지) — 동기화가 저장보다 먼저다
+    - 행 배열은 설정 JSON 에 저장하지 않는다 — 떼지 않으면 basic_defaults.json·config 미러 오염
+    - 아이콘은 **이미지 업로드만**(결정 R4), SVG 제외(결정 R13 — 첨부가 인증 없이
+      인라인 스트리밍이라 스크립트 실행 위험), 1MB 이하
+    - 표시 우선순위: icon_url > icon_name(시드 FA) > 레이아웃 기본 아이콘
+    - 관리자가 끈 유형·바꾼 순서는 시더 재실행이 되돌리지 않는다(trackableFields)
+
+axes:
+  # case 는 (표면 · 조작 · 유형 상태 · 권한) 의 **의미 있는 조합**만 열거한다.
+  # 독립 축을 곱하면 무의미한 칸(icon_delete × duplicate_code 등)이 폭증하므로
+  # 기획서가 확정한 시나리오만 case 로 둔다 (board-conditional-validation.yaml 관례).
+  case:
+    - settings_read_lists_all_types_including_inactive
+    - settings_create_update_reorder_in_one_save
+    - settings_code_immutable_on_update
+    - settings_duplicate_code_rejected
+    - settings_invalid_code_rejected
+    - settings_missing_default_name_rejected
+    - settings_delete_unreferenced_type
+    - settings_delete_referenced_type_blocked
+    - settings_deactivate_survives_seeder
+    - icon_upload_png_returns_uploader_shape
+    - icon_upload_rejects_svg_wrong_mime_and_oversize
+    - icon_upload_without_permission_forbidden
+    - icon_bound_on_save_and_replaced_icon_deleted
+    - icon_delete_foreign_collection_rejected
+    - icon_delete_clears_type_reference
+    - icon_url_downloadable_by_guest
+    - type_list_exposes_icon_url
+    - defaults_single_source_and_backfill_no_drift
+    - settings_editor_renders_form_rows
+    - settings_editor_add_form_validates
+    - settings_editor_icon_uploader_wired
+    - settings_checkbox_reads_form_rows
+
+effects:
+  # 추가 폼이 서버 코드 규칙을 미리 본다 · 아이콘 업로드 실패 문구가 한도를 말한다 (K1 실측 2026-10-06)
+  - settings_editor_add_form_checks_code_format
+  - settings_editor_icon_upload_failure_names_limits
+  # 편집기 ↔ 설정 응답 계약
+  - editor_iterates_form_reaction_types
+  - save_payload_carries_reaction_types
+  # 추가·수정·순서
+  - add_requires_code_and_default_name
+  - add_rejects_duplicate_code
+  - edit_uses_map_by_index
+  - server_422_maps_to_row_error
+  # 삭제 정책
+  - delete_requires_confirm_and_zero_reactions
+  - delete_blocked_shows_count_tooltip
+  - delete_removes_code_from_active_types
+  - sync_before_save_leaves_json_untouched_on_422
+  # 시더 보존
+  - deactivated_type_survives_seeder_resync
+  - seeder_reads_defaults_from_single_source
+  - backfill_snapshot_does_not_drift_from_defaults
+  # 아이콘
+  - icon_upload_requires_permission
+  - icon_upload_uses_module_endpoints
+  - icon_upload_sets_icon_url_and_attachment_id
+  - icon_remove_clears_icon_fields
+  - icon_upload_rejects_svg_and_wrong_mime_422
+  - icon_upload_rejects_oversize_422
+  - icon_delete_rejects_foreign_collection
+  - icon_url_public_download
+  - reaction_type_exposes_icon_url
+  # 읽기 전용 잠금
+
+  # 화면(레이아웃 계약)
+  - settings_editor_iterates_form_reaction_types_not_datasource
+  - settings_editor_add_form_checks_required_and_duplicate
+  - settings_editor_row_edit_uses_map_by_index
+  - settings_editor_reorder_is_drag_and_drop
+  - settings_editor_delete_is_confirmed_and_blocked_by_count
+  - settings_editor_delete_strips_code_from_active_types
+  - settings_editor_icon_uploader_declares_module_endpoints
+  - settings_editor_icon_callbacks_write_three_fields
+  - settings_checkbox_renders_image_icon_before_font_icon
+  - settings_checkbox_disabled_for_inactive_type
+  - settings_layout_drops_reaction_types_datasource
+  - board_form_checkbox_renders_image_icon
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/ReactionTypeSettingsSyncTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/ReactionTypeIconUploadTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/ReactionTypeApiTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/Support/ReactionTypeDefaultsTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-reaction-type-editor.test.tsx
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-reaction-settings.test.tsx
+  - tests/Playwright/specs/admin/board-reaction-type-editor.spec.ts
+
+validation:
+  audit_rule: test-scenario-coverage
+  note: |
+    <!-- audit:allow test-scenario-coverage[cross_product] reason: surface × op × type_state ×
+    icon_file × permission 의 전 조합은 의미 없는 칸(예: icon_delete × duplicate_code)이
+    대부분이다. 기획서가 확정한 조합만 case 로 열거하고, 각 테스트가 @scenario 로 자기
+    조합을 밝힌다 (board-conditional-validation.yaml 관례). -->
+
+    프론트(vitest) 커버리지는 레이아웃 JSON 계약 테스트로 잠근다 — 저작본(.g7.html)의 기계
+    산출물인 .json 을 직접 읽으므로, 화면을 고치고 다시 굽지 않으면 red 가 된다.
+    E2E(Playwright) 는 `playwright:seed-board-reaction` 시드로 세 상태의 행·비활성 유형·
+    탈퇴 회원을 고정해 두고 실브라우저로 잰다(되돌리기는 같은 커맨드 `--teardown`).

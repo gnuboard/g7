@@ -1,0 +1,177 @@
+<!-- 장바구니 오른쪽 요약 기둥 — 표시하는 금액은 전부 `cartItems.data.calculation` 이 준 값이고
+     화면에서 더하거나 빼지 않는다. 「주문하기」가 여기 있는 이유는 이 자리가 결제 대상(선택분)을
+     쥐고 있기 때문이다. -->
+<partial description="장바구니 주문 요약">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 sticky top-24">
+    <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6"/>
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">$t:shop.cart.order_summary</h3>
+    <!-- 선택 상품 수 -->
+    <div class="flex justify-between text-sm pb-3 border-b border-gray-200 dark:border-gray-700 mb-3">
+      <span class="text-gray-600 dark:text-gray-400">$t:shop.cart.selected_items</span>
+      <span class="font-medium text-gray-900 dark:text-white">{{_local.selectedItems?.length ?? 0}} / {{cartItems.data.item_count ?? 0}}$t:common.unit.item</span>
+    </div>
+    <!-- 로딩 상태 -->
+    <div data-if="{{_local.isCalculating}}" class="flex items-center justify-center py-8">
+      <icon name="spinner" :spin="true" class="text-gray-400" size="lg"/>
+    </div>
+    <!-- 선택 없음 안내 -->
+    <div data-if="{{!_local.isCalculating &amp;&amp; (!_local.selectedItems || _local.selectedItems.length === 0)}}" class="py-8 text-center">
+      <icon name="shopping-cart" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+      <p class="text-gray-500 dark:text-gray-400">$t:shop.cart.select_items_message</p>
+    </div>
+    <!-- 금액 정보 (선택된 상품이 있을 때만) -->
+    <div data-if="{{!_local.isCalculating &amp;&amp; _local.selectedItems?.length > 0}}">
+      <div class="space-y-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <!-- 상품 금액 (클릭하면 세금 상세 토글) -->
+        <div>
+          <div class="flex justify-between text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 -mx-2 px-2 py-1 rounded">
+            <on type="click">
+              <!-- 상품 금액 줄을 누르면 과세·면세 분해를 접었다 폈다 한다(별도 버튼 없이 줄 자체가 토글) -->
+              <set-state target="local" showTaxDetails="{{!_local.showTaxDetails}}"/>
+            </on>
+            <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+              <span>$t:shop.cart.product_amount</span>
+              <icon name="{{_local.showTaxDetails ? 'chevron-up' : 'chevron-down'}}" size="sm"/>
+            </div>
+            <span class="font-medium text-gray-900 dark:text-white">{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.subtotal_formatted ?? cartItems.data.calculation?.summary?.subtotal_formatted ?? '-'}}</span>
+          </div>
+          <!-- 세금 상세 (접이식) -->
+          <div data-if="{{_local.showTaxDetails}}" class="ml-4 mt-2 space-y-1">
+            <div data-if="{{(cartItems.data.calculation?.summary?.taxable_amount ?? 0) > 0}}" class="flex justify-between text-xs">
+              <span class="text-gray-500 dark:text-gray-500">$t:shop.cart.taxable_amount</span>
+              <span class="text-gray-600 dark:text-gray-400">{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.taxable_amount_formatted ?? '-'}}</span>
+            </div>
+            <div data-if="{{(cartItems.data.calculation?.summary?.tax_free_amount ?? 0) > 0}}" class="flex justify-between text-xs">
+              <span class="text-gray-500 dark:text-gray-500">$t:shop.cart.tax_free_amount</span>
+              <span class="text-gray-600 dark:text-gray-400">{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.tax_free_amount_formatted ?? '-'}}</span>
+            </div>
+          </div>
+        </div>
+        <!-- 할인 섹션 (할인이 있을 때만) -->
+        <div data-if="{{(cartItems.data.calculation?.summary?.total_discount ?? 0) > 0}}">
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-600 dark:text-gray-400">$t:shop.cart.discount_total</span>
+            <span class="font-medium text-red-600 dark:text-red-400">-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.total_discount_formatted ?? cartItems.data.calculation?.summary?.discount_formatted}}</span>
+          </div>
+          <!-- 할인 상세 (항상 펼침) -->
+          <div class="ml-4 mt-1 space-y-1">
+            <div data-if="{{(cartItems.data.calculation?.summary?.product_coupon_discount ?? 0) > 0}}" class="flex justify-between text-xs">
+              <span class="text-gray-500 dark:text-gray-500">$t:shop.cart.coupon_discount</span>
+              <span class="text-red-500 dark:text-red-400">-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.product_coupon_discount_formatted ?? '-'}}</span>
+            </div>
+            <div data-if="{{(cartItems.data.calculation?.summary?.code_discount ?? 0) > 0}}" class="flex justify-between text-xs">
+              <span class="text-gray-500 dark:text-gray-500">$t:shop.cart.code_discount</span>
+              <span class="text-red-500 dark:text-red-400">-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.code_discount_formatted ?? '-'}}</span>
+            </div>
+            <div data-if="{{(cartItems.data.calculation?.summary?.order_coupon_discount ?? 0) > 0}}" class="flex justify-between text-xs">
+              <span class="text-gray-500 dark:text-gray-500">$t:shop.cart.order_discount</span>
+              <span class="text-red-500 dark:text-red-400">-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.order_coupon_discount_formatted ?? '-'}}</span>
+            </div>
+          </div>
+        </div>
+        <!-- 배송비 섹션 -->
+        <div>
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-600 dark:text-gray-400">$t:shop.cart.shipping_fee</span>
+            <span class="font-medium {{(cartItems.data.calculation?.summary?.total_shipping ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}">{{(cartItems.data.calculation?.summary?.total_shipping ?? 0) === 0 ? '$t:shop.free_shipping' : (cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.total_shipping_formatted ?? cartItems.data.calculation?.summary?.shipping_fee_formatted)}}</span>
+          </div>
+          <!-- 배송비 상세 (항상 펼침, 배송비가 있을 때만) -->
+          <div data-if="{{(cartItems.data.calculation?.summary?.total_shipping ?? 0) > 0 || (cartItems.data.calculation?.summary?.shipping_discount ?? 0) > 0}}" class="ml-4 mt-1 space-y-1">
+            <div data-if="{{(cartItems.data.calculation?.summary?.base_shipping_total ?? 0) > 0}}" class="flex justify-between text-xs">
+              <span class="text-gray-500 dark:text-gray-500">$t:shop.cart.base_shipping</span>
+              <span class="text-gray-600 dark:text-gray-400">{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.base_shipping_total_formatted ?? '-'}}</span>
+            </div>
+            <div data-if="{{(cartItems.data.calculation?.summary?.extra_shipping_total ?? 0) > 0}}" class="flex justify-between text-xs">
+              <span class="text-gray-500 dark:text-gray-500">$t:shop.cart.extra_shipping</span>
+              <span class="text-gray-600 dark:text-gray-400">{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.extra_shipping_total_formatted ?? '-'}}</span>
+            </div>
+            <div data-if="{{(cartItems.data.calculation?.summary?.shipping_discount ?? 0) > 0}}" class="flex justify-between text-xs">
+              <span class="text-gray-500 dark:text-gray-500">$t:shop.cart.shipping_discount</span>
+              <span class="text-red-500 dark:text-red-400">-{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? '-'}}</span>
+            </div>
+          </div>
+        </div>
+        <!-- 결제 예정금액 -->
+        <div class="flex justify-between text-sm pt-2">
+          <span class="text-gray-600 dark:text-gray-400">$t:shop.cart.payment_amount</span>
+          <span class="font-medium text-gray-900 dark:text-white">{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.payment_amount_formatted ?? cartItems.data.calculation?.summary?.payment_amount_formatted ?? '-'}}</span>
+        </div>
+        <!-- 적립 예정 마일리지 -->
+        <div data-if="{{(cartItems.data.calculation?.summary?.points_earning ?? 0) > 0}}" class="flex justify-between text-sm">
+          <span class="text-gray-600 dark:text-gray-400">$t:shop.cart.expected_mileage</span>
+          <span class="font-medium text-blue-600 dark:text-blue-400">+{{cartItems.data.calculation?.summary?.mileage_formatted}}</span>
+        </div>
+      </div>
+      <!-- 합계 -->
+      <div class="py-4">
+        <div class="flex justify-between items-center">
+          <span class="text-lg font-semibold text-gray-900 dark:text-white">$t:shop.cart.total</span>
+          <span class="text-xl font-bold text-gray-900 dark:text-white">{{cartItems.data.calculation?.summary?.multi_currency[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? cartItems.data.calculation?.summary?.final_amount_formatted ?? '-'}}</span>
+        </div>
+        <!-- 보조 통화들 -->
+        <div data-each="currency in {{Object.entries(cartItems.data.calculation?.summary?.multi_currency ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end mt-1">
+          <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.final_amount_formatted}}</span>
+        </div>
+      </div>
+    </div>
+    <!-- 배송 불가 안내 (D1 — 혼재 시 전체 차단). 배송 불가 상품 1개라도 있으면 주문하기 비활성. -->
+    <div data-if="{{cartItems.data.has_unshippable_items === true}}" class="mb-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">$t:shop.shippability.blocks_order</div>
+    <p data-if="{{cartItems.data?.abilities?.can_order === false}}" class="text-xs text-amber-600 dark:text-amber-400 mb-2">$t:shop.order_permission_denied</p>
+    <!-- 주문하기 — 먼저 화면을 잠그고(중복 클릭 차단) 임시 주문을 만든다. 비로그인이면 곧바로 주문서로
+         가지 않고 로그인을 거치는데, 임시 주문은 cart_key 로 남아 있어 돌아와도 그 주문서가 이어진다 -->
+    <button class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-center disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" data-ref="cart_order_button" disabled="{{(_local.isOrdering || !cartItems.data.items || cartItems.data.items.length === 0 || !_local.selectedItems || _local.selectedItems.length === 0 || cartItems.data.has_unshippable_items === true) || cartItems.data?.abilities?.can_order !== true}}">
+      <on type="click">
+        <set-state target="local" :isOrdering="true"/>
+        <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="POST">
+          <success>
+            <!-- 로그인: 주문서로 직행 / 비로그인: 로그인 페이지(비회원 주문 선택) 경유. 임시주문은 cart_key(localStorage)로 유지되어 복귀 후에도 조회됨 -->
+            <conditions>
+              <when if="{{_global.currentUser?.uuid}}">
+                <navigate path="{{_global.shopBase}}/checkout"/>
+              </when>
+              <else>
+                <navigate path="/login">
+                  <query redirect="{{_global.shopBase}}/checkout"/>
+                </navigate>
+              </else>
+            </conditions>
+          </success>
+          <fail>
+            <!-- 구매불가 상품 에러 처리 -->
+            <sequence if="{{error.errors?.code === 'cart_unavailable'}}">
+              <set-state target="local" :isOrdering="false"/>
+              <set-state target="local">
+                <field name="unavailableModal">
+                  <field name="visible" :value="true"/>
+                  <field name="items" value="{{error.errors?.unavailable_items ?? []}}"/>
+                  <field name="hasStockIssue" value="{{error.errors?.has_stock_issue ?? false}}"/>
+                </field>
+              </set-state>
+              <open-modal target="cart_unavailable_modal"/>
+            </sequence>
+            <!-- 기타 에러 처리 -->
+            <sequence if="{{error.errors?.code !== 'cart_unavailable'}}">
+              <set-state target="local" :isOrdering="false"/>
+              <toast type="error" message="{{error.errors?.message ?? error.message}}"/>
+            </sequence>
+          </fail>
+          <body item_ids="{{_local.selectedItems}}"/>
+          <field name="headers">
+            <field name="X-Cart-Key" value="{{_global.cartKey}}"/>
+          </field>
+        </api-call>
+      </on>
+      <div class="flex items-center justify-center gap-2">
+        <icon data-if="{{_local.isOrdering}}" name="spinner" :spin="true" size="md"/>
+        <span data-if="{{!_local.isOrdering}}">$t:shop.cart.checkout</span>
+        <span data-if="{{_local.isOrdering}}">$t:shop.cart.ordering</span>
+      </div>
+    </button>
+    <button class="block w-full text-center text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 mt-3 cursor-pointer">
+      <on type="click">
+        <navigate path="{{_global.shopBase}}/products"/>
+      </on>
+      $t:shop.cart.continue_shopping
+    </button>
+  </div>
+</partial>

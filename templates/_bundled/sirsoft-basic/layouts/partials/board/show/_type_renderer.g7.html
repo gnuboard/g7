@@ -1,0 +1,18 @@
+<partial description="게시글 상세 유형별 렌더러. 상단 네비게이션 + 유형별 본문(basic/gallery/card)을 렌더링한다.">
+  <!-- 게시글 상세 유형별 렌더러 -->
+  <div>
+    <include src="partials/board/show/_navigation.g7.html"/>
+    <!-- basic + fallback. 새 유형 추가 시 이 블록 아래에 해당 유형 블록 추가 후 !includes 배열에도 추가 -->
+    <div data-if="{{post?.data?.board?.type === 'basic' || !['gallery','card'].includes(post?.data?.board?.type ?? 'basic')}}">
+      <include src="partials/board/types/basic/show.g7.html"/>
+    </div>
+    <!-- gallery 유형 -->
+    <div data-if="{{post?.data?.board?.type === 'gallery'}}">
+      <include src="partials/board/types/basic/show.g7.html"/>
+    </div>
+    <!-- card 유형 -->
+    <div data-if="{{post?.data?.board?.type === 'card'}}">
+      <include src="partials/board/types/basic/show.g7.html"/>
+    </div>
+  </div>
+</partial>

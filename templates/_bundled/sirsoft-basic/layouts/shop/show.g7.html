@@ -1,0 +1,232 @@
+<!-- 상품 상세 — 상품 자체·리뷰·문의·다운로드 쿠폰을 각각 따로 받는다. 나뉜 이유는 갱신 시점이
+     다르기 때문이다: 상품은 진입 때 한 번, 리뷰·문의는 그 탭 안의 조건(정렬·필터·쪽수)이 바뀔 때마다.
+     검색봇에게는 SEO 렌더가 이 화면을 서버에서 만들어 준다(og:type=product). -->
+<layout name="shop/show" version="1.0.0" extends="_user_base">
+  <meta>
+    <seo :enabled="true" page_type="product" toggle_setting="$module_settings:sirsoft-ecommerce:seo.seo_product_detail" :priority="0.8" changefreq="daily">
+      <extensions>
+        <item type="module" id="sirsoft-ecommerce"/>
+      </extensions>
+      <data-sources>
+        <item>product</item>
+        <item>popularProducts</item>
+        <item>reviews</item>
+        <item>qna</item>
+      </data-sources>
+      <vars product_name="{{$localized(product.data.meta_title) ?? $localized(product.data.name) ?? ''}}" product_description="{{$localized(product.data.meta_description) ?? $localized(product.data.short_description) ?? $localized(product.data.description) ?? ''}}" site_name="$core_settings:general.site_name" shopBase="$module_settings:sirsoft-ecommerce:basic_info.route_path"/>
+      <og type="product" title="{{_seo.product.title ?? $localized(product.data.meta_title) ?? $localized(product.data.name) ?? ''}}" description="{{_seo.product.description ?? $localized(product.data.meta_description) ?? $localized(product.data.description) ?? ''}}"/>
+    </seo>
+  </meta>
+  <!-- 상품 본체(옵션 조합·재고·가격 포함). 없거나 볼 수 없는 상품이면 토스트가 아니라 본문 자리를
+       통째로 오류 화면으로 바꾼다 — 껍데기만 남은 상세 화면을 보여 주지 않기 위해서다 -->
+  <data-source id="product" label_key="$t:editor.data_source.product" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/{{route.product_code}}" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+    <fallback :data="null"/>
+    <success>
+      <!-- 최근 본 상품 기록 — 상품이 실제로 조회된 뒤에 남긴다. 라우트 파라미터는 상품 코드(문자열)라 서버가 요구하는 숫자 ID 가 아니므로, 응답에서 받은 id 를 쓴다 -->
+      <save-to-local-storage key="recentProductIds" value="{{(response?.data?.data?.id ?? response?.data?.id) ? [Number(response?.data?.data?.id ?? response?.data?.id), ...(_global.recentProductIds ?? []).filter(id => Number(id) !== Number(response?.data?.data?.id ?? response?.data?.id))].slice(0, 20) : (_global.recentProductIds ?? [])}}"/>
+      <!-- 같은 화면에서 이어지는 참조를 위해 전역 상태도 맞춰 둔다 -->
+      <set-state target="global" recentProductIds="{{(response?.data?.data?.id ?? response?.data?.id) ? [Number(response?.data?.data?.id ?? response?.data?.id), ...(_global.recentProductIds ?? []).filter(id => Number(id) !== Number(response?.data?.data?.id ?? response?.data?.id))].slice(0, 20) : (_global.recentProductIds ?? [])}}"/>
+    </success>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page :errorCode="403" target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page :errorCode="404" target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 리뷰 탭. 조건(쪽수·정렬·사진만·별점·옵션)이 전부 `_local` 에 있어 URL 에 남지 않는다 —
+       탭 안에서만 쓰는 조건이라 공유·뒤로가기 대상이 아니기 때문. 조건이 바뀌면 이 소스만 다시 받는다 -->
+  <data-source id="reviews" label_key="$t:editor.data_source.reviews" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/{{route.product_code}}/reviews" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+    <params page="{{_local.reviewsPage ?? 1}}" sort="{{_local.reviewSortBy ?? 'created_at_desc'}}" photo_only="{{_local.reviewPhotoOnly ?? false}}" rating="{{_local.reviewRating ?? ''}}" option_filters="{{JSON.stringify(_local.reviewOptionFilters ?? null)}}"/>
+    <fallback>
+      <field name="reviews">
+        <field name="data" :value="[]"/>
+        <field name="meta">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="per_page" :value="10"/>
+          <field name="total" :value="0"/>
+        </field>
+      </field>
+      <field name="rating_stats">
+        <field name="avg" :value="0"/>
+        <field name="1">
+          <field name="count" :value="0"/>
+          <field name="percent" :value="0"/>
+        </field>
+        <field name="2">
+          <field name="count" :value="0"/>
+          <field name="percent" :value="0"/>
+        </field>
+        <field name="3">
+          <field name="count" :value="0"/>
+          <field name="percent" :value="0"/>
+        </field>
+        <field name="4">
+          <field name="count" :value="0"/>
+          <field name="percent" :value="0"/>
+        </field>
+        <field name="5">
+          <field name="count" :value="0"/>
+          <field name="percent" :value="0"/>
+        </field>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 상품 문의 탭. 응답의 `meta` 가 이 상품의 문의 게시판 설정(비밀글 허용·첨부 한도·글자수 제한)을
+       함께 실어 오고, 문의 작성 창의 검증이 그 값을 그대로 쓴다 — 그래서 목록과 설정이 한 소스다 -->
+  <data-source id="qna" label_key="$t:editor.data_source.qna" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/{{route.product_code}}/inquiries" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+    <params page="{{_local.qnaPage ?? 1}}" :per_page="10" exclude_secret="{{_local.qnaExcludeSecret ?? false}}"/>
+    <fallback>
+      <field name="items" :value="[]"/>
+      <field name="meta">
+        <field name="inquiry_available" :value="false"/>
+        <field name="board_settings">
+          <field name="secret_mode" value="disabled"/>
+          <field name="categories" :value="[]"/>
+          <field name="use_file_upload" :value="false"/>
+          <field name="max_file_count" :value="5"/>
+          <field name="max_file_size" :value="10485760"/>
+          <field name="allowed_extensions" :value="[]"/>
+          <field name="min_title_length" :value="2"/>
+          <field name="max_title_length" :value="200"/>
+          <field name="min_content_length" :value="10"/>
+          <field name="max_content_length" :value="10000"/>
+        </field>
+        <field name="total" :value="0"/>
+        <field name="current_page" :value="1"/>
+        <field name="per_page" :value="10"/>
+        <field name="last_page" :value="1"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 이 상품에 받아 갈 수 있는 쿠폰. 비로그인도 목록은 보이고(받기를 누를 때 로그인 창으로 보낸다) -->
+  <data-source id="productDownloadableCoupons" label_key="$t:editor.data_source.productDownloadableCoupons" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/{{route.product_code}}/downloadable-coupons" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 상세 아래에 붙는 인기 상품 줄 — 지금 보는 상품과 무관한 고정 추천이다 -->
+  <data-source id="popularProducts" label_key="$t:editor.data_source.popularProducts" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/popular?limit=8" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <computed name="popularItems">{{popularProducts?.data ?? []}}</computed>
+  <computed name="optionChoices">{{(product.data?.option_groups ?? []).map((g, gi) => (g.values_localized ?? []).map(v => { const combos = (product.data?.options ?? []).filter(o => o.option_values_localized?.[g.name_localized] === v &amp;&amp; (product.data?.option_groups ?? []).slice(0, gi).every(ug => !_local.currentSelection?.[ug.name_localized] || o.option_values_localized?.[ug.name_localized] === _local.currentSelection[ug.name_localized])); const soldOut = combos.length > 0 &amp;&amp; combos.every(o => o.is_sold_out || (o.stock_quantity ?? 0) &lt;= 0 || !o.is_active); return { value: v, label: soldOut ? v + ' ' + $t('shop.product.sold_out_suffix') : v, disabled: soldOut }; }))}}</computed>
+  <permissions/>
+  <error-handling>
+    <on-code code="401">
+      <!-- 비로그인 시 current_user 401은 정상 — 무시 (상품 상세는 비로그인 접근 허용) -->
+      <set-state target="local" :productAccessDenied="false"/>
+    </on-code>
+    <on-code code="403">
+      <!-- 인증된 사용자 상품 조회 권한 없음 — 에러 페이지 표시 -->
+      <show-error-page :errorCode="403" target="content"/>
+    </on-code>
+  </error-handling>
+  <init>
+    <load-from-local-storage key="recentProductIds" :defaultValue="[]">
+      <field name="resultTo">
+        <field name="target" value="_global"/>
+        <field name="key" value="recentProductIds"/>
+      </field>
+    </load-from-local-storage>
+    <!-- 이전 페이지에서 열린 모달 닫기 -->
+    <close-modal/>
+    <!-- 장바구니 이동 로딩 상태 초기화 -->
+    <set-state target="global" :isNavigatingToCart="false"/>
+    <!-- 옵션 선택 상태 초기화 -->
+    <set-state target="local" :selectedOptionItems="[]" :currentSelection="{}" :noOptionQuantity="1" :additionalOptions="{}" :wishlistLoading="false" :isOrdering="false" :downloadableCoupons="null" :downloadableCouponsLoading="false" :downloadingMore="false" :downloadingCouponId="null" :selectedCouponForDownload="null" :reviewsPage="1" reviewSortBy="created_at_desc" :reviewPhotoOnly="false" reviewRating="" :reviewOptionFilters="{}" activeTab="{{query.tab ?? 'info'}}" :starNums="[5,4,3,2,1]" :starList="[1,2,3,4,5]"/>
+  </init>
+  <slot name="content">
+    <container data-type="layout" class="py-4">
+      <responsive on="desktop" class="py-8"/>
+      <!-- 뒤로가기 버튼 -->
+      <button class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 cursor-pointer">
+        <responsive on="desktop" class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6 cursor-pointer"/>
+        <on type="click">
+          <navigate path="{{_global.shopBase}}/products" :mergeQuery="true">
+            <query/>
+          </navigate>
+        </on>
+        <icon name="chevron-left" size="sm"/>
+        <span>$t:shop.back</span>
+      </button>
+      <!-- 상품 정보 영역 - PC: 2열, 모바일: 1열 -->
+      <div class="flex flex-col mb-8">
+        <blur-until-loaded sources="product"/>
+        <responsive on="desktop" class="flex flex-row gap-8 mb-8"/>
+        <!-- 이미지 갤러리 영역 -->
+        <div class="w-full mb-4 transition-opacity duration-200 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}">
+          <responsive on="desktop" class="w-1/2 mb-0 transition-opacity duration-200 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}"/>
+          <product-image-viewer data-type="composite" images="{{product.data?.images ?? []}}"/>
+        </div>
+        <!-- 상품 정보 + 구매 카드 영역 - responsive로 mobile/desktop 분기 -->
+        <div class="w-full space-y-4">
+          <responsive on="desktop" class="w-1/2 space-y-6"/>
+          <!-- 상품 정보 영역 (주문 중 블러 처리) -->
+          <div class="space-y-4 transition-opacity duration-200 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}">
+            <responsive on="desktop" class="space-y-6 transition-opacity duration-200 {{_local.isOrdering ? 'pointer-events-none opacity-50' : ''}}"/>
+            <!-- 상품 헤더 (카테고리, 상품명, 찜) -->
+            <include src="partials/shop/detail/_header.g7.html"/>
+            <!-- 모바일 전용: 가격 표시 -->
+            <div data-if="{{true}}">
+              <responsive on="desktop" data-if="{{false}}"/>
+              <include src="partials/shop/detail/_price_mobile.g7.html"/>
+            </div>
+            <!-- 상품 정보 요약 -->
+            <include src="partials/shop/detail/_info_summary.g7.html"/>
+          </div>
+          <!-- 구매 카드 -->
+          <include src="partials/shop/detail/_purchase_card.g7.html"/>
+          <!-- 판매상태 안내 (품절/판매중지/출시예정) -->
+          <div data-if="{{product.data?.sales_status !== 'on_sale'}}" class="flex items-center gap-3 px-4 py-3 rounded-lg border {{product.data?.sales_status === 'sold_out' ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800' : product.data?.sales_status === 'suspended' ? 'bg-gray-100 border-gray-300 dark:bg-gray-700/50 dark:border-gray-600' : 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800'}}">
+            <icon name="{{product.data?.sales_status === 'sold_out' ? 'box-open' : product.data?.sales_status === 'suspended' ? 'ban' : 'clock'}}" size="lg" class="{{product.data?.sales_status === 'sold_out' ? 'text-red-500 dark:text-red-400' : product.data?.sales_status === 'suspended' ? 'text-gray-500 dark:text-gray-400' : 'text-blue-500 dark:text-blue-400'}} shrink-0"/>
+            <span class="text-sm font-medium {{product.data?.sales_status === 'sold_out' ? 'text-red-700 dark:text-red-300' : product.data?.sales_status === 'suspended' ? 'text-gray-700 dark:text-gray-300' : 'text-blue-700 dark:text-blue-300'}}">{{product.data?.sales_status === 'sold_out' ? $t('shop.product.status_message_sold_out') : product.data?.sales_status === 'suspended' ? $t('shop.product.status_message_suspended') : $t('shop.product.status_message_coming_soon')}}</span>
+          </div>
+        </div>
+      </div>
+      <!-- 탭 네비게이션 -->
+      <tab-navigation data-type="composite" hiddenTabIds="{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ? [] : ['qna']}}" activeTabId="{{_local.activeTab ?? 'info'}}" variant="underline">
+        <prop name="tabs">
+          <item id="info" label="$t:shop.tabs.detail_info" iconName="file-text"/>
+          <item id="reviews" label="$t:shop.tabs.reviews" badge="{{reviews.data?.total_count ?? 0}}" iconName="star"/>
+          <item id="qna" label="$t:shop.tabs.qna" badge="{{qna.data.meta.total ?? 0}}" iconName="comment"/>
+        </prop>
+        <on event="onTabChange">
+          <set-state target="local" activeTab="{{$args[0]}}"/>
+          <!-- 탭은 이 화면 안에서만 바뀌는 값이다 — 목록에서 실어 온 page·정렬·검색어·분류는 그대로 두고 tab 만 얹는다. 병합하지 않으면 탭을 한 번 누르는 순간 목록 상태가 사라져 '상품 목록' 버튼이 1페이지로 되돌아간다 (#75). -->
+          <replace-url :mergeQuery="true">
+            <query tab="{{$args[0]}}"/>
+          </replace-url>
+        </on>
+      </tab-navigation>
+      <include src="partials/shop/detail/_tab_detail.g7.html"/>
+      <include src="partials/shop/detail/_tab_reviews.g7.html"/>
+      <include src="partials/shop/detail/_tab_qna.g7.html"/>
+      <!-- 인기 상품 섹션 -->
+      <div class="mt-12">
+        <include src="partials/shop/list/_popular_products.g7.html"/>
+      </div>
+    </container>
+  </slot>
+  <!-- 장바구니에 담은 직후 — 계속 둘러볼지 장바구니로 갈지 고르게 한다 -->
+  <modal src="partials/shop/detail/_modal_cart_added.g7.html"/>
+  <!-- 받아 갈 수 있는 쿠폰 목록 창(상품 상세와 목록이 함께 쓴다) -->
+  <modal src="partials/shop/_modal_coupon_download.g7.html"/>
+  <!-- 비회원이 회원 전용 동작(쿠폰 받기·문의 작성 등)을 눌렀을 때 로그인으로 안내한다 -->
+  <modal src="partials/shop/detail/_modal_login_required.g7.html"/>
+  <!-- 쿠폰을 실제로 받기 직전의 확인 — 받은 뒤에는 되돌릴 수 없어 한 번 묻는다 -->
+  <modal src="partials/shop/detail/_modal_coupon_download_confirm.g7.html"/>
+  <!-- 리뷰에 달린 사진을 원본 크기로 보는 창 -->
+  <modal src="partials/shop/detail/_modal_review_image.g7.html"/>
+  <!-- 상품 문의 작성. 검증 규칙은 `qna` 응답의 게시판 설정에서 온다 -->
+  <modal src="partials/shop/detail/_modal_qna_write.g7.html"/>
+  <!-- 문의에 달린 답변을 펼쳐 보는 창(비밀글이면 작성자·관리자에게만 내용이 온다) -->
+  <modal src="partials/shop/detail/_modal_qna_reply.g7.html"/>
+  <!-- 내가 쓴 문의를 지우기 전 확인 -->
+  <modal src="partials/shop/detail/_modal_inquiry_delete.g7.html"/>
+</layout>

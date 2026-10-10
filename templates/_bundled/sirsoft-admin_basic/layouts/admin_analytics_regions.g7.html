@@ -1,0 +1,147 @@
+<!-- 지역 리포트 — 국가·지역·도시 세 탭. GeoIP 가 꺼진 사이트에서는 국가가 브라우저 언어 추정이고 지역·도시는
+  아예 없으므로, 그 사실을 표 위 안내로 알리고 고급 설정으로 가는 길을 둔다. 라벨은 서버가 번역한
+  `label_display` 를 쓰고 원값(`label`)은 title 로 남긴다. -->
+<layout name="admin_analytics_regions" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.analytics.regions.title"/>
+  <!-- 탭 → 리포트 이름(국가·지역·도시). GeoIP 가 꺼진 사이트에서 국가는 브라우저 언어 추정값이고 지역·도시는 비어 온다 —
+       그 안내 여부는 아래 진단 상태가 가른다. -->
+  <data-source id="analytics_report" label_key="$t:editor.data_source.analytics_report" type="api" endpoint="/api/admin/analytics/reports/{{({countries: 'country', regions: 'region', cities: 'city'})[query.tab || 'countries'] || 'country'}}" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}" page="{{query.page || 1}}" per_page="{{query.per_page}}" sort="{{query.sort}}" q="{{query.q}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="has_more" :value="false"/>
+        </field>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- GeoIP 사용 여부·수집 상태. 지역 화면은 이 값으로 안내를 가른다.
+       fallback 은 GeoIP 를 「켜짐」으로 둔다 — 진단 요청이 실패해 사실을 모를 때 「꺼짐」 경고를 띄우면
+       켜 둔 사이트에 거짓 안내가 된다(모르면 알리지 않는다). 설정 화면이 같은 필드를 「꺼짐」으로 두는 것은
+       거기서는 그 값이 국가 필터 입력을 잠그는 쪽이라서다(모르면 집행할 수 없는 필터를 받지 않는다). -->
+  <data-source id="analytics_status" label_key="$t:editor.data_source.analytics_status" type="api" endpoint="/api/admin/analytics/diagnostics" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <fallback>
+      <field name="data">
+        <field name="collection">
+          <field name="enabled" :value="true"/>
+        </field>
+        <field name="queue">
+          <field name="backlogged" :value="false"/>
+        </field>
+        <field name="geoip">
+          <field name="enabled" :value="true"/>
+          <field name="db_present" :value="true"/>
+        </field>
+      </field>
+    </fallback>
+    <!-- 조회 권한이 없는 화면(방문자·정보주체·설정)에서는 이 경고 소스가 403 이다. 상단 경고를
+         띄우지 못할 뿐 화면은 자기 권한으로 정상 동작하므로 오류를 삼킨다 — 삼키지 않으면 화면을
+         열 때마다 전역 오류 토스트가 뜬다(#682 S3 라운드 2). -->
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 한 항목 추이 창의 소스 — 자동으로 받지 않는다. 행 끝 추이 아이콘이 `_global.analyticsRowTrend` 를 정한 뒤 이 소스를
+       다시 받게 하고 창을 연다. 기간·제외는 지금 주소 그대로 싣는다. -->
+  <data-source id="analytics_row_trend" label_key="$t:editor.data_source.analytics_row_trend" type="api" endpoint="/api/admin/analytics/reports/{{_global.analyticsRowTrend?.report ?? ''}}/series" method="GET" :auto_fetch="false" :auth_required="true">
+    <params label="{{_global.analyticsRowTrend?.label ?? ''}}" preset="{{query.from ? undefined : (query.preset || '7d')}}" from="{{query.from}}" to="{{query.to}}" exclude[]="{{(query.exclude || '').split(',').filter(Boolean)}}"/>
+    <fallback>
+      <field name="data">
+        <field name="unit" value="day"/>
+        <field name="unit_downgraded" :value="false"/>
+        <field name="points" :value="[]"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+      <on-code code="404">
+        <suppress/>
+      </on-code>
+      <on-code code="422">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="periodPath" value="/admin/analytics/regions"/>
+    <field name="periodSource" value="analytics_report"/>
+    <field name="showUnit" :value="false"/>
+  </init-local>
+  <computed name="reportName">{{({countries: 'country', regions: 'region', cities: 'city'})[query.tab || 'countries'] || 'country'}}</computed>
+  <computed name="csvUrl">{{'/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&amp;from=' + query.from + '&amp;to=' + (query.to || query.from) : '&amp;preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&amp;exclude[]=' + e).join('') + (query.q ? '&amp;q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&amp;sort=' + query.sort : '')}}</computed>
+  <computed name="csvFilename">{{'analytics-' + _computed.reportName + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}</computed>
+  <computed name="periodFrom">{{query.from || analytics_report?.data?.from || _local.periodComputed?.from || ''}}</computed>
+  <computed name="periodTo">{{query.to || query.from || analytics_report?.data?.to || _local.periodComputed?.to || ''}}</computed>
+  <computed name="archiveFreshness">{{analytics_report?.data?.freshness ?? null}}</computed>
+  <permissions>
+    <permission>core.analytics.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>analytics_report</wait-for>
+  </transition-overlay>
+  <init>
+    <action handler="setAnalyticsPeriod" preset="{{query.preset || '7d'}}">
+      <field name="resultTo">
+        <field name="target" value="_local"/>
+        <field name="key" value="periodComputed"/>
+      </field>
+    </action>
+  </init>
+  <slot name="content">
+    <div data-ref="analytics_regions_content" class="admin-page-content-responsive-fluid">
+      <div data-ref="page_header" class="flex-between mb-4">
+        <div>
+          <h1 class="page-title">$t:admin.analytics.regions.title</h1>
+          <p class="text-label-subtle mt-1">$t:admin.analytics.regions.description</p>
+        </div>
+      </div>
+      <include src="partials/admin_analytics/_partial_status_alerts.g7.html"/>
+      <div data-ref="geoip_off_alert" data-if="{{analytics_status?.data?.geoip?.enabled === false || analytics_status?.data?.geoip?.db_present === false}}" class="alert-warning mb-4">
+        <div class="flex-center gap-3">
+          <icon name="triangle-exclamation" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+          <p class="text-warning-soft flex-1">$t:admin.analytics.alerts.geoip_off</p>
+          <button data-ref="geoip_settings_link" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.settings.read'))}}" type="button" class="text-sm font-medium underline text-yellow-800 dark:text-yellow-200">
+            <on type="click">
+              <!-- GeoIP 설정으로 — 환경설정 고급 탭을 연다. 환경설정 읽기 권한이 있을 때만 버튼이 보인다(안내 문구는 권한과 무관하게 남는다). -->
+              <navigate path="/admin/settings">
+                <query tab="advanced"/>
+              </navigate>
+            </on>
+            $t:admin.analytics.alerts.geoip_off_link
+          </button>
+        </div>
+      </div>
+      <include src="partials/admin_analytics/_partial_period_bar.g7.html"/>
+      <tab-navigation data-type="composite" data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'countries'}}" variant="underline">
+        <prop name="tabs">
+          <item id="countries" label="$t:admin.analytics.regions.tabs.countries"/>
+          <item id="regions" label="$t:admin.analytics.regions.tabs.regions"/>
+          <item id="cities" label="$t:admin.analytics.regions.tabs.cities"/>
+        </prop>
+        <on type="change" event="onTabChange">
+          <!-- audit:allow layout-list-context-navigate-merge-query 서브탭 전환 — 리포트마다 행이 달라 쪽·검색·정렬을 물려받지 않도록 병합하지 않는다. 기간(preset·from·to·unit·exclude)과 쪽 크기만 query 로 명시해 잇는다. -->
+          <navigate path="/admin/analytics/regions" :replace="true">
+            <query tab="{{$args[0]}}" preset="{{query.preset}}" from="{{query.from}}" to="{{query.to}}" unit="{{query.unit}}" exclude="{{query.exclude}}" per_page="{{query.per_page}}"/>
+          </navigate>
+        </on>
+      </tab-navigation>
+      <include src="partials/admin_analytics/_partial_report_grid.g7.html"/>
+      <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->
+      <extension-point name="analytics_regions_widgets" class="space-y-4 mt-4">
+        <default/>
+      </extension-point>
+    </div>
+  </slot>
+  <!-- 한 항목 추이 창. -->
+  <modal src="partials/admin_analytics/_modal_row_trend.g7.html"/>
+</layout>

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionStatus;
+use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\PluginOperationException;
 use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\EditorSpecAssembler;
@@ -12,6 +13,8 @@ use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
 use App\Extension\Vendor\VendorMode;
+use App\Services\Extension\ExtensionIconResolver;
+use App\Support\SafeExceptionMessage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\ValidationException;
@@ -23,6 +26,12 @@ class PluginService
      */
     private const SEARCHABLE_FIELDS = ['name', 'identifier', 'description', 'vendor'];
 
+    /**
+     * 플러그인 서비스를 생성합니다.
+     *
+     * @param  PluginRepositoryInterface  $pluginRepository  플러그인 저장소
+     * @param  PluginManagerInterface  $pluginManager  플러그인 매니저
+     */
     public function __construct(
         private PluginRepositoryInterface $pluginRepository,
         private PluginManagerInterface $pluginManager
@@ -128,7 +137,7 @@ class PluginService
     ): ?array {
         $failureReason = null;
 
-        HookManager::doAction('core.plugins.before_install', $pluginName);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             $this->pluginManager->loadPlugins();
@@ -138,7 +147,8 @@ class PluginService
                 // 설치 후 플러그인 정보 반환
                 $pluginInfo = $this->pluginManager->getPluginInfo($pluginName);
 
-                HookManager::doAction('core.plugins.after_install', $pluginName, $pluginInfo);
+                // after_install 훅은 PluginManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+                // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
                 return $pluginInfo;
             }
@@ -146,7 +156,7 @@ class PluginService
             return null;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'plugin_name' => [__('plugins.installation_failed', ['error' => $e->getMessage()])],
+                'plugin_name' => [__('plugins.installation_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -158,13 +168,13 @@ class PluginService
      *
      * @param  string  $pluginName  플러그인 식별자
      * @param  bool  $force  의존성 경고를 무시하고 강제 활성화 여부
-     * @return array{success: bool, plugin_info?: array, warning?: bool} 활성화 결과
+     * @return array{success: bool, plugin_info?: array, layout_warnings?: array, warning?: bool} 활성화 결과 (빈 자리로 등록한 조각 참조 경고 포함)
      *
      * @throws ValidationException 활성화 실패 시
      */
     public function activatePlugin(string $pluginName, bool $force = false): array
     {
-        HookManager::doAction('core.plugins.before_activate', $pluginName);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             $this->pluginManager->loadPlugins();
@@ -178,11 +188,14 @@ class PluginService
             if ($result['success']) {
                 $pluginInfo = $this->pluginManager->getPluginInfo($pluginName);
 
-                HookManager::doAction('core.plugins.after_activate', $pluginName, $pluginInfo);
+                // after_activate 훅은 PluginManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+                // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
                 return [
                     'success' => true,
                     'plugin_info' => $pluginInfo,
+                    // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
+                    'layout_warnings' => $result['layout_warnings'] ?? [],
                 ];
             }
 
@@ -191,7 +204,7 @@ class PluginService
             return $result;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'plugin_name' => [__('plugins.activation_failed', ['error' => $e->getMessage()])],
+                'plugin_name' => [__('plugins.activation_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -209,7 +222,7 @@ class PluginService
      */
     public function deactivatePlugin(string $pluginName, bool $force = false): array
     {
-        HookManager::doAction('core.plugins.before_deactivate', $pluginName);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             $this->pluginManager->loadPlugins();
@@ -232,7 +245,7 @@ class PluginService
             return $result;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'plugin_name' => [__('plugins.deactivation_failed', ['error' => $e->getMessage()])],
+                'plugin_name' => [__('plugins.deactivation_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -258,7 +271,7 @@ class PluginService
         $failureReason = null;
         $preservedBackups = [];
 
-        HookManager::doAction('core.plugins.before_uninstall', $pluginName, $deleteData);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             $this->pluginManager->loadPlugins();
@@ -271,12 +284,13 @@ class PluginService
                 $preservedBackups
             );
 
-            HookManager::doAction('core.plugins.after_uninstall', $pluginName, $deleteData, $result);
+            // after_uninstall 훅은 PluginManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+            // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
             return $result;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'plugin_name' => [__('plugins.uninstallation_failed', ['error' => $e->getMessage()])],
+                'plugin_name' => [__('plugins.uninstallation_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -502,7 +516,7 @@ class PluginService
             return $result;
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'plugins' => [__('plugins.check_updates_failed', ['error' => $e->getMessage()])],
+                'plugins' => [__('plugins.check_updates_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -524,7 +538,7 @@ class PluginService
         string $layoutStrategy = 'overwrite',
         bool $force = false,
     ): array {
-        HookManager::doAction('core.plugins.before_update', $pluginName);
+        // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
         try {
             $this->pluginManager->loadPlugins();
@@ -538,15 +552,19 @@ class PluginService
 
             $pluginInfo = $this->pluginManager->getPluginInfo($pluginName);
 
-            HookManager::doAction('core.plugins.after_update', $pluginName, $result, $pluginInfo);
+            // after_update 훅은 PluginManager 가 정규 시그니처로 이미 발화 — CLI·어드민 UI 공통 단일 발화(#138)
+            // (Service 중복 발화 제거 — listener 2회 실행으로 인한 activity log 중복 차단)
 
             return array_merge($result, [
                 'plugin_info' => $pluginInfo,
             ]);
+        } catch (ExtensionOperationInProgressException $e) {
+            // 같은 확장의 업데이트가 진행 중 — 「업데이트 실패」(422)로 감싸면 화면이 두 번째 요청을 실패로 보여 준다(#138 실측 ②)
+            throw $e;
         } catch (\Exception $e) {
             // Manager의 RuntimeException은 이미 번역된 메시지를 포함하므로
             // getPrevious()로 원본 에러를 추출하여 이중 래핑 방지
-            $rawError = $e->getPrevious() ? $e->getPrevious()->getMessage() : $e->getMessage();
+            $rawError = SafeExceptionMessage::for(SafeExceptionMessage::isInternal($e) ? $e : ($e->getPrevious() ?? $e));
 
             throw ValidationException::withMessages([
                 'plugin_name' => [__('plugins.errors.update_failed', ['plugin' => $pluginName, 'error' => $rawError])],
@@ -570,7 +588,7 @@ class PluginService
             return $this->pluginManager->hasModifiedLayouts($pluginName);
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'plugin_name' => [__('plugins.check_modified_layouts_failed', ['error' => $e->getMessage()])],
+                'plugin_name' => [__('plugins.check_modified_layouts_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -591,7 +609,7 @@ class PluginService
             return $this->pluginManager->refreshPluginLayouts($pluginName);
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
-                'plugin_name' => [__('plugins.refresh_layouts_failed', ['error' => $e->getMessage()])],
+                'plugin_name' => [__('plugins.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])],
             ]);
         }
     }
@@ -644,7 +662,7 @@ class PluginService
     /**
      * 플러그인 편집기 스펙(editor-spec.json) 디코드 결과를 반환합니다.
      *
-     * 활성 플러그인만 대상으로 하며, 활성 디렉토리 → _bundled 폴백 순으로 읽습니다.
+     * 활성 플러그인만 대상으로 하며, 설치본(`plugins/{id}`)만 읽습니다(배포 원본 폴백 없음).
      * editor-spec.json 은 수작업 작성 파일로 플러그인 루트(plugin.json 옆)에 둡니다.
      * 파일 미존재/미작성 시 spec=null 로 폴백합니다(편집 컨트롤 부재).
      *
@@ -674,8 +692,8 @@ class PluginService
      * 플러그인 컴포넌트 매니페스트(components.json) 디코드 결과를 반환합니다.
      *
      * components.json 은 plugin:build 산출물로 플러그인 루트에 둡니다.
-     * 활성 디렉토리 → _bundled 폴백 순으로 읽으며, 미생성(구버전 플러그인) 시
-     * components=null 로 폴백합니다(무손실 보존 디그레이드 — 원칙 4.6).
+     * 설치본(`plugins/{id}/components.json`)만 읽으며, 설치본에 없으면(구버전 플러그인 등)
+     * 배포 원본을 대신 읽지 않고 components=null 로 둡니다(무손실 보존 디그레이드 — 원칙 4.6).
      *
      * @param  string  $identifier  플러그인 식별자
      * @return array{success: bool, components: array<string, mixed>|null, error: string|null}
@@ -688,33 +706,30 @@ class PluginService
             return ['success' => false, 'components' => null, 'error' => 'plugin_not_found'];
         }
 
-        $components = $this->readJsonWithBundledFallback("plugins/{$identifier}/components.json");
+        $components = $this->readInstalledJson("plugins/{$identifier}/components.json");
 
         return ['success' => true, 'components' => $components, 'error' => null];
     }
 
     /**
-     * 활성 디렉토리 → _bundled 폴백 순으로 JSON 파일을 읽어 디코드합니다.
+     * 설치본의 JSON 파일을 읽어 디코드합니다.
+     *
+     * 배포 원본(`plugins/_bundled/{id}`)은 대신 읽지 않는다 — 런타임·편집기는 실제로 돌아가는
+     * 설치본만 기준으로 삼는다.
      *
      * @param  string  $relativePath  base_path 기준 상대 경로 (plugins/{id}/file.json)
      * @return array<string, mixed>|null 디코드된 배열, 미존재/파싱 실패 시 null
      */
-    private function readJsonWithBundledFallback(string $relativePath): ?array
+    private function readInstalledJson(string $relativePath): ?array
     {
-        $bundledPath = preg_replace('#^plugins/#', 'plugins/_bundled/', $relativePath, 1);
-        $candidates = [base_path($relativePath), base_path((string) $bundledPath)];
-
-        foreach ($candidates as $path) {
-            if (! file_exists($path) || ! is_file($path)) {
-                continue;
-            }
-            $decoded = json_decode((string) file_get_contents($path), true);
-            if (is_array($decoded)) {
-                return $decoded;
-            }
+        $path = base_path($relativePath);
+        if (! is_file($path)) {
+            return null;
         }
 
-        return null;
+        $decoded = json_decode((string) file_get_contents($path), true);
+
+        return is_array($decoded) ? $decoded : null;
     }
 
     /**
@@ -845,6 +860,7 @@ class PluginService
         $extractPath = $tempPath.'/preview-'.uniqid('plugin_');
         $manifest = null;
         $errors = [];
+        $icon = null;
 
         try {
             File::ensureDirectoryExists($tempPath);
@@ -854,8 +870,13 @@ class PluginService
             );
 
             $manifest = $result['config'];
+
+            // 추출본은 finally 에서 지워지므로 아이콘 검사는 여기(try 안)에서 끝낸다.
+            // 아이콘 규격 위반은 설치를 막지 않는다 — 경고만 보이고 화면은 유형 글리프로 떨어진다.
+            $icon = app(ExtensionIconResolver::class)
+                ->inspectRootForApi($result['sourcePath'], $manifest['icon'] ?? null);
         } catch (\Throwable $e) {
-            $errors[] = $e->getMessage();
+            $errors[] = SafeExceptionMessage::for($e);
         } finally {
             if (File::exists($extractPath)) {
                 File::deleteDirectory($extractPath);
@@ -868,6 +889,7 @@ class PluginService
 
         return [
             'manifest' => $manifest,
+            'icon' => $icon,
             'validation' => [
                 'errors' => $errors,
                 'is_valid' => $errors === [] && $manifest !== null,
@@ -918,7 +940,7 @@ class PluginService
             // ZipInstallHelper 등 설치 원본 처리의 raw RuntimeException(깨진 zip·manifest
             // 누락 같은 사용자 입력 오류)을 도메인 예외로 승격한다 — 컨트롤러의 좁혀진
             // catch 가 인프라 예외와 구분해 종전 422 계약을 유지하고, 사유는 :error 로 보존.
-            throw new PluginOperationException('plugins.errors.install_failed', ['error' => $e->getMessage()], $e);
+            throw new PluginOperationException('plugins.errors.install_failed', ['error' => SafeExceptionMessage::for($e)], $e);
         } finally {
             if (File::exists($extractPath)) {
                 File::deleteDirectory($extractPath);
@@ -977,7 +999,7 @@ class PluginService
         } catch (\RuntimeException $e) {
             // GithubHelper·ZipInstallHelper 의 raw RuntimeException(잘못된 URL·다운로드
             // 실패·manifest 오류)을 도메인 예외로 승격한다 — 종전 422 계약 유지, 사유 보존.
-            throw new PluginOperationException('plugins.errors.install_failed', ['error' => $e->getMessage()], $e);
+            throw new PluginOperationException('plugins.errors.install_failed', ['error' => SafeExceptionMessage::for($e)], $e);
         } finally {
             if (File::exists($extractPath)) {
                 File::deleteDirectory($extractPath);
@@ -994,6 +1016,7 @@ class PluginService
      * _bundled/_pending에만 존재하는 경우(is_installed=false)는 설치 허용합니다.
      *
      * @param  string  $identifier  플러그인 식별자
+     * @return void 반환값 없음
      *
      * @throws \RuntimeException 이미 설치된 경우
      */

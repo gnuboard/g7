@@ -4,6 +4,22 @@
  */
 @import 'tailwindcss';
 
+/*
+ * Typography — `prose` / `prose-sm` / `dark:prose-invert` 를 쓰는 화면이 의존한다.
+ * 이 템플릿 자기 레이아웃 5개(게시글 본문·댓글 답변·상품 상세 탭·약관/개인정보 모달)와
+ * 플러그인이 주입하는 약관 본문 창이 그 클래스로 서식을 잡는다.
+ *
+ * 형제 템플릿 `sirsoft-admin_basic` 은 2026-09-16 에 **같은 이유로** 이 줄을 넣었다
+ * (그쪽 main.css 주석 참조 — 미등록 상태에서는 그 클래스들이 전부 무효라 서식이 죽어 있었다).
+ * 이쪽은 그때 함께 넣지 않아 `prose` 가 계속 무효였다(2026-09-21 실측: 로드된 스타일시트
+ * 5개 어디에도 `.prose` 규칙이 없다). Tailwind v4 는 CSS 우선 설정이라 JS config 가 아니라
+ * 여기서 등록한다.
+ *
+ * `@import` 는 **반드시 `@plugin` 보다 위**에 둔다 — CSS 명세상 `@import` 가 다른 at-rule
+ * 뒤에 오면 무시되고, 그래도 빌드는 성공하며 경고도 없다.
+ */
+@plugin "@tailwindcss/typography";
+
 /**
  * Dark mode variant 설정
  * class 기반 dark 모드 활성화 (.dark 클래스 사용)
@@ -11,10 +27,37 @@
 @variant dark (.dark &);
 
 /**
- * 레이아웃 JSON에서 동적으로 사용되는 클래스들을 위한 safelist
- * Tailwind가 자동 스캔하지 못하는 JSON 파일의 클래스들은 safelist.txt에 정의
+ * 레이아웃에서 동적으로 사용되는 클래스들을 위한 safelist.
+ *
+ * 소스 SSoT 는 `.g7.html`(D38), 런타임 계약은 짝 `.json` 이다. 이 템플릿은 둘 중
+ * **어느 쪽도 `@source` 글롭으로 앵커하지 않는다** — 레이아웃에서 오는 클래스는 전부
+ * 아래 `safelist.txt` 가 감당한다. 형제 템플릿 `sirsoft-admin_basic` 은 반대로
+ * `main.css` 가 `.json`·`.g7.html` 두 글롭을 직접 앵커하고 `prebuild` 의
+ * `scripts/extract-safelist.cjs` 가 SAFELIST 구간을 재생성한다.
+ *
+ * 즉 두 템플릿의 차이는 `@source` 한 줄이 아니라 **safelist 유지 모델의 차이**(수동 vs
+ * 자동 생성)다. 여기에 layouts 글롭을 추가하면 종전에 없던 클래스가 새로 유입돼
+ * CSS 산출이 바뀌므로(=동작 변경) 통일 여부는 설계 판단 대상이다 — 미해결 큐 R3.
+ * 이 `safelist.txt`(647줄)에는 생성 스크립트가 없어 레이아웃에 새 클래스가 들어와도
+ * 자동 반영되지 않는다는 점이 그 판단의 핵심이다.
  */
 @source "./safelist.txt";
+
+/*
+ * Icon 크기 임의값.
+ *
+ * Icon 은 `<i>` 글리프라 박스가 아니라 `font-size` 로 크기가 정해진다. 기존 `w-N h-N` 을 픽셀 그대로
+ * 옮길 때 Tailwind 기본 스케일에 같은 값이 없는 것만 임의값으로 둔다(w-10 = 40px) — 근사한 표준
+ * 클래스로 바꾸면 화면이 조용히 달라진다.
+ *
+ * `safelist.txt` 가 아니라 `inline` 인 이유: `@source` 로 읽는 평문 파일에서는 대괄호 임의값이
+ * 추출되지 않는다(실측 — 넣어도 CSS 가 생성되지 않았다).
+ *
+ * 이 템플릿은 `layouts/**` 를 `@source` 로 앵커하지 않으므로(위 safelist 주석 참조) **레이아웃에
+ * 쓰는 임의값은 전부 여기 있어야 한다.** 빠지면 CSS 가 생성되지 않아 크기가 조용히 사라진다.
+ * 2rem(32px) · 4rem(64px) · 10px 는 S18.5 축 C 가 `w-8`·`w-16`·`w-2.5` 를 픽셀 그대로 옮기며 합류했다.
+ */
+@source inline("text-[2rem] text-[2.5rem] text-[4rem] text-[10px]");
 
 /**
  * 기본 sans-serif 폰트

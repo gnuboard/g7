@@ -1,4 +1,5 @@
 {
+    "comment": "게시판 활동의 「내 댓글」 하위 탭 — 「내 글」과 같은 짜임이되 조건 이름이 `myComments*` 로 갈린다.\n     이 소스는 `auto_fetch=false` 라, 이 탭을 실제로 열 때 처음 받는다.",
     "meta": {
         "is_partial": true,
         "description": "마이페이지 내 게시판 활동 - 내가 쓴 댓글 탭"
@@ -18,6 +19,28 @@
                     "comment": "게시판 필터",
                     "type": "basic",
                     "name": "Select",
+                    "actions": [
+                        {
+                            "type": "change",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myCommentsBoard": "{{$event.target.value}}",
+                                        "myCommentsPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "myComments"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
                     "props": {
                         "value": "{{_global.myCommentsBoard ?? ''}}",
                         "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
@@ -43,56 +66,12 @@
                             },
                             "text": "{{board.name}}"
                         }
-                    ],
-                    "actions": [
-                        {
-                            "type": "change",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "myCommentsBoard": "{{$event.target.value}}",
-                                        "myCommentsPage": 1
-                                    }
-                                },
-                                {
-                                    "handler": "refetchDataSource",
-                                    "params": {
-                                        "dataSourceId": "myComments"
-                                    }
-                                }
-                            ]
-                        }
                     ]
                 },
                 {
                     "comment": "정렬 필터",
                     "type": "basic",
                     "name": "Select",
-                    "props": {
-                        "value": "{{_global.myCommentsSort ?? 'latest'}}",
-                        "className": "min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "latest"
-                            },
-                            "text": "$t:mypage.board_activities.sort.latest"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Option",
-                            "props": {
-                                "value": "oldest"
-                            },
-                            "text": "$t:mypage.board_activities.sort.oldest"
-                        }
-                    ],
                     "actions": [
                         {
                             "type": "change",
@@ -114,6 +93,28 @@
                                 }
                             ]
                         }
+                    ],
+                    "props": {
+                        "value": "{{_global.myCommentsSort ?? 'latest'}}",
+                        "className": "min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "latest"
+                            },
+                            "text": "$t:mypage.board_activities.sort.latest"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "oldest"
+                            },
+                            "text": "$t:mypage.board_activities.sort.oldest"
+                        }
                     ]
                 },
                 {
@@ -125,42 +126,61 @@
                     },
                     "children": [
                         {
+                            "comment": "검색 대상 — 댓글 내용(기본)과 원글 제목 중 하나. 「어떤 글에 단 댓글인지」로 찾는 쪽이 자연스러운 경우가 많다",
+                            "id": "my_comments_search_field_select",
                             "type": "basic",
-                            "name": "Input",
-                            "props": {
-                                "type": "text",
-                                "placeholder": "$t:mypage.board_activities.search_placeholder_comments",
-                                "value": "{{_global.myCommentsSearch ?? ''}}",
-                                "className": "flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
-                            },
+                            "name": "Select",
                             "actions": [
                                 {
                                     "type": "change",
                                     "handler": "setState",
                                     "params": {
                                         "target": "global",
-                                        "myCommentsSearch": "{{$event.target.value}}"
+                                        "myCommentsSearchField": "{{$event.target.value}}"
                                     }
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "value": "{{_global.myCommentsSearchField ?? 'content'}}",
+                                "className": "px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                                "options": [
+                                    {
+                                        "value": "content",
+                                        "label": "$t:mypage.board_activities.comment_search_fields.content"
+                                    },
+                                    {
+                                        "value": "post_title",
+                                        "label": "$t:mypage.board_activities.comment_search_fields.post_title"
+                                    }
+                                ]
+                            }
                         },
                         {
                             "type": "basic",
-                            "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
-                            },
-                            "text": "$t:common.search",
+                            "name": "Input",
                             "actions": [
                                 {
-                                    "type": "click",
+                                    "comment": "댓글 본문 검색어 — 옆 「내 글」 탭과 조건 자리가 갈리므로 이름도 따로다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myCommentsSearch": "{{$event.target.value}}"
+                                    }
+                                },
+                                {
+                                    "comment": "Enter 검색 — 검색 버튼과 같은 순서를 탄다. 적용 검색어는 입력칸 값에서 바로 읽는다(상태가 아직 따라오지 않은 마지막 글자도 빠지지 않게). 한글 조합 중 Enter 는 엔진 키 필터가 건너뛴다",
+                                    "type": "keypress",
+                                    "key": "Enter",
                                     "handler": "sequence",
                                     "actions": [
                                         {
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",
-                                                "myCommentsPage": 1
+                                                "myCommentsPage": 1,
+                                                "myCommentsSearch": "{{$event.target.value}}",
+                                                "myCommentsSearchApplied": "{{$event.target.value}}"
                                             }
                                         },
                                         {
@@ -171,17 +191,51 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "type": "text",
+                                "placeholder": "$t:mypage.board_activities.search_placeholder_comments",
+                                "value": "{{_global.myCommentsSearch ?? ''}}",
+                                "className": "flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                            }
                         },
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                            },
-                            "text": "$t:common.reset",
                             "actions": [
                                 {
+                                    "comment": "검색 — 조건이 URL 이 아니라 전역 상태에 있어 스스로 refetch 를 걸어야 한다. 쪽수를 1 로 되돌리지 않으면 3쪽을 보던 중 검색했을 때 빈 쪽이 뜬다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "myCommentsPage": 1,
+                                                "myCommentsSearchApplied": "{{_global.myCommentsSearch ?? ''}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "myComments"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                            },
+                            "text": "$t:common.search"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -191,6 +245,8 @@
                                                 "target": "global",
                                                 "myCommentsBoard": "",
                                                 "myCommentsSearch": "",
+                                                "myCommentsSearchApplied": "",
+                                                "myCommentsSearchField": "content",
                                                 "myCommentsSort": "latest",
                                                 "myCommentsPage": 1
                                             }
@@ -203,7 +259,11 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            },
+                            "text": "$t:common.reset"
                         }
                     ]
                 }
@@ -250,19 +310,21 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "text": "({{myComments?.data?.total ?? 0}}$t:mypage.board_activities.search_result_unit)"
+                            "text": "({{myComments?.data?.total ?? 0}}$t:mypage.board_activities.search_result_unit|count={{myComments?.data?.total ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": ")"
                         }
                     ]
                 },
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "className": "text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-sm"
-                    },
-                    "text": "$t:common.reset",
                     "actions": [
                         {
+                            "comment": "초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -272,6 +334,8 @@
                                         "target": "global",
                                         "myCommentsBoard": "",
                                         "myCommentsSearch": "",
+                                        "myCommentsSearchApplied": "",
+                                        "myCommentsSearchField": "content",
                                         "myCommentsSort": "latest",
                                         "myCommentsPage": 1
                                     }
@@ -284,7 +348,11 @@
                                 }
                             ]
                         }
-                    ]
+                    ],
+                    "props": {
+                        "className": "text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-sm"
+                    },
+                    "text": "$t:common.reset"
                 }
             ]
         },
@@ -309,9 +377,6 @@
                         {
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "className": "w-full text-left block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
-                            },
                             "actions": [
                                 {
                                     "type": "click",
@@ -321,6 +386,9 @@
                                     }
                                 }
                             ],
+                            "props": {
+                                "className": "w-full text-left block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
+                            },
                             "children": [
                                 {
                                     "comment": "상단: [게시판명] 원글 제목 + 작성일",
@@ -402,8 +470,10 @@
                             }
                         },
                         {
+                            "comment": "검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다",
                             "type": "basic",
                             "name": "P",
+                            "if": "{{!(!!_global.myCommentsSearchApplied || !!_global.myCommentsBoard)}}",
                             "props": {
                                 "className": "text-gray-500 dark:text-gray-400"
                             },
@@ -411,10 +481,16 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Button",
+                            "name": "P",
+                            "if": "{{!!_global.myCommentsSearchApplied || !!_global.myCommentsBoard}}",
                             "props": {
-                                "className": "inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                                "className": "text-gray-500 dark:text-gray-400"
                             },
+                            "text": "$t:board.no_search_results"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
                             "actions": [
                                 {
                                     "type": "click",
@@ -424,6 +500,9 @@
                                     }
                                 }
                             ],
+                            "props": {
+                                "className": "inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                            },
                             "text": "$t:mypage.board_activities.go_boards"
                         }
                     ]
@@ -435,12 +514,6 @@
             "type": "composite",
             "name": "Pagination",
             "if": "{{((myComments?.data?.last_page ?? 0) > 1) || (myComments?.data?.has_more_pages === true) || ((myComments?.data?.current_page ?? 1) > 1)}}",
-            "props": {
-                "currentPage": "{{myComments?.data?.current_page ?? 1}}",
-                "totalPages": "{{myComments?.data?.last_page ?? null}}",
-                "hasMorePages": "{{myComments?.data?.has_more_pages ?? false}}",
-                "className": "mt-4 flex justify-center"
-            },
             "actions": [
                 {
                     "event": "onPageChange",
@@ -461,7 +534,13 @@
                         }
                     ]
                 }
-            ]
+            ],
+            "props": {
+                "currentPage": "{{myComments?.data?.current_page ?? 1}}",
+                "totalPages": "{{myComments?.data?.last_page ?? null}}",
+                "hasMorePages": "{{myComments?.data?.has_more_pages ?? false}}",
+                "className": "mt-4 flex justify-center"
+            }
         }
     ]
 }

@@ -1,0 +1,47 @@
+feature: 게시판 관리자·스텝 일괄 지정
+
+description: |
+  한 회원을 여러 게시판의 관리자·스텝으로 지정하려면 게시판 폼을 하나씩 저장해야 했다.
+  게시판 환경설정 「기본값」 탭에 일괄 지정 카드를 둔다.
+
+  경로: POST /api/modules/sirsoft-board/admin/boards/bulk-members
+        {apply_all, board_ids, user_uuids, member_type, mode} → BoardService::bulkUpdateBoardMembers()
+
+  규칙:
+    - 대상 게시판은 전체 또는 고른 목록, 범위(scope) 밖 게시판은 skipped(scope)
+    - 관리자가 0명이 되는 게시판은 skipped(last_manager) — 게시판 폼의 min:1 규칙과 같다
+    - 바뀐 게시판마다 기존 syncBoardRoleUsers() 를 타 역할 멤버십·캐시·훅이 단건 저장과 같다
+    - 「모든 게시판」 에서 액터가 그 게시판 역할을 줄 수 없으면(권한 부여 상한) 그 게시판만 skipped(not_grantable) — 하나 때문에
+      전체가 403 이 되지 않는다(7.1.0 실측 O-K3T-7). 직접 고른 게시판은 종전대로 상한 위반이면 403 이고 모두 되돌린다
+    - 전체를 한 트랜잭션으로 묶어 실패 시 모두 되돌린다
+    - 바꿀 것이 없던 게시판은 unchanged_count(「변화 없음」)로 따로 센다 — 변경·제외·변화 없음의 합이 대상 게시판 수(G1a 관측, 결정 2026-10-08)
+    - 카드 잠금은 서버와 같은 게시판 수정 권한(boards.update)만 따른다 — 환경설정 수정 권한(settings.update)이 없어도 쓸 수 있다(O-K3-5)
+    - 역할 행이 없는(데이터 손상) 게시판은 skipped(role_missing) 로 결과 화면에 사유와 함께 보인다(결정 2026-10-09)
+    - 게시판 목록 조회가 403 이면 「권한 없음」 이유를, 그 밖의 실패(5xx 등)면 「불러오지 못함」 이유를 보인다(지침 2026-10-09)
+
+axes:
+  member_type: [manager, step]
+  mode: [add, remove]
+  target: [all, selected]
+
+effects:
+  - last_manager_board_skipped
+  - scope_filtered
+  - skipped_entries_carry_board_name
+  - bulk_members_user_search_skips_blank_keyword
+  - role_membership_synced
+  - rollback_on_failure
+  - not_grantable_board_skipped_on_apply_all
+  - bulk_members_labels_resolve_in_both_locales
+  - bulk_members_inputs_do_not_pollute_settings_form
+  - bulk_members_card_renders_on_defaults_tab
+  - bulk_members_card_lock_follows_boards_update
+  - unchanged_boards_counted
+  - role_missing_boards_skipped
+  - bulk_members_reason_distinguishes_forbidden_and_failed
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardBulkMembersTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-bulk-members-i18n.test.ts
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-bulk-members-section.test.ts
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-bulk-members-render.test.tsx

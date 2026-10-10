@@ -1,0 +1,70 @@
+feature: 코드 편집기의 좌측 파일 트리
+
+description: |
+  좌측 파일 목록이 **평면 1차원 리스트**였다. 관리자 템플릿 하나만 `.g7.html` 144개이고 이름이
+  `partials/admin_identity_logs/_modal_log_detail` 처럼 슬래시가 든 긴 문자열이라, 원하는 파일을
+  눈으로 찾는 것이 사실상 불가능했다(#476).
+
+  접근성도 없었다 — 행이 `<div>` + click 이라 role·tabindex 가 붙지 않아 키보드로 닿을 수 없고
+  스크린리더는 구조로 읽지 못했다(D9).
+
+  고침은 평면 배열을 **컴포넌트가** 폴더 트리로 세우는 것이다. 백엔드 응답 스키마는 그대로 두고
+  이름의 슬래시로 폴더를 만든다 — 폴더는 실체가 아니라 이름의 일부이므로, 파일이 사라지면 빈 폴더도
+  함께 사라진다(결정 D-2).
+
+axes:
+  depth: [root, one_level, two_levels]
+  input: [mouse, keyboard]
+
+axis_notes:
+  depth: 이름의 `/` 개수 — 0/1/2. 폴더 노드가 만들어지는 깊이가 이 축이다.
+  input: >-
+    mouse = 클릭 선택, keyboard = 방향키 이동 + Enter. 접근성(D9)이 걸린 축이라 둘 다 잰다.
+  removed_kind: >-
+    `kind`(layout / extension_module / extension_plugin) 는 축에서 뺐다 — 트리 렌더는 노드의
+    `kind` 로 아이콘만 가르고 **모듈과 플러그인을 구분하지 않는다**(그룹 라벨은 서버가 준 문자열을
+    그대로 쓴다). 실제로 변하지 않는 것을 축으로 세우면 조합만 부풀고 커버는 허위가 된다.
+    확장 조각이 트리에 실리는지는 `code-editor-file-tree.spec.ts` 가 라이브에서 본다.
+
+effects:
+  - file_tree_builds_folders_from_slashes            # 이름의 슬래시가 폴더가 된다
+  - file_tree_shows_last_segment_only                # 행에는 마지막 세그먼트만 (전체 경로는 title)
+  - file_tree_indents_16px_per_depth                 # 깊이당 16px (§7.6 치수표)
+  - file_tree_groups_extensions_by_source            # 확장 조각은 준 확장으로 묶인다
+  - file_tree_shows_pending_folders                  # 파일이 없는 가상 폴더도 보인다
+  - file_tree_marks_dirty_files_three_ways           # 점 + 굵기 + aria-label (색 하나에 기대지 않는다)
+  - file_tree_counts_dirty_descendants_on_folders    # 상위 폴더에 자손 미저장 개수
+  - file_tree_uses_tree_role_contract                # role=tree / treeitem / aria-expanded / aria-selected
+  - file_tree_uses_roving_tabindex                   # 활성 노드 하나만 tabindex=0
+  - file_tree_arrow_keys_move_between_visible_rows   # 접힌 폴더의 자식은 건너뛴다
+  - file_tree_remembers_expansion_in_local_storage   # 새로고침해도 접힘 상태 유지
+  - code_editor_file_tree_is_a_single_component      # 기기별 목록 두 벌이 하나로 합쳐졌다
+  - code_editor_file_select_syncs_route_query        # 선택이 주소에 남아 새로고침을 견딘다
+  - file_tabs_scroll_active_tab_into_view            # 활성 탭이 바뀌면 시야로 끌어온다 (§9.2 "활성 자동 스크롤 인")
+  - file_tabs_cap_width_at_180px                     # 탭 폭 180px + 말줄임 (§7.6)
+  - file_tabs_use_spec_tokens_for_active_and_inactive # 활성 흰 배경+파랑 밑줄 / 비활성 gray-600 (§7.6 토큰표)
+  - file_tree_picker_drawer_slides_in_from_the_left  # 태블릿 서랍 380px·z-40·200ms 슬라이드 (§7.4)
+  - file_tree_picker_sheet_covers_the_viewport       # 모바일 시트는 전체 화면, 아래에서 올라온다 (§7.5)
+  - file_tree_picker_overlay_closes_on_escape        # Esc 로 오버레이·스크림이 닫힌다
+  - file_tree_picker_focuses_search_on_nonce         # 단축키(mod+k·mod+shift+f)가 검색창에 포커스 — 서랍이면 먼저 연다
+  - extension_override_badge_is_visible_in_the_tree # 확장 덮어쓰기 표지가 트리에 보인다
+  - code_editor_tree_reads_dirty_keys # 트리가 미저장 표시를 작업 영역의 dirty 키에서 읽는다
+  - code_editor_tree_hides_actions_without_permission # 편집 권한이 없으면 트리의 파일 조작 버튼을 감춘다
+  - extension_select_sets_selected_node_kind # 확장 조각을 고르면 선택 노드 종류가 extension 이 된다
+  - code_editor_new_folder_is_client_side_only # 새 폴더는 서버 호출 없이 트리에만 생긴다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileTree.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileTabs.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileTreePicker.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-template-layout-edit.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-file-tree.spec.ts
+
+validation:
+  note: |
+    단위 테스트가 트리 변환·접근성 규약을 잠그고, 레이아웃 계약 테스트가 "목록이 하나의 컴포넌트로
+    합쳐졌다"(옛 rich-select·평면 iteration 이 남아 있지 않다)를 고정하며, 브라우저 spec 이
+    실제 폴더 접기·키보드 이동·주소 복원을 잰다.
+
+    폭 규약은 code-editor-panels-and-versions 가 이어서 잰다 — 트리 폭은 이제 컴포넌트가
+    240~480px 로 묶어 소유하고 레이아웃은 "내용 길이로 밀리지 않는다" 만 선언한다.

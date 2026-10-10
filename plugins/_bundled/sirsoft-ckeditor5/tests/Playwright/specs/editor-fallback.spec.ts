@@ -39,9 +39,11 @@ test.describe('편집기 자산 실패 폴백', () => {
         testInfo.setTimeout(120_000);
     });
 
+    /**
+     * @scenario asset_class=vendored, outcome=failed
+     * @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice
+     */
     test('자산 실패 시 안내와 평문 입력창이 나타난다', async ({ page, editorToken }) => {
-        // @scenario asset_class=vendored, outcome=failed
-        // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice
         await page.route(EDITOR_BUNDLE, (route) => route.abort());
         await authenticatePage(page, editorToken);
 
@@ -57,9 +59,34 @@ test.describe('편집기 자산 실패 폴백', () => {
         await expect(page.locator('[data-ckeditor5-fallback]')).toBeVisible({ timeout: 20_000 });
     });
 
+    /**
+     * @scenario asset_class=vendored, outcome=failed
+     * @effects editor_script_failure_shows_single_plugin_notice
+     */
+    test('본체 실패 안내는 한 건이고 임시 입력창 전환 문장이 그대로 보인다', async ({ page, editorToken }) => {
+        // 본체는 조각의 <script id="ckeditor5_script"> 로 실려, 코어 레이아웃 스크립트 로더도 같은 실패를
+        // `layout-script:ckeditor5_script` 로 알린다. 두 건이 겹치면 배너가 「2개 항목을 불러오지 못했습니다」
+        // 묶음 문구가 되어 전환 안내 문장이 사라졌다. 코어 재시도가 끝난 뒤(늦게 온 코어 안내)까지 기다려 본다.
+        await page.route(EDITOR_BUNDLE, (route) => route.abort());
+        await authenticatePage(page, editorToken);
+
+        await page.goto('/admin/board/notice/create');
+        await page.waitForLoadState('networkidle');
+
+        const notice = page.locator('#g7-asset-failure-notice');
+        await expect(notice).toBeVisible({ timeout: 20_000 });
+        await page.waitForTimeout(8_000);
+
+        await expect(notice).toBeVisible();
+        await expect(notice).toContainText(/임시 입력창|plain text box|一時的な入力ウィンドウ/);
+        await expect(notice).not.toContainText(/\d+개 항목|Could not load \d+ items|\d+個の項目/);
+    });
+
+    /**
+     * @scenario asset_class=vendored, outcome=failed
+     * @effects failed_asset_falls_back_to_plain_input
+     */
     test('폴백 입력창으로 작성한 내용이 평문으로 저장되고 새로고침 뒤에도 남는다', async ({ page, editorToken }) => {
-        // @scenario asset_class=vendored, outcome=failed
-        // @effects failed_asset_falls_back_to_plain_input
         //
         // 폼 상태만 보면 "폴백에 글자가 들어갔다" 까지만 증명된다. 제보의 요구는 그게 아니라
         // **글을 쓸 수 있어야 한다** 이므로 저장 → 재진입 → 본문 보존까지 실제로 밟는다.
@@ -117,9 +144,11 @@ test.describe('편집기 자산 실패 폴백', () => {
         }
     });
 
+    /**
+     * @scenario asset_class=vendored, outcome=failed
+     * @effects retry_recovers_editor
+     */
     test('차단 해제 후 다시 시도하면 편집기가 서고 입력 내용이 승계된다', async ({ page, editorToken }) => {
-        // @scenario asset_class=vendored, outcome=failed
-        // @effects retry_recovers_editor
         let blocked = true;
 
         await page.route(EDITOR_BUNDLE, (route) => (blocked ? route.abort() : route.continue()));
@@ -149,10 +178,12 @@ test.describe('편집기 자산 실패 폴백', () => {
         expect(restored).toContain('승계 확인');
     });
 
+    /**
+     * @scenario asset_class=vendored, outcome=loaded
+     * @effects runtime_asset_served_same_origin
+     */
     test('정상 경로에서는 안내가 뜨지 않고 편집기가 선다', async ({ page, editorToken }) => {
         // 폴백이 정상 경로까지 삼키면 편집기가 영영 안 뜬다 — 반대 방향도 잠근다.
-        // @scenario asset_class=vendored, outcome=loaded
-        // @effects runtime_asset_served_same_origin
         await authenticatePage(page, editorToken);
 
         await page.goto('/admin/board/notice/create');
@@ -163,9 +194,11 @@ test.describe('편집기 자산 실패 폴백', () => {
         await expect(page.locator('#g7-asset-failure-notice')).toHaveCount(0, { timeout: 20_000 });
     });
 
+    /**
+     * @scenario asset_class=vendored, outcome=failed
+     * @effects failed_asset_falls_back_to_plain_input, fallback_body_survives_resize_on_save
+     */
     test('폭을 바꾼 뒤 저장해도 폴백 입력창의 본문이 그대로 전송된다', async ({ page, editorToken }) => {
-        // @scenario asset_class=vendored, outcome=failed
-        // @effects failed_asset_falls_back_to_plain_input, fallback_body_survives_resize_on_save
         //
         // 이 케이스는 두 매니페스트에 걸친다 — 폴백이 서는 것 자체는
         // `self-hosted-runtime-assets.yaml`, 폭 변경 후 본문이 살아남는 것은

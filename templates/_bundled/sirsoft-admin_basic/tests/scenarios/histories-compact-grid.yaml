@@ -1,0 +1,16 @@
+feature: 관리자 이력 표 촘촘 서식이 표 칸 기본 여백을 이긴다
+
+description: |
+  신고 상세 「처리 이력」 표가 쓰는 `.histories-compact-grid` 는 표 칸 여백을 px-3·py-2 로 좁히는 서식이다.
+  규칙이 `@layer components` 안에 있어 표 칸에 붙은 유틸리티 `px-6 py-4`(utilities 층)에 밀려 적용되지 않았고,
+  1024px 에서 표가 칸보다 넓어 가로 스크롤이 생겼다(7.1.0 전수 실측 K2 관측 O-K2-7). 층 순서는 명시도로
+  뒤집을 수 없으므로 규칙을 층 밖에 둔다. 축 placement 는 규칙이 놓인 캐스케이드 층 위치다.
+
+axes:
+  placement: [unlayered]
+
+effects:
+  - compact_padding_beats_cell_utility_padding
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-histories-compact-grid-css.test.tsx

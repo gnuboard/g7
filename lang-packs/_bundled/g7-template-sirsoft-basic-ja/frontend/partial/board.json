@@ -1,6 +1,10 @@
 {
   "loading_posts": "投稿を読み込み中です...",
   "view_board": "掲示板を表示",
+  "admin_links": {
+    "posts": "管理者の投稿を閲覧",
+    "manage": "掲示板管理"
+  },
   "no": "番号",
   "title": "タイトル",
   "author": "作成者",
@@ -8,15 +12,15 @@
   "created_at": "作成日",
   "views": "閲覧",
   "views_count": "閲覧 {{count}}",
-  "write": "投稿する",
-  "search_placeholder": "タイトル、内容、作成者で検索...",
+  "write": "投稿を作成",
+  "search_placeholder": "検索キーワードを入力してください",
   "board_not_found": "掲示板が見つかりません",
   "board_not_found_description": "掲示板が存在しないか、無効化されています。",
   "no_posts": "登録された投稿がありません",
   "no_posts_on_page": "このページに投稿がありません",
   "go_to_first_page": "最初のページに移動",
   "no_search_results": "検索結果がありません",
-  "write_first_post": "最初の投稿を作成する",
+  "write_first_post": "最初の投稿を作成",
   "clear_search": "検索をリセット",
   "secret_post": "秘密の投稿です。",
   "notice": "お知らせ",
@@ -24,8 +28,8 @@
   "blinded": "ブラインド",
   "new_badge": "NEW",
   "secret_post_locked": "秘密の投稿です。パスワードを入力してください。",
-  "secret_post_login_required": "秘密の投稿です。ログイン後にご確認ください。",
-  "secret_post_no_permission": "秘密の投稿です。作成者または権限のあるユーザーのみ閲覧可能です。",
+  "secret_post_login_required": "秘密の投稿です。ログイン後に確認してください。",
+  "secret_post_no_permission": "秘密の投稿です。作成者または権限を持つユーザーのみ閲覧できます。",
   "enter_password": "パスワード入力",
   "secret_post_password_title": "秘密の投稿のパスワード",
   "secret_post_password_desc": "この投稿を表示するにはパスワードを入力してください。",
@@ -33,20 +37,20 @@
   "blinded_post": "ブラインド処理された投稿です",
   "view_original": "元の投稿を表示",
   "hide_original": "元の投稿を非表示",
-  "original_content": "元のコンテンツ",
+  "original_content": "元の内容",
   "reason": "理由",
   "blinded_reason": {
-    "report": "通報によってブラインド処理されました",
-    "admin": "管理者によってブラインド処理されました",
-    "system": "システムによってブラインド処理されました",
-    "auto_hide": "通報によってブラインド処理されました"
+    "report": "通報によりブラインド処理されました",
+    "admin": "管理者によりブラインド処理されました",
+    "system": "システムによりブラインド処理されました",
+    "auto_hide": "通報によりブラインド処理されました"
   },
   "all_boards": {
     "title": "すべての掲示板",
-    "description": "様々なトピックの掲示板をご覧ください",
+    "description": "様々なテーマの掲示板を閲覧",
     "empty": "登録された掲示板がありません。"
   },
-  "post_count": "{{count}}個",
+  "post_count": "{{count}}件",
   "list": "リスト",
   "post": {
     "author": "作成者",
@@ -56,24 +60,29 @@
     "likes": "いいね",
     "edit": "編集",
     "delete": "削除",
-    "delete_confirm": "この投稿を削除しますか?",
+    "delete_confirm": "投稿を削除しますか?",
     "deleted": "削除されました。",
     "deleted_badge": "削除済み",
-    "reply": "回答",
+    "reply": "返信",
     "report": "通報",
     "reported": "通報済み",
-    "report_post": "投稿を通報",
-    "report_comment": "コメントを通報",
+    "scrap": "スクラップ",
+    "scrapped": "スクラップ済み",
+    "scrap_login_required": "ログインが必要な機能です。",
+    "scrap_added": "投稿をスクラップしました。",
+    "scrap_removed": "スクラップを解除しました。",
+    "report_post": "投稿通報",
+    "report_comment": "コメント通報",
     "report_reason": "通報理由",
     "select_reason": "通報理由を選択してください",
-    "report_detail": "詳細な理由",
-    "report_detail_placeholder": "通報理由を詳しく入力してください",
+    "report_detail": "詳細理由",
+    "report_detail_placeholder": "通報理由を具体的に入力してください",
     "report_reason_required": "通報理由を選択してください",
-    "report_detail_required": "詳細な理由を入力してください",
+    "report_detail_required": "詳細理由を入力してください",
     "submit_report": "通報する",
     "report_submitted": "通報が受け付けられました",
-    "report_notice_title": "通報する前にご確認ください",
-    "report_notice_content": "虚偽の通報の場合は処罰を受ける可能性があり、通報内容は管理者が確認後に処理します。",
+    "report_notice_title": "通報する前に確認してください",
+    "report_notice_content": "虚偽の通報の場合は制裁を受ける可能性があります。通報内容は管理者が検討した後に処理されます。",
     "report_target_comment": "通報するコメント",
     "notice": "お知らせ",
     "secret": "秘密の投稿"
@@ -86,12 +95,13 @@
     "reply": "返信",
     "edit": "編集",
     "delete": "削除",
-    "delete_confirm": "このコメントを削除しますか?",
+    "delete_confirm": "コメントを削除してもよろしいですか?",
     "deleted": "削除されたコメントです。",
     "empty": "最初のコメントを作成してみてください!",
-    "blinded_comment": "ブラインド処理されたコメントです。",
+    "blinded_comment": "ブロック処理されたコメントです。",
     "deleted_comment_content": "削除されたコメントです",
-    "blinded_comment_content": "ブラインド処理されたコメントです",
+    "blinded_comment_content": "ブロック処理されたコメントです",
+    "secret_comment": "秘密のコメントです。",
     "view_original": "原文を表示",
     "hide_original": "原文を非表示"
   },
@@ -116,7 +126,7 @@
   "guest_author_name": "名前",
   "guest_author_name_placeholder": "名前を入力してください",
   "guest_password": "パスワード",
-  "guest_password_placeholder": "パスワードを入力してください(編集·削除時に必要)",
+  "guest_password_placeholder": "パスワードを入力してください (編集/削除時に必要)",
   "guest_password_verify": "パスワード確認",
   "guest_password_verify_message": "非会員の投稿を編集するにはパスワードを入力してください。",
   "guest_password_post_edit_message": "非会員の投稿を編集するにはパスワードを入力してください。",
@@ -133,11 +143,10 @@
     "incorrect": "パスワードが一致しません。"
   },
   "reaction": {
-    "like": "いいね",
-    "laugh": "面白い",
-    "agree": "同意します",
-    "thanks": "ありがとうございます",
-    "wow": "驚きました"
+    "login_required": "ログインが必要な機能です",
+    "failed": "反応処理に失敗しました。しばらく後にもう一度お試しください。",
+    "self_post_denied": "自分の投稿には反応できません。",
+    "self_comment_denied": "自分のコメントには反応できません。"
   },
   "attachments": {
     "title": "添付ファイル",
@@ -170,30 +179,30 @@
     "content_placeholder": "内容を入力してください...",
     "attachments": "添付ファイル",
     "attachments_desc": "最大{{maxFiles}}個、各{{maxSize}}MB以下",
-    "secret_post": "非公開",
-    "secret_post_always": "この掲示板は常に非公開で作成されます",
+    "secret_post": "非公開投稿",
+    "secret_post_always": "このボードは常に非公開として作成されます",
     "secret_description": "作成者と管理者のみが閲覧できます",
-    "secret_always_description": "この掲示板のすべての投稿は非公開で作成されます",
+    "secret_always_description": "このゲーム板のすべての投稿は秘密投稿として作成されます",
     "submit": "登録",
     "password_placeholder": "パスワードを入力してください",
     "is_notice": "お知らせ",
     "notice_description": "掲示板の上部に固定されます",
-    "category": "カテゴリー",
-    "select_category": "カテゴリ選択",
+    "category": "カテゴリ",
+    "select_category": "カテゴリを選択",
     "reply_to": "返信対象",
     "view_original": "原文を表示",
-    "show_full_content": "全内容を表示",
-    "hide_content": "閉じる"
+    "show_full_content": "全文を表示",
+    "hide_content": "折りたたむ"
   },
   "popular": {
     "title": "人気投稿",
-    "description": "多くの関心を受けた投稿です",
+    "description": "多くの関心を集めた投稿です",
     "today": "今日",
     "this_week": "今週",
     "this_month": "今月",
     "year": "1年",
     "no_posts": "人気投稿がありません",
-    "no_posts_description": "選択された期間に閲覧数が高い投稿がありません"
+    "no_posts_description": "選択された期間で閲覧数が高い投稿がありません"
   },
   "filter": {
     "category_all": "すべてのカテゴリ",
@@ -202,34 +211,36 @@
     "include_deleted_comments": "削除されたコメントを含める"
   },
   "error_title": "一時的なエラーが発生しました",
-  "error_description": "掲示板を読み込む中に問題が発生しました。\nしばらく後に再度お試しください。",
+  "error_description": "掲示板を読み込む際に問題が発生しました。\nしばらく後に再度お試しください。",
   "reload_page": "更新",
   "new_post": "投稿を作成",
   "new_post_description": "新しい投稿を作成します",
   "edit_post": "投稿を編集",
   "edit_post_description": "投稿を編集します",
-  "no_write_permission": "投稿権限がありません",
-  "login_required": "ログインが必要です",
+  "no_write_permission": "投稿作成権限がありません",
+  "login_required": "ログインが必要なページです",
   "login_required_to_write": "投稿を作成するにはログインが必要です",
-  "no_comments_yet": "まだコメントがありません。最初のコメントを作成してみてください。",
+  "no_comments_yet": "まだコメントがありません。最初のコメントを作成してみてください！",
   "blinded_comment_disabled": "ブラインド処理された投稿にはコメントを作成できません",
   "no_comment_write_permission": "コメント作成権限がありません",
   "no_comment_read_permission": "コメント閲覧権限がありません",
   "parent_post": "元の投稿",
-  "show_less": "閉じる",
+  "show_less": "折りたたむ",
   "show_more": "もっと見る",
   "posts": {
     "detail": {
       "replies_title": "回答 ({{count}})",
-      "reply_secret_content": "非公開投稿です"
+      "reply_secret_content": "秘密投稿です"
     },
     "form": {
-      "confirm_remove_attachment_title": "添付ファイル削除",
-      "confirm_remove_attachment_message": "ファイルが即座に削除されます。投稿保存と無関係に取り戻せません。"
+      "confirm_remove_attachment_title": "添付ファイルを削除",
+      "confirm_remove_attachment_message": "ファイルは即座に削除されます。投稿の保存とは関係なく、復元することはできません。"
     }
   },
-  "admin_links": {
-    "posts": "管理者投稿閲覧",
-    "manage": "掲示板管理"
+  "search_fields": {
+    "title_content": "タイトル+内容",
+    "title": "タイトル",
+    "content": "内容",
+    "author": "作成者"
   }
 }

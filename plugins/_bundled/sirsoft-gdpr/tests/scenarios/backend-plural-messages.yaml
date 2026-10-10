@@ -1,0 +1,13 @@
+feature: GDPR 동의 일괄 갱신 응답 문구의 수 채움·단·복수
+
+description: |
+  동의 일괄 갱신 API 응답 message 가 `{renewed}` 를 채우지 못해 자리표시자가 그대로 나가던 것을 `:renewed` 로 고치고, 영어는 갱신 수로 단·복수를 고른다.
+
+axes:
+  surface: [response_message]
+
+effects:
+  - response_message_fills_and_follows_count
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Lang/BackendPluralMessagesTest.php

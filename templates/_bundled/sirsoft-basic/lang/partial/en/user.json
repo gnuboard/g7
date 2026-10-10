@@ -1,177 +1,226 @@
 {
-  "base_layout_title": "Gnuboard7",
-  "base_layout_description": "Gnuboard7 Community",
-  "menu": "Menu",
-  "search_placeholder": "Enter search term",
-  "profile": {
-    "page_title": "User Profile",
-    "posts_page_title": "Posts",
-    "user_not_found": "User not found.",
-    "joined_at": "Joined:",
-    "posts_count": "Posts",
-    "comments_count": "Comments",
-    "recent_posts": "Recent Posts",
-    "posts_suffix": "'s Posts",
-    "total_posts": "Total {{count}} posts",
-    "no_posts": "No posts yet.",
-    "view_all": "View All",
-    "back_to_profile": "Profile",
-    "post_board": "Board",
-    "post_title": "Title",
-    "post_views": "Views",
-    "post_date": "Date",
-    "badge_blinded": "Blinded"
-  },
-  "nav": {
-    "home": "Home",
-    "popular": "Popular",
-    "boards": "Boards",
-    "shop": "Shop",
-    "products": "Products",
-    "cart": "Cart",
-    "mypage": "My Page"
-  },
-  "footer": {
-    "info": "Info",
-    "about": "About Us",
-    "faq": "FAQ",
-    "contact": "Contact Us",
-    "policy": "Policy",
-    "terms": "Terms of Service",
-    "privacy": "Privacy Policy",
-    "refund": "Refund Policy"
-  },
-  "page": {
-    "page_title": "Page",
-    "not_found_title": "Page Not Found",
-    "not_found_description": "The page you requested does not exist or has been deleted.",
-    "back_to_home": "Back to Home",
-    "admin_edit": "Edit",
-    "status_active": "Active",
-    "published_at": "Published",
-    "create_page": "Create Page",
-    "attachments": "Attachments",
-    "download": "Download",
-    "preview_banner": "Previewing an unpublished page"
-  },
-  "mypage": {
-    "page_title": "My Page",
-    "profile_title": "Profile",
-    "profile_edit_title": "Edit Profile",
-    "change_password_title": "Change Password",
-    "orders_title": "Order History",
-    "order_detail_title": "Order Details",
-    "mileage_title": "Mileage",
-    "wishlist_title": "Wishlist",
-    "addresses_title": "Address Management",
-    "notifications_title": "Notifications",
-    "board_title": "Board Activity",
-    "inquiries_title": "Product Inquiries"
-  },
-  "identity": {
-    "challenge": {
-      "title": "Identity Verification",
-      "code_title": "Enter Verification Code",
-      "code_subtitle": "Please enter the 6-digit code that was sent to you.",
-      "code_placeholder": "Verification code",
-      "verify": "Verify",
-      "resend": "Resend code",
-      "resend_cooldown": "Resend (in {{seconds}}s)",
-      "resend_success": "Verification code has been resent.",
-      "remaining_time": "Time remaining: {{minutes}}:{{seconds}}",
-      "remaining_attempts": "Attempts left: {{count}}",
-      "expired": "Code has expired. Please resend.",
-      "link_title": "Email Verification Required",
-      "link_subtitle": "Click the link in your email to complete identity verification.",
-      "resend_link": "Resend email",
-      "check_spam": "If the email hasn't arrived, please check your spam folder.",
-      "external_title": "Redirecting to external verification",
-      "external_subtitle": "You will be redirected to the identity verification service shortly.",
-      "manual_redirect": "Redirect manually",
-      "error_generic": "Verification failed. Please try again."
-    }
-  },
-  "home": {
-    "page_title": "Home"
-  },
-  "auth": {
-    "login_title": "Sign In",
-    "register_title": "Sign Up",
-    "forgot_password_title": "Forgot Password",
-    "reset_password_title": "Reset Password"
-  },
-  "board": {
-    "boards_title": "Boards",
-    "popular_title": "Popular Posts",
-    "list_title": "Board",
-    "show_title": "Post",
-    "write_title": "Write Post",
-    "edit_title": "Edit Post"
-  },
-  "shop": {
-    "list_title": "Products",
-    "show_title": "Product Detail",
-    "category_title": "Category",
-    "cart_title": "Cart",
-    "checkout_title": "Checkout",
-    "order_complete_title": "Order Complete",
-    "guest_order_form_title": "Guest Order Lookup",
-    "guest_order_show_title": "Guest Order Detail"
-  },
-  "search": {
-    "page_title": "Search"
-  },
-  "errors": {
-    "not_found_title": "404 — Not Found",
-    "forbidden_title": "403 — Forbidden",
-    "server_error_title": "500 — Server Error"
-  },
-  "modal_label": {
+    "base_layout_title": "Gnuboard7",
+    "base_layout_description": "Gnuboard7 Community",
+    "menu": "Menu",
+    "search_placeholder": "Enter search term",
+    "profile": {
+        "page_title": "User Profile",
+        "posts_page_title": "Posts",
+        "user_not_found": "User not found.",
+        "joined_at": "Joined:",
+        "posts_count": "Posts",
+        "comments_count": "Comments",
+        "recent_posts": "Recent Posts",
+        "posts_suffix": "'s Posts",
+        "total_posts": "Total {{count}} posts",
+        "total_posts_one": "Total {{count}} post",
+        "no_posts": "No posts yet.",
+        "view_all": "View All",
+        "back_to_profile": "Profile",
+        "post_board": "Board",
+        "post_title": "Title",
+        "post_views": "Views",
+        "post_date": "Date",
+        "badge_blinded": "Blinded"
+    },
+    "nav": {
+        "home": "Home",
+        "popular": "Popular",
+        "boards": "Boards",
+        "shop": "Shop",
+        "products": "Products",
+        "cart": "Cart",
+        "mypage": "My Page"
+    },
+    "footer": {
+        "info": "Info",
+        "about": "About Us",
+        "faq": "FAQ",
+        "contact": "Contact Us",
+        "policy": "Policy",
+        "terms": "Terms of Service",
+        "privacy": "Privacy Policy",
+        "refund": "Refund Policy"
+    },
+    "page": {
+        "page_title": "Page",
+        "not_found_title": "Page Not Found",
+        "not_found_description": "The page you requested does not exist or has been deleted.",
+        "back_to_home": "Back to Home",
+        "admin_edit": "Edit",
+        "status_active": "Active",
+        "published_at": "Published",
+        "create_page": "Create Page",
+        "attachments": "Attachments",
+        "download": "Download",
+        "preview_banner": "Previewing an unpublished page"
+    },
+    "mypage": {
+        "page_title": "My Page",
+        "profile_title": "Profile",
+        "profile_edit_title": "Edit Profile",
+        "change_password_title": "Change Password",
+        "orders_title": "Order History",
+        "order_detail_title": "Order Details",
+        "mileage_title": "Mileage",
+        "wishlist_title": "Wishlist",
+        "addresses_title": "Address Management",
+        "notifications_title": "Notifications",
+        "board_title": "Board Activity",
+        "scrap_title": "Scrap",
+        "inquiries_title": "Product Inquiries",
+        "claim_apply_title": "Exchange / Return / Cancel",
+        "claim_apply_description": "Request an exchange, return, cancellation or refund for your order.",
+        "claims_title": "Exchange, return and cancellation requests",
+        "claims_description": "Review, edit or withdraw your exchange, return, refund and cancellation requests.",
+        "claim_detail_title": "Request details",
+        "claim_detail_description": "Review the items, shipping, amounts and reason of the request.",
+        "claim_edit_title": "Edit request"
+    },
+    "identity": {
+        "challenge": {
+            "title": "Identity Verification",
+            "code_title": "Enter Verification Code",
+            "code_subtitle": "Please enter the 6-digit code that was sent to you.",
+            "code_placeholder": "Verification code",
+            "verify": "Verify",
+            "resend": "Resend code",
+            "resend_cooldown": "Resend (in {{seconds}}s)",
+            "resend_success": "Verification code has been resent.",
+            "remaining_time": "Time remaining: {{minutes}}:{{seconds}}",
+            "remaining_attempts": "Attempts left: {{count}}",
+            "expired": "Code has expired. Please resend.",
+            "link_title": "Email Verification Required",
+            "link_subtitle": "Click the link in your email to complete identity verification.",
+            "resend_link": "Resend email",
+            "check_spam": "If the email hasn't arrived, please check your spam folder.",
+            "external_title": "Redirecting to external verification",
+            "external_subtitle": "You will be redirected to the identity verification service shortly.",
+            "manual_redirect": "Redirect manually",
+            "error_generic": "Verification failed. Please try again."
+        },
+        "verify_link": {
+            "title": "Identity Verification",
+            "verifying": "Verifying…",
+            "verified_title": "Verification complete",
+            "verified_body": "Go back to the screen where you started verification — it will continue automatically. You can close this window.",
+            "failed_title": "This link cannot be verified",
+            "failed_body": "The link has expired or was already used. Request a new email from the original screen."
+        }
+    },
+    "home": {
+        "page_title": "Home"
+    },
+    "visitor_counter": {
+        "title": "Visitors",
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "max": "Peak",
+        "total": "Total"
+    },
     "auth": {
-      "privacyModal": "Privacy Policy",
-      "termsModal": "Terms of Service"
+        "login_title": "Sign In",
+        "register_title": "Sign Up",
+        "forgot_password_title": "Forgot Password",
+        "reset_password_title": "Reset Password"
     },
-    "shop_detail": {
-      "coupon_download_confirm_modal": "Download Coupon",
-      "inquiry_delete_modal": "Delete Product Inquiry",
-      "login_required_modal": "Login Required",
-      "qna_reply_modal": "Reply to Product Inquiry",
-      "qna_write_modal": "Write Product Inquiry",
-      "review_image_modal": "View Review Image",
-      "cart_added_modal": "Added to Cart"
-    },
-    "board_form": {
-      "password_verify_modal": "Verify Password"
-    },
-    "board_show": {
-      "board_delete_modal": "Delete Post or Comment",
-      "board_report_modal": "Report Post or Comment",
-      "board_guest_password_modal": "Verify Guest Password"
-    },
-    "mypage_addresses": {
-      "addressModal": "Add or Edit Address",
-      "confirmDeleteAddressModal": "Delete Address",
-      "confirmOverwriteModal": "Overwrite Address"
+    "board": {
+        "boards_title": "Boards",
+        "popular_title": "Popular Posts",
+        "list_title": "Board",
+        "show_title": "Post",
+        "write_title": "Write Post",
+        "edit_title": "Edit Post"
     },
     "shop": {
-      "addressManageModal": "Manage Addresses",
-      "cart_delete_confirm_modal": "Remove from Cart",
-      "cart_option_change_modal": "Change Cart Option",
-      "cart_unavailable_modal": "Unavailable Items",
-      "coupon_download_modal": "Download Coupon",
-      "exclusiveCouponConfirm": "Apply Exclusive Coupon",
-      "tempOrderNotFoundModal": "Order Not Found"
+        "list_title": "Products",
+        "show_title": "Product Detail",
+        "category_title": "Category",
+        "cart_title": "Cart",
+        "checkout_title": "Checkout",
+        "order_complete_title": "Order Complete",
+        "guest_order_form_title": "Guest Order Lookup",
+        "guest_order_show_title": "Guest Order Detail"
     },
-    "mypage_orders": {
-      "modal_cancel_order": "Cancel Order",
-      "changeAddressModal": "Change Address",
-      "modal_confirm_purchase": "Confirm Purchase",
-      "modal_write_review": "Write Review"
+    "search": {
+        "page_title": "Search"
     },
-    "mypage_profile": {
-      "withdrawModal": "Withdraw Membership"
+    "errors": {
+        "not_found_title": "404 — Not Found",
+        "forbidden_title": "403 — Forbidden",
+        "server_error_title": "500 — Server Error"
     },
-    "identity_challenge_modal": "Identity Verification",
-    "notification_delete_all_confirm_modal": "Delete All Notifications"
-  }
+    "modal_label": {
+        "auth": {
+            "privacyModal": "Privacy Policy",
+            "termsModal": "Terms of Service"
+        },
+        "shop_detail": {
+            "coupon_download_confirm_modal": "Download Coupon",
+            "inquiry_delete_modal": "Delete Product Inquiry",
+            "login_required_modal": "Login Required",
+            "qna_reply_modal": "Reply to Product Inquiry",
+            "qna_write_modal": "Write Product Inquiry",
+            "review_image_modal": "View Review Image",
+            "cart_added_modal": "Added to Cart"
+        },
+        "board_form": {
+            "password_verify_modal": "Verify Password"
+        },
+        "board_show": {
+            "board_delete_modal": "Delete Post or Comment",
+            "board_report_modal": "Report Post or Comment",
+            "board_guest_password_modal": "Verify Guest Password"
+        },
+        "mypage_addresses": {
+            "addressModal": "Add or Edit Address",
+            "confirmDeleteAddressModal": "Delete Address",
+            "confirmOverwriteModal": "Overwrite Address"
+        },
+        "mypage_scrap": {
+            "scrapDeleteModal": "Confirm Scrap Removal",
+            "scrapBulkDeleteModal": "Confirm Bulk Scrap Removal"
+        },
+        "shop": {
+            "addressManageModal": "Manage Addresses",
+            "cart_delete_confirm_modal": "Remove from Cart",
+            "cart_option_change_modal": "Change Cart Option",
+            "cart_unavailable_modal": "Unavailable Items",
+            "coupon_download_modal": "Download Coupon",
+            "exclusiveCouponConfirm": "Apply Exclusive Coupon",
+            "tempOrderNotFoundModal": "Order Not Found"
+        },
+        "mypage_orders": {
+            "changeAddressModal": "Change Address",
+            "modal_confirm_purchase": "Confirm Purchase",
+            "modal_write_review": "Write Review"
+        },
+        "mypage_profile": {
+            "withdrawModal": "Withdraw Membership"
+        },
+        "identity_challenge_modal": "Identity Verification",
+        "notification_delete_all_confirm_modal": "Delete All Notifications",
+        "mypage_board": {
+            "reactionDeleteModal": "Confirm reaction removal",
+            "reactionBulkDeleteModal": "Confirm bulk reaction removal",
+            "reportCancelModal": "Confirm report cancellation"
+        },
+        "mypage_claims": {
+            "apply_items": "Claim items",
+            "apply_redelivery": "Redelivery address",
+            "apply_reason": "Claim reason",
+            "apply_summary": "Claim summary",
+            "apply_comparison": "Order amount comparison",
+            "apply_refund_account": "Refund account",
+            "change_product_modal": "Change exchange option",
+            "withdraw_modal": "Withdraw request confirmation",
+            "list": "Request list",
+            "detail_items": "Requested items",
+            "detail_shipping": "Shipping",
+            "detail_claim_info": "Request details",
+            "detail_progress": "Progress",
+            "detail_reason": "Reason",
+            "image_viewer_modal": "Photo viewer"
+        }
+    }
 }

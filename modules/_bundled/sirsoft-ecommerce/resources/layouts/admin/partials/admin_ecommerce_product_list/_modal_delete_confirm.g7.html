@@ -1,0 +1,59 @@
+<!-- 상품 목록 — 상품 삭제 확인 창. 지울 수 있는지를 **서버가 먼저 판정해서** 넘겨준다
+  (`_global.deleteProduct.canDelete` 와 안 되는 경우의 사유). 그래서 이 창은 두 얼굴이다 —
+  지울 수 있으면 함께 지워질 이미지·옵션·추가옵션의 개수를 세어 보여 주고, 지울 수 없으면
+  그 사유만 띄우고 확인 버튼이 잠긴다. 개수를 미리 세는 이유는 상품 하나를 지우는 것이
+  실제로는 여러 줄을 지우는 일이라서다.
+
+  알려진 결함 하나: 함께 지워질 항목의 단위("개")가 코드에 박혀 있어 다국어로 바뀌지 않는다.
+
+  (해소됨) 이 창과 주문 목록 쪽 창들이 실패 토스트에서 서로 다른 이름을 읽어 한쪽이 빈
+  메시지로 뜨던 문제는 정본인 `{{error.message}}` 로 통일해 닫았다. 엔진 오류 컨텍스트에는
+  `error` 만 있고 `$` 를 붙인 이름은 없다 — 그 자리는 값이 비어 **내용 없는 토스트**가 된다.
+  같은 실수가 다시 들어오지 못하도록 audit 룰 `layout-binding-error-prefix` 를 세웠다. -->
+<partial description="Product List - Delete Confirmation Modal">
+  <modal data-type="composite" data-ref="modal_delete_confirm" title="$t:sirsoft-ecommerce.admin.product.modal.delete.title" size="sm">
+    <div data-if="{{_global.deleteProduct?.canDelete}}">
+      <div>
+        <p class="text-body">$t:sirsoft-ecommerce.admin.product.modal.delete.confirm_question</p>
+        <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.product.modal.delete.related_data_notice</p>
+        <p class="text-label-subtle">- 이미지: {{_global.deleteProduct?.relatedData?.images ?? 0}}개</p>
+        <p class="text-label-subtle">- 옵션: {{_global.deleteProduct?.relatedData?.options ?? 0}}개</p>
+        <p class="text-label-subtle">- 추가옵션: {{_global.deleteProduct?.relatedData?.additionalOptions ?? 0}}개</p>
+        <alert data-type="composite" type="warning" message="$t:sirsoft-ecommerce.admin.product.modal.delete.warning_message" class=""/>
+      </div>
+    </div>
+    <div data-if="{{_global.deleteProduct?.canDelete === false}}">
+      <alert data-type="composite" type="error" title="$t:sirsoft-ecommerce.admin.product.modal.delete.cannot_delete_title" message="{{_global.deleteProduct?.reason}}"/>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isProductDeleting}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.deleteProduct?.canDelete || _global.isProductDeleting}}">
+        <on type="click">
+          <!-- 삭제. 버튼은 서버 판정(`canDelete`)이 참일 때만 열리므로 여기서 다시 검사하지 않는다 — 최종 판정은 어차피 서버가 다시 한다. -->
+          <sequence>
+            <set-state target="global" :isProductDeleting="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/products/{{_global.deleteProduct?.target?.id}}" method="DELETE">
+              <success>
+                <set-state target="global" :isProductDeleting="false"/>
+                <refetch-data-source dataSourceId="products"/>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.product.messages.deleted_success"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isProductDeleting="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isProductDeleting}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isProductDeleting ? '$t:common.deleting' : '$t:sirsoft-ecommerce.admin.product.modal.delete.confirm_button'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

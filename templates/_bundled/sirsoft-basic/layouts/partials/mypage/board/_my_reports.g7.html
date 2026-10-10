@@ -1,0 +1,183 @@
+<!-- 게시판 활동의 「내 신고」 하위 탭 — 내가 넣은 신고가 지금 어떤 상태인지 보고, 아직
+     처리가 시작되지 않은 건은 스스로 취소한다.
+
+     취소는 **대기 중인 신고만** 된다(`can_cancel`). 운영자가 이미 검토에 들어갔거나 판정이
+     끝난 건은 신고자가 되돌릴 수 없다 — 그 사실은 상태 배지가 말한다.
+
+     이 탭은 신고 내용을 보여주되 신고 대상을 지우지 않는다. 취소해도 글·댓글은 그대로다. -->
+<partial description="마이페이지 내 게시판 활동 - 내 신고 탭">
+  <div>
+    <!-- 필터 영역 -->
+    <div class="flex flex-col sm:flex-row gap-3 mb-4">
+      <!-- 게시판 필터 -->
+      <select value="{{_global.myReportsBoard ?? ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <on type="change">
+          <sequence>
+            <set-state target="global" myReportsBoard="{{$event.target.value}}" :myReportsPage="1"/>
+            <refetch-data-source dataSourceId="myReports"/>
+          </sequence>
+        </on>
+        <option value="">$t:mypage.board_activities.filter.all_boards</option>
+        <option data-each="board in {{boards?.data ?? []}}" value="{{board.slug}}">{{board.name}}</option>
+      </select>
+      <!-- 처리 상태 필터 -->
+      <select data-testid="my-reports-status-filter" value="{{_global.myReportsStatus ?? ''}}" class="min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <options>
+          <option value="">$t:mypage.board_activities.reports.filter.all_statuses</option>
+          <option value="pending">$t:mypage.board_activities.reports.status.pending</option>
+          <option value="review">$t:mypage.board_activities.reports.status.review</option>
+          <option value="rejected">$t:mypage.board_activities.reports.status.rejected</option>
+          <option value="suspended">$t:mypage.board_activities.reports.status.suspended</option>
+        </options>
+        <on type="change">
+          <sequence>
+            <set-state target="global" myReportsStatus="{{$event.target.value}}" :myReportsPage="1"/>
+            <refetch-data-source dataSourceId="myReports"/>
+          </sequence>
+        </on>
+      </select>
+      <!-- 대상 필터 -->
+      <select data-testid="my-reports-target-filter" value="{{_global.myReportsTargetType ?? ''}}" class="min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <options>
+          <option value="">$t:mypage.board_activities.reports.filter.all_targets</option>
+          <option value="post">$t:mypage.board_activities.target.post</option>
+          <option value="comment">$t:mypage.board_activities.target.comment</option>
+        </options>
+        <on type="change">
+          <sequence>
+            <set-state target="global" myReportsTargetType="{{$event.target.value}}" :myReportsPage="1"/>
+            <refetch-data-source dataSourceId="myReports"/>
+          </sequence>
+        </on>
+      </select>
+      <!-- 정렬 필터 -->
+      <select value="{{_global.myReportsSort ?? 'latest'}}" class="min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <on type="change">
+          <sequence>
+            <set-state target="global" myReportsSort="{{$event.target.value}}" :myReportsPage="1"/>
+            <refetch-data-source dataSourceId="myReports"/>
+          </sequence>
+        </on>
+        <option value="latest">$t:mypage.board_activities.sort.latest</option>
+        <option value="oldest">$t:mypage.board_activities.sort.oldest</option>
+      </select>
+      <!-- 검색 영역 -->
+      <div class="flex-1 flex gap-2">
+        <!-- 검색 대상 — 형제 탭(내 글·내 댓글·내 반응)과 같은 자리·같은 모양. 'reason' 은 신고할 때 적은 사유 설명을 찾는다 -->
+        <select data-testid="my-reports-search-field" data-ref="my_reports_search_field_select" value="{{_global.myReportsSearchField ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+          <options>
+            <option value="title_content">$t:mypage.board_activities.search_fields.title_content</option>
+            <option value="title">$t:mypage.board_activities.search_fields.title</option>
+            <option value="content">$t:mypage.board_activities.search_fields.content</option>
+            <option value="reason">$t:mypage.board_activities.search_fields.reason</option>
+          </options>
+          <on type="change">
+            <set-state target="global" myReportsSearchField="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <input type="text" placeholder="$t:mypage.board_activities.search_placeholder" value="{{_global.myReportsSearch ?? ''}}" class="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
+          <on type="change">
+            <!-- 검색어 — 담아만 둔다 -->
+            <set-state target="global" myReportsSearch="{{$event.target.value}}"/>
+          </on>
+          <on type="keypress" key="Enter">
+            <!-- Enter 검색 — 검색 버튼과 같은 순서를 탄다. 적용 검색어는 입력칸 값에서 바로 읽는다(상태가 아직 따라오지 않은 마지막 글자도 빠지지 않게). 한글 조합 중 Enter 는 엔진 키 필터가 건너뛴다 -->
+            <sequence>
+              <set-state target="global" :myReportsPage="1" myReportsSearch="{{$event.target.value}}" myReportsSearchApplied="{{$event.target.value}}"/>
+              <refetch-data-source dataSourceId="myReports"/>
+            </sequence>
+          </on>
+        </input>
+        <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+          <on type="click">
+            <!-- 검색 — 쪽수를 1 로 되돌리지 않으면 3쪽을 보던 중 검색했을 때 빈 쪽이 뜬다 -->
+            <sequence>
+              <set-state target="global" :myReportsPage="1" myReportsSearchApplied="{{_global.myReportsSearch ?? ''}}"/>
+              <refetch-data-source dataSourceId="myReports"/>
+            </sequence>
+          </on>
+          $t:common.search
+        </button>
+        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <!-- 초기화 — 게시판·상태·대상·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다 -->
+            <sequence>
+              <set-state target="global" myReportsBoard="" myReportsStatus="" myReportsTargetType="" myReportsSearch="" myReportsSearchApplied="" myReportsSearchField="title_content" myReportsSort="latest" :myReportsPage="1"/>
+              <refetch-data-source dataSourceId="myReports"/>
+            </sequence>
+          </on>
+          $t:common.reset
+        </button>
+      </div>
+    </div>
+    <!-- 신고 목록 -->
+    <div class="space-y-3">
+      <div data-testid="my-report-row-{{report.id}}" data-each="report in {{myReports?.data?.data ?? []}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 {{report.target_deleted ? 'opacity-60' : ''}}">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <!-- 게시판 -->
+              <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">{{report.board_name ?? ''}}</span>
+              <!-- 대상 구분 -->
+              <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{report.target_type === 'comment' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}}">{{report.target_type_label ?? ''}}</span>
+              <!-- 처리 상태 — 네 가지 색으로 갈린다 -->
+              <span data-testid="my-report-status-{{report.id}}" class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{report.status === 'pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' : report.status === 'review' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : report.status === 'rejected' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : report.status === 'suspended' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}}">{{report.status_label ?? ''}}</span>
+              <!-- 신고 대상이 이미 사라진 경우 -->
+              <span data-if="{{report.target_deleted}}" class="inline-flex items-center px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded">$t:mypage.board_activities.reports.target_deleted</span>
+            </div>
+            <!-- 신고한 글·댓글. 글은 제목, 댓글은 본문 요약(댓글 스냅샷에는 제목이 없다). 살아 있으면 눌러서 원글로 간다 -->
+            <button data-if="{{!report.target_deleted &amp;&amp; !!report.board_slug &amp;&amp; !!report.post_id}}" class="text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2">
+              <on type="click">
+                <navigate path="/board/{{report.board_slug}}/{{report.post_id}}"/>
+              </on>
+              {{raw:report.title ?? report.excerpt ?? ''}}
+            </button>
+            <span data-if="{{report.target_deleted || !report.board_slug || !report.post_id}}" class="block text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{{raw:report.title ?? report.excerpt ?? ''}}</span>
+            <!-- 내가 고른 사유와 덧붙인 설명 -->
+            <div class="mt-2 flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <icon name="flag" size="sm" class="mt-0.5 flex-shrink-0"/>
+              <div class="min-w-0">
+                <span class="font-medium">{{report.reason_type_label ?? ''}}</span>
+                <span data-if="{{!!report.reason_detail}}" class="block line-clamp-2">{{report.reason_detail}}</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex flex-col items-end gap-2 flex-shrink-0">
+            <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{report.reported_at ?? ''}}</span>
+            <!-- 취소는 대기 중인 건에만 뜬다 — 검토가 시작된 뒤에는 신고자가 되돌릴 수 없다 -->
+            <button data-testid="my-report-cancel-{{report.id}}" data-if="{{report.can_cancel}}" class="px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors whitespace-nowrap">
+              <on type="click">
+                <sequence>
+                  <set-state target="global">
+                    <field name="reportCancelModal">
+                      <field name="id" value="{{report.id}}"/>
+                      <field name="title" value="{{report.title ?? report.excerpt ?? ''}}"/>
+                    </field>
+                  </set-state>
+                  <open-modal target="report_cancel_modal"/>
+                </sequence>
+              </on>
+              $t:mypage.board_activities.reports.cancel
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- 신고 없음 -->
+      <div data-testid="my-reports-empty" data-if="{{(myReports?.data?.data ?? []).length === 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+        <icon name="flag" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+        <!-- 검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다 -->
+        <p data-if="{{!(!!_global.myReportsSearchApplied || !!_global.myReportsBoard || !!_global.myReportsStatus || !!_global.myReportsTargetType)}}" class="text-gray-500 dark:text-gray-400">$t:mypage.board_activities.reports.empty</p>
+        <p data-if="{{!!_global.myReportsSearchApplied || !!_global.myReportsBoard || !!_global.myReportsStatus || !!_global.myReportsTargetType}}" class="text-gray-500 dark:text-gray-400">$t:board.no_search_results</p>
+      </div>
+    </div>
+    <!-- 페이지네이션 -->
+    <pagination data-type="composite" currentPage="{{myReports?.data?.pagination?.current_page ?? 1}}" totalPages="{{myReports?.data?.pagination?.last_page ?? null}}" hasMorePages="{{myReports?.data?.pagination?.has_more_pages ?? false}}" class="mt-4 flex justify-center">
+      <on event="onPageChange">
+        <sequence>
+          <set-state target="global" myReportsPage="{{$args[0]}}"/>
+          <refetch-data-source dataSourceId="myReports"/>
+        </sequence>
+      </on>
+    </pagination>
+  </div>
+</partial>

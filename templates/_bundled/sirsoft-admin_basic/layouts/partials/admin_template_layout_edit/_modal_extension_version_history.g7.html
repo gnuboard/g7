@@ -1,0 +1,68 @@
+<!-- 앞의 판본 이력 창과 짝이지만 대상이 다르다 — 이쪽은 **확장이 끼워 넣는 조각**의 이력이다.
+  되돌린 뒤 다시 받는 것이 셋인 것도 그 때문이다: 지금 조각 · 그 이력 · 조각 목록(요약이 함께 바뀐다).
+  본 화면 쪽과 달리 편집기 내용을 갈아 끼우지 않는데, 조각 편집은 목록을 다시 받으면 그 값이
+  따라오기 때문이다. -->
+<partial name="modal_extension_version_history" editor_label="$t:admin.modal_label.admin_template_layout_edit.extension_version_history_modal">
+  <modal data-type="composite" data-ref="extension_version_history_modal" size="medium" title="$t:admin.templates.modals.extension_version_history.title">
+    <!-- 되돌리기 전 경고(D6). 지금 편집 중인 미저장분이 있으면, 되돌린 판본이 서버에 실리는 순간
+         내 버퍼와 서버가 어긋난다. 그 자체는 `<code-workspace>` 가 충돌 바로 잡아 주지만 — 자동
+         덮어쓰기는 일어나지 않는다 — **누르기 전에 알고 있는 편이 낫다**. 되돌리기는 새 판본을 만드는
+         일이라 취소해도 흔적이 남기 때문이다. -->
+    <div data-ref="version_restore_dirty_warning" data-if="{{(_global.dirtyFileKeys?.length ?? 0) > 0}}" role="alert" class="mb-3 p-3 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-sm">
+      <div class="flex-center gap-2">
+        <icon name="fa-solid fa-triangle-exclamation" class="text-base"/>
+        <span>$t:admin.templates.layout_edit.draft.restore_warning|count={{_global.dirtyFileKeys?.length ?? 0}}</span>
+      </div>
+    </div>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">$t:admin.templates.modals.extension_version_history.description|target_name={{current_extension?.data?.target_name ?? ''}}|source_label={{current_extension?.data?.source_label ?? ''}}</p>
+    <div class="space-y-3 max-h-96 overflow-y-auto">
+      <div data-each="version, idx in {{extension_versions?.data ?? []}}" data-blur-until-loaded="{{_global.isRestoringExtension}}" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+          <responsive on="portable" class="flex flex-col gap-2"/>
+          <div class="flex items-center gap-2">
+            <span class="font-medium text-gray-900 dark:text-white">{{version.created_at}}</span>
+            <span data-if="{{idx === 0}}" class="px-2 py-0.5 text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded">$t:admin.templates.modals.extension_version_history.latest</span>
+          </div>
+          <button data-if="{{idx !== 0}}" type="button" class="flex items-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRestoringExtension || current_extension?.data?.abilities?.can_update !== true}}">
+            <on type="click">
+              <!-- 되돌리는 동안 판본 카드들을 흐리게 덮어 두 번 누르는 것을 막는다(버튼 잠금과 같은 값을 본다). -->
+              <sequence>
+                <set-state target="global" :isRestoringExtension="true"/>
+                <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/versions/{{version.id}}/restore" method="POST">
+                  <success>
+                    <set-state target="global" :isRestoringExtension="false"/>
+                    <toast type="success" message="$t:admin.templates.modals.extension_version_history.restore_success"/>
+                    <!-- 버퍼는 재조회 응답의 init-global 이 갈아 끼운다 — 여기서 `current_extension?.data` 를 재독하면 재조회 전 값이다(레이아웃 판본 복원과 같은 이유). -->
+                    <set-state target="global" :markupCompileError="null" :jsonViewStale="false"/>
+                    <refetch-data-source dataSourceId="current_extension"/>
+                    <refetch-data-source dataSourceId="extension_versions"/>
+                    <refetch-data-source dataSourceId="layout_extensions"/>
+                    <close-modal/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :isRestoringExtension="false"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{!_global.isRestoringExtension}}" name="fa-solid fa-clock-rotate-left" size="sm"/>
+            <icon data-if="{{_global.isRestoringExtension}}" name="fa-solid fa-spinner" size="sm" class="animate-spin"/>
+            <span>{{_global.isRestoringExtension ? '$t:admin.templates.modals.extension_version_history.restoring' : '$t:admin.templates.modals.extension_version_history.restore'}}</span>
+          </button>
+        </div>
+        <div class="flex items-center gap-4 mt-2 text-sm">
+          <span class="text-green-600 dark:text-green-400">+ {{version.changes_summary?.added_count ?? 0}} $t:admin.templates.modals.extension_version_history.lines</span>
+          <span class="text-red-600 dark:text-red-400">- {{version.changes_summary?.removed_count ?? 0}} $t:admin.templates.modals.extension_version_history.lines</span>
+          <span class="text-gray-500 dark:text-gray-400">({{version.changes_summary?.char_diff >= 0 ? '+' : ''}}{{version.changes_summary?.char_diff ?? 0}} $t:admin.templates.modals.extension_version_history.chars)</span>
+        </div>
+      </div>
+    </div>
+    <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+      <div class="flex items-center gap-2">
+        <icon name="fa-solid fa-circle-info" size="sm" class="text-blue-600 dark:text-blue-400"/>
+        <span class="text-sm text-blue-700 dark:text-blue-300">$t:admin.templates.modals.extension_version_history.restore_note</span>
+      </div>
+    </div>
+  </modal>
+</partial>

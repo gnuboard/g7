@@ -26,7 +26,11 @@ function Harness({ states, activeId }: { states: EditorStateItemSpec[]; activeId
   React.useEffect(() => {
     // route 선택 후 상태 셋팅 — reducer 의 scope-reset 가 비우지 않도록 SELECT_ROUTE 후 셋팅
     dispatch({ type: 'SELECT_ROUTE', route: { path: '/login', layoutName: 'auth/login' } });
-    dispatch({ type: 'SET_AVAILABLE_STATES', states, activeStateId: activeId });
+    dispatch({ type: 'SET_AVAILABLE_STATES', states, activeStateId: activeId, scopeKey: 'route|/login' });
+    // 목록을 새로 받으면 리듀서는 같은 화면의 직전 선택이 없는 한 기본 상태로 연다(상태 고르개 보강 이후
+    // 셸도 늘 기본 상태를 넘긴다). 기본이 아닌 상태는 편집자가 고르는 경로(SET_ACTIVE_STATE)로 만든다.
+    const defaultId = states.find((s) => s.default)?.id ?? states[0]?.id ?? null;
+    if (activeId && activeId !== defaultId) dispatch({ type: 'SET_ACTIVE_STATE', activeStateId: activeId });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return <PageStateSwitcher />;
@@ -51,6 +55,7 @@ const TWO_STATES: EditorStateItemSpec[] = [
 ];
 
 describe('PageStateSwitcher', () => {
+  /** @effects state_switcher_visible_when_two_or_more_items */
   it('availableStates 2개 이상 → 드롭다운 렌더, 기본 상태 선택', () => {
     act(() => {
       renderWith(TWO_STATES, 'default');
@@ -63,6 +68,7 @@ describe('PageStateSwitcher', () => {
     expect(screen.getByText('Login failed')).toBeTruthy();
   });
 
+  /** @effects picking_a_state_overwrites_the_memory */
   it('선택 변경 → SET_ACTIVE_STATE 반영 (select value 변경)', () => {
     act(() => {
       renderWith(TWO_STATES, 'default');
@@ -75,6 +81,7 @@ describe('PageStateSwitcher', () => {
     expect(screen.getByTestId('g7le-state-switcher').getAttribute('data-active-state')).toBe('login_failed');
   });
 
+  /** @effects state_switcher_hidden_when_single_or_zero_or_unmatched */
   it('availableStates 1개 → 토글 미표시 (디그레이드)', () => {
     act(() => {
       renderWith([{ id: 'only', label: 'Only', default: true }], 'only');
@@ -82,6 +89,7 @@ describe('PageStateSwitcher', () => {
     expect(screen.queryByTestId('g7le-state-switcher')).toBeNull();
   });
 
+  /** @effects state_switcher_hidden_when_single_or_zero_or_unmatched */
   it('availableStates 0개 → 토글 미표시', () => {
     act(() => {
       renderWith([], null);
@@ -89,6 +97,7 @@ describe('PageStateSwitcher', () => {
     expect(screen.queryByTestId('g7le-state-switcher')).toBeNull();
   });
 
+  /** @effects state_switcher_shows_active_state_description */
   it('description 보조 표시 (활성 상태가 description 보유 시)', () => {
     act(() => {
       renderWith(TWO_STATES, 'login_failed');
@@ -97,6 +106,7 @@ describe('PageStateSwitcher', () => {
     expect(screen.getByTestId('g7le-state-switcher-description').textContent).toBe('desc-key');
   });
 
+  /** @effects state_label_never_shows_raw_t_key */
   it('label 이 `$t:` 키면 G7Core.t 로 해석', () => {
     (window as unknown as { G7Core?: { t: (k: string) => string } }).G7Core = {
       t: (k: string) => (k === 'editor.state.x' ? '비회원' : k),

@@ -1,0 +1,20 @@
+feature: 한국어 문구 — 값 뒤 조사·번역 누락 값 (7.1.0 잔여 관측 O-H4·O-J3)
+
+description: |
+  숫자·날짜·이름처럼 값이 바뀌는 자리표시자 바로 뒤에 받침에 따라 갈리는 조사(을/를·이/가·와/과·으로/로 등)를
+  한 꼴로 붙이면 「1000를 초과하면 안 됩니다」처럼 틀린 문장이 나온다(2026-10-06 실측 O-H4). 코어·사용자 템플릿·
+  관리자 템플릿 ko 문구 전수를 훑어 그런 꼴이 없음을 잠근다. 관리자 정보 탭의 데이터베이스 구성 값
+  「Write Only」가 ko·ja 화면에서 영어 원문 그대로 보이던 것(O-J3)도 같은 문구 계열로 함께 잠근다.
+
+axes:
+  surface: [core_lang, user_template_lang, admin_template_lang]
+
+effects:
+  - placeholder_is_not_followed_by_a_single_form_particle
+  - numeric_max_message_reads_correctly_for_any_number
+  - write_only_value_is_translated
+
+test_files:
+  - tests/Unit/Lang/KoreanParticleAfterPlaceholderTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/korean-particle-after-placeholder.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/i18n/localized-values-and-particles.test.ts

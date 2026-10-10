@@ -14,6 +14,8 @@ use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
  *
  * 잔액 SSoT = SUM(remaining_amount WHERE remaining_amount > 0 AND 미만료).
  * 거래 행은 불변(ChangeDetector 미사용 — $activityLogFields 불요).
+ *
+ * @property int|null $user_id 회원 ID (회원 완전 삭제 시 NULL — 거래 기록은 보존, E3)
  */
 class MileageTransaction extends Model
 {
@@ -29,6 +31,8 @@ class MileageTransaction extends Model
         'order_id',
         'order_option_id',
         'order_cancel_id',
+        'claim_payment_id',
+        'order_refund_id',
         'source_transaction_id',
         'granted_by',
         'description',
@@ -47,6 +51,8 @@ class MileageTransaction extends Model
     {
         return [
             'type' => MileageTransactionTypeEnum::class,
+            'claim_payment_id' => 'integer',
+            'order_refund_id' => 'integer',
             'amount' => 'decimal:2',
             'remaining_amount' => 'decimal:2',
             'balance_after' => 'decimal:2',
@@ -74,6 +80,18 @@ class MileageTransaction extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * 클레임 추가결제 관계
+     *
+     * 클레임 배송비·차액을 마일리지로 결제하거나 그 건을 환급할 때의 멱등 기준이다.
+     *
+     * @return BelongsTo 클레임 추가결제 관계
+     */
+    public function claimPayment(): BelongsTo
+    {
+        return $this->belongsTo(ClaimPayment::class, 'claim_payment_id');
     }
 
     /**

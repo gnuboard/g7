@@ -1,0 +1,15 @@
+# e2e:allow 화면 변경 없음 — 주문 메타에 폴백 사실만 남는다.
+feature: 외부 배송비 API 폴백을 주문에 남긴다 (B9) — #747 C9
+
+description: |
+  외부 배송비 API 가 실패하면 기본 배송비로 계산하는 설계는 유지한다. 계산 결과 metadata 에 폴백 정책을 싣고 주문 생성이
+  order_meta.shipping_fee_fallback(+정책 목록)으로 남겨, 배송비를 덜 받았을 수 있는 주문을 찾을 수 있게 한다.
+
+axes:
+  stage: [calculation, order_meta]
+
+effects:
+  - shipping_api_fallback_is_recorded_on_the_order
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ShippingApiFallbackMetaTest.php

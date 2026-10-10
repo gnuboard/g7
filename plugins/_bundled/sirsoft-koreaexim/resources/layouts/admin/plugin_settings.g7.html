@@ -1,0 +1,162 @@
+<!-- 수출입은행 환율 플러그인 설정 — 관리자가 인증키·자동 갱신 정책·실패 알림 발송 수단을 정하고 실행 이력을 본다. 탭은 query.tab 으로 가르며 설정 탭이 기본이다 -->
+<layout name="plugin_settings" version="1.0.0" extends="_admin_base">
+<meta title="$t:sirsoft-koreaexim.title" description="$t:sirsoft-koreaexim.description"/>
+<!-- 플러그인 설정값 — 화면을 열 때마다 다시 받아 폼(_local.form)의 초기값으로 깐다. 저장 뒤에도 다시 받는다 -->
+<data-source id="settings" label_key="$t:sirsoft-koreaexim.settings_tab" type="api" endpoint="/api/admin/plugins/sirsoft-koreaexim/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
+<error-handling>
+<on-code code="403">
+<set-state target="local" :koreaeximSettingsForbidden="true"/>
+</on-code>
+</error-handling>
+</data-source>
+<!-- 상태 요약(자동 관리·키 등록·마지막 실행·호출 예산·다음 실행 시각). 권한이 없으면 403 을 콘텐츠 영역 오류 화면으로 보인다 -->
+<data-source id="koreaeximStatus" label_key="$t:sirsoft-koreaexim.status" type="api" endpoint="/api/plugins/sirsoft-koreaexim/admin/status" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true">
+<error-handling>
+<on-code code="403">
+<show-error-page target="content"/>
+</on-code>
+</error-handling>
+</data-source>
+<!-- 설정 탭에서만 최근 실행 5건을 받는다 — 응답이 없을 때도 빈 목록·페이지 1 로 그린다 -->
+<data-source id="koreaeximRecentRuns" if="{{(query.tab ?? 'settings') === 'settings'}}" label_key="$t:sirsoft-koreaexim.recent" type="api" endpoint="/api/plugins/sirsoft-koreaexim/admin/runs" method="GET" :auto_fetch="true" :auth_required="true">
+<params :per_page="5"/>
+<fallback>
+<field name="data">
+<field name="data" :value="[]"/>
+<field name="pagination">
+<field name="current_page" :value="1"/>
+<field name="last_page" :value="1"/>
+<field name="total" :value="0"/>
+</field>
+</field>
+</fallback>
+</data-source>
+<!-- 이력 탭에서만 실행 이력을 받는다 — 페이지·결과·계기·기간을 전부 쿼리에서 읽으므로 필터 변경은 navigate 로만 한다. 종료일이 시작일보다 앞선 기간은 서버가 422 로 거절하므로 조회하지 않는다(필터 아래 안내가 이유를 적는다) -->
+<data-source id="koreaeximRuns" if="{{query.tab === 'history' &amp;&amp; !(query.date_from &amp;&amp; query.date_to &amp;&amp; query.date_to &lt; query.date_from)}}" label_key="$t:sirsoft-koreaexim.history_tab" type="api" endpoint="/api/plugins/sirsoft-koreaexim/admin/runs" method="GET" :auto_fetch="true" :auth_required="true">
+<params page="{{query.page ?? 1}}" :per_page="20" status="{{query.status}}" trigger="{{query.trigger}}" date_from="{{query.date_from}}" date_to="{{query.date_to}}"/>
+<fallback>
+<field name="data">
+<field name="data" :value="[]"/>
+<field name="pagination">
+<field name="current_page" :value="1"/>
+<field name="last_page" :value="1"/>
+<field name="total" :value="0"/>
+</field>
+</field>
+</fallback>
+<error-handling>
+<on-code code="403">
+<show-error-page target="content"/>
+</on-code>
+</error-handling>
+</data-source>
+<!-- 코어가 런타임에 정한 발송 채널 목록 — 설정 탭에서만, 다른 요청을 막지 않도록 progressive 로 받는다 -->
+<data-source id="koreaeximNotificationChannels" if="{{(query.tab ?? 'settings') === 'settings'}}" label_key="$t:sirsoft-koreaexim.notifications" type="api" endpoint="/api/admin/notification-channels" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+<fallback>
+<field name="data">
+<field name="channels" :value="[]"/>
+</field>
+</fallback>
+</data-source>
+<!-- 이 플러그인 소유 알림 정의 — 켠 채널 전부의 템플릿을 한 번에 그리려고 template_channel=all 로 받는다 -->
+<data-source id="koreaeximNotificationDefinitions" if="{{(query.tab ?? 'settings') === 'settings'}}" label_key="$t:sirsoft-koreaexim.notifications" type="api" endpoint="/api/admin/notification-definitions?extension_type=plugin&amp;extension_identifier=sirsoft-koreaexim" method="GET" :auto_fetch="true" :auth_required="true">
+<params template_channel="all"/>
+<fallback>
+<field name="data">
+<field name="data" :value="[]"/>
+<field name="pagination">
+<field name="current_page" :value="1"/>
+<field name="last_page" :value="1"/>
+<field name="total" :value="0"/>
+</field>
+</field>
+</fallback>
+<error-handling>
+<on-code code="403">
+<set-state target="local" :koreaeximNotificationsForbidden="true"/>
+</on-code>
+</error-handling>
+</data-source>
+<computed name="activeTab">{{query.tab || _global.activeKoreaeximTab || 'settings'}}</computed>
+<computed name="isReadOnly">{{koreaeximStatus?.data?.abilities?.can_manage !== true}}</computed>
+<computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
+<computed name="isSettingsReadOnly">{{koreaeximStatus?.data?.abilities?.can_manage !== true || settings?.data?.abilities?.can_update !== true}}</computed>
+<computed name="isNotificationReadOnly">{{koreaeximNotificationDefinitions?.data?.abilities?.can_update !== true}}</computed>
+<permissions>
+<permission>sirsoft-koreaexim.exchange_rate.view</permission>
+</permissions>
+<slot name="content">
+<div data-ref="koreaexim_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+<page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-koreaexim.title" description="$t:sirsoft-koreaexim.description">
+<button data-ref="koreaexim_back" type="button" class="btn btn-secondary whitespace-nowrap" aria-label="$t:admin.plugins.back_to_list">
+<on type="click">
+<navigate path="/admin/plugins"/>
+</on>
+<icon name="arrow-left"/>
+<span>$t:common.back</span>
+</button>
+</page-header>
+<tab-navigation data-type="composite" data-ref="koreaexim_tab_navigation" activeTabId="{{_computed.activeTab}}" variant="default" class="sticky-tab-nav-responsive">
+<prop name="tabs">
+<item id="settings" label="$t:sirsoft-koreaexim.settings_tab"/>
+<item id="history" label="$t:sirsoft-koreaexim.history_tab"/>
+</prop>
+<on type="change" event="onTabChange">
+<!-- 탭 전환 — 전역에 기억해 두고 query.tab 을 replace 로 바꿔 뒤로 가기 이력을 쌓지 않는다 -->
+<sequence>
+<set-state target="global" activeKoreaeximTab="{{$args[0]}}"/>
+<navigate path="/admin/plugins/sirsoft-koreaexim/settings" :mergeQuery="true" :replace="true">
+<query tab="{{$args[0]}}"/>
+</navigate>
+</sequence>
+</on>
+</tab-navigation>
+<!-- 읽기 전용 안내 — 빠진 권한마다 따로 알린다. 플러그인 설정 수정 권한이 없으면 설정 폼이, 환율 관리 권한이 없으면 설정 폼과 환율 갱신이 잠긴다. 응답이 오기 전·설정 403 일 때는 띄우지 않는다 -->
+<div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mb-4">
+<icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+<span class="text-warning-soft">$t:sirsoft-koreaexim.plugin_read_only</span>
+</div>
+<div data-ref="koreaexim_read_only_banner" data-if="{{_computed.isReadOnly &amp;&amp; !!koreaeximStatus?.data}}" role="status" class="alert-info mb-4">$t:sirsoft-koreaexim.read_only</div>
+<div data-ref="koreaexim_settings_forbidden" data-if="{{_local.koreaeximSettingsForbidden === true}}" role="status" class="alert-warning mb-4">$t:sirsoft-koreaexim.settings_forbidden</div>
+<div data-ref="koreaexim_tab_content" class="tab-content">
+<include src="partials/plugin_settings/_tab_settings.g7.html"/>
+<include src="partials/plugin_settings/_tab_history.g7.html"/>
+</div>
+<div data-if="{{_computed.activeTab === 'settings'}}" class="sticky-footer-buttons">
+<button type="button" class="btn btn-secondary">
+<on type="click">
+<navigate path="/admin/plugins"/>
+</on>
+<span>$t:common.cancel</span>
+</button>
+<button type="button" data-ref="koreaexim_save" disabled="{{_computed.isSettingsReadOnly || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
+<on type="click">
+<!-- 설정 저장 — 폼 전체를 PUT 하고 성공하면 설정·상태를 다시 받아 변경 표시를 내린다. 검증 오류는 _local.errors 로 각 필드 밑에 그린다 -->
+<sequence>
+<set-state target="local" :isSaving="true" :errors="null"/>
+<api-call target="/api/admin/plugins/sirsoft-koreaexim/settings" method="PUT" body="{{_local.form}}" :auth_required="true">
+<success>
+<set-state target="local" :isSaving="false" :hasChanges="false"/>
+<refetch-data-source dataSourceId="settings"/>
+<refetch-data-source dataSourceId="koreaeximStatus"/>
+<toast type="success" message="$t:sirsoft-koreaexim.saved"/>
+</success>
+<fail>
+<set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+<toast type="error" message="{{error.message}}"/>
+</fail>
+</api-call>
+</sequence>
+</on>
+<span>$t:common.save</span>
+</button>
+</div>
+</div>
+</slot>
+<!-- 알림 템플릿 편집 창 — 알림 카드의 템플릿 행 「편집」에서 연다 -->
+<modal src="partials/plugin_settings/_modal_notification_template_edit.g7.html"/>
+<!-- 템플릿 미리보기 창 — 편집 창 안에서 연다 -->
+<modal src="partials/plugin_settings/_modal_notification_template_preview.g7.html"/>
+<!-- 알림 정의 초기화 확인 창 — 알림 카드의 「초기화」에서 연다 -->
+<modal src="partials/plugin_settings/_modal_notification_definition_reset.g7.html"/>
+</layout>

@@ -40,7 +40,7 @@ describe('editor-spec states — _admin_base 드로어 상태', () => {
     const item = (group.items ?? []).find((i: any) => i.id === 'sidebar_open');
 
     expect(item).toBeTruthy();
-    // 드로어 게이트는 `_admin_base.json` 의 `left_sidebar_area_portable_open` → `_global.sidebarOpen`.
+    // 드로어 게이트는 `_admin_base.g7.html` 의 `left_sidebar_area_portable_open` → `_global.sidebarOpen`.
     expect(item.initialState?.global?.sidebarOpen).toBe(true);
   });
 

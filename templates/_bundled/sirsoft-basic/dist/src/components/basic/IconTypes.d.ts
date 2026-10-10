@@ -4,8 +4,15 @@
 export type IconStyle = 'solid' | 'regular' | 'light' | 'duotone' | 'brands';
 /**
  * Font Awesome 아이콘 크기
+ *
+ * `Icon` 이 `fa-{size}` 로 그대로 방출하므로 값 집합은 Font Awesome 어휘다(Tailwind 아님).
+ * 상대 스케일 `xs`~`2xl` 과 배수 스케일 `2x`~`5x` 가 함께 있다.
+ *
+ * 이 타입이 레이아웃 작성 `<icon size>` 의 SSoT 이며 audit 레지스트리
+ * (`layout-schema/component-registry.cjs` 의 `Icon.enums.size`)가 이 목록과 대조된다 —
+ * 값을 늘리거나 줄이면 `icon-size-registry-sync` 가드가 두 하네스에서 실패한다.
  */
-export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2x' | '3x' | '4x' | '5x';
+export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '2x' | '3x' | '4x' | '5x';
 /**
  * 자주 사용되는 Font Awesome 아이콘 이름
  *
@@ -134,7 +141,23 @@ export declare enum IconName {
     Sync = "fa-sync",
     RotateLeft = "fa-rotate-left",
     MapPin = "fa-map-marker-alt",
-    HelpCircle = "fa-question-circle"
+    HelpCircle = "fa-question-circle",
+    FileLines = "fa-file-lines",
+    MoneyBill = "fa-money-bill",
+    Pause = "fa-pause",
+    Ban = "fa-ban",
+    BoxOpen = "fa-box-open",
+    Warehouse = "fa-warehouse",
+    TruckFast = "fa-truck-fast",
+    House = "fa-house",
+    CircleCheck = "fa-circle-check",
+    HourglassHalf = "fa-hourglass-half",
+    BoxesPacking = "fa-boxes-packing",
+    RightLeft = "fa-right-left",
+    Reply = "fa-reply",
+    ArrowsRotate = "fa-arrows-rotate",
+    BoxArchive = "fa-box-archive",
+    CircleXmark = "fa-circle-xmark"
 }
 /**
  * 문자열 아이콘 이름을 IconName enum으로 매핑합니다.

@@ -1,0 +1,36 @@
+feature: 주문상품 소계 할인액의 숫자형 보조 필드 (OrderOptionResource)
+
+description: |
+  `subtotal_discount_amount` 는 모델에서 `decimal:2` 로 캐스트되어 JSON 직렬화 시 문자열
+  `"0.00"` 으로 나갔다. 마이페이지 레이아웃은 무할인 여부를 `=== 0` 으로 strict 비교했고,
+  문자열은 그 비교를 통과하지 못해 **무할인 항목의 소계가 화면에서 통째로 사라졌다**.
+
+  지금은 두 갈래로 계약이 서 있다:
+
+    subtotal_discount_amount        raw 금액. 기본 통화의 `decimal_places` 로 정규화된다
+                                    (0자리 KRW/JPY → 정수, 2자리 USD → 소수)
+    subtotal_discount_amount_value  **언제나 float**. 통화와 무관하게 숫자 비교가 필요한
+                                    소비처를 위해 따로 노출한다
+
+  raw 필드가 통화에 따라 타입이 달라지므로, 이 축을 재는 테스트는 기본 통화를 **명시적으로
+  고정**해야 한다. 전제를 주석으로만 적어 두면 같은 프로세스에서 먼저 돈 테스트가 상점 설정을
+  2자리 통화로 남겼을 때 조용히 깨진다 — 단독 실행은 통과하고 묶어 돌릴 때만 실패하는 형태로
+  실제 관측됐다(2026-09-17). 부팅 설정이 단위 테스트로 스며드는 것과 같은 성질이다.
+
+axes:
+  discount_state:
+    - none
+    - positive
+
+exclusions: []
+
+effects:
+  # 무할인이면 보조 필드가 정확히 0.0(float) 이다 — 문자열 "0.00" 이 아니다
+  - no_discount_exposes_the_numeric_field_as_float_zero
+  # 할인이 있으면 보조 필드가 양수 float 이다
+  - positive_discount_exposes_the_numeric_field_as_a_positive_float
+  # raw 필드는 기본 통화의 소수 자릿수로 정규화된다 (0자리 통화에서는 정수)
+  - raw_amount_is_normalized_to_the_base_currency_decimal_places
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Resources/OrderOptionResourceSubtotalDiscountValueTest.php

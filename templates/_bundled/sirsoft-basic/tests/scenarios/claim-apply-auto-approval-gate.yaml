@@ -1,0 +1,45 @@
+feature: 취소·환불 신청서의 «자동으로 끝난다» 안내 — 분기와 결제수단 게이트
+
+description: |
+  2026-09-21 #599 세션A 브라우저 실측. 신청서는 두 가지를 갈라 말해야 한다.
+
+  ① **분기**(`refund_branch` / `resolved_type`) — 즉시취소(auto)인가 환불신청(request)인가.
+     **상품 상태**가 정한다(결제완료·상품준비중이면 신청, 그 이전이면 즉시취소).
+  ② **게이트**(`refund_auto_approved`) — 접수 뒤 사람 손 없이 끝나는가.
+     **결제수단**이 정한다(P16·P17). 무통장·가상계좌는 ①이 auto 여도 ②가 false 라서
+     `requested` 에서 멈추고 운영자 승인 → [환불하기] 를 기다린다.
+
+  결함: 화면이 ①만 보고 문구를 골랐다. 무통장 주문 `20260921-1316400577` 의 신청서가
+  상품 배지에 「자동 처리」, 하단에 「환불신청서가 접수되고 승인·환불완료까지 자동으로
+  진행됩니다」를 띄웠고, 실제 접수 결과는 `RF20260921-1357532719` **`requested` 정지**였다.
+  구매자는 곧 돈이 돌아온다고 읽고 기다리게 된다.
+
+  게이트 판정 SSoT 는 결제수단 카탈로그(`PaymentMethodResolver::autoApprovesRefund`)이며,
+  서버가 `claimable-options` 응답에 실어 보낸다(회원·비회원 공용 responder).
+  화면이 결제수단 코드로 재현하면 운영자가 정책 탭에서 목록을 바꿔도 안내만 옛 규칙으로 남는다.
+
+# axis 의미: 갈라지는 축은 «어느 자리에 뜨는 문구인가» 하나다. 상품 줄의 배지와 요약 아래의
+# 안내는 같은 사실을 서로 다른 단위(상품 / 신청서 전체)로 말하므로 각각 잠근다.
+axes:
+  surface: [claim_apply_badge, claim_apply_notice]
+
+effects:
+  - claim_apply_auto_badge_respects_payment_gate    # 상품 배지가 분기와 게이트를 함께 본다
+  - claim_apply_auto_notice_respects_payment_gate   # 하단 안내가 분기와 게이트를 함께 본다
+  - claim_apply_auto_notice_reuses_existing_wording # 막힐 때는 이미 있는 «판매자 확인» 문구로 갈린다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/claim-apply-auto-approval-gate.test.ts
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: |
+    #599 세션A 가 실측으로 재현·수정·재실측했다(2026-09-21 · 무통장 주문 20260921-1316400577).
+    수정 전 배지 「자동 처리」 · 안내 「승인·환불완료까지 자동으로 진행됩니다」 →
+    수정 후 배지 **「환불 신청」** · 안내 **「신청 후 판매자 확인을 거쳐 환불됩니다.」** ·
+    API `refund_auto_approved:false` + `resolved_type:auto`(두 축이 분리돼 나온다).
+  note: |
+    서버 쪽 계약은 `UserClaimApiTest` 가 두 방향으로 잠근다 — 무통장 false · 카드 true.
+    대조군이 없으면 「언제나 false」 로 굳어도 테스트가 통과한다.
+    Playwright spec 은 세우지 않았다. 재현에 「무통장으로 결제완료까지 간 주문」 이라는 상태가
+    필요해 기존 신청서 spec 의 시드로는 세울 수 없다(형제 시나리오와 같은 사유).

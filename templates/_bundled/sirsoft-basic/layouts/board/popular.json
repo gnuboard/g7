@@ -1,24 +1,29 @@
 {
+    "comment": "인기글 — 게시판을 가리지 않고 조회·반응이 많은 글을 모은다. 기간 버튼은 상태가 아니라 URL 질의(period)를 바꾸는 이동이라, 고른 기간이 주소에 남고 뒤로가기로 되돌아간다.",
     "version": "1.0.0",
     "layout_name": "board/popular",
-    "permissions": [],
     "extends": "_user_base",
     "meta": {
         "seo": {
             "enabled": true,
-            "data_sources": ["popularPosts"],
             "page_type": "boards",
+            "priority": 0.6,
+            "changefreq": "daily",
+            "data_sources": [
+                "popularPosts"
+            ],
             "extensions": [
-                { "type": "module", "id": "sirsoft-board" }
+                {
+                    "type": "module",
+                    "id": "sirsoft-board"
+                }
             ],
             "vars": {
                 "site_name": "$core_settings:general.site_name"
             },
-            "priority": 0.6,
-            "changefreq": "daily",
             "og": {
                 "type": "website",
-                "title": "$t:nav.popular_posts"
+                "title": "$t:user.board.popular_title"
             }
         }
     },
@@ -29,13 +34,13 @@
             "type": "api",
             "endpoint": "/api/modules/sirsoft-board/boards/popular",
             "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "optional",
+            "refetchOnMount": true,
             "params": {
                 "period": "{{query.period ?? 'week'}}",
                 "limit": 20
             },
-            "auto_fetch": true,
-            "auth_required": false,
-            "refetchOnMount": true,
             "errorHandling": {
                 "403": {
                     "handler": "showErrorPage",
@@ -43,9 +48,11 @@
                         "target": "content"
                     }
                 }
-            }
+            },
+            "comment": "인기글 상위 20건 — 기간은 URL 질의에서 오고 기본은 최근 일주일이다. 누구나 보는 화면이라 로그인을 요구하지 않는다."
         }
     ],
+    "permissions": [],
     "slots": {
         "content": [
             {
@@ -105,6 +112,15 @@
                             {
                                 "type": "basic",
                                 "name": "Button",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/boards/popular?period=today"
+                                        }
+                                    }
+                                ],
                                 "props": {
                                     "className": "{{(query.period ?? 'week') === 'today' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}"
                                 },
@@ -123,20 +139,20 @@
                                         "name": "Span",
                                         "text": "$t:board.popular.today"
                                     }
-                                ],
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/boards/popular?period=today"
-                                        }
-                                    }
                                 ]
                             },
                             {
                                 "type": "basic",
                                 "name": "Button",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/boards/popular?period=week"
+                                        }
+                                    }
+                                ],
                                 "props": {
                                     "className": "{{(query.period ?? 'week') === 'week' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}"
                                 },
@@ -155,20 +171,20 @@
                                         "name": "Span",
                                         "text": "$t:board.popular.this_week"
                                     }
-                                ],
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/boards/popular?period=week"
-                                        }
-                                    }
                                 ]
                             },
                             {
                                 "type": "basic",
                                 "name": "Button",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/boards/popular?period=month"
+                                        }
+                                    }
+                                ],
                                 "props": {
                                     "className": "{{(query.period ?? 'week') === 'month' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}"
                                 },
@@ -187,20 +203,20 @@
                                         "name": "Span",
                                         "text": "$t:board.popular.this_month"
                                     }
-                                ],
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/boards/popular?period=month"
-                                        }
-                                    }
                                 ]
                             },
                             {
                                 "type": "basic",
                                 "name": "Button",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/boards/popular?period=year"
+                                        }
+                                    }
+                                ],
                                 "props": {
                                     "className": "{{(query.period ?? 'week') === 'year' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}"
                                 },
@@ -218,15 +234,6 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "text": "$t:board.popular.year"
-                                    }
-                                ],
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/boards/popular?period=year"
-                                        }
                                     }
                                 ]
                             }

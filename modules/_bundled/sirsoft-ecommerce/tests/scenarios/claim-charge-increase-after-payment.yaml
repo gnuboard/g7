@@ -1,0 +1,22 @@
+# e2e:allow 화면 변경 없음 — 구매자 화면은 대기 결제 건이 있으면 이미 [추가 결제] 를 보인다. 실제 흐름은 07 문서 실측이 잰다.
+feature: 수납 뒤 올린 청구액은 차액 결제 건을 만들고, 미수납이면 완료를 막는다 (S3) — #747 C6
+
+description: |
+  관리자 금액 수정은 수납액이 0 일 때만 차액 정산을 불러, 회수비 3,000원을 받은 뒤 5,000원으로 올리면 2,000원을 낼
+  자리가 생기지 않았고 그대로 완료할 수 있었다.
+
+    - 금액 수정이 청구액을 수납액보다 올리면 그 차액으로 결제 대기 건을 만든다(내리는 쪽은 종전대로 손대지 않는다).
+    - 승인·회수 단계의 [결제 요청] 은 상태를 결제대기로 되돌리지 않고 차액 대기 건만 만든다.
+    - 반품·교환 완료는 추가결제 방식에서 미수납이 남아 있으면 거절한다.
+
+axes:
+  charge_method: [pay_on_request, pay_on_approval]
+  stage: [after_payment]
+
+effects:
+  - charge_increase_after_payment_creates_pending_difference
+  - claim_completion_blocked_while_outstanding
+  - charge_decrease_after_payment_closes_the_pending_difference   # 받은 뒤 이하로 내리면 차액 대기 건을 닫는다(환급은 안 함) (S1-D13)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Claims/ChargeIncreaseAfterPaymentTest.php

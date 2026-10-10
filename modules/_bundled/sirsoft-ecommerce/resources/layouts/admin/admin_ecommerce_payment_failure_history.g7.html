@@ -1,0 +1,817 @@
+<!-- 결제 실패 이력 (운영자) — 결제창까지 갔다가 실패한 시도를 모아 본다. 실패는 카드사 거절·한도
+  초과·본인인증 이탈처럼 사유가 제각각이고 그 원문이 PG 마다 달라, 행을 펼쳐야 응답 코드와 원문을
+  볼 수 있게 했다. 아직 데이터소스가 없어 표가 예시 행으로 박혀 있는 골격 단계다. -->
+<layout name="admin_ecommerce_payment_failure_history" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.payment_failure_history.title" description="$t:sirsoft-ecommerce.admin.payment_failure_history.description"/>
+  <init-local>
+    <field name="paymentMethodFilter" value=""/>
+    <field name="deviceFilter" value=""/>
+    <field name="startDate" value=""/>
+    <field name="endDate" value=""/>
+    <field name="searchField" value="order_number"/>
+    <field name="searchKeyword" value=""/>
+    <field name="sortBy" value="failure_date_desc"/>
+    <field name="perPage" :value="10"/>
+    <field name="expandedRows" :value="[]"/>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.orders.read</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="payment_failure_history_content" class="admin-page-content">
+      <div data-ref="page_header" class="flex-start justify-between mb-6">
+        <div>
+          <div class="flex-center gap-3 mb-1">
+            <icon name="credit-card" class="text-xl icon-muted"/>
+            <h1 class="page-title">$t:sirsoft-ecommerce.admin.payment_failure_history.title</h1>
+          </div>
+          <p class="page-description">$t:sirsoft-ecommerce.admin.payment_failure_history.description</p>
+        </div>
+        <button aria-label="$t:common.refresh" title="$t:common.refresh" type="button" class="btn btn-icon">
+          <icon name="arrows-rotate" class="text-xl"/>
+        </button>
+      </div>
+      <div data-ref="filter_card" class="admin-card mb-6 filter-grid">
+        <div data-ref="search_row" class="search-bar mb-4">
+          <select data-ref="search_field_select" name="searchField" class="search-bar-select" value="{{_local.searchField}}">
+            <options>
+              <option value="order_number">$t:sirsoft-ecommerce.admin.payment_failure_history.search.field.order_number</option>
+              <option value="member_name">$t:sirsoft-ecommerce.admin.payment_failure_history.search.field.member_name</option>
+              <option value="member_id">$t:sirsoft-ecommerce.admin.payment_failure_history.search.field.member_id</option>
+              <option value="product_name">$t:sirsoft-ecommerce.admin.payment_failure_history.search.field.product_name</option>
+              <option value="failure_reason">$t:sirsoft-ecommerce.admin.payment_failure_history.search.field.failure_reason</option>
+              <option value="failure_code">$t:sirsoft-ecommerce.admin.payment_failure_history.search.field.failure_code</option>
+            </options>
+            <on type="change">
+              <!-- 검색 대상만 바꾼다 — 실패 사유·실패 코드로도 찾을 수 있어야 같은 원인의 건을 묶어 볼 수 있다 -->
+              <set-state target="_local" searchField="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <input data-ref="search_input" type="text" placeholder="$t:sirsoft-ecommerce.admin.payment_failure_history.search.placeholder" class="search-bar-input" value="{{_local.searchKeyword}}">
+            <on type="change">
+              <!-- 입력을 마칠 때 담는다 -->
+              <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <button data-ref="reset_button" type="button" class="search-bar-reset">
+            <on type="click">
+              <!-- 검색 초기화 — 아래 결제수단·기기·기간 필터까지 함께 되돌린다 -->
+              <set-state target="_local" paymentMethodFilter="" deviceFilter="" startDate="" endDate="" searchField="order_number" searchKeyword=""/>
+            </on>
+            <icon name="arrows-rotate" class="text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.payment_failure_history.search.reset</span>
+          </button>
+        </div>
+        <div data-ref="payment_method_filter_row" class="filter-row">
+          <span class="filter-label">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.payment_method</span>
+          <div class="filter-buttons">
+            <div class="{{_local.paymentMethodFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}">
+              <on type="click">
+                <!-- 결제수단을 가리지 않고 모두 -->
+                <set-state target="_local" paymentMethodFilter=""/>
+              </on>
+              <icon name="list" class="text-xs"/>
+              <span>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.all</span>
+            </div>
+            <div class="{{_local.paymentMethodFilter === 'card' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'btn-badge cursor-pointer'}}">
+              <on type="click">
+                <!-- 신용카드 — 실패가 가장 많이 나는 수단이라 따로 보는 일이 잦다 -->
+                <set-state target="_local" paymentMethodFilter="card"/>
+              </on>
+              <icon name="credit-card" class="text-xs"/>
+              <span>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.card</span>
+            </div>
+            <div class="{{_local.paymentMethodFilter === 'bank_transfer' ? 'btn-badge btn-badge-cyan cursor-pointer ring-1 ring-cyan-400 dark:ring-cyan-500' : 'btn-badge cursor-pointer'}}">
+              <on type="click">
+                <!-- 계좌이체 -->
+                <set-state target="_local" paymentMethodFilter="bank_transfer"/>
+              </on>
+              <icon name="landmark" class="text-xs"/>
+              <span>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.bank_transfer</span>
+            </div>
+            <div class="{{_local.paymentMethodFilter === 'virtual_account' ? 'btn-badge btn-badge-orange cursor-pointer ring-1 ring-orange-400 dark:ring-orange-500' : 'btn-badge cursor-pointer'}}">
+              <on type="click">
+                <!-- 가상계좌 — 발급 단계에서 막힌 건이 여기 남는다 -->
+                <set-state target="_local" paymentMethodFilter="virtual_account"/>
+              </on>
+              <icon name="wallet" class="text-xs"/>
+              <span>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.virtual_account</span>
+            </div>
+            <div class="{{_local.paymentMethodFilter === 'easy_payment' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400 dark:ring-yellow-500' : 'btn-badge cursor-pointer'}}">
+              <on type="click">
+                <!-- 간편결제 — 앱으로 넘어갔다 돌아오지 못한 이탈이 섞여 있다 -->
+                <set-state target="_local" paymentMethodFilter="easy_payment"/>
+              </on>
+              <icon name="mobile-screen" class="text-xs"/>
+              <span>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.easy_payment</span>
+            </div>
+            <div class="{{_local.paymentMethodFilter === 'bank_deposit' ? 'btn-badge btn-badge-red cursor-pointer ring-1 ring-red-400 dark:ring-red-500' : 'btn-badge cursor-pointer'}}">
+              <on type="click">
+                <!-- 무통장입금 -->
+                <set-state target="_local" paymentMethodFilter="bank_deposit"/>
+              </on>
+              <icon name="money-bill" class="text-xs"/>
+              <span>$t:sirsoft-ecommerce.admin.payment_failure_history.filter.bank_deposit</span>
+            </div>
+          </div>
+        </div>
+        <div data-ref="device_filter_row" class="filter-row">
+          <span class="filter-label">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.device</span>
+          <div class="filter-buttons">
+            <!-- 기기를 가리지 않고 모두 -->
+            <div class="{{_local.deviceFilter === '' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'btn-badge cursor-pointer'}}">
+              <on type="click">
+                <set-state target="_local" deviceFilter=""/>
+              </on>
+              $t:sirsoft-ecommerce.admin.payment_failure_history.filter.all
+            </div>
+            <!-- PC — 기기별로 결제창 동작이 달라 실패 원인 추적의 한 축이다 -->
+            <div class="{{_local.deviceFilter === 'desktop' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}">
+              <on type="click">
+                <set-state target="_local" deviceFilter="desktop"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.payment_failure_history.filter.desktop
+            </div>
+            <!-- 모바일 — 앱 전환이 끼어 이탈이 잦은 쪽이다 -->
+            <div class="{{_local.deviceFilter === 'mobile' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}">
+              <on type="click">
+                <set-state target="_local" deviceFilter="mobile"/>
+              </on>
+              $t:sirsoft-ecommerce.admin.payment_failure_history.filter.mobile
+            </div>
+          </div>
+        </div>
+        <div data-ref="date_filter_row" class="filter-row">
+          <span class="filter-label">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.failure_date</span>
+          <div class="md:flex-row md:items-center">
+            <div class="flex-center gap-2">
+              <icon name="calendar" class="text-base icon-muted"/>
+              <input type="date" placeholder="$t:sirsoft-ecommerce.admin.payment_failure_history.filter.start_date" class="input md:w-36" value="{{_local.startDate}}">
+                <on type="change">
+                  <!-- 실패일 기간 시작일 -->
+                  <set-state target="_local" startDate="{{$event.target.value}}"/>
+                </on>
+              </input>
+            </div>
+            <span class="hidden md:block text-gray-500 dark:text-gray-400">~</span>
+            <div class="flex-center gap-2">
+              <icon name="calendar" class="text-base icon-muted"/>
+              <input type="date" placeholder="$t:sirsoft-ecommerce.admin.payment_failure_history.filter.end_date" class="input md:w-36" value="{{_local.endDate}}">
+                <on type="change">
+                  <!-- 실패일 기간 종료일 -->
+                  <set-state target="_local" endDate="{{$event.target.value}}"/>
+                </on>
+              </input>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="table_card" class="admin-card">
+        <div data-ref="table_header" class="flex-between flex-wrap gap-4 mb-6">
+          <span class="text-secondary">$t:sirsoft-ecommerce.admin.payment_failure_history.table.total_count|count=11</span>
+          <div class="flex-center gap-3">
+            <select name="sortBy" class="w-44" value="{{_local.sortBy}}">
+              <options>
+                <option value="failure_date_desc">$t:sirsoft-ecommerce.admin.payment_failure_history.table.sort.failure_date_desc</option>
+                <option value="failure_date_asc">$t:sirsoft-ecommerce.admin.payment_failure_history.table.sort.failure_date_asc</option>
+                <option value="amount_desc">$t:sirsoft-ecommerce.admin.payment_failure_history.table.sort.amount_desc</option>
+                <option value="amount_asc">$t:sirsoft-ecommerce.admin.payment_failure_history.table.sort.amount_asc</option>
+                <option value="order_number_asc">$t:sirsoft-ecommerce.admin.payment_failure_history.table.sort.order_number_asc</option>
+                <option value="order_number_desc">$t:sirsoft-ecommerce.admin.payment_failure_history.table.sort.order_number_desc</option>
+              </options>
+            </select>
+            <select name="perPage" class="w-32" value="{{_local.perPage}}">
+              <options>
+                <option :value="10">$t:sirsoft-ecommerce.admin.payment_failure_history.table.per_page|count=10</option>
+                <option :value="20">$t:sirsoft-ecommerce.admin.payment_failure_history.table.per_page|count=20</option>
+                <option :value="50">$t:sirsoft-ecommerce.admin.payment_failure_history.table.per_page|count=50</option>
+                <option :value="100">$t:sirsoft-ecommerce.admin.payment_failure_history.table.per_page|count=100</option>
+              </options>
+              <on type="change">
+                <!-- 선택값은 문자열로 오므로 수로 바꿔 담는다 -->
+                <set-state target="_local" perPage="{{parseInt($event.target.value)}}"/>
+              </on>
+            </select>
+          </div>
+        </div>
+        <div data-ref="table_container" class="overflow-x-auto">
+          <responsive on="portable">
+            <div data-ref="mobile_cards_container">
+              <div class="admin-card cursor-pointer">
+                <on type="click">
+                  <!-- 좁은 화면의 카드 펼치기/접기. 펼친 행 번호를 배열로 들고 다녀 여러 건을 동시에 펼쳐 견줄 수 있게 했다(한 건만 여는 방식이면 사유 비교가 안 된다) -->
+                  <set-state target="_local" expandedRows="{{_local.expandedRows.includes(1) ? _local.expandedRows.filter(id => id !== 1) : [..._local.expandedRows, 1]}}"/>
+                </on>
+                <div class="flex-between mb-2">
+                  <span class="text-primary font-medium">20251027-001</span>
+                  <span class="btn-badge btn-badge-blue">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.card</span>
+                </div>
+                <div class="text-sm mb-2">
+                  <div class="text-primary">프리미엄 티셔츠 외 2건</div>
+                  <div class="text-secondary">김철수 (user001)</div>
+                </div>
+                <div class="flex-between mb-2">
+                  <span class="text-primary font-semibold">89,000원</span>
+                  <icon name="{{_local.expandedRows.includes(1) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
+                </div>
+                <div class="flex items-start gap-1.5">
+                  <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                  <div>
+                    <span class="text-sm text-error">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_one_time_auth_amount</span>
+                    <div class="text-xs text-secondary">(EXCEED_MAX_ONE_TIME_AUTH_AMOUNT)</div>
+                  </div>
+                </div>
+                <div class="{{_local.expandedRows.includes(1) ? 'mt-4 pt-4' : 'hidden'}}">
+                  <div class="border-l-4 border-error bg-red-50 dark:bg-red-900/20 rounded-r-lg p-3 mb-4">
+                    <div class="flex-center gap-2 mb-3">
+                      <icon name="circle-exclamation" class="text-base text-error"/>
+                      <span class="text-error font-semibold text-sm">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.title</span>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                      <div class="flex justify-between">
+                        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.failure_date</span>
+                        <span class="text-primary">2025-10-27 14:32:15</span>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.error_code</span>
+                        <span class="text-error">EXCEED_MAX_ONE_TIME_AUTH_AMOUNT</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-3">
+                    <div class="flex-center gap-2 mb-2">
+                      <icon name="user" class="text-base icon-muted"/>
+                      <span class="text-heading text-sm">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.customer_info.title</span>
+                    </div>
+                    <div class="space-y-1 text-sm">
+                      <div class="flex justify-between">
+                        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.customer_info.email</span>
+                        <span class="text-primary">kim@example.com</span>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.customer_info.phone</span>
+                        <span class="text-primary">010-1234-5678</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                    <div class="flex-center gap-2 mb-2">
+                      <icon name="desktop" class="text-base icon-muted"/>
+                      <span class="text-heading text-sm">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.access_info.title</span>
+                    </div>
+                    <div class="space-y-1 text-sm">
+                      <div class="flex justify-between">
+                        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.access_info.device</span>
+                        <span class="text-primary">Desktop</span>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.access_info.browser</span>
+                        <span class="text-primary">Chrome 120</span>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.access_info.ip</span>
+                        <span class="text-primary">192.168.1.100</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="admin-card">
+                <div class="flex-between mb-2">
+                  <span class="text-primary font-medium">20251027-002</span>
+                  <span class="btn-badge btn-badge-blue">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.card</span>
+                </div>
+                <div class="text-sm mb-2">
+                  <div class="text-primary">겨울 패딩 점퍼</div>
+                  <div class="text-secondary">이영희 (user002)</div>
+                </div>
+                <div class="flex-between mb-2">
+                  <span class="text-primary font-semibold">159,000원</span>
+                  <icon name="chevron-down" class="text-xl text-gray-400 dark:text-gray-500"/>
+                </div>
+                <div class="flex items-start gap-1.5">
+                  <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                  <div>
+                    <span class="text-sm text-error">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_stopped_card</span>
+                    <div class="text-xs text-secondary">(INVALID_STOPPED_CARD)</div>
+                  </div>
+                </div>
+              </div>
+              <div class="admin-card">
+                <div class="flex-between mb-2">
+                  <span class="text-primary font-medium">20251027-003</span>
+                  <span class="btn-badge btn-badge-cyan">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.bank_transfer</span>
+                </div>
+                <div class="text-sm mb-2">
+                  <div class="text-primary">스니커즈 신발</div>
+                  <div class="text-secondary">박민수 (user003)</div>
+                </div>
+                <div class="flex-between mb-2">
+                  <span class="text-primary font-semibold">129,000원</span>
+                  <icon name="chevron-down" class="text-xl text-gray-400 dark:text-gray-500"/>
+                </div>
+                <div class="flex items-start gap-1.5">
+                  <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                  <div>
+                    <span class="text-sm text-error">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.not_enough_balance</span>
+                    <div class="text-xs text-secondary">(NOT_ENOUGH_BALANCE)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </responsive>
+          <table data-ref="data_table" class="w-full">
+            <thead>
+              <tr class="border-b border-gray-200 dark:border-gray-700">
+                <th class="text-table-header py-3 px-4 text-left w-16">$t:sirsoft-ecommerce.admin.payment_failure_history.table.columns.no</th>
+                <th class="text-table-header py-3 px-4 text-left w-32">$t:sirsoft-ecommerce.admin.payment_failure_history.table.columns.order_number</th>
+                <th class="text-table-header py-3 px-4 text-left w-28">$t:sirsoft-ecommerce.admin.payment_failure_history.table.columns.member_info</th>
+                <th class="text-table-header py-3 px-4 text-left">$t:sirsoft-ecommerce.admin.payment_failure_history.table.columns.product_name</th>
+                <th class="text-table-header py-3 px-4 text-center w-24">$t:sirsoft-ecommerce.admin.payment_failure_history.table.columns.payment_method</th>
+                <th class="text-table-header py-3 px-4 text-right w-28">$t:sirsoft-ecommerce.admin.payment_failure_history.table.columns.payment_amount</th>
+                <th class="text-table-header py-3 px-4 text-left">$t:sirsoft-ecommerce.admin.payment_failure_history.table.columns.failure_reason</th>
+                <th class="text-table-header py-3 px-4 text-center w-28">$t:sirsoft-ecommerce.admin.payment_failure_history.table.columns.failure_date</th>
+                <th class="text-table-header py-3 px-4 text-center w-20">$t:sirsoft-ecommerce.admin.payment_failure_history.table.columns.detail</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800">
+                <td class="py-4 px-4 text-sm text-primary">1</td>
+                <td class="py-4 px-4 text-sm text-primary font-medium">
+                  <dropdown data-type="composite" label="20251027-001" position="bottom-left" variant="text">
+                    <prop name="items">
+                      <item label="$t:sirsoft-ecommerce.admin.payment_failure_history.dropdown.view_order_detail" value="view_order"/>
+                    </prop>
+                  </dropdown>
+                </td>
+                <td class="py-4 px-4">
+                  <div class="text-sm">
+                    <dropdown data-type="composite" label="김철수" position="bottom-left" variant="text">
+                      <prop name="items">
+                        <item label="$t:sirsoft-ecommerce.admin.payment_failure_history.dropdown.search_by_member" value="search_member"/>
+                        <item label="$t:sirsoft-ecommerce.admin.payment_failure_history.dropdown.view_member_info" value="view_member"/>
+                      </prop>
+                    </dropdown>
+                    <div class="text-tertiary">user001</div>
+                  </div>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary">프리미엄 티셔츠 외 2건</td>
+                <td class="empty-state-cell">
+                  <span class="btn-badge btn-badge-blue">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.card</span>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary text-right">89,000원</td>
+                <td class="py-4 px-4">
+                  <div class="flex-start gap-1.5">
+                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <div>
+                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_one_time_auth_amount</span>
+                      <div class="text-xs text-secondary">(EXCEED_MAX_ONE_TIME_AUTH_AMOUNT)</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="empty-state-cell text-sm text-secondary">
+                  <div>2025-10-27</div>
+                  <div>14:32:15</div>
+                </td>
+                <td class="empty-state-cell cursor-pointer">
+                  <on type="click">
+                    <!-- 예시 행 1 — 넓은 화면에서는 맨 오른쪽 화살표 칸이 펼치기/접기를 맡는다 -->
+                    <set-state target="_local" expandedRows="{{_local.expandedRows.includes(1) ? _local.expandedRows.filter(id => id !== 1) : [..._local.expandedRows, 1]}}"/>
+                  </on>
+                  <icon name="{{_local.expandedRows.includes(1) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
+                </td>
+              </tr>
+              <tr class="{{_local.expandedRows.includes(1) ? '' : 'hidden'}}">
+                <td :colSpan="9" class="p-0">
+                  <div class="bg-gray-50 dark:bg-gray-800 p-6">
+                    <div class="border-l-4 border-error bg-red-50 dark:bg-red-900/20 rounded-r-lg p-4 mb-6">
+                      <div class="flex-center gap-2 mb-4">
+                        <icon name="circle-exclamation" class="text-xl text-error"/>
+                        <span class="text-error font-semibold">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.title</span>
+                      </div>
+                      <div class="row-stack">
+                        <div class="grid-2col-responsive">
+                          <div class="flex justify-between">
+                            <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.transaction_number</span>
+                            <span class="text-primary">20251027-001</span>
+                          </div>
+                          <div class="flex justify-between">
+                            <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.payment_method</span>
+                            <span class="btn-badge btn-badge-blue">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.card</span>
+                          </div>
+                        </div>
+                        <div class="grid-2col-responsive">
+                          <div class="flex justify-between">
+                            <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.payment_amount</span>
+                            <span class="text-primary">89,000원</span>
+                          </div>
+                          <div class="flex justify-between">
+                            <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.failure_date</span>
+                            <span class="text-primary">2025-10-27 14:32:15</span>
+                          </div>
+                        </div>
+                        <div class="grid-2col-responsive">
+                          <div class="flex justify-between">
+                            <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.failure_reason</span>
+                            <span class="text-error">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_one_time_auth_amount</span>
+                          </div>
+                          <div class="flex justify-between">
+                            <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.error_code</span>
+                            <span class="text-error">EXCEED_MAX_ONE_TIME_AUTH_AMOUNT</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="grid-2col-responsive">
+                      <div class="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                        <div class="flex-center gap-2 mb-4">
+                          <icon name="user" class="text-base icon-muted"/>
+                          <span class="text-heading">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.customer_info.title</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                          <div>
+                            <div class="text-label-subtle text-xs mb-1">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.customer_info.name</div>
+                            <div class="text-primary text-sm">김철수</div>
+                          </div>
+                          <div>
+                            <div class="text-label-subtle text-xs mb-1">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.customer_info.id</div>
+                            <div class="text-primary text-sm">user001</div>
+                          </div>
+                          <div>
+                            <div class="text-label-subtle text-xs mb-1">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.customer_info.email</div>
+                            <div class="text-primary text-sm">kim@example.com</div>
+                          </div>
+                          <div>
+                            <div class="text-label-subtle text-xs mb-1">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.customer_info.phone</div>
+                            <div class="text-primary text-sm">010-1234-5678</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                        <div class="flex-center gap-2 mb-4">
+                          <icon name="desktop" class="text-base icon-muted"/>
+                          <span class="text-heading">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.access_info.title</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                          <div>
+                            <div class="text-label-subtle text-xs mb-1">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.access_info.device</div>
+                            <div class="text-primary text-sm">Desktop</div>
+                          </div>
+                          <div>
+                            <div class="text-label-subtle text-xs mb-1">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.access_info.browser</div>
+                            <div class="text-primary text-sm">Chrome 120</div>
+                          </div>
+                          <div>
+                            <div class="text-label-subtle text-xs mb-1">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.access_info.os</div>
+                            <div class="text-primary text-sm">Windows 10</div>
+                          </div>
+                          <div>
+                            <div class="text-label-subtle text-xs mb-1">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.access_info.ip</div>
+                            <div class="text-primary text-sm">192.168.1.100</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer">
+                <on type="click">
+                  <!-- 예시 행 2 — 위와 같은 펼치기 토글 -->
+                  <set-state target="_local" expandedRows="{{_local.expandedRows.includes(2) ? _local.expandedRows.filter(id => id !== 2) : [..._local.expandedRows, 2]}}"/>
+                </on>
+                <td class="py-4 px-4 text-sm text-primary">2</td>
+                <td class="py-4 px-4 text-sm text-primary font-medium">20251027-002</td>
+                <td class="py-4 px-4">
+                  <div class="text-sm">
+                    <span class="text-primary font-medium">이영희</span>
+                    <div class="text-tertiary">user002</div>
+                  </div>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary">겨울 패딩 점퍼</td>
+                <td class="empty-state-cell">
+                  <span class="btn-badge btn-badge-blue">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.card</span>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary text-right">159,000원</td>
+                <td class="py-4 px-4">
+                  <div class="flex-start gap-1.5">
+                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <div>
+                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_stopped_card</span>
+                      <div class="text-xs text-secondary">(INVALID_STOPPED_CARD)</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="empty-state-cell text-sm text-secondary">
+                  <div>2025-10-27</div>
+                  <div>13:15:42</div>
+                </td>
+                <td class="empty-state-cell">
+                  <icon name="{{_local.expandedRows.includes(2) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
+                </td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer">
+                <on type="click">
+                  <!-- 예시 행 3 — 위와 같은 펼치기 토글 -->
+                  <set-state target="_local" expandedRows="{{_local.expandedRows.includes(3) ? _local.expandedRows.filter(id => id !== 3) : [..._local.expandedRows, 3]}}"/>
+                </on>
+                <td class="py-4 px-4 text-sm text-primary">3</td>
+                <td class="py-4 px-4 text-sm text-primary font-medium">20251027-003</td>
+                <td class="py-4 px-4">
+                  <div class="text-sm">
+                    <span class="text-primary font-medium">박민수</span>
+                    <div class="text-tertiary">user003</div>
+                  </div>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary">스니커즈 신발</td>
+                <td class="empty-state-cell">
+                  <span class="btn-badge btn-badge-cyan">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.bank_transfer</span>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary text-right">129,000원</td>
+                <td class="py-4 px-4">
+                  <div class="flex-start gap-1.5">
+                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <div>
+                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.not_enough_balance</span>
+                      <div class="text-xs text-secondary">(NOT_ENOUGH_BALANCE)</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="empty-state-cell text-sm text-secondary">
+                  <div>2025-10-27</div>
+                  <div>11:20:30</div>
+                </td>
+                <td class="empty-state-cell">
+                  <icon name="{{_local.expandedRows.includes(3) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
+                </td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer">
+                <on type="click">
+                  <!-- 예시 행 4 — 위와 같은 펼치기 토글 -->
+                  <set-state target="_local" expandedRows="{{_local.expandedRows.includes(4) ? _local.expandedRows.filter(id => id !== 4) : [..._local.expandedRows, 4]}}"/>
+                </on>
+                <td class="py-4 px-4 text-sm text-primary">4</td>
+                <td class="py-4 px-4 text-sm text-primary font-medium">20251027-004</td>
+                <td class="py-4 px-4">
+                  <div class="text-sm">
+                    <span class="text-primary font-medium">정수현</span>
+                    <div class="text-tertiary">user004</div>
+                  </div>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary">청바지 외 1건</td>
+                <td class="empty-state-cell">
+                  <span class="btn-badge btn-badge-blue">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.card</span>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary text-right">65,000원</td>
+                <td class="py-4 px-4">
+                  <div class="flex-start gap-1.5">
+                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <div>
+                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.user_cancel</span>
+                      <div class="text-xs text-secondary">(USER_CANCEL)</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="empty-state-cell text-sm text-secondary">
+                  <div>2025-10-27</div>
+                  <div>10:12:35</div>
+                </td>
+                <td class="empty-state-cell">
+                  <icon name="{{_local.expandedRows.includes(4) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
+                </td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer">
+                <on type="click">
+                  <!-- 예시 행 5 — 위와 같은 펼치기 토글 -->
+                  <set-state target="_local" expandedRows="{{_local.expandedRows.includes(5) ? _local.expandedRows.filter(id => id !== 5) : [..._local.expandedRows, 5]}}"/>
+                </on>
+                <td class="py-4 px-4 text-sm text-primary">5</td>
+                <td class="py-4 px-4 text-sm text-primary font-medium">20251026-045</td>
+                <td class="py-4 px-4">
+                  <div class="text-sm">
+                    <span class="text-primary font-medium">최지은</span>
+                    <div class="text-tertiary">user005</div>
+                  </div>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary">가죽 지갑</td>
+                <td class="empty-state-cell">
+                  <span class="btn-badge btn-badge-yellow">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.easy_payment</span>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary text-right">49,000원</td>
+                <td class="py-4 px-4">
+                  <div class="flex-start gap-1.5">
+                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <div>
+                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.incorrect_card_password</span>
+                      <div class="text-xs text-secondary">(INCORRECT_CARD_PASSWORD)</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="empty-state-cell text-sm text-secondary">
+                  <div>2025-10-26</div>
+                  <div>16:20:10</div>
+                </td>
+                <td class="empty-state-cell">
+                  <icon name="{{_local.expandedRows.includes(5) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
+                </td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer">
+                <on type="click">
+                  <!-- 예시 행 6 — 위와 같은 펼치기 토글 -->
+                  <set-state target="_local" expandedRows="{{_local.expandedRows.includes(6) ? _local.expandedRows.filter(id => id !== 6) : [..._local.expandedRows, 6]}}"/>
+                </on>
+                <td class="py-4 px-4 text-sm text-primary">6</td>
+                <td class="py-4 px-4 text-sm text-primary font-medium">20251026-023</td>
+                <td class="py-4 px-4">
+                  <div class="text-sm">
+                    <span class="text-primary font-medium">홍길동</span>
+                    <div class="text-tertiary">user006</div>
+                  </div>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary">무선 이어폰</td>
+                <td class="empty-state-cell">
+                  <span class="btn-badge btn-badge-blue">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.card</span>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary text-right">179,000원</td>
+                <td class="py-4 px-4">
+                  <div class="flex-start gap-1.5">
+                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <div>
+                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.reject_card_company</span>
+                      <div class="text-xs text-secondary">(REJECT_CARD_COMPANY)</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="empty-state-cell text-sm text-secondary">
+                  <div>2025-10-26</div>
+                  <div>14:22:18</div>
+                </td>
+                <td class="empty-state-cell">
+                  <icon name="{{_local.expandedRows.includes(6) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
+                </td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer">
+                <on type="click">
+                  <!-- 예시 행 7 — 위와 같은 펼치기 토글 -->
+                  <set-state target="_local" expandedRows="{{_local.expandedRows.includes(7) ? _local.expandedRows.filter(id => id !== 7) : [..._local.expandedRows, 7]}}"/>
+                </on>
+                <td class="py-4 px-4 text-sm text-primary">7</td>
+                <td class="py-4 px-4 text-sm text-primary font-medium">20251025-021</td>
+                <td class="py-4 px-4">
+                  <div class="text-sm">
+                    <span class="text-primary font-medium">강민지</span>
+                    <div class="text-tertiary">user007</div>
+                  </div>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary">노트북 파우치</td>
+                <td class="empty-state-cell">
+                  <span class="btn-badge btn-badge-orange">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.virtual_account</span>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary text-right">35,000원</td>
+                <td class="py-4 px-4">
+                  <div class="flex-start gap-1.5">
+                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <div>
+                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.virtual_account_expired</span>
+                      <div class="text-xs text-secondary">(VIRTUAL_ACCOUNT_EXPIRED)</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="empty-state-cell text-sm text-secondary">
+                  <div>2025-10-25</div>
+                  <div>15:10:00</div>
+                </td>
+                <td class="empty-state-cell">
+                  <icon name="{{_local.expandedRows.includes(7) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
+                </td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer">
+                <on type="click">
+                  <!-- 예시 행 8 — 위와 같은 펼치기 토글 -->
+                  <set-state target="_local" expandedRows="{{_local.expandedRows.includes(8) ? _local.expandedRows.filter(id => id !== 8) : [..._local.expandedRows, 8]}}"/>
+                </on>
+                <td class="py-4 px-4 text-sm text-primary">8</td>
+                <td class="py-4 px-4 text-sm text-primary font-medium">20251024-019</td>
+                <td class="py-4 px-4">
+                  <div class="text-sm">
+                    <span class="text-primary font-medium">윤서준</span>
+                    <div class="text-tertiary">user008</div>
+                  </div>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary">운동화</td>
+                <td class="empty-state-cell">
+                  <span class="btn-badge btn-badge-blue">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.card</span>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary text-right">98,000원</td>
+                <td class="py-4 px-4">
+                  <div class="flex-start gap-1.5">
+                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <div>
+                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_card_expiration</span>
+                      <div class="text-xs text-secondary">(INVALID_CARD_EXPIRATION)</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="empty-state-cell text-sm text-secondary">
+                  <div>2025-10-24</div>
+                  <div>10:45:30</div>
+                </td>
+                <td class="empty-state-cell">
+                  <icon name="{{_local.expandedRows.includes(8) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
+                </td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer">
+                <on type="click">
+                  <!-- 예시 행 9 — 위와 같은 펼치기 토글 -->
+                  <set-state target="_local" expandedRows="{{_local.expandedRows.includes(9) ? _local.expandedRows.filter(id => id !== 9) : [..._local.expandedRows, 9]}}"/>
+                </on>
+                <td class="py-4 px-4 text-sm text-primary">9</td>
+                <td class="py-4 px-4 text-sm text-primary font-medium">20251024-008</td>
+                <td class="py-4 px-4">
+                  <div class="text-sm">
+                    <span class="text-primary font-medium">송하늘</span>
+                    <div class="text-tertiary">user009</div>
+                  </div>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary">백팩</td>
+                <td class="empty-state-cell">
+                  <span class="btn-badge btn-badge-yellow">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.easy_payment</span>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary text-right">82,000원</td>
+                <td class="py-4 px-4">
+                  <div class="flex-start gap-1.5">
+                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <div>
+                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_card_number</span>
+                      <div class="text-xs text-secondary">(INVALID_CARD_NUMBER)</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="empty-state-cell text-sm text-secondary">
+                  <div>2025-10-24</div>
+                  <div>09:15:22</div>
+                </td>
+                <td class="empty-state-cell">
+                  <icon name="{{_local.expandedRows.includes(9) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
+                </td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer">
+                <on type="click">
+                  <!-- 예시 행 10 — 위와 같은 펼치기 토글 -->
+                  <set-state target="_local" expandedRows="{{_local.expandedRows.includes(10) ? _local.expandedRows.filter(id => id !== 10) : [..._local.expandedRows, 10]}}"/>
+                </on>
+                <td class="py-4 px-4 text-sm text-primary">10</td>
+                <td class="py-4 px-4 text-sm text-primary font-medium">20251023-012</td>
+                <td class="py-4 px-4">
+                  <div class="text-sm">
+                    <span class="text-primary font-medium">임준호</span>
+                    <div class="text-tertiary">user010</div>
+                  </div>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary">캐주얼 셔츠</td>
+                <td class="empty-state-cell">
+                  <span class="btn-badge btn-badge-red">$t:sirsoft-ecommerce.admin.payment_failure_history.filter.bank_deposit</span>
+                </td>
+                <td class="py-4 px-4 text-sm text-primary text-right">45,000원</td>
+                <td class="py-4 px-4">
+                  <div class="flex-start gap-1.5">
+                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <div>
+                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_auth_count</span>
+                      <div class="text-xs text-secondary">(EXCEED_MAX_AUTH_COUNT)</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="empty-state-cell text-sm text-secondary">
+                  <div>2025-10-23</div>
+                  <div>23:59:58</div>
+                </td>
+                <td class="empty-state-cell">
+                  <icon name="{{_local.expandedRows.includes(10) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div data-ref="pagination_container" class="flex justify-center mt-6">
+          <div class="pagination">
+            <button aria-label="$t:common.first_page" type="button" class="pagination-btn" :disabled="true">
+              <icon name="angles-left" class="text-base"/>
+            </button>
+            <button aria-label="$t:common.prev_page" type="button" class="pagination-btn" :disabled="true">
+              <icon name="chevron-left" class="text-base"/>
+            </button>
+            <button type="button" class="pagination-btn active">1</button>
+            <button type="button" class="pagination-btn">2</button>
+            <button aria-label="$t:common.next_page" type="button" class="pagination-btn">
+              <icon name="chevron-right" class="text-base"/>
+            </button>
+            <button aria-label="$t:common.last_page" type="button" class="pagination-btn">
+              <icon name="angles-right" class="text-base"/>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </slot>
+</layout>

@@ -23,6 +23,7 @@ import { useTranslation } from '../TranslationContext';
 import { LayoutEditorProvider, useLayoutEditor } from './LayoutEditorContext';
 import { LayoutDocumentProvider } from './LayoutDocumentContext';
 import { EditorModalProvider, EditorModalRoot, useEditorModal } from './EditorModalContext';
+import { useEditorDialog } from './components/EditorDialog';
 import { EditorToolbar, type EditorTemplateOption } from './components/EditorToolbar';
 import { LayoutAttachmentManager } from './components/property-controls/LayoutAttachmentManager';
 import { CustomTranslationManager } from './components/property-controls/CustomTranslationManager';
@@ -57,6 +58,7 @@ import {
   deriveCurrentScope,
   matchStateItems,
   resolveDefaultStateId,
+  stateScopeKey,
 } from './utils/matchStateScope';
 import { buildAuthHeaders } from './utils/authToken';
 import { buildSampleGlobalSeed } from './sample-data/sampleGlobalChain';
@@ -64,14 +66,19 @@ import { useEditorRoutes } from './hooks/useEditorRoutes';
 import { useEditorUrlSync } from './hooks/useEditorUrlSync';
 import { usePreviewDarkIsolation } from './hooks/usePreviewDarkIsolation';
 import { usePreviewBodyScrollIsolation } from './hooks/usePreviewBodyScrollIsolation';
+import { usePreviewMediaIsolation } from './hooks/usePreviewMediaIsolation';
 import { useLayoutDocument } from './hooks/useLayoutDocument';
 import { useExtensionDocument } from './hooks/useExtensionDocument';
 import { adaptExtensionToLayoutDocument } from './hooks/adaptExtensionToLayoutDocument';
 import { ExtensionHostPickerModal } from './components/ExtensionHostPickerModal';
 import { useLayoutPreview } from './hooks/useLayoutPreview';
-import type { ComponentManifest } from './components/ComponentPalette';
+import type { ComponentManifest, ComponentManifestEntry } from './components/ComponentPalette';
 import type { NestingSpec, EditorSpec } from './spec/specTypes';
 import { loadEditorSpecBundle, type SampleGlobalSource } from './spec/editorSpecLoader';
+import {
+  loadExtensionPaletteManifestEntries,
+  mergeExtensionManifestEntries,
+} from './spec/extensionPaletteComponents';
 import { buildCoreActionRecipeSeed } from './spec/coreActionRecipes';
 import { registerCoreWidgets } from './spec/registerCoreWidgets';
 import { registerCoreEditors } from './spec/registerCoreEditors';
@@ -179,6 +186,20 @@ function LayoutEditorChromeBody({
   const { state, dispatch } = useLayoutEditor();
   const { t } = useTranslation();
   const modal = useEditorModal();
+  // 확인 대화상자 — 브라우저 기본 confirm 대신 편집기 모달 스택 위에 띄운다(engine-v1.78.7).
+  const dialog = useEditorDialog(t);
+  /** 저장하지 않은 변경을 버리고 떠날지 묻는다 — 나가기·템플릿 전환·자산 토글·경로 이동 공통 */
+  const confirmDiscardChanges = useCallback(
+    (): Promise<boolean> =>
+      dialog.confirm({
+        title: t('layout_editor.chrome.dirty_guard.title'),
+        message: t('layout_editor.chrome.dirty_guard.message'),
+        confirmLabel: t('layout_editor.chrome.dirty_guard.discard'),
+        cancelLabel: t('layout_editor.chrome.dirty_guard.stay'),
+        danger: true,
+      }),
+    [dialog, t],
+  );
 
   // 단일 useLayoutDocument 인스턴스 — Context 로 PreviewCanvas/Overlay 들에 공급
   const layoutDocument = useLayoutDocument();
@@ -203,8 +224,15 @@ function LayoutEditorChromeBody({
 
   // 편집 대상 템플릿의 components.json 매니페스트 + editor-spec.json 로드
   // 추가. 두 자산은 PreviewCanvas → EditorCanvasOverlay 가 팔레트/nesting 평가에 사용.
-  const [manifest, setManifest] = useState<ComponentManifest | null>(null);
+  const [templateManifest, setManifest] = useState<ComponentManifest | null>(null);
   const [editorSpec, setEditorSpec] = useState<EditorSpec | null>(null);
+  // 확장이 팔레트에 등재한 자기 컴포넌트의 매니페스트 항목 — 템플릿 매니페스트에는 확장 컴포넌트가
+  // 없어 팔레트가 그 등재를 모두 걸러 냈다(engine-v1.76.0, extensionPaletteComponents.ts).
+  const [extensionPaletteEntries, setExtensionPaletteEntries] = useState<ComponentManifestEntry[]>([]);
+  const manifest = useMemo(
+    () => mergeExtensionManifestEntries(templateManifest, extensionPaletteEntries),
+    [templateManifest, extensionPaletteEntries],
+  );
   // sampleGlobal deep merge 체인 소스 (모듈 → 플러그인 → 템플릿 순) — PreviewCanvas
   // 가 코어 시드와 합성해 격리 store baseline 을 만든다.
   const [sampleGlobalSources, setSampleGlobalSources] = useState<SampleGlobalSource[]>([]);
@@ -261,6 +289,23 @@ function LayoutEditorChromeBody({
       cancelled = true;
     };
   }, [templateIdentifier]);
+
+  // 팔레트에 컴포넌트를 등재한 확장의 components.json 을 받아 팔레트 목록에 더한다. 등재한 확장이
+  // 없으면 요청이 없다. 템플릿 매니페스트를 기다리는 것은 템플릿 대체본(`overrides`)의 메타를 쓰기 위해서다.
+  useEffect(() => {
+    if (!editorSpec || !templateManifest) return;
+    let cancelled = false;
+    (async () => {
+      const entries = await loadExtensionPaletteManifestEntries(editorSpec, templateManifest, {
+        urlFor: (kind, identifier) =>
+          suffixed(`/api/${kind}/${encodeURIComponent(identifier)}/components`, 'json'),
+      });
+      if (!cancelled) setExtensionPaletteEntries(entries);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editorSpec, templateManifest]);
 
   useEffect(() => {
     let cancelled = false;
@@ -362,6 +407,18 @@ function LayoutEditorChromeBody({
     // 라우트 노드가 없는 호스트(예: `_user_base`) → base scope 로 매칭.
     return `__base__/${selectedHostLayout}`;
   }, [editMode, selectedHostLayout, routeTree]);
+  // 반복 항목 편집 모드의 호스트 scope — 진입 직전 화면(`returnRoute`)이 호스트다.
+  // 항목 템플릿은 그 화면의 상태 뒤에 있으므로(예: 알림톡 템플릿 행은 `templates_tab`
+  // 상태에서만 존재) 호스트 scope 를 물려받지 않으면 항목 편집에 들어가는 순간 상태가
+  // 풀려 편집 대상이 캔버스에서 사라진다. returnRoute.path 는 route/base/modal 모드의
+  // 인코딩을 그대로 담고 있어 deriveCurrentScope 가 그대로 해석한다.
+  const iterationReturnPath = state.returnRoute?.path ?? null;
+  // 창 편집 모드의 호스트 레이아웃 — reducer 가 창 선택 때 selectedRoute.layoutName 에 담는다.
+  const modalHostLayoutName = editMode === 'modal' ? state.selectedRoute?.layoutName ?? null : null;
+  const iterationHostRoutePath = useMemo<string | null>(() => {
+    if (editMode !== 'iteration_item') return null;
+    return iterationReturnPath;
+  }, [editMode, iterationReturnPath]);
   // host 미지정 확장 URL 직접 진입(`?edit=__extension__/{id}` 단독)의 종료 복귀 보강.
   // 진입 시점에는 호스트 미확정이라 returnRoute 합성이 불가(useEditorUrlSync 의 D-32 합성은
   // `?host=` 가 있을 때만 동작). 호스트가 확정되는 시점(picker 선택 → selectHost / 단일 호스트
@@ -381,14 +438,31 @@ function LayoutEditorChromeBody({
   }, [extensionReturnRoutePending, selectedHostLayout, routeTree, dispatch]);
 
   useEffect(() => {
-    const scope = deriveCurrentScope(editMode, selectedRoutePath, extensionHostRoutePath);
-    const items = matchStateItems(editorSpec?.states?.groups, scope);
+    const scope = deriveCurrentScope(
+      editMode,
+      selectedRoutePath,
+      extensionHostRoutePath ?? iterationHostRoutePath,
+    );
+    // 창 편집이면 창을 연 화면(호스트 레이아웃)의 주인 묶음을 우선한다(engine-v1.78.3 — 같은 창 id 의 다른 확장 표본 혼입 차단).
+    const items = matchStateItems(editorSpec?.states?.groups, scope, editMode === 'modal' ? modalHostLayoutName : null);
     dispatch({
       type: 'SET_AVAILABLE_STATES',
       states: items,
+      // 새 대상의 기본 상태. 직전 선택이 **같은 scope 의 것이고** 새 목록에도 있으면 리듀서가
+      // 그쪽을 이어 간다(반복 항목/모달 편집을 드나들 때마다 기본값으로 풀리지 않게 —
+      // lastActiveStateId). scope 키를 함께 넘겨야 다른 화면의 동명 상태를 되살리지 않는다.
       activeStateId: resolveDefaultStateId(items),
+      scopeKey: stateScopeKey(scope),
     });
-  }, [editorSpec, editMode, selectedRoutePath, extensionHostRoutePath, dispatch]);
+  }, [
+    editorSpec,
+    editMode,
+    selectedRoutePath,
+    extensionHostRoutePath,
+    iterationHostRoutePath,
+    modalHostLayoutName,
+    dispatch,
+  ]);
 
   // 권한 키 후보 — 속성 모달 고급 탭 permissions TagInput (a-2).
   // 편집 권한 가드된 편집기 전용 엔드포인트에서 1회 fetch (코어 + 활성 확장 권한).
@@ -416,6 +490,11 @@ function LayoutEditorChromeBody({
   // 캔버스(브라우저 단일 스크롤) 스크롤바가 사라진다. 편집기 생존 동안 인라인 락을 무력화.
   usePreviewBodyScrollIsolation();
 
+  // CSS 매체 격리 — 프리뷰가 동일 문서의 div 라 폭 `@media`·`vw` 가 브라우저 창 폭으로 판정된다.
+  // 편집기 생존 동안 폭 조건을 프리뷰 프레임 컨테이너 기준으로 나눠 두고 언마운트 때 되돌린다(#141).
+  // usePreviewMediaIsolation 참조.
+  usePreviewMediaIsolation();
+
   // 라우트 매칭 — selectedNode 의 navigate.path/A.href 가 라우트 트리에 있는지 판정
   const resolveRouteMatch = useCallback(
     (path: string): 'route_in_tree' | 'route_not_in_tree' => {
@@ -429,24 +508,18 @@ function LayoutEditorChromeBody({
 
   // 링크 어포던스 클릭 → SELECT_ROUTE + 트리에서 layoutName 보강
   const handleNavigateToDestination = useCallback(
-    (destinationPath: string): void => {
+    async (destinationPath: string): Promise<void> => {
       const stripped = destinationPath.split('?')[0]?.split('#')[0] ?? destinationPath;
       const node = findRouteNodeByPath(state.routeTree, stripped);
       if (!node) return;
-      // dirty 가드 — 변경 사항이 있으면 사용자에게 확인 (단순 confirm 으로 1차)
-      if (activeDocument.isDirty) {
-        const proceed =
-          typeof window !== 'undefined'
-            ? window.confirm(t('layout_editor.chrome.dirty_guard.message'))
-            : true;
-        if (!proceed) return;
-      }
+      // dirty 가드 — 변경 사항이 있으면 사용자에게 확인
+      if (activeDocument.isDirty && !(await confirmDiscardChanges())) return;
       dispatch({
         type: 'SELECT_ROUTE',
         route: { path: node.path, layoutName: node.layoutName },
       });
     },
-    [state.routeTree, activeDocument.isDirty, dispatch]
+    [state.routeTree, activeDocument.isDirty, dispatch, confirmDiscardChanges]
   );
 
   // 세션 누적 path 추적 — save 가드의 sessionAddedPaths 로 사용
@@ -485,54 +558,52 @@ function LayoutEditorChromeBody({
   // 편집기는 전체화면 오버레이로 React Router 컨텍스트 밖이라 SPA navigate 가
   // 동작하지 않는다(라우트 미매칭 → URL 미변경). 실제 페이지 이동을 일으키는
   // openWindow + target:'_self'(window.location.assign) 로 처리한다.
-  const handleExit = useCallback(() => {
-    if (activeDocument.isDirty) {
-      const proceed =
-        typeof window !== 'undefined'
-          ? window.confirm(t('layout_editor.chrome.dirty_guard.message'))
-          : true;
-      if (!proceed) return;
-    }
+  const handleExit = useCallback(async () => {
+    if (activeDocument.isDirty && !(await confirmDiscardChanges())) return;
     // 편집 대상이 admin 템플릿이면 admin 탭, user 템플릿이면 user 탭으로 복귀.
     (window as any).G7Core?.dispatch?.({
       handler: 'openWindow',
       params: { path: `/admin/templates/${templateType}`, target: '_self' },
     });
-  }, [activeDocument.isDirty, t, templateType]);
+  }, [activeDocument.isDirty, confirmDiscardChanges, templateType]);
 
   // 템플릿 전환 — 상단 툴바 드롭다운에서 다른 템플릿을 고르면 그 템플릿의 편집기로 이동.
   // 나가기와 동일하게 dirty 면 확인 후 이탈한다. 편집기는 React Router 밖
   // 전체화면 오버레이라 openWindow + target:'_self'(window.location.assign)로 실제 이동한다.
   const handleSwitchTemplate = useCallback(
-    (nextIdentifier: string) => {
+    async (nextIdentifier: string) => {
       if (!nextIdentifier || nextIdentifier === templateIdentifier) return;
-      if (activeDocument.isDirty) {
-        const proceed =
-          typeof window !== 'undefined'
-            ? window.confirm(t('layout_editor.chrome.dirty_guard.message'))
-            : true;
-        if (!proceed) return;
-      }
+      if (activeDocument.isDirty && !(await confirmDiscardChanges())) return;
       const path = buildEditorUrl(nextIdentifier);
       (window as any).G7Core?.dispatch?.({
         handler: 'openWindow',
         params: { path, target: '_self' },
       });
     },
-    [templateIdentifier, activeDocument.isDirty, t],
+    [templateIdentifier, activeDocument.isDirty, confirmDiscardChanges],
   );
 
   // 커스텀 자산 관리 모달 — 운영자 CSS·JS·폰트·이미지를 화면에서 직접 넣고 고친다.
   // 권한은 서버가 판정하므로 여기서 버튼을 감추지 않는다(모달이 403 을 안내로 바꾼다).
   const handleManageCustomAssets = useCallback(() => {
+    // 창이 등록한 닫기 요청(미저장 확인 후 닫기) — 백드롭 클릭이 이것을 부른다.
+    let closeRequest: (() => void) | null = null;
     const id = modal.open({
       ariaLabel: t('layout_editor.custom_assets.title'),
       width: 860,
       maxHeightRatio: 0.86,
+      // Esc·백드롭으로 바로 닫지 않는다 — 모달 루트가 닫으면 창의 «저장하지 않은 편집 N건» 확인을 건너뛰어
+      // 쓰던 본문이 사라진다. closeOnEscape=false 면 루트가 Esc 를 가로채지 않아 창 자신의 Esc 처리
+      // (handleClose → 확인)가 받고, 백드롭 클릭은 onRequestClose 로 같은 확인에 넘긴다. 편집이 없으면 바로 닫힌다.
+      closeOnEscape: false,
+      onRequestClose: () => (closeRequest ? closeRequest() : modal.close(id)),
       content: React.createElement(CustomAssetsModal, {
         templateIdentifier,
         t,
         onClose: () => modal.close(id),
+        onRegisterCloseRequest: (handler: (() => void) | null) => {
+          closeRequest = handler;
+        },
       }),
     });
   }, [modal, templateIdentifier, t]);
@@ -556,12 +627,9 @@ function LayoutEditorChromeBody({
     (!!(window as any).G7Config?.customAssetsDisabled ||
       new URLSearchParams(window.location.search).get('custom') === 'off');
 
-  const handleToggleCustomAssets = useCallback(() => {
+  const handleToggleCustomAssets = useCallback(async () => {
     if (typeof window === 'undefined') return;
-    if (activeDocument.isDirty) {
-      const proceed = window.confirm(t('layout_editor.chrome.dirty_guard.message'));
-      if (!proceed) return;
-    }
+    if (activeDocument.isDirty && !(await confirmDiscardChanges())) return;
 
     const url = new URL(window.location.href);
 
@@ -583,7 +651,7 @@ function LayoutEditorChromeBody({
       handler: 'openWindow',
       params: { path: `${url.pathname}${url.search}${url.hash}`, target: '_self' },
     });
-  }, [activeDocument.isDirty, customAssetsDisabled, t]);
+  }, [activeDocument.isDirty, customAssetsDisabled, confirmDiscardChanges]);
 
   // 코드편집 — 기존 텍스트 레이아웃 편집기 화면을 새 창으로 연다(위지윅 편집은
   // 유지한 채 코드 편집을 별도 창에서). 본체는 별도 라우트로 이미 존재
@@ -778,15 +846,16 @@ function LayoutEditorChromeBody({
   // dirty 일 때만 활성(툴바). confirm 후 reload() — reload 가 (1) 세션 캐시 엔트리
   // 제거 + dirty 키 해제(트리 배지 사라짐), (2) reloadCounter +1(EditorCanvasOverlay
   // history baseline 재설정), (3) 서버 최신 재fetch 를 일괄 수행한다.
-  const handleReset = useCallback(() => {
+  const handleReset = useCallback(async () => {
     if (!activeDocument.isDirty) return;
-    const proceed =
-      typeof window !== 'undefined'
-        ? window.confirm(t('layout_editor.chrome.reset_guard.message'))
-        : true;
+    const proceed = await dialog.confirm({
+      title: t('layout_editor.chrome.reset_guard.title'),
+      message: t('layout_editor.chrome.reset_guard.message'),
+      danger: true,
+    });
     if (!proceed) return;
     void activeDocument.reload();
-  }, [activeDocument, t]);
+  }, [activeDocument, dialog, t]);
 
   // 저장 — 툴바 onSave 와 동일 경로(단축키 Ctrl+S 재사용). 확장 편집 모드는 활성 문서가
   // 확장 문서이므로 layout-extensions API 로 저장된다.
@@ -938,7 +1007,10 @@ function LayoutEditorChromeBody({
           <EditorToolbar
             onSave={() => {
               // 단축키(Ctrl+S)와 동일 경로 — 저장 + 배너 + 트리 버전 배지 동기화 일원화.
-              void handleSaveAction();
+              // Promise 를 **돌려준다** — EditorToolbar 는 반환값이 thenable 일 때만 저장 중
+              // 스피너를 띄우고 버튼을 잠근다. `void` 로 버리면 진행 표시가 영영 뜨지 않고
+              // 저장 중 중복 클릭도 막히지 않는다(단위 테스트는 Promise 를 주입해 통과했다).
+              return handleSaveAction();
             }}
             isDirty={activeDocument.isDirty}
             onExit={handleExit}

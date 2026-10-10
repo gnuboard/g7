@@ -1,0 +1,215 @@
+<!-- 설정의 「신고 정책」 탭 — 신고를 누가 할 수 있고 몇 건이 쌓이면 무엇을 하는지, 그리고 그때 관리자·글쓴이에게 알릴지를 정한다. 알림 문안 자체는 여기서 고치지 않고 「알림 정의」 탭으로 건너가는 버튼만 둔다 -->
+<partial description="게시판 환경설정 신고 정책 탭 콘텐츠">
+  <div data-ref="tab_content_report_policy" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'report_policy'}}">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <div>
+      <!-- ========== 카드 1: 자동 블라인드 처리 ========== -->
+      <section-layout data-type="layout" data-ref="section_auto_hide" class="admin-card">
+        <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.auto_hide</h3>
+        <div class="card-description">$t:sirsoft-board.admin.settings.sections.auto_hide_description</div>
+        <div class="row-stack">
+          <div data-ref="field_auto_hide_threshold">
+            <label class="form-label">
+              <span>$t:sirsoft-board.admin.settings.fields.auto_hide_threshold</span>
+            </label>
+            <input type="number" name="report_policy.auto_hide_threshold" min="{{_local?.form?._meta?.limits?.auto_hide_threshold_min ?? 0}}" max="{{_local?.form?._meta?.limits?.auto_hide_threshold_max ?? 100}}" class="{{(_local.errors?.['report_policy.auto_hide_threshold']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['report_policy.auto_hide_threshold']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_policy.auto_hide_threshold']) ? _local.errors['report_policy.auto_hide_threshold'][0] : _local.errors?.['report_policy.auto_hide_threshold']) ?? ''}}</span>
+            <span class="text-tertiary block">$t:sirsoft-board.admin.settings.fields.auto_hide_threshold_hint</span>
+          </div>
+          <div data-ref="field_auto_hide_target">
+            <label class="form-label">
+              <span>$t:sirsoft-board.admin.settings.fields.auto_hide_target</span>
+            </label>
+            <select name="report_policy.auto_hide_target" class="w-full text-sm" disabled="{{_computed.isReadOnly}}">
+              <options>
+                <option value="post">$t:sirsoft-board.admin.settings.options.auto_hide_target.post</option>
+                <option value="comment">$t:sirsoft-board.admin.settings.options.auto_hide_target.comment</option>
+                <option value="both">$t:sirsoft-board.admin.settings.options.auto_hide_target.both</option>
+              </options>
+            </select>
+            <span class="text-tertiary block">$t:sirsoft-board.admin.settings.fields.auto_hide_target_hint</span>
+          </div>
+        </div>
+      </section-layout>
+      <!-- ========== 카드 2: 신고 남발 방지 ========== -->
+      <section-layout data-type="layout" data-ref="section_report_abuse_prevention" class="admin-card">
+        <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.report_abuse_prevention</h3>
+        <div class="card-description">$t:sirsoft-board.admin.settings.sections.report_abuse_prevention_description</div>
+        <div class="row-stack">
+          <div data-ref="field_daily_report_limit">
+            <label class="form-label">
+              <span>$t:sirsoft-board.admin.settings.fields.daily_report_limit</span>
+            </label>
+            <input type="number" name="report_policy.daily_report_limit" min="{{_local?.form?._meta?.limits?.daily_report_limit_min ?? 0}}" max="{{_local?.form?._meta?.limits?.daily_report_limit_max ?? 100}}" class="{{(_local.errors?.['report_policy.daily_report_limit']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['report_policy.daily_report_limit']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_policy.daily_report_limit']) ? _local.errors['report_policy.daily_report_limit'][0] : _local.errors?.['report_policy.daily_report_limit']) ?? ''}}</span>
+            <span class="text-tertiary block">$t:sirsoft-board.admin.settings.fields.daily_report_limit_hint</span>
+          </div>
+          <div data-ref="field_rejection_limit">
+            <label class="form-label">
+              <span>$t:sirsoft-board.admin.settings.fields.rejection_limit_count</span>
+            </label>
+            <div class="grid-2col">
+              <div>
+                <div>
+                  <span class="text-tertiary">$t:sirsoft-board.admin.settings.fields.rejection_limit_count</span>
+                  <input type="number" name="report_policy.rejection_limit_count" aria-label="$t:sirsoft-board.admin.settings.fields.rejection_limit_count" min="{{_local?.form?._meta?.limits?.rejection_limit_count_min ?? 0}}" max="{{_local?.form?._meta?.limits?.rejection_limit_count_max ?? 50}}" class="{{(_local.errors?.['report_policy.rejection_limit_count']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+                  <span data-if="{{_local.errors?.['report_policy.rejection_limit_count']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_policy.rejection_limit_count']) ? _local.errors['report_policy.rejection_limit_count'][0] : _local.errors?.['report_policy.rejection_limit_count']) ?? ''}}</span>
+                </div>
+              </div>
+              <div>
+                <div>
+                  <span class="text-tertiary">$t:sirsoft-board.admin.settings.fields.rejection_limit_days</span>
+                  <input type="number" name="report_policy.rejection_limit_days" aria-label="$t:sirsoft-board.admin.settings.fields.rejection_limit_days" min="{{_local?.form?._meta?.limits?.rejection_limit_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.rejection_limit_days_max ?? 365}}" class="{{(_local.errors?.['report_policy.rejection_limit_days']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+                  <span data-if="{{_local.errors?.['report_policy.rejection_limit_days']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_policy.rejection_limit_days']) ? _local.errors['report_policy.rejection_limit_days'][0] : _local.errors?.['report_policy.rejection_limit_days']) ?? ''}}</span>
+                </div>
+              </div>
+            </div>
+            <span class="text-tertiary block">$t:sirsoft-board.admin.settings.fields.rejection_limit_hint</span>
+          </div>
+          <div data-ref="field_report_cooldown_seconds" class="">
+            <div>
+              <label class="form-label">
+                <span>$t:sirsoft-board.admin.settings.fields.report_cooldown_seconds</span>
+              </label>
+              <input type="number" name="spam_security.report_cooldown_seconds" min="{{_local?.form?._meta?.limits?.report_cooldown_seconds_min ?? 0}}" max="{{_local?.form?._meta?.limits?.report_cooldown_seconds_max ?? 3600}}" class="{{(_local.errors?.['spam_security.report_cooldown_seconds']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+              <span data-if="{{_local.errors?.['spam_security.report_cooldown_seconds']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['spam_security.report_cooldown_seconds']) ? _local.errors['spam_security.report_cooldown_seconds'][0] : _local.errors?.['spam_security.report_cooldown_seconds']) ?? ''}}</span>
+              <span class="text-tertiary block">$t:sirsoft-board.admin.settings.fields.report_cooldown_seconds_hint</span>
+            </div>
+          </div>
+        </div>
+      </section-layout>
+      <!-- ========== 카드 3: 신고 관리 권한 ========== -->
+      <section-layout data-type="layout" data-ref="section_report_permissions" class="admin-card">
+        <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.report_permissions</h3>
+        <div class="card-description">$t:sirsoft-board.admin.settings.sections.report_permissions_description</div>
+        <div class="row-stack">
+          <div data-ref="field_report_view_roles">
+            <span class="block text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-board.admin.settings.fields.report_view_roles</span>
+            <span class="block text-tertiary mb-1.5">$t:sirsoft-board.admin.settings.fields.report_view_roles_description</span>
+            <tag-input data-type="composite" name="report_permissions.view_roles" options="{{_computed.roleOptions ?? []}}" class="{{(_local.errors?.['report_permissions.view_roles']) ? 'w-full input-error' : 'w-full'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['report_permissions.view_roles']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_permissions.view_roles']) ? _local.errors['report_permissions.view_roles'][0] : _local.errors?.['report_permissions.view_roles']) ?? ''}}</span>
+          </div>
+          <div data-ref="field_report_manage_roles" class="">
+            <div>
+              <span class="block text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-board.admin.settings.fields.report_manage_roles</span>
+              <span class="block text-tertiary mb-1.5">$t:sirsoft-board.admin.settings.fields.report_manage_roles_description</span>
+              <tag-input data-type="composite" name="report_permissions.manage_roles" options="{{_computed.roleOptions ?? []}}" class="{{(_local.errors?.['report_permissions.manage_roles']) ? 'w-full input-error' : 'w-full'}}" disabled="{{_computed.isReadOnly}}"/>
+              <span data-if="{{_local.errors?.['report_permissions.manage_roles']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_permissions.manage_roles']) ? _local.errors['report_permissions.manage_roles'][0] : _local.errors?.['report_permissions.manage_roles']) ?? ''}}</span>
+            </div>
+          </div>
+        </div>
+      </section-layout>
+      <!-- ========== 카드 4: 신고 처리 알림 ========== -->
+      <section-layout data-type="layout" data-ref="section_report_notification" class="admin-card">
+        <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.report_notification</h3>
+        <div class="card-description">$t:sirsoft-board.admin.settings.sections.report_notification_description</div>
+        <div class="card-stack">
+          <!-- --- 신고 접수 관리자 알림 --- -->
+          <div data-ref="field_notify_admin_on_report" class="option-card">
+            <!-- 헤더 행 (활성화 토글 제거 — 알림 정의 활성화는 알림 설정 메뉴에서 관리). padding/border 은 option-card 자산이 책임 -->
+            <div class="flex items-start gap-4">
+              <div class="flex-1 min-w-0">
+                <span class="block text-heading">$t:sirsoft-board.admin.settings.fields.notify_admin_on_report</span>
+                <span class="block text-tertiary mt-0.5">$t:sirsoft-board.admin.settings.fields.notify_admin_on_report_description</span>
+              </div>
+            </div>
+            <!-- 하위 옵션 (토글 제거로 항상 표시). option-card 자산이 padding + border-t 책임 -->
+            <div class="space-y-4">
+              <div data-ref="field_notify_admin_on_report_scope" class="stack-tight">
+                <label class="text-tertiary">$t:sirsoft-board.admin.settings.fields.notify_admin_on_report_scope</label>
+                <radio-group data-type="composite" name="report_policy.notify_admin_on_report_scope" :inline="true" size="md" disabled="{{_computed.isReadOnly}}">
+                  <prop name="options">
+                    <item value="per_case" label="$t:sirsoft-board.admin.settings.fields.notify_admin_on_report_scope_per_case"/>
+                    <item value="per_report" label="$t:sirsoft-board.admin.settings.fields.notify_admin_on_report_scope_per_report"/>
+                  </prop>
+                </radio-group>
+              </div>
+              <div data-ref="field_notify_admin_on_report_channels" class="stack-tight">
+                <label class="text-tertiary">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_title</label>
+                <div data-ref="report_received_admin_template_status" class="space-y-2">
+                  <div data-each="tpl, tplIndex in (((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_received_admin')?.templates) ?? [])" class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg board-notification-template-row">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <icon name="{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}" size="sm" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+                      <div class="min-w-0">
+                        <span class="block text-xs font-medium text-gray-500 dark:text-gray-400">{{tpl.channel === 'mail' ? $t('sirsoft-board.admin.settings.fields.notification_channels.mail') : (tpl.channel === 'database' ? $t('sirsoft-board.admin.settings.fields.notification_channels.database') : tpl.channel)}}</span>
+                        <span class="block text-sm text-gray-800 dark:text-gray-200 truncate">{{tpl.subject?.[$locale] ?? tpl.subject?.ko ?? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}</span>
+                      </div>
+                    </div>
+                    <span class="{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0">{{tpl.is_active ? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_active') : $t('sirsoft-board.admin.settings.fields.report_notification_template_status_inactive')}}</span>
+                  </div>
+                  <div data-if="{{(((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_received_admin')?.templates) ?? []).length === 0}}" class="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_empty</div>
+                </div>
+                <div class="flex items-center justify-between gap-2 flex-wrap mt-1">
+                  <span class="block text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint</span>
+                  <button data-ref="go_to_notification_settings_admin" type="button" class="flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <on type="click">
+                      <!-- 관리자 알림 문안을 고치러 「알림 정의」 탭으로 건너간다 — 화면을 새로 여는 것이 아니라 탭만 바꾸므로 전역 값과 URL 을 함께 맞추고, `replace-url` 이라 뒤로가기 이력에 쌓이지 않는다 -->
+                      <sequence>
+                        <set-state target="global" activeBoardSettingsTab="notification_definitions"/>
+                        <!-- audit:allow layout-list-context-navigate-merge-query 다른 탭으로 넘어가는 이동이다 — 알림 정의 탭은 자기 검색어와 페이지를 따로 갖는 별개의 목록이라 신고 정책 탭의 조건을 물려주지 않는다. -->
+                        <replace-url>
+                          <query tab="notification_definitions"/>
+                        </replace-url>
+                      </sequence>
+                    </on>
+                    <icon name="arrow-up-right-from-square" size="sm"/>
+                    <span>$t:sirsoft-board.admin.settings.fields.report_notification_go_to_settings</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- --- 신고 처리 결과 작성자 알림 --- -->
+          <div data-ref="field_notify_author_on_report_action" class="option-card">
+            <!-- 헤더 행 (활성화 토글 제거 — 알림 정의 활성화는 알림 설정 메뉴에서 관리). padding/border 은 option-card 자산이 책임 -->
+            <div class="flex items-start gap-4">
+              <div class="flex-1 min-w-0">
+                <span class="block text-heading">$t:sirsoft-board.admin.settings.fields.notify_author_on_report_action</span>
+                <span class="block text-tertiary mt-0.5">$t:sirsoft-board.admin.settings.fields.notify_author_on_report_action_description</span>
+              </div>
+            </div>
+            <!-- 하위 옵션 (토글 제거로 항상 표시). option-card 자산이 padding + border-t 책임 -->
+            <div class="space-y-4">
+              <div data-ref="field_notify_author_on_report_action_channels" class="stack-tight">
+                <label class="text-tertiary">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_title</label>
+                <div data-ref="report_action_template_status" class="space-y-2">
+                  <div data-each="tpl, tplIndex in (((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_action')?.templates) ?? [])" class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg board-notification-template-row">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <icon name="{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}" size="sm" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+                      <div class="min-w-0">
+                        <span class="block text-xs font-medium text-gray-500 dark:text-gray-400">{{tpl.channel === 'mail' ? $t('sirsoft-board.admin.settings.fields.notification_channels.mail') : (tpl.channel === 'database' ? $t('sirsoft-board.admin.settings.fields.notification_channels.database') : tpl.channel)}}</span>
+                        <span class="block text-sm text-gray-800 dark:text-gray-200 truncate">{{tpl.subject?.[$locale] ?? tpl.subject?.ko ?? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}</span>
+                      </div>
+                    </div>
+                    <span class="{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0">{{tpl.is_active ? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_active') : $t('sirsoft-board.admin.settings.fields.report_notification_template_status_inactive')}}</span>
+                  </div>
+                  <div data-if="{{(((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_action')?.templates) ?? []).length === 0}}" class="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_empty</div>
+                </div>
+                <div class="flex items-center justify-between gap-2 flex-wrap mt-1">
+                  <span class="block text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint</span>
+                  <button data-ref="go_to_notification_settings_author" type="button" class="flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <on type="click">
+                      <!-- 글쓴이 알림 문안 쪽 진입점 — 위 관리자용 버튼과 같은 탭으로 간다(도착지가 같고 출발한 문단만 다르다) -->
+                      <sequence>
+                        <set-state target="global" activeBoardSettingsTab="notification_definitions"/>
+                        <!-- audit:allow layout-list-context-navigate-merge-query 다른 탭으로 넘어가는 이동이다 — 알림 정의 탭은 자기 검색어와 페이지를 따로 갖는 별개의 목록이라 신고 정책 탭의 조건을 물려주지 않는다. -->
+                        <replace-url>
+                          <query tab="notification_definitions"/>
+                        </replace-url>
+                      </sequence>
+                    </on>
+                    <icon name="arrow-up-right-from-square" size="sm"/>
+                    <span>$t:sirsoft-board.admin.settings.fields.report_notification_go_to_settings</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section-layout>
+    </div>
+  </div>
+</partial>

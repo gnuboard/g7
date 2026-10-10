@@ -1,0 +1,30 @@
+feature: 폼 제출 진행 중 재제출 차단 — 저장 버튼 연타가 요청 하나만 낸다
+
+description: |
+  저장 버튼을 `disabled="{{_global.isSaving}}"` 으로 잠그는 폼은 같은 틱의 두 번째 클릭을 막지 못한다.
+  첫 submit 의 `set-state isSaving=true` 가 렌더되기 전에 두 번째 submit 이 이미 들어오기 때문이다
+  (#708 실측: 역할 폼 저장 더블클릭 → PUT 2건). `sequence :debounce` 는 submit 이벤트의 기본 동작
+  (페이지 이동)과 폼 요소를 잃어 쓸 수 없다.
+
+  엔진은 그래서 **같은 폼의 submit 액션이 끝나기 전에 들어온 새 submit 이벤트**를 기본 동작만 막고
+  무시한다. 한 submit 이벤트에 액션이 여럿 묶여 있으면 그 액션들은 모두 실행된다(같은 이벤트 객체).
+  잠금은 액션이 성공하든 실패하든 끝나면 풀린다.
+
+axes:
+  submit_timing: [during_previous, after_previous]
+  actions_per_event: [single, multiple]
+
+exclusions:
+  - { submit_timing: after_previous, actions_per_event: multiple,
+      reason: "잠금이 풀린 뒤의 제출은 첫 제출과 같은 경로라 액션 수와 무관하다 — single 이 대표다" }
+
+effects:
+  - second_submit_during_flight_is_ignored
+  - ignored_submit_still_prevents_default
+  - actions_of_same_submit_event_all_run
+  - lock_releases_after_success
+  - lock_releases_after_failure
+  - other_forms_are_not_blocked
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.submitInFlight.test.ts

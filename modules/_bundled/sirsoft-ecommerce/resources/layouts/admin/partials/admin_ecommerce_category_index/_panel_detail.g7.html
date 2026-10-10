@@ -1,0 +1,13 @@
+<!-- 분류 화면 오른쪽 패널의 껍데기. 스스로 그리는 것은 아무것도 선택되지 않았을 때의 빈 안내뿐이고,
+  보기·편집 두 조각은 각자 `_global.panelMode` 를 보고 스스로 나타난다.
+  빈 안내의 조건이 브랜드 쪽과 갈린다 — 여기서는 `create` 만 예외로 두고 `edit` 은 빼지 않았다.
+  선택 없이 편집 모드로 들어가는 경로가 없기 때문이다(편집은 언제나 보기에서 시작한다). -->
+<partial description="Category Detail Panel - View/Form Container">
+  <div data-ref="detail_panel" class="admin-card col-span-2-lg">
+    <div class="row-stack">
+      <empty-state data-type="composite" data-ref="empty_state_panel" data-if="{{!_global.selectedCategoryId &amp;&amp; _global.panelMode !== 'create'}}" icon="folder-tree" title="$t:sirsoft-ecommerce.admin.category.empty.title" description="$t:sirsoft-ecommerce.admin.category.empty.description" class="py-16"/>
+      <include src="_panel_view.g7.html"/>
+      <include src="_panel_form.g7.html"/>
+    </div>
+  </div>
+</partial>

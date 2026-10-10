@@ -1,0 +1,38 @@
+<!-- 상품 목록 — 검색조건 프리셋 이름 바꾸기 창. 보내는 것은 `name` 하나뿐이라 저장된 조건은
+  그대로 남는다(조건을 바꾸려면 새로 저장한다). 대상과 편집 중인 이름은 관리 창이 `_global` 에
+  담아 둔 값을 읽는다 — 창은 별도 컨텍스트라 관리 창의 `_local` 을 보지 못한다. -->
+<partial description="Product Index - Preset Edit Modal">
+  <modal data-type="composite" data-ref="modal_preset_edit" title="$t:sirsoft-ecommerce.admin.product.modal.preset_edit.title" size="sm">
+    <input data-ref="preset_edit_input" type="text" placeholder="$t:sirsoft-ecommerce.admin.product.modal.preset_save.placeholder" class="input" value="{{_global.editingPresetName}}">
+      <on type="input">
+        <!-- 입력값을 `_global` 로 되돌려 담는다 — 저장 버튼의 잠금 조건과 요청 본문이 같은 키를 읽으므로, 창 안 `_local` 에 두면 둘이 갈린다. -->
+        <set-state target="global" editingPresetName="{{$event.target.value}}"/>
+      </on>
+    </input>
+    <div data-ref="preset_edit_footer" class="flex justify-end gap-2 mt-4">
+      <button type="button" class="btn btn-secondary">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:common.cancel
+      </button>
+      <button type="button" class="btn btn-primary" disabled="{{!_global.editingPresetName || _global.editingPresetName.trim() === ''}}">
+        <on type="click">
+          <!-- 저장. 공백만 남은 이름은 버튼 잠금이 먼저 막는다. 성공하면 프리셋 목록만 다시 부른다(상품 목록은 무관하다). -->
+          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/presets/{{_global.editingPresetId}}" method="PUT">
+            <success>
+              <refetch-data-source dataSourceId="presets"/>
+              <toast type="success" message="$t:sirsoft-ecommerce.messages.presets.updated"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+            <body name="{{_global.editingPresetName}}"/>
+          </api-call>
+        </on>
+        $t:common.save
+      </button>
+    </div>
+  </modal>
+</partial>

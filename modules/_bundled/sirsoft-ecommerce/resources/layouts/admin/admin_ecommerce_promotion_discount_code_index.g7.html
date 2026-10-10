@@ -1,0 +1,489 @@
+<!-- 할인코드 목록 (운영자) — 쿠폰과 달리 코드 문자열을 받아 적용하는 판촉 수단이라, 혜택 종류
+  (상품값/배송비)와 코드 종류(공개코드/일회용코드)가 조회의 두 축이 된다. 아직 데이터소스가 없어
+  표가 예시 값으로 박혀 있는 골격 단계이고, 필터 입력만 _local 에 살아 있다. -->
+<layout name="admin_ecommerce_promotion_discount_code_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.promotion_discount_code.title" description="$t:sirsoft-ecommerce.admin.promotion_discount_code.description"/>
+  <init-local>
+    <field name="searchField" value="all"/>
+    <field name="searchKeyword" value=""/>
+    <field name="benefitType" value=""/>
+    <field name="codeType" value=""/>
+    <field name="benefitAmountType" value=""/>
+    <field name="benefitMin" value=""/>
+    <field name="benefitMax" value=""/>
+    <field name="startDate" value=""/>
+    <field name="endDate" value=""/>
+    <field name="sortBy" value="created_at_desc"/>
+    <field name="perPage" :value="10"/>
+    <field name="selectedItems" :value="[]"/>
+    <field name="selectAll" :value="false"/>
+    <field name="bulkStatus" value=""/>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.promotion-coupon.read</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="discount_code_content" class="admin-page-content">
+      <responsive on="portable" class="admin-page-content-compact"/>
+      <div data-ref="page_header" class="flex-start justify-between mb-6">
+        <responsive on="portable" class="row-stack mb-6"/>
+        <div class="flex-center gap-3">
+          <icon name="percent" class="text-2xl text-gray-700 dark:text-gray-300"/>
+          <div>
+            <h1 class="page-title">$t:sirsoft-ecommerce.admin.promotion_discount_code.title</h1>
+            <p class="page-description">$t:sirsoft-ecommerce.admin.promotion_discount_code.description</p>
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary">
+          <icon name="plus" class="text-base"/>
+          <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.actions.create</span>
+        </button>
+      </div>
+      <div data-ref="filter_card" class="admin-card mb-6">
+        <div data-ref="search_row" class="flex-center flex-wrap gap-3 mb-6">
+          <responsive on="portable" class="row-stack mb-6"/>
+          <select name="searchField" class="w-32" value="{{_local.searchField}}">
+            <options>
+              <option value="all">$t:sirsoft-ecommerce.admin.promotion_discount_code.search.field.all</option>
+              <option value="discount_code_name">$t:sirsoft-ecommerce.admin.promotion_discount_code.search.field.discount_code_name</option>
+              <option value="discount_code">$t:sirsoft-ecommerce.admin.promotion_discount_code.search.field.discount_code</option>
+            </options>
+            <on type="change">
+              <!-- 검색 대상만 바꾼다 — 코드 이름과 코드 문자열 중 어디를 볼지 정하는 자리다 -->
+              <set-state target="_local" searchField="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <div class="flex-1 min-w-64 relative">
+            <responsive on="portable" class="w-full relative"/>
+            <input type="text" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.search.placeholder" class="input pr-10" value="{{_local.searchKeyword}}">
+              <on type="change">
+                <!-- 입력을 마칠 때 담는다 -->
+                <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <icon name="search" class="text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
+          </div>
+          <div class="flex-center gap-2">
+            <button type="button" class="btn btn-outline">
+              <icon name="sliders" class="text-base"/>
+              <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.search.column_select</span>
+              <span class="text-gray-500 dark:text-gray-400">(9)</span>
+            </button>
+            <button type="button" class="btn btn-outline">
+              <icon name="filter" class="text-base"/>
+              <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.search.detail_search</span>
+            </button>
+          </div>
+        </div>
+        <div data-ref="basic_filters" class="space-y-4 filter-grid">
+          <div data-ref="filter_benefit_type" class="filter-row">
+            <span class="filter-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.benefit_type</span>
+            <div class="filter-buttons">
+              <label class="flex-center gap-2 cursor-pointer">
+                <input type="radio" name="benefitType" value="" class="radio" checked="{{_local.benefitType === ''}}">
+                  <on type="change">
+                    <!-- 혜택 종류를 가리지 않고 모두 -->
+                    <set-state target="_local" benefitType=""/>
+                  </on>
+                </input>
+                <span class="text-sm text-primary">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_type.all</span>
+              </label>
+              <label class="flex-center gap-2 cursor-pointer">
+                <input type="radio" name="benefitType" value="product" class="radio" checked="{{_local.benefitType === 'product'}}">
+                  <on type="change">
+                    <!-- 상품값을 깎는 코드 -->
+                    <set-state target="_local" benefitType="product"/>
+                  </on>
+                </input>
+                <span class="text-sm text-primary">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_type.product</span>
+              </label>
+              <label class="flex-center gap-2 cursor-pointer">
+                <input type="radio" name="benefitType" value="shipping_fee" class="radio" checked="{{_local.benefitType === 'shipping_fee'}}">
+                  <on type="change">
+                    <!-- 배송비를 깎는 코드 — 상품값과 계산 대상이 달라 따로 가른다 -->
+                    <set-state target="_local" benefitType="shipping_fee"/>
+                  </on>
+                </input>
+                <span class="text-sm text-primary">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_type.shipping_fee</span>
+              </label>
+            </div>
+          </div>
+          <div data-ref="filter_code_type" class="filter-row">
+            <span class="filter-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.code_type</span>
+            <div class="filter-buttons">
+              <label class="flex-center gap-2 cursor-pointer">
+                <input type="radio" name="codeType" value="" class="radio" checked="{{_local.codeType === ''}}">
+                  <on type="change">
+                    <!-- 코드 종류를 가리지 않고 모두 -->
+                    <set-state target="_local" codeType=""/>
+                  </on>
+                </input>
+                <span class="text-sm text-primary">$t:sirsoft-ecommerce.admin.promotion_discount_code.code_type.all</span>
+              </label>
+              <label class="flex-center gap-2 cursor-pointer">
+                <input type="radio" name="codeType" value="public_code" class="radio" checked="{{_local.codeType === 'public_code'}}">
+                  <on type="change">
+                    <!-- 공개코드 — 하나를 여럿이 함께 쓴다 -->
+                    <set-state target="_local" codeType="public_code"/>
+                  </on>
+                </input>
+                <span class="text-sm text-primary">$t:sirsoft-ecommerce.admin.promotion_discount_code.code_type.public_code</span>
+              </label>
+              <label class="flex-center gap-2 cursor-pointer">
+                <input type="radio" name="codeType" value="one_time_code" class="radio" checked="{{_local.codeType === 'one_time_code'}}">
+                  <on type="change">
+                    <!-- 일회용코드 — 한 번 쓰면 소진되므로 발급 수량만큼 코드가 따로 만들어진다 -->
+                    <set-state target="_local" codeType="one_time_code"/>
+                  </on>
+                </input>
+                <span class="text-sm text-primary">$t:sirsoft-ecommerce.admin.promotion_discount_code.code_type.one_time_code</span>
+              </label>
+            </div>
+          </div>
+          <div data-ref="filter_benefit_amount" class="filter-row">
+            <span class="filter-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.benefit_amount</span>
+            <div class="flex-center gap-2">
+              <responsive on="portable" class="grid grid-cols-1 gap-2 w-full"/>
+              <select name="benefitAmountType" aria-label="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.benefit_amount_unit" class="w-24" value="{{_local.benefitAmountType}}">
+                <responsive on="portable" class="w-full"/>
+                <options>
+                  <option value="">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_type.all</option>
+                  <option value="fixed">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_category.fixed</option>
+                  <option value="rate">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_category.rate</option>
+                </options>
+                <on type="change">
+                  <!-- 아래 금액 범위를 정액(원)으로 읽을지 정률(%)로 읽을지 정한다 — 같은 숫자라도 뜻이 달라진다 -->
+                  <set-state target="_local" benefitAmountType="{{$event.target.value}}"/>
+                </on>
+              </select>
+              <div class="flex-center gap-2">
+                <input type="text" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.min" class="input w-28" value="{{_local.benefitMin}}">
+                  <responsive on="portable" class="input flex-1"/>
+                  <on type="change">
+                    <!-- 혜택 하한 -->
+                    <set-state target="_local" benefitMin="{{$event.target.value}}"/>
+                  </on>
+                </input>
+                <span class="text-secondary">~</span>
+                <input type="text" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.max" class="input w-28" value="{{_local.benefitMax}}">
+                  <responsive on="portable" class="input flex-1"/>
+                  <on type="change">
+                    <!-- 혜택 상한 -->
+                    <set-state target="_local" benefitMax="{{$event.target.value}}"/>
+                  </on>
+                </input>
+                <span class="text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.amount_suffix</span>
+              </div>
+            </div>
+          </div>
+          <div data-ref="filter_created_at" class="filter-row">
+            <span class="filter-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.created_at</span>
+            <div class="flex-center gap-2 flex-wrap">
+              <div class="flex-center gap-2">
+                <div class="relative">
+                  <icon name="calendar" class="text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
+                  <input type="text" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.start_date" class="input w-32 pl-10" value="{{_local.startDate}}">
+                    <on type="change">
+                      <!-- 유효기간 시작일 -->
+                      <set-state target="_local" startDate="{{$event.target.value}}"/>
+                    </on>
+                  </input>
+                </div>
+                <span class="text-secondary">~</span>
+                <div class="relative">
+                  <icon name="calendar" class="text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
+                  <input type="text" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.end_date" class="input w-32 pl-10" value="{{_local.endDate}}">
+                    <on type="change">
+                      <!-- 유효기간 종료일 -->
+                      <set-state target="_local" endDate="{{$event.target.value}}"/>
+                    </on>
+                  </input>
+                </div>
+              </div>
+              <div class="flex-center gap-1">
+                <button type="button" class="btn-date">$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.date_quick.today</button>
+                <button type="button" class="btn-date">$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.date_quick.3_days</button>
+                <button type="button" class="btn-date">$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.date_quick.1_week</button>
+                <button type="button" class="btn-date">$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.date_quick.1_month</button>
+                <button type="button" class="btn-date">$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.date_quick.3_months</button>
+                <button type="button" class="btn-date">$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.date_quick.all</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-ref="filter_actions" class="flex justify-center gap-2 mt-6">
+          <button type="button" class="btn btn-primary">
+            <icon name="search" class="text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.actions.search</span>
+          </button>
+          <button type="button" class="btn btn-secondary">
+            <icon name="arrows-rotate" class="text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.actions.reset</span>
+          </button>
+        </div>
+      </div>
+      <div data-ref="batch_actions" class="admin-card mb-6">
+        <div class="flex-between">
+          <responsive on="portable" class="row-stack"/>
+          <div class="flex-center gap-3">
+            <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.batch.selected_count|count=0</span>
+            <select name="bulkStatus" class="w-32" value="{{_local.bulkStatus}}">
+              <options>
+                <option value="">$t:sirsoft-ecommerce.admin.promotion_discount_code.batch.status_change</option>
+                <option value="active">$t:sirsoft-ecommerce.admin.promotion_discount_code.status.active</option>
+                <option value="inactive">$t:sirsoft-ecommerce.admin.promotion_discount_code.status.inactive</option>
+              </options>
+              <on type="change">
+                <!-- 고르기만 하고 보내지 않는다 — 실제 반영은 오른쪽 「일괄변경」이 확인 창을 거쳐 한다 -->
+                <set-state target="_local" bulkStatus="{{$event.target.value}}"/>
+              </on>
+            </select>
+          </div>
+          <button type="button" class="btn btn-primary">
+            <on type="click">
+              <open-modal target="modal_status_change"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.promotion_discount_code.actions.bulk_change
+          </button>
+        </div>
+      </div>
+      <div data-ref="table_header" class="flex-between mb-4">
+        <responsive on="portable" class="row-stack mb-4"/>
+        <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.total_count|count=2</span>
+        <div class="flex-center gap-3">
+          <select name="sortBy" class="w-40" value="{{_local.sortBy}}">
+            <options>
+              <option value="created_at_desc">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.sort.created_at_desc</option>
+              <option value="created_at_asc">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.sort.created_at_asc</option>
+              <option value="discount_code_name_asc">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.sort.discount_code_name_asc</option>
+              <option value="discount_code_name_desc">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.sort.discount_code_name_desc</option>
+            </options>
+            <on type="change">
+              <!-- 정렬 기준 -->
+              <set-state target="_local" sortBy="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <select name="perPage" class="w-20" value="{{_local.perPage}}">
+            <options>
+              <option value="10">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page|count=10</option>
+              <option value="20">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page|count=20</option>
+              <option value="50">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page|count=50</option>
+            </options>
+            <on type="change">
+              <!-- 한 쪽에 담을 건수 -->
+              <set-state target="_local" perPage="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </div>
+      </div>
+      <div data-ref="data_table_container">
+        <responsive on="portable">
+          <div data-ref="mobile_cards_container">
+            <div class="admin-card">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex-center gap-2">
+                  <input type="checkbox" class="checkbox"/>
+                  <span class="text-primary font-medium">신규회원 10% 할인코</span>
+                </div>
+                <button aria-label="$t:common.more_actions" type="button" class="btn-icon">
+                  <icon name="ellipsis" class="text-base"/>
+                </button>
+              </div>
+              <div class="text-sm text-secondary mb-3">2025-12-18 17:58</div>
+              <div class="flex-center gap-2 mb-3">
+                <span class="badge badge-green">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_type.product</span>
+                <span class="badge badge-blue">$t:sirsoft-ecommerce.admin.promotion_discount_code.code_type.public_code</span>
+                <span class="text-sm font-medium text-primary">10% (최대 10,000원)</span>
+              </div>
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.promotion_discount_code.mobile.code_label</span>
+                  <span class="text-primary">53572</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.promotion_discount_code.mobile.validity_period_label</span>
+                  <span class="text-primary">2025-12-16 ~ 2025-12-30</span>
+                </div>
+                <div class="flex-between">
+                  <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.promotion_discount_code.mobile.history_label</span>
+                  <div class="flex-center gap-2">
+                    <span class="text-primary">발급 8건 / 사용 8건</span>
+                    <button type="button" class="btn btn-secondary text-xs px-2 py-1">
+                      <icon name="eye" class="text-xs"/>
+                      <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.mobile.view_history</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="flex-between">
+                  <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.promotion_discount_code.mobile.status_label</span>
+                  <span class="badge badge-green">$t:sirsoft-ecommerce.admin.promotion_discount_code.status.active</span>
+                </div>
+              </div>
+            </div>
+            <div class="admin-card">
+              <div class="flex items-start justify-between mb-2">
+                <div class="flex-center gap-2">
+                  <input type="checkbox" class="checkbox"/>
+                  <span class="text-primary font-medium">첫구매 5천원 할인</span>
+                </div>
+                <button aria-label="$t:common.more_actions" type="button" class="btn-icon">
+                  <icon name="ellipsis" class="text-base"/>
+                </button>
+              </div>
+              <div class="text-sm text-secondary mb-3">2025-12-01 10:00</div>
+              <div class="flex-center gap-2 mb-3">
+                <span class="badge badge-green">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_type.product</span>
+                <span class="badge badge-pink">$t:sirsoft-ecommerce.admin.promotion_discount_code.code_type.one_time_code</span>
+                <span class="text-sm font-medium text-primary">5,000원</span>
+              </div>
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.promotion_discount_code.mobile.code_label</span>
+                  <span class="text-primary">FIRST5000</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.promotion_discount_code.mobile.validity_period_label</span>
+                  <span class="text-primary">2025-12-01 ~ 2025-12-31</span>
+                </div>
+                <div class="flex-between">
+                  <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.promotion_discount_code.mobile.history_label</span>
+                  <div class="flex-center gap-2">
+                    <span class="text-primary">발급 152건 / 사용 89건</span>
+                    <button type="button" class="btn btn-secondary text-xs px-2 py-1">
+                      <icon name="eye" class="text-xs"/>
+                      <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.mobile.view_history</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="flex-between">
+                  <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.promotion_discount_code.mobile.status_label</span>
+                  <span class="badge badge-green">$t:sirsoft-ecommerce.admin.promotion_discount_code.status.active</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </responsive>
+        <!-- 테두리 상자는 데스크톱 표에만 — 모바일은 위 카드가 스스로 상자다(옛 `md:table-container` 는 자산에 반응형 접두를 붙여 생성되지 않았다). -->
+        <div data-ref="data_table_box" class="table-container">
+          <table data-ref="data_table" class="table">
+            <thead class="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th class="px-4 py-3 w-10">
+                  <input type="checkbox" class="checkbox" checked="{{_local.selectAll}}">
+                    <on type="change">
+                      <!-- 머리글 전체선택 — 체크값이 아니라 지금 상태를 뒤집는다(표가 예시 행이라 개별 선택과 아직 이어져 있지 않다) -->
+                      <set-state target="_local" selectAll="{{!_local.selectAll}}"/>
+                    </on>
+                  </input>
+                </th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.no</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.benefit_type</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.code_type</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.discount_code_name</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.code_info</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.benefit</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.validity_period</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.history</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.created_at</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.status</th>
+                <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.columns.actions</th>
+              </tr>
+            </thead>
+            <tbody class="divider-list bg-white dark:bg-gray-900">
+              <tr>
+                <td class="px-4 py-3">
+                  <input type="checkbox" class="checkbox"/>
+                </td>
+                <td class="px-4 py-3 text-sm text-secondary">1</td>
+                <td class="px-4 py-3">
+                  <span class="badge badge-green">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_type.product</span>
+                </td>
+                <td class="px-4 py-3">
+                  <span class="badge badge-blue">$t:sirsoft-ecommerce.admin.promotion_discount_code.code_type.public_code</span>
+                </td>
+                <td class="px-4 py-3">
+                  <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">신규회원 10% 할인코</a>
+                </td>
+                <td class="px-4 py-3 text-sm text-secondary">53572</td>
+                <td class="px-4 py-3">
+                  <div class="flex-center gap-1">
+                    <span class="badge badge-cyan">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_category.rate</span>
+                    <span class="text-sm text-primary">10%</span>
+                    <span class="text-xs text-secondary">(최대 10,000원)</span>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-sm text-secondary">2025-12-16 ~ 2025-12-30</td>
+                <td class="px-4 py-3 text-sm text-primary">8 / 8</td>
+                <td class="px-4 py-3 text-sm text-secondary">2025-12-18 17:58</td>
+                <td class="px-4 py-3">
+                  <span class="badge badge-green">$t:sirsoft-ecommerce.admin.promotion_discount_code.status.active</span>
+                </td>
+                <td class="px-4 py-3">
+                  <button aria-label="$t:common.more_actions" type="button" class="btn-icon">
+                    <icon name="ellipsis" class="text-base"/>
+                  </button>
+                </td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3">
+                  <input type="checkbox" class="checkbox"/>
+                </td>
+                <td class="px-4 py-3 text-sm text-secondary">2</td>
+                <td class="px-4 py-3">
+                  <span class="badge badge-green">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_type.product</span>
+                </td>
+                <td class="px-4 py-3">
+                  <span class="badge badge-pink">$t:sirsoft-ecommerce.admin.promotion_discount_code.code_type.one_time_code</span>
+                </td>
+                <td class="px-4 py-3">
+                  <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">첫구매 5천원 할인</a>
+                </td>
+                <td class="px-4 py-3 text-sm text-secondary">FIRST5000</td>
+                <td class="px-4 py-3">
+                  <div class="flex-center gap-1">
+                    <span class="badge badge-indigo">$t:sirsoft-ecommerce.admin.promotion_discount_code.benefit_category.fixed</span>
+                    <span class="text-sm text-primary">5,000원</span>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-sm text-secondary">2025-12-01 ~ 2025-12-31</td>
+                <td class="px-4 py-3 text-sm text-primary">89 / 152</td>
+                <td class="px-4 py-3 text-sm text-secondary">2025-12-01 10:00</td>
+                <td class="px-4 py-3">
+                  <span class="badge badge-green">$t:sirsoft-ecommerce.admin.promotion_discount_code.status.active</span>
+                </td>
+                <td class="px-4 py-3">
+                  <button aria-label="$t:common.more_actions" type="button" class="btn-icon">
+                    <icon name="ellipsis" class="text-base"/>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div data-ref="pagination" class="flex justify-center mt-6">
+        <div class="pagination">
+          <button aria-label="$t:common.first_page" type="button" class="pagination-btn" :disabled="true">
+            <icon name="angles-left" class="text-base"/>
+          </button>
+          <button aria-label="$t:common.prev_page" type="button" class="pagination-btn" :disabled="true">
+            <icon name="chevron-left" class="text-base"/>
+          </button>
+          <button type="button" class="pagination-btn active">1</button>
+          <button type="button" class="pagination-btn">2</button>
+          <button type="button" class="pagination-btn">3</button>
+          <button aria-label="$t:common.next_page" type="button" class="pagination-btn">
+            <icon name="chevron-right" class="text-base"/>
+          </button>
+          <button aria-label="$t:common.last_page" type="button" class="pagination-btn">
+            <icon name="angles-right" class="text-base"/>
+          </button>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <!-- 선택한 코드들의 사용 상태를 한꺼번에 바꾸기 전 확인 -->
+  <modal src="partials/admin_ecommerce_promotion_discount_code_index/_modal_status_change.g7.html"/>
+  <!-- 할인코드 삭제 확인 -->
+  <modal src="partials/admin_ecommerce_promotion_discount_code_index/_modal_delete_confirm.g7.html"/>
+</layout>

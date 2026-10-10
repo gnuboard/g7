@@ -3,6 +3,7 @@
 namespace App\Seo;
 
 use App\Contracts\Extension\StorageInterface;
+use App\Support\SiteUrl;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -80,7 +81,8 @@ class SitemapFileStore
      */
     public static function childUrl(int $n, bool $gzip = false): string
     {
-        return url('/'.self::childFilename($n, $gzip));
+        // 보안: 요청 Host 가 아니라 사이트 주소 기준 — sitemapindex 가 위조 Host 로 굳지 않게 한다.
+        return SiteUrl::absolute('/'.self::childFilename($n, $gzip));
     }
 
     /**

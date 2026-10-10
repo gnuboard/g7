@@ -7,12 +7,16 @@ use App\Enums\ExtensionOwnerType;
 use App\Enums\MenuPermissionType;
 use App\Extension\AbstractPlugin;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
+use App\Extension\HookManager;
 use App\Models\Menu;
 use Plugins\Sirsoft\Gdpr\Http\Middleware\CookieConsentMiddleware;
+use Plugins\Sirsoft\Gdpr\Listeners\GdprAnnualNoticeListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthConsentListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprAuthLogoutListener;
+use Plugins\Sirsoft\Gdpr\Listeners\GdprConsentChangeRelayListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprUserDeleteListener;
 use Plugins\Sirsoft\Gdpr\Listeners\GdprUserWithdrawListener;
+use Plugins\Sirsoft\Gdpr\Listeners\RegisterGdprConsentProviderListener;
 
 /**
  * GDPR (일반 데이터 보호 규정) 플러그인
@@ -22,6 +26,33 @@ use Plugins\Sirsoft\Gdpr\Listeners\GdprUserWithdrawListener;
  */
 class Plugin extends AbstractPlugin
 {
+    public const ANNUAL_NOTICE_MIN = 1;
+
+    public const ANNUAL_NOTICE_MAX = 1000;
+
+    /** 1회 실행당 발송 상한 기본값 — 설정·스키마·검증 복원의 단일 출처. */
+    public const ANNUAL_NOTICE_DEFAULT = 500;
+
+    /** 발송 채널 기본값 — 위와 같은 이유로 한 곳에서만 정의한다. */
+    public const ANNUAL_NOTICE_CHANNELS = ['mail', 'database'];
+
+    /**
+     * 확장이 strictly necessary 저장 키를 제공하는 계약 훅 (filter).
+     *
+     * 리스너는 `['localStorage' => [...], 'sessionStorage' => [...], 'cookie' => [...]]` 를 받아 자기
+     * 키를 덧붙여 돌려준다. 이 플러그인이 없으면 훅이 발행되지 않으므로 제공 확장은 아무 영향이 없다.
+     */
+    public const PROVIDED_NECESSARY_STORAGE_HOOK = 'sirsoft-gdpr.necessary_storage.filter_provided_keys';
+
+    /**
+     * 필수 저장 항목(저장소 키 / 쿠키 이름) 형식 — 운영자 입력 검증과 확장 제공 키 수용의 단일 출처.
+     *
+     * - 이름 문자: 영숫자와 `_ . : @ + -`
+     * - 와일드카드 `*` 는 **끝에만** 1개 허용 (`g7_filters_*`)
+     * - `*` 단독 표기는 허용하지 않는다 — 접두사가 비면 전체 개방이 되어 게이트가 무력화된다
+     */
+    public const NECESSARY_STORAGE_KEY_PATTERN = '/^[A-Za-z0-9_.:@+\-]+\*?$/';
+
     /**
      * strictly necessary 허용목록 출하 기본 카탈로그.
      *
@@ -29,8 +60,12 @@ class Plugin extends AbstractPlugin
      * `necessary_storage_allowlist` 가 하며, 이 카탈로그는 신규 설치 시 그 설정의 기본값과
      * 관리자 화면 추천 목록(`default_necessary_allowlist_preview`)으로만 쓰입니다.
      *
-     * 그래서 새 확장이 저장 키를 도입해도 이 플러그인을 고칠 필요가 없습니다 — 운영자가
-     * 관리자 화면에서 직접 추가합니다.
+     * 그래서 새 확장이 저장 키를 도입해도 이 플러그인을 고칠 필요가 없습니다 — 확장은
+     * 계약 훅(self::PROVIDED_NECESSARY_STORAGE_HOOK)으로 자기 키를 제공하고, 운영자는
+     * 관리자 화면에서 나머지를 직접 추가합니다.
+     *
+     * **특정 확장의 키를 여기 적지 않습니다.** 이 플러그인은 어떤 확장이 설치돼 있는지
+     * 모르는 채로 동작해야 합니다. 확장 소유 키는 그 확장이 계약 훅으로 제공합니다.
      *
      * 표기 규칙: 끝의 `*` 는 앞부분 매칭, 없으면 정확 일치.
      *
@@ -53,14 +88,8 @@ class Plugin extends AbstractPlugin
             // 파기되면 재방문마다 기본 형식으로 첫 자산 요청을 보내 404 를 겪는다. 키에 캐시
             // 버전이 붙으므로 앞부분 매칭으로 등재한다.
             'g7_asset_url_mode*',
-            // 장바구니 게스트 키 — 익명 카트 식별 (구매 동선 필수)
-            'g7_cart_key',
             // devtools UI 상태
             'g7-devtools-panel',
-            // 비회원 주문 조회 — 주문 이행에 필요 (Art.6(1)(b))
-            'g7_guest_order_token',
-            'g7_guest_order_number',
-            'g7_guest_order_expires_at',
             // 관리자 화면 상태 (필터/정렬/컬럼/devtools) — 사용자 의사로 조작
             'g7_devtools_*',
             'g7_filters_*',
@@ -71,26 +100,19 @@ class Plugin extends AbstractPlugin
             'g7_admin_sidebar_collapsed',
             'g7_filter_visibility_*',
             'g7_dismissed_warnings',
+            // 확장 목록 보기 방식(갤러리/목록) — 사이드바 접힘과 같은 범주다.
+            // 목록에서 빠지면 보기를 바꿔도 새로고침마다 되돌아간다 (#640 테마와 같은 함정).
+            'g7_view_mode_*',
             // 레이아웃 편집기 작업 상태 (라우트 트리 접힘) — 운영자 편집 동선 유지
             'g7le.*',
-            // 결제·본인인증 복귀 기록 — 실제 쓰기는 sessionStorage 지만, 이관 전 목록이 저장소
+            // 본인인증 복귀 기록 (코어) — 실제 쓰기는 sessionStorage 지만, 이관 전 목록이 저장소
             // 종류를 가리지 않았으므로 판정 범위를 좁히지 않는다.
-            '__sirsoftKginicisMobilePaymentReturnPending',
             'g7.identity.redirectStash',
-            'sirsoft-verification_nhnkcp.formStash',
         ],
         // 세션 저장소(sessionStorage) — 탭 수명 동안의 복귀·작업 상태
         'sessionStorage' => [
-            // 결제 진행 기록 — 결제창 복귀 시 종료·실패 사유 보고에 필요 (Art.6(1)(b)).
-            // 결제창은 전체 페이지 이동으로 열리고 돌아오므로, 부팅 시 파기되면 그 보고가 통째로 누락된다.
-            'g7:sirsoft-pay_kginicis:pendingClose',
-            'g7:sirsoft-pay_nhnkcp:pendingClose',
-            'g7:sirsoft-tosspayments:pendingClose',
-            // 본인인증 복귀 — 인증창에서 돌아왔을 때 원래 화면·입력 내용 복원에 필요
+            // 본인인증 복귀 (코어) — 인증창에서 돌아왔을 때 원래 화면 복원에 필요
             'g7.identity.redirectStash',
-            'sirsoft-verification_nhnkcp.formStash',
-            // 결제창 복귀 대기 표식
-            '__sirsoftKginicisMobilePaymentReturnPending',
             // 레이아웃 편집기 클립보드 — 같은 탭에서 다른 레이아웃으로 붙여넣기
             'g7le.*',
             // 관리자 화면 상태 — 저장소 종류를 가리지 않던 이관 전 판정 범위를 그대로 옮긴다
@@ -104,6 +126,10 @@ class Plugin extends AbstractPlugin
         'cookie' => [
             // 유지보수 모드 우회 (운영자 전용)
             'laravel_maintenance',
+            // 방문자 통계 수집 거부 기록 — 「세지 말라」는 의사 자체를 담는 쿠키다.
+            // 목록에서 빠져 있으면 동의하지 않은 방문자일수록 제외가 안 되는 역설이
+            // 생긴다(서버는 200 을 주는데 Set-Cookie 가 제거돼 아무 일도 일어나지 않았다).
+            'g7_analytics_optout',
         ],
     ];
 
@@ -191,15 +217,25 @@ class Plugin extends AbstractPlugin
     {
         return [
             [
+                'name' => 'sirsoft-gdpr.privacy.annual_notice_due',
+                'type' => 'action',
+                'description' => ['ko' => '개인정보 연간 통지 접수 후 발화', 'en' => 'Annual privacy notice queued', 'ja' => '個人情報の年次通知の受付後に発火'],
+                'parameters' => ['user' => 'User - 수신 회원', 'attemptId' => 'string - 접수 식별자'],
+            ],
+            [
                 'name' => 'sirsoft-gdpr.consent.granted',
                 'type' => 'action',
                 'description' => [
                     'ko' => '동의 부여 시 발화',
                     'en' => 'Fired when consent is granted',
+                    'ja' => '同意が付与されたときに発火',
                 ],
                 'parameters' => [
-                    'consent' => 'Model - GdprUserConsent',
-                    'source' => 'string - banner|preference_center|register|mypage',
+                    'consent' => 'GdprUserConsent|null - 회원 상태 행 (게스트·필수 항목이면 null)',
+                    'source' => 'string - banner|mypage|mypage_renew_all|register|withdraw',
+                    'consentKey' => 'string - 동의 키 (예: cookie_analytics)',
+                    'userId' => 'int|null - 회원 ID (게스트면 null)',
+                    'sessionId' => 'string|null - 게스트 동의 식별자 (회원이면 null)',
                 ],
             ],
             [
@@ -208,10 +244,26 @@ class Plugin extends AbstractPlugin
                 'description' => [
                     'ko' => '동의 철회 시 발화',
                     'en' => 'Fired when consent is revoked',
+                    'ja' => '同意が撤回されたときに発火',
                 ],
                 'parameters' => [
-                    'consent' => 'Model - GdprUserConsent',
-                    'source' => 'string - 철회 발생 경로',
+                    'consent' => 'GdprUserConsent|null - 회원 상태 행 (게스트·필수 항목이면 null)',
+                    'source' => 'string - 철회 발생 경로 (banner|mypage|withdraw 등)',
+                    'consentKey' => 'string - 동의 키 (예: cookie_analytics)',
+                    'userId' => 'int|null - 회원 ID (게스트면 null)',
+                    'sessionId' => 'string|null - 게스트 동의 식별자 (회원이면 null)',
+                ],
+            ],
+            [
+                'name' => self::PROVIDED_NECESSARY_STORAGE_HOOK,
+                'type' => 'filter',
+                'description' => [
+                    'ko' => '확장이 쿠키 미동의 방문자에게도 필요한 자기 저장 키를 제공 (strictly necessary 허용목록에 합쳐진다)',
+                    'en' => 'Extensions provide their own storage keys that non-consenting visitors still need (merged into the strictly necessary allowlist)',
+                    'ja' => '拡張機能が、Cookie に同意していない訪問者にも必要な自身の保存キーを提供(厳密に必要なものの許可リストに統合される)',
+                ],
+                'parameters' => [
+                    'keys' => 'array{localStorage: string[], sessionStorage: string[], cookie: string[]} - 지금까지 모인 제공 키 (자기 키를 덧붙여 반환)',
                 ],
             ],
         ];
@@ -237,6 +289,13 @@ class Plugin extends AbstractPlugin
                 'url' => '/admin/plugins/sirsoft-gdpr/consent-log',
                 'icon' => 'fas fa-user-shield',
                 'order' => 50,
+            ],
+            [
+                'name' => ['ko' => '개인정보 통지 이력', 'en' => 'Privacy Notice Log'],
+                'slug' => 'sirsoft-gdpr-notice-log',
+                'url' => '/admin/plugins/sirsoft-gdpr/notice-log',
+                'icon' => 'fas fa-envelope',
+                'order' => 51,
             ],
         ];
     }
@@ -270,14 +329,27 @@ class Plugin extends AbstractPlugin
     }
 
     /**
-     * 플러그인 비활성화 — 관리자 메뉴 일괄 제거.
+     * 플러그인 비활성화 — 관리자 메뉴 행은 보존한다.
      *
-     * cleanupStaleMenus 에 currentSlugs=[] 를 넘겨 본 플러그인 소속 메뉴 전체를 삭제한다.
-     * 자식 메뉴 + role_menus 피벗 정리는 helper 가 cascade 처리.
+     * 비활성 플러그인의 메뉴는 사이드바·메뉴 관리 목록에서 자동으로 빠지므로 행을 지울
+     * 필요가 없다. 지우면 운영자가 붙여 둔 메뉴 역할이 사라져, 다시 켰을 때 관리자·privacy
+     * 역할만 남는다. 재활성화까지 그대로 두고, 메뉴 삭제는 제거(uninstall) 때만 한다.
      *
      * @return bool 비활성화 성공 여부
      */
     public function deactivate(): bool
+    {
+        return true;
+    }
+
+    /**
+     * 플러그인 제거 — 관리자 메뉴를 삭제한다.
+     *
+     * 비활성화가 메뉴를 보존하므로 제거가 직접 지운다(자식 메뉴·role_menus 피벗은 helper 가 처리).
+     *
+     * @return bool 제거 성공 여부
+     */
+    public function uninstall(): bool
     {
         app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(
             ExtensionOwnerType::Plugin,
@@ -289,23 +361,14 @@ class Plugin extends AbstractPlugin
     }
 
     /**
-     * 플러그인 제거 — 메뉴 잔존 안전망 (정상 흐름은 deactivate 가 먼저 처리).
-     *
-     * @return bool 제거 성공 여부
-     */
-    public function uninstall(): bool
-    {
-        $this->deactivate();
-
-        return true;
-    }
-
-    /**
      * 메뉴 트리에 sirsoft-gdpr.privacy 역할의 read 권한을 재귀 부여한다.
      *
      * helper.grantDefaultRoles 는 admin 역할만 자동 부여하므로 privacy 역할은 별도 처리 필요.
+     * 운영자가 메뉴 관리에서 privacy 역할을 붙이거나 뗀 메뉴(user_overrides 에 그 역할 식별자가
+     * 기록됨)는 운영자의 결정이므로 다시 붙이지 않는다 — 켤 때마다 뺀 역할이 되살아나지 않게.
      *
      * @param  Menu  $menu  대상 메뉴 (자식 포함)
+     * @return void 반환값 없음
      */
     private function grantPrivacyRoleToMenuTree(Menu $menu): void
     {
@@ -315,9 +378,11 @@ class Plugin extends AbstractPlugin
             return;
         }
 
-        $menu->roles()->syncWithoutDetaching([
-            $role->id => ['permission_type' => MenuPermissionType::Read->value],
-        ]);
+        if (! in_array($role->identifier, $menu->user_overrides ?? [], true)) {
+            $menu->roles()->syncWithoutDetaching([
+                $role->id => ['permission_type' => MenuPermissionType::Read->value],
+            ]);
+        }
 
         foreach ($menu->children as $child) {
             $this->grantPrivacyRoleToMenuTree($child);
@@ -411,6 +476,7 @@ class Plugin extends AbstractPlugin
     public function getDynamicTables(): array
     {
         return [
+            'gdpr_privacy_notice_logs',
             'gdpr_user_consent_histories',
             'gdpr_user_consents',
             'gdpr_policy_versions',
@@ -480,12 +546,123 @@ class Plugin extends AbstractPlugin
         ];
     }
 
+    /**
+     * 확장이 제공하는 strictly necessary 저장 키를 모읍니다 (계약 훅 pull).
+     *
+     * 이 플러그인은 어떤 확장이 있는지 모른다. 확장이 쿠키 미동의 방문자에게도 필요한 자기 키를
+     * 계약 훅(self::PROVIDED_NECESSARY_STORAGE_HOOK)으로 덧붙이고, 판정·화면 인라인 때마다 여기서
+     * 모은다. 비활성 확장의 리스너는 부팅 때 등록되지 않으므로 활성화·비활성화가 다음 요청부터
+     * 저절로 반영된다(이커머스 결제수단 등록과 같은 방식). 설정에 저장하지 않는다.
+     *
+     * 확장이 돌려준 값은 운영자 항목과 같은 형식 규칙을 통과한 것만 받는다 — 형식이 틀린 항목
+     * (특히 `*` 단독)이 섞이면 게이트 전체가 열린다.
+     *
+     * 진입 파일에 두는 이유는 lockedNecessaryStorage() 와 같다(설치 흐름의 오토로드 순서).
+     *
+     * @return array<string, array<int, string>> 스코프 => 항목 배열
+     */
+    public static function providedNecessaryStorage(): array
+    {
+        $empty = ['localStorage' => [], 'sessionStorage' => [], 'cookie' => []];
+        $raw = HookManager::applyFilters(self::PROVIDED_NECESSARY_STORAGE_HOOK, $empty);
+
+        if (! is_array($raw)) {
+            return $empty;
+        }
+
+        $provided = $empty;
+        foreach (array_keys($empty) as $scope) {
+            $items = is_array($raw[$scope] ?? null) ? $raw[$scope] : [];
+            foreach ($items as $item) {
+                if (is_string($item) && strlen($item) <= 128 && preg_match(self::NECESSARY_STORAGE_KEY_PATTERN, $item) === 1) {
+                    $provided[$scope][] = $item;
+                }
+            }
+            $provided[$scope] = array_values(array_unique($provided[$scope]));
+        }
+
+        return $provided;
+    }
+
+    /**
+     * 개인정보 통지는 정책 버전 발행과 별개인 정기 작업입니다.
+     *
+     * @return array 정기 실행 선언
+     */
+    public function getSchedules(): array
+    {
+        return [[
+            'command' => 'sirsoft-gdpr:send-annual-notices --scheduled',
+            'schedule' => 'daily',
+            'description' => '개인정보 연간 통지',
+            'enabled_config' => 'annual_notice.enabled',
+        ]];
+    }
+
+    /**
+     * 수신자 로케일로 렌더링하는 연간 개인정보 통지 정의입니다.
+     *
+     * @return array 알림 및 채널 템플릿 선언
+     */
+    public function getNotificationDefinitions(): array
+    {
+        return [[
+            'type' => 'annual_privacy_notice',
+            'hook_prefix' => 'sirsoft-gdpr',
+            'audience' => 'customer',
+            'name' => ['ko' => '개인정보 이용내역 안내', 'en' => 'Annual Privacy Notice'],
+            'description' => ['ko' => '활성 회원에게 개인정보 처리 내역을 연 1회 안내', 'en' => 'Annual notice of personal data processing for active members'],
+            'channels' => ['mail', 'database'],
+            'hooks' => ['sirsoft-gdpr.privacy.annual_notice_due'],
+            'variables' => [
+                ['key' => 'recipient_name', 'description' => '수신자 이름'],
+                ['key' => 'app_name', 'description' => '사이트명'],
+                ['key' => 'introduction', 'description' => '운영자 서문'],
+                ['key' => 'collection_summary', 'description' => '수집 항목 요약'],
+                ['key' => 'purpose', 'description' => '이용 목적'],
+                ['key' => 'retention', 'description' => '보유 기간'],
+                ['key' => 'privacy_policy_url', 'description' => '개인정보처리방침 URL'],
+                ['key' => 'privacy_policy_link', 'description' => '개인정보처리방침 링크 줄 (주소가 없으면 빈 값)'],
+                ['key' => 'notice_sections', 'description' => '확장이 기여한 처리 내역'],
+                ['key' => 'introduction_text', 'description' => '운영자 서문 (평문 — 사이트내 알림·문자용)'],
+                ['key' => 'notice_sections_text', 'description' => '확장이 기여한 처리 내역 (평문 — 사이트내 알림·문자용)'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '[{app_name}] 개인정보 이용내역 안내', 'en' => '[{app_name}] Annual privacy notice'],
+                    'body' => [
+                        'ko' => '<h1>{recipient_name}님, 개인정보 이용내역을 안내합니다.</h1><p>{introduction}</p><h2>수집 항목</h2><p>{collection_summary}</p><h2>이용 목적</h2><p>{purpose}</p><h2>보유 기간</h2><p>{retention}</p>{notice_sections}{privacy_policy_link}',
+                        'en' => '<h1>{recipient_name}, here is your annual privacy notice.</h1><p>{introduction}</p><h2>Data collected</h2><p>{collection_summary}</p><h2>Purpose</h2><p>{purpose}</p><h2>Retention</h2><p>{retention}</p>{notice_sections}{privacy_policy_link}',
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'trigger_user']],
+                    'subject' => ['ko' => '개인정보 이용내역 안내', 'en' => 'Annual privacy notice'],
+                    // 사이트내 알림은 평문으로 그려진다 — 메일용 HTML 변수(notice_sections·introduction) 대신 평문 짝을 쓴다.
+                    'body' => ['ko' => '{introduction_text} / {collection_summary} / {purpose} / {retention} / {notice_sections_text}', 'en' => '{introduction_text} / {collection_summary} / {purpose} / {retention} / {notice_sections_text}'],
+                    'click_url' => '{privacy_policy_url}',
+                ],
+            ],
+        ]];
+    }
+
     public function getConfigValues(): array
     {
         return [
+            'annual_notice' => [
+                'enabled' => false,
+                'channels' => self::ANNUAL_NOTICE_CHANNELS,
+                'batch_size' => self::ANNUAL_NOTICE_DEFAULT,
+                'introduction' => [],
+            ],
             // 정책 메타데이터 — cookie_policy_version 은 gdpr_policy_versions 테이블이 SSoT
             // (마이그레이션 시 initial 행 자동 시드). 본 settings 에서는 보관하지 않음.
-            'privacy_policy_slug' => 'privacy',
+            // 처리방침 주소는 운영자가 직접 입력한다 — 이 플러그인은 처리방침을 어느 확장이 어떤 주소로
+            // 게시하는지 모르므로 기본값을 비워 두고, 비어 있으면 배너의 정책 링크를 숨긴다.
+            'privacy_policy_url' => '',
             'legal_entity_name' => '',
             'data_storage_location' => '',
 
@@ -521,6 +698,11 @@ class Plugin extends AbstractPlugin
             // 섞여 와도 validated() 에서 배제되어 저장되지 않는다. 화면에는 읽기 전용으로
             // 표시하고, 판정은 언제나 '운영자 목록 ∪ 이 집합' 이다.
             'necessary_storage_locked' => self::lockedNecessaryStorage(),
+
+            // 확장 제공 항목 — 잠금 항목과 같이 설정이 아니라 계산값이다. 활성 확장이 계약 훅으로
+            // 덧붙인 키를 요청마다 모은다. 스키마에 없으므로 저장 요청에 섞여 와도 저장되지 않는다.
+            // 화면에는 읽기 전용으로 표시하고, 판정은 '운영자 목록 ∪ 잠금 ∪ 이 집합' 이다.
+            'necessary_storage_provided' => self::providedNecessaryStorage(),
 
             'cookie_categories' => json_encode([
                 [
@@ -581,15 +763,21 @@ class Plugin extends AbstractPlugin
     public function getSettingsSchema(): array
     {
         return [
+            'annual_notice' => [
+                'type' => 'array',
+                'default' => ['enabled' => false, 'channels' => self::ANNUAL_NOTICE_CHANNELS, 'batch_size' => self::ANNUAL_NOTICE_DEFAULT, 'introduction' => []],
+                'label' => ['ko' => '개인정보 연간 통지', 'en' => 'Annual privacy notice'],
+                'required' => false,
+            ],
             // 정책 메타데이터 — cookie_policy_version 은 gdpr_policy_versions 테이블이 SSoT.
             // 운영자는 직접 입력하지 않고, Material 변경 (카테고리 추가/삭제 등) 시 시스템이 자동 발행.
-            'privacy_policy_slug' => [
+            'privacy_policy_url' => [
                 'type' => 'string',
-                'default' => 'privacy',
-                'label' => ['ko' => '개인정보처리방침 페이지 슬러그', 'en' => 'Privacy Policy Page Slug'],
+                'default' => '',
+                'label' => ['ko' => '개인정보처리방침 주소', 'en' => 'Privacy Policy Address'],
                 'hint' => [
-                    'ko' => 'sirsoft-page 모듈의 페이지 slug. 미설치 또는 페이지 부재 시 관련 링크는 자동 숨김됩니다.',
-                    'en' => 'Slug of the sirsoft-page page. Links auto-hide when page is missing.',
+                    'ko' => '/ 로 시작하는 사이트 경로 또는 https:// 로 시작하는 주소. 비어 있으면 쿠키 배너의 정책 링크를 숨깁니다.',
+                    'en' => 'A site path starting with / or an address starting with https://. If empty, the policy link in the cookie banner is hidden.',
                 ],
                 'required' => false,
             ],
@@ -699,10 +887,13 @@ class Plugin extends AbstractPlugin
     public function getHookListeners(): array
     {
         return [
+            GdprAnnualNoticeListener::class,
             GdprUserWithdrawListener::class,
             GdprUserDeleteListener::class,
             GdprAuthLogoutListener::class,
             GdprAuthConsentListener::class,
+            RegisterGdprConsentProviderListener::class,
+            GdprConsentChangeRelayListener::class,
         ];
     }
 }

@@ -29,6 +29,8 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 테스트 게시판 slug
+     *
+     * @return string 게시판 슬러그
      */
     protected function getTestBoardSlug(): string
     {
@@ -37,6 +39,9 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 기본 게시판 속성
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return array<string, mixed> 게시판 속성
      */
     protected function getDefaultBoardAttributes(string $slug): array
     {
@@ -50,6 +55,8 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 각 테스트 전 실행
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -61,11 +68,16 @@ class UserActivityApiTest extends BoardTestCase
         DB::table('board_comments')->delete();
 
         // 테스트 사용자 생성 (parent::setUp()에서 users 테이블 초기화됨)
-        $this->user = User::factory()->create();
+        // 「내가 댓글 단 글」은 읽을 수 있는 게시판의 글만 싣는다(KVE-2026-2371 동반) — 댓글을 단
+        // 회원은 그 게시판을 읽을 수 있었으므로, 실제와 같게 user 역할 + 게시판 읽기 권한을 준다.
+        $this->grantUserRolePermissions(['posts.read']);
+        $this->user = $this->createUser();
     }
 
     /**
      * 각 테스트 후 실행
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -74,6 +86,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 인증된 사용자가 자신의 게시글 활동을 조회할 수 있다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects authenticated_user_can_fetch_own_board_activities
+     *
+     * @return void 반환값 없음
      */
     public function test_authenticated_user_can_fetch_own_board_activities(): void
     {
@@ -110,6 +128,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 비인증 사용자는 게시글 활동을 조회할 수 없다.
+     *
+     * @scenario viewer=guest
+     *
+     * @effects guest_cannot_fetch_board_activities
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_cannot_fetch_board_activities(): void
     {
@@ -122,6 +146,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 게시판별로 활동을 필터링할 수 있다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects can_filter_activities_by_board_slug
+     *
+     * @return void 반환값 없음
      */
     public function test_can_filter_activities_by_board_slug(): void
     {
@@ -160,6 +190,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 제목으로 활동을 검색할 수 있다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects can_search_activities_by_title
+     *
+     * @return void 반환값 없음
      */
     public function test_can_search_activities_by_title(): void
     {
@@ -188,6 +224,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 작성한 게시글이 활동에 포함된다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects activity_includes_authored_posts
+     *
+     * @return void 반환값 없음
      */
     public function test_activity_includes_authored_posts(): void
     {
@@ -211,6 +253,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 작성한 게시글 활동에 created_at_formatted 필드가 포함된다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects authored_post_activity_includes_created_at_formatted
+     *
+     * @return void 반환값 없음
      */
     public function test_authored_post_activity_includes_created_at_formatted(): void
     {
@@ -235,14 +283,17 @@ class UserActivityApiTest extends BoardTestCase
     }
 
     /**
-     * 댓글을 단 게시글이 활동에 포함된다.
-     */
-    /**
      * per_page 경계값 회귀 가드 (#492 브라우저 실측).
      *
      * 같은 컨트롤러의 my-comments 는 min(max(per_page,1),100) 로 잘라내는데
      * board-activities 만 원시 입력을 그대로 페이지네이터에 넘겨,
      * per_page=0 / 음수에서 500 이 나고 큰 값은 전량 조회가 됐다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects board_activities_per_page_capped_at_100
+     *
+     * @return void 반환값 없음
      */
     public function test_board_activities_per_page_는_상한_100_으로_잘린다(): void
     {
@@ -253,6 +304,15 @@ class UserActivityApiTest extends BoardTestCase
         $this->assertSame(100, $response->json('data.per_page'));
     }
 
+    /**
+     * per_page=0 은 500 이 아니라 최소값(1)으로 처리된다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects board_activities_per_page_zero_clamped
+     *
+     * @return void 반환값 없음
+     */
     public function test_board_activities_per_page_0_은_500_이_아니라_최소값으로_처리된다(): void
     {
         $response = $this->actingAs($this->user)
@@ -262,6 +322,15 @@ class UserActivityApiTest extends BoardTestCase
         $this->assertSame(1, $response->json('data.per_page'));
     }
 
+    /**
+     * per_page 음수는 500 이 아니라 최소값(1)으로 처리된다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects board_activities_per_page_negative_clamped
+     *
+     * @return void 반환값 없음
+     */
     public function test_board_activities_per_page_음수는_500_이_아니라_최소값으로_처리된다(): void
     {
         $response = $this->actingAs($this->user)
@@ -271,6 +340,15 @@ class UserActivityApiTest extends BoardTestCase
         $this->assertSame(1, $response->json('data.per_page'));
     }
 
+    /**
+     * 댓글을 단 게시글이 활동에 포함된다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects activity_includes_commented_posts
+     *
+     * @return void 반환값 없음
+     */
     public function test_activity_includes_commented_posts(): void
     {
         // Given: 다른 사용자의 게시글에 댓글 작성
@@ -303,6 +381,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 활동 통계를 조회할 수 있다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects can_fetch_activity_stats
+     *
+     * @return void 반환값 없음
      */
     public function test_can_fetch_activity_stats(): void
     {
@@ -333,6 +417,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 비인증 사용자는 통계를 조회할 수 없다.
+     *
+     * @scenario viewer=guest
+     *
+     * @effects guest_cannot_fetch_activity_stats
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_cannot_fetch_activity_stats(): void
     {
@@ -345,6 +435,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 삭제된 게시글의 댓글은 통계 카운트에서 제외된다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects stats_comments_on_deleted_posts_are_excluded
+     *
+     * @return void 반환값 없음
      */
     public function test_stats_comments_on_deleted_posts_are_excluded(): void
     {
@@ -378,7 +474,87 @@ class UserActivityApiTest extends BoardTestCase
     }
 
     /**
+     * 「작성한 댓글」 통계는 내가 쓴 댓글 수다 — 내 글에 남이 단 댓글은 세지 않고, 남의 글에 내가 단 댓글은 센다.
+     *
+     * 종전에는 내 글들의 comments_count 합(받은 댓글 수)을 내보내, 마이페이지 「작성한 댓글」 카드와
+     * 「내가 쓴 댓글」 탭 숫자가 목록과 어긋났다(7.1.0 실측: 탭 6, 목록 2).
+     *
+     * @scenario viewer=owner
+     *
+     * @effects stats_total_comments_counts_comments_written_by_user
+     *
+     * @return void 반환값 없음
+     */
+    public function test_stats_total_comments_counts_comments_written_by_user(): void
+    {
+        $other = $this->createUser();
+
+        // 내 글에 남이 단 댓글 2개 — 세지 않는다
+        $myPost = $this->createPost($this->board->slug, ['user_id' => $this->user->id]);
+        $this->createComment($this->board->slug, $myPost->id, ['user_id' => $other->id, 'content' => '남의 댓글 1']);
+        $this->createComment($this->board->slug, $myPost->id, ['user_id' => $other->id, 'content' => '남의 댓글 2']);
+
+        // 남의 글에 내가 단 댓글 1개 — 센다
+        $othersPost = $this->createPost($this->board->slug, ['user_id' => $other->id]);
+        $this->createComment($this->board->slug, $othersPost->id, ['user_id' => $this->user->id, 'content' => '내 댓글']);
+
+        $statsResponse = $this->actingAs($this->user)->getJson('/api/modules/sirsoft-board/me/activity-stats');
+        $listResponse = $this->actingAs($this->user)->getJson('/api/modules/sirsoft-board/me/my-comments');
+
+        $statsResponse->assertOk();
+        $listResponse->assertOk();
+        $this->assertSame(1, $statsResponse->json('data.total_comments'));
+        $this->assertSame($listResponse->json('data.total'), $statsResponse->json('data.total_comments'), '통계와 「내가 쓴 댓글」 목록 건수가 같아야 한다');
+    }
+
+    /**
+     * 댓글 기능을 끈 게시판의 내 댓글은 목록에서 빠지므로 통계에서도 빠진다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects stats_total_comments_counts_comments_written_by_user
+     *
+     * @return void 반환값 없음
+     */
+    public function test_stats_total_comments_excludes_comment_disabled_board(): void
+    {
+        $post = $this->createPost($this->board->slug, ['user_id' => $this->user->id]);
+        $this->createComment($this->board->slug, $post->id, ['user_id' => $this->user->id, 'content' => '보일 댓글']);
+
+        $noCommentBoard = Board::factory()->create(['use_comment' => false, 'is_active' => true]);
+        $hiddenPost = Post::create([
+            'board_id' => $noCommentBoard->id,
+            'title' => '댓글 끈 게시판 글',
+            'content' => '본문',
+            'user_id' => $this->user->id,
+            'ip_address' => '127.0.0.1',
+            'is_notice' => false,
+            'is_secret' => false,
+            'status' => 'published',
+        ]);
+        Comment::create([
+            'board_id' => $noCommentBoard->id,
+            'post_id' => $hiddenPost->id,
+            'content' => '숨을 댓글',
+            'user_id' => $this->user->id,
+            'status' => 'published',
+        ]);
+
+        $statsResponse = $this->actingAs($this->user)->getJson('/api/modules/sirsoft-board/me/activity-stats');
+        $listResponse = $this->actingAs($this->user)->getJson('/api/modules/sirsoft-board/me/my-comments');
+
+        $this->assertSame(1, $statsResponse->json('data.total_comments'));
+        $this->assertSame(1, $listResponse->json('data.total'));
+    }
+
+    /**
      * 정렬 옵션으로 활동을 조회할 수 있다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects can_sort_activities
+     *
+     * @return void 반환값 없음
      */
     public function test_can_sort_activities(): void
     {
@@ -434,6 +610,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 삭제된 게시글은 활동에서 제외된다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects deleted_posts_are_excluded_from_activities
+     *
+     * @return void 반환값 없음
      */
     public function test_deleted_posts_are_excluded_from_activities(): void
     {
@@ -458,6 +640,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 페이지네이션이 정상 동작한다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects pagination_works
+     *
+     * @return void 반환값 없음
      */
     public function test_pagination_works(): void
     {
@@ -492,6 +680,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 동일 게시글에 여러 활동이 있을 경우 authored 우선순위가 적용된다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects authored_activity_takes_priority_over_commented
+     *
+     * @return void 반환값 없음
      */
     public function test_authored_activity_takes_priority_over_commented(): void
     {
@@ -520,6 +714,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * activity_type으로 활동을 필터링할 수 있다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects can_filter_by_activity_type
+     *
+     * @return void 반환값 없음
      */
     public function test_can_filter_by_activity_type(): void
     {
@@ -567,6 +767,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 내가 작성한 댓글 목록 API를 조회할 수 있다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects authenticated_user_can_fetch_own_comments
+     *
+     * @return void 반환값 없음
      */
     public function test_authenticated_user_can_fetch_own_comments(): void
     {
@@ -603,6 +809,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 비인증 사용자는 내 댓글 목록을 조회할 수 없다.
+     *
+     * @scenario viewer=guest
+     *
+     * @effects guest_cannot_fetch_own_comments
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_cannot_fetch_own_comments(): void
     {
@@ -612,6 +824,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 내 댓글 목록은 게시판 필터와 정렬을 지원한다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects my_comments_supports_board_filter_and_sort
+     *
+     * @return void 반환값 없음
      */
     public function test_my_comments_supports_board_filter_and_sort(): void
     {
@@ -663,6 +881,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 삭제된 게시글에 달린 내 댓글은 목록에서 제외된다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects comments_on_deleted_posts_are_excluded
+     *
+     * @return void 반환값 없음
      */
     public function test_comments_on_deleted_posts_are_excluded(): void
     {
@@ -692,6 +916,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 비활성 게시판의 게시글은 내 게시글 목록에서 제외된다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects posts_on_inactive_board_are_excluded
+     *
+     * @return void 반환값 없음
      */
     public function test_posts_on_inactive_board_are_excluded(): void
     {
@@ -725,6 +955,12 @@ class UserActivityApiTest extends BoardTestCase
 
     /**
      * 비활성 게시판의 댓글은 목록에서 제외된다.
+     *
+     * @scenario viewer=owner
+     *
+     * @effects comments_on_inactive_board_are_excluded
+     *
+     * @return void 반환값 없음
      */
     public function test_comments_on_inactive_board_are_excluded(): void
     {
@@ -767,6 +1003,8 @@ class UserActivityApiTest extends BoardTestCase
      * 헬퍼 메서드: 게시글 생성
      *
      * @param  string  $slug  사용하지 않음 (단일 테이블 전환 후 board_id로 대체)
+     * @param  array<string, mixed>  $attributes  덮어쓸 게시글 속성
+     * @return Post 생성된 게시글
      */
     private function createPost(string $slug, array $attributes = []): Post
     {
@@ -786,6 +1024,9 @@ class UserActivityApiTest extends BoardTestCase
      * 헬퍼 메서드: 댓글 생성
      *
      * @param  string  $slug  사용하지 않음 (단일 테이블 전환 후 board_id로 대체)
+     * @param  int  $postId  게시글 ID
+     * @param  array<string, mixed>  $attributes  덮어쓸 댓글 속성
+     * @return Comment 생성된 댓글
      */
     private function createComment(string $slug, int $postId, array $attributes = []): Comment
     {

@@ -1,0 +1,98 @@
+feature: 게시판 관리자 화면 abilities 게이트 — 화면 잠금 축을 서버 라우트 권한과 맞춘다 (7.1.0 abilities 게이트 최종 점검 board-admin-a)
+
+description: |
+  게시판 관리자 화면에서 쓰기 UI 가 열린 채 서버만 403 을 내던 곳, 또는 화면 잠금 축과 서버 권한 축이 어긋난 곳을 맞춘다.
+  - 게시판 생성·복제 폼: form-data 가 생성·복사 모드에도 `abilities.can_create` 를 싣고, 폼은 신규·복제면 can_create,
+    편집이면 can_update 로 읽기 전용이 된다(배너 문구도 「생성 권한이 없어」로 갈린다).
+  - 폼의 「사용 반응 유형」 [관리] 는 `_meta.can_manage_reaction_types`(게시판 환경설정 수정)로 잠그고, 반응 유형 목록은
+    게시판 조회 권한으로도 읽혀 체크박스가 빈 채로 뜨지 않는다.
+  - 환경설정 응답 abilities 에 `can_bulk_apply`(환경설정 수정 + 게시판 수정, 제품 결정 2026-10-09)·`can_manage_board_types`
+    (게시판 등록)·`can_clear_seo_cache`(코어 환경설정 수정)를 싣는다. 일괄 적용 라우트는 두 권한을 모두 요구한다(403).
+  - 일괄 적용 체크박스 35개·대상 카드·라디오·게시판 선택·적용 버튼이 일괄 적용 권한으로 잠기고 이유를 보인다.
+  - SEO 탭 입력 9칸은 읽기 전용이면 잠기고, 「SEO 캐시 초기화」는 코어 환경설정 수정 권한이 없으면 잠기고 이유를 보인다(G06).
+  - 게시판 유형 관리 버튼·모달은 게시판 등록 권한으로 잠기고, 유형 목록은 환경설정 조회 권한으로도 읽힌다.
+  - 날짜 형식 카드 클릭·반응 유형 드래그 손잡이(G10)는 읽기 전용이면 바꾸지 못하고, 알림 채널 토글은 저장 축(isReadOnly)을 본다.
+  - 이커머스 문의 게시판 「관리자 메뉴에 추가」는 고른 게시판 행의 can_update 로 잠긴다(G07).
+  - 대시보드 커뮤니티 구획·퀵메뉴 타일은 데이터·이동 화면과 같은 권한으로만 그린다.
+  - 「본인인증 정책」 탭은 게시판 권한 `sirsoft-board.identity.policies.read`/`.update` 로 동작한다(제품 결정 2026-10-10).
+    목록·추가·수정·삭제는 게시판 모듈 경로(/api/modules/sirsoft-board/admin/identity-policies)가 같은 권한으로 403 을 내고,
+    게시판 몫(source_identifier=sirsoft-board) 정책만 다룬다(다른 출처 정책 ID 는 404). 응답 abilities 도 같은 권한이다.
+    화면은 조회 권한이 없으면(목록 403) 「권한 없음」 안내, 수정 권한이 없으면 읽기 전용 안내 + 추가·토글·편집·삭제·저장 잠금.
+    인증 제공자 선택지는 공개 목록(/api/identity/providers)에서 받는다. 권한은 기본 관리자 역할(admin)에 기본 부여된다.
+    운영자 정책의 대상은 게시판 지점으로 묶는다 — 훅·사용자 지정 범위는 `sirsoft-board.`, 경로 범위는 `api.modules.sirsoft-board.`
+    로 시작해야 하고, 아니면 추가·수정이 422(target)다. 정책은 범위·대상으로 적용되므로 출처만 묶어서는 코어 로그인 같은 지점을 막지 못한다.
+    이 검사는 범위·대상을 새로 지정·변경할 때만 한다 — 7.0.11 에서 자유 입력으로 만든 게시판 밖 대상 정책도 대상을 그대로 둔
+    사용 토글·다른 칸 수정은 된다(B7-1). 대상을 옮기려면 게시판 지점으로만 옮길 수 있다.
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardAdminAbilityGateTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-ability-gate.test.ts
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardIdentityPolicyPermissionGateTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-identity-policy-gate.test.ts
+
+axes:
+  case:
+    - form_create_without_create
+    - form_create_with_create
+    - form_copy_without_create
+    - form_reaction_manage_flag
+    - reaction_types_list_by_board_reader
+    - settings_abilities_settings_update_only
+    - settings_abilities_all_granted
+    - bulk_apply_without_board_update
+    - board_types_list_by_settings_reader
+    - identity_list_without_read
+    - identity_list_read_only
+    - identity_list_with_update
+    - identity_write_read_only
+    - identity_write_with_update
+    - identity_write_foreign_policy
+    - identity_store_source
+    - identity_permission_declared
+    - identity_target_outside_module
+    - identity_target_inside_module
+    - identity_legacy_target_unchanged
+    - identity_legacy_target_changed
+    - identity_tab_module_route
+    - identity_tab_without_read
+    - identity_tab_read_only
+    - seo_tab_read_only
+    - seo_clear_cache_without_core_settings
+    - board_types_without_create
+    - general_card_read_only
+    - channel_toggle_axis
+    - reaction_drag_read_only
+    - inquiry_add_menu_without_update
+    - dashboard_extension_permissions
+
+effects:
+  - form_create_reports_can_create
+  - form_reports_reaction_manage_flag
+  - reaction_types_readable_by_board_reader
+  - settings_reports_split_abilities
+  - bulk_apply_requires_board_update
+  - board_types_readable_by_settings_reader
+  - identity_policy_list_requires_module_read
+  - identity_policy_list_scoped_to_board
+  - identity_policy_abilities_follow_module_update
+  - identity_policy_write_requires_module_update
+  - identity_policy_write_scoped_to_board
+  - identity_permission_granted_to_admin_by_default
+  - identity_policy_target_limited_to_board
+  - identity_policy_unchanged_target_skips_ownership
+  - identity_tab_uses_module_permission_route
+  - identity_provider_options_need_no_core_permission
+  - identity_tab_shows_no_permission_notice
+  - identity_tab_read_only_locks_writes
+  - bulk_apply_locked_without_board_update
+  - bulk_apply_reason_shown
+  - seo_inputs_locked_when_read_only
+  - seo_clear_cache_locked_with_reason
+  - board_type_controls_locked_without_create
+  - date_card_click_ignored_when_read_only
+  - channel_toggle_follows_settings_update
+  - drag_handle_hidden_when_read_only
+  - form_create_read_only_without_create
+  - form_reaction_manage_locked
+  - inquiry_add_menu_locked_without_update
+  - dashboard_extension_rendered_by_permission

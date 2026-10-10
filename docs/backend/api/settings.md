@@ -20,6 +20,40 @@
 
 상한을 넘긴 목록의 응답 형태는 [pagination.md](../pagination.md) 를 참고하세요.
 
+## IP 접근 제한 (`security` 탭)
+
+허용한 IP 에서만 관리자 영역·지정 경로에 접근하게 합니다. 저장 경로는 `security` 탭이며, 키는
+`ip_restriction_enabled`(마스터 토글)·`admin_allowed_ips`(관리자 영역 허용 목록)·`ip_restriction_rules`(경로별 규칙) 셋입니다.
+
+판정은 전역 미들웨어가 모든 요청에 대해 수행하고, 순서는 다음과 같습니다(첫 거부에서 멈춤).
+
+1. 마스터 토글이 꺼져 있으면 통과
+2. **관리자 영역**이면 `admin_allowed_ips` 를 대조한다 — 빈 목록이면 이 축은 적용하지 않는다.
+   관리자 영역은 관리자 화면(`/admin*`)·코어 관리자 API(`/api/admin/*`)·관리자 로그인 API(`/api/auth/admin/*`)·
+   확장 관리자 API(`/api/modules/{id}/admin/*`, `/api/plugins/{id}/admin/*`)다.
+3. 관리자 영역이 아니면 **인바운드 콜백 경로**(결제 승인·입금통보·웹훅·본인인증 콜백)인지 먼저 보고, 해당하면 통과시킨다.
+   코어 고정 목록(`plugins/*/payment/*`, `*/webhook*`, `plugins/*/plugin/*/callback`) 외의 경로는 확장이
+   `core.security.ip_restriction_exempt_paths` 필터 훅으로 등록한다. 관리자 영역은 어떤 제외 경로로도 빠져나갈 수 없다.
+4. `ip_restriction_rules` 에서 **사용 중인 첫 매칭 규칙** 하나의 `ips` 를 대조한다.
+
+IP 는 신뢰 프록시 해석 뒤의 값이다 — 리버스 프록시 뒤에서 신뢰 프록시를 설정하지 않으면 전원이 프록시 주소 하나로
+보이므로, 환경설정 화면이 그 상태를 경고로 띄운다([reverse-proxy.md](../reverse-proxy.md)).
+
+**차단 응답** — API 요청은 403 JSON, 웹 요청은 403 페이지(접속 IP 표시)입니다.
+
+```json
+{
+    "success": false,
+    "message": "허용된 IP 에서만 접근할 수 있습니다. 접근이 필요하면 사이트 관리자에게 문의하세요."
+}
+```
+
+차단은 활동 로그 `security.ip_blocked`(유형 시스템)로 남으며, 같은 IP 는 60초에 한 건만 기록합니다.
+
+**자기 잠금 방지** — 저장 요청자의 현재 IP 가 저장 후 설정에서 막히면(관리자 영역 허용 목록 밖, 또는 설정 화면 경로를
+막는 규칙) 저장하지 않고 422 를 돌려줍니다. 그래도 잠긴 경우의 구제는 서버 셸의
+`php artisan security:ip-restriction --disable` 입니다(목록·규칙은 지우지 않고 토글만 끈다).
+
 ## TL;DR (5초 요약)
 
 ```text
@@ -59,7 +93,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | general | object | `{"site_name":"그누보드7","site_url":"https:\/\/g7_2.dev","sit…` | 일반 탭 설정 그룹 (사이트명·사이트 URL·설명·관리자 이메일·타임존·기본 언어·통화·점검 모드·사이트 로고 첨부). site_logo 는 SettingsService 가 별도 주입한 첨부 정보 |
-| security | object | `{"force_https":false,"login_attempt_enabled":true,"auth_t…` | 보안 탭 설정 그룹 (HTTPS 강제·로그인 시도 제한 사용·인증 토큰 유지시간(분, 0=무한)·최대 로그인 시도 횟수·잠금 시간·내부 네트워크 주소 호출 허용). `allow_internal_outbound_urls`(boolean, 기본 false): 서버가 대신 호출하는 outbound 요청(예약 작업 URL 호출, 외부 API 연동)에서 사설 IP·`localhost` 등 내부 주소를 허용할지 여부 — 켜면 사내 서버 호출이 가능해지지만 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본은 차단입니다. 언어팩 URL 설치는 원격 코드를 내려받으므로 이 설정과 무관하게 항상 내부 주소를 거부합니다 |
+| security | object | `{"force_https":false,"login_attempt_enabled":true,"auth_t…` | 보안 탭 설정 그룹 (HTTPS 강제·로그인 시도 제한 사용·인증 토큰 유지시간(분, 0=무한)·최대 로그인 시도 횟수·잠금 시간·내부 네트워크 주소 호출 허용). `allow_internal_outbound_urls`(boolean, 기본 false): 서버가 대신 호출하는 outbound 요청(예약 작업 URL 호출, 외부 API 연동)에서 사설 IP·`localhost` 등 내부 주소를 허용할지 여부 — 켜면 사내 서버 호출이 가능해지지만 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본은 차단입니다. 언어팩 URL 설치는 원격 코드를 내려받으므로 이 설정과 무관하게 항상 내부 주소를 거부합니다. IP 접근 제한 3키(`ip_restriction_enabled`·`admin_allowed_ips`·`ip_restriction_rules`)도 이 그룹에 실린다 — 의미는 아래 「IP 접근 제한」 절. 비밀번호 정책 키(`password_min_length`·`require_password_special_char` 와 `password_*` 16키 — 작성 규칙·재사용 금지·만료, 서버가 기록하는 만료 기준 시작일 `password_expiry_started_at` 포함 — #736)도 이 그룹에 실린다 — 범위·기본값은 `POST /api/admin/settings` 의 `security.password_*` 행. 활동 로그(접속기록) 보관 기간 `activity_log_retention_days`(정수 일, 기본 365)도 이 그룹이다 |
 | mail | object | `{"mailer":"smtp","host":"","port":587,"username":"","pass…` | 메일 탭 설정 그룹 (메일러 종류(smtp/mailgun/ses)·SMTP 호스트/포트/인증 정보·암호화 방식·발신자 주소/이름·Mailgun/SES 자격 정보) |
 | upload | object | `{"max_file_size":10,"allowed_extensions":["jpg","jpeg","p…` | 업로드 탭 설정 그룹 (최대 파일 크기(MB)·허용 확장자 목록·이미지 최대 가로/세로·이미지 품질) |
 | seo | object | `{"meta_title_suffix":null,"meta_description":null,"meta_k…` | SEO 탭 설정 그룹 (메타 타이틀 접미사·메타 설명/키워드·검색엔진 인증 코드·봇 감지·OG/Twitter 기본값·SEO 캐시·사이트맵·생성기 설정) |
@@ -71,11 +105,14 @@ _단건 응답: `data` 객체의 필드._
 | geoip | object | `{"geoip_enabled":false,"geoip_license_key":null,"geoip_au…` | GeoIP 원본 카테고리 (GeoIP 사용 여부·MaxMind 라이선스 키·DB 자동 갱신 사용). advanced 탭에 병합된 파생 뷰 |
 | notifications | object | `{"channels":[{"id":"mail","is_active":true,"sort_order":1…` | 알림 탭 설정 그룹. channels 는 알림 채널 목록으로 각 원소가 id(채널 식별자)·is_active(활성 여부)·sort_order(표시 순서)를 가짐 |
 | identity | object | `{"default_provider":"g7:core.mail","purpose_providers":{"…` | 본인인증(IDV) 탭 설정 그룹 (기본 provider·목적별 provider 매핑(purpose_providers)·챌린지 유효시간(분)·최대 시도 횟수) |
+| privacy | object | `{"withdrawn_retention_enabled":false,"withdrawn_retention_…` | 개인정보 탭 설정 그룹 (탈퇴 회원 잔여정보 2차 파기 사용 여부·보유일, 휴면 전환 사용 여부·전환 기준일·사전 통지 선행일, 휴면 후 자동 탈퇴 사용 여부·기준일). 전 항목 기본 꺼짐 |
 | available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/public_asset/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공. `public_asset` 은 공개 자산 직접 URL 서빙 디스크 선택지 (코어 none/public/s3 + 플러그인 훅 등록분) |
-| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 세 필드로 구성 |
+| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 다섯 필드로 구성 |
 | _meta.limits | object | `{"upload_max_file_size_min":1,"upload_max_file_size_max":1024,…}` | 각 설정 항목의 min/max 경계값 맵 (`config/core.php` 의 `settings_limits` 가 SSoT, 화면 입력 힌트와 FormRequest 검증이 같은 값을 공유) |
 | _meta.env_priority_enabled | boolean | `false` | `.env` 키 단위 우선 모드(`G7_ENV_PRIORITY`) 활성 여부. 화면은 이 값으로 안내 배너 표시를 판정한다. 기본값 false (스위치 미설정 시 종전 동작) |
 | _meta.env_locked | object | `{"general.site_name":true,"advanced.debug_mode":true}` | `.env` 에 값이 명시되어 편집이 잠긴 필드 목록. 키는 **화면이 쓰는 프론트엔드 키**(`frontend_key`/`merge_into` 변환 후 — 예: `debug.mode` → `advanced.debug_mode`)이며 값은 항상 true. 병합 대상 카테고리와 원본 카테고리 양쪽에 실린다(설정값 자체가 두 위치에 실리는 것과 같은 규칙). 스위치가 꺼져 있으면 빈 객체. 잠긴 필드는 저장 요청에 포함되어도 서버가 제거하므로 값이 반영되지 않는다. 잠긴 필드의 값은 저장값이 아니라 실제로 적용 중인 값으로 내려가되, 비밀번호·시크릿·토큰 등 민감 항목은 그 대체를 하지 않는다 |
+| _meta.consent_providers | array | `[{"id":"sirsoft-gdpr","label":"쿠키 동의 배너 (sirsoft-gdpr)"}]` | 등록된 동의 관리 제공자 `{id, label}` 목록 — 개인정보 탭 「동의 관리 제공자」 선택 상자의 항목. 동의 수집을 꺼 둔 제공자도 실린다(고를 수 있다) |
+| _meta.consent_selection | object | `{"state":"auto","reason":null,"provider_id":"sirsoft-gdpr","provider_label":"GDPR …"}` | 지금 선택 상태. `state` 는 `none`·`auto`·`selected`·`ambiguous`·`missing`, `reason` 은 `none` 의 사유(`no_provider`·`provider_unavailable`) |
 | abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -153,7 +190,7 @@ HTTP/1.1 200
 
 **설명**
 
-관리자 통합 환경설정 화면(`admin_settings.json`)이 사용하는 전체 설정 조회 엔드포인트입니다. 각 탭에 해당하는 설정 그룹(general/security/mail/upload/seo/advanced/drivers/geoip/notifications/identity 등)과 드라이버 선택지 카탈로그(`available_drivers`)를 한 번에 반환합니다. 응답은 Eloquent 모델이 아니라 SettingsService 가 여러 설정 소스를 병합해 만든 집계 배열이며, 일부 그룹(cache/debug 등)은 원본 카테고리 값을 별도 키로 함께 노출한 파생 뷰입니다.
+관리자 통합 환경설정 화면(`admin_settings.g7.html`)이 사용하는 전체 설정 조회 엔드포인트입니다. 각 탭에 해당하는 설정 그룹(general/security/mail/upload/seo/advanced/drivers/geoip/notifications/identity 등)과 드라이버 선택지 카탈로그(`available_drivers`)를 한 번에 반환합니다. 응답은 Eloquent 모델이 아니라 SettingsService 가 여러 설정 소스를 병합해 만든 집계 배열이며, 일부 그룹(cache/debug 등)은 원본 카테고리 값을 별도 키로 함께 노출한 파생 뷰입니다.
 
 
 ### POST /api/admin/settings
@@ -166,16 +203,17 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| _tab | body | string | 아니오 | — | 활성 탭 식별자 (general/mail/upload/seo/security/drivers/advanced/notifications/identity). 지정 시 해당 탭 필드만 필수 검증되고 나머지 탭은 nullable 처리되어 탭 단위 부분 저장을 가능케 함 |
+| _tab | body | string | 아니오 | — | 활성 탭 식별자 (general/mail/upload/seo/security/drivers/advanced/notifications/identity/privacy). 지정 시 해당 탭 필드만 필수 검증되고 나머지 탭은 nullable 처리되어 탭 단위 부분 저장을 가능케 함 |
 | general | body | array | 아니오 | — | 일반 탭 설정 묶음 (사이트명·URL·설명·관리자 이메일·타임존·기본 언어·통화·점검 모드·사이트 로고) |
 | mail | body | array | 아니오 | — | 메일 탭 설정 묶음 (메일러 종류·SMTP 호스트/포트/인증·암호화·발신자 정보·Mailgun/SES 자격 정보) |
 | upload | body | array | 아니오 | — | 업로드 탭 설정 묶음 (최대 파일 크기·허용 확장자·이미지 최대 크기 및 품질) |
 | seo | body | array | 아니오 | — | SEO 탭 설정 묶음 (메타 태그·검색엔진 인증·봇 감지·OG/Twitter 기본값·SEO 캐시·사이트맵·생성기) |
-| security | body | array | 아니오 | — | 보안 탭 설정 묶음 (HTTPS 강제·로그인 시도 제한·인증 토큰 유지시간·최대 시도 횟수·잠금 시간) |
+| security | body | array | 아니오 | — | 보안 탭 설정 묶음 (HTTPS 강제·로그인 시도 제한·인증 토큰 유지시간·최대 시도 횟수·잠금 시간·비밀번호 정책 — 비밀번호 키별 범위는 아래 `security.password_*` 행) |
 | drivers | body | array | 아니오 | — | 드라이버 탭 설정 묶음 (스토리지/캐시/세션/큐/로그 드라이버 및 S3·Redis·Memcached·WebSocket·검색엔진 접속 정보) |
 | advanced | body | array | 아니오 | — | 고급 탭 설정 묶음 (캐시·디버그·코어 업데이트·GeoIP 설정) |
 | notifications | body | array | 아니오 | — | 알림 탭 설정 묶음. channels 배열로 각 알림 채널의 id·is_active(활성 여부)·sort_order(표시 순서)를 저장 |
 | identity | body | array | 아니오 | — | 본인인증(IDV) 탭 설정 묶음 (기본 provider·목적별 provider 매핑·챌린지 유효시간·최대 시도 횟수) |
+| privacy | body | array | 아니오 | — | 개인정보 탭 설정 묶음 (탈퇴 회원 잔여정보 파기·휴면 전환·휴면 후 자동 탈퇴의 사용 여부와 기간) |
 | notifications.channels | body | array | 아니오 | — | 알림 채널 목록. 각 원소는 `id`(채널 식별자, 필수·최대 50자)·`is_active`(활성 여부, 필수 boolean)·`sort_order`(표시 순서, 0 이상 정수) 로 구성 |
 | general.site_name | body | string | 예 | max 100 | general.site 이름 (식별자) |
 | general.site_url | body | string | 예 | max 255 | 사이트 기본 URL |
@@ -235,6 +273,31 @@ HTTP/1.1 200
 | security.auth_token_lifetime | body | integer | 아니오 | min 0, max 3600 | 인증 토큰 유효 시간 (분) |
 | security.max_login_attempts | body | integer | 아니오 | min 0, max 100 | 로그인 실패 허용 횟수 (초과 시 잠금) |
 | security.login_lockout_time | body | integer | 아니오 | min 0, max 1440 | 로그인 잠금 지속 시간 (분) |
+| security.ip_restriction_enabled | body | boolean | 아니오 | — | IP 접근 제한 마스터 토글 (기본 false). 끄면 아래 목록·규칙은 저장만 되고 적용되지 않는다 |
+| security.admin_allowed_ips | body | array | 아니오 | max 100 | 관리자 영역(관리자 화면·코어/확장 관리자 API·관리자 로그인 API)에 접근을 허용할 IP·CIDR 목록. **빈 목록 = 이 축 미적용**. 앞뒤 공백·빈 항목·중복은 저장 전에 정리된다 |
+| security.admin_allowed_ips.* | body | string | 아니오 | IPv4·IPv6·CIDR (`203.0.113.0/24`, `2001:db8::/32`) | 허용 항목. 호스트명·범위 표기(`a-b`)·와일드카드(`192.168.*`)는 422 |
+| security.ip_restriction_rules | body | array | 아니오 | max 50 | 경로별 접근 규칙 목록. **사용 중인 첫 매칭 규칙 하나만** 적용된다 |
+| security.ip_restriction_rules.*.pattern | body | string | 예 | max 255, 공백·`?`·`#` 불가 | URI glob — `*` 는 `/` 를 포함해 무엇이든 맞고 앞뒤 `/` 는 무시 (예: `/api/admin/users*`) |
+| security.ip_restriction_rules.*.ips | body | array | 예 | 1개 이상, max 100 | 이 규칙에 맞는 경로를 허용할 IP·CIDR 목록 |
+| security.ip_restriction_rules.*.ips.* | body | string | 아니오 | IPv4·IPv6·CIDR | 허용 항목 |
+| security.ip_restriction_rules.*.memo | body | string | 아니오 | max 255 | 운영자 메모 |
+| security.ip_restriction_rules.*.enabled | body | boolean | 아니오 | — | 규칙 사용 여부 (미지정 = 사용). 삭제하지 않고 잠시 끌 때 쓴다 |
+| security.password_require_char_types | body | boolean | 아니오 | — | 비밀번호 조합 규칙 — 켜면 영문·숫자·특수문자 중 2종류 이상 (기본 false). 가입·변경·재설정·관리자 지정 전 경로에 적용 |
+| security.password_block_identifier | body | boolean | 아니오 | — | 이메일 `@` 앞부분(3자 이상, 대소문자 무시)이 들어간 비밀번호 거부 (기본 false) |
+| security.password_block_repeated_chars | body | boolean | 아니오 | — | 같은 문자가 연속으로 반복되는 비밀번호 거부 (기본 false) |
+| security.password_repeated_chars_length | body | integer | 아니오 | min 3, max 6 | 반복 금지가 거부하기 시작하는 글자 수 (기본 4) |
+| security.password_block_sequential_chars | body | boolean | 아니오 | — | 연속 문자(숫자 `1234`·영문 `abcd`·자판 행 `qwer`, 오름·내림) 거부 (기본 false) |
+| security.password_sequential_chars_length | body | integer | 아니오 | min 3, max 6 | 연속 문자 금지가 거부하기 시작하는 글자 수 (기본 4) |
+| security.password_reuse_prevention_enabled | body | boolean | 아니오 | — | 최근 비밀번호 재사용 금지 (기본 false). 관리자를 포함한 전 회원, 관리자가 **다른 회원**의 비밀번호를 정할 때는 검사하지 않는다 |
+| security.password_reuse_count | body | integer | 아니오 | min 1, max 10 | 다시 쓸 수 없는 최근 비밀번호 개수 — 현재 비밀번호 포함 (기본 3) |
+| security.password_expiry_enabled | body | boolean | 아니오 | — | 비밀번호 만료 사용 (기본 false). 꺼짐→켜짐으로 저장한 순간을 서버가 만료 기준 시작일로 기록한다(기존 회원은 그날부터 계산) |
+| security.password_expiry_days | body | integer | 아니오 | min 30, max 730 | 비밀번호 사용 기간(일) (기본 90) |
+| security.password_expiry_notice_days | body | integer | 아니오 | min 1, max 30 | 만료 며칠 전에 사전 안내를 보낼지 (기본 7). **만료가 켜져 있으면 `security.password_expiry_days` 보다 작아야 하며**, 같거나 크면 422 (`validation.settings.password_expiry_notice_days_lt_expiry_days`) |
+| security.password_expiry_scope | body | string | 아니오 | `all`, `admin`, `selected` | 만료 적용 범위 — 전체 회원 / 관리자만 / 역할·회원에서 '적용'으로 지정한 대상만 (기본 `all`). 회원 개별 설정 > 역할 설정 > 이 범위 순으로 판정 |
+| security.password_expiry_action | body | string | 아니오 | `force`, `remind` | 만료 시 동작 — 변경해야 로그인 / 다음에 변경 허용 (기본 `force`). `force` 면 만료 처리 때 그 회원의 로그인 토큰을 모두 폐기 |
+| security.password_expiry_remind_days | body | integer | 아니오 | min 1, max 90 | '다음에 변경'을 고른 뒤 다시 안내하기까지의 일수 (기본 30, `remind` 일 때만 사용) |
+| security.password_expiry_batch_size | body | integer | 아니오 | min 0, max 100000 | 1회 실행당 안내 상한 — 사전 안내·만료 처리에 각각 적용, 만료가 가까운 순 (기본 1000, 0 = 무제한) |
+| security.activity_log_retention_days | body | integer | 아니오 | min 365, max 3650 | 활동 로그(접속기록) 보관 기간(일) — 매일 04:45 자동 파기가 따른다. 365 미만은 법정 최소 안내 문구(`validation.settings.activity_log_retention_days_min`)로 422. 권한·역할 변경 기록은 이 값과 관계없이 최소 3년 보관 (기본 365) |
 | advanced.cache_enabled | body | boolean | 아니오 | — | 캐시 사용 여부 |
 | advanced.layout_cache_enabled | body | boolean | 아니오 | — | 레이아웃 캐시 사용 여부 (레이아웃 데이터를 캐시) |
 | advanced.layout_cache_ttl | body | integer | 아니오 | min 0, max 14400 | 레이아웃 캐시 만료 시간 (초, 0 = 만료 없음) |
@@ -290,8 +353,18 @@ HTTP/1.1 200
 | identity.purpose_providers | body | array | 아니오 | — | 본인인증 목적(Purpose)별 프로바이더 매핑. 미지정 목적은 기본 프로바이더를 사용 |
 | identity.challenge_ttl_minutes | body | integer | 아니오 | min 1, max 1440 | 발급된 인증 코드/링크(challenge)의 유효시간 (분) |
 | identity.max_attempts | body | integer | 아니오 | min 1, max 20 | challenge 최대 시도 횟수 (연속 실패 시 잠금 — 재전송 필요) |
+| privacy.consent_provider | body | string | 아니오 | 빈 값 · 등록된 동의 제공자 id · 현재 저장값 | 방문자 동의를 판단할 동의 관리 제공자. 빈 값이면 자동(수집 중인 제공자 1개면 그것, 2개 이상이면 고르기 전까지 모든 방문자 「확인 불가」). 저장값을 허용하는 이유: 고른 제공자가 비활성화된 상태에서 다른 칸만 고쳐 저장할 때 화면이 옛 id 를 다시 보낸다. 그 밖의 값은 422 |
+| privacy.withdrawn_retention_enabled | body | boolean | 아니오 | — | 탈퇴 회원 잔여 개인정보의 2차 파기 사용 여부 (기본 false). 켜면 매일 배치가 보유기간이 지난 탈퇴 회원의 연락처·주소·본인인증 식별자를 되돌릴 수 없게 지운다 |
+| privacy.withdrawn_retention_days | body | integer | 아니오 | min 1, max 3650 | 탈퇴 시점부터 잔여 정보를 보유할 일수 (기본 365). 경과분만 파기 대상 |
+| privacy.dormant_enabled | body | boolean | 아니오 | — | 장기 미접속 회원의 휴면 전환 사용 여부 (기본 false). 활동 기준은 `max(users.last_login_at, personal_access_tokens.last_used_at)` |
+| privacy.dormant_days | body | integer | 아니오 | min 30, max 3650 | 휴면 전환 기준 미접속 일수 (기본 730) |
+| privacy.dormant_notice_days | body | integer | 아니오 | min 1, max 365 | 휴면 전환 사전 통지를 며칠 전에 보낼지 (기본 30). **`privacy.dormant_days` 보다 작아야 하며**, 같거나 크면 422 (`validation.settings.privacy_dormant_notice_days_lt_dormant_days`). 통지 후 이 일수가 지나야 실제 전환된다 |
+| privacy.dormant_withdraw_enabled | body | boolean | 아니오 | — | 휴면이 오래 이어진 계정의 자동 탈퇴 사용 여부 (기본 false). 관리자 역할 보유자와 슈퍼 관리자는 예고·탈퇴 대상에서 모두 제외된다 |
+| privacy.dormant_withdraw_days | body | integer | 아니오 | min 1, max 3650 | 휴면 전환 시점부터 자동 탈퇴까지의 일수 (기본 365). 이때도 `privacy.dormant_notice_days` 만큼 앞서 탈퇴 예고를 보낸다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.save_validation_rules`, `core.search.engine_drivers`).
+
+> 로그인 보안 정수 키(`security.auth_token_lifetime`·`security.max_login_attempts`·`security.login_lockout_time`), 비밀번호 정책 정수 키(최소 길이 `security.password_min_length` 포함)와 `security.activity_log_retention_days` 는 `"5"` 처럼 문자열로 보내도 정수로 정규화해 저장한다. 그래서 `security.auth_token_lifetime` 의 `"0"`(무한대)도 `0` 으로 받아들인다. 만료 기준 시작일(`security.password_expiry_started_at`)은 서버가 기록하는 값이라 이 요청으로 보내도 저장되지 않는다.
 
 **요청 예시**
 
@@ -403,6 +476,19 @@ Content-Type: application/json
     "security.require_password_special_char": true,
     "security.two_factor_auth": true,
     "security.allow_internal_outbound_urls": true,
+    "security.ip_restriction_enabled": true,
+    "security.admin_allowed_ips": [
+        "203.0.113.24",
+        "10.0.0.0/8"
+    ],
+    "security.ip_restriction_rules": [
+        {
+            "pattern": "/api/admin/users*",
+            "ips": ["203.0.113.0/24"],
+            "memo": "본사망만",
+            "enabled": true
+        }
+    ],
     "advanced.cache_enabled": true,
     "advanced.layout_cache_enabled": true,
     "advanced.layout_cache_ttl": 1,
@@ -520,13 +606,170 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 보안 탭에서는 **저장하면 요청자 자신이 잠기는 IP 접근 제한**(현재 IP 가 관리자 영역 허용 목록 밖이거나, 설정 화면 경로를 막는 규칙에 걸림)도 422 — `security.admin_allowed_ips` 또는 `security.ip_restriction_rules` 에 현재 IP 가 담긴 문구 |
 
 <!-- @generated:end -->
 
 **설명**
 
 통합 환경설정 화면에서 한 탭의 설정을 일괄 저장합니다. `_tab` 으로 활성 탭을 지정하면 해당 탭의 필드만 필수 검증되고 다른 탭 필드는 nullable 로 처리되므로, 탭 단위로 부분 저장할 수 있습니다. 저장 성공 시 응답 `data.settings` 에 갱신된 전체 설정과 `available_drivers` 를 함께 반환하여, 프론트엔드가 새로고침 없이 전역 상태를 갱신할 수 있습니다. 검증 실패 시 422, 그 외 오류 시 500 을 반환합니다.
+
+
+### GET /api/admin/settings/privacy-preview
+<!-- @generated:start:api.admin.settings.privacy-preview -->
+- **라우트명**: `api.admin.settings.privacy-preview`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SettingsController@privacyPreview`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/admin/settings/privacy-preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| retention | object | `{"user-withdrawn": {…}}` | 보유기간 핸들러 식별자 => 상태 객체. 확장이 등록한 핸들러도 같은 객체에 실린다 |
+| retention.{id}.enabled | boolean | `false` | 그 핸들러의 기능이 켜져 있는지 |
+| retention.{id}.count | integer\|null | `2` | 대상 건수 — **꺼져 있어도 센다**(저장된 기간값 기준). `null` 은 미리보기 실패(로그 참조) |
+| retention.{id}.can_view_targets | boolean | `true` | 요청 관리자가 대상 목록(「더보기」)을 볼 권한이 있는지 — 핸들러가 선언한 설정 읽기 + 도메인 읽기 |
+| dormant.enabled | boolean | `false` | 휴면 기능이 켜져 있는지 |
+| dormant.withdraw_enabled | boolean | `false` | 휴면 자동 탈퇴가 켜져 있는지 |
+| dormant.can_view_targets | boolean | `true` | 휴면 대상 목록을 볼 권한(`core.settings.read` + `core.users.read`) |
+| dormant.pre_notice | integer | `0` | 사전 안내 대상 건수 |
+| dormant.convert | integer | `0` | 휴면 전환 대상 건수 (안내 후 통지 기간 경과분만) |
+| dormant.withdraw_notice | integer | `0` | 탈퇴 예정 안내 대상 건수 (자동 탈퇴가 꺼져 있어도 센다) |
+| dormant.withdraw | integer | `0` | 탈퇴 처리 대상 건수 (자동 탈퇴가 꺼져 있어도 센다) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "retention": {
+            "user-withdrawn": {
+                "enabled": false,
+                "count": 2,
+                "can_view_targets": true
+            }
+        },
+        "dormant": {
+            "enabled": false,
+            "withdraw_enabled": false,
+            "can_view_targets": true,
+            "pre_notice": 0,
+            "convert": 0,
+            "withdraw_notice": 0,
+            "withdraw": 0
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+개인정보 보유기간·휴면의 **처리 대상 건수를 미리** 돌려줍니다. 관리자 > 환경설정 > 개인정보 탭의 「대상 N건」 배지가 이 값을 씁니다. 읽기 전용이며 데이터를 바꾸지 않습니다.
+
+건수는 커맨드(`privacy:process-retention --dry-run` · `privacy:process-dormant --dry-run`)와 **같은 조건식**을 지납니다 — 화면에서 본 숫자와 실제 처리 건수가 어긋나면 운영자가 규모를 오판한 채 기능을 켜게 되고, 그 처리는 되돌릴 수 없습니다.
+
+**기능이 꺼져 있어도 건수를 돌려줍니다.** 운영자는 켜기 **전에** 규모와 명단을 확인해야 하기 때문입니다. "꺼짐" 과 "대상 0건" 은 `enabled` 로 구분합니다. 명단은 [개인정보 조치 대상 API](privacy.md)로 한 페이지씩 받으며, `can_view_targets` 가 `false` 면 화면이 「더보기」 버튼을 그리지 않습니다.
+
+
+### GET /api/admin/settings/password-expiry-preview
+<!-- @generated:start:api.admin.settings.password-expiry-preview -->
+- **라우트명**: `api.admin.settings.password-expiry-preview`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SettingsController@passwordExpiryPreview`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.settings.password_expiry_preview_validation_rules`).
+
+**요청 예시**
+
+```http
+GET /api/admin/settings/password-expiry-preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드 (`PasswordExpiryService::preview()`)._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| enabled | boolean | `false` | 비밀번호 만료 기능이 켜져 있는지 (`security.password_expiry_enabled`) |
+| started_at | string(ISO8601)\|null | `2026-06-01T03:12:00+00:00` | 만료 기준 시작일(기능을 켠 순간 — 서버 기록). 한 번도 켜지 않았으면 `null` |
+| notice | integer | `12` | 사전 안내 대상 수 — **꺼져 있어도 센다**(저장된 기간값 기준) |
+| expire | integer | `3` | 만료 처리 대상 수 |
+| batch_size | integer | `1000` | 1회 실행당 처리 상한 (0 = 무제한) |
+| can_view_targets | boolean | `true` | 요청 관리자가 명단(「대상 보기」)을 볼 권한이 있는지 — `core.settings.read` + `core.users.read`, 둘 다 전체 범위 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "enabled": true,
+        "started_at": "2026-06-01T03:12:00+00:00",
+        "notice": 12,
+        "expire": 3,
+        "batch_size": 1000,
+        "can_view_targets": true
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+비밀번호 만료 처리(`auth:process-password-expiry`)의 **사전 안내·만료 처리 대상 수를 미리** 돌려줍니다 (#736). 관리자 > 환경설정 > 보안 탭 「비밀번호 만료」 카드의 대상 배지가 이 값을 씁니다. 읽기 전용입니다.
+
+건수는 배치·명단(`GET /api/admin/privacy/password-expiry-targets/{stage}`)·직권 실행과 **같은 쿼리**를 지납니다 — 활성 회원, 관리자 지정 변경 대기자 제외, 적용 범위(회원 개별 > 역할 > 사이트 범위), 날짜 경계(기준일 = max(마지막 변경일 ?? 시작일, 시작일)), 이번 주기 미처리. 기능이 꺼져 있어도 셉니다 — 켜기 전에 규모를 확인하는 자리입니다. `{key}` 와일드카드 라우트보다 먼저 등록돼 그 라우트에 흡수되지 않습니다.
 
 
 ### GET /api/admin/settings/app-key
@@ -1007,7 +1250,7 @@ _단건 응답: `data` 객체의 필드._
 | web_server | string | `nginx/1.27.3` | 웹서버 소프트웨어 식별 문자열 (`$_SERVER['SERVER_SOFTWARE']`) |
 | php_version | string | `8.3.26` | 실행 중인 PHP 버전 (`PHP_VERSION`) |
 | mysql_version | string | `Mysql 8.4.3` | 연결된 데이터베이스 서버 종류와 버전 (DB 조회 산물). probe 실패 시 "알 수 없음" 폴백 |
-| g7_version | string | `7.0.6` | G7 코어 버전 (`config('app.version')`) |
+| g7_version | string | `7.1.0` | G7 코어 버전 (`config('app.version')`) |
 | g7_release_year | string | `2026` | G7 릴리즈 연도 (`config('app.release_year')`, 저작권 표기 등에 사용) |
 | laravel_version | string | `12.62.0` | 프레임워크 Laravel 버전 (`app()->version()`) |
 | environment | string | `local` | 현재 실행 환경 (`app()->environment()` — local/production/testing 등) |
@@ -1044,7 +1287,7 @@ HTTP/1.1 200
         "web_server": "nginx/1.27.3",
         "php_version": "8.3.26",
         "mysql_version": "Mysql 8.4.3",
-        "g7_version": "7.0.7",
+        "g7_version": "7.1.0",
         "g7_release_year": "2026",
         "laravel_version": "12.62.0",
         "environment": "production",
@@ -1773,7 +2016,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 서버가 기록하는 키(`security.password_expiry_started_at`)는 값과 관계없이(null 포함) 422 (`validation.setting.value.server_only`) |
 | 500 | Internal Server Error | 저장 중 예외가 발생한 경우 (`settings.update_error`) |
 
 <!-- @generated:end -->

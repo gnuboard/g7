@@ -91,6 +91,8 @@ $deleted = $menuSyncHelper->cleanupStaleMenus(
 
 확장 모듈 업데이트에서도 동일 패턴으로 `cleanupStaleMenus` 호출.
 
+운영자 수정 보존 — `Menu` 는 `name`·`icon`·`order`·`url`·`is_active`·`parent_id` 를 추적한다. 목록 토글로 끈 메뉴, 편집 패널에서 상위를 바꾼 메뉴는 `syncMenu()` 가 되살리거나 원위치로 옮기지 않는다(`parent_id` 가 표식돼 있으면 인자 `$parentId` 를 무시). 드래그 순서 저장은 **실제로 순서가 바뀐 메뉴만** `order` 로 표식한다.
+
 ---
 
 ## 4. ExtensionRoleSyncHelper
@@ -124,6 +126,7 @@ public function syncAllRoleAssignments(array $permissionRoleMap, array $allExten
 - `cleanupStaleRoles`: **삭제 대상 역할을 참조하는 `user_roles` 피벗 레코드가 있으면 삭제 차단 + 경고 로그**. 사용자 수동 재배정 유도 (안전장치)
 - `cleanupStalePermissions`: 순수 diff 삭제 (권한은 사용자 수정 불가 설계)
 - `syncAllRoleAssignments`: 코어는 `core/core` 소유 권한 전체를 diff 기준으로 사용 (이관된 구 식별자도 detach)
+- `syncRole`: 이름·설명은 로케일 단위(`name.ko`)로, `is_active` 는 칸으로 운영자 수정을 보존한다 — 운영자가 끈 확장 역할은 다시 켜지 않는다. 운영자 값과 새 선언값이 같아지면 표식을 푼다(합의 해제 — [user-overrides.md](user-overrides.md))
 
 ---
 
@@ -174,6 +177,9 @@ $helper->cleanupStaleDefinitions($extensionType, $extensionIdentifier, $definedT
 
 - 코어: `NotificationDefinitionSeeder` (`config('core.notification_definitions')` 직독)
 - 모듈/플러그인: `ModuleManager::syncModuleNotificationDefinitions()` / `PluginManager::syncPluginNotificationDefinitions()` (각 확장의 `getNotificationDefinitions()` getter 호출 — 별도 Seeder 작성 금지)
+
+
+- 「기본」 표시(`is_default`) — 동기화는 운영자가 고친 템플릿(`user_overrides` 가 있는 템플릿)의 「기본」 표시를 되살리지 않고, 정의의 「기본」 은 소속 템플릿이 하나라도 수정됐으면 false 로 맞춘다. 그래서 수정본의 「원래대로」 버튼이 업데이트 뒤에도 보인다.
 
 ---
 
@@ -234,18 +240,20 @@ public function cleanupStale(
 ): int;
 ```
 
-### 사용 예시 1 — 스코프 없음
+> **운영자가 직접 행을 만드는 표는 운영자 행을 가르는 범위 조건 없이 `cleanupStale` 을 부르지 않는다.** 시더는 언어팩을 켜고 끌 때마다 다시 돌기 때문에, 조건 없이 부르면 운영자가 만든 행(선언에 없는 행)이 흔적 없이 지워진다(#727 — 게시판 유형·클레임 사유·배송유형·택배사). 시더가 만든 행만 정리하려면 `['created_by' => null]` 을 범위에 넣고, 시더가 새로 만드는 행에는 `created_by => null` 을 명시해 로그인한 요청 안에서 시더가 돌아도 시드 행이 운영자 행으로 보이지 않게 한다. 가를 표식이 없는 표(게시판 유형)는 정리하지 않는다 — 선언을 없앨 일이 생기면 그 버전의 업그레이드 스텝이 명시적으로 처리한다.
+
+### 사용 예시 1 — 운영자 행을 만들지 않는 표 (스코프 없음)
 
 ```php
 $helper = app(GenericEntitySyncHelper::class);
-$definedSlugs = [];
+$definedCodes = [];
 
-foreach ($boardTypes as $data) {
-    $helper->sync(BoardType::class, ['slug' => $data['slug']], $data);
-    $definedSlugs[] = $data['slug'];
+foreach ($systemCodes as $data) {
+    $helper->sync(SystemCode::class, ['code' => $data['code']], $data);
+    $definedCodes[] = $data['code'];
 }
 
-$helper->cleanupStale(BoardType::class, [], 'slug', $definedSlugs);
+$helper->cleanupStale(SystemCode::class, [], 'code', $definedCodes);
 ```
 
 ### 사용 예시 2 — scope 필터 (type 별)
@@ -258,7 +266,8 @@ foreach ($reasons as $data) {
 }
 
 foreach ($definedByType as $type => $codes) {
-    $helper->cleanupStale(ClaimReason::class, ['type' => $type], 'code', $codes);
+    // 클레임 사유는 운영자가 설정 화면에서 직접 만드는 표 — 시더가 만든 행(created_by IS NULL)만 정리한다
+    $helper->cleanupStale(ClaimReason::class, ['type' => $type, 'created_by' => null], 'code', $codes);
 }
 ```
 

@@ -1,0 +1,57 @@
+feature: 회원 결제 통화·배송국가를 코어 회원 저장 한 번으로 저장
+
+description: |
+  결정(2026-09-28): 회원 수정 화면(관리자 admin_user_form, 마이페이지 프로필 수정)은 코어 회원 저장
+  API(PUT /api/admin/users/{user}, PUT /api/me)만 호출한다. 이커머스 소유 두 칸
+  (ecommerce_preferred_currency, ecommerce_preferred_shipping_country)은 그 요청 본문에 실려 오고,
+  이커머스가 코어 훅으로 같은 요청 안에서 처리한다.
+    · 검증 — core.user.update_validation_rules(관리자) / core.user.update_profile_validation_rules(본인)
+      필터에 규칙 추가. 오류 키 = 필드 이름이라 칸 아래에 뜬다. 저장된 값과 같으면 재검증하지 않는다
+      (폼이 조회 응답을 시드하므로 비활성화된 값이 다른 칸의 저장을 막지 않게). 관리자 경로는 값이
+      바뀔 때만 user-currency.manage / user-shipping-country.manage 권한을 요구한다.
+    · 분리 — core.user.filter_update_data 에서 두 키를 코어 데이터에서 제거(users 테이블에 쓰지 않음).
+    · 저장 — core.user.after_update(sync) 에서 원본 데이터의 값을 저장. 다른 회원을 바꾸는 관리자
+      저장은 서비스 관리자 경로로 변경 훅(admin.user_currency.changed 등)을 그대로 발화.
+  종전 관리자 전용 PATCH(/admin/users/{user}/currency, /shipping-country)는 호출처가 사라져 제거했다.
+  등록(POST /api/admin/users) 경로는 등록 화면에 두 칸이 없어 다루지 않는다(기본값은 가입 리스너가 부여).
+
+# axis 의미:
+#   entry_point — 코어 회원 저장 진입점 (관리자 회원 수정 / 본인 프로필 수정)
+#   field       — 이커머스 소유 필드 (결제 통화 / 배송국가)
+axes:
+  entry_point: [admin_update, profile_update]
+  field: [currency, shipping_country]
+
+effects:
+  # 저장 (PHPUnit)
+  - core_save_persists_currency                 # 코어 저장 한 번으로 결제 통화 저장
+  - core_save_persists_shipping_country         # 코어 저장 한 번으로 배송국가 저장(대문자 정규화)
+  - ecommerce_keys_not_written_to_users         # 두 키가 users 테이블 쓰기에 섞이지 않음
+  - admin_change_fires_changed_hooks            # 관리자가 다른 회원 값 변경 시 변경 훅(활동 로그) 발화
+  - self_change_fires_no_admin_hook             # 본인 저장은 관리자 변경 훅을 발화하지 않음
+  # 검증 (PHPUnit)
+  - invalid_value_error_on_field_key            # 미등록 통화·비활성 국가 → 422, 오류 키 = 필드 이름
+  - core_fields_untouched_on_rejection          # 검증 실패 시 코어 필드도 저장되지 않음
+  - change_without_permission_rejected_on_field_key  # 이커머스 권한 없는 관리자의 값 변경 → 필드 오류
+  - unchanged_value_does_not_block_core_save    # 저장된 값 그대로면 선택 불가·권한 없음이어도 통과
+  - unchanged_value_fires_no_changed_hook       # 값이 그대로면 변경 훅 미발화
+  - validation_messages_resolve_in_ko_en        # 검증 메시지(forbidden 포함) ko/en 해석
+  # 화면 (Vitest)
+  - form_calls_only_core_save_api               # 폼 저장 흐름에 이커머스 전용 엔드포인트 호출 없음
+  - form_field_rides_core_save_body             # 주입 칸 값이 코어 저장 본문(_local.form / profileEditForm)에 실림
+  - field_error_shown_under_field               # 코어 저장 요청의 필드 오류를 그 칸 아래에 표시
+  - field_options_follow_selectable_currencies  # 칸 옵션 = 선택 가능 통화(기본 또는 환율 설정)
+  - profile_save_syncs_global_preference        # 프로필 저장 성공 시 전역 선호 통화·배송국가 갱신
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/UserPreferenceCoreSaveTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Lang/CurrencyValidationMessageTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminUserCurrencyField.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/shippingCountryLayouts.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypageCurrencySettings.test.tsx
+
+notes: |
+  E2E: 이 변경은 저장 배선(요청 수·본문)과 서버 검증이 핵심이라 PHPUnit(실제 HTTP 요청 → 훅 등록 경로
+  → DB)과 Vitest(실제 레이아웃 노드 렌더 후 fetch 호출 관측, 템플릿 쪽 admin-user-form-single-save)가
+  행동을 검증한다. 브라우저 실측은 별도 검수 단계에서 수행한다(관리자 회원 수정 → 통화 변경 → 저장,
+  마이페이지 → 통화·배송국가 변경 → 저장, 미등록 값 강제 전송 시 칸 아래 오류).

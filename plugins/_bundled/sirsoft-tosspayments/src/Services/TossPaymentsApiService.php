@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Tosspayments\Services;
 
 use App\Extension\HookManager;
 use App\Services\PluginSettingsService;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\Tosspayments\Exceptions\TossPaymentsApiException;
@@ -57,6 +58,21 @@ class TossPaymentsApiService
     }
 
     /**
+     * 결제 조회 API 호출
+     *
+     * 토스에 기록된 결제의 현재 상태(status)와 금액(totalAmount)을 서버에서 직접 확인할 때 쓴다.
+     *
+     * @param  string  $paymentKey  토스 결제 키
+     * @return array PG 응답 데이터 (Payment 객체)
+     *
+     * @throws TossPaymentsApiException API 호출 실패 시
+     */
+    public function getPayment(string $paymentKey): array
+    {
+        return $this->request('GET', '/v1/payments/'.rawurlencode($paymentKey), []);
+    }
+
+    /**
      * 결제 취소 API 호출
      *
      * 토스는 cancelAmount 를 넣지 않으면 전액 취소로 처리한다. 전액 취소를 부분 취소로
@@ -99,7 +115,8 @@ class TossPaymentsApiService
 
         $response = $this->request('POST', "/v1/payments/{$paymentKey}/cancel", $body, $idempotencyKey);
 
-        HookManager::doAction('sirsoft-tosspayments.payment.after_cancel', $paymentKey, $response);
+        // 가상계좌 웹훅 검증값(secret)은 훅 인자에서 뺀다 — 큐 구독자가 있으면 작업 표에 사본이 남는다.
+        HookManager::doAction('sirsoft-tosspayments.payment.after_cancel', $paymentKey, Arr::except($response, ['secret']));
 
         return $response;
     }
@@ -178,9 +195,14 @@ class TossPaymentsApiService
                 'error_message' => $error['message'] ?? '',
             ]);
 
+            // 코드를 로그에만 남기고 예외에서 빼면 소비자는 「무엇이 잘못됐는지」를 되찾을 수
+            // 없다. 클레임 승인 리스너가 그래서 모든 거절을 `PG_API_ERROR` 하나로 접었고,
+            // 결제행·구매자 배너가 한도 초과와 세션 만료를 구분하지 못했다 (#599 3차 실측 F-5).
             throw new TossPaymentsApiException(
                 $error['message'] ?? 'TossPayments API error',
-                $response->status()
+                $response->status(),
+                isset($error['code']) ? (string) $error['code'] : null,
+                is_array($error) ? $error : null,
             );
         }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Listeners;
 
 use App\Models\User;
+use App\Notifications\GenericNotification;
 use Illuminate\Support\Facades\Config;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceNotificationDataListener;
@@ -25,6 +26,11 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
 {
     private EcommerceNotificationDataListener $listener;
 
+    /**
+     * 컨테이너에서 리스너를 꺼내 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,6 +43,10 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
      *
      * 회귀 방지: 과거 `total_paid_amount ?? total_amount` 패턴은 0 (null 아님) 을
      * 폴백 트리거로 인식하지 못해 0원 을 출력했다. `?:` 로 교체된 뒤 회귀 차단.
+     *
+     * @effects order_notification_amount_uses_paid_then_total
+     *
+     * @return void 반환값 없음
      */
     public function test_new_order_admin_shows_total_amount_for_unpaid_order(): void
     {
@@ -53,6 +63,10 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * new_order_admin 알림 + 결제 완료 주문 → 결제 금액으로 표시.
+     *
+     * @effects order_notification_amount_uses_paid_then_total
+     *
+     * @return void 반환값 없음
      */
     public function test_new_order_admin_shows_paid_amount_when_paid(): void
     {
@@ -69,6 +83,10 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * order_confirmed 알림 (buildOrderData 경유) — 결제 금액 표시 + 폴백 정합성.
+     *
+     * @effects order_notification_amount_uses_paid_then_total
+     *
+     * @return void 반환값 없음
      */
     public function test_order_confirmed_uses_paid_amount_with_total_amount_fallback(): void
     {
@@ -94,6 +112,10 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
      * 회원 주문 (order_confirmed) → name 은 회원명, order_url 은 마이페이지 경로.
      *
      * 회귀 방지: 비회원 분기 추가 후에도 회원 알림 데이터 구조가 기존과 동일해야 한다.
+     *
+     * @effects member_order_notification_uses_member_name_and_mypage_url
+     *
+     * @return void 반환값 없음
      */
     public function test_member_order_uses_member_name_and_mypage_url(): void
     {
@@ -110,6 +132,10 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 비회원 주문 (order_confirmed) → name 은 주문자명(배송지), order_url 은 비회원 조회 화면 경로.
+     *
+     * @effects guest_order_notification_uses_orderer_name_and_lookup_url
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_order_uses_orderer_name_and_lookup_url(): void
     {
@@ -129,6 +155,10 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
      *
      * 상수로 `/shop` 을 박아 두면 주소를 바꾼 상점의 손님이 받은 메일이 존재하지 않는
      * 화면을 가리킨다 — 메일은 정상 발송되므로 아무 오류도 남지 않는다.
+     *
+     * @effects notification_guest_order_url_follows_route_path
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_lookup_url_follows_shop_route_path_setting(): void
     {
@@ -142,6 +172,10 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 비회원 주문 컨텍스트 → 코어 알림 표준 키 guest_recipient 제공 (회원과 동일 발송 경로).
+     *
+     * @effects ecommerce_guest_order_context_exposes_guest_recipient
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_order_context_exposes_guest_recipient(): void
     {
@@ -162,6 +196,10 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 주문 시 저장된 locale 이 없으면 guest_recipient.locale 은 null (수신 측 app locale 폴백).
+     *
+     * @effects ecommerce_guest_recipient_locale_null_when_not_stored
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_recipient_locale_is_null_when_not_stored(): void
     {
@@ -174,6 +212,10 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * new_order_admin 알림 → 비회원 주문자명도 customer_name 으로 채워진다.
+     *
+     * @effects guest_order_notification_uses_orderer_name_and_lookup_url
+     *
+     * @return void 반환값 없음
      */
     public function test_new_order_admin_uses_orderer_name_for_guest(): void
     {
@@ -185,10 +227,92 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
+     * 결제완료·구매확정 관리자 알림도 신규 주문 관리자 알림과 같은 변수를 채운다.
+     *
+     * 두 알림은 정의만 있고 데이터 추출이 없어 코어 기본값(빈 data·context)으로 떨어졌다 — 메일 본문에
+     * `{order_number}` 원문이 그대로 나가고, context 에 주문번호가 없어 관리자 주소로 올리는 단계도 건너뛰었다.
+     *
+     * @effects staff_order_status_notifications_carry_order_data
+     *
+     * @return void 반환값 없음
+     */
+    public function test_staff_order_status_notifications_carry_order_data(): void
+    {
+        foreach (['order_confirmed_admin', 'order_completed_admin'] as $type) {
+            $order = $this->makeGuestOrder('비회원주문자', 'guest@example.com', 'ORD-STAFF-'.$type);
+            $order->total_amount = 12000;
+            $order->total_paid_amount = 12000;
+
+            $result = $this->listener->extractData($this->emptyDefault(), $type, [$order]);
+
+            $this->assertSame('ORD-STAFF-'.$type, $result['data']['order_number'] ?? null, $type.' 의 order_number 가 비었습니다.');
+            $this->assertSame('비회원주문자', $result['data']['customer_name'] ?? null, $type);
+            $this->assertSame('12,000원', $result['data']['total_amount'] ?? null, $type);
+            $this->assertSame('{recipient_name}', $result['data']['name'] ?? null, $type);
+            $this->assertArrayHasKey('order_url', $result['data'], $type);
+            $this->assertSame('ORD-STAFF-'.$type, $result['context']['order_number'] ?? null, $type.' 의 context 에 주문번호가 없어 관리자 주소로 올리지 못합니다.');
+        }
+    }
+
+    /**
+     * 비회원 주문 알림 6종은 주문자 연락처를 코어 표준 수신 전화번호 키로 data 에 싣는다.
+     *
+     * 비회원은 수신자 객체에 전화번호가 없으므로, 문자·알림톡 채널이 이커머스를 모른 채 읽을 수
+     * 있도록 도메인이 직접 싣는다(종전에는 문자 플러그인이 이커머스 주문 모델을 읽어 채웠다).
+     *
+     * @scenario recipient_type=guest, channel=mail
+     *
+     * @effects ecommerce_guest_order_data_carries_standard_recipient_phone
+     *
+     * @return void 반환값 없음
+     */
+    public function test_guest_order_data_carries_standard_recipient_phone(): void
+    {
+        $order = $this->makeGuestOrder('비회원주문자', 'guest@example.com', 'ORD-GUEST-PHONE');
+        $order->shippingAddress->setAttribute('orderer_phone', '010-1234-5678');
+
+        // 6종이 모두 같은 buildOrderData 를 지나므로 DB 조회가 없는 두 유형으로 대표한다
+        foreach (['order_confirmed', 'order_completed'] as $type) {
+            $result = $this->listener->extractData($this->emptyDefault(), $type, [$order]);
+
+            $this->assertSame(
+                '010-1234-5678',
+                $result['data'][GenericNotification::RECIPIENT_PHONE_KEY] ?? null,
+                "{$type} 알림 data 에 표준 수신 전화번호 키가 있어야 합니다."
+            );
+        }
+    }
+
+    /**
+     * 회원 주문과 연락처 없는 비회원 주문은 표준 수신 전화번호 키를 싣지 않는다.
+     *
+     * 회원은 채널이 회원 휴대폰을 쓰고, 빈 번호를 실으면 채널이 빈 번호로 발송을 시도한다.
+     *
+     * @scenario recipient_type=member, channel=mail
+     *
+     * @effects ecommerce_member_order_data_has_no_recipient_phone
+     *
+     * @return void 반환값 없음
+     */
+    public function test_member_order_and_phoneless_guest_have_no_recipient_phone(): void
+    {
+        $member = $this->makeMemberOrder('회원', 'ORD-MEMBER-PHONE');
+        $member->shippingAddress->setAttribute('orderer_phone', '010-9999-0000');
+        $guest = $this->makeGuestOrder('비회원주문자', 'guest@example.com', 'ORD-GUEST-NOPHONE');
+
+        $memberResult = $this->listener->extractData($this->emptyDefault(), 'order_confirmed', [$member]);
+        $guestResult = $this->listener->extractData($this->emptyDefault(), 'order_confirmed', [$guest]);
+
+        $this->assertArrayNotHasKey(GenericNotification::RECIPIENT_PHONE_KEY, $memberResult['data']);
+        $this->assertArrayNotHasKey(GenericNotification::RECIPIENT_PHONE_KEY, $guestResult['data']);
+    }
+
+    /**
      * 회원 주문 모델(배송지 관계 포함)을 DB 없이 합성합니다.
      *
      * @param  string  $memberName  회원명
      * @param  string  $orderNumber  주문번호
+     * @return Order 결과 객체
      */
     private function makeMemberOrder(string $memberName, string $orderNumber): Order
     {
@@ -213,6 +337,8 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
      * @param  string  $ordererName  주문자명
      * @param  string  $ordererEmail  주문자 이메일
      * @param  string  $orderNumber  주문번호
+     * @param  ?string  $ordererLocale  주문자 선호 언어
+     * @return Order 결과 객체
      */
     private function makeGuestOrder(string $ordererName, string $ordererEmail, string $orderNumber, ?string $ordererLocale = null): Order
     {
@@ -235,7 +361,7 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
     /**
      * extract_data 기본 default 구조.
      *
-     * @return array{notifiable: null, notifiables: null, data: array, context: array}
+     * @return array{notifiable: null, notifiables: null, data: array, context: array} extract_data 기본 구조
      */
     private function emptyDefault(): array
     {
@@ -253,6 +379,10 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 무통장입금(dbank) + 입금 필요액 > 0 → 계좌/예금주/입금기한 + 차감 후 입금액 포함.
+     *
+     * @effects pending_deposit_notification_only_for_dbank_with_due_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_order_pending_deposit_includes_dbank_fields_and_post_mileage_amount(): void
     {
@@ -273,6 +403,10 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 입금 필요액이 0원(전액 마일리지/예치금 충당)이면 입금 안내를 발송하지 않는다 (빈 결과).
+     *
+     * @effects pending_deposit_notification_only_for_dbank_with_due_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_order_pending_deposit_suppressed_when_due_amount_zero(): void
     {
@@ -285,6 +419,10 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
 
     /**
      * 무통장입금이 아닌 결제수단(예: card)은 입금 안내를 발송하지 않는다 (빈 결과).
+     *
+     * @effects pending_deposit_notification_only_for_dbank_with_due_amount
+     *
+     * @return void 반환값 없음
      */
     public function test_order_pending_deposit_suppressed_for_non_dbank_method(): void
     {
@@ -301,6 +439,8 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
      * @param  string  $orderNumber  주문번호
      * @param  int  $totalDue  입금 필요액
      * @param  string  $paymentMethod  결제수단 (기본 dbank)
+     * @param  array  $currencySnapshot  통화 스냅샷
+     * @return Order 결과 객체
      */
     private function makeDbankOrder(string $orderNumber, int $totalDue, string $paymentMethod = 'dbank', array $currencySnapshot = []): Order
     {
@@ -332,6 +472,10 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
      *
      * 회귀: 종전엔 base 통화 정수 + '원' 하드코딩이라 "$6 입금"이 "6원"으로 잘못 안내됨.
      * 환산 후 결제 통화(KRW) 포맷으로 "7,058원" 안내해야 한다(PG 청구액과 동일 SSoT).
+     *
+     * @effects pending_deposit_amount_in_order_currency
+     *
+     * @return void 반환값 없음
      */
     public function test_order_pending_deposit_converts_base_usd_amount_to_order_currency(): void
     {
@@ -362,6 +506,8 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
      * @scenario transition_path=update, target_status=delivered, previous_status=different, order_count=single
      *
      * @effects order_delivered_extract_filter_handles_carrier_tracking
+     *
+     * @return void 반환값 없음
      */
     public function test_order_delivered_extract_returns_order_data_with_carrier_fields(): void
     {
@@ -383,6 +529,8 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
      * @scenario transition_path=update, target_status=delivered, previous_status=different, order_count=single
      *
      * @effects order_delivered_definition_registered
+     *
+     * @return void 반환값 없음
      */
     public function test_order_delivered_definition_is_registered(): void
     {
@@ -404,6 +552,8 @@ class EcommerceNotificationDataListenerTest extends ModuleTestCase
      * @scenario transition_path=complete_payment, target_status=payment_complete, previous_status=different, order_count=single
      *
      * @effects order_confirmed_label_means_payment_complete
+     *
+     * @return void 반환값 없음
      */
     public function test_order_confirmed_label_means_payment_complete(): void
     {

@@ -1,272 +1,273 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Board Form - List Tab Content"
-  },
-  "id": "section_list_card",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card"
-  },
-  "classMap": {
-    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-    "variants": {
-      "readonly": "opacity-60",
-      "normal": ""
-    }
-  },
-  "children": [
+    "comment": "게시판 폼 「목록」 탭 — 글 목록을 어떻게 늘어놓을지만 다룬다(정렬 기준과 방향, 한 쪽에 몇 건). 한 쪽 건수는 데스크톱과 모바일을 따로 두어 좁은 화면에서 더 적게 보일 수 있다",
+    "meta": {
+        "is_partial": true,
+        "description": "Board Form - List Tab Content"
+    },
+    "id": "section_list_card",
+    "type": "basic",
+    "name": "Div",
+    "classMap": {
+        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+        "variants": {
+            "readonly": "opacity-60",
+            "normal": ""
+        }
+    },
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
         {
-          "id": "section_list",
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-board.admin.form.tabs.list"
+            "id": "section_list",
+            "type": "basic",
+            "name": "H3",
+            "props": {
+                "className": "card-title"
+            },
+            "text": "$t:sirsoft-board.admin.form.tabs.list"
         },
         {
-          "id": "section_list_fields",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-        {
-          "id": "list_sort_group",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "grid-2col"
-          },
-          "children": [
-            {
-              "id": "order_by_field",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "id": "order_by_label",
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-board.admin.form.fields.order_by.label"
-                    }
-                  ]
-                },
-                {
-                  "id": "order_by_select",
-                  "type": "composite",
-                  "name": "Select",
-                  "props": {
-                    "name": "order_by",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "w-full",
-                    "options": [
-                      {
-                        "value": "created_at",
-                        "label": "$t:sirsoft-board.admin.form.fields.order_by.options.created_at"
-                      },
-                      {
-                        "value": "view_count",
-                        "label": "$t:sirsoft-board.admin.form.fields.order_by.options.view_count"
-                      },
-                      {
-                        "value": "title",
-                        "label": "$t:sirsoft-board.admin.form.fields.order_by.options.title"
-                      },
-                      {
-                        "value": "author",
-                        "label": "$t:sirsoft-board.admin.form.fields.order_by.options.author"
-                      }
-                    ]
-                  }
-                }
-              ]
+            "id": "section_list_fields",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "row-stack"
             },
-            {
-              "id": "order_direction_field",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
+            "children": [
                 {
-                  "id": "order_direction_label",
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-board.admin.form.fields.order_direction.label"
-                    }
-                  ]
-                },
-                {
-                  "id": "order_direction_select",
-                  "type": "composite",
-                  "name": "Select",
-                  "props": {
-                    "name": "order_direction",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "w-full",
-                    "options": [
-                      {
-                        "value": "DESC",
-                        "label": "$t:sirsoft-board.admin.form.fields.order_direction.options.desc"
-                      },
-                      {
-                        "value": "ASC",
-                        "label": "$t:sirsoft-board.admin.form.fields.order_direction.options.asc"
-                      }
+                    "id": "list_sort_group",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid-2col"
+                    },
+                    "children": [
+                        {
+                            "id": "order_by_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "id": "order_by_label",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.form.fields.order_by.label"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "order_by_select",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "props": {
+                                        "name": "order_by",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "w-full",
+                                        "options": [
+                                            {
+                                                "value": "created_at",
+                                                "label": "$t:sirsoft-board.admin.form.fields.order_by.options.created_at"
+                                            },
+                                            {
+                                                "value": "view_count",
+                                                "label": "$t:sirsoft-board.admin.form.fields.order_by.options.view_count"
+                                            },
+                                            {
+                                                "value": "title",
+                                                "label": "$t:sirsoft-board.admin.form.fields.order_by.options.title"
+                                            },
+                                            {
+                                                "value": "author",
+                                                "label": "$t:sirsoft-board.admin.form.fields.order_by.options.author"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "order_direction_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "id": "order_direction_label",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.form.fields.order_direction.label"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "order_direction_select",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "props": {
+                                        "name": "order_direction",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "w-full",
+                                        "options": [
+                                            {
+                                                "value": "DESC",
+                                                "label": "$t:sirsoft-board.admin.form.fields.order_direction.options.desc"
+                                            },
+                                            {
+                                                "value": "ASC",
+                                                "label": "$t:sirsoft-board.admin.form.fields.order_direction.options.asc"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
                     ]
-                  }
+                },
+                {
+                    "id": "list_per_page_group",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid-2col"
+                    },
+                    "children": [
+                        {
+                            "id": "per_page_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "id": "per_page_label",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.form.fields.per_page.label"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "per_page_input",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "per_page",
+                                        "min": "{{_local?.form?._meta?.limits?.per_page_min ?? 5}}",
+                                        "max": "{{_local?.form?._meta?.limits?.per_page_max ?? 100}}",
+                                        "required": true,
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "id": "per_page_hint",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.per_page.hint|min={{board_config?.data?.limits?.per_page_min ?? 5}}|max={{board_config?.data?.limits?.per_page_max ?? 100}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.per_page}}",
+                                    "props": {
+                                        "className": "form-error-xs mt-1"
+                                    },
+                                    "text": "{{_local.errors?.per_page?.[0] ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "per_page_mobile_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "id": "per_page_mobile_label",
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.form.fields.per_page_mobile.label"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "per_page_mobile_input",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "per_page_mobile",
+                                        "min": "{{_local?.form?._meta?.limits?.per_page_min ?? 5}}",
+                                        "max": "{{_local?.form?._meta?.limits?.per_page_max ?? 100}}",
+                                        "required": true,
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": ""
+                                    }
+                                },
+                                {
+                                    "id": "per_page_mobile_hint",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.form.fields.per_page_mobile.hint|min={{board_config?.data?.limits?.per_page_min ?? 5}}|max={{board_config?.data?.limits?.per_page_max ?? 100}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.per_page_mobile}}",
+                                    "props": {
+                                        "className": "form-error-xs mt-1"
+                                    },
+                                    "text": "{{_local.errors?.per_page_mobile?.[0] ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "list_per_page_group",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "grid-2col"
-          },
-          "children": [
-            {
-              "id": "per_page_field",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "id": "per_page_label",
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-board.admin.form.fields.per_page.label"
-                    }
-                  ]
-                },
-                {
-                  "id": "per_page_input",
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "per_page",
-                    "min": "{{_local?.form?._meta?.limits?.per_page_min ?? 5}}",
-                    "max": "{{_local?.form?._meta?.limits?.per_page_max ?? 100}}",
-                    "required": true,
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": ""
-                  }
-                },
-                {
-                  "id": "per_page_hint",
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.per_page.hint|min={{board_config?.data?.limits?.per_page_min ?? 5}}|max={{board_config?.data?.limits?.per_page_max ?? 100}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.per_page}}",
-                  "props": {
-                    "className": "form-error-xs mt-1"
-                  },
-                  "text": "{{_local.errors?.per_page?.[0] ?? ''}}"
-                }
-              ]
-            },
-            {
-              "id": "per_page_mobile_field",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "id": "per_page_mobile_label",
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:sirsoft-board.admin.form.fields.per_page_mobile.label"
-                    }
-                  ]
-                },
-                {
-                  "id": "per_page_mobile_input",
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "per_page_mobile",
-                    "min": "{{_local?.form?._meta?.limits?.per_page_min ?? 5}}",
-                    "max": "{{_local?.form?._meta?.limits?.per_page_max ?? 100}}",
-                    "required": true,
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": ""
-                  }
-                },
-                {
-                  "id": "per_page_mobile_hint",
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-board.admin.form.fields.per_page_mobile.hint|min={{board_config?.data?.limits?.per_page_min ?? 5}}|max={{board_config?.data?.limits?.per_page_max ?? 100}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.per_page_mobile}}",
-                  "props": {
-                    "className": "form-error-xs mt-1"
-                  },
-                  "text": "{{_local.errors?.per_page_mobile?.[0] ?? ''}}"
-                }
-              ]
-            }
-          ]
+            ]
         }
-          ]
-        }
-      ]
+    ]
 }

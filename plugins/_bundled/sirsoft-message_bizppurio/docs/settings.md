@@ -14,7 +14,7 @@
 | `sender_number` | `string` | - | 발신번호 |
 | `sender_key` | `string` | - | 알림톡 발신프로필 키 |
 
-기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.json`
+기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
 <!-- @generated:settings-schema END -->
 
 <!-- @intent START -->
@@ -23,9 +23,14 @@
 `is_test_mode` 의 기본값이 `true` 인 것이 이 플러그인의 안전장치입니다. 설치 직후에는 실제
 발송이 일어나지 않고, 운영자가 명시적으로 끄는 순간부터 **발송과 비용이 발생**합니다. 그
 전환 시점에만 필수값 검증이 걸리는 것도 같은 이유입니다 —
-`ValidateBizppurioSettingsListener` 가 `core.plugin_settings.update_rules` 로 운영 모드일
+`ValidateBizppurioSettingsListener` 가 `core.plugin_settings.update_validation_rules` 로 운영 모드일
 때만 아이디·비밀번호·API 키·발신번호를 요구합니다. 검수 모드에서는 비어 있어도 저장되어야
 합니다.
+
+같은 리스너가 저장 검증 때마다(검수·운영 모드 모두) 6개 항목의 이름을 요청 언어로 등록합니다
+(`messages.settings.{필드}_attribute`). 스키마 `label` 은 ko/en 만 들고 있어, 등록하지 않으면
+일본어 화면의 검증 오류에 한국어 항목 이름이 섞입니다. 설정 항목을 더하면 이 번역 키도 ko/en
+lang 과 언어팩에 함께 둡니다.
 
 크리덴셜 셋(`password` · `api_key` · `sender_key`)은 `frontend_schema` 에서 `expose: false`
 + `sensitive: true` 로 선언되어 **프론트엔드로 나가지 않습니다.** 관리자 설정 화면은 코어의
@@ -126,6 +131,13 @@ _등록하는 메뉴가 없습니다._
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 
 없음.
+
+**함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)
+
+| 확장 | 유형 | 번들 |
+|---|---|---|
+| `sirsoft-board` | 모듈 | ✅ |
+| `sirsoft-ecommerce` | 모듈 | ✅ |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->

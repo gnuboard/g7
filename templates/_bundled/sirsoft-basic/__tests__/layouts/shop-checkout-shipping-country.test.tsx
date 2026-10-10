@@ -16,6 +16,7 @@
 import { describe, it, expect } from 'vitest';
 import checkoutJson from '../../layouts/shop/checkout.json';
 import shippingJson from '../../layouts/partials/shop/_checkout_shipping.json';
+import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /** 객체 트리에서 조건을 만족하는 첫 노드를 깊이우선 탐색 */
 function findNode(node: any, predicate: (n: any) => boolean): any {
@@ -79,7 +80,7 @@ describe('A3: 배송국가 Select 변경 → PUT /checkout 재계산 (옵션1 �
     );
     expect(select, '배송국가 Select 노드가 존재해야 함').toBeDefined();
 
-    const changeAction = (select.actions ?? []).find((a: any) => a.type === 'change');
+    const changeAction = asArray(select?.actions).find((a: any) => a.type === 'change');
     expect(changeAction, 'Select change 액션이 존재해야 함').toBeDefined();
 
     const putCall = findNode(
@@ -100,7 +101,7 @@ describe('A3: 배송국가 Select 변경 → PUT /checkout 재계산 (옵션1 �
     expect(putCall.params.body).toContain('_local.checkout');
 
     // 재계산 결과를 checkoutData 에 반영
-    const onSuccess = putCall.onSuccess ?? [];
+    const onSuccess = asArray(putCall?.onSuccess);
     const updateDs = onSuccess.find(
       (a: any) => a.handler === 'updateDataSource' && a.params?.dataSourceId === 'checkoutData'
     );

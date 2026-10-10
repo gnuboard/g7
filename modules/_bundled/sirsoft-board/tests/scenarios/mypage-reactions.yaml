@@ -1,0 +1,88 @@
+feature: 마이페이지 「내 반응」 (조회·단건/선택 해제)
+
+description: |
+  이슈 #525 제보 ③ — 반응을 남긴 내역을 회원이 마이페이지에서 확인·관리할 수단이 없었다.
+  게시판 활동 탭 안 「내 반응」 서브탭으로 내 글·내 댓글과 같은 수준으로 제공한다 (결정 R3).
+
+  핵심 동작 (확정):
+    - 게시글 반응과 댓글 반응이 **한 목록**에 섞여 나온다 (target_type 으로 구분)
+    - 댓글 반응도 이동은 부모 글 상세로 간다 — 제목은 언제나 글 제목, 발췌는 댓글 본문 80자
+    - 대상이 삭제됐거나 게시판이 사라졌어도 행은 남는다. 어느 상태든 **해제는 허용**한다
+      (결정 R11) — 남긴 기록의 회수는 게시판 설정과 무관한 회원의 권리다
+    - 해제 시 대상의 reaction_counts 를 실제 행 수로 재집계한다. 대상이 하드 삭제됐으면
+      재집계할 캐시가 없으므로 조용히 넘어간다(행만 사라지면 된다)
+    - 선택 해제는 남의 ID·없는 ID 를 **조용히 건너뛰고** 실제 건수만 돌려준다 —
+      exists 를 걸면 "그 ID 가 존재하는가" 가 422/200 으로 갈려 ID 탐색 통로가 된다
+    - 필터 셀렉트 옵션(유형)은 목록 응답 메타로 온다. **비활성 유형도 포함** —
+      이미 끈 유형으로 남긴 과거 반응도 골라낼 수 있어야 한다
+    - 제목 전용 검색은 댓글 분기를 켜지 않는다(댓글에는 제목이 없다).
+      검색은 삭제된 대상을 결과에서 뺀다 — 링크 없는 행을 찾아 내도 할 일이 없다
+
+axes:
+  case:
+    - list_mixes_post_and_comment_rows
+    - filters_target_type_reaction_type_board_and_sort
+    - search_title_excludes_deleted_targets
+    - invalid_filter_values_rejected
+    - unknown_search_field_falls_back
+    - row_marks_target_board_deleted_and_reaction_off
+    - response_carries_type_meta_and_query_echo
+    - remove_single_own_only_and_recalculates
+    - bulk_remove_ignores_foreign_ids
+    - bulk_remove_validates_ids
+    - remove_allowed_when_reaction_off
+    - remove_tolerates_hard_deleted_target
+    - anonymous_user_unauthorized
+    - activity_stats_include_totals
+    - subtab_lists_rows_in_three_states
+    - subtab_bulk_selection_clears_on_navigation
+
+effects:
+  - mypage_filtered_empty_says_no_results
+  # 좁은 화면(390px) 가로 넘침·확인 버튼 커서 (K1 실측 2026-10-06)
+  - mypage_board_tabs_scroll_inside_bar_on_narrow_screen
+  # 처리 중 서버 오류는 400 이 아니라 500 (1.2.0 Fixed 122행 근거 잠금 — K1 실측 2026-10-06)
+  - my_reactions_server_error_returns_500
+  - mypage_reactions_search_input_shrinks_on_narrow_screen
+  - mypage_reaction_confirm_buttons_show_pointer
+  # 목록·대상 해석
+  - list_mixes_post_and_comment_targets
+  - targets_hydrated_without_n_plus_one
+  - list_filters_target_type_reaction_type_board_and_sort
+  - search_uses_like_and_excludes_deleted_targets
+  - invalid_filter_returns_422
+  # 7.1.0 실측 O-K3-3 — 모르는 검색 대상은 422 대신 기본(제목+내용)
+  - unknown_search_field_falls_back_to_title_content
+  - row_marks_reaction_off_board_deleted_and_target_deleted
+  - response_carries_reaction_types_meta_and_query_echo
+  # 해제
+  - remove_own_only_and_recalculates_counts
+  - remove_allowed_when_board_reaction_off
+  - remove_tolerates_missing_target
+  - bulk_remove_ignores_foreign_ids_and_reports_count
+  - bulk_remove_validates_ids
+  - guest_returns_401
+  # 통계
+  - activity_stats_include_reaction_and_report_totals
+
+  # 화면(레이아웃 계약)
+  - mypage_reactions_datasource_passes_seven_filters
+  - mypage_reactions_subtab_button_refetches_lazily
+  - mypage_reactions_rows_split_into_three_states
+  - mypage_reactions_target_badge_splits_post_and_comment
+  - mypage_reactions_select_all_covers_current_page_only
+  - mypage_reactions_search_and_paging_clear_selection
+  - mypage_reactions_single_and_bulk_modals_call_delete
+  - mypage_reactions_stats_card_counts_total_reactions
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/MyReactionsApiTest.php
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/mypage-board-reactions.test.tsx
+  - tests/Playwright/specs/user/mypage-reactions.spec.ts
+
+validation:
+  audit_rule: test-scenario-coverage
+  note: |
+    프론트(vitest) 커버리지는 레이아웃 JSON 계약 테스트로 잠근다 — 저작본(.g7.html)의 기계
+    산출물인 .json 을 직접 읽으므로, 화면을 고치고 다시 굽지 않으면 red 가 된다.
+    E2E(Playwright) 는 `playwright:seed-board-reaction` 시드로 세 상태의 행·비활성 유형·
+    탈퇴 회원을 고정해 두고 실브라우저로 잰다(되돌리기는 같은 커맨드 `--teardown`).

@@ -11,6 +11,7 @@ use App\Models\TemplateLayout;
 use App\Models\TemplateLayoutVersion;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
@@ -42,6 +43,11 @@ class LayoutControllerTest extends TestCase
 
     private string $token;
 
+    /**
+     * 테스트마다 관리자·일반 사용자와 토큰, 테스트용 템플릿을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -65,6 +71,9 @@ class LayoutControllerTest extends TestCase
     /**
      * 관리자 사용자 생성 (필요한 권한 포함)
      * admin 미들웨어를 통과하기 위해 admin 역할도 함께 할당
+     *
+     * @param  array<string>  $permissions  부여할 권한 식별자 목록
+     * @return User 권한을 가진 관리자 사용자
      */
     private function createAdminUser(array $permissions = []): User
     {
@@ -126,6 +135,8 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 인증된 요청 헬퍼 메서드
+     *
+     * @return static 인증 헤더를 붙인 테스트 인스턴스
      */
     private function authRequest(): static
     {
@@ -137,6 +148,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 레이아웃 목록 조회 성공
+     *
+     * @scenario endpoint=layout_index
+     *
+     * @effects layout_index_lists_layout_files
+     *
+     * @return void 반환값 없음
      */
     public function test_can_list_layouts(): void
     {
@@ -186,6 +203,8 @@ class LayoutControllerTest extends TestCase
      * 이 대체 경로가 끊기면 화면의 크기 표기가 전부 `0 B` 가 되므로 본문 프루닝과 한 몸이다.
      *
      * @effects layout_size_reported_without_reading_content, list_query_does_not_select_content_column
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_list_reports_size_without_hydrating_content(): void
     {
@@ -225,6 +244,8 @@ class LayoutControllerTest extends TestCase
      * @scenario resource=layout,endpoint=list,observation=response_payload
      *
      * @effects list_omits_layout_content
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_list_omits_content_and_parsed_blocks(): void
     {
@@ -250,6 +271,8 @@ class LayoutControllerTest extends TestCase
      * @scenario resource=layout,endpoint=detail,observation=response_payload
      *
      * @effects detail_still_returns_full_payload
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_detail_still_provides_content_and_parsed_blocks(): void
     {
@@ -270,6 +293,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 화면이 쓰는 크기 표시는 목록에서도 유지된다.
+     *
+     * @scenario endpoint=layout_index
+     *
+     * @effects layout_index_lists_layout_files
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_list_keeps_size_fields_used_by_editor(): void
     {
@@ -291,6 +320,12 @@ class LayoutControllerTest extends TestCase
      *
      * 팩토리 템플릿은 실제 routes.json 이 없어 매핑이 비므로 route_path 는 null 이다.
      * 실제 routes.json 기반 매핑 검증은 TemplateService 단위 테스트가 담당.
+     *
+     * @scenario endpoint=layout_index
+     *
+     * @effects layout_index_lists_layout_files
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_list_includes_route_path_field(): void
     {
@@ -312,6 +347,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 인증되지 않은 사용자 접근 거부
+     *
+     * @scenario endpoint=layout_index
+     *
+     * @effects layout_api_rejects_unauthorized
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_list_layouts(): void
     {
@@ -324,6 +365,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자 접근 거부
+     *
+     * @scenario endpoint=layout_index
+     *
+     * @effects layout_api_rejects_unauthorized
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_list_layouts(): void
     {
@@ -337,6 +384,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 빈 목록 조회 (레이아웃이 없을 때)
+     *
+     * @scenario endpoint=layout_index
+     *
+     * @effects layout_index_lists_layout_files
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_empty_array_when_no_layouts(): void
     {
@@ -351,6 +404,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 레이아웃 상세 조회 성공
+     *
+     * @scenario endpoint=layout_show
+     *
+     * @effects layout_show_returns_layout_document
+     *
+     * @return void 반환값 없음
      */
     public function test_can_show_layout(): void
     {
@@ -395,6 +454,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 존재하지 않는 레이아웃 조회 시 404 응답
+     *
+     * @scenario endpoint=layout_show
+     *
+     * @effects layout_show_returns_layout_document
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_404_for_nonexistent_layout(): void
     {
@@ -408,6 +473,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 인증되지 않은 사용자는 레이아웃 상세 조회 불가
+     *
+     * @scenario endpoint=layout_show
+     *
+     * @effects layout_api_rejects_unauthorized
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_show_layout(): void
     {
@@ -425,6 +496,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자는 레이아웃 상세 조회 불가
+     *
+     * @scenario endpoint=layout_show
+     *
+     * @effects layout_api_rejects_unauthorized
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_show_layout(): void
     {
@@ -443,6 +520,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 레이아웃 업데이트 성공
+     *
+     * @scenario endpoint=layout_update
+     *
+     * @effects layout_update_saves_and_keeps_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_can_update_layout(): void
     {
@@ -506,6 +589,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 레이아웃 업데이트 시 유효성 검증 실패
+     *
+     * @scenario endpoint=layout_update
+     *
+     * @effects layout_update_saves_and_keeps_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_update_layout_validation_fails(): void
     {
@@ -536,6 +625,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 존재하지 않는 레이아웃 업데이트 시 500 응답
+     *
+     * @scenario endpoint=layout_update
+     *
+     * @effects layout_update_saves_and_keeps_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_update_nonexistent_layout_returns_500(): void
     {
@@ -569,6 +664,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자는 레이아웃 업데이트 불가
+     *
+     * @scenario endpoint=layout_update
+     *
+     * @effects layout_api_rejects_unauthorized
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_update_layout(): void
     {
@@ -599,6 +700,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 레이아웃 상세 조회 시 민감한 정보 제외
+     *
+     * @scenario endpoint=layout_show
+     *
+     * @effects layout_show_returns_layout_document
+     *
+     * @return void 반환값 없음
      */
     public function test_response_excludes_sensitive_fields(): void
     {
@@ -622,6 +729,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 레이아웃 버전 목록 조회 성공
+     *
+     * @scenario endpoint=layout_versions
+     *
+     * @effects layout_versions_listed_and_shown
+     *
+     * @return void 반환값 없음
      */
     public function test_can_list_layout_versions(): void
     {
@@ -670,6 +783,8 @@ class LayoutControllerTest extends TestCase
      * @scenario resource=layout_version,endpoint=list,observation=response_payload
      *
      * @effects list_omits_layout_content
+     *
+     * @return void 반환값 없음
      */
     public function test_version_list_omits_layout_body(): void
     {
@@ -702,6 +817,8 @@ class LayoutControllerTest extends TestCase
      * 걸러내지 않으면 `"updated_at": {}` 라는 빈 객체가 응답에 남는다.
      *
      * @effects list_payload_has_no_empty_object_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_version_list_does_not_leak_unfulfilled_conditional_fields(): void
     {
@@ -731,6 +848,8 @@ class LayoutControllerTest extends TestCase
      * 하나가 수천 건을 한 응답에 담게 된다.
      *
      * @effects version_list_request_carries_limit
+     *
+     * @return void 반환값 없음
      */
     public function test_version_list_is_capped_and_accepts_limit(): void
     {
@@ -771,6 +890,8 @@ class LayoutControllerTest extends TestCase
      * 버전 목록에 저장자 이름(created_by_name)이 노출되되 created_by ID 는 제외
      *
      * @effects version_resource_exposes_creator_name_not_id, version_row_shows_creator_name_or_unknown_fallback
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_versions_expose_creator_name_not_id(): void
     {
@@ -798,6 +919,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 탈퇴/미상 저장자(created_by null)는 created_by_name 이 null
+     *
+     * @scenario endpoint=layout_versions
+     *
+     * @effects layout_versions_listed_and_shown
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_versions_creator_name_null_when_no_creator(): void
     {
@@ -822,6 +949,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 존재하지 않는 레이아웃의 버전 조회 시 404 응답
+     *
+     * @scenario endpoint=layout_versions
+     *
+     * @effects layout_versions_listed_and_shown
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_404_for_nonexistent_layout_versions(): void
     {
@@ -835,6 +968,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자는 버전 목록 조회 불가
+     *
+     * @scenario endpoint=layout_versions
+     *
+     * @effects layout_api_rejects_unauthorized
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_list_versions(): void
     {
@@ -857,6 +996,8 @@ class LayoutControllerTest extends TestCase
      * @scenario resource=layout_version,endpoint=detail,observation=response_payload
      *
      * @effects detail_still_returns_full_payload
+     *
+     * @return void 반환값 없음
      */
     public function test_can_show_specific_version(): void
     {
@@ -923,6 +1064,8 @@ class LayoutControllerTest extends TestCase
      * 버전이 404 가 된다 — 단건은 반드시 버전 번호로 직접 조회해야 한다.
      *
      * @effects version_detail_reaches_rows_beyond_list_cap
+     *
+     * @return void 반환값 없음
      */
     public function test_show_version_reaches_versions_beyond_the_list_cap(): void
     {
@@ -947,6 +1090,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 버전 목록(index)에는 full_content 를 포함하지 않는다 (페이로드 비대화 회피)
+     *
+     * @scenario endpoint=layout_versions
+     *
+     * @effects layout_versions_listed_and_shown
+     *
+     * @return void 반환값 없음
      */
     public function test_version_index_excludes_full_content(): void
     {
@@ -971,6 +1120,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 존재하지 않는 버전 조회 시 404 응답
+     *
+     * @scenario endpoint=layout_versions
+     *
+     * @effects layout_versions_listed_and_shown
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_404_for_nonexistent_version(): void
     {
@@ -989,6 +1144,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자는 특정 버전 조회 불가
+     *
+     * @scenario endpoint=layout_versions
+     *
+     * @effects layout_api_rejects_unauthorized
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_show_version(): void
     {
@@ -1012,6 +1173,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 버전 응답에 민감한 정보 제외
+     *
+     * @scenario endpoint=layout_versions
+     *
+     * @effects layout_versions_listed_and_shown
+     *
+     * @return void 반환값 없음
      */
     public function test_version_response_excludes_sensitive_fields(): void
     {
@@ -1038,6 +1205,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 버전 복원 성공
+     *
+     * @scenario endpoint=layout_restore
+     *
+     * @effects layout_version_restored
+     *
+     * @return void 반환값 없음
      */
     public function test_can_restore_version(): void
     {
@@ -1102,6 +1275,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 존재하지 않는 버전 복원 시 404 응답
+     *
+     * @scenario endpoint=layout_restore
+     *
+     * @effects layout_version_restored
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_nonexistent_version_returns_404(): void
     {
@@ -1120,6 +1299,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 존재하지 않는 레이아웃의 버전 복원 시 404 응답
+     *
+     * @scenario endpoint=layout_restore
+     *
+     * @effects layout_version_restored
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_version_for_nonexistent_layout_returns_404(): void
     {
@@ -1133,6 +1318,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 권한 없는 사용자는 버전 복원 불가
+     *
+     * @scenario endpoint=layout_restore
+     *
+     * @effects layout_api_rejects_unauthorized
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthorized_user_cannot_restore_version(): void
     {
@@ -1156,6 +1347,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 버전 복원 후 새 버전이 생성되는지 확인
+     *
+     * @scenario endpoint=layout_restore
+     *
+     * @effects layout_version_restored
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_creates_new_version(): void
     {
@@ -1217,6 +1414,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 다른 레이아웃의 버전으로 복원 시도 시 404 응답
+     *
+     * @scenario endpoint=layout_restore
+     *
+     * @effects layout_version_restored
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_restore_version_from_different_layout(): void
     {
@@ -1250,6 +1453,12 @@ class LayoutControllerTest extends TestCase
      * 저장 시 2개의 버전이 생성되어야 함:
      * 1. 이전 버전 (롤백용)
      * 2. 현재 저장 버전 (최신 상태 기록)
+     *
+     * @scenario endpoint=layout_update
+     *
+     * @effects layout_update_saves_and_keeps_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_update_layout_creates_both_old_and_new_versions(): void
     {
@@ -1314,6 +1523,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 연속 업데이트 시 버전 히스토리가 올바르게 누적되는지 확인
+     *
+     * @scenario endpoint=layout_update
+     *
+     * @effects layout_update_saves_and_keeps_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_multiple_updates_accumulate_version_history_correctly(): void
     {
@@ -1393,6 +1608,12 @@ class LayoutControllerTest extends TestCase
      *
      * meta 필드가 validated() 결과에 포함되어 저장되는지 확인
      * (이전에는 rules에 없어서 meta가 사라지는 버그가 있었음)
+     *
+     * @scenario endpoint=layout_update
+     *
+     * @effects layout_update_saves_and_keeps_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_update_layout_preserves_meta_field(): void
     {
@@ -1445,6 +1666,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 레이아웃 업데이트 시 modals, state, init_actions 필드 포함
+     *
+     * @scenario endpoint=layout_update
+     *
+     * @effects layout_update_saves_and_keeps_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_update_layout_preserves_additional_fields(): void
     {
@@ -1519,6 +1746,12 @@ class LayoutControllerTest extends TestCase
      * 하위에 title/description 등 일부 키만 명시돼 있으면 명시되지 않은 meta 하위 키는 저장 시
      * 누락된다. guest_only 가 사라지면 비로그인 전용 레이아웃(로그인/회원가입/비번찾기/재설정)이
      * 편집기 저장 후 reload 시 "이미 로그인" 가드가 오발화한다.
+     *
+     * @scenario endpoint=layout_update
+     *
+     * @effects layout_update_saves_and_keeps_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_update_layout_preserves_non_seo_meta_keys(): void
     {
@@ -1577,6 +1810,12 @@ class LayoutControllerTest extends TestCase
      * content.meta.seo 도 'array' 규칙이고 enabled/data_sources/priority 등 일부 하위 키만
      * 명시돼 있어, 명시되지 않은 seo 하위 키(SEO 페이지 생성기가 소비하는 vars/page_type 등)가
      * 저장 시 누락된다.
+     *
+     * @scenario endpoint=layout_update
+     *
+     * @effects layout_update_saves_and_keeps_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_update_layout_preserves_non_standard_seo_keys(): void
     {
@@ -1641,6 +1880,12 @@ class LayoutControllerTest extends TestCase
      *
      * 이 키들은 엔진이 상태 초기화/에러 처리/액션에 소비하지만 rules() 에 없어 validated() 에서
      * 누락된다. 저장 시마다 레이아웃 동작 정의가 사라지는 손상.
+     *
+     * @scenario endpoint=layout_update
+     *
+     * @effects layout_update_saves_and_keeps_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_update_layout_preserves_content_top_state_action_keys(): void
     {
@@ -1699,6 +1944,12 @@ class LayoutControllerTest extends TestCase
      * 레이아웃 업데이트 시 플러그인 settings 전용 키 보존 (pageConfig / schema)
      *
      * 플러그인 설정 레이아웃이 content 직속에 두는 pageConfig/schema 키도 저장 시 누락된다.
+     *
+     * @scenario endpoint=layout_update
+     *
+     * @effects layout_update_saves_and_keeps_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_update_layout_preserves_plugin_settings_keys(): void
     {
@@ -1746,6 +1997,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 레이아웃 업데이트 시 extends 레이아웃도 모든 필드 보존
+     *
+     * @scenario endpoint=layout_update
+     *
+     * @effects layout_update_saves_and_keeps_fields
+     *
+     * @return void 반환값 없음
      */
     public function test_update_extends_layout_preserves_all_fields(): void
     {
@@ -1845,6 +2102,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 미리보기 생성 성공
+     *
+     * @scenario endpoint=layout_preview
+     *
+     * @effects layout_preview_token_issued
+     *
+     * @return void 반환값 없음
      */
     public function test_can_store_preview(): void
     {
@@ -1875,7 +2138,9 @@ class LayoutControllerTest extends TestCase
 
         $token = $response->json('data.token');
         $this->assertNotEmpty($token);
-        $this->assertStringStartsWith('/preview/', $response->json('data.preview_url'));
+        // 팩토리 템플릿 종류는 무작위다 — 관리자 템플릿이면 관리자 셸 주소다(아래 종류별 테스트 참고).
+        $expectedPrefix = $this->template->type === 'admin' ? '/admin/preview/' : '/preview/';
+        $this->assertSame($expectedPrefix.$token, $response->json('data.preview_url'));
 
         // DB에 저장 확인
         $this->assertDatabaseHas('template_layout_previews', [
@@ -1888,6 +2153,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 슬래시 포함 레이아웃 이름으로 미리보기 생성 성공
+     *
+     * @scenario endpoint=layout_preview
+     *
+     * @effects layout_preview_token_issued
+     *
+     * @return void 반환값 없음
      */
     public function test_can_store_preview_with_slash_in_layout_name(): void
     {
@@ -1917,7 +2188,55 @@ class LayoutControllerTest extends TestCase
     }
 
     /**
+     * 미리보기 주소는 템플릿 종류의 화면 셸을 가리킨다 (7.1.0 O-G3-6).
+     *
+     * 관리자 템플릿 레이아웃을 사용자 셸(`/preview/{token}`)로 열면 활성 사용자 템플릿의 컴포넌트·다국어·라우트로
+     * 그려졌다. 관리자 템플릿은 `/admin/preview/{token}`, 사용자 템플릿은 `/preview/{token}` 이다.
+     *
+     * @scenario endpoint=layout_preview
+     *
+     * @effects preview_url_shell_matches_template_type
+     *
+     * @param  string  $type  템플릿 종류(admin|user)
+     * @param  string  $prefix  기대하는 미리보기 주소 접두
+     * @return void 반환값 없음
+     */
+    #[DataProvider('previewShellProvider')]
+    public function test_store_preview_url_matches_template_type_shell(string $type, string $prefix): void
+    {
+        $template = Template::factory()->create(['type' => $type]);
+        TemplateLayout::factory()->create(['template_id' => $template->id, 'name' => 'main']);
+
+        $response = $this->authRequest()
+            ->postJson("/api/admin/templates/{$template->identifier}/layouts/main/preview", [
+                'content' => ['version' => '1.0.0', 'layout_name' => 'main', 'components' => []],
+            ]);
+
+        $response->assertStatus(200);
+        $this->assertSame($prefix.$response->json('data.token'), $response->json('data.preview_url'));
+    }
+
+    /**
+     * 템플릿 종류별 기대 미리보기 주소 접두를 제공합니다.
+     *
+     * @return array<string, array{0: string, 1: string}> 데이터셋 이름별 [템플릿 종류, 기대 주소 접두]
+     */
+    public static function previewShellProvider(): array
+    {
+        return [
+            'admin 템플릿' => ['admin', '/admin/preview/'],
+            'user 템플릿' => ['user', '/preview/'],
+        ];
+    }
+
+    /**
      * 미리보기 생성 시 content 필수 검증
+     *
+     * @scenario endpoint=layout_preview
+     *
+     * @effects layout_preview_token_issued
+     *
+     * @return void 반환값 없음
      */
     public function test_store_preview_requires_content(): void
     {
@@ -1932,6 +2251,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 동일 조합으로 미리보기 재생성 시 이전 미리보기 삭제
+     *
+     * @scenario endpoint=layout_preview
+     *
+     * @effects layout_preview_token_issued
+     *
+     * @return void 반환값 없음
      */
     public function test_store_preview_replaces_existing_preview(): void
     {
@@ -1960,6 +2285,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 존재하지 않는 템플릿으로 미리보기 생성 시 404
+     *
+     * @scenario endpoint=layout_preview
+     *
+     * @effects layout_preview_token_issued
+     *
+     * @return void 반환값 없음
      */
     public function test_store_preview_with_nonexistent_template_returns_404(): void
     {
@@ -1975,6 +2306,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 미인증 사용자 미리보기 생성 불가
+     *
+     * @scenario endpoint=layout_preview
+     *
+     * @effects layout_api_rejects_unauthorized
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_store_preview(): void
     {
@@ -1989,6 +2326,12 @@ class LayoutControllerTest extends TestCase
 
     /**
      * 슬래시 포함 레이아웃 이름 조회 성공
+     *
+     * @scenario endpoint=layout_show
+     *
+     * @effects layout_show_returns_layout_document
+     *
+     * @return void 반환값 없음
      */
     public function test_can_show_layout_with_slash_in_name(): void
     {

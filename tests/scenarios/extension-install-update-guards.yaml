@@ -1,0 +1,54 @@
+feature: 확장 설치와 업데이트의 요청 검증, 안내 문구, 오토로드 순서, 파일 잠금 도우미
+
+description: |
+  확장 업데이트 요청의 레이아웃 전략과 vendor 설치 방식 검증, 플러그인 설치 검증 문구, 업데이트 다국어 키, 설치 때 오토로드 경로 등록 순서, Windows 파일 잠금 감지 도우미를 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
+  축 concern 은 지키는 대상(요청 검증 규칙과 안내, 번역 키, 설치 때 오토로드 순서, 파일 잠금 해제), extension_type 은 그 대상이 받는 확장 종류다.
+  파일 잠금 도우미는 확장 종류를 받지 않아 agnostic 으로 적는다.
+
+axes:
+  concern: [request_validation, translation_key, autoload_order, file_lock]
+  extension_type: [module, plugin, agnostic]
+
+exclusions:
+  - { concern: [request_validation, translation_key, autoload_order], extension_type: agnostic,
+      reason: "요청 클래스, 언어 파일, 설치 흐름이 모듈과 플러그인 쪽에 따로 있어 종류를 가리지 않는 공통 대상이 없다." }
+  - { concern: file_lock, extension_type: [module, plugin],
+      reason: "파일 잠금 도우미는 디렉터리 경로만 받고 확장 종류를 입력으로 받지 않는다." }
+
+effects:
+  - module_update_request_accepts_valid_layout_strategy
+  - plugin_update_request_accepts_valid_layout_strategy
+  - module_update_request_rejects_invalid_layout_strategy
+  - plugin_update_request_rejects_invalid_layout_strategy
+  - module_update_request_layout_strategy_is_optional
+  - module_update_request_accepts_valid_vendor_mode
+  - plugin_update_request_rejects_invalid_vendor_mode
+  - github_install_messages_are_resolved
+  - file_install_messages_are_resolved
+  - manifest_preview_messages_are_resolved
+  - install_validation_keys_defined_in_all_base_locales
+  - ko_translation_key_exists
+  - en_translation_key_exists
+  - ko_and_en_translations_differ
+  - placeholder_substitution_works
+  - en_placeholder_substitution_works
+  - autoload_paths_are_registered_between_copy_and_entry_file_load
+  - windows_detection_matches_os_family
+  - find_locking_processes_returns_empty_when_no_locks
+  - find_locking_processes_returns_empty_for_nonexistent_dir
+  - kill_processes_with_empty_array_returns_empty
+  - kill_processes_protects_system_processes
+  - release_locks_returns_true_when_no_locks
+  - release_locks_calls_output_callback
+  - detect_locked_file_on_windows
+  - find_locking_processes_respects_max_files
+  - kill_result_accounts_for_every_process
+
+test_files:
+  - tests/Unit/Http/Requests/PerformExtensionUpdateRequestTest.php
+  - tests/Unit/Http/Requests/PluginInstallRequestMessagesTest.php
+  - tests/Unit/Extension/ModuleUpdateI18nTest.php
+  - tests/Unit/Extension/ExtensionInstallAutoloadOrderTest.php
+  - tests/Unit/Extension/FileHandleHelperTest.php

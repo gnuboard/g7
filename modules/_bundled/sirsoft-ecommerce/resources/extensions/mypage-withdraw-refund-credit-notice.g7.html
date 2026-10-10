@@ -1,0 +1,7 @@
+<!-- 탈퇴 확인 창에 「환불로 받은 마일리지도 소멸된다」를 덧붙이는 조각(Q20). 현금 환불을 마일리지로 받은 회원이 탈퇴하면 그 돈도 함께 사라지므로 탈퇴 전에 따로 알린다. 숫자는 로그인 사용자 정보(`user.data.ecommerce_mileage.refund_credit_available`)에서 읽는다. 경고 목록은 모달 안이라 target-id 오버레이가 닿지 않아, 템플릿이 연 확장점(withdraw_warnings)에 넣는다. -->
+<extension extension-point="withdraw_warnings" priority="320">
+  <li data-ref="ext_withdraw_refund_credit_warning" data-if="{{(user?.data?.ecommerce_mileage?.refund_credit_available ?? 0) > 0}}" class="flex items-center gap-2 mt-2 text-amber-700 dark:text-amber-300">
+    <icon name="triangle-exclamation" size="sm" class="text-amber-500"/>
+    <span>$t:sirsoft-ecommerce.user_mileage.withdraw_refund_credit_warning|amount={{(user?.data?.ecommerce_mileage?.refund_credit_available ?? 0).toLocaleString()}}</span>
+  </li>
+</extension>

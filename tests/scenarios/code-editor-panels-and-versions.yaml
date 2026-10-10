@@ -1,0 +1,48 @@
+feature: 코드 편집기의 패널 폭 · 저장 후 목록 갱신 · 판본 이력 상한
+
+description: |
+  편집기 화면에서 **본문 편집과 무관한 세 가지 약속**을 잠근다. 셋 다 조용히 깨지는 부류다 —
+  화면은 뜨고 저장도 되므로 보고 알기 어렵다.
+
+  ① **패널 폭·높이** — 파일 목록은 내용 길이로 밀리지 않고(shrink-0), 편집기는 남는 폭을 갖는다.
+     폭 **값**은 이제 트리 컴포넌트가 소유한다(240~480px 드래그 + 기억) — 레이아웃은 "이 칸은
+     내용으로 밀리지 않는다" 만 선언한다(#476 개편). 긴 파일명은 줄바꿈이 아니라 **폴더 분할**로
+     가둔다: 트리가 마지막 세그먼트만 보이고 전체 경로는 툴팁으로 남긴다.
+     높이도 같은 규약이다 — 고정 계산식(`calc(100vh - 420px)`)을 버리고 카드가 남는 높이를 가져간다.
+     기준은 `dvh` 다(iOS 주소창이 수축하면 `vh` 는 어긋난다).
+
+  ② **저장 후 목록 갱신** — 목록은 저장으로 바뀌는 값(설명·크기·수정일)을 보여준다. 상세만
+     다시 부르면 방금 저장한 행이 저장 전 값으로 남는다.
+
+  ③ **판본 이력 상한** — 서버가 상한 조회만 지원하므로(#518) `limit` 이 없으면 100건을 넘는
+     버전은 이 화면에서 **어떤 조작으로도 도달할 수 없다**. 「더 보기」가 한 묶음씩 넓히고
+     서버 상한에서 멈춘다. 모달을 열 때 상한을 초기화하지 않으면 다른 레이아웃 이력으로 이월된다.
+
+  축은 **무엇을 잠그는가**(약속)와 **어디서 재는가**(레이아웃 선언 / 브라우저)다. 레이아웃 선언
+  검사는 데이터소스·액션이 규약대로 적혔는지를 보고, 브라우저는 그 선언이 실제 화면에서
+  약속대로 동작하는지를 본다 — 선언만 보면 렌더 결과를 모르고, 브라우저만 보면 왜 그런지 모른다.
+
+axes:
+  promise: [panel_width, list_refresh_after_save, version_limit]
+  surface: [layout_declaration, browser]
+
+exclusions:
+  - { promise: version_limit, surface: browser,
+      reason: "판본 상한은 서버 상한(500)까지 눌러야 드러나는데 브라우저에서 그만큼의 판본을 만들면 실행 시간이 분 단위가 된다 — 선언 검사가 limit 부착·초기화·묶음 확장을 모두 덮고, 브라우저는 version-history-paging.spec.ts 가 첫 묶음만 확인한다" }
+
+effects:
+  # ① 패널 폭·높이
+  - file_list_and_editor_keep_their_own_width_rules
+  - long_file_name_wraps_instead_of_widening_the_list      # 이제 폴더 분할 + 마지막 세그먼트로 가둔다
+  - editor_height_flexes_instead_of_fixed_calc             # 고정 calc 금지 · dvh 기준 (D13)
+  - editor_pane_is_wider_than_the_file_list_in_the_browser
+  # ② 저장 후 목록 갱신
+  - successful_save_refetches_both_detail_and_list
+  - successful_save_refetches_the_file_list_in_the_browser
+  # ③ 판본 이력 상한
+  - version_query_carries_a_limit_and_resets_on_open
+  - load_more_widens_the_limit_one_page_at_a_time_and_stops_at_the_server_cap
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-template-layout-edit-panels-and-versions.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-panels-and-list-refresh.spec.ts

@@ -9,6 +9,9 @@ return [
     // 복사 작업 시 이름에 추가되는 locale 별 접미사 (ProductNoticeTemplateRepository 등에서 사용)
     'copy_suffix' => ' (복사)',
 
+    // 입금 전 취소 주문의 가상계좌를 PG 에서 닫을 때 보내는 취소 사유 (P-D1)
+    'vbank_close_reason' => '입금 전 주문 취소',
+
     'categories' => [
         'list_retrieved' => '카테고리 목록을 조회했습니다.',
         'retrieved' => '카테고리 정보를 조회했습니다.',
@@ -174,6 +177,8 @@ return [
 
     // 주문 메시지 (관리자향 - plural)
     'orders' => [
+        'manual_paid_preview_retrieved' => '결제 처리 항목을 확인했습니다.',
+        'manual_paid_preview_failed' => '결제 처리 항목을 확인하지 못했습니다.',
         'list_retrieved' => '주문 목록을 조회했습니다.',
         'retrieved' => '주문 정보를 조회했습니다.',
         'not_found' => '주문을 찾을 수 없습니다.',
@@ -204,10 +209,12 @@ return [
         'log_bulk_updated' => ':count건의 주문이 일괄 변경되었습니다.',
         'email_sent' => '이메일이 발송되었습니다.',
         'email_send_failed' => '이메일 발송에 실패했습니다.',
+        'email_channel_disabled' => '메일 채널이 꺼져 있거나 메일 설정·템플릿이 준비되지 않아 보낼 수 없습니다. 이커머스 환경설정 > 알림에서 메일 채널과 「주문 안내 메일」 템플릿을 확인해 주세요.',
         'email_subject' => '[:app_name] 주문 :order_number 관련 안내',
         'fetch_success' => '주문 정보를 조회했습니다.',
         'fetch_failed' => '주문 정보 조회에 실패했습니다.',
         'cancelled' => '주문이 취소되었습니다.',
+        'cancel_refund_requested' => '환불신청서가 접수되었습니다. 환불이 완료되면 주문이 취소됩니다.',
         'cancel_failed' => '주문 취소에 실패했습니다.',
         'estimate_refund_success' => '환불 예상금액을 조회했습니다.',
         'estimate_refund_failed' => '환불 예상금액 조회에 실패했습니다.',
@@ -215,9 +222,12 @@ return [
         'guest_password_reset_failed' => '비회원 조회 비밀번호 재설정에 실패했습니다.',
         'guest_password_reset_not_guest' => '비회원 주문만 조회 비밀번호를 재설정할 수 있습니다.',
         'deposit_confirmed' => '입금이 확인되어 결제완료 처리되었습니다.',
+        'deposit_recorded' => '입금 내역을 기록했습니다. 주문 상태는 결제대기로 유지됩니다.',
+        'deposit_recorded_status_kept' => '입금 내역과 결제금액을 기록했습니다. 이미 결제 이후 단계인 주문이라 주문 상태는 그대로 유지됩니다.',
         'deposit_confirm_failed' => '입금확인 처리에 실패했습니다.',
         'deposit_amount_mismatch' => '입금액이 결제예정금액과 일치하지 않습니다.',
         'deposit_not_dbank' => '무통장입금 주문만 입금확인할 수 있습니다.',
+        'deposit_order_cancelled' => '취소된 주문은 입금확인할 수 없습니다.',
         'deposit_not_pending' => '미결제 상태의 주문만 입금확인할 수 있습니다.',
         'payment_name_summary' => ':name 외 :count건',
         'deposit' => [
@@ -264,6 +274,9 @@ return [
 
     // 장바구니 메시지
     'cart' => [
+        'admin_list_retrieved' => '장바구니 목록을 조회했습니다.',
+        'admin_deleted' => '장바구니 항목을 삭제했습니다.',
+        'admin_bulk_deleted' => ':count개의 장바구니 항목을 삭제했습니다.',
         'list_retrieved' => '장바구니 목록을 조회했습니다.',
         'added' => '장바구니에 상품이 추가되었습니다.',
         'bulk_added' => ':count개 상품이 장바구니에 추가되었습니다.',
@@ -374,6 +387,8 @@ return [
         'not_earning' => '적립 거래만 수정할 수 있습니다.',
         'expiry_not_editable' => '이미 소멸되었거나 모두 사용된 적립건은 유효기간을 변경할 수 없습니다.',
         'expiry_before_earned' => '유효기간은 적립일시보다 이전일 수 없습니다.',
+        // 적립 마일리지 표기 — 통화가 아니라 포인트 단위다(`:points` 는 천 단위 구분이 끝난 숫자).
+        'points_format' => ':pointsP',
     ],
 
     // 임시주문 메시지
@@ -464,7 +479,81 @@ return [
         'updated' => '클레임 사유가 수정되었습니다.',
         'deleted' => '클레임 사유가 삭제되었습니다.',
         'toggled' => '클레임 사유 상태가 변경되었습니다.',
-        'delete_failed_in_use' => '주문 취소에서 사용 중인 사유는 삭제할 수 없습니다. 비활성화를 권장합니다.',
+        'delete_failed_in_use' => '이미 사용 중인 사유는 삭제할 수 없습니다. 비활성화를 권장합니다.',
+    ],
+
+    // 클레임 공통 메시지
+    'claims' => [
+        // 취소 가능 금액의 한도를 정한 축 (D19) — 관리자 화면이 근거로 표시한다.
+        'cancellable_binding' => [
+            'domain_refundable' => '환불 대상 금액이 한도입니다.',
+            'payment_capacity' => '결제수단 잔여 한도가 한도입니다.',
+        ],
+        // 수단별 잔여 한도의 표시 라벨 (D19) — 마일리지는 결제행이 없는 주문 컬럼 원장이라
+        // 결제수단 어휘(PaymentMethodEnum)에 없다. 라벨이 없으면 원시값이 화면에 나간다.
+        'cancellable_method' => [
+            'reactivated_cash' => '재활성으로 다시 받은 결제금액',
+            'payment' => '결제수단',
+            'mileage' => '마일리지',
+        ],
+        'payment_order_name' => ':type 추가결제 (:number)',
+        'claimable_retrieved' => '신청 가능 상품을 조회했습니다.',
+        'preview_success' => '신청 예상 금액을 계산했습니다.',
+        'requested' => '신청이 접수되었습니다.',
+        'cancelled_instantly' => '주문이 취소되었습니다.',
+        'auto_refund_forbidden' => '환불 실행 권한이 없어 환불까지 한 번에 처리할 수 없습니다. 이 항목을 끄고 접수하세요.',
+        'approve_on_receipt_forbidden' => '클레임 상태 변경 권한이 없어 접수와 함께 승인할 수 없습니다. 승인 항목을 끄고 접수하세요.',
+        'instant_cancel_forbidden' => '주문 취소 권한이 없어 이 상품은 바로 취소할 수 없습니다. 판매자에게 문의해 주세요.',
+        'list_retrieved' => '신청 내역을 조회했습니다.',
+        'retrieved' => '신청서를 조회했습니다.',
+        'updated' => '신청 내용이 수정되었습니다.',
+        'rejected' => '신청이 반려되었습니다.',
+        'withdrawn' => '신청이 철회되었습니다.',
+        'image_uploaded' => '이미지를 첨부했습니다.',
+        'image_deleted' => '첨부 이미지를 삭제했습니다.',
+        'payment_started' => '결제를 시작합니다.',
+        'payment_completed' => '결제가 완료되었습니다.',
+        'settings_retrieved' => '클레임 설정을 조회했습니다.',
+        'operation_failed' => '클레임 처리 중 오류가 발생했습니다.',
+        // 관리자 클레임 API
+        'status_updated' => '신청 상태가 변경되었습니다.',
+        'payment_requested' => '추가결제를 요청했습니다. 결제 완료 후 승인 처리됩니다.',
+        'bulk_status_processed' => '일괄 상태 변경을 처리했습니다.',
+        'option_status_processed' => '신청 상품 상태 변경을 처리했습니다.',
+        'tracking_saved' => '운송장 정보를 저장했습니다.',
+        'tracking_delivered' => '운송장의 상품을 도착 처리했습니다.',
+        'notifications' => [
+            'advance_exchange_notice' => '선교환입니다 — 기존 상품은 :date까지 보내 주세요.',
+            'request_origin_admin' => '판매자가 고객님을 대신해 접수했습니다.',
+            'withdraw_origin_admin' => '고객님 요청으로 판매자가 철회했습니다.',
+            // 환불 완료 알림·상세의 수단별 금액 줄 (S7)
+            'refund_breakdown_cash' => ':method :amount',
+            'refund_breakdown_points' => '마일리지 :amount',
+        ],
+        // 교환 차액 환급 표기 — 합계와 낸 수단 (S2 「X원(카드/마일리지)」)
+        'exchange_difference' => [
+            'format' => ':total (:methods)',
+            'part' => ':method :amount',
+            'points' => '마일리지',
+        ],
+        'tracking_deliver_not_ready' => '지금 상태에서는 도착 처리할 수 없습니다.',
+        'exchange_mode_updated' => '진행 방식을 바꿨습니다.',
+        'admin_requested' => '고객을 대신해 접수했습니다.',
+        'admin_requested_approval_skipped' => '접수했지만 승인하지 못했습니다. 신청서에서 사유를 확인해 주세요.',
+        'stock_restored' => '재고를 복구했습니다.',
+        'withdrawn_on_behalf' => '고객 요청으로 신청을 철회했습니다.',
+        'request_updated_by_admin' => '신청 내용을 수정했습니다.',
+        'charge_repriced_after_partial_rejection' => '일부 상품 반려·철회로 청구액이 줄어 차액을 환급합니다.',
+        'charge_free' => '무료 (배송비 0)',
+        'images_cleared' => '첨부 이미지를 모두 삭제했습니다.',
+        'amounts_updated' => '금액을 수정했습니다.',
+        'cancellable_retrieved' => '취소 가능 금액을 산정했습니다.',
+        'refund_executed' => '환불을 실행했습니다.',
+        'refund_execute_failed' => '환불 실행에 실패했습니다.',
+        'side_effect_failed' => '처리 중 쿠폰·재고·마일리지 복원에 실패해 변경을 되돌렸습니다.',
+        'completion_preview_retrieved' => '완료 처리 요약을 계산했습니다.',
+        'refund_request_created' => '환불신청서를 접수했습니다.',
+        'logs_retrieved' => '활동 로그를 조회했습니다.',
     ],
 
     // 배송정책 메시지
@@ -482,6 +571,8 @@ return [
         'bulk_toggled' => ':count개 배송정책의 사용여부가 변경되었습니다.',
         'set_default_success' => '기본 배송정책이 설정되었습니다.',
         'api_test_done' => '계산 API 테스트 호출을 완료했습니다.',
+        'claim_settings_retrieved' => '클레임 배송 설정을 조회했습니다.',
+        'claim_settings_updated' => '클레임 배송 설정이 저장되었습니다.',
         'fee_summary' => [
             'free' => '무료배송',
             'fixed' => '배송비: :fee',
@@ -718,8 +809,6 @@ return [
                     'cancel' => [
                         'title' => '주문 취소',
                         'description' => '선택한 상품의 주문을 취소합니다. 환불 예상금액을 확인 후 진행해주세요.',
-                        'cancel_pg' => 'PG 결제도 취소합니다',
-                        'cancel_pg_hint' => '체크 해제 시 PG 취소 없이 주문 상태만 변경합니다.',
                         'reason' => '취소 사유',
                         'reason_placeholder' => '취소 사유를 선택해주세요',
                         'reason_detail' => '상세 사유',
@@ -729,7 +818,7 @@ return [
                         'refund_product_amount' => '상품 환불액',
                         'refund_shipping_diff' => '배송비 변동',
                         'refund_discount_diff' => '할인 조정',
-                        'refund_points' => '마일리지 환불',
+                        'refund_points' => '사용 마일리지 반환',
                         'refund_total' => '최종 환불 예정액',
                         'confirm' => '주문 취소',
                         'close' => '닫기',
@@ -1174,6 +1263,9 @@ return [
     ],
 
     'wishlist' => [
+        'admin_list_retrieved' => '찜 목록을 조회했습니다.',
+        'admin_deleted' => '찜을 삭제했습니다.',
+        'admin_bulk_deleted' => ':count개의 찜을 삭제했습니다.',
         'added' => '상품이 찜 목록에 추가되었습니다.',
         'removed' => '상품이 찜 목록에서 제거되었습니다.',
         'retrieved' => '찜 목록을 불러왔습니다.',
@@ -1220,6 +1312,8 @@ return [
         'reply_deleted' => '답변이 삭제되었습니다.',
         'reply_delete_failed' => '답변 삭제에 실패했습니다.',
         'reply_not_found' => '답변을 찾을 수 없습니다.',
+        // 비밀 문의를 열람 권한 없는 사람에게 보일 때의 제목 자리 문구
+        'secret_post_title' => '비밀글',
         // 서비스가 던진 사유를 그대로 덧붙여, 실패 원인을 서버 기록 없이도 알 수 있게 한다
         'operation_failed_reason' => ':reason',
     ],
@@ -1257,8 +1351,129 @@ return [
         'update_failed' => '배송국가 변경에 실패했습니다.',
     ],
 
+    // 회원 소유 데이터 관리자 목록 (#524 §4.1)
+    'user_address' => [
+        'admin_list_retrieved' => '회원 배송지 목록을 조회했습니다.',
+        'admin_deleted' => '배송지를 삭제했습니다.',
+        'admin_bulk_deleted' => ':count개의 배송지를 삭제했습니다.',
+    ],
+
+    'product_inquiry' => [
+        'admin_list_retrieved' => '상품문의 목록을 조회했습니다.',
+        'admin_deleted' => '상품문의를 삭제했습니다.',
+        'admin_bulk_deleted' => ':count개의 상품문의를 삭제했습니다.',
+    ],
+
+    // 개인정보 보유기간 (이슈 #636) — 코어 보유기간 커맨드의 핸들러 이름과 연간 통지문 「주문 정보」 섹션
+    'privacy_retention' => [
+        'handler_label' => '이커머스 종결 주문 개인정보',
+        'target_columns' => [
+            'order_number' => '주문번호',
+            'orderer' => '주문자',
+            'status' => '주문 상태',
+            'closed_at' => '종결일',
+        ],
+        'notice_section' => [
+            'title' => '주문 정보',
+            'body' => '상품 주문 시 주문자·수령인의 이름, 연락처, 주소를 수집해 주문 처리와 배송에 이용합니다. 전자상거래 등에서의 소비자보호에 관한 법률에 따라 계약·청약철회, 대금결제 및 재화 등의 공급에 관한 기록은 5년간 보관합니다.',
+            'after_anonymize' => '구매확정 또는 취소로 종결된 주문은 종결 후 :years년이 지나면 주문자·수령인 정보를 알아볼 수 없게 익명화합니다.',
+            'after_delete' => '구매확정 또는 취소로 종결된 주문은 종결 후 :years년이 지나면 주문 기록과 함께 삭제합니다.',
+        ],
+    ],
+
     // 대시보드
     'dashboard' => [
         'fetch_success' => '대시보드 데이터를 조회했습니다.',
+    ],
+    // 알림 수신자 규칙 「관련 사용자」의 관계 이름 — 알림 설정 화면이 관계 키 대신 보인다.
+    'notification_relations' => [
+        'author' => '문의 작성자',
+    ],
+    // 알림 템플릿 편집 창 「사용 가능한 변수」 설명 — common 은 변수 키별 기본, by_type 은 그 알림에서만 뜻이 다른 변수. 없는 키는 선언 문자열을 그대로 쓴다.
+    'notification_variables' => [
+        'common' => [
+            'name' => '수신자 이름',
+            'app_name' => '사이트 이름',
+            'order_number' => '주문번호',
+            'total_amount' => '결제 금액',
+            'order_url' => '주문 상세 URL',
+            'site_url' => '사이트 URL',
+            'shipping_recipient_name' => '수취인 이름',
+            'shipping_country_name' => '배송국가명',
+            'shipping_address' => '배송지 주소',
+            'deposit_amount' => '입금 필요 금액 (마일리지/예치금 차감 후)',
+            'bank_name' => '입금 은행',
+            'account_number' => '입금 계좌번호',
+            'account_holder' => '예금주',
+            'depositor_name' => '입금자명',
+            'deposit_due_at' => '입금 기한',
+            'carrier_name' => '택배사 이름',
+            'tracking_number' => '운송장 번호',
+            'cancel_reason' => '취소 사유',
+            'customer_name' => '주문자 이름',
+            'product_name' => '상품명',
+            'inquiry_content' => '문의 내용 (요약)',
+            'inquiry_url' => '문의 관리 URL',
+            'amount' => '소멸 예정 마일리지',
+            'currency' => '통화 코드',
+            'expires_date' => '소멸 예정일',
+            'balance' => '현재 사용 가능 잔액',
+            'mileage_url' => '마일리지 내역 URL',
+            'claim_type_label' => '클레임 유형 (교환/반품/환불)',
+            'claim_url' => '신청서 상세 URL (비회원은 비회원 주문 조회 화면)',
+            'claim_number' => '클레임 신청번호',
+            'status_label' => '현재 진행 상태',
+            'reason_label' => '신청 사유',
+            'request_origin_notice' => '판매자 대리 접수 안내 (고객 신청은 빈 값)',
+            'requester_name' => '신청자 이름',
+            'charge_amount' => '총 청구 금액',
+            'outstanding_amount' => '미결제 금액',
+            'paid_amount' => '결제 완료 금액',
+            'admin_memo' => '보류 안내 메모',
+            'reject_reason' => '반려 사유',
+            'tracking_lines' => '운송장별 상품 줄 (택배사 · 운송장 · 상품×수량, 줄바꿈 구분)',
+            'advance_exchange_notice' => '선교환 헌 상품 반송 기한 안내 (일반 교환은 빈 값)',
+            'refund_amount' => '환불 금액',
+            'refund_method_label' => '환불 수단',
+            'withdraw_origin_notice' => '판매자 대리 철회 안내 (고객 철회는 빈 값)',
+            'processed_count' => '이번에 처리된 상품 수',
+            'remaining_count' => '아직 처리되지 않은 상품 수',
+            'item_lines' => '이번에 처리된 상품 목록(줄바꿈 구분)',
+            'total_count' => '신청한 상품 수',
+            'approved_count' => '이번에 승인된 상품 수',
+            'rejected_count' => '이번에 반려된 상품 수',
+            'decision_label' => '이번 처리의 결정 표기',
+            'collection_due_date' => '선교환 헌 상품 반송 기한',
+            'overdue_days' => '반송 기한을 넘긴 일수',
+            'unreturned_item_lines' => '아직 회수되지 않은 상품 목록(줄바꿈 구분)',
+            'subject' => '관리자가 입력한 제목',
+            'message' => '관리자가 입력한 본문 (줄바꿈 유지)',
+        ],
+        'by_type' => [
+            'new_order_admin' => [
+                'name' => '수신자(관리자) 이름',
+                'order_url' => '주문 관리 URL',
+            ],
+            'order_confirmed_admin' => [
+                'name' => '수신자(운영자) 이름',
+                'order_url' => '주문 화면 URL (운영자에게는 관리자 주소로 치환)',
+            ],
+            'order_completed_admin' => [
+                'name' => '수신자(운영자) 이름',
+                'order_url' => '주문 화면 URL (운영자에게는 관리자 주소로 치환)',
+            ],
+            'inquiry_received' => [
+                'name' => '수신자(관리자) 이름',
+                'customer_name' => '문의자 이름',
+            ],
+            'inquiry_replied' => [
+                'name' => '수신자(문의자) 이름',
+                'inquiry_content' => '원래 문의 내용 (요약)',
+                'inquiry_url' => '문의 상세 URL (마이페이지)',
+            ],
+            'order_custom_email' => [
+                'app_name' => '사이트명',
+            ],
+        ],
     ],
 ];

@@ -1,0 +1,60 @@
+<!-- 이 모듈을 쓰는 템플릿이 있는데도 비활성하려 할 때의 경고 창.
+  영향받는 템플릿 목록은 전역 `affectedTemplates` 에서 읽고, 확인하면 `force` 로 다시 보낸다.
+
+  **지금은 열리는 경로가 없는 고아 조각이다.** 모듈 목록(`admin_module_list`)이 심는 창 열하나에
+  이것이 없고, `affectedTemplates` 를 채우는 곳도 코퍼스에 없다.
+  실사용 정본은 `_modal_force_deactivate.g7.html` 이다 — 서버가 409 로 알려 온 의존 목록을
+  `deactivateWarningData` 로 받아 같은 일을 한다. 되살릴 때는 이 조각을 다시 잇기보다
+  그쪽에 흡수하는 편이 맞다(같은 화면에 같은 뜻의 창을 둘 두지 않는다). -->
+<partial description="모듈 비활성화 경고 모달" editor_label="$t:admin.modal_label.admin_module_list.module_deactivate_warning_modal">
+  <modal data-type="composite" data-ref="module_deactivate_warning_modal" title="$t:admin.modules.modals.deactivate_warning_title" size="sm">
+    <div>
+      <div class="flex-start gap-3">
+        <div class="flex-center flex-shrink-0 w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-full justify-center">
+          <icon name="exclamation-triangle" class="text-xl text-amber-600 dark:text-amber-400"/>
+        </div>
+        <div class="flex-1">
+          <p class="text-gray-700 dark:text-gray-300">$t:admin.modules.modals.deactivate_warning_message</p>
+        </div>
+      </div>
+      <div data-if="{{_global.affectedTemplates &amp;&amp; _global.affectedTemplates.length > 0}}" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+        <p class="text-body font-medium mb-2">$t:admin.modules.modals.affected_templates</p>
+        <div>
+          <div data-each="template in _global.affectedTemplates" class="flex-center gap-2 text-label">
+            <icon name="palette" class="text-base"/>
+            <span>{{template.name || template.identifier}}</span>
+            <span data-if="{{template.type}}" class="text-xs text-gray-500 dark:text-gray-500">({{template.type === 'admin' ? '$t:admin.templates.tabs.admin' : '$t:admin.templates.tabs.user'}})</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600">
+        <on type="click">
+          <!-- 강제 비활성 실행. 창을 **먼저 닫고** 요청을 낸다 — 결과는 토스트와 목록 갱신으로
+               알리므로 창을 붙들 이유가 없다(대상은 전역이라 창이 사라져도 값이 남는다). -->
+          <sequence>
+            <close-modal/>
+            <api-call :auth_required="true" target="/api/admin/modules/{{_global.selectedModule.identifier}}/deactivate" method="POST">
+              <success>
+                <toast type="success" message="$t:admin.modules.deactivate_success"/>
+                <refetch-data-source dataSourceId="modules"/>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body :force="true"/>
+            </api-call>
+          </sequence>
+        </on>
+        <span>$t:admin.modules.modals.confirm_deactivate</span>
+      </button>
+    </div>
+  </modal>
+</partial>

@@ -1,215 +1,215 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Product List - Delete Confirmation Modal"
-  },
-  "id": "modal_delete_confirm",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.product.modal.delete.title",
-    "size": "sm"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_global.deleteProduct?.canDelete}}",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "P",
-              "text": "$t:sirsoft-ecommerce.admin.product.modal.delete.confirm_question",
-              "props": {
-                "className": "text-body"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "text": "$t:sirsoft-ecommerce.admin.product.modal.delete.related_data_notice",
-              "props": {
-                "className": "text-label-subtle"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "text": "- 이미지: {{_global.deleteProduct?.relatedData?.images ?? 0}}개",
-              "props": {
-                "className": "text-label-subtle"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "text": "- 옵션: {{_global.deleteProduct?.relatedData?.options ?? 0}}개",
-              "props": {
-                "className": "text-label-subtle"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "text": "- 추가옵션: {{_global.deleteProduct?.relatedData?.additionalOptions ?? 0}}개",
-              "props": {
-                "className": "text-label-subtle"
-              }
-            },
-            {
-              "type": "composite",
-              "name": "Alert",
-              "props": {
-                "type": "warning",
-                "message": "$t:sirsoft-ecommerce.admin.product.modal.delete.warning_message",
-                "className": ""
-              }
-            }
-          ],
-          "props": {
-          }
-        }
-      ]
+    "comment": "상품 목록 — 상품 삭제 확인 창. 지울 수 있는지를 **서버가 먼저 판정해서** 넘겨준다\n  (`_global.deleteProduct.canDelete` 와 안 되는 경우의 사유). 그래서 이 창은 두 얼굴이다 —\n  지울 수 있으면 함께 지워질 이미지·옵션·추가옵션의 개수를 세어 보여 주고, 지울 수 없으면\n  그 사유만 띄우고 확인 버튼이 잠긴다. 개수를 미리 세는 이유는 상품 하나를 지우는 것이\n  실제로는 여러 줄을 지우는 일이라서다.\n\n  알려진 결함 하나: 함께 지워질 항목의 단위(\"개\")가 코드에 박혀 있어 다국어로 바뀌지 않는다.\n\n  (해소됨) 이 창과 주문 목록 쪽 창들이 실패 토스트에서 서로 다른 이름을 읽어 한쪽이 빈\n  메시지로 뜨던 문제는 정본인 `{{error.message}}` 로 통일해 닫았다. 엔진 오류 컨텍스트에는\n  `error` 만 있고 `$` 를 붙인 이름은 없다 — 그 자리는 값이 비어 **내용 없는 토스트**가 된다.\n  같은 실수가 다시 들어오지 못하도록 audit 룰 `layout-binding-error-prefix` 를 세웠다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Product List - Delete Confirmation Modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_global.deleteProduct?.canDelete === false}}",
-      "children": [
-        {
-          "type": "composite",
-          "name": "Alert",
-          "props": {
-            "type": "error",
-            "title": "$t:sirsoft-ecommerce.admin.product.modal.delete.cannot_delete_title",
-            "message": "{{_global.deleteProduct?.reason}}"
-          }
-        }
-      ]
+    "id": "modal_delete_confirm",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.product.modal.delete.title",
+        "size": "sm"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isProductDeleting}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:common.cancel"
-            }
-          ]
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.deleteProduct?.canDelete}}",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-body"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.product.modal.delete.confirm_question"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-label-subtle"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.product.modal.delete.related_data_notice"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-label-subtle"
+                            },
+                            "text": "- 이미지: {{_global.deleteProduct?.relatedData?.images ?? 0}}개"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-label-subtle"
+                            },
+                            "text": "- 옵션: {{_global.deleteProduct?.relatedData?.options ?? 0}}개"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-label-subtle"
+                            },
+                            "text": "- 추가옵션: {{_global.deleteProduct?.relatedData?.additionalOptions ?? 0}}개"
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Alert",
+                            "props": {
+                                "type": "warning",
+                                "message": "$t:sirsoft-ecommerce.admin.product.modal.delete.warning_message",
+                                "className": ""
+                            }
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "flex-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{!_global.deleteProduct?.canDelete || _global.isProductDeleting}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.deleteProduct?.canDelete === false}}",
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isProductDeleting": true
-                  }
+                    "type": "composite",
+                    "name": "Alert",
+                    "props": {
+                        "type": "error",
+                        "title": "$t:sirsoft-ecommerce.admin.product.modal.delete.cannot_delete_title",
+                        "message": "{{_global.deleteProduct?.reason}}"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isProductDeleting}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/modules/sirsoft-ecommerce/admin/products/{{_global.deleteProduct?.target?.id}}",
-                  "params": {
-                    "method": "DELETE"
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isProductDeleting": false
-                      }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "삭제. 버튼은 서버 판정(`canDelete`)이 참일 때만 열리므로 여기서 다시 검사하지 않는다 — 최종 판정은 어차피 서버가 다시 한다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isProductDeleting": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/products/{{_global.deleteProduct?.target?.id}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "DELETE"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isProductDeleting": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "products"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-ecommerce.admin.product.messages.deleted_success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isProductDeleting": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{!_global.deleteProduct?.canDelete || _global.isProductDeleting}}"
                     },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "products"
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:sirsoft-ecommerce.admin.product.messages.deleted_success"
-                      }
-                    },
-                    {
-                      "handler": "closeModal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isProductDeleting": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message}}"
-                      }
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isProductDeleting}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isProductDeleting ? '$t:common.deleting' : '$t:sirsoft-ecommerce.admin.product.modal.delete.confirm_button'}}"
+                        }
+                    ]
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isProductDeleting}}",
-              "props": {
-                "name": "spinner",
-                "className": "spinner-sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isProductDeleting ? '$t:common.deleting' : '$t:sirsoft-ecommerce.admin.product.modal.delete.confirm_button'}}"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

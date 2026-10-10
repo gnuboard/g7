@@ -1,14 +1,99 @@
 {
+    "comment": "쿠폰 등록·수정 (운영자) — `route.id` 유무 하나로 등록/수정을 겸한다. 기본정보·혜택·발급·사용조건\n  네 구획이 `_local.form` 하나를 나눠 쓰고, 적용 대상 상품·분류는 별도 검색 창에서 골라 담는다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_promotion_coupon_form",
-    "permissions": [
-        "sirsoft-ecommerce.promotion-coupon.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_edit' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_create'}}"
     },
-    "state": {
+    "data_sources": [
+        {
+            "id": "coupon",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.coupon",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{{route.id}}",
+            "method": "GET",
+            "if": "{{!!route.id}}",
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "loading_strategy": "blocking",
+            "initLocal": {
+                "form": "{{data}}",
+                "form.products": "{{(data.included_products ?? []).map(p => ({...p, type: 'include'})).concat((data.excluded_products ?? []).map(p => ({...p, type: 'exclude'})))}}",
+                "form.categories": "{{(data.included_categories ?? []).map(c => ({...c, type: 'include'})).concat((data.excluded_categories ?? []).map(c => ({...c, type: 'exclude'})))}}",
+                "issue_quantity_type": "{{data.total_quantity != null ? 'limited' : 'unlimited'}}",
+                "issue_period_type": "{{(data.issue_from != null || data.issue_to != null) ? 'limited' : 'unlimited'}}",
+                "reissue_type": "{{data.per_user_limit > 0 ? 'limited' : 'unlimited'}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "errorCondition": {
+                "if": "{{response?.data?.abilities?.can_update === false}}",
+                "errorCode": 403
+            },
+            "comment": "수정 진입일 때만 원본을 받아 폼에 심는다. 그대로 옮기지 못하는 것이 둘 있다 — 포함/제외 대상은\n    서버가 두 배열로 주지만 화면은 한 목록에서 구분값으로 다루고, 수량·기간·재발급의 「무제한」은\n    저장 형태에 없는 화면 개념이라 값의 유무를 보고 되살린다."
+        },
+        {
+            "id": "coupon_abilities",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.coupon_abilities",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/promotion-coupons",
+            "method": "GET",
+            "if": "{{!route.id}}",
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "loading_strategy": "blocking",
+            "params": {
+                "per_page": 10
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "errorCondition": {
+                "if": "{{response?.data?.abilities?.can_create === false}}",
+                "errorCode": 403
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "등록 진입 전용 — 쿠폰 응답이 없는 등록 진입에서 등록 권한(can_create)을 알 곳은 목록 응답의 컬렉션 abilities 뿐이라, 목록을 한 쪽만 받아 그 키만 본다.\n    수정 진입이 수정 권한이 없으면 화면을 403 으로 접는 것과 같은 기준으로, 등록 권한이 없으면(can_create=false) 주소로 바로 들어와도 입력칸이 그려지기 전에 403 화면으로 접는다.\n    응답을 받기 전에는 폼을 그리지 않고(blocking), 조회가 실패해도 오류 화면이다. [저장]은 폼 읽기 전용 계산값(`isReadOnly`)을 따라 응답에 키가 빠져도 잠긴 쪽이다."
+        },
+        {
+            "id": "categories",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.categories",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/categories/tree",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_mode": "required",
+            "loading_strategy": "progressive",
+            "comment": "적용 분류를 고르는 트리. 폼 저장과 무관해 화면을 먼저 띄우고 뒤늦게 채운다"
+        }
+    ],
+    "initLocal": {
         "form": {
             "target_type": "product_amount",
             "issue_method": "direct",
@@ -60,60 +145,17 @@
         "selectedProductIds": [],
         "selectedCategoryIds": []
     },
+    "computed": {
+        "isReadOnly": "{{route.id ? coupon?.data?.abilities?.can_update !== true : coupon_abilities?.data?.abilities?.can_create !== true}}"
+    },
+    "permissions": [
+        "sirsoft-ecommerce.promotion-coupon.read"
+    ],
     "transition_overlay": {
         "wait_for": [
             "categories"
         ]
     },
-    "data_sources": [
-        {
-            "id": "coupon",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.coupon",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{{route.id}}",
-            "method": "GET",
-            "if": "{{!!route.id}}",
-            "initLocal": {
-                "form": "{{data}}",
-                "form.products": "{{(data.included_products ?? []).map(p => ({...p, type: 'include'})).concat((data.excluded_products ?? []).map(p => ({...p, type: 'exclude'})))}}",
-                "form.categories": "{{(data.included_categories ?? []).map(c => ({...c, type: 'include'})).concat((data.excluded_categories ?? []).map(c => ({...c, type: 'exclude'})))}}",
-                "issue_quantity_type": "{{data.total_quantity != null ? 'limited' : 'unlimited'}}",
-                "issue_period_type": "{{(data.issue_from != null || data.issue_to != null) ? 'limited' : 'unlimited'}}",
-                "reissue_type": "{{data.per_user_limit > 0 ? 'limited' : 'unlimited'}}"
-            },
-            "auto_fetch": true,
-            "auth_mode": "required",
-            "loading_strategy": "blocking",
-            "errorHandling": {
-                "403": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
-                },
-                "404": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
-                }
-            },
-            "errorCondition": {
-                "if": "{{response?.data?.abilities?.can_update !== true}}",
-                "errorCode": 403
-            }
-        },
-        {
-            "id": "categories",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.categories",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/categories/tree",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_mode": "required",
-            "loading_strategy": "progressive"
-        }
-    ],
     "slots": {
         "content": [
             {
@@ -151,9 +193,22 @@
                                                 "id": "back_button",
                                                 "type": "basic",
                                                 "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "comment": "목록으로. 보던 검색·필터·페이지를 이고 가므로 폼을 열었다 닫아도 목록이 되감기지 않는다",
+                                                        "type": "click",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/promotion-coupons",
+                                                            "mergeQuery": true,
+                                                            "query": {}
+                                                        }
+                                                    }
+                                                ],
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "p-1.5 rounded-lg hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-700 transition-colors"
+                                                    "className": "p-1.5 rounded-lg hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-700 transition-colors",
+                                                    "aria-label": "$t:common.back"
                                                 },
                                                 "children": [
                                                     {
@@ -162,17 +217,6 @@
                                                         "props": {
                                                             "name": "arrow-left",
                                                             "size": "sm"
-                                                        }
-                                                    }
-                                                ],
-                                                "actions": [
-                                                    {
-                                                        "type": "click",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/ecommerce/promotion-coupons",
-                                                            "mergeQuery": true,
-                                                            "query": {}
                                                         }
                                                     }
                                                 ]
@@ -219,14 +263,10 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "취소하고 목록으로. 위 뒤로가기 버튼과 같은 이동이며 화면 위아래 어디서든 빠져나갈 수 있게 둘 다 둔다",
                                                 "id": "cancel_button_top",
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "btn btn-outline"
-                                                },
-                                                "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.cancel",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -237,15 +277,87 @@
                                                             "query": {}
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "btn btn-outline"
+                                                },
+                                                "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.cancel"
                                             },
                                             {
                                                 "id": "save_button_top",
                                                 "type": "basic",
                                                 "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "comment": "저장 — 등록/수정 구분은 `route.id` 하나로 엔드포인트와 메서드를 함께 가른다. 성공하면 목록으로 돌아가므로 폼을 되받지 않고, 실패하면 서버 오류를 폼 위 배너로 넘긴다",
+                                                        "type": "click",
+                                                        "handler": "sequence",
+                                                        "actions": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "_local",
+                                                                    "isSaving": true,
+                                                                    "errors": null
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "apiCall",
+                                                                "target": "{{route.id ? '/api/modules/sirsoft-ecommerce/admin/promotion-coupons/' + route.id : '/api/modules/sirsoft-ecommerce/admin/promotion-coupons'}}",
+                                                                "auth_mode": "required",
+                                                                "params": {
+                                                                    "method": "{{route.id ? 'PUT' : 'POST'}}",
+                                                                    "body": "{{_local.form}}"
+                                                                },
+                                                                "onSuccess": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "_local",
+                                                                            "isSaving": false
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "success",
+                                                                            "message": "{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.updated' : '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.created'}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "navigate",
+                                                                        "params": {
+                                                                            "path": "/admin/ecommerce/promotion-coupons",
+                                                                            "mergeQuery": true,
+                                                                            "query": {}
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "onError": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "_local",
+                                                                            "isSaving": false,
+                                                                            "errors": "{{error.errors}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{error.message || '$t:common.validation_error'}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ],
                                                 "props": {
                                                     "type": "button",
-                                                    "disabled": "{{_local.isSaving || (route.id && coupon?.data?.abilities?.can_update !== true)}}",
+                                                    "disabled": "{{_local.isSaving || _computed.isReadOnly}}",
                                                     "className": "flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 },
                                                 "children": [
@@ -262,74 +374,6 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "text": "{{_local.isSaving ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.saving' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.save'}}"
-                                                    }
-                                                ],
-                                                "actions": [
-                                                    {
-                                                        "type": "click",
-                                                        "handler": "sequence",
-                                                        "params": {
-                                                            "actions": [
-                                                                {
-                                                                    "handler": "setState",
-                                                                    "params": {
-                                                                        "target": "_local",
-                                                                        "isSaving": true,
-                                                                        "errors": null
-                                                                    }
-                                                                },
-                                                                {
-                                                                    "handler": "apiCall",
-                                                                    "auth_mode": "required",
-                                                                    "target": "{{route.id ? '/api/modules/sirsoft-ecommerce/admin/promotion-coupons/' + route.id : '/api/modules/sirsoft-ecommerce/admin/promotion-coupons'}}",
-                                                                    "params": {
-                                                                        "method": "{{route.id ? 'PUT' : 'POST'}}",
-                                                                        "body": "{{_local.form}}"
-                                                                    },
-                                                                    "onSuccess": [
-                                                                        {
-                                                                            "handler": "setState",
-                                                                            "params": {
-                                                                                "target": "_local",
-                                                                                "isSaving": false
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "toast",
-                                                                            "params": {
-                                                                                "type": "success",
-                                                                                "message": "{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.updated' : '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.created'}}"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "navigate",
-                                                                            "params": {
-                                                                                "path": "/admin/ecommerce/promotion-coupons",
-                                                                                "mergeQuery": true,
-                                                                                "query": {}
-                                                                            }
-                                                                        }
-                                                                    ],
-                                                                    "onError": [
-                                                                        {
-                                                                            "handler": "setState",
-                                                                            "params": {
-                                                                                "target": "_local",
-                                                                                "isSaving": false,
-                                                                                "errors": "{{error.errors}}"
-                                                                            }
-                                                                        },
-                                                                        {
-                                                                            "handler": "toast",
-                                                                            "params": {
-                                                                                "type": "error",
-                                                                                "message": "{{error.message || '$t:common.validation_error'}}"
-                                                                            }
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
-                                                        }
                                                     }
                                                 ]
                                             }
@@ -373,12 +417,12 @@
                                         "type": "basic",
                                         "name": "Ul",
                                         "if": "{{typeof _local.errors === 'object'}}",
-                                        "props": {
-                                            "className": "mt-2 list-disc list-inside space-y-1"
-                                        },
                                         "iteration": {
                                             "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
                                             "item_var": "message"
+                                        },
+                                        "props": {
+                                            "className": "mt-2 list-disc list-inside space-y-1"
                                         },
                                         "children": [
                                             {

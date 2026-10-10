@@ -1,0 +1,91 @@
+<!-- 주문 상세의 처리 이력 줄 — 주문이 어떤 상태를 언제 지나왔는지 보여 준다. 회원·비회원 상세가 함께 쓴다. -->
+<partial _e2e_allow="e2e:allow S4-D11 — 배송완료일시 줄의 값 출처 표현식 하나만 바꿨다(주문 delivered_at → 배송 행 최신 delivered_at_formatted). 대체 검증: Vitest 조건 평가 + 전용 Chrome 실측. 테스트 결제창이 실제 카드사·은행 인증으로 이어져 결제 상태를 전제로 한 Playwright E2E 를 만들 수 없다" description="주문 상세 - 주문 이력">
+  <div class="bg-white dark:bg-gray-800 rounded-lg p-6">
+    <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg p-4"/>
+    <!-- 섹션 제목 -->
+    <div class="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <responsive on="portable" class="flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"/>
+      <icon name="clock" class="text-xl text-gray-700 dark:text-gray-300"/>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+        <responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white"/>
+        $t:mypage.order_detail.history_title
+      </h3>
+    </div>
+    <!-- 주문 이력 목록 -->
+    <div class="space-y-3">
+      <!-- 주문일시 -->
+      <div class="flex items-center justify-between">
+        <span class="text-gray-500 dark:text-gray-400">
+          <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
+          $t:mypage.order_detail.ordered_at
+        </span>
+        <span class="text-gray-900 dark:text-white">
+          <responsive on="portable" class="text-gray-900 dark:text-white text-sm"/>
+          {{order.data.ordered_at_formatted ?? ''}}
+        </span>
+      </div>
+      <!-- 결제일시 (결제 완료된 경우만) -->
+      <div data-if="{{order.data.paid_at_formatted}}" class="flex items-center justify-between">
+        <span class="text-gray-500 dark:text-gray-400">
+          <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
+          $t:mypage.order_detail.paid_at
+        </span>
+        <span class="text-gray-900 dark:text-white">
+          <responsive on="portable" class="text-gray-900 dark:text-white text-sm"/>
+          {{order.data.paid_at_formatted ?? ''}}
+        </span>
+      </div>
+      <!-- 배송완료일시 (배송완료된 경우만) — 배송 완료 시각은 배송 행(shippings[].delivered_at)에 있다. 주문 응답의 delivered_at 은
+           주문 테이블에 칼럼이 없어 늘 비어 이 줄이 한 번도 안 떴다. 여러 배송이면 가장 늦게 끝난 것을 보인다. -->
+      <div data-if="{{(order.data.shippings ?? []).some(s => s.delivered_at)}}" class="flex items-center justify-between">
+        <span class="text-gray-500 dark:text-gray-400">
+          <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
+          $t:mypage.order_detail.delivered_at
+        </span>
+        <span class="text-gray-900 dark:text-white">
+          <responsive on="portable" class="text-gray-900 dark:text-white text-sm"/>
+          {{(order.data.shippings ?? []).filter(s => s.delivered_at).sort((x, y) => (x.delivered_at &lt; y.delivered_at ? 1 : -1))[0]?.delivered_at_formatted ?? ''}}
+        </span>
+      </div>
+      <!-- 구매확정일시 (구매확정된 경우만) -->
+      <div data-if="{{order.data.confirmed_at_formatted}}" class="flex items-center justify-between">
+        <span class="text-gray-500 dark:text-gray-400">
+          <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
+          $t:mypage.order_detail.confirmed_at
+        </span>
+        <span class="text-gray-900 dark:text-white">
+          <responsive on="portable" class="text-gray-900 dark:text-white text-sm"/>
+          {{order.data.confirmed_at_formatted ?? ''}}
+        </span>
+      </div>
+      <!-- 취소일시 (취소된 경우만) -->
+      <div data-if="{{order.data.cancelled_at_formatted}}" class="flex items-center justify-between">
+        <span class="text-gray-500 dark:text-gray-400">
+          <responsive on="portable" class="text-gray-500 dark:text-gray-400 text-sm"/>
+          $t:mypage.order_detail.cancelled_at
+        </span>
+        <span class="text-gray-900 dark:text-white">
+          <responsive on="portable" class="text-gray-900 dark:text-white text-sm"/>
+          {{order.data.cancelled_at_formatted ?? ''}}
+        </span>
+      </div>
+    </div>
+    <!-- 취소 사유 (취소 이력이 있는 경우만) — 부분취소 다건 목록 -->
+    <div data-if="{{(order.data.cancels?.data ?? order.data.cancels ?? []).length > 0}}" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <responsive on="portable" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700"/>
+      <p class="text-sm font-medium text-gray-900 dark:text-white mb-3">$t:mypage.order_detail.cancel_reason_title</p>
+      <div class="space-y-3">
+        <!-- 취소 건별 카드 -->
+        <div data-each="cancel in order.data.cancels?.data ?? order.data.cancels ?? []" class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+          <!-- 사유 라벨 + 취소일시 -->
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-sm text-gray-900 dark:text-white font-medium">{{cancel.cancel_reason_label ?? ''}}</span>
+            <span data-if="{{cancel.cancelled_at_formatted}}" class="text-xs text-gray-500 dark:text-gray-400 shrink-0">{{cancel.cancelled_at_formatted ?? ''}}</span>
+          </div>
+          <!-- 상세 사유 (기타 입력 시) -->
+          <p data-if="{{cancel.cancel_reason_detail}}" class="text-sm text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-line">{{cancel.cancel_reason_detail ?? ''}}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

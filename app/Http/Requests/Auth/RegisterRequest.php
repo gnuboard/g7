@@ -32,7 +32,8 @@ class RegisterRequest extends FormRequest
             'name' => 'required|string|max:255',
             'nickname' => 'nullable|string|max:50',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique(User::class)],
-            'password' => ['required', 'string', 'confirmed', PasswordPolicy::rule()],
+            // 작성 규칙(조합·추측 방지)까지 함께 — 아이디 판정은 입력한 이메일로 한다.
+            'password' => ['required', 'string', 'confirmed', ...PasswordPolicy::rules($this->identifierEmail())],
             'mobile' => ['nullable', 'string', 'max:20', 'regex:/^[0-9\-\+\(\)\s]+$/'],
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9\-\+\(\)\s]+$/'],
             'language' => 'nullable|string|in:'.implode(',', config('app.supported_locales', ['ko', 'en'])),
@@ -42,6 +43,18 @@ class RegisterRequest extends FormRequest
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.auth.register_validation_rules', $rules, $this);
+    }
+
+    /**
+     * 아이디(이메일 앞부분) 포함 판정에 쓸 이메일을 반환합니다.
+     *
+     * @return string|null 입력 이메일 (없으면 null)
+     */
+    private function identifierEmail(): ?string
+    {
+        $email = $this->input('email');
+
+        return is_string($email) && $email !== '' ? $email : null;
     }
 
     /**

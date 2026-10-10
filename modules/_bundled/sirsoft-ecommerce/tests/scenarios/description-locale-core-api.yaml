@@ -1,0 +1,22 @@
+feature: 상세설명 언어 탭 — 코어 지원 언어·사이트 기본 언어
+
+description: |
+  상품 폼 상세설명의 언어 탭 추가·삭제 처리기가 지원 언어와 사이트 기본 언어를 어디서 읽는지.
+  7.1.0 출시 점검 D3-1: 지원 언어를 코어에 없는 `G7Core.config()` 로 읽어 늘 ko·en 이라 ja 탭을 추가할 수 없었고,
+  기본 언어를 인자를 받지 않는 `G7Core.state.get()` 로 읽어 사이트 기본 언어 탭 삭제 금지가 걸리지 않았다.
+  코어 공개 API `G7Core.locale.supported()` 와 `appConfig.siteLocale` 로 읽는다.
+
+axes:
+  case: [c01, c02, c03]
+  # c01: 지원 언어 셋째(JA) 탭 추가
+  # c02: 사이트 기본 언어(JA) 탭 삭제 거절
+  # c03: 사이트 기본 언어가 아닌 탭(KO) 삭제
+
+effects:
+  - description_locale_uses_core_locale_api
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/descriptionLocaleHandlers.test.ts
+
+validation:
+  browser_check: ja 언어팩 활성 · 사이트 기본 언어 ja 로 상품 등록 → 상세설명 [언어 추가]에서 JA 선택 가능, JA 탭 삭제 시 「기본 언어는 삭제할 수 없음」 토스트

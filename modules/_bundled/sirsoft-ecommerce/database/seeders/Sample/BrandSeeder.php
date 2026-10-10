@@ -9,6 +9,8 @@ class BrandSeeder extends Seeder
 {
     /**
      * 브랜드 시더를 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     public function run(): void
     {
@@ -69,7 +71,7 @@ class BrandSeeder extends Seeder
             ],
             [
                 'name' => ['ko' => '에잇세컨즈', 'en' => '8SECONDS'],
-                'slug' => '8seconds',
+                'slug' => 'eight-seconds', // 슬러그 규칙(영문 소문자로 시작)을 지켜야 관리자 수정 화면에서 그대로 저장된다
                 'website' => 'https://www.8seconds.co.kr',
                 'sort_order' => 8,
                 'is_active' => true,
@@ -337,6 +339,8 @@ class BrandSeeder extends Seeder
 
     /**
      * 기존 브랜드 데이터를 삭제합니다.
+     *
+     * @return void 반환값 없음
      */
     private function deleteExistingBrands(): void
     {

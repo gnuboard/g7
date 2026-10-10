@@ -3,7 +3,9 @@
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Http\Controllers\Admin;
 
 use App\Extension\HookManager;
+use App\Extension\ModuleManager;
 use App\Models\User;
+use App\Services\NotificationDefinitionService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderAddressFactory;
@@ -16,6 +18,7 @@ use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
+use Modules\Sirsoft\Ecommerce\Module;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
@@ -25,6 +28,11 @@ class OrderControllerTest extends ModuleTestCase
 {
     protected User $adminUser;
 
+    /**
+     * 모든 테스트의 기본 호출자로 주문 조회 권한(orders.read)만 가진 관리자를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,6 +43,15 @@ class OrderControllerTest extends ModuleTestCase
     // index() 테스트
     // ========================================
 
+    /**
+     * 조회 권한 관리자가 목록을 열면 success 와 data.data · data.pagination 봉투가 돌아온다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_index_returns_success_envelope_with_pagination
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_returns_paginated_orders(): void
     {
         // Given: 관리자가 로그인하고 주문이 15개 존재
@@ -55,6 +72,15 @@ class OrderControllerTest extends ModuleTestCase
             ]);
     }
 
+    /**
+     * order_status[]=pending_payment 필터는 결제대기 주문 3건만 돌려주고 결제완료·취소 주문을 뺀다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_index_filters_by_order_status
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_filters_by_order_status(): void
     {
         // Given: 다양한 상태의 주문 존재
@@ -72,6 +98,15 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertCount(3, $data);
     }
 
+    /**
+     * 최근 7일 start_date·end_date 필터를 받아 정상 응답하고, 범위 안 주문 2건 이상을 돌려준다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_index_filters_by_date_range
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_filters_by_date_range(): void
     {
         // Given: 다양한 날짜의 주문 존재 (명확한 범위 밖)
@@ -93,6 +128,15 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertGreaterThanOrEqual(2, count($data));
     }
 
+    /**
+     * search_field=order_number 검색은 주문번호가 일치하는 주문 1건만 돌려준다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_index_searches_by_order_number
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_searches_by_order_number(): void
     {
         // Given: 특정 주문번호 존재
@@ -110,6 +154,15 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertEquals($targetOrder->id, $data[0]['id']);
     }
 
+    /**
+     * min_amount=30000 필터는 총액 30000 이상 주문 2건만 돌려준다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_index_filters_by_min_amount
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_filters_by_min_amount(): void
     {
         // Given: 다양한 금액의 주문
@@ -127,6 +180,15 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertCount(2, $data);
     }
 
+    /**
+     * country_codes[]=KR 필터는 배송지 국가가 KR 인 주문 2건만 돌려주고 US 주문을 뺀다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_index_filters_by_shipping_country
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_filters_by_country_codes(): void
     {
         // Given: 다양한 국가의 주문
@@ -147,6 +209,15 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertCount(2, $data);
     }
 
+    /**
+     * order_device[]=mobile 필터는 모바일 주문 2건만 돌려주고 PC 주문을 뺀다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_index_filters_by_order_device
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_filters_by_order_device(): void
     {
         // Given: PC와 모바일 주문
@@ -163,6 +234,15 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertCount(2, $data);
     }
 
+    /**
+     * shipping_type[]=parcel 필터는 택배 배송 주문 1건만 돌려주고 매장수령 주문을 뺀다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_index_filters_by_shipping_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_filters_by_shipping_type(): void
     {
         // Given: 배송유형 DB 데이터 생성 (검증 통과용)
@@ -189,6 +269,15 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertCount(1, $data);
     }
 
+    /**
+     * per_page=10 으로 25건을 조회하면 pagination 에 current_page·last_page·total 이 실리고 total=25 · current_page=1 이다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_index_honors_per_page_and_reports_totals
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_returns_pagination_structure(): void
     {
         // Given: 25개 주문
@@ -214,6 +303,15 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertEquals(1, $response->json('data.pagination.current_page'));
     }
 
+    /**
+     * 목록 행에 order_device(pc)·order_device_label·is_first_order(true) 필드가 실린다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_index_carries_device_and_first_order_fields
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_returns_order_device_and_first_order_fields(): void
     {
         // Given: PC에서 첫구매 주문
@@ -237,6 +335,17 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertTrue($data['is_first_order']);
     }
 
+    /**
+     * 현재 로케일(en) 키가 없는 다국어 옵션명을 가진 주문도 500 없이 직렬화되고, 대표 옵션명이 남은 로케일 값(ko)으로 실린다.
+     *
+     * 오류 핸들러로 E_NOTICE 를 ErrorException 으로 승격해 운영의 overloaded 속성 참조 회귀를 결정적으로 재현한다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_index_serializes_multilingual_option_name_without_500
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_serializes_array_product_option_name_without_error(): void
     {
         // Given: 다국어(array) product_option_name 을 가진 옵션이 포함된 주문
@@ -272,6 +381,15 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertSame('레드 / L', $firstOption['product_option_name']);
     }
 
+    /**
+     * 비로그인 요청은 주문 목록에서 401 을 받는다.
+     *
+     * @scenario caller=unauthenticated
+     *
+     * @effects admin_order_index_requires_authentication
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_requires_authentication(): void
     {
         // Given: 비로그인 상태
@@ -283,6 +401,15 @@ class OrderControllerTest extends ModuleTestCase
         $response->assertUnauthorized();
     }
 
+    /**
+     * 주문 권한이 없는 일반 사용자는 주문 목록에서 403 을 받는다.
+     *
+     * @scenario caller=no_permission_user
+     *
+     * @effects admin_order_index_requires_orders_read_permission
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_requires_permission(): void
     {
         // Given: 권한 없는 사용자
@@ -300,6 +427,15 @@ class OrderControllerTest extends ModuleTestCase
     // show() 테스트
     // ========================================
 
+    /**
+     * 주문번호로 상세를 조회하면 옵션·배송지·결제·배송이 딸린 주문의 id·order_number·order_status 가 실린 봉투가 돌아온다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_show_resolves_by_order_number
+     *
+     * @return void 반환값 없음
+     */
     public function test_show_returns_order_details(): void
     {
         // Given: 주문 및 관련 데이터 존재
@@ -325,6 +461,15 @@ class OrderControllerTest extends ModuleTestCase
             ]);
     }
 
+    /**
+     * 하위 호환으로 숫자 id 를 넣어도 같은 주문 상세(data.id 일치)가 돌아온다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_show_resolves_by_numeric_id
+     *
+     * @return void 반환값 없음
+     */
     public function test_show_returns_order_details_by_id(): void
     {
         // Given: 주문 존재
@@ -339,6 +484,15 @@ class OrderControllerTest extends ModuleTestCase
             ->assertJsonPath('data.id', $order->id);
     }
 
+    /**
+     * 존재하지 않는 주문번호의 상세 조회는 404 를 받는다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_show_is_404_for_unknown_order
+     *
+     * @return void 반환값 없음
+     */
     public function test_show_returns_404_for_nonexistent_order(): void
     {
         // Given: 존재하지 않는 주문번호
@@ -355,6 +509,13 @@ class OrderControllerTest extends ModuleTestCase
     // update() 테스트
     // ========================================
 
+    /**
+     * 수정 권한 관리자가 주문번호로 PATCH 하면 결제대기 → 결제완료(인접 전진) 전이가 DB 에 반영된다.
+     *
+     * @scenario transition_path=single_update, from_status=pending_payment, to_status=payment_complete, classification=forward_adjacent
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_changes_order_status(): void
     {
         // Given: pending_payment 상태의 주문
@@ -377,6 +538,15 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $order->fresh()->order_status);
     }
 
+    /**
+     * 수정 요청의 수취인·연락처·우편번호·주소·상세주소·배송메모는 배송지 주소 행에, 관리자 메모는 주문 행에 저장된다.
+     *
+     * @scenario caller=orders_update_admin
+     *
+     * @effects admin_order_update_saves_recipient_address_and_memos
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_saves_recipient_info_and_delivery_memo(): void
     {
         // Given: 배송지 주소가 있는 주문
@@ -416,6 +586,15 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertEquals('관리자 테스트 메모', $order->fresh()->admin_memo);
     }
 
+    /**
+     * 수취인명 101자·연락처 21자·배송메모 501자는 각 필드 검증 오류(422)로 거절된다.
+     *
+     * @scenario caller=orders_update_admin
+     *
+     * @effects admin_order_update_validates_recipient_field_lengths
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_validates_recipient_fields(): void
     {
         // Given: 수정 권한이 있는 사용자와 주문
@@ -435,6 +614,15 @@ class OrderControllerTest extends ModuleTestCase
         $response->assertJsonValidationErrors(['recipient_name', 'recipient_phone', 'delivery_memo']);
     }
 
+    /**
+     * 조회 권한만 가진 관리자의 주문 수정은 403 을 받는다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_update_requires_orders_update_permission
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_requires_edit_permission(): void
     {
         // Given: view 권한만 있는 사용자
@@ -460,6 +648,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario transition_path=single_update, from_status=confirmed, to_status=payment_complete, classification=reverse_not_whitelisted
      *
      * @effects single_reverse_transition_blocked_and_db_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_update_blocks_reverse_status_transition(): void
     {
@@ -488,6 +678,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario transition_path=single_update, from_status=confirmed, to_status=payment_complete, verify_stage=hook_fired
      *
      * @effects blocked_transition_does_not_fire_status_change_hook
+     *
+     * @return void 반환값 없음
      */
     public function test_blocked_transition_does_not_fire_status_change_hook(): void
     {
@@ -526,6 +718,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario transition_path=single_update, from_status=payment_complete, to_status=shipping, classification=forward_jump
      *
      * @effects single_forward_jump_allowed
+     *
+     * @return void 반환값 없음
      */
     public function test_update_allows_forward_jump_transition(): void
     {
@@ -558,6 +752,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario transition_path=single_update, from_status=shipping, to_status=shipping, classification=self
      *
      * @effects single_self_transition_allowed
+     *
+     * @return void 반환값 없음
      */
     public function test_update_allows_self_transition(): void
     {
@@ -588,6 +784,13 @@ class OrderControllerTest extends ModuleTestCase
     // bulkUpdate() 테스트
     // ========================================
 
+    /**
+     * 일괄 수정으로 결제대기 주문 3건을 결제완료로 바꾸면 3건 모두 DB 에 반영된다.
+     *
+     * @scenario transition_path=bulk_update, from_status=pending_payment, to_status=payment_complete, classification=forward_adjacent
+     *
+     * @return void 반환값 없음
+     */
     public function test_bulk_update_changes_multiple_orders(): void
     {
         // Given: 여러 pending_payment 주문
@@ -608,6 +811,15 @@ class OrderControllerTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 배송 행이 없는 주문을 일괄로 배송중 + 택배사·송장번호로 바꾸면 옵션마다 배송 행이 하나씩 생기고 택배사·송장·출고시각이 기록된다.
+     *
+     * @scenario caller=orders_update_admin
+     *
+     * @effects admin_order_bulk_shipping_creates_per_option_shipping_records
+     *
+     * @return void 반환값 없음
+     */
     public function test_bulk_update_shipping_creates_records_when_not_exist(): void
     {
         // Given: 옵션은 있지만 shipping 레코드가 없는 주문
@@ -661,6 +873,15 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertEquals($expectedOptionIds, $shippingOptionIds);
     }
 
+    /**
+     * 배송 행이 이미 있는 옵션은 일괄 송장 입력 시 새 행을 만들지 않고 기존 행의 택배사·송장번호를 갱신한다.
+     *
+     * @scenario caller=orders_update_admin
+     *
+     * @effects admin_order_bulk_shipping_updates_existing_shipping_record
+     *
+     * @return void 반환값 없음
+     */
     public function test_bulk_update_shipping_updates_existing_records(): void
     {
         // Given: 기존 shipping 레코드가 있는 주문
@@ -708,6 +929,15 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertEquals('NEW456', $shippings->first()->tracking_number);
     }
 
+    /**
+     * ids 없이 보낸 일괄 수정은 ids 검증 오류(422)로 거절된다.
+     *
+     * @scenario caller=orders_update_admin
+     *
+     * @effects admin_order_bulk_update_requires_ids
+     *
+     * @return void 반환값 없음
+     */
     public function test_bulk_update_validates_ids_required(): void
     {
         // Given: 권한 있는 사용자
@@ -730,6 +960,8 @@ class OrderControllerTest extends ModuleTestCase
      * @scenario transition_path=bulk_update, mix=2_forward_1_reverse, to_status=payment_complete, classification=all_or_nothing
      *
      * @effects bulk_update_all_or_nothing_blocks_and_db_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_update_blocks_all_when_one_reverse_transition(): void
     {
@@ -759,6 +991,15 @@ class OrderControllerTest extends ModuleTestCase
     // destroy() 테스트
     // ========================================
 
+    /**
+     * 삭제 권한 관리자가 주문번호로 취소 주문을 삭제하면 소프트 삭제된다.
+     *
+     * @scenario caller=orders_delete_admin
+     *
+     * @effects admin_order_destroy_soft_deletes
+     *
+     * @return void 반환값 없음
+     */
     public function test_destroy_soft_deletes_order(): void
     {
         // Given: 주문 존재
@@ -774,6 +1015,15 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertSoftDeleted('ecommerce_orders', ['id' => $order->id]);
     }
 
+    /**
+     * 조회 권한만 가진 관리자의 주문 삭제는 403 을 받는다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_destroy_requires_orders_delete_permission
+     *
+     * @return void 반환값 없음
+     */
     public function test_destroy_requires_delete_permission(): void
     {
         // Given: 삭제 권한 없는 사용자
@@ -791,6 +1041,15 @@ class OrderControllerTest extends ModuleTestCase
     // logs() 테스트
     // ========================================
 
+    /**
+     * 주문번호로 주문 로그를 조회하면 success 와 data.data 봉투가 돌아온다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_logs_returns_success_envelope
+     *
+     * @return void 반환값 없음
+     */
     public function test_logs_returns_paginated_logs(): void
     {
         // Given: 주문 존재
@@ -810,6 +1069,15 @@ class OrderControllerTest extends ModuleTestCase
             ]);
     }
 
+    /**
+     * 주문 로그 조회는 per_page·page·sort_order=asc 파라미터를 받아 정상 응답한다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_logs_accepts_pagination_and_sort_params
+     *
+     * @return void 반환값 없음
+     */
     public function test_logs_supports_pagination_params(): void
     {
         // Given: 주문 존재
@@ -823,6 +1091,15 @@ class OrderControllerTest extends ModuleTestCase
         $response->assertOk();
     }
 
+    /**
+     * 비로그인 요청은 주문 로그 조회에서 401 을 받는다.
+     *
+     * @scenario caller=unauthenticated
+     *
+     * @effects admin_order_logs_requires_authentication
+     *
+     * @return void 반환값 없음
+     */
     public function test_logs_requires_authentication(): void
     {
         // Given: 주문 존재
@@ -839,10 +1116,24 @@ class OrderControllerTest extends ModuleTestCase
     // sendEmail() 테스트
     // ========================================
 
+    /**
+     * 메일 채널을 준비하고 order_custom_email 알림 정의를 동기화한 상태에서 수정 권한 관리자의 메일 발송은 success=true 로 응답한다.
+     *
+     * @scenario caller=orders_update_admin
+     *
+     * @effects admin_order_send_email_succeeds_when_mail_channel_ready
+     *
+     * @return void 반환값 없음
+     */
     public function test_send_email_success(): void
     {
         // Given: 메일 Fake 설정 및 주문 생성
+        // 주문 메일은 7.1.0 부터 알림 정의(order_custom_email)·메일 채널 준비 상태를 거친다(#699).
         Mail::fake();
+        $this->enableMailChannelReadiness();
+        (new \ReflectionMethod(ModuleManager::class, 'syncModuleNotificationDefinitions'))
+            ->invoke(app(ModuleManager::class), new Module('sirsoft-ecommerce', $this->getModuleBasePath()));
+        app(NotificationDefinitionService::class)->invalidateAllCache();
         $order = OrderFactory::new()->create();
         $adminWithEditPermission = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
 
@@ -858,6 +1149,15 @@ class OrderControllerTest extends ModuleTestCase
             ->assertJsonPath('success', true);
     }
 
+    /**
+     * 빈 본문으로 메일을 보내면 email·message 검증 오류(422)로 거절된다.
+     *
+     * @scenario caller=orders_update_admin
+     *
+     * @effects admin_order_send_email_requires_email_and_message
+     *
+     * @return void 반환값 없음
+     */
     public function test_send_email_validation_fails_with_empty_data(): void
     {
         // Given: 주문 생성
@@ -873,6 +1173,15 @@ class OrderControllerTest extends ModuleTestCase
             ->assertJsonValidationErrors(['email', 'message']);
     }
 
+    /**
+     * 형식이 틀린 이메일 주소로 메일을 보내면 email 검증 오류(422)로 거절된다.
+     *
+     * @scenario caller=orders_update_admin
+     *
+     * @effects admin_order_send_email_rejects_invalid_email
+     *
+     * @return void 반환값 없음
+     */
     public function test_send_email_validation_fails_with_invalid_email(): void
     {
         // Given: 주문 생성
@@ -891,6 +1200,15 @@ class OrderControllerTest extends ModuleTestCase
             ->assertJsonValidationErrors(['email']);
     }
 
+    /**
+     * 비로그인 요청은 주문 메일 발송에서 401 을 받는다.
+     *
+     * @scenario caller=unauthenticated
+     *
+     * @effects admin_order_send_email_requires_authentication
+     *
+     * @return void 반환값 없음
+     */
     public function test_send_email_requires_permission(): void
     {
         // Given: 주문 존재, 권한 없는 관리자
@@ -910,6 +1228,15 @@ class OrderControllerTest extends ModuleTestCase
     // 회원/비회원 구분 필터 (member_type)
     // ========================================
 
+    /**
+     * member_type=member 필터는 회원 주문 2건만 돌려주고 비회원 주문 3건을 뺀다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_list_filters_by_member_type_member_when_user_id_is_present
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_filters_member_orders(): void
     {
         // Given: 회원 주문 2건, 비회원 주문 3건
@@ -927,6 +1254,15 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertCount(2, $data);
     }
 
+    /**
+     * member_type=guest 필터는 비회원 주문 3건만 돌려주고 회원 주문 2건을 뺀다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_list_filters_by_member_type_guest_when_user_id_is_null
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_filters_guest_orders(): void
     {
         // Given: 회원 주문 2건, 비회원 주문 3건
@@ -944,6 +1280,15 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertCount(3, $data);
     }
 
+    /**
+     * 허용 값 밖의 member_type 은 member_type 검증 오류(422)로 거절된다.
+     *
+     * @scenario caller=orders_read_admin
+     *
+     * @effects admin_order_list_rejects_unknown_member_type_with_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_index_rejects_invalid_member_type(): void
     {
         // When: 허용되지 않은 member_type 값
@@ -959,6 +1304,15 @@ class OrderControllerTest extends ModuleTestCase
     // 비회원 조회 비밀번호 재설정
     // ========================================
 
+    /**
+     * 비회원 주문의 조회 비밀번호를 재설정하면 해시가 새 비밀번호로 바뀌어 옛 비밀번호가 더는 맞지 않고, 응답에 평문이 실리지 않는다.
+     *
+     * @scenario caller=orders_update_admin
+     *
+     * @effects admin_reset_guest_lookup_password_updates_hash_for_guest_order
+     *
+     * @return void 반환값 없음
+     */
     public function test_reset_guest_lookup_password_succeeds_for_guest_order(): void
     {
         // Given: 조회 비밀번호 hash 가 설정된 비회원 주문, update 권한 관리자
@@ -983,6 +1337,15 @@ class OrderControllerTest extends ModuleTestCase
         $this->assertStringNotContainsString('newpass1', $response->getContent());
     }
 
+    /**
+     * 회원 주문에 조회 비밀번호 재설정을 시도하면 422 로 거절된다.
+     *
+     * @scenario caller=orders_update_admin
+     *
+     * @effects admin_reset_guest_lookup_password_rejects_member_order_with_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_reset_guest_lookup_password_rejected_for_member_order(): void
     {
         // Given: 회원 주문, update 권한 관리자
@@ -1001,6 +1364,15 @@ class OrderControllerTest extends ModuleTestCase
         $response->assertStatus(422);
     }
 
+    /**
+     * 8자 미만 비밀번호(abc12)는 guest_lookup_password 검증 오류(422)로 거절된다 — 회원가입 정책 min:8 과 같다.
+     *
+     * @scenario caller=orders_update_admin
+     *
+     * @effects admin_reset_guest_lookup_password_enforces_min_length_8
+     *
+     * @return void 반환값 없음
+     */
     public function test_reset_guest_lookup_password_validates_min_length(): void
     {
         // Given: 비회원 주문, update 권한 관리자
@@ -1019,6 +1391,15 @@ class OrderControllerTest extends ModuleTestCase
             ->assertJsonValidationErrors(['guest_lookup_password']);
     }
 
+    /**
+     * 숫자 없이 영문 8자(abcdefgh)만으로도 재설정이 성공한다 — 영문+숫자 조합을 강제하지 않는다.
+     *
+     * @scenario caller=orders_update_admin
+     *
+     * @effects admin_reset_guest_lookup_password_accepts_letters_only
+     *
+     * @return void 반환값 없음
+     */
     public function test_reset_guest_lookup_password_allows_letters_only(): void
     {
         // Given: 비회원 주문, update 권한 관리자
@@ -1036,6 +1417,15 @@ class OrderControllerTest extends ModuleTestCase
         $response->assertOk();
     }
 
+    /**
+     * 비로그인 요청은 비회원 조회 비밀번호 재설정에서 401 을 받는다.
+     *
+     * @scenario caller=unauthenticated
+     *
+     * @effects admin_reset_guest_lookup_password_requires_authentication
+     *
+     * @return void 반환값 없음
+     */
     public function test_reset_guest_lookup_password_requires_authentication(): void
     {
         // Given: 비회원 주문
@@ -1057,6 +1447,12 @@ class OrderControllerTest extends ModuleTestCase
      * GuestOrderAuthService 의 HMAC 입력에 비밀번호 해시 suffix 가 포함되어 있어
      * 비밀번호 변경 시 토큰 서명이 자동으로 불일치하는 stateless revocation 이 동작한다.
      * 이 invariant 가 회귀되면 (캐싱 추가/HMAC 입력 순서 변경 등) 본 테스트가 실패한다.
+     *
+     * @scenario caller=orders_update_admin
+     *
+     * @effects admin_reset_guest_lookup_password_revokes_existing_guest_token
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_password_reset_invalidates_existing_guest_token(): void
     {
@@ -1120,5 +1516,33 @@ class OrderControllerTest extends ModuleTestCase
             "/api/modules/sirsoft-ecommerce/user/orders/{$order->order_number}",
             ['X-Guest-Order-Token' => $newVerify->json('data.guest_order_token')]
         )->assertStatus(200);
+    }
+
+    /**
+     * 관리자 주문 상세에 진행단계 배열과 상태 아이콘 토큰이 실린다 — 회원·비회원 상세와 같은 배열.
+     *
+     * @scenario surface=admin_detail, order_stage=in_progress
+     *
+     * @effects order_progress_steps_seven_stages, order_status_badge_carries_icon
+     *
+     * @return void 반환값 없음
+     */
+    public function test_show_carries_progress_steps_and_status_icons(): void
+    {
+        $order = OrderFactory::new()->delivered()->create();
+        OrderOptionFactory::new()->count(2)->forOrder($order)->create();
+
+        $response = $this->actingAs($this->adminUser)
+            ->getJson("/api/modules/sirsoft-ecommerce/admin/orders/{$order->order_number}");
+
+        $response->assertOk()
+            ->assertJsonPath('data.order_status_icon', 'status-delivered')
+            ->assertJsonCount(7, 'data.progress_steps')
+            ->assertJsonPath('data.progress_steps.5.value', 'delivered')
+            ->assertJsonPath('data.progress_steps.5.state', 'current');
+
+        foreach ($response->json('data.options') as $option) {
+            $this->assertStringStartsWith('status-', $option['option_status_icon']);
+        }
     }
 }

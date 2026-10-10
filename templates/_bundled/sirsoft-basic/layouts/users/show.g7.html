@@ -1,0 +1,156 @@
+<!-- 남의 프로필 — 글 목록 화면과 달리 프로필까지 비회원에게 열려 있다(공개 프로필). 요약 통계와 최근 글을 각각 따로 받아 한쪽이 늦어도 나머지가 먼저 보인다. -->
+<layout name="users/show" version="1.0.0" extends="_user_base">
+  <meta>
+    <seo :enabled="true" :priority="0.4" changefreq="monthly">
+      <data-sources>
+        <item>profile</item>
+        <item>postStats</item>
+        <item>recentPosts</item>
+      </data-sources>
+      <og type="profile"/>
+      <structured-data @type="ProfilePage"/>
+    </seo>
+  </meta>
+  <!-- 프로필 본문 — 화면에 다시 들어올 때마다 새로 받는다(자기 프로필을 고치고 돌아오는 경우가 있다). -->
+  <data-source id="profile" label_key="$t:editor.data_source.profile" type="api" endpoint="/api/users/{{route.userId}}/profile" method="GET" :auto_fetch="true" :auth_required="false" :refetchOnMount="true" loading_strategy="progressive">
+    <error-handling>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 활동 요약 숫자 — 글·댓글 수 배지용이라 목록과 따로 받는다(목록은 첫 페이지만 오므로 전체 개수를 알 수 없다). 로그인했으면 토큰을 실어 보는 사람이 읽을 수 있는 게시판(회원전용 등)의 글까지 센다. -->
+  <data-source id="postStats" label_key="$t:editor.data_source.postStats" type="api" endpoint="/api/modules/sirsoft-board/users/{{route.userId}}/posts/stats" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive"/>
+  <!-- 최근 글 미리보기 — 프로필 아래에 몇 건만 보이고 전체는 작성글 화면으로 넘긴다. 위 숫자와 같은 기준이 되도록 로그인했으면 토큰을 싣는다. -->
+  <data-source id="recentPosts" label_key="$t:editor.data_source.recentPosts" type="api" endpoint="/api/modules/sirsoft-board/users/{{route.userId}}/posts" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+    <params :per_page="5"/>
+  </data-source>
+  <permissions/>
+  <slot name="content">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <container data-type="layout" class="py-8">
+        <responsive on="portable" class="py-4"/>
+        <!-- 로딩/에러 상태 처리 -->
+        <div data-if="{{profile.loading}}" class="flex justify-center items-center py-20">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"/>
+        </div>
+        <!-- 프로필 내용 -->
+        <div data-if="{{profile.data &amp;&amp; !profile.loading &amp;&amp; !profile.error}}" class="space-y-6">
+          <!-- 페이지 헤더 -->
+          <div class="flex items-center gap-2 mb-6">
+            <icon name="user" size="xl" class="text-gray-900 dark:text-white"/>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">$t:user.profile.page_title</h1>
+          </div>
+          <!-- 프로필 카드 -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
+            <div class="flex gap-6 items-start">
+              <responsive on="portable" class="flex flex-col items-center gap-4"/>
+              <!-- 아바타 (author 객체로 탈퇴 사용자 자동 처리) -->
+              <avatar data-type="composite" author="{{profile.data}}" size="xl">
+                <responsive on="portable" size="lg"/>
+              </avatar>
+              <!-- 기본 정보 (일반 사용자) -->
+              <div data-if="{{profile.data?.status !== 'withdrawn'}}" class="flex-1 space-y-3">
+                <responsive on="portable" class="w-full space-y-3 text-center"/>
+                <!-- 이름 (배지 제거) -->
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+                  <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white"/>
+                  {{profile.data?.name ?? '-'}}
+                </h2>
+                <!-- 가입일 -->
+                <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                  <responsive on="portable" class="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400"/>
+                  <icon name="calendar" size="sm"/>
+                  <span>$t:user.profile.joined_at</span>
+                  <span class="font-medium text-gray-700 dark:text-gray-300">{{profile.data?.created_at ?? '-'}}</span>
+                </div>
+                <!-- 자기소개 -->
+                <p data-if="{{profile.data?.bio}}" class="text-gray-600 dark:text-gray-300 whitespace-pre-wrap mt-4">{{profile.data?.bio}}</p>
+              </div>
+              <!-- 기본 정보 (탈퇴한 사용자) -->
+              <div data-if="{{profile.data?.status === 'withdrawn'}}" class="flex-1 space-y-3">
+                <responsive on="portable" class="w-full space-y-3 text-center"/>
+                <!-- 탈퇴한 사용자 텍스트 -->
+                <h2 class="text-2xl font-bold text-gray-400 dark:text-gray-500 line-through">
+                  <responsive on="portable" class="text-xl font-bold text-gray-400 dark:text-gray-500 line-through"/>
+                  $t:userinfo.withdrawn_user
+                </h2>
+              </div>
+            </div>
+          </div>
+          <!-- 활동 통계 카드 -->
+          <div class="grid grid-cols-2 gap-4">
+            <responsive on="portable" class="grid grid-cols-2 gap-3"/>
+            <!-- 게시글 수 -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 text-center">
+              <div class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{postStats.data?.posts_count ?? 0 | number}}</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">$t:user.profile.posts_count</div>
+            </div>
+            <!-- 댓글 수 -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 text-center">
+              <div class="text-3xl font-bold text-green-600 dark:text-green-400">{{postStats.data?.comments_count ?? 0 | number}}</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">$t:user.profile.comments_count</div>
+            </div>
+          </div>
+          <!-- 최근 게시글 섹션 -->
+          <div data-if="{{recentPosts.data?.data?.length > 0}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:user.profile.recent_posts</h3>
+              <button class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                <on type="click">
+                  <navigate path="/users/{{route.userId}}/posts"/>
+                </on>
+                <span>$t:user.profile.view_all</span>
+              </button>
+            </div>
+            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+              <button data-each="post in {{recentPosts.data?.data ?? []}}" class="block w-full text-left px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
+                <on type="click">
+                  <navigate path="/board/{{post.board_slug}}/{{post.id}}"/>
+                </on>
+                <div class="flex items-center justify-between gap-4">
+                  <!-- 제목 영역 -->
+                  <div class="flex-1 min-w-0 flex items-center gap-2 overflow-hidden">
+                    <!-- 게시판명 배지 -->
+                    <span class="flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap">{{post.board_name}}</span>
+                    <!-- 카테고리 배지 -->
+                    <span data-if="{{post.category}}" class="flex-shrink-0 text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded whitespace-nowrap">{{post.category}}</span>
+                    <!-- 비밀글 아이콘 -->
+                    <icon data-if="{{post.is_secret}}" name="lock" size="xs" class="flex-shrink-0 text-yellow-500 dark:text-yellow-400"/>
+                    <!-- 블라인드 아이콘 -->
+                    <icon data-if="{{post.status === 'blinded'}}" name="eye-slash" size="xs" class="flex-shrink-0 text-orange-500 dark:text-orange-400"/>
+                    <!-- 제목 + 댓글수 컨테이너 -->
+                    <div class="flex-1 min-w-0 flex items-center gap-1">
+                      <!-- 제목 -->
+                      <span class="truncate text-sm font-medium text-gray-900 dark:text-white">{{post.title}}</span>
+                      <!-- 댓글 수 -->
+                      <span data-if="{{post.comment_count > 0}}" class="flex-shrink-0 text-xs text-blue-600 dark:text-blue-400 font-medium">[{{post.comment_count}}]</span>
+                    </div>
+                  </div>
+                  <span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 hidden md:inline" title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
+                </div>
+              </button>
+            </div>
+          </div>
+          <!-- 최근 게시글 없음 상태 -->
+          <div data-if="{{!recentPosts.data?.data?.length}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:user.profile.recent_posts</h3>
+              <button class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                <on type="click">
+                  <navigate path="/users/{{route.userId}}/posts"/>
+                </on>
+                <span>$t:user.profile.view_all</span>
+              </button>
+            </div>
+            <div class="text-center py-12">
+              <icon name="file-circle-xmark" size="2xl" class="text-gray-300 dark:text-gray-600 mb-4"/>
+              <p class="text-gray-500 dark:text-gray-400">$t:user.profile.no_posts</p>
+            </div>
+          </div>
+        </div>
+      </container>
+    </div>
+  </slot>
+</layout>

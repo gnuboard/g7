@@ -1,0 +1,645 @@
+<!-- 상품 목록 — 검색 필터 영역. 주문 목록의 같은 영역과 구조가 같다(슬롯 등록 + 편집모드 +
+  프리셋), 다만 필터 항목이 상품 도메인이다.
+  
+  ⓐ 필터 행은 전부 화면 밖 등록 영역(`slot_registration_area`)에 한 번만 정의하고, 각 행의
+     `data-slot` 이 "기본 필터" 와 "상세 필터" 중 어디로 갈지를 그때그때 정한다 — 보이고 숨겨도
+     행이 사라졌다 다시 만들어지지 않으므로 입력값이 유지된다.
+  ⓑ 어떤 필터를 기본에 둘지는 운영자별 취향이라 브라우저(localStorage)에 남긴다. 저장은 셸의
+     필터 표시 선택기가 자기 `id`(`admin_ecommerce_product_filters`)와 로그인 사용자로 만든 키에
+     스스로 한다 — 주문 목록과 `id` 가 달라 키가 겹치지 않고, 편집모드 체크박스는 상태만 바꾼다.
+  ⓒ 입력 중인 값은 `_local.filter` 에 모이지만 **검색은 URL 로 나간다**(재진입·뒤로가기·주소
+     공유에서 같은 목록이 서야 한다).
+  
+  숫자 범위 필터가 둘인데 타입이 갈린다 — 가격은 `type="number"`, 재고는 `type="text"` 다. -->
+<partial description="Product Index - Filter Section with Slot System">
+  <div data-ref="filter_card" data-key="filter" class="admin-card">
+    <div data-ref="slot_registration_area" class="hidden filter-grid" aria-hidden="true">
+      <div data-ref="category_filter_row" data-slot="{{(_local.visibleFilters || []).includes('category') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="1" class="filter-row">
+        <responsive on="portable" class="filter-row flex-col items-start"/>
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('category')}}">
+          <on type="change">
+            <!-- 분류 필터 노출 스위치. 분류는 4단계라 자리를 많이 먹어, 안 쓰는 몰은 접어 두는 일이 많다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('category') ? (_local.visibleFilters || []).filter(f => f !== 'category') : [...(_local.visibleFilters || []), 'category']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.product.filter.category</span>
+        <div class="flex-center flex-wrap gap-2">
+          <responsive on="portable" class="grid grid-cols-2 gap-2 w-full"/>
+          <select name="category1" class="select-composite w-36" value="{{_local.filter.category1}}" options="{{_computed.category1Options ?? []}}">
+            <responsive on="portable" class="w-full"/>
+            <on type="change">
+              <!-- 분류는 4단계이고 위 단계를 바꾸면 아래 단계를 **전부 비운다** — 안 비우면 상위와 맞지 않는 하위 분류가 조건에 남는다. -->
+              <set-state target="_local" filter.category1="{{$event.target.value}}" filter.category2="" filter.category3="" filter.category4=""/>
+            </on>
+          </select>
+          <select data-if="{{_local.filter.category1}}" name="category2" class="select-composite w-36" value="{{_local.filter.category2}}" options="{{_computed.category2Options ?? []}}">
+            <responsive on="portable" class="w-full"/>
+            <on type="change">
+              <!-- 2단계를 바꾸면 3·4단계를 비운다(1단계는 그대로) — 아래 단계 선택지는 위 단계에서 파생되기 때문이다. -->
+              <set-state target="_local" filter.category2="{{$event.target.value}}" filter.category3="" filter.category4=""/>
+            </on>
+          </select>
+          <select data-if="{{_local.filter.category2}}" name="category3" class="select-composite w-36" value="{{_local.filter.category3}}" options="{{_computed.category3Options ?? []}}">
+            <responsive on="portable" class="w-full"/>
+            <on type="change">
+              <!-- 3단계를 바꾸면 4단계만 비운다. -->
+              <set-state target="_local" filter.category3="{{$event.target.value}}" filter.category4=""/>
+            </on>
+          </select>
+          <select data-if="{{_local.filter.category3}}" name="category4" class="select-composite w-36" value="{{_local.filter.category4}}" options="{{_computed.category4Options ?? []}}">
+            <responsive on="portable" class="w-full"/>
+            <on type="change">
+              <!-- 마지막 단계라 비울 아래가 없다. 서버로는 가장 깊이 고른 단계 하나만 보낸다. -->
+              <set-state target="_local" filter.category4="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <label class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="checkbox" checked="{{_local.filter.noCategoryRegistered}}">
+              <on type="change">
+                <!-- "분류 미등록" 은 위 4단계와 **배타가 아니다** — 둘 다 켜면 서버가 각각을 조건으로 받는다. 값을 뒤집어 담는 이유는 체크박스의 checked 를 이 키가 정하기 때문이다. -->
+                <set-state target="_local" filter.noCategoryRegistered="{{!_local.filter.noCategoryRegistered}}"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.admin.product.filter.no_category</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('date') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('date')}}">
+          <on type="change">
+            <!-- 일자 필터 노출 스위치. 어느 날짜(등록·수정)를 기준으로 볼지까지 이 행 안에서 고른다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('date') ? (_local.visibleFilters || []).filter(f => f !== 'date') : [...(_local.visibleFilters || []), 'date']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.product.filter.date</span>
+        <div class="flex-center flex-wrap gap-2">
+          <select name="dateType" aria-label="$t:sirsoft-ecommerce.admin.product.filter.date_type_select" class="w-28" value="{{_local.filter.dateType || 'created_at'}}">
+            <options>
+              <option value="created_at">$t:sirsoft-ecommerce.admin.product.filter.date_type.created_at</option>
+              <option value="updated_at">$t:sirsoft-ecommerce.admin.product.filter.date_type.updated_at</option>
+            </options>
+            <on type="change">
+              <!-- 등록일과 수정일 중 무엇을 기준으로 볼지. 주문 목록은 주문·결제·발송 셋인데 상품은 둘뿐이다. -->
+              <set-state target="_local" filter.dateType="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <div class="flex-center gap-2">
+            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+            <input type="date" name="startDate" value="{{_local.filter.startDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.filter.start_date" class="input w-36">
+              <on type="change">
+                <!-- 직접 고르면 빠른 기간 버튼의 선택 표시를 지운다 — 남겨 두면 버튼은 "1개월" 인데 실제 범위는 다른 상태가 된다. -->
+                <set-state target="_local" filter.startDate="{{$event.target.value}}" filter.dateQuick=""/>
+              </on>
+            </input>
+            <span class="text-gray-400 dark:text-gray-500">~</span>
+            <input type="date" name="endDate" value="{{_local.filter.endDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.filter.end_date" class="input w-36">
+              <on type="change">
+                <!-- 시작일과 같은 이유로 빠른 기간 표시를 지운다. 시작·종료 중 하나만 넣어도 서버는 열린 구간으로 받는다. -->
+                <set-state target="_local" filter.endDate="{{$event.target.value}}" filter.dateQuick=""/>
+              </on>
+            </input>
+          </div>
+          <div class="flex-center flex-wrap gap-1">
+            <div class="{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 빠른 기간 버튼 여섯. 핸들러가 시작·종료일을 계산해 돌려주고 그 결과를 `$prev` 로 받아 담는다 — 날짜 계산을 레이아웃 표현식에 두지 않으려는 것이다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="today"/>
+                  <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.admin.product.filter.date_quick.today
+            </div>
+            <div class="{{_local.filter.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 3일. 주문 목록에는 없는 구간으로, 상품은 최근 등록분을 훑는 일이 잦아 짧은 구간을 더 뒀다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="3days"/>
+                  <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.admin.product.filter.date_quick.3days
+            </div>
+            <div class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 1주일. 눌린 버튼 표시는 `dateQuick` 이 정하고, 날짜 칸을 직접 고치면 그 표시가 지워진다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="week"/>
+                  <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.admin.product.filter.date_quick.week
+            </div>
+            <div class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 1개월. 기준 날짜는 위 "등록일/수정일" 선택을 따른다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="month"/>
+                  <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.admin.product.filter.date_quick.month
+            </div>
+            <div class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 3개월. 상품은 주문과 달리 오래된 것도 계속 유효하므로 6개월 구간 대신 "전체" 를 뒀다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="3months"/>
+                  <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.admin.product.filter.date_quick.3months
+            </div>
+            <div class="{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+              <on type="click">
+                <!-- 전체. 날짜 조건을 비우는 자리라 다른 다섯과 달리 범위를 넓히는 것이 아니라 없앤다. -->
+                <sequence>
+                  <action handler="sirsoft-ecommerce.setDateRange" preset="all"/>
+                  <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}"/>
+                </sequence>
+              </on>
+              $t:sirsoft-ecommerce.admin.product.filter.date_quick.all
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="sales_status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('salesStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('salesStatus')}}">
+          <on type="change">
+            <!-- 판매상태 필터 노출 스위치. 네 상태를 겹쳐 고를 수 있어 배열로 담긴다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('salesStatus') ? (_local.visibleFilters || []).filter(f => f !== 'salesStatus') : [...(_local.visibleFilters || []), 'salesStatus']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.product.filter.sales_status</span>
+        <div class="filter-buttons">
+          <label class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="checkbox" checked="{{!_local.filter.salesStatus || (_local.filter.salesStatus || []).length === 0}}">
+              <on type="change">
+                <!-- "전체" 는 별도 값이 아니라 **빈 배열**이다 — 상태를 하나도 고르지 않은 것과 전부 고른 것이 같은 결과이므로 조건 자체를 뺀다. -->
+                <set-state target="_local" :filter.salesStatus="[]"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.admin.product.filter.sales_status_options.all</span>
+          </label>
+          <label class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.salesStatus || []).includes('on_sale')}}">
+              <on type="change">
+                <!-- 판매중. 네 상태는 겹쳐 고를 수 있어 배열에 넣고 뺀다(주문 상태 필터와 같은 관용구). -->
+                <set-state target="_local" filter.salesStatus="{{(_local.filter.salesStatus || []).includes('on_sale') ? (_local.filter.salesStatus || []).filter(s => s !== 'on_sale') : [...(_local.filter.salesStatus || []), 'on_sale']}}"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.enums.sales_status.on_sale</span>
+          </label>
+          <label class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.salesStatus || []).includes('suspended')}}">
+              <on type="change">
+                <!-- 판매중지. 품절과 달리 운영자가 명시적으로 내린 상태다. -->
+                <set-state target="_local" filter.salesStatus="{{(_local.filter.salesStatus || []).includes('suspended') ? (_local.filter.salesStatus || []).filter(s => s !== 'suspended') : [...(_local.filter.salesStatus || []), 'suspended']}}"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.enums.sales_status.suspended</span>
+          </label>
+          <label class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.salesStatus || []).includes('sold_out')}}">
+              <on type="change">
+                <!-- 품절. 재고가 0 이 되면 자동으로 잡히는 상태라 재고 필터와 겹쳐 쓰면 교집합이 된다. -->
+                <set-state target="_local" filter.salesStatus="{{(_local.filter.salesStatus || []).includes('sold_out') ? (_local.filter.salesStatus || []).filter(s => s !== 'sold_out') : [...(_local.filter.salesStatus || []), 'sold_out']}}"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.enums.sales_status.sold_out</span>
+          </label>
+          <label class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="checkbox" checked="{{(_local.filter.salesStatus || []).includes('coming_soon')}}">
+              <on type="change">
+                <!-- 판매예정. 판매 시작일이 아직 오지 않은 상품이다. -->
+                <set-state target="_local" filter.salesStatus="{{(_local.filter.salesStatus || []).includes('coming_soon') ? (_local.filter.salesStatus || []).filter(s => s !== 'coming_soon') : [...(_local.filter.salesStatus || []), 'coming_soon']}}"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.enums.sales_status.coming_soon</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="display_status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('displayStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="4" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('displayStatus')}}">
+          <on type="change">
+            <!-- 전시상태 필터 노출 스위치. 판매상태와 달리 하나만 고르는 값이다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('displayStatus') ? (_local.visibleFilters || []).filter(f => f !== 'displayStatus') : [...(_local.visibleFilters || []), 'displayStatus']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.product.filter.display_status</span>
+        <div class="filter-buttons">
+          <label class="flex-center gap-2 cursor-pointer text-label">
+            <input type="radio" name="display_status" class="radio" checked="{{(_local.filter.displayStatus || 'all') === 'all'}}">
+              <on type="change">
+                <!-- 전시상태는 판매상태와 달리 **하나만** 고른다 — 그래서 배열이 아니라 라디오이고 "전체" 도 값(`all`)이다. -->
+                <set-state target="_local" filter.displayStatus="all"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.admin.product.filter.display_status_options.all</span>
+          </label>
+          <label class="flex-center gap-2 cursor-pointer text-label">
+            <input type="radio" name="display_status" class="radio" checked="{{_local.filter.displayStatus === 'visible'}}">
+              <on type="change">
+                <!-- 노출. 전시상태는 쇼핑몰에서 보이는지만 정하고 살 수 있는지는 판매상태가 정한다 — 둘은 독립이다. -->
+                <set-state target="_local" filter.displayStatus="visible"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.enums.display_status.visible</span>
+          </label>
+          <label class="flex-center gap-2 cursor-pointer text-label">
+            <input type="radio" name="display_status" class="radio" checked="{{_local.filter.displayStatus === 'hidden'}}">
+              <on type="change">
+                <!-- 숨김. 숨긴 상품도 주소를 알면 들어갈 수 있으므로 "판매중지" 와 같지 않다. -->
+                <set-state target="_local" filter.displayStatus="hidden"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.enums.display_status.hidden</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="brand_filter_row" data-slot="{{(_local.visibleFilters || []).includes('brand') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('brand')}}">
+          <on type="change">
+            <!-- 브랜드 필터 노출 스위치. 브랜드를 안 쓰는 몰에서는 늘 비어 있는 행이다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('brand') ? (_local.visibleFilters || []).filter(f => f !== 'brand') : [...(_local.visibleFilters || []), 'brand']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.product.filter.brand</span>
+        <div class="flex-center flex-wrap gap-4">
+          <select name="brandId" class="w-48 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{_local.filter.brandId || ''}}" options="{{_computed.brandOptions ?? []}}" placeholder="$t:common.select_placeholder">
+            <on type="change">
+              <!-- 브랜드는 목록이 설치마다 다르므로 선택지를 서버에서 받는다. 값으로 이름이 아니라 id 를 담는 이유는 브랜드명이 바뀌어도 저장한 프리셋이 같은 브랜드를 가리켜야 하기 때문이다. -->
+              <set-state target="_local" filter.brandId="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <label class="flex-center gap-2 cursor-pointer text-label">
+            <input type="checkbox" class="w-4 h-4 text-blue-600 dark:text-blue-400 rounded" checked="{{_local.filter.noBrandRegistered || false}}">
+              <on type="change">
+                <!-- "브랜드 미등록" 도 위 선택과 배타가 아니다 — 분류 쪽과 같은 관용구다. -->
+                <set-state target="_local" filter.noBrandRegistered="{{!_local.filter.noBrandRegistered}}"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.admin.product.filter.no_brand</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="tax_status_filter_row" data-slot="{{(_local.visibleFilters || []).includes('taxStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('taxStatus')}}">
+          <on type="change">
+            <!-- 과세구분 필터 노출 스위치. 면세 상품을 따로 쓰는 몰에서만 의미가 있다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('taxStatus') ? (_local.visibleFilters || []).filter(f => f !== 'taxStatus') : [...(_local.visibleFilters || []), 'taxStatus']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.product.filter.tax_status</span>
+        <div class="filter-buttons">
+          <label class="flex-center gap-2 cursor-pointer text-label">
+            <input type="radio" name="tax_status" class="radio" checked="{{(_local.filter.taxStatus || 'all') === 'all'}}">
+              <on type="change">
+                <!-- 과세구분도 하나만 고르는 값이라 "전체" 가 값(`all`)이다. -->
+                <set-state target="_local" filter.taxStatus="all"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.admin.product.filter.tax_status_options.all</span>
+          </label>
+          <label class="flex-center gap-2 cursor-pointer text-label">
+            <input type="radio" name="tax_status" class="radio" checked="{{_local.filter.taxStatus === 'taxable'}}">
+              <on type="change">
+                <!-- 과세. 부가세 계산 대상이라 주문 금액 구성이 면세 상품과 다르다. -->
+                <set-state target="_local" filter.taxStatus="taxable"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.enums.tax_status.taxable</span>
+          </label>
+          <label class="flex-center gap-2 cursor-pointer text-label">
+            <input type="radio" name="tax_status" class="radio" checked="{{_local.filter.taxStatus === 'tax_free'}}">
+              <on type="change">
+                <!-- 면세. 도서·농산물처럼 법으로 정해진 품목에 쓴다. -->
+                <set-state target="_local" filter.taxStatus="tax_free"/>
+              </on>
+            </input>
+            <span>$t:sirsoft-ecommerce.enums.tax_status.tax_free</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="price_filter_row" data-slot="{{(_local.visibleFilters || []).includes('price') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('price')}}">
+          <on type="change">
+            <!-- 가격 필터 노출 스위치. 정가·판매가 중 무엇을 기준으로 볼지까지 이 행에서 고른다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('price') ? (_local.visibleFilters || []).filter(f => f !== 'price') : [...(_local.visibleFilters || []), 'price']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.product.filter.price</span>
+        <div class="md:flex-row md:items-center">
+          <select name="priceType" aria-label="$t:sirsoft-ecommerce.admin.product.filter.price_type_select" class="w-full md:w-28" value="{{_local.filter.priceType || 'selling_price'}}">
+            <options>
+              <option value="selling_price">$t:sirsoft-ecommerce.admin.product.filter.price_type.selling_price</option>
+              <option value="original_price">$t:sirsoft-ecommerce.admin.product.filter.price_type.original_price</option>
+            </options>
+            <on type="change">
+              <!-- 정가와 판매가 중 **어느 값에** 아래 범위를 걸지 고른다 — 할인 중인 상품은 둘이 다르므로 기준을 바꾸면 결과가 달라진다. -->
+              <set-state target="_local" filter.priceType="{{$event.target.value}}"/>
+            </on>
+          </select>
+          <div class="flex-center gap-2">
+            <input type="number" value="{{_local.filter?.minPrice ?? ''}}" min="0" step="1" placeholder="$t:sirsoft-ecommerce.admin.product.filter.min_price" class="w-32">
+              <on type="change">
+                <!-- 숫자를 한 자리씩 칠 때마다 담지 않고 300ms 묶는다(자릿수를 늘리는 동안 중간값이 조건이 되지 않게). -->
+                <set-state :debounce="300" target="_local" filter.minPrice="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <span class="text-gray-400 dark:text-gray-500 shrink-0">~</span>
+            <input type="number" value="{{_local.filter?.maxPrice ?? ''}}" min="0" step="1" placeholder="$t:sirsoft-ecommerce.admin.product.filter.max_price" class="w-32">
+              <on type="change">
+                <!-- 최소값과 같은 이유로 묶는다. 한쪽만 넣어도 서버는 열린 구간으로 받는다. -->
+                <set-state :debounce="300" target="_local" filter.maxPrice="{{$event.target.value}}"/>
+              </on>
+            </input>
+          </div>
+        </div>
+      </div>
+      <div data-ref="stock_filter_row" data-slot="{{(_local.visibleFilters || []).includes('stock') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('stock')}}">
+          <on type="change">
+            <!-- 재고 필터 노출 스위치. 재고는 옵션 단위라 여기 범위는 상품 기준 합계에 걸린다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('stock') ? (_local.visibleFilters || []).filter(f => f !== 'stock') : [...(_local.visibleFilters || []), 'stock']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.product.filter.stock</span>
+        <div class="flex-center gap-2">
+          <input type="text" value="{{_local.filter?.minStock ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.filter.min" class="input md:w-28">
+            <on type="change">
+              <!-- 재고는 옵션 단위로 잡히므로 이 범위는 상품 기준 합계에 걸린다. 가격 칸과 달리 `type="text"` 라 숫자 아닌 입력도 들어올 수 있고 판정은 서버가 한다. -->
+              <set-state :debounce="300" target="_local" filter.minStock="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span class="text-gray-400 dark:text-gray-500 shrink-0">~</span>
+          <input type="text" value="{{_local.filter?.maxStock ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.filter.max" class="input md:w-28">
+            <on type="change">
+              <!-- 최소 재고와 같은 이유로 묶는다. 0 을 넣으면 품절만 보는 것과 비슷하지만 품절 상태와 재고 0 이 항상 같지는 않다. -->
+              <set-state :debounce="300" target="_local" filter.maxStock="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <span class="text-gray-500 dark:text-gray-400 shrink-0">$t:sirsoft-ecommerce.admin.product.filter.stock_unit</span>
+        </div>
+      </div>
+      <div data-ref="shipping_policy_filter_row" data-slot="{{(_local.visibleFilters || []).includes('shippingPolicy') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="filter-row">
+        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('shippingPolicy')}}">
+          <on type="change">
+            <!-- 배송정책 필터 노출 스위치. 정책을 여러 개 쓰는 몰에서 정책별로 상품을 훑을 때 쓴다. 어떤 필터를 기본에 둘지는 운영자별 취향이라 서버가 아니라 브라우저에 남긴다 — 여기서는 상태만 바꾸고, 저장은 셸의 필터 표시 선택기가 바뀐 값을 받아 브라우저에 남긴다. -->
+              <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('shippingPolicy') ? (_local.visibleFilters || []).filter(f => f !== 'shippingPolicy') : [...(_local.visibleFilters || []), 'shippingPolicy']}}"/>
+          </on>
+        </input>
+        <span class="filter-label w-32">$t:sirsoft-ecommerce.admin.product.filter.shipping_policy</span>
+        <div class="flex-center flex-wrap gap-2">
+          <select name="shippingPolicy" class="!w-48" value="{{_local.filter.shippingPolicy || ''}}" options="{{_computed.shippingPolicyOptions ?? [{ value: '', label: '$t:common.all' }]}}">
+            <on type="change">
+              <!-- 배송정책 선택지는 쇼핑몰 설정에서 온다. 정책을 지정하지 않은 상품은 빈 값으로 잡힌다. -->
+              <set-state target="_local" filter.shippingPolicy="{{$event.target.value}}"/>
+            </on>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div data-ref="preset_row" class="flex-center flex-wrap gap-3 mb-4">
+      <div class="flex-center gap-2 text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200">
+        <on type="click">
+          <open-modal target="modal_preset_manage"/>
+        </on>
+        <icon name="sliders" class="text-base"/>
+        <span class="text-sm font-medium">$t:sirsoft-ecommerce.admin.product.preset.label</span>
+      </div>
+      <!-- 프리셋 버튼. 저장된 조건 세트를 통째로 갈아끼우고 펼침 상태를 비운 뒤 주소를 바꾼다 — 지금 걸린 조건과 섞지 않는 것이 프리셋의 뜻이다 -->
+      <div data-ref="preset_buttons_dynamic_{{presetIdx}}" data-each="preset, presetIdx in presets.data || []" class="{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 dark:ring-gray-500 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}">
+        <on type="click">
+          <set-state target="_local" merge="shallow">
+            <field name="filter">
+              <field name="selectedPreset" value="{{preset.id}}"/>
+              <field name="searchField" value="{{preset.conditions?.searchField || 'all'}}"/>
+              <field name="searchKeyword" value="{{preset.conditions?.searchKeyword || ''}}"/>
+              <field name="category1" value="{{preset.conditions?.category1 || ''}}"/>
+              <field name="category2" value="{{preset.conditions?.category2 || ''}}"/>
+              <field name="category3" value="{{preset.conditions?.category3 || ''}}"/>
+              <field name="category4" value="{{preset.conditions?.category4 || ''}}"/>
+              <field name="noCategoryRegistered" value="{{preset.conditions?.noCategoryRegistered || false}}"/>
+              <field name="dateType" value="{{preset.conditions?.dateType || 'created_at'}}"/>
+              <field name="startDate" value="{{preset.conditions?.startDate || ''}}"/>
+              <field name="endDate" value="{{preset.conditions?.endDate || ''}}"/>
+              <field name="dateQuick" value="{{preset.conditions?.dateQuick || ''}}"/>
+              <field name="salesStatus" value="{{preset.conditions?.salesStatus || []}}"/>
+              <field name="displayStatus" value="{{preset.conditions?.displayStatus || 'all'}}"/>
+              <field name="brandId" value="{{preset.conditions?.brandId || ''}}"/>
+              <field name="noBrandRegistered" value="{{preset.conditions?.noBrandRegistered || false}}"/>
+              <field name="taxStatus" value="{{preset.conditions?.taxStatus || 'all'}}"/>
+              <field name="priceType" value="{{preset.conditions?.priceType || 'selling_price'}}"/>
+              <field name="minPrice" value="{{preset.conditions?.minPrice || ''}}"/>
+              <field name="maxPrice" value="{{preset.conditions?.maxPrice || ''}}"/>
+              <field name="minStock" value="{{preset.conditions?.minStock || ''}}"/>
+              <field name="maxStock" value="{{preset.conditions?.maxStock || ''}}"/>
+              <field name="shippingPolicy" value="{{preset.conditions?.shippingPolicy || ''}}"/>
+            </field>
+          </set-state>
+          <action-ref name="resetExpandedOptionState"/>
+          <!-- audit:allow layout-list-context-navigate-merge-query 프리셋 적용 — 프리셋은 조건 세트를 통째로 갈아끼우는 것이므로 병합하면 직전 조건이 섞인다. 주문 목록의 프리셋 규약과 동일. -->
+          <navigate path="/admin/ecommerce/products" :replace="true" :mergeQuery="false">
+            <query :page="1" preset_id="{{preset.id}}" search_field="{{(preset.conditions?.searchField || 'all') !== 'all' ? preset.conditions?.searchField : null}}" search_keyword="{{preset.conditions?.searchKeyword || null}}" category_id1="{{preset.conditions?.category1 || null}}" category_id2="{{preset.conditions?.category2 || null}}" category_id3="{{preset.conditions?.category3 || null}}" category_id4="{{preset.conditions?.category4 || null}}" category_id="{{preset.conditions?.category4 || preset.conditions?.category3 || preset.conditions?.category2 || preset.conditions?.category1 || null}}" no_category="{{preset.conditions?.noCategoryRegistered ? 'true' : null}}" sales_status="{{(preset.conditions?.salesStatus || []).length > 0 ? preset.conditions?.salesStatus : null}}" display_status="{{(preset.conditions?.displayStatus || 'all') !== 'all' ? preset.conditions?.displayStatus : null}}" brand_id="{{preset.conditions?.brandId || null}}" no_brand="{{preset.conditions?.noBrandRegistered ? 'true' : null}}" tax_status="{{(preset.conditions?.taxStatus || 'all') !== 'all' ? preset.conditions?.taxStatus : null}}" date_type="{{(preset.conditions?.dateType || 'created_at') !== 'created_at' ? preset.conditions?.dateType : null}}" start_date="{{preset.conditions?.startDate || null}}" end_date="{{preset.conditions?.endDate || null}}" price_type="{{(preset.conditions?.priceType || 'selling_price') !== 'selling_price' ? preset.conditions?.priceType : null}}" min_price="{{preset.conditions?.minPrice || null}}" max_price="{{preset.conditions?.maxPrice || null}}" min_stock="{{preset.conditions?.minStock || null}}" max_stock="{{preset.conditions?.maxStock || null}}" shipping_policy_id="{{preset.conditions?.shippingPolicy || null}}"/>
+          </navigate>
+          <toast type="info" message="$t:sirsoft-ecommerce.admin.product.preset.applied|name={{preset.name}}"/>
+        </on>
+        {{preset.name}}
+      </div>
+    </div>
+    <div data-ref="search_row" class="flex-center flex-wrap gap-3">
+      <responsive on="portable" class="row-stack"/>
+      <div data-ref="search_row_line1" class="contents">
+        <responsive on="portable" class="flex-center gap-3 w-full"/>
+        <select name="searchField" class="w-80 shrink-0" value="{{_local.filter.searchField || 'all'}}">
+          <responsive on="portable" class="w-24 shrink-0"/>
+          <options>
+            <option value="all">$t:sirsoft-ecommerce.admin.product.search.field.all</option>
+            <option value="name">$t:sirsoft-ecommerce.admin.product.search.field.product_name</option>
+            <option value="description">$t:sirsoft-ecommerce.admin.product.search.field.description</option>
+            <option value="product_code">$t:sirsoft-ecommerce.admin.product.search.field.product_code</option>
+            <option value="sku">$t:sirsoft-ecommerce.admin.product.search.field.sku</option>
+            <option value="barcode">$t:sirsoft-ecommerce.admin.product.search.field.barcode</option>
+          </options>
+          <on type="change">
+            <!-- 검색어를 어느 칸에서 찾을지. "전체" 는 서버가 여러 칸을 OR 로 훑으므로 범위를 좁히면 빨라진다. -->
+            <set-state target="_local" filter.searchField="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <div class="flex-1 min-w-64 relative">
+          <responsive on="portable" class="flex-1 min-w-0 relative"/>
+          <icon name="search" class="text-base absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"/>
+          <input type="text" placeholder="$t:sirsoft-ecommerce.admin.product.search.placeholder" class="input pl-10" value="{{_local.filter.searchKeyword}}">
+            <on type="change">
+              <!-- 타이핑은 300ms 묶어 담기만 한다 — 글자마다 조회하면 목록 API 를 계속 친다. 실제 조회는 Enter 나 검색 버튼이다. -->
+              <set-state :debounce="300" target="_local" filter.searchKeyword="{{$event.target.value}}"/>
+            </on>
+            <on type="keypress" key="Enter">
+              <!-- Enter 는 묶지 않고 즉시 담은 뒤 검색을 부른다 — 위 묶음이 아직 안 끝났으면 방금 친 글자가 빠진 채 조회될 자리다. -->
+              <sequence>
+                <set-state target="_local" filter.searchKeyword="{{$event.target.value}}"/>
+                <action-ref name="searchProducts"/>
+              </sequence>
+            </on>
+          </input>
+        </div>
+      </div>
+      <div data-ref="search_row_line2" class="flex-center gap-2 ml-auto">
+        <responsive on="portable" class="grid grid-cols-2 gap-2 w-full"/>
+        <column-selector data-type="composite" data-ref="column_selector" id="admin_product_list_columns" visibleColumns="{{_local.visibleColumns}}" triggerLabel="$t:sirsoft-ecommerce.admin.product.search.column_select" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
+          <responsive on="portable" class="w-full" triggerClassName="w-full justify-center" labelClassName="inline"/>
+          <prop name="columns">
+            <item field="thumbnail" header="$t:sirsoft-ecommerce.admin.product.table.column.image"/>
+            <item field="name" header="$t:sirsoft-ecommerce.admin.product.table.column.product_name" :required="true"/>
+            <item field="categories" header="$t:sirsoft-ecommerce.admin.product.table.column.category"/>
+            <item field="list_price_formatted" header="$t:sirsoft-ecommerce.admin.product.table.column.original_price"/>
+            <item field="selling_price_formatted" header="$t:sirsoft-ecommerce.admin.product.table.column.selling_price"/>
+            <item field="stock_quantity" header="$t:sirsoft-ecommerce.admin.product.table.column.stock"/>
+            <item field="sales_status" header="$t:sirsoft-ecommerce.admin.product.table.column.sales_status"/>
+            <item field="display_status" header="$t:sirsoft-ecommerce.admin.product.table.column.display_status"/>
+            <item field="brand_name" header="$t:sirsoft-ecommerce.admin.product.table.column.brand"/>
+            <item field="min_purchase_qty" header="$t:sirsoft-ecommerce.admin.product.table.column.min_purchase_qty"/>
+            <item field="max_purchase_qty" header="$t:sirsoft-ecommerce.admin.product.table.column.max_purchase_qty"/>
+            <item field="shipping_policy_name" header="$t:sirsoft-ecommerce.admin.product.table.column.shipping_policy"/>
+            <item field="created_at" header="$t:sirsoft-ecommerce.admin.product.table.column.created_at"/>
+            <item field="updated_at" header="$t:sirsoft-ecommerce.admin.product.table.column.updated_at"/>
+          </prop>
+          <prop name="defaultColumns">
+            <item>thumbnail</item>
+            <item>name</item>
+            <item>categories</item>
+            <item>selling_price_formatted</item>
+            <item>stock_quantity</item>
+            <item>sales_status</item>
+            <item>display_status</item>
+            <item>shipping_policy_name</item>
+            <item>created_at</item>
+          </prop>
+          <on type="change" event="onColumnVisibilityChange">
+            <!-- 표의 열 선택. 고른 열은 ColumnSelector 가 `id`(admin_product_list_columns)와 로그인 사용자로 키를 만들어 브라우저에 남기므로 새로고침해도 유지된다 — 이 set-state 는 화면 상태를 맞추는 쪽이고, 남기는 일은 컴포넌트가 한다. -->
+            <set-state target="_local" visibleColumns="{{$args[0]}}"/>
+          </on>
+        </column-selector>
+        <button type="button" class="{{_local.showDetailFilter ? 'btn btn-primary' : 'btn btn-outline'}}">
+          <responsive on="portable" class="{{_local.showDetailFilter ? 'btn btn-primary w-full justify-center' : 'btn btn-outline w-full justify-center'}}"/>
+          <on type="click">
+            <!-- 상세 필터 펼침/접힘. 편집모드를 켜면 이 값이 강제로 참이 되므로(아래 검색편집 버튼) 여기서 끄면 편집모드에서도 접힌다. -->
+            <set-state target="_local" showDetailFilter="{{!_local.showDetailFilter}}"/>
+          </on>
+          <icon name="filter" class="text-base"/>
+          <span>$t:sirsoft-ecommerce.admin.product.search.detail_search</span>
+          <icon name="{{_local.showDetailFilter ? 'chevron-up' : 'chevron-down'}}" class="text-base"/>
+        </button>
+      </div>
+    </div>
+    <div data-ref="basic_filter_section" class="flex flex-col mt-4">
+      <slot-container data-type="composite" data-ref="basic_filters_slot" slotId="basic_filters" class="filter-grid"/>
+    </div>
+    <div data-ref="detail_filter_wrapper" data-if="{{_local.showDetailFilter}}" class="border-t border-gray-100 dark:border-gray-800 pt-4 mt-2">
+      <span class="text-body font-medium mb-2 block">$t:sirsoft-ecommerce.admin.product.filter.detail_title</span>
+      <slot-container data-type="composite" data-ref="detail_filters_slot" slotId="detail_filters" class="filter-grid"/>
+    </div>
+    <div data-ref="filter_actions" class="flex-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+      <responsive on="portable" class="row-stack border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"/>
+      <div data-ref="filter_actions_row1" class="contents">
+        <responsive on="portable" class="flex gap-2 w-full"/>
+        <div data-ref="edit_search_button_wrapper" class="flex-1">
+          <responsive on="portable" class="hidden"/>
+          <button data-ref="edit_search_button" type="button" class="{{_local.isEditMode ? 'btn btn-primary' : 'btn btn-outline'}}">
+            <on type="click">
+              <!-- 검색편집을 켜면 상세 필터를 강제로 펼친다 — 숨겨 둔 필터를 다시 꺼내려면 그것이 보여야 하기 때문이고, 끌 때는 펼침 상태를 그대로 둔다. -->
+              <sequence>
+                <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
+              </sequence>
+            </on>
+            <icon name="sliders" class="text-base"/>
+            <span>$t:sirsoft-ecommerce.admin.product.action.edit_search</span>
+          </button>
+        </div>
+        <div class="flex-center justify-center gap-2 flex-1">
+          <responsive on="portable" class="contents"/>
+          <button type="button" class="btn btn-primary">
+            <responsive on="portable" class="btn btn-primary flex-1"/>
+            <on type="click">
+              <action-ref name="searchProducts"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.action.search
+          </button>
+          <!-- 필터 초기화. 폼 상태·펼침 상태·주소를 모두 비운다 — 한 곳만 비우면 남은 값이 다음 검색에 되살아난다 -->
+          <button type="button" class="btn btn-outline">
+            <responsive on="portable" class="btn btn-outline flex-1"/>
+            <on type="click">
+              <set-state target="_local" merge="shallow">
+                <field name="filter">
+                  <field name="selectedPreset" value=""/>
+                  <field name="searchField" value="all"/>
+                  <field name="searchKeyword" value=""/>
+                  <field name="category1" value=""/>
+                  <field name="category2" value=""/>
+                  <field name="category3" value=""/>
+                  <field name="category4" value=""/>
+                  <field name="noCategoryRegistered" :value="false"/>
+                  <field name="dateType" value="created_at"/>
+                  <field name="startDate" value=""/>
+                  <field name="endDate" value=""/>
+                  <field name="dateQuick" value=""/>
+                  <field name="salesStatus" :value="[]"/>
+                  <field name="displayStatus" value="all"/>
+                  <field name="brandId" value=""/>
+                  <field name="noBrandRegistered" :value="false"/>
+                  <field name="taxStatus" value="all"/>
+                  <field name="priceType" value="selling_price"/>
+                  <field name="minPrice" value=""/>
+                  <field name="maxPrice" value=""/>
+                  <field name="minStock" value=""/>
+                  <field name="maxStock" value=""/>
+                  <field name="shippingPolicy" value=""/>
+                </field>
+              </set-state>
+              <action-ref name="resetExpandedOptionState"/>
+              <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->
+              <navigate path="/admin/ecommerce/products" :mergeQuery="false"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.action.reset
+          </button>
+          <!-- 지금 조건을 프리셋으로 저장. 조건을 전역으로 옮겨 담은 뒤 이름 입력 창을 연다 — 창은 별도 컨텍스트라 이 화면의 필터를 읽지 못한다 -->
+          <button data-ref="preset_save_button_desktop" type="button" class="btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_update !== true}}">
+            <responsive on="portable" class="hidden"/>
+            <on type="click">
+              <set-state target="global" savingPresetConditions="{{_local.filter}}"/>
+              <open-modal target="modal_preset_save"/>
+            </on>
+            $t:sirsoft-ecommerce.admin.product.action.save_preset
+          </button>
+        </div>
+        <div class="flex-1">
+          <responsive on="portable" class="hidden"/>
+        </div>
+      </div>
+      <div data-ref="filter_actions_row2_mobile" class="hidden">
+        <responsive on="portable" class="flex gap-2 w-full"/>
+        <button data-ref="edit_search_button_mobile" type="button" class="{{_local.isEditMode ? 'btn btn-primary flex-1' : 'btn btn-outline flex-1'}}">
+          <on type="click">
+            <!-- 좁은 화면용 짝 버튼. 넓은 화면 버튼과 같이 편집모드를 켜면 상세 필터를 강제로 펼친다 — 숨겨 둔 필터를 다시 꺼내려면 그것이 보여야 한다. -->
+            <sequence>
+              <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
+            </sequence>
+          </on>
+          <icon name="sliders" class="text-base"/>
+          <span>$t:sirsoft-ecommerce.admin.product.action.edit_search</span>
+        </button>
+        <button data-ref="preset_save_button_mobile" type="button" class="btn btn-outline flex-1 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_update !== true}}">
+          <on type="click">
+            <!-- 좁은 화면용 짝 버튼(위 넓은 화면 버튼은 여기서 숨는다). 담는 값과 여는 창은 같다. -->
+            <sequence>
+              <set-state target="global" savingPresetConditions="{{_local.filter}}"/>
+              <open-modal target="modal_preset_save"/>
+            </sequence>
+          </on>
+          $t:sirsoft-ecommerce.admin.product.action.save_preset
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

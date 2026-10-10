@@ -93,7 +93,7 @@ class InvalidateTokenOnSettingsSaveListenerTest extends PluginTestCase
      * 실제 저장 API(PluginSettingsService::save) 를 호출해 코어 저장 경로 →
      * after_save 훅 → 캐시 무효화까지 end-to-end 로 관찰한다.
      */
-    public function test_설정_저장_API_호출시_실제_저장_경로를_통해_캐시가_무효화된다(): void
+    public function test_설정_저장_ap_i_호출시_실제_저장_경로를_통해_캐시가_무효화된다(): void
     {
         $this->cache->put(self::CACHE_KEY, 'STALE_TOKEN', 3600);
 

@@ -1,0 +1,36 @@
+feature: 설치된 확장은 설치본만 읽는다 — 내장 번역·아이콘·라이선스
+
+description: |
+  확장은 동봉 원본(`{modules,plugins,templates}/_bundled/{id}`)과 설치본(`{modules,plugins,templates}/{id}`)
+  두 벌로 존재한다. 사이트에서 실제로 동작하는 것은 설치본이고, 설치본은 마켓·업로드로 들어와
+  동봉 원본과 버전이 다르거나 동봉 원본에 아예 없을 수 있다. 그래서 관리 화면이 보여 주는 것도
+  설치본이어야 한다(결정 D1).
+
+  이 매니페스트는 그 규칙이 걸리는 세 표면을 잠근다.
+   - 언어팩 관리의 내장 번역(ko·en 가상 보호 행) — 설치 기록이 있는 확장의 설치본 lang 만 훑는다.
+   - 확장 아이콘 — 설치된 확장은 설치본만, 미설치 확장만 활성 → _pending → _bundled.
+   - 확장 라이선스 보기 — 아이콘과 같은 규칙.
+
+  「설치됨」 은 확장 테이블의 active·inactive 행이다(관리 목록이 설치/미설치 행을 가르는 기준과 같다).
+
+  `install_state` 가 축인 이유: 동봉 원본을 읽던 폴백은 **번들로 설치해 설치본과 원본이 같은 개발
+  환경에서는 늘 초록**이다. 차이는 번들 밖에서 설치한 확장(installed_non_bundled), 설치본에서 파일이
+  빠진 확장(installed_file_only_in_bundled), 설치하지 않은 번들 확장(not_installed_bundled)에서만 드러난다.
+
+axes:
+  surface: [built_in_lang_pack, extension_icon, extension_license]
+  install_state: [installed_non_bundled, installed_file_only_in_bundled, not_installed_bundled]
+
+effects:
+  # 설치 소스와 무관하게 설치된 확장의 설치본 lang 이 내장 번역으로 나오고, 설치본에 없으면 원본으로 채우지 않는다
+  - built_in_packs_come_from_installed_copies
+  # 설치하지 않은 번들 확장은 원본에 lang 이 있어도 내장 번역 목록에 나오지 않는다
+  - not_installed_bundled_extension_has_no_built_in_pack
+  - installed_extension_icon_reads_installed_copy_only
+  - installed_extension_license_reads_installed_copy_only
+  # 미설치 확장(목록의 번들·대기 행)은 종전대로 _pending → _bundled 에서 찾는다
+  - not_installed_extension_falls_back_to_pending_and_bundled
+
+test_files:
+  - tests/Feature/LanguagePack/BuiltInPacksFromInstalledCopyTest.php
+  - tests/Feature/Extension/InstalledCopyIconAndLicenseTest.php

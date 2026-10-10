@@ -29,10 +29,12 @@ Route::withoutMiddleware([ValidateCsrfToken::class])
             ->name('payment.vbank-notify');
     });
 
-// SignData 생성: 비회원 결제도 결제창 진입 직전에 호출하므로 인증 미들웨어를 걸지 않는다.
+// SignData 생성: 비회원 결제도 결제창 진입 직전에 호출하므로 로그인을 강제하지 않는다.
 // 대신 컨트롤러에서 주문번호, 결제 전 상태, 나이스페이 결제 레코드, 청구 금액을 모두 검증한다.
+// 실패 주문을 결제대기로 되살리는 재결제 복구는 주문 소유자(회원 로그인 / 비회원 조회 토큰)만 할 수 있어
+// optional.sanctum 으로 Bearer 토큰을 회원으로 인식시킨다 (KVE-2026-2434).
 Route::withoutMiddleware([ValidateCsrfToken::class])
-    ->middleware(['throttle:30,1'])
+    ->middleware(['throttle:30,1', 'optional.sanctum'])
     ->group(function () {
         Route::post('/payment/sign-data', [PaymentCallbackController::class, 'signData'])
             ->name('payment.sign-data');

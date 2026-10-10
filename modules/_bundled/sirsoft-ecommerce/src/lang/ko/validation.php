@@ -6,6 +6,8 @@
  * FormRequest 검증 실패 시 사용되는 메시지
  */
 return [
+    'exchange_rate_save_failed' => '환율 설정을 저장하지 못했습니다.',
+    'exchange_rate_provider_unavailable' => '사용할 수 없는 환율 제공자입니다.',
     // 상품 1:1 문의 검증 메시지
     'inquiries' => [
         'content' => [
@@ -24,6 +26,9 @@ return [
     'settings' => [
         'key_required' => '설정 키는 필수입니다.',
         'value_present' => '설정 값은 필수입니다.',
+        'key_unknown' => '저장할 수 없는 설정 키입니다: :key',
+        'key_server_managed' => '이 설정은 서버가 기록하는 값이라 직접 저장할 수 없습니다.',
+        'empty_payload' => '저장할 설정 내용이 없습니다. 화면을 새로고침한 뒤 다시 저장해 주세요.',
     ],
 
     // 배송사 검증 메시지
@@ -244,6 +249,7 @@ return [
     'options_min' => '옵션을 1개 이상 추가해주세요.',
     'selling_price_lte_list' => '판매가는 정가보다 클 수 없습니다.',
     'option_selling_price_lte_list' => '옵션 판매가는 정가보다 클 수 없습니다.',
+    'claim_reason_code_format' => '클레임 사유 코드는 영문 소문자로 시작하고, 소문자·숫자와 단어 사이의 언더스코어(_)만 사용할 수 있습니다(연속 언더스코어·끝 언더스코어 불가). 이미 저장된 코드는 그대로 두어도 됩니다.',
 
     // 상품 검증 메시지
     'product' => [
@@ -264,6 +270,12 @@ return [
             'option_stock_quantity' => '옵션 재고 수량',
             'option_name' => '옵션명',
             'option_code' => '옵션코드',
+            // 다국어 필수 칸 이름 (옵션그룹·추가옵션·상품정보제공고시)
+            'option_group_name' => '옵션그룹명',
+            'additional_option_name' => '추가옵션 그룹명',
+            'additional_option_value_name' => '추가옵션 선택지명',
+            'notice_item_name' => '상품정보제공고시 항목명',
+            'notice_item_content' => '상품정보제공고시 내용',
         ],
         'name' => [
             'required' => '상품명을 입력해주세요.',
@@ -277,6 +289,7 @@ return [
         'product_code' => [
             'required' => '상품코드를 입력해주세요.',
             'unique' => '이미 사용중인 상품코드입니다.',
+            'regex' => '상품코드는 영문, 숫자, 하이픈(-), 밑줄(_)만 사용할 수 있습니다.',
         ],
         'list_price' => [
             'required' => '정가를 입력해주세요.',
@@ -754,6 +767,9 @@ return [
             'date' => '종료일은 날짜 형식이어야 합니다.',
             'after_or_equal' => '종료일은 시작일 이후여야 합니다.',
         ],
+        'date_basis' => [
+            'in' => '날짜 기준은 site(사이트 표준시)만 쓸 수 있습니다.',
+        ],
         // 옵션상태
         'option_status' => [
             'array' => '옵션 상태는 배열 형태여야 합니다.',
@@ -818,6 +834,29 @@ return [
         'orderer_uuid' => [
             'uuid' => '주문자 UUID 형식이 올바르지 않습니다.',
         ],
+        // 클레임 기준 필터 (D22)
+        'claim_presence' => [
+            'in' => '클레임 유무 필터는 none, any, active 중 하나여야 합니다.',
+        ],
+        'claim_statuses' => [
+            'array' => '클레임 상태 필터는 배열 형태여야 합니다.',
+            'in' => '올바른 클레임 상태를 선택해주세요.',
+        ],
+        'claim_cancel_types' => [
+            'array' => '취소 유형 필터는 배열 형태여야 합니다.',
+            'in' => '올바른 취소 유형을 선택해주세요.',
+        ],
+        'claim_fault_types' => [
+            'array' => '귀책 필터는 배열 형태여야 합니다.',
+            'in' => '올바른 귀책 구분을 선택해주세요.',
+        ],
+        'claim_requested_from' => [
+            'date' => '클레임 신청일 시작은 올바른 날짜여야 합니다.',
+        ],
+        'claim_requested_to' => [
+            'date' => '클레임 신청일 종료는 올바른 날짜여야 합니다.',
+            'after_or_equal' => '클레임 신청일 종료는 시작일 이후여야 합니다.',
+        ],
         // 정렬 및 페이지네이션
         'sort_by' => [
             'in' => '올바른 정렬 필드를 선택해주세요.',
@@ -863,6 +902,8 @@ return [
     // 주문 검증 메시지 (하위 호환성 - order.* 형식)
     'order' => [
         'payment_method_unavailable' => '현재 사용할 수 없는 결제수단입니다. 다른 결제수단을 선택해주세요.',
+        'payment_method_not_selectable' => '선택할 수 없는 결제수단입니다.',
+        'payment_method_not_allowed_for_currency' => ':currency 결제에서는 선택할 수 없는 결제수단입니다.',
         'ids' => [
             'required' => '변경할 주문을 선택해주세요.',
             'array' => '주문 ID는 배열 형태여야 합니다.',
@@ -920,6 +961,7 @@ return [
         'cash_receipt_identifier_required' => '현금영수증 발급에 사용할 번호를 입력해주세요.',
         'refund_bank_required_with' => '환불 계좌는 은행·계좌번호·예금주를 모두 입력해야 합니다.',
         'refund_bank_required_for_vbank' => '입금이 완료된 가상계좌 주문은 환불 계좌가 필요합니다.',
+        'refund_bank_required_for_manual_transfer' => '이 주문의 환불은 계좌로 송금해야 합니다. 환불받을 계좌를 입력해 주세요.',
     ],
 
     // 비회원 주문 조회 인증 검증 메시지
@@ -1014,6 +1056,30 @@ return [
     'shipping_policy' => [
         'name' => [
             'required' => '배송정책명을 입력해주세요.',
+        ],
+        // 클레임 설정 (회수지 + 국가별 클레임 배송비 — S6c)
+        'claim_settings' => [
+            'country_code' => [
+                'required' => '국가 코드를 입력해주세요.',
+                'distinct' => '국가 코드가 중복되었습니다.',
+                'exists' => '이 배송정책의 국가별 설정에 없는 국가 코드입니다.',
+            ],
+            'claim_fee_mode' => [
+                'required' => '클레임 배송비 산정 모드를 선택해주세요.',
+                'enum' => '올바른 클레임 배송비 산정 모드를 선택해주세요.',
+            ],
+            'fee' => [
+                'numeric' => '클레임 배송비는 숫자여야 합니다.',
+                'min' => '클레임 배송비는 0 이상이어야 합니다.',
+            ],
+            'recipient_name' => [
+                'required' => '회수지 수취인명을 입력해주세요.',
+                'max' => '회수지 수취인명은 최대 100자까지 입력 가능합니다.',
+            ],
+            'address1' => [
+                'required' => '회수지 기본주소를 입력해주세요.',
+                'max' => '회수지 기본주소는 최대 255자까지 입력 가능합니다.',
+            ],
         ],
         'ids_required' => '변경할 배송정책을 선택해주세요.',
         'ids_array' => '배송정책 ID는 배열 형태여야 합니다.',
@@ -1333,6 +1399,17 @@ return [
 
     // 필드명 한국어 변환 (Laravel 표준)
     'attributes' => [
+        // 수동 결제 처리·재활성 확인 창 세 항목 (Q13·Q14)
+        'apply_stock_deduction' => '재고 차감',
+        'apply_mileage_deduction' => '사용 마일리지 차감',
+        'record_paid_amount' => '결제금액 기록',
+
+        // 관리자 회원 목록 확장 필터 (#705)
+        'user_filter_mileage_min' => '마일리지 잔액 최소',
+        'user_filter_mileage_max' => '마일리지 잔액 최대',
+        'user_filter_shipping_country' => '배송지 국가',
+        'user_filter_has_address' => '배송지 등록 여부',
+
         // 공개 자산 스토리지
         'basic_info.public_asset_disk' => '공개 자산 디스크',
 
@@ -1362,6 +1439,20 @@ return [
         'review_settings.write_deadline_days' => '리뷰 작성 기한(일)',
         'review_settings.max_images' => '리뷰 이미지 최대 개수',
         'review_settings.max_image_size_mb' => '리뷰 이미지 최대 용량(MB)',
+
+        // 클레임 설정
+        'claim.exchange_reasons' => '교환 사유',
+        'claim.exchange_reasons.*.code' => '교환 사유 코드',
+        'claim.exchange_reasons.*.name' => '교환 사유명',
+        'claim.exchange_reasons.*.fault_type' => '교환 사유 귀책 구분',
+        'claim.return_reasons' => '반품 사유',
+        'claim.return_reasons.*.code' => '반품 사유 코드',
+        'claim.return_reasons.*.name' => '반품 사유명',
+        'claim.return_reasons.*.fault_type' => '반품 사유 귀책 구분',
+        'claim.refund_reasons' => '환불 사유',
+        'claim.refund_reasons.*.code' => '환불 사유 코드',
+        'claim.refund_reasons.*.name' => '환불 사유명',
+        'claim.refund_reasons.*.fault_type' => '환불 사유 귀책 구분',
 
         // 기본 정보
         'basic_info' => '기본 정보',
@@ -1497,6 +1588,19 @@ return [
         'claim_reason_is_active' => '사용여부',
         'claim_reason_sort_order' => '정렬순서',
         'claim_reason_search' => '검색어',
+
+        // 다국어 이름 칸 (현재 언어 값 필수 문구의 칸 이름)
+        'category_name' => '카테고리명',
+        'brand_name' => '브랜드명',
+        'coupon_name' => '쿠폰명',
+        'common_info_name' => '공통정보명',
+        'notice_template_name' => '상품군명',
+        'notice_template_field_name' => '항목명',
+        'notice_template_field_content' => '항목 내용',
+        'shipping_carrier_name' => '배송사명',
+        'shipping_policy_name' => '배송정책명',
+        'shipping.carriers.*.name' => '배송사명',
+        'shipping.types.*.name' => '배송유형명',
     ],
 
     // 필드별 커스텀 검증 메시지
@@ -1583,10 +1687,12 @@ return [
         'user_currency' => [
             'required' => '결제 통화를 선택해 주세요.',
             'invalid' => '등록된 통화만 선택할 수 있습니다.',
+            'forbidden' => '회원 결제 통화를 변경할 권한이 없습니다.',
         ],
         'user_shipping_country' => [
             'required' => '배송국가를 선택해 주세요.',
             'invalid' => '배송 가능한 국가만 선택할 수 있습니다.',
+            'forbidden' => '회원 배송국가를 변경할 권한이 없습니다.',
         ],
         'language_currency' => [
             'base_locked_after_data' => '상품 또는 주문이 1건 이상 등록된 후에는 기본 통화를 변경할 수 없습니다.',
@@ -1595,6 +1701,7 @@ return [
                 'max' => '기본 통화는 최대 10자까지 입력 가능합니다.',
             ],
             'currencies' => [
+                'exchange_rate_managed' => ':currency 환율은 :provider 제공자가 관리 중입니다. 화면을 새로고침하세요.',
                 'duplicate_code' => '중복된 통화 코드가 있습니다.',
                 'name_required' => '통화명은 최소 하나의 언어로 입력해야 합니다.',
                 'code' => [
@@ -1752,6 +1859,7 @@ return [
             ],
             'bank_accounts' => [
                 'at_least_one_active_default' => '무통장 계좌 중 하나 이상은 기본 선택 및 사용 선택되어 있어야 합니다.',
+                'dbank_requires_active_account' => '무통장입금을 사용하려면 사용 중인 입금 계좌(계좌번호 입력)가 하나 이상 있어야 합니다.',
                 'bank_code' => [
                     'required_with' => '은행은 필수 항목입니다.',
                     'string' => '은행코드는 문자열이어야 합니다.',
@@ -1798,9 +1906,20 @@ return [
             ],
         ],
         'claim' => [
+            'exchange_reasons' => [
+                'duplicate_code' => '중복된 교환 사유 코드가 있습니다.',
+                'name_required' => '교환 사유명은 필수 항목입니다.',
+                'code_swap' => '다른 교환 사유가 아직 쓰고 있는 코드입니다. 코드를 서로 맞바꾸려면 한쪽을 먼저 다른 코드로 저장한 뒤 바꿔 주세요.',
+            ],
+            'return_reasons' => [
+                'duplicate_code' => '중복된 반품 사유 코드가 있습니다.',
+                'name_required' => '반품 사유명은 필수 항목입니다.',
+                'code_swap' => '다른 반품 사유가 아직 쓰고 있는 코드입니다. 코드를 서로 맞바꾸려면 한쪽을 먼저 다른 코드로 저장한 뒤 바꿔 주세요.',
+            ],
             'refund_reasons' => [
                 'duplicate_code' => '중복된 환불 사유 코드가 있습니다.',
                 'name_required' => '환불 사유명은 필수 항목입니다.',
+                'code_swap' => '다른 환불 사유가 아직 쓰고 있는 코드입니다. 코드를 서로 맞바꾸려면 한쪽을 먼저 다른 코드로 저장한 뒤 바꿔 주세요.',
             ],
         ],
         'shipping' => [
@@ -1858,6 +1977,7 @@ return [
             ],
             'types' => [
                 'duplicate_code' => '중복된 배송유형 코드가 있습니다.',
+                'code_swap' => '다른 배송유형이 아직 쓰고 있는 코드입니다. 코드를 서로 맞바꾸려면 한쪽을 먼저 다른 코드로 저장한 뒤 바꿔 주세요.',
                 'name_required' => '배송유형명은 필수 항목입니다.',
                 'code' => [
                     'required_with' => '배송유형 코드는 필수입니다.',
@@ -1879,6 +1999,7 @@ return [
             ],
             'carriers' => [
                 'duplicate_code' => '중복된 배송사 코드가 있습니다.',
+                'code_swap' => '다른 배송사가 아직 쓰고 있는 코드입니다. 코드를 서로 맞바꾸려면 한쪽을 먼저 다른 코드로 저장한 뒤 바꿔 주세요.',
                 'name_required' => '배송사명은 필수 항목입니다.',
                 'code' => [
                     'required_with' => '배송사 코드는 필수입니다.',
@@ -1909,6 +2030,201 @@ return [
                     'boolean' => '배송사 사용여부는 참/거짓 값이어야 합니다.',
                 ],
             ],
+        ],
+    ],
+
+    // 클레임(교환/반품) 신청 검증 메시지
+    'claims' => [
+        'items' => [
+            'required' => '신청할 상품을 선택해 주세요.',
+            'array' => '신청 상품은 배열 형태여야 합니다.',
+            'max' => '한 번에 신청할 수 있는 상품은 최대 :max개입니다.',
+            'order_option_id_required' => '신청 대상 주문 상품을 지정해 주세요.',
+            'quantity_required' => '신청 수량을 입력해 주세요.',
+            'quantity_min' => '신청 수량은 1 이상이어야 합니다.',
+            'new_product_option_id_integer' => '교환할 옵션 ID 는 숫자여야 합니다.',
+            'custom_options_array' => '커스텀 옵션 입력값은 배열 형태여야 합니다.',
+            'id_integer' => '신청 상품 행 ID 는 숫자여야 합니다.',
+            'not_in_claim' => '이 신청서에 속하지 않은 상품이 포함되어 있습니다.',
+            'entry_object' => '신청 상품 항목은 {id, quantity} 형태여야 합니다.',
+            'duplicate_id' => '같은 상품을 두 번 지정했습니다. 한 상품은 한 줄로 보내 주세요.',
+            'not_in_order' => '이 주문에 속하지 않은 상품이 포함되어 있습니다.',
+            'prohibited_with_refund' => '환불신청서 기준과 상품 선택 기준은 함께 지정할 수 없습니다. 하나만 보내 주세요.',
+        ],
+        // 관리자 금액 수정 (D18)
+        'amounts' => [
+            'numeric' => '금액은 숫자여야 합니다.',
+            'min' => '금액은 0 이상이어야 합니다.',
+            'prohibited' => '이 클레임 유형에서 수정할 수 없는 항목이 포함되어 있습니다.',
+        ],
+        'refund_method' => [
+            'in' => '선택한 환불 수단을 사용할 수 없습니다.',
+        ],
+        // 완료 처리 모달 미리보기 (D26)
+        'preview_claims' => [
+            'required' => '미리보기할 신청서를 선택해 주세요.',
+            'array' => '신청서 목록은 배열 형태여야 합니다.',
+            'max' => '한 번에 미리보기할 수 있는 신청서는 최대 :max건입니다.',
+            'id_required' => '신청서 ID 를 지정해 주세요.',
+            'id_integer' => '신청서 ID 는 숫자여야 합니다.',
+        ],
+        'reason_code' => [
+            'required' => '신청 사유를 선택해 주세요.',
+            'exists' => '선택한 사유를 사용할 수 없습니다.',
+        ],
+        'reason_detail' => [
+            'max' => '상세 사유는 :max자 이하로 입력해 주세요.',
+        ],
+        'charge_method' => [
+            'in' => '선택한 청구 방식을 사용할 수 없습니다.',
+        ],
+        'redelivery_address' => [
+            'array' => '재발송지는 주소 항목을 담은 객체여야 합니다.',
+            'country_code_size' => '재발송지 국가 코드는 2자리여야 합니다.',
+            'country_code_unchanged' => '교환 재발송지는 주문 배송지와 같은 국가만 지정할 수 있습니다. (교환 해외배송 미지원)',
+            'changed_by_user_boolean' => '재발송지 수정 여부는 true/false 여야 합니다.',
+        ],
+        'type' => [
+            'required' => '클레임 유형을 지정해 주세요.',
+            'in' => '지원하지 않는 클레임 유형입니다.',
+        ],
+        // 신청내역 목록 — 상한은 규칙이 정하므로 문구에 숫자를 적지 않는다.
+        // 주문 목록의 문구를 빌려 쓰던 시절에는 실제 상한(50)과 다른 수(100)를 안내했다.
+        'per_page' => [
+            'integer' => '페이지당 항목 수는 숫자여야 합니다.',
+            'min' => '페이지당 항목 수는 :min 이상이어야 합니다.',
+            'max' => '페이지당 항목 수는 :max 이하여야 합니다.',
+        ],
+        'page' => [
+            'integer' => '페이지 번호는 숫자여야 합니다.',
+            'min' => '페이지 번호는 :min 이상이어야 합니다.',
+            'max' => '페이지 번호는 :max 이하여야 합니다.',
+        ],
+        'status' => [
+            'in' => '선택한 유형에 없는 신청 상태입니다.',
+        ],
+        'payment_method' => [
+            'in' => '선택한 결제 수단은 클레임 추가결제에 사용할 수 없습니다.',
+        ],
+        'image_ids' => [
+            'array' => '첨부 이미지 목록은 배열 형태여야 합니다.',
+            'max' => '첨부 이미지는 한 번에 :max장까지 지정할 수 있습니다.',
+            'integer' => '첨부 이미지 ID 는 숫자여야 합니다.',
+        ],
+        'refund_bank' => [
+            'array' => '환불 계좌는 은행·계좌번호·예금주를 담은 객체여야 합니다.',
+            'incomplete' => '환불 계좌는 은행, 계좌번호, 예금주를 모두 입력해 주세요.',
+            'masked' => '가려진 계좌번호나 예금주는 저장할 수 없습니다. 환불 계좌를 다시 입력해 주세요.',
+        ],
+        'image' => [
+            'required' => '첨부할 이미지를 선택해 주세요.',
+            'file' => '올바른 파일이 아닙니다.',
+            'image' => '이미지 파일만 첨부할 수 있습니다.',
+            'mimes' => '지원하는 이미지 형식: jpeg, png, jpg, gif, webp',
+            'max' => '이미지 용량은 :maxKB 이하여야 합니다.',
+        ],
+        'callback' => [
+            'required' => '결제 승인 정보가 없습니다.',
+            'array' => '결제 승인 정보 형식이 올바르지 않습니다.',
+        ],
+        // 관리자 클레임 API (목록 필터·전이·송장)
+        'statuses' => [
+            'array' => '상태 필터는 배열 형태여야 합니다.',
+        ],
+        'search_field' => [
+            'in' => '지원하지 않는 검색 항목입니다.',
+        ],
+        'search_keyword' => [
+            'max' => '검색어는 :max자 이하로 입력해 주세요.',
+        ],
+        'fault_types' => [
+            'array' => '귀책 필터는 배열 형태여야 합니다.',
+            'prohibited' => '이 유형에는 귀책 필터를 사용할 수 없습니다.',
+            'in' => '지원하지 않는 귀책 구분입니다.',
+        ],
+        'charge_methods' => [
+            'array' => '청구 방식 필터는 배열 형태여야 합니다.',
+            'prohibited' => '이 유형에는 청구 방식 필터를 사용할 수 없습니다.',
+            'in' => '지원하지 않는 청구 방식입니다.',
+        ],
+        'requester_type' => [
+            'in' => '회원구분은 member 또는 guest 여야 합니다.',
+        ],
+        'min_amount' => [
+            'numeric' => '최소 금액은 숫자여야 합니다.',
+        ],
+        'max_amount' => [
+            'numeric' => '최대 금액은 숫자여야 합니다.',
+            'gte' => '최대 금액은 최소 금액보다 크거나 같아야 합니다.',
+        ],
+        'currency_code' => [
+            'in' => '사용된 적 없는 통화입니다.',
+        ],
+        'charge_payment_methods' => [
+            'array' => '청구 결제수단 필터는 배열이어야 합니다.',
+            'prohibited' => '이 유형에는 청구 결제수단 필터를 사용할 수 없습니다.',
+            'in' => '사용된 적 없는 청구 결제수단입니다.',
+        ],
+        'admin_status' => [
+            'required' => '변경할 상태를 선택해 주세요.',
+            'in' => '이 유형에서 지정할 수 없는 상태입니다.',
+        ],
+        'reject_reason' => [
+            'required' => '반려 사유를 입력해 주세요. 구매자 화면에 그대로 안내됩니다.',
+            'max' => '반려 사유는 :max자 이하로 입력해 주세요.',
+        ],
+        'admin_memo' => [
+            'max' => '관리자 메모는 :max자 이하로 입력해 주세요.',
+        ],
+        'ids' => [
+            'required' => '대상 신청서를 선택해 주세요.',
+            'array' => '신청서 ID 목록은 배열 형태여야 합니다.',
+            'min' => '대상 신청서를 1건 이상 선택해 주세요.',
+            'max' => '한 번에 처리할 수 있는 신청서는 최대 :max건입니다.',
+            'integer' => '신청서 ID 는 숫자여야 합니다.',
+        ],
+        'completion' => [
+            'required_if' => '완료 처리에는 완료 옵션(재고 복구·환불신청서 접수)이 필요합니다.',
+            'array' => '완료 옵션은 객체 형태여야 합니다.',
+            'restore_stock_by_item_array' => '재고 복구 선택은 상품 행별 맵이어야 합니다.',
+            'restore_stock_by_item_boolean' => '재고 복구 선택 값은 true/false 여야 합니다.',
+            'create_refund_request_required' => '환불신청서 접수 여부를 선택해 주세요.',
+            'create_refund_request_boolean' => '환불신청서 접수 여부는 true/false 여야 합니다.',
+        ],
+        'tracking' => [
+            'carrier_id_required' => '회수중·발송중으로 바꾸려면 택배사를 선택해 주세요.',
+            'tracking_number_required' => '회수중·발송중으로 바꾸려면 운송장 번호를 입력해 주세요.',
+            'per_claim_required' => '회수중·발송중으로 바꾸려면 선택한 신청서마다 택배사와 운송장 번호를 입력해 주세요.',
+            'carrier_id_integer' => '택배사 ID 는 숫자여야 합니다.',
+            'carrier_id_exists' => '등록되지 않은 택배사입니다.',
+            'tracking_number_max' => '운송장 번호는 :max자 이하로 입력해 주세요.',
+            'direction_required' => '송장 방향(회수·재발송)을 선택해 주세요.',
+            'direction_in' => '송장 방향은 회수·재발송 중 하나여야 합니다.',
+            'deliver_carrier_required' => '도착 처리할 운송장의 택배사를 알 수 없습니다.',
+            'deliver_tracking_required' => '도착 처리할 운송장 번호를 알 수 없습니다.',
+        ],
+        'withdraw_reason' => [
+            'required' => '철회 사유를 입력해 주세요.',
+            'max' => '철회 사유는 2000자 이하로 입력해 주세요.',
+        ],
+        'request_source' => [
+            'in' => '접수 출처는 판매자 접수·고객 접수 중 하나여야 합니다.',
+            'prohibited' => '취소 목록은 접수 출처로 거를 수 없습니다.',
+        ],
+        'collection_overdue' => [
+            'prohibited' => '회수 지연 필터는 교환 목록에서만 쓸 수 있습니다.',
+        ],
+        'pending_refund' => [
+            'prohibited' => '환불 미접수 필터는 교환·반품 목록에서만 쓸 수 있습니다.',
+        ],
+        'exchange_mode' => [
+            'required' => '진행 방식을 선택해 주세요.',
+            'in' => '진행 방식은 일반 교환·선교환 중 하나여야 합니다.',
+        ],
+        'unreturned' => [
+            'array' => '미회수 완료 지시 형식이 올바르지 않습니다.',
+            'reason_string' => '미회수 사유는 문자열이어야 합니다.',
+            'reason_max' => '미회수 사유는 :max자 이하로 입력해 주세요.',
         ],
     ],
 
@@ -1957,5 +2273,147 @@ return [
             'integer' => '상품 ID는 숫자여야 합니다.',
             'item_min' => '상품 ID는 1 이상이어야 합니다.',
         ],
+    ],
+    // 개인정보 보유기간 설정 필드 라벨 (이슈 #636) — StoreEcommerceSettingsRequest::attributes() 가 키별로 읽는다
+    'privacy_retention_attributes' => [
+        'section' => '개인정보 보유기간 설정',
+        'enabled' => '주문 개인정보 보유기간 자동 파기',
+        'retention_years' => '주문 개인정보 보유기간',
+        'mode' => '보유기간 경과 주문 처리 방식',
+    ],
+    // 요청 필드 라벨 (이슈 #599) — 클레임·주문 목록·배송정책·주문서 FormRequest 의 attributes() 가 키별로 읽는다
+    'request_attributes' => [
+        'claim_type' => '클레임 유형',
+        'items' => '대상 상품',
+        'claim_item' => '클레임 상품',
+        'order_option' => '주문 상품',
+        'quantity' => '수량',
+        'cancel_quantity' => '취소 수량',
+        'new_product_option' => '교환할 옵션',
+        'custom_options' => '추가 입력 옵션',
+        'reason_code' => '사유',
+        'reason_detail' => '상세 사유',
+        'reject_reason' => '거부 사유',
+        'withdraw_reason' => '철회 사유',
+        'admin_memo' => '관리자 메모',
+        'charge_method' => '청구 방식',
+        'payment_method' => '결제 수단',
+        'refund_priority' => '환불 우선순위',
+        'refund_bank' => '환불 계좌',
+        'refund_bank_code' => '환불 은행',
+        'refund_bank_account' => '환불 계좌번호',
+        'refund_bank_holder' => '예금주',
+        'image_ids' => '첨부 이미지',
+        'image_id' => '첨부 이미지',
+        'add_image_ids' => '추가할 첨부 이미지',
+        'remove_image_ids' => '삭제할 첨부 이미지',
+        'image' => '첨부 이미지',
+        'redelivery_address' => '교환 상품 배송지',
+        'redelivery_recipient_name' => '받는 분',
+        'redelivery_phone' => '받는 분 연락처',
+        'redelivery_zipcode' => '우편번호',
+        'redelivery_address1' => '주소',
+        'redelivery_address2' => '상세 주소',
+        'redelivery_city' => '도시',
+        'redelivery_state' => '주/도',
+        'redelivery_country_code' => '배송 국가',
+        'redelivery_changed_by_user' => '배송지 변경 여부',
+        'full_cancel' => '전체 취소 여부',
+        'auto_advance' => '자동 진행 여부',
+        'claim_id' => '클레임',
+        'trackings' => '운송장 목록',
+        'tracking' => '운송장 항목',
+        'carrier' => '택배사',
+        'tracking_number' => '운송장번호',
+        'tracking_direction' => '운송장 구분',
+        'refund_id' => '환불',
+        'claims' => '완료할 클레임',
+        'completion_item_ids' => '완료할 상품',
+        'completion_item_id' => '완료할 상품',
+        'restore_stock_by_item' => '상품별 재고 복구',
+        'restore_stock_item' => '재고 복구 여부',
+        'unreturned_item_ids' => '미회수 상품',
+        'unreturned_item_id' => '미회수 상품',
+        'create_refund_request' => '환불신청서 접수 여부',
+        'statuses' => '상태',
+        'status_item' => '상태',
+        'date_from' => '시작일',
+        'date_to' => '종료일',
+        'search_field' => '검색 항목',
+        'search_keyword' => '검색어',
+        'fault_types' => '귀책 구분',
+        'fault_type' => '귀책 구분',
+        'charge_methods' => '청구 방식',
+        'requester_type' => '신청자 구분',
+        'request_source' => '접수 경로',
+        'collection_overdue' => '회수 지연',
+        'pending_refund' => '환불 대기',
+        'min_amount' => '최소 금액',
+        'max_amount' => '최대 금액',
+        'currency_code' => '통화',
+        'charge_payment_methods' => '추가결제 수단',
+        'charge_payment_method' => '추가결제 수단',
+        'sort_order' => '정렬 순서',
+        'refund_amount' => '환불 금액',
+        'refund_points_amount' => '환불 마일리지',
+        'refund_method' => '환불 수단',
+        'force_without_refund_bank' => '환불 계좌 없이 진행',
+        'claim_shipping_fee' => '클레임 배송비',
+        'exchange_mode' => '교환 진행 방식',
+        'claim_addresses' => '반품·교환 회수지',
+        'country_settings' => '국가별 설정',
+        'country_code' => '국가',
+        'claim_fee_mode' => '반품·교환 배송비 방식',
+        'return_fixed_fee' => '반품 고정 배송비',
+        'exchange_fixed_fee' => '교환 고정 배송비',
+        'save_shipping_address' => '저장할 배송지',
+        'payment_callback' => '결제 승인 응답',
+        'claim_number' => '클레임 번호',
+        'claim_presence' => '클레임 유무',
+        'claim_exchange_statuses' => '교환 상태',
+        'claim_exchange_status' => '교환 상태',
+        'claim_return_statuses' => '반품 상태',
+        'claim_return_status' => '반품 상태',
+        'claim_refund_statuses' => '환불 상태',
+        'claim_refund_status' => '환불 상태',
+        'claim_cancel_types' => '취소 구분',
+        'claim_cancel_type' => '취소 구분',
+        'claim_requested_from' => '클레임 신청 시작일',
+        'claim_requested_to' => '클레임 신청 종료일',
+        'claim_ids' => '대상 클레임',
+        'claim_status' => '변경할 상태',
+        'approve_on_receipt' => '접수와 함께 승인',
+        'completion' => '완료 처리 옵션',
+        'unreturned_reasons' => '미회수 사유',
+    ],
+    // 클레임 정책 설정 필드 라벨 (이슈 #599) — StoreEcommerceSettingsRequest::attributes() 가 키별로 읽는다
+    'claim_settings_attributes' => [
+        'cancellable_statuses' => '취소 가능 주문 상태',
+        'exchange_requestable_statuses' => '교환 신청 가능 상태',
+        'return_requestable_statuses' => '반품 신청 가능 상태',
+        'instant_cancel_statuses' => '자동 전이 대상 상태',
+        'refund_request_statuses' => '환불신청 가능 상태',
+        'allowed_charge_methods' => '허용 청구 방식',
+        'charge_payment_methods' => '추가결제 수단',
+        'auto_approve_zero_charge' => '추가 청구 없음 자동 승인',
+        'auto_approve_after_payment' => '추가결제 완료 후 자동 승인',
+        'auto_approve_refund_request' => '환불신청 자동 승인',
+        'auto_approve_refund_statuses' => '자동승인 대상 상태',
+        'auto_approve_refund_payment_methods' => '환불 자동 승인 결제수단',
+        'auto_approve_refund_payment_methods_decided' => '환불 자동 승인 결제수단 확정 여부',
+        'max_images' => '최대 첨부 장수',
+        'image_max_size_kb' => '이미지 최대 용량(KB)',
+        'request_period_days' => '신청 가능 기간(일)',
+        'advance_exchange_enabled' => '선교환 사용',
+        'advance_exchange_collection_due_days' => '기존 상품 반송 기한(일)',
+        'complete_defaults' => '완료 처리 기본값',
+        'complete_defaults_create_refund_request' => '완료 처리 기본값 - 환불신청서 접수',
+        'complete_defaults_restore_stock' => '완료 처리 기본값 - 재고 복구',
+    ],
+
+    // 본인인증 정책 탭 검증 메시지
+    'identity_policy' => [
+        'target_not_owned' => '이커머스 본인인증 정책은 이커머스 지점만 대상으로 할 수 있습니다. 훅·사용자 지정 범위는 「sirsoft-ecommerce.」, 경로 범위는 「api.modules.sirsoft-ecommerce.」로 시작해야 합니다.',
+        'nothing_to_update' => '변경할 항목이 없습니다.',
     ],
 ];

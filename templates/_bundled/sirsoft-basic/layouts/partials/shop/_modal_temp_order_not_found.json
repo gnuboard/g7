@@ -1,4 +1,5 @@
 {
+    "comment": "주문서를 열었는데 임시 주문이 이미 사라진 경우(만료·정리) 알리는 창. 닫기·바깥클릭·ESC 를 모두\n     막았다 — 이 상태로는 주문서가 아무 의미가 없어 장바구니로 돌아가는 것 말고 할 일이 없기 때문이다.",
     "meta": {
         "is_partial": true,
         "description": "임시 주문 정보 없음 알림 모달",
@@ -50,13 +51,9 @@
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": {
-                        "type": "button",
-                        "className": "px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-                    },
-                    "text": "$t:common.confirm",
                     "actions": [
                         {
+                            "comment": "확인이 곧 유일한 출구다 — 임시 주문이 없으면 주문서에 머물 이유가 없어 장바구니로 되돌린다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
@@ -71,7 +68,12 @@
                                 }
                             ]
                         }
-                    ]
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                    },
+                    "text": "$t:common.confirm"
                 }
             ]
         }

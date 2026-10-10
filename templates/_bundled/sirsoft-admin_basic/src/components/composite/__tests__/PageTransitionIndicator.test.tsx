@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { PageTransitionIndicator } from '../PageTransitionIndicator';
 
@@ -10,7 +10,7 @@ describe('PageTransitionIndicator', () => {
     // Mock TransitionManager 생성
     mockTransitionManager = {
       getIsPending: vi.fn(() => false),
-      subscribe: vi.fn((callback) => {
+      subscribe: vi.fn((_callback: (isPending: boolean) => void) => {
         // unsubscribe 함수 반환
         return vi.fn();
       }),
@@ -29,6 +29,10 @@ describe('PageTransitionIndicator', () => {
     (window as any).G7Core = originalG7Core;
   });
 
+  /**
+   * @scenario case=c01
+   * @effects page_transition_indicator_behaves
+   */
   it('isPending이 false일 때 아무것도 렌더링하지 않아야 한다', () => {
     mockTransitionManager.getIsPending.mockReturnValue(false);
 
@@ -36,6 +40,10 @@ describe('PageTransitionIndicator', () => {
     expect(container.firstChild).toBeNull();
   });
 
+  /**
+   * @scenario case=c02
+   * @effects page_transition_indicator_behaves
+   */
   it('isPending이 true일 때 로딩 바를 렌더링해야 한다', async () => {
     mockTransitionManager.getIsPending.mockReturnValue(true);
 
@@ -44,10 +52,44 @@ describe('PageTransitionIndicator', () => {
     await waitFor(() => {
       const progressbar = screen.getByRole('progressbar');
       expect(progressbar).toBeDefined();
-      expect(progressbar.getAttribute('aria-label')).toBe('페이지 로딩 중');
+      expect(progressbar.getAttribute('aria-label')).toBe((window as any).G7Core.t('common.page_loading'));
     });
   });
 
+  /**
+   * @scenario case=c03
+   * @effects page_transition_indicator_behaves
+   */
+  it('로딩 막대의 읽기 이름은 화면 언어를 따른다(한국어 고정 글자가 아니다)', async () => {
+    mockTransitionManager.getIsPending.mockReturnValue(true);
+    (window as any).G7Core.t = (key: string) => `EN:${key}`;
+
+    render(<PageTransitionIndicator />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('progressbar').getAttribute('aria-label')).toBe('EN:common.page_loading');
+    });
+  });
+
+  /**
+   * @scenario case=c04
+   * @effects page_transition_indicator_behaves
+   */
+  it('움직이는 띠가 다크 모드 색을 함께 갖는다', async () => {
+    mockTransitionManager.getIsPending.mockReturnValue(true);
+
+    const { container } = render(<PageTransitionIndicator />);
+
+    await waitFor(() => {
+      const bar = [...container.querySelectorAll('div')].find((d) => d.className.includes('bg-blue-700'));
+      expect(bar?.className).toContain('dark:bg-blue-400');
+    });
+  });
+
+  /**
+   * @scenario case=c05
+   * @effects page_transition_indicator_behaves
+   */
   it('TransitionManager를 구독해야 한다', async () => {
     // 새로운 구독 mock 생성 (이전 테스트들의 호출 기록을 피하기 위해)
     const freshSubscribeMock = vi.fn(() => vi.fn());
@@ -63,6 +105,10 @@ describe('PageTransitionIndicator', () => {
     expect(freshSubscribeMock).toHaveBeenCalledWith(expect.any(Function));
   });
 
+  /**
+   * @scenario case=c06
+   * @effects page_transition_indicator_behaves
+   */
   it('언마운트 시 구독을 해제해야 한다', async () => {
     const unsubscribe = vi.fn();
     const freshSubscribeMock = vi.fn(() => unsubscribe);
@@ -80,6 +126,10 @@ describe('PageTransitionIndicator', () => {
     expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * @scenario case=c07
+   * @effects page_transition_indicator_behaves
+   */
   it('TransitionManager가 없을 때 경고를 출력해야 한다', async () => {
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -102,16 +152,20 @@ describe('PageTransitionIndicator', () => {
     (window as any).G7Core = localBackup;
   });
 
+  /**
+   * @scenario case=c08
+   * @effects page_transition_indicator_behaves
+   */
   it('isPending 상태 변경 시 UI가 업데이트되어야 한다', async () => {
-    let subscribeCallback: ((isPending: boolean) => void) | null = null;
+    let subscribeCallback = null as ((isPending: boolean) => void) | null;
 
     mockTransitionManager.getIsPending.mockReturnValue(false);
-    mockTransitionManager.subscribe.mockImplementation((callback) => {
+    mockTransitionManager.subscribe.mockImplementation((callback: (isPending: boolean) => void) => {
       subscribeCallback = callback;
       return vi.fn();
     });
 
-    const { container, rerender } = render(<PageTransitionIndicator />);
+    const { container } = render(<PageTransitionIndicator />);
 
     // 초기 상태: isPending = false, 렌더링 없음
     expect(container.firstChild).toBeNull();
@@ -128,10 +182,14 @@ describe('PageTransitionIndicator', () => {
     });
   });
 
+  /**
+   * @scenario case=c09
+   * @effects page_transition_indicator_behaves
+   */
   it('custom className을 적용할 수 있어야 한다', async () => {
     mockTransitionManager.getIsPending.mockReturnValue(true);
 
-    const { container } = render(<PageTransitionIndicator className="custom-class" />);
+    render(<PageTransitionIndicator className="custom-class" />);
 
     await waitFor(() => {
       const progressbar = screen.getByRole('progressbar');
@@ -139,11 +197,15 @@ describe('PageTransitionIndicator', () => {
     });
   });
 
+  /**
+   * @scenario case=c10
+   * @effects page_transition_indicator_behaves
+   */
   it('custom style을 적용할 수 있어야 한다', async () => {
     mockTransitionManager.getIsPending.mockReturnValue(true);
 
     const customStyle = { opacity: 0.5 };
-    const { container } = render(<PageTransitionIndicator style={customStyle} />);
+    render(<PageTransitionIndicator style={customStyle} />);
 
     await waitFor(() => {
       const progressbar = screen.getByRole('progressbar');
@@ -151,6 +213,10 @@ describe('PageTransitionIndicator', () => {
     });
   });
 
+  /**
+   * @scenario case=c11
+   * @effects page_transition_indicator_behaves
+   */
   it('fixed positioning과 z-index를 적용해야 한다', async () => {
     mockTransitionManager.getIsPending.mockReturnValue(true);
 

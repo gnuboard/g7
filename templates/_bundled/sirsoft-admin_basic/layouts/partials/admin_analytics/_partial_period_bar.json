@@ -1,0 +1,675 @@
+{
+    "comment": "방문자 통계 공통 기간 바. 모든 통계 화면이 같은 질의 키(`preset`·`from`·`to`·`unit`·`exclude`)를\n  쓰고 이동은 전부 `mergeQuery` 라, 화면·탭을 옮겨도 고른 기간이 따라가고 주소를 공유하면 그 화면이\n  그대로 열린다. 프리셋을 누르면 URL 에는 프리셋만 남고, 달력 두 칸은 서버가 그 프리셋을 푼 구간을\n  되돌려 준 값으로 채워진다(달력을 직접 고치면 반대로 프리셋이 빠진다 — 둘 다 있으면 서버가 날짜를\n  우선하므로 하나만 둔다).\n  기간·단위·제외를 바꾸는 이동은 `page=1` 을 함께 실어 옛 쪽 번호가 새 기간에 남지 않게 한다.\n  이 14개 이동(초기화 포함)은 **이력에 쌓는다**(`replace` 를 쓰지 않는다) — 기간을 몇 번 바꿔 본 뒤 뒤로 가기로 직전 기간에\n  돌아갈 수 있어야 한다는 설계 결정(#682 라운드 4, 검수 지적 ①ⓑ). 쪽 이동·탭 전환은 종전대로 `replace` 다.\n  그래서 이 바가 보여 주는 것(고른 프리셋·날짜 두 칸·단위·제외 토글)은 **전부 주소에서 읽는다** — 화면 상태\n  (`_local.period`)로 그리면 뒤로 가기는 주소만 되돌리고 바는 직전에 고른 기간을 가리킨 채 남아, 주소와 화면이\n  서로 다른 말을 한다(실측: `?preset=30d` 로 돌아갔는데 칩은 90일, 달력은 90일 구간). 프리셋은 주소에 날짜를\n  남기지 않으므로 달력 두 칸은 화면이 채워 주는 `_computed.periodFrom`·`periodTo`(서버가 echo 한 구간)를 읽는다.\n  이 조각을 쓰는 화면은 `_local.periodPath`(이동 경로)·`_local.periodSource`(새로고침 대상 소스)와\n  `_computed.periodFrom`·`periodTo`(달력 두 칸에 넣을 구간)를 채우고, CSV 가 있으면 `_computed.csvUrl`·\n  `_computed.csvFilename` 을 둔다.\n  파일명은 서버 규약 `analytics-{report}-{from}_{to}.csv` 에 달력 두 칸의 날짜를 채운다 — blob 저장은 응답 헤더의\n  이름을 쓰지 못해 화면이 준 이름이 이기므로, 프리셋 이름(30d)만 적으면 어느 기간 파일인지 알 수 없다.",
+    "meta": {
+        "is_partial": true,
+        "description": "방문자 통계 공통 기간 바 — 프리셋 8·달력·단위·제외 토글·초기화·CSV·새로고침"
+    },
+    "id": "analytics_period_bar",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card mb-4"
+    },
+    "children": [
+        {
+            "id": "period_bar_row",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-wrap items-center gap-2"
+            },
+            "children": [
+                {
+                    "id": "period_presets",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-wrap gap-1"
+                    },
+                    "children": [
+                        {
+                            "id": "preset_today",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "누르면 주소만 바꾼다 — 날짜는 서버가 프리셋을 풀어 되돌려 주므로 화면이 계산하지 않는다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{_local.periodPath}}",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "preset": "today",
+                                                    "from": "{{undefined}}",
+                                                    "to": "{{undefined}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "{{(query.from ? '' : (query.preset || '7d')) === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                            },
+                            "text": "$t:admin.analytics.period.presets.today"
+                        },
+                        {
+                            "id": "preset_yesterday",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "어제 — 서버가 사이트 날짜 기준 전날 하루(시작=끝)로 푼다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{_local.periodPath}}",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "preset": "yesterday",
+                                                    "from": "{{undefined}}",
+                                                    "to": "{{undefined}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "{{(query.from ? '' : (query.preset || '7d')) === 'yesterday' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                            },
+                            "text": "$t:admin.analytics.period.presets.yesterday"
+                        },
+                        {
+                            "id": "preset_7d",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "최근 7일 — 오늘 포함 7일. 질의에 기간이 하나도 없을 때의 기본값과 같은 구간이라, 아무것도 고르지 않은 화면에서\n                 이 칩이 이미 켜져 보인다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{_local.periodPath}}",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "preset": "7d",
+                                                    "from": "{{undefined}}",
+                                                    "to": "{{undefined}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "{{(query.from ? '' : (query.preset || '7d')) === '7d' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                            },
+                            "text": "$t:admin.analytics.period.presets.7d"
+                        },
+                        {
+                            "id": "preset_30d",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "최근 30일 — 오늘 포함 30일. 달이 아니라 날 수라 월 경계와 무관하다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{_local.periodPath}}",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "preset": "30d",
+                                                    "from": "{{undefined}}",
+                                                    "to": "{{undefined}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "{{(query.from ? '' : (query.preset || '7d')) === '30d' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                            },
+                            "text": "$t:admin.analytics.period.presets.30d"
+                        },
+                        {
+                            "id": "preset_90d",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "최근 90일 — 오늘 포함 90일. 분기 규모의 추세를 보는 자리다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{_local.periodPath}}",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "preset": "90d",
+                                                    "from": "{{undefined}}",
+                                                    "to": "{{undefined}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "{{(query.from ? '' : (query.preset || '7d')) === '90d' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                            },
+                            "text": "$t:admin.analytics.period.presets.90d"
+                        },
+                        {
+                            "id": "preset_this_month",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "이번 달 — 1일부터 오늘까지. 달이 끝나지 않았으므로 지난달 칩과 길이가 다르다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{_local.periodPath}}",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "preset": "this_month",
+                                                    "from": "{{undefined}}",
+                                                    "to": "{{undefined}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "{{(query.from ? '' : (query.preset || '7d')) === 'this_month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                            },
+                            "text": "$t:admin.analytics.period.presets.this_month"
+                        },
+                        {
+                            "id": "preset_last_month",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "지난달 — 전달 1일부터 말일까지 전체. 서버가 월 넘침 없이 계산해 31일에 눌러도 짧은 전달을 온전히 잡는다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{_local.periodPath}}",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "preset": "last_month",
+                                                    "from": "{{undefined}}",
+                                                    "to": "{{undefined}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "{{(query.from ? '' : (query.preset || '7d')) === 'last_month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                            },
+                            "text": "$t:admin.analytics.period.presets.last_month"
+                        },
+                        {
+                            "id": "preset_this_year",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "올해 — 1월 1일부터 오늘까지. 기간 한도(366일) 안이라 연중 어느 날 눌러도 거절되지 않는다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{_local.periodPath}}",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "preset": "this_year",
+                                                    "from": "{{undefined}}",
+                                                    "to": "{{undefined}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "{{(query.from ? '' : (query.preset || '7d')) === 'this_year' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                            },
+                            "text": "$t:admin.analytics.period.presets.this_year"
+                        }
+                    ]
+                },
+                {
+                    "comment": "두 칸은 지금 조건의 날짜 범위를 보여 준다. 프리셋이면 URL 에 날짜가 없으므로 화면이 넘겨 준\n        `_computed.periodFrom`·`periodTo` 를 읽는다 — 그 값은 서버가 되돌려 준 구간이라 기간 해석이 서버와\n        어긋나지 않고, 뒤로 가기처럼 화면을 다시 만들지 않는 이동에서도 주소를 따라간다(첫 응답이 오기 전\n        한 순간만 초기화가 계산해 둔 값을 쓴다). 한 칸을 고치면 다른 칸은 화면에 보이던 값을 잇고,\n        시작이 끝보다 늦어지면 그 하루로 줄인다 — 뒤집힌 기간은 서버가 422 로 거절한다. 비운 칸은 기간을 바꾸지 않는다.\n        좁은 화면에서는 두 칸이 카드 폭을 나눠 쓴다(고정 폭 두 칸이 390px 카드 안쪽보다 넓다).",
+                    "id": "period_dates",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-1 w-full sm:w-auto"
+                    },
+                    "children": [
+                        {
+                            "id": "period_from",
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "달력을 직접 고치면 프리셋 표시가 빠진다 — 버튼이 만든 범위를 손으로 바꾼 순간 그 버튼은 지금 조건이 아니다.\n                 키보드로 날짜를 치면 브라우저는 칸이 유효한 날짜가 될 때마다 change 를 낸다(일 「28」 → 02 → 28). 바로 이동하면\n                 중간 날짜가 이력·요청에 한 건씩 남아 뒤로 가기가 중간 날짜로 간다(7.1.0 실측 O-E2) — 입력이 멎은 뒤 한 번만 이동한다.",
+                                    "type": "change",
+                                    "handler": "sequence",
+                                    "if": "{{!!$event.target.value}}",
+                                    "actions": [
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{_local.periodPath}}",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "from": "{{$event.target.value}}",
+                                                    "to": "{{(function(f, t) { return t && t >= f ? t : f; })($event.target.value, _computed.periodTo || '')}}",
+                                                    "preset": "{{undefined}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "debounce": 600
+                                }
+                            ],
+                            "props": {
+                                "name": "analytics_period_from",
+                                "type": "date",
+                                "className": "input flex-1 min-w-0 sm:flex-none sm:w-40",
+                                "value": "{{_computed.periodFrom || ''}}",
+                                "aria-label": "$t:admin.analytics.period.from"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-gray-400 dark:text-gray-500"
+                            },
+                            "text": "~"
+                        },
+                        {
+                            "id": "period_to",
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "끝 날짜를 고치면 시작 칸은 화면에 보이던 값을 잇되, 새 끝보다 늦으면 끝 날짜 하루로 당긴다(시작 칸 쪽과 짝을 이루는 규칙).\n                 비운 값으로는 이동하지 않는다.\n                 키보드로 날짜를 치면 브라우저는 칸이 유효한 날짜가 될 때마다 change 를 낸다(일 「28」 → 02 → 28). 바로 이동하면\n                 중간 날짜가 이력·요청에 한 건씩 남아 뒤로 가기가 중간 날짜로 간다(7.1.0 실측 O-E2) — 입력이 멎은 뒤 한 번만 이동한다.",
+                                    "type": "change",
+                                    "handler": "sequence",
+                                    "if": "{{!!$event.target.value}}",
+                                    "actions": [
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{_local.periodPath}}",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "from": "{{(function(f, t) { return f && t >= f ? f : t; })(_computed.periodFrom || '', $event.target.value)}}",
+                                                    "to": "{{$event.target.value}}",
+                                                    "preset": "{{undefined}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "debounce": 600
+                                }
+                            ],
+                            "props": {
+                                "name": "analytics_period_to",
+                                "type": "date",
+                                "className": "input flex-1 min-w-0 sm:flex-none sm:w-40",
+                                "value": "{{_computed.periodTo || ''}}",
+                                "aria-label": "$t:admin.analytics.period.to"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "period_unit",
+                    "type": "basic",
+                    "name": "Select",
+                    "if": "{{_local.showUnit === true}}",
+                    "actions": [
+                        {
+                            "comment": "시계열 단위. `auto` 는 서버 기본이라 질의에서 뺀다.",
+                            "type": "change",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{_local.periodPath}}",
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "unit": "{{$event.target.value === 'auto' ? undefined : $event.target.value}}",
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "name": "analytics_period_unit",
+                        "className": "w-28",
+                        "value": "{{query.unit || 'auto'}}",
+                        "aria-label": "$t:admin.analytics.period.unit_label",
+                        "options": [
+                            {
+                                "value": "auto",
+                                "label": "$t:admin.analytics.period.units.auto"
+                            },
+                            {
+                                "value": "hour",
+                                "label": "$t:admin.analytics.period.units.hour"
+                            },
+                            {
+                                "value": "day",
+                                "label": "$t:admin.analytics.period.units.day"
+                            },
+                            {
+                                "value": "week",
+                                "label": "$t:admin.analytics.period.units.week"
+                            },
+                            {
+                                "value": "month",
+                                "label": "$t:admin.analytics.period.units.month"
+                            },
+                            {
+                                "value": "year",
+                                "label": "$t:admin.analytics.period.units.year"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "id": "period_excludes",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.showExclude !== false}}",
+                    "props": {
+                        "className": "flex items-center gap-3"
+                    },
+                    "children": [
+                        {
+                            "id": "exclude_admin_toggle",
+                            "type": "composite",
+                            "name": "Toggle",
+                            "actions": [
+                                {
+                                    "comment": "「관리자 제외」 — 합산에서 관리자 유형 행을 뺀다. 질의에는 콤마로 묶어 싣고, 비면 키를 지운다.",
+                                    "type": "change",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{_local.periodPath}}",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "exclude": "{{(function(cur, on) { const next = on ? [...cur.filter(t => t !== 'admin'), 'admin'] : cur.filter(t => t !== 'admin'); return next.length > 0 ? next.join(',') : undefined; })((query.exclude || '').split(',').filter(Boolean), ($event?.target?.checked ?? $event) === true)}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "checked": "{{(query.exclude || '').split(',').filter(Boolean).includes('admin')}}",
+                                "size": "sm",
+                                "label": "$t:admin.analytics.period.exclude_admin"
+                            }
+                        },
+                        {
+                            "id": "exclude_member_toggle",
+                            "type": "composite",
+                            "name": "Toggle",
+                            "actions": [
+                                {
+                                    "comment": "「회원 제외」 — 관리자 제외와 같은 방식으로 질의 `exclude` 목록에 `member` 를 넣고 뺀다. 목록의 다른 값은 보존하므로\n                 한쪽 토글을 꺼도 다른 쪽 제외는 남는다.",
+                                    "type": "change",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{_local.periodPath}}",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "exclude": "{{(function(cur, on) { const next = on ? [...cur.filter(t => t !== 'member'), 'member'] : cur.filter(t => t !== 'member'); return next.length > 0 ? next.join(',') : undefined; })((query.exclude || '').split(',').filter(Boolean), ($event?.target?.checked ?? $event) === true)}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "checked": "{{(query.exclude || '').split(',').filter(Boolean).includes('member')}}",
+                                "size": "sm",
+                                "label": "$t:admin.analytics.period.exclude_member"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "기간 조건 초기화 — 프리셋·날짜·단위·제외를 한 번에 걷어 기본(7일·자동 단위·제외 없음)으로 돌린다.\n        이 바의 다른 이동처럼 이력에 쌓아 뒤로 가기로 직전 조건에 돌아갈 수 있고, 표의 검색어·정렬 같은\n        다른 영역 조건은 건드리지 않는다(그 영역마다 초기화가 따로 있다). 이미 기본이면 잠근다.",
+                    "id": "period_reset_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "{{_local.periodPath}}",
+                                "mergeQuery": true,
+                                "query": {
+                                    "preset": "{{undefined}}",
+                                    "from": "{{undefined}}",
+                                    "to": "{{undefined}}",
+                                    "unit": "{{undefined}}",
+                                    "exclude": "{{undefined}}",
+                                    "page": 1
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary btn-sm flex-center gap-1.5",
+                        "disabled": "{{!query.from && !query.to && (query.preset || '7d') === '7d' && !query.unit && !query.exclude}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "rotate-left",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.reset"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1"
+                    }
+                },
+                {
+                    "comment": "「마지막 집계」 — 숫자가 언제 기준인지 알린다. 스케줄러가 멈추면 숫자가 한 시각에 멈춘 채 정상처럼 보이므로\n        모든 집계 화면이 이 줄을 단다. 값은 집계 응답의 `data.freshness` 를 화면이 `_computed.archiveFreshness` 로\n        넘겨 준 것이고, 원장 화면(실시간·방문자 등)은 그 값을 두지 않아 이 줄이 숨는다. 문구는 스케줄러가 살아 있으면\n        매시 자동 집계, 없고 화면 열 때 집계가 켜져 있으면 1분 간격 재집계, 둘 다 아니면 시각만(오늘이 아니면 날짜까지).\n        시각 문자열은 서버가 사이트 표준시 `Y-m-d H:i:s` 로 주므로 잘라 쓴다(형식 파이프 의존 없음).",
+                    "id": "period_freshness",
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{!!_computed.archiveFreshness?.last_run_at}}",
+                    "props": {
+                        "className": "text-hint text-xs w-full sm:w-auto"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_computed.archiveFreshness?.scheduler?.alive === true}}",
+                            "text": "$t:admin.analytics.freshness.scheduled|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_computed.archiveFreshness?.scheduler?.alive !== true && _computed.archiveFreshness?.on_view?.enabled === true}}",
+                            "text": "$t:admin.analytics.freshness.on_view|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_computed.archiveFreshness?.scheduler?.alive !== true && _computed.archiveFreshness?.on_view?.enabled !== true && _computed.archiveFreshness?.is_today === true}}",
+                            "text": "$t:admin.analytics.freshness.plain_time|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_computed.archiveFreshness?.scheduler?.alive !== true && _computed.archiveFreshness?.on_view?.enabled !== true && _computed.archiveFreshness?.is_today !== true}}",
+                            "text": "$t:admin.analytics.freshness.plain_date|month={{Number((_computed.archiveFreshness?.last_run_at ?? '').slice(5, 7))}}|day={{Number((_computed.archiveFreshness?.last_run_at ?? '').slice(8, 10))}}|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "모바일에서는 기간 바 아래 전폭 — 390px 에서 칩 사이에 끼면 눌리는 면적이 칩 하나만 해진다(계획서 §4.11).",
+                    "id": "csv_download_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{!!_computed.csvUrl}}",
+                    "actions": [
+                        {
+                            "comment": "CSV 는 토큰이 실리는 blob 요청으로 받는다 — `<a href>` 는 Authorization 이 없어 401 이다.",
+                            "type": "click",
+                            "handler": "downloadAttachment",
+                            "params": {
+                                "url": "{{_computed.csvUrl}}",
+                                "filename": "{{_computed.csvFilename ?? 'analytics.csv'}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary btn-sm flex-center gap-1.5 w-full sm:w-auto"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "download",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.analytics.common.csv_download"
+                        }
+                    ]
+                },
+                {
+                    "id": "period_refresh_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "refetchDataSource",
+                            "params": {
+                                "dataSourceId": "{{_local.periodSource}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn-icon",
+                        "aria-label": "$t:admin.analytics.common.refresh"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "refresh",
+                                "className": "text-xl"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "주소로 들어온 기간이 서버 한도(366일, `PeriodRequest::MAX_RANGE_DAYS`)를 넘으면 그 자리에서 알린다.\n      요청은 422 로 거절되는데 다시 시도해도 풀리지 않으므로, 실패 카드가 아니라 기간 바가 원인을 말해야 한다.\n      프리셋은 한도를 넘지 않으므로 직접 지정 기간(`from`)만 본다.",
+            "id": "period_range_error",
+            "type": "basic",
+            "name": "P",
+            "if": "{{!!query.from && Math.round((Date.parse(query.to || query.from) - Date.parse(query.from)) / 86400000) + 1 > 366}}",
+            "props": {
+                "className": "mt-2 text-sm text-red-600 dark:text-red-400"
+            },
+            "text": "$t:admin.analytics.period.range_too_long|days=366"
+        }
+    ]
+}

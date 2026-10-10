@@ -1,0 +1,17 @@
+feature: 마이페이지 쿠키 동의 카드 항목 이름의 「쿠키」 접미사 한 번만 붙이기
+
+description: |
+  마이페이지 쿠키 동의 카드와 동의 확인 창은 운영자 라벨이 「기능」처럼 짧아도 「기능 쿠키」로 보이도록
+  `label_suffix`(`{label} 쿠키`)를 붙인다(#430). 기본 카탈로그 ko 라벨은 이미 「필수 쿠키」라서
+  「필수 쿠키 쿠키」가 나왔다. 라벨이 그 언어의 접미사로 이미 끝나면(대소문자 무관) 그대로 쓴다.
+
+axes:
+  category_label: [short, already_suffixed, missing]
+  viewer_locale: [ko, en, ja]
+
+effects:
+  - mypage_consent_label_has_single_cookie_suffix
+  - mypage_consent_label_falls_back_to_key
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/mypage-consent-label-suffix.test.ts

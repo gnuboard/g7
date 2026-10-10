@@ -1,0 +1,728 @@
+<!-- 회원 목록. 이 화면의 성격은 **상태를 URL 에 둔다**는 것이다 — 검색·필터·정렬·페이지·항목수를 전부
+  쿼리스트링으로 옮기고 데이터소스가 그 값을 파라미터로 읽으므로, 목록을 다시 부르는 대신 `navigate`
+  로 URL 만 바꾸면 갱신된다. 새로고침·뒤로가기·링크 공유가 그대로 되는 것이 그 대가로 얻는 것이다.
+  예외는 삭제 뒤 한 자리다(URL 이 안 바뀌므로 `refetch-data-source` 를 쓴다).
+
+  필터 영역은 쿠폰·상품·주문 목록과 같은 구조다(기본/상세 + 검색편집, #705) — 조각 파일 머리 주석 참조.
+  검색어 조건은 기존 `filters[0][*]` 형식을 그대로 두고(외부 링크·테스트가 이 형식에 묶여 있다),
+  새 조건은 평면 키(`status[]`·`role_ids[]`·`start_date` …)로 더했다. 확장이 더하는 조건은
+  `ext_filters[]` 배열 칸 하나로 모인다.
+  필터 선택지 두 벌은 `<defines>` 에 두고 computed(`userStatusOptions`·`countryOptions`)로 조각에 넘긴다 — 슬롯으로
+  옮겨 그려지는 필터 행에는 `_defines` 가 실리지 않는다(브라우저 실측에서 상태 체크박스가 사라진 원인). 계정 상태(`userStatusList`, 서버 Enum UserStatus 여섯 값과
+  같은 순서)와 국가(`countryList`, 회원 등록·수정 폼 admin_user_form 의 목록과 **같아야** 한다 — 갈리면
+  폼에서 넣은 나라를 필터로 찾지 못한다).
+
+  권한은 서버가 응답에 실어 준 `abilities` 로만 판정한다 — 역할 이름을 프론트에서 보지 않는다.
+  일괄 처리는 모바일(드롭다운)과 데스크톱(버튼 4개) 두 벌이 같은 확인 창을 연다. -->
+<layout name="admin_user_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.users.page_title" description="$t:admin.users.page_description"/>
+  <!-- 회원 목록. 파라미터가 전부 `query.*` 를 읽는 것이 이 화면의 뼈대다(위 설명 참조).
+       배열 조건은 URL 에 `키[]` 로 실리고 엔진이 늘 배열로 되읽으므로 `query['status[]']` 로 받는다.
+       403 은 토스트가 아니라 **에러 화면으로 갈아끼운다** — 목록 자체를 볼 권한이 없는 상태라
+       빈 표를 보여 주면 "회원이 없다" 로 읽힌다. -->
+  <data-source id="users" label_key="$t:editor.data_source.users" type="api" endpoint="/api/admin/users" method="GET" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+    <params page="{{query.page}}" per_page="{{query.per_page || '10'}}" filters[0][field]="{{query['filters[0][field]'] || 'all'}}" filters[0][value]="{{query['filters[0][value]']}}" filters[0][operator]="{{query['filters[0][operator]']}}" sort_by="{{query.sort_by}}" sort_order="{{query.sort_order}}" status="{{query['status[]'] || []}}" role_ids="{{query['role_ids[]'] || []}}" admin_scope="{{query.admin_scope}}" lock_state="{{query.lock_state}}" start_date="{{query.start_date}}" end_date="{{query.end_date}}" last_login_start="{{query.last_login_start}}" last_login_end="{{query.last_login_end}}" never_logged_in="{{query.never_logged_in}}" dormant_start="{{query.dormant_start}}" dormant_end="{{query.dormant_end}}" status_changed_type="{{query.status_changed_type}}" status_changed_start="{{query.status_changed_start}}" status_changed_end="{{query.status_changed_end}}" language="{{query.language}}" country="{{query.country}}" email_verified="{{query.email_verified}}" identity_verified="{{query.identity_verified}}" ext_filters="{{query['ext_filters[]'] || []}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="current_page" :value="1"/>
+        <field name="last_page" :value="1"/>
+        <field name="per_page" :value="20"/>
+        <field name="total" :value="0"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 권한 그룹 필터의 선택지(활성 역할). 목록을 가리지 않도록 늦게 받고, 실패해도 역할 행만 비고
+       목록은 그대로 쓴다 — 그래서 에러 화면으로 갈아끼우지 않는다. -->
+  <data-source id="roles" label_key="$t:editor.data_source.roles" type="api" endpoint="/api/admin/roles/active" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="visibleFilters">
+      <item>searchField</item>
+      <item>searchKeyword</item>
+      <item>status</item>
+      <item>role</item>
+      <item>createdAt</item>
+    </field>
+    <field name="showDetailFilter" :value="false"/>
+    <field name="isEditMode" :value="false"/>
+    <field name="filter">
+      <field name="searchField" value="all"/>
+      <field name="searchKeyword" value=""/>
+      <field name="status" :value="[]"/>
+      <field name="role" :value="[]"/>
+      <field name="adminScope" value="all"/>
+      <field name="lockState" value="all"/>
+      <field name="createdStartDate" value=""/>
+      <field name="createdEndDate" value=""/>
+      <field name="createdDateQuick" value=""/>
+      <field name="lastLoginStartDate" value=""/>
+      <field name="lastLoginEndDate" value=""/>
+      <field name="lastLoginDateQuick" value=""/>
+      <field name="neverLoggedIn" :value="false"/>
+      <field name="dormantStartDate" value=""/>
+      <field name="dormantEndDate" value=""/>
+      <field name="statusChangedType" value=""/>
+      <field name="statusChangedStart" value=""/>
+      <field name="statusChangedEnd" value=""/>
+      <field name="language" value=""/>
+      <field name="country" value=""/>
+      <field name="emailVerified" value="all"/>
+      <field name="identityVerified" value="all"/>
+    </field>
+    <field name="userFilterExtraQuery" :value="[]"/>
+  </init-local>
+  <permissions>
+    <permission>core.users.read</permission>
+  </permissions>
+  <defines>
+    <define name="userStatusList">
+      <item code="active" name="$t:admin.users.status.active"/>
+      <item code="inactive" name="$t:admin.users.status.inactive"/>
+      <item code="blocked" name="$t:admin.users.status.blocked"/>
+      <item code="withdrawn" name="$t:admin.users.status.withdrawn"/>
+      <item code="pending_verification" name="$t:admin.users.status.pending_verification"/>
+      <item code="dormant" name="$t:admin.users.status.dormant"/>
+    </define>
+    <define name="countryList">
+      <item code="KR" name="$t:countries.KR"/>
+      <item code="US" name="$t:countries.US"/>
+      <item code="JP" name="$t:countries.JP"/>
+      <item code="CN" name="$t:countries.CN"/>
+      <item code="GB" name="$t:countries.GB"/>
+      <item code="DE" name="$t:countries.DE"/>
+      <item code="FR" name="$t:countries.FR"/>
+      <item code="CA" name="$t:countries.CA"/>
+      <item code="AU" name="$t:countries.AU"/>
+      <item code="IN" name="$t:countries.IN"/>
+      <item code="BR" name="$t:countries.BR"/>
+      <item code="RU" name="$t:countries.RU"/>
+      <item code="IT" name="$t:countries.IT"/>
+      <item code="ES" name="$t:countries.ES"/>
+      <item code="MX" name="$t:countries.MX"/>
+      <item code="NL" name="$t:countries.NL"/>
+      <item code="SE" name="$t:countries.SE"/>
+      <item code="CH" name="$t:countries.CH"/>
+      <item code="SG" name="$t:countries.SG"/>
+      <item code="HK" name="$t:countries.HK"/>
+      <item code="TW" name="$t:countries.TW"/>
+      <item code="TH" name="$t:countries.TH"/>
+      <item code="VN" name="$t:countries.VN"/>
+      <item code="PH" name="$t:countries.PH"/>
+      <item code="MY" name="$t:countries.MY"/>
+      <item code="ID" name="$t:countries.ID"/>
+      <item code="NZ" name="$t:countries.NZ"/>
+      <item code="AT" name="$t:countries.AT"/>
+      <item code="BE" name="$t:countries.BE"/>
+      <item code="DK" name="$t:countries.DK"/>
+      <item code="FI" name="$t:countries.FI"/>
+      <item code="NO" name="$t:countries.NO"/>
+      <item code="PL" name="$t:countries.PL"/>
+      <item code="PT" name="$t:countries.PT"/>
+      <item code="IE" name="$t:countries.IE"/>
+      <item code="GR" name="$t:countries.GR"/>
+      <item code="CZ" name="$t:countries.CZ"/>
+      <item code="HU" name="$t:countries.HU"/>
+      <item code="TR" name="$t:countries.TR"/>
+      <item code="IL" name="$t:countries.IL"/>
+      <item code="AE" name="$t:countries.AE"/>
+      <item code="SA" name="$t:countries.SA"/>
+      <item code="ZA" name="$t:countries.ZA"/>
+      <item code="EG" name="$t:countries.EG"/>
+      <item code="AR" name="$t:countries.AR"/>
+      <item code="CL" name="$t:countries.CL"/>
+      <item code="CO" name="$t:countries.CO"/>
+      <item code="PE" name="$t:countries.PE"/>
+    </define>
+  </defines>
+  <computed name="userStatusOptions">{{(_defines?.userStatusList ?? []).map(d => ({ code: d.code, name: d.name }))}}</computed>
+  <computed name="countryOptions">{{(_defines?.countryList ?? []).map(c => ({ value: c.code, label: c.name }))}}</computed>
+  <transition-overlay>
+    <wait-for>users</wait-for>
+    <wait-for>roles</wait-for>
+  </transition-overlay>
+  <!-- 검색 실행 — 필터 조각의 검색 버튼·Enter 가 이 액션 하나를 공유한다. 열거한 조건만 덮어쓰고 정렬/페이지당 개수 등 나머지 목록 상태는 유지한다. 「전체」는 조건이 아니므로 빈 값으로 떨어뜨리고(빈 값·빈 배열은 엔진이 URL 에서 키를 지운다), 조건이 바뀌었으니 쪽수는 `page=""` 로 떨궈 첫 쪽으로 되돌린다 — list-context.md 「페이지 되돌림은 빈 값」, 회귀 테스트 admin-list-context-round-trip (#75). 검색도 표를 다시 그리므로 페이지 이동과 동일하게 표 본문에 전환 오버레이를 건다 (#245). transition_overlay_target 은 replace:true 인 navigate 에서만 읽히므로 함께 둔다. 빠른 기간 표시(`*DateQuick`)는 URL 에 싣지 않는다 — 참조 목록들과 같이 새로고침하면 버튼 하이라이트만 꺼진다. -->
+  <action name="searchUsers">
+    <navigate path="/admin/users" :mergeQuery="true" :replace="true" transition_overlay_target="users_data_grid__body">
+      <query page="" filters[0][field]="{{_local.filter.searchField || 'all'}}" filters[0][value]="{{_local.filter.searchKeyword || undefined}}" filters[0][operator]="like" status[]="{{_local.filter.status || []}}" role_ids[]="{{_local.filter.role || []}}" admin_scope="{{_local.filter.adminScope !== 'all' ? _local.filter.adminScope : ''}}" lock_state="{{_local.filter.lockState !== 'all' ? _local.filter.lockState : ''}}" start_date="{{_local.filter.createdStartDate}}" end_date="{{_local.filter.createdEndDate}}" last_login_start="{{_local.filter.neverLoggedIn ? '' : _local.filter.lastLoginStartDate}}" last_login_end="{{_local.filter.neverLoggedIn ? '' : _local.filter.lastLoginEndDate}}" never_logged_in="{{_local.filter.neverLoggedIn ? 'true' : ''}}" dormant_start="{{_local.filter.dormantStartDate}}" dormant_end="{{_local.filter.dormantEndDate}}" status_changed_type="{{_local.filter.statusChangedType}}" status_changed_start="{{_local.filter.statusChangedType ? _local.filter.statusChangedStart : ''}}" status_changed_end="{{_local.filter.statusChangedType ? _local.filter.statusChangedEnd : ''}}" language="{{_local.filter.language}}" country="{{_local.filter.country}}" email_verified="{{_local.filter.emailVerified !== 'all' ? _local.filter.emailVerified : ''}}" identity_verified="{{_local.filter.identityVerified !== 'all' ? _local.filter.identityVerified : ''}}" ext_filters="{{_local.userFilterExtraQuery || []}}"/>
+    </navigate>
+  </action>
+  <init>
+    <action handler="loadVisibleFilters" id="admin_user_filters">
+      <field name="defaultFilters">
+        <item>searchField</item>
+        <item>searchKeyword</item>
+        <item>status</item>
+        <item>role</item>
+        <item>createdAt</item>
+      </field>
+      <field name="resultTo">
+        <field name="target" value="_local"/>
+        <field name="key" value="visibleFilters"/>
+      </field>
+    </action>
+    <set-state target="global">
+      <field name="_local">
+        <field name="showDetailFilter" value="{{!!(query.admin_scope || query.lock_state || query.last_login_start || query.last_login_end || query.never_logged_in || query.dormant_start || query.dormant_end || query.status_changed_type || query.language || query.country || query.email_verified || query.identity_verified || (query['ext_filters[]'] || []).length > 0)}}"/>
+        <field name="userFilterExtraQuery" value="{{query['ext_filters[]'] || []}}"/>
+        <field name="filter">
+          <field name="searchField" value="{{query['filters[0][field]'] || 'all'}}"/>
+          <field name="searchKeyword" value="{{query['filters[0][value]'] || ''}}"/>
+          <field name="status" value="{{query['status[]'] || []}}"/>
+          <field name="role" value="{{query['role_ids[]'] || []}}"/>
+          <field name="adminScope" value="{{query.admin_scope || 'all'}}"/>
+          <field name="lockState" value="{{query.lock_state || 'all'}}"/>
+          <field name="createdStartDate" value="{{query.start_date || ''}}"/>
+          <field name="createdEndDate" value="{{query.end_date || ''}}"/>
+          <field name="lastLoginStartDate" value="{{query.last_login_start || ''}}"/>
+          <field name="lastLoginEndDate" value="{{query.last_login_end || ''}}"/>
+          <field name="neverLoggedIn" value="{{query.never_logged_in === 'true'}}"/>
+          <field name="dormantStartDate" value="{{query.dormant_start || ''}}"/>
+          <field name="dormantEndDate" value="{{query.dormant_end || ''}}"/>
+          <field name="statusChangedType" value="{{query.status_changed_type || ''}}"/>
+          <field name="statusChangedStart" value="{{query.status_changed_start || ''}}"/>
+          <field name="statusChangedEnd" value="{{query.status_changed_end || ''}}"/>
+          <field name="language" value="{{query.language || ''}}"/>
+          <field name="country" value="{{query.country || ''}}"/>
+          <field name="emailVerified" value="{{query.email_verified || 'all'}}"/>
+          <field name="identityVerified" value="{{query.identity_verified || 'all'}}"/>
+        </field>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="user_list_content" class="admin-page-content-fluid">
+      <responsive on="portable" class="admin-page-content-fluid-compact"/>
+      <filter-visibility-selector data-type="composite" data-ref="filter_visibility_selector" id="admin_user_filters" visibleFilters="{{_local.visibleFilters}}">
+        <prop name="defaultFilters">
+          <item>searchField</item>
+          <item>searchKeyword</item>
+          <item>status</item>
+          <item>role</item>
+          <item>createdAt</item>
+        </prop>
+        <on type="change" event="onFilterVisibilityChange">
+          <!-- 화면에 세울 필터 목록만 바꾼다 — 저장은 컴포넌트가 사용자별 키로 직접 처리하므로 여기서 다시 보내지 않는다 -->
+          <set-state target="_local" visibleFilters="{{$args[0]}}"/>
+        </on>
+      </filter-visibility-selector>
+      <page-header data-type="composite" data-ref="page_header" title="$t:admin.users.title" description="$t:admin.users.description">
+        <icon-button data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
+          <on type="click">
+            <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지와 걸어둔 검색 조건을 유지한다 (#75). -->
+            <navigate path="/admin/users" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+        </icon-button>
+        <button data-ref="add_user_button" disabled="{{users?.data?.abilities?.can_create !== true}}" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 등록 폼은 회원 목록 클러스터 안이다 — 취소하고 돌아왔을 때 보고 있던 페이지·검색 조건이 그대로여야 한다 (#75). -->
+            <navigate path="/admin/users/create" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          <icon name="plus" size="md"/>
+          <span>$t:admin.users.add_user</span>
+        </button>
+      </page-header>
+      <include src="partials/admin_user_list/_partial_filter_section.g7.html"/>
+      <div data-ref="bulk_actions_area" data-if="{{users?.data?.abilities?.can_update === true}}" class="bulk-actions-bar">
+        <responsive on="portable" class="bulk-actions-bar">
+          <span data-ref="mobile_selected_count" class="text-body font-medium">$t:admin.users.selected_count|count={{(_global.selectedIds_admin_users || []).length}}</span>
+          <dropdown data-type="composite" data-ref="mobile_bulk_action_dropdown" label="$t:admin.users.bulk_action_select" position="bottom-right" class="ml-auto">
+            <prop name="items">
+              <item value="activate" label="$t:admin.users.bulk_activate" disabled="{{!(_global.selectedIds_admin_users?.length &gt; 0)}}"/>
+              <item value="deactivate" label="$t:admin.users.bulk_deactivate" disabled="{{!(_global.selectedIds_admin_users?.length &gt; 0)}}"/>
+              <item value="block" label="$t:admin.users.bulk_block" disabled="{{!(_global.selectedIds_admin_users?.length &gt; 0)}}"/>
+              <item value="withdraw" label="$t:admin.users.bulk_withdraw" disabled="{{!(_global.selectedIds_admin_users?.length &gt; 0)}}"/>
+              <item value="role_add" label="$t:admin.users.bulk_roles.add_button" disabled="{{!(_global.selectedIds_admin_users?.length &gt; 0)}}"/>
+              <item value="role_remove" label="$t:admin.users.bulk_roles.remove_button" disabled="{{!(_global.selectedIds_admin_users?.length &gt; 0)}}"/>
+            </prop>
+            <on type="action" event="onItemClick">
+              <!-- 모바일 일괄 처리 — 고른 항목에 따라 데스크톱 버튼 4개와 **같은 확인 창**을 연다.
+                   여기서 바로 처리하지 않는 이유는 되돌릴 수 없는 상태 변경이기 때문이다.
+                   고른 회원이 없으면 항목이 잠긴다 — 서버는 빈 대상(`ids=[]`)을 422 로 거절한다. -->
+              <switch>
+                <case when="activate">
+                  <open-modal target="bulk_activate_confirm_modal"/>
+                </case>
+                <case when="deactivate">
+                  <open-modal target="bulk_deactivate_confirm_modal"/>
+                </case>
+                <case when="block">
+                  <open-modal target="bulk_block_confirm_modal"/>
+                </case>
+                <case when="withdraw">
+                  <open-modal target="bulk_withdraw_confirm_modal"/>
+                </case>
+                <case when="role_add">
+                  <set-state target="global" userBulkRoleMode="add" :userBulkRoleIds="[]" :userBulkRoleResult="null" :userBulkRoleError="null"/>
+                  <open-modal target="bulk_roles_modal"/>
+                </case>
+                <case when="role_remove">
+                  <set-state target="global" userBulkRoleMode="remove" :userBulkRoleIds="[]" :userBulkRoleResult="null" :userBulkRoleError="null"/>
+                  <open-modal target="bulk_roles_modal"/>
+                </case>
+              </switch>
+            </on>
+          </dropdown>
+        </responsive>
+        <span data-ref="selected_count" class="text-body font-medium">$t:admin.users.selected_count|count={{(_global.selectedIds_admin_users || []).length}}</span>
+        <span data-ref="status_change_label" class="text-label-subtle">$t:admin.users.bulk_status_change</span>
+        <div data-ref="bulk_buttons" class="flex gap-2">
+          <button data-ref="bulk_activate" class="btn btn-sm btn-success" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
+            <on type="click">
+              <open-modal target="bulk_activate_confirm_modal"/>
+            </on>
+            <span>$t:admin.users.bulk_activate</span>
+          </button>
+          <button data-ref="bulk_deactivate" class="btn btn-sm btn-neutral" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
+            <on type="click">
+              <open-modal target="bulk_deactivate_confirm_modal"/>
+            </on>
+            <span>$t:admin.users.bulk_deactivate</span>
+          </button>
+          <button data-ref="bulk_block" class="btn btn-sm btn-danger" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
+            <on type="click">
+              <open-modal target="bulk_block_confirm_modal"/>
+            </on>
+            <span>$t:admin.users.bulk_block</span>
+          </button>
+          <button data-ref="bulk_withdraw" class="btn btn-sm btn-warning" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
+            <on type="click">
+              <open-modal target="bulk_withdraw_confirm_modal"/>
+            </on>
+            <span>$t:admin.users.bulk_withdraw</span>
+          </button>
+          <button data-ref="bulk_role_add" type="button" class="btn btn-sm btn-secondary" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
+            <on type="click">
+              <!-- 역할 일괄 추가 — 모드를 정하고 지난 입력·결과를 비운 뒤 창을 연다(모바일 드롭다운의 같은 항목과 같은 동작) -->
+              <sequence>
+                <set-state target="global" userBulkRoleMode="add" :userBulkRoleIds="[]" :userBulkRoleResult="null" :userBulkRoleError="null"/>
+                <open-modal target="bulk_roles_modal"/>
+              </sequence>
+            </on>
+            <span>$t:admin.users.bulk_roles.add_button</span>
+          </button>
+          <button data-ref="bulk_role_remove" type="button" class="btn btn-sm btn-secondary" disabled="{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}">
+            <on type="click">
+              <!-- 역할 일괄 제거 — 추가와 같은 창을 제거 모드로 연다 -->
+              <sequence>
+                <set-state target="global" userBulkRoleMode="remove" :userBulkRoleIds="[]" :userBulkRoleResult="null" :userBulkRoleError="null"/>
+                <open-modal target="bulk_roles_modal"/>
+              </sequence>
+            </on>
+            <span>$t:admin.users.bulk_roles.remove_button</span>
+          </button>
+        </div>
+      </div>
+      <div data-ref="list_toolbar" class="flex-between mb-4">
+        <!-- 총 건수를 끝까지 센 경우 / 상한(result_cap)에 걸려 잘린 경우 — 세지 않은 값을 정확한 총계처럼 말하지 않는다 -->
+        <span data-ref="total_count" data-if="{{users?.data?.pagination?.total_is_exact !== false}}" class="text-label">$t:admin.users.total_count|count={{users?.data?.pagination?.total ?? 0}}</span>
+        <span data-ref="total_count_at_least" data-if="{{users?.data?.pagination?.total_is_exact === false}}" class="text-label">$t:admin.users.total_at_least|count={{users?.data?.pagination?.total ?? 0}}</span>
+        <div data-ref="list_options" class="flex-center gap-3">
+          <select data-ref="sort_select" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
+            <options>
+              <option value="created_at_desc">$t:admin.users.sort.created_at_desc</option>
+              <option value="created_at_asc">$t:admin.users.sort.created_at_asc</option>
+              <option value="last_login_at_desc">$t:admin.users.sort.last_login_at_desc</option>
+              <option value="last_login_at_asc">$t:admin.users.sort.last_login_at_asc</option>
+              <option value="name_asc">$t:admin.users.sort.name_asc</option>
+              <option value="name_desc">$t:admin.users.sort.name_desc</option>
+              <option value="email_asc">$t:admin.users.sort.email_asc</option>
+              <option value="email_desc">$t:admin.users.sort.email_desc</option>
+              <option value="country_asc">$t:admin.users.sort.country_asc</option>
+              <option value="country_desc">$t:admin.users.sort.country_desc</option>
+              <option value="language_asc">$t:admin.users.sort.language_asc</option>
+              <option value="language_desc">$t:admin.users.sort.language_desc</option>
+              <option value="status_asc">$t:admin.users.sort.status_asc</option>
+              <option value="status_desc">$t:admin.users.sort.status_desc</option>
+            </options>
+            <on type="change">
+              <!-- 정렬 선택. 옵션 값 하나(`created_at_desc`)에 필드와 방향이 붙어 있어 마지막 조각을
+                   방향으로 떼고 나머지를 필드로 쓴다(필드명에 `_` 가 있어 앞에서 자를 수 없다).
+                   옵션은 표 머리글로 정렬할 수 있는 열마다 오름·내림 두 개씩 둔다 — 하나라도 빠지면
+                   그 머리글로 정렬했을 때 이 칸이 빈 칸으로 보인다.
+                   페이지는 1로 되돌린다 — 정렬이 바뀌면 3페이지의 의미가 달라진다.
+                   대기 표시는 표 본문에만 건다(툴바까지 덮으면 방금 고른 값이 가려진다). -->
+              <navigate path="/admin/users" :mergeQuery="true" :replace="true" transition_overlay_target="users_data_grid__body">
+                <query sort_by="{{$event.target.value.split('_').slice(0, -1).join('_')}}" sort_order="{{$event.target.value.split('_').pop()}}" :page="1"/>
+              </navigate>
+            </on>
+          </select>
+          <select data-ref="per_page_select" value="{{query.per_page || '10'}}" class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-blue-500">
+            <options>
+              <option value="10">$t:admin.users.per_page|count=10</option>
+              <option value="20">$t:admin.users.per_page|count=20</option>
+              <option value="50">$t:admin.users.per_page|count=50</option>
+              <option value="100">$t:admin.users.per_page|count=100</option>
+            </options>
+            <on type="change">
+              <!-- 페이지당 항목 수. 정렬과 같은 이유로 페이지를 1로 되돌린다 — 100개씩 보기로 바꾸면
+                   기존 5페이지가 범위 밖이 된다. -->
+              <navigate path="/admin/users" :mergeQuery="true" :replace="true" transition_overlay_target="users_data_grid__body">
+                <query per_page="{{$event.target.value}}" :page="1"/>
+              </navigate>
+            </on>
+          </select>
+        </div>
+      </div>
+      <data-grid data-type="composite" selectedCountText="" data-ref="users_data_grid" :data-blur-until-loaded="true" data="{{users?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'asc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{users?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{users?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{users?.data?.pagination?.has_more_pages ?? false}}" selectable="{{users?.data?.abilities?.can_update === true}}" selectionScope="page" nonSelectableIds="{{current_user?.data?.uuid ? [current_user.data.uuid] : []}}" selectedIds="{{_global.selectedIds_admin_users || []}}" idField="uuid" :showColumnSelector="false" visibleColumns="{{_global.visibleColumns_admin_users}}" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+        <column field="name" header="$t:admin.users.columns.name" :sortable="true" :required="true">
+          <cell>
+            <div>
+              <span class="font-medium text-gray-900 dark:text-white">{{row.name}}</span>
+              <div data-if="{{row.nickname}}" class="text-tertiary">{{row.nickname}}</div>
+            </div>
+          </cell>
+        </column>
+        <column field="role" header="$t:admin.users.columns.role" :sortable="false" :required="true">
+          <cell>
+            <div class="flex flex-wrap gap-1">
+              <span data-each="role in row.roles" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{{role.name}}</span>
+            </div>
+          </cell>
+        </column>
+        <column field="email" header="$t:admin.users.columns.email" :sortable="true" :required="true"/>
+        <column field="nickname" header="$t:admin.users.columns.nickname" :sortable="false">
+          <cell>
+            <span>{{row.nickname ?? ''}}</span>
+          </cell>
+        </column>
+        <column field="country" header="$t:admin.users.columns.country" :sortable="true">
+          <cell>
+            <div data-if="{{row.country}}" class="inline-flex items-center gap-2">
+              <span class="{{'fi fi-' + row.country.toLowerCase() + ' fis rounded'}}"/>
+              <span>{{row.country_name}}</span>
+            </div>
+          </cell>
+        </column>
+        <column field="language" header="$t:admin.users.columns.language" :sortable="true">
+          <cell>
+            <span>{{row.language_label}}</span>
+          </cell>
+        </column>
+        <column field="status" header="$t:admin.users.columns.status" :sortable="true">
+          <cell>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', secondary: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200', danger: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', info: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'})[row.status_variant] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}">{{row.status_label}}</span>
+          </cell>
+        </column>
+        <column field="email_verified_at" header="$t:admin.users.columns.email_verified_at" :sortable="false">
+          <cell>
+            <span>{{row.email_verified_at ?? '-'}}</span>
+          </cell>
+        </column>
+        <column field="identity_verified_at" header="$t:admin.users.columns.identity_verified_at" :sortable="false">
+          <cell>
+            <span>{{row.identity_verified_at ?? '-'}}</span>
+          </cell>
+        </column>
+        <column field="created_at" header="$t:admin.users.columns.created_at" :sortable="true"/>
+        <column field="last_login_at" header="$t:admin.users.columns.last_login_at" :sortable="true"/>
+        <prop name="rowActions">
+          <item id="view" label="$t:admin.users.actions.view" iconName="eye"/>
+          <item id="edit" label="$t:admin.users.actions.edit" iconName="pencil" disabledField="abilities.can_update"/>
+          <item id="delete" label="$t:admin.users.actions.delete" iconName="trash" variant="danger" disabledField="abilities.can_delete" disabledReason="$t:admin.users.actions.delete_disabled_reason"/>
+        </prop>
+        <on type="change" event="onSelectionChange">
+          <!-- 선택한 행의 id 를 전역에 둔다 — 일괄 처리 버튼과 확인 창이 모두 이 값을 읽으므로
+               표 바깥(툴바·모달)에서 보여야 한다. 로그인한 본인의 행은 표가 고르지 못하게 막는다
+               (`nonSelectableIds`) — 본인이 섞인 일괄 요청은 서버가 통째로 422 로 거절한다. -->
+          <set-state target="global" selectedIds_admin_users="{{$args[0]}}"/>
+        </on>
+        <on type="change" event="onColumnVisibilityChange">
+          <!-- 표 자체의 열 선택기는 꺼 두었고(`:showColumnSelector="false"`) 툴바 선택기가 그 역할을
+               한다. 이 배선은 표가 스스로 열을 감출 때를 위한 자리다. -->
+          <set-state target="local" visibleColumns_admin_users="{{$args[0]}}"/>
+        </on>
+        <on type="change" event="onSortChange">
+          <!-- 열 머리글 정렬. 툴바 정렬 선택과 **같은 쿼리 키**로 모이므로 둘 중 무엇을 써도 상태가
+               한 곳(URL)에 남는다. 여기서는 페이지를 건드리지 않는다.
+               페이지 이동 — 표 본문만 대기 표시로 덮는다(페이지네이션까지 덮으면 누른 자리가 사라진다). -->
+          <navigate path="/admin/users" :mergeQuery="true" :replace="true" transition_overlay_target="users_data_grid__body">
+            <query sort_by="{{$args[0]}}" sort_order="{{$args[1]}}" :page="1"/>
+          </navigate>
+        </on>
+        <on type="change" event="onPageChange">
+          <!-- 페이지 이동. 걸려 있던 검색·필터는 그대로 두고 번호만 바꾸며, 표 몸통만 덮어 필터 영역이 깜빡이지 않는다 -->
+          <navigate path="/admin/users" :mergeQuery="true" :replace="true" transition_overlay_target="users_data_grid__body">
+            <query page="{{$args[0]}}"/>
+          </navigate>
+        </on>
+        <on type="action" event="onRowAction">
+          <!-- 행 메뉴. 보기/수정은 곧바로 이동하고, 삭제만 확인 창을 거친다.
+               삭제 갈래는 대상 행을 전역 `modal_data` 에 **먼저 담고** 그 성공 갈래에서 창을 연다 —
+               순서를 바꾸면 창이 아직 비어 있는 대상을 가리킨다. -->
+          <switch>
+            <case when="view">
+              <!-- 상세는 회원 목록 클러스터 안이다 — 돌아왔을 때 보고 있던 페이지·검색 조건이 그대로여야 한다 (#75). -->
+              <navigate path="/admin/users/{{$args[1].uuid}}" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </case>
+            <case when="edit">
+              <!-- 수정 폼도 같은 클러스터다 — 취소하고 돌아왔을 때 목록 상태가 살아 있어야 한다 (#75). -->
+              <navigate path="/admin/users/{{$args[1].uuid}}/edit" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </case>
+            <case when="delete">
+              <set-state target="global" modal_data="{{$args[1]}}">
+                <success>
+                  <open-modal target="delete_confirm_modal"/>
+                </success>
+              </set-state>
+            </case>
+          </switch>
+        </on>
+      </data-grid>
+    </div>
+  </slot>
+  <modal>
+    <!-- 선택한 회원을 한꺼번에 활성으로 바꾸는 확인 창. 아래 일괄 창 4개(활성·비활성·차단·탈퇴)는
+         `status` 값과 성공 문구만 다른 같은 형태다. -->
+    <modal data-type="composite" data-ref="bulk_activate_confirm_modal" title="$t:admin.users.modals.bulk_activate_title" size="sm">
+      <meta editor_label="$t:admin.modal_label.user_list.bulk_activate_confirm_modal"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.bulk_activate_confirm|count={{(_global.selectedIds_admin_users || []).length}}</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button disabled="{{_global.isProcessing}}" class="btn btn-secondary">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="bulk_activate_submit_button" disabled="{{_global.isProcessing || !(_global.selectedIds_admin_users?.length &gt; 0)}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 일괄 활성 실행. 성공하면 선택을 비우고(처리된 id 가 남아 있으면 다음 일괄이 그것을
+                 다시 보낸다) 빈 쿼리로 같은 URL 을 다시 밟아 목록을 새로 받는다 — 조건은 유지된다.
+                 실패는 토스트가 아니라 오류 창으로 띄운다(일괄은 몇 건이 왜 실패했는지가 길다). -->
+            <sequence>
+              <set-state target="global" :isProcessing="true"/>
+              <api-call :auth_required="true" target="/api/admin/users/bulk-status" method="PATCH">
+                <success>
+                  <set-state target="global" :isProcessing="false" :selectedIds_admin_users="[]"/>
+                  <close-modal/>
+                  <navigate path="/admin/users" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                  <!-- 서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다. -->
+                  <toast type="{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}" message="{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_activate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
+                  <open-modal target="error_modal"/>
+                </fail>
+                <body ids="{{_global.selectedIds_admin_users}}" status="active"/>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.isProcessing}}" name="spinner" size="sm" :spin="true"/>
+          <span>{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 선택한 회원을 한꺼번에 비활성으로 바꾸는 확인 창(활성 창과 같은 형태, `status` 만 다르다). -->
+    <modal data-type="composite" data-ref="bulk_deactivate_confirm_modal" title="$t:admin.users.modals.bulk_deactivate_title" size="sm">
+      <meta editor_label="$t:admin.modal_label.user_list.bulk_deactivate_confirm_modal"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.bulk_deactivate_confirm|count={{(_global.selectedIds_admin_users || []).length}}</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button disabled="{{_global.isProcessing}}" class="btn btn-secondary">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="bulk_deactivate_submit_button" disabled="{{_global.isProcessing || !(_global.selectedIds_admin_users?.length &gt; 0)}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 일괄 비활성 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`inactive`)만 다르다. -->
+            <sequence>
+              <set-state target="global" :isProcessing="true"/>
+              <api-call :auth_required="true" target="/api/admin/users/bulk-status" method="PATCH">
+                <success>
+                  <set-state target="global" :isProcessing="false" :selectedIds_admin_users="[]"/>
+                  <close-modal/>
+                  <navigate path="/admin/users" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                  <!-- 서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다. -->
+                  <toast type="{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}" message="{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_deactivate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
+                  <open-modal target="error_modal"/>
+                </fail>
+                <body ids="{{_global.selectedIds_admin_users}}" status="inactive"/>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.isProcessing}}" name="spinner" size="sm" :spin="true"/>
+          <span>{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 회원 한 건 삭제 확인 창. 대상은 행 메뉴가 전역 `modal_data` 에 담아 준 행이다
+         (일괄 창들이 쓰는 선택 목록과 다른 값을 본다). -->
+    <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:admin.users.modals.delete_title" size="sm">
+      <meta editor_label="$t:admin.modal_label.user_list.delete_confirm_modal"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.delete_confirm</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="btn btn-secondary" disabled="{{_global.isDeleting}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+          <on type="click">
+            <!-- 삭제 실행. 이 화면에서 **유일하게 URL 을 바꾸지 않는 갱신**이라 목록을 직접 다시 부른다
+                 (일괄 처리 쪽은 같은 URL 을 다시 밟는 방식이다). 실패는 창을 연 채 토스트만 띄운다. -->
+            <sequence>
+              <set-state target="global" :isDeleting="true"/>
+              <api-call :auth_required="true" target="/api/admin/users/{{_global.modal_data.uuid}}" method="DELETE">
+                <success>
+                  <set-state target="global" :isDeleting="false"/>
+                  <refetch-data-source dataSourceId="users"/>
+                  <toast type="success" message="$t:admin.users.modals.delete_success"/>
+                  <close-modal/>
+                </success>
+                <fail>
+                  <set-state target="global" :isDeleting="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
+          <span>{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 일괄 처리 실패를 띄우는 공용 오류 창. 일괄 창 4개가 실패 갈래에서 문구를 전역
+         `errorMessage` 에 담고 이것을 연다 — 자기 창은 닫지 않으므로 오류 창이 그 위에 겹친다. -->
+    <modal data-type="composite" data-ref="error_modal" title="$t:common.error" size="sm">
+      <meta editor_label="$t:admin.modal_label.user_list.error_modal"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">{{_global.errorMessage || $t:common.error_occurred}}</p>
+      </div>
+      <div class="flex justify-end mt-6">
+        <button class="px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.close</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 선택한 회원을 한꺼번에 차단하는 확인 창(활성 창과 같은 형태, `status` 만 다르다). -->
+    <modal data-type="composite" data-ref="bulk_block_confirm_modal" title="$t:admin.users.modals.bulk_block_title" size="sm">
+      <meta editor_label="$t:admin.modal_label.user_list.bulk_block_confirm_modal"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.bulk_block_confirm|count={{(_global.selectedIds_admin_users || []).length}}</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button disabled="{{_global.isProcessing}}" class="btn btn-secondary">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="bulk_block_submit_button" disabled="{{_global.isProcessing || !(_global.selectedIds_admin_users?.length &gt; 0)}}" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 일괄 차단 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`blocked`)만 다르다. -->
+            <sequence>
+              <set-state target="global" :isProcessing="true"/>
+              <api-call :auth_required="true" target="/api/admin/users/bulk-status" method="PATCH">
+                <success>
+                  <set-state target="global" :isProcessing="false" :selectedIds_admin_users="[]"/>
+                  <close-modal/>
+                  <navigate path="/admin/users" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                  <!-- 서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다. -->
+                  <toast type="{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}" message="{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_block_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
+                  <open-modal target="error_modal"/>
+                </fail>
+                <body ids="{{_global.selectedIds_admin_users}}" status="blocked"/>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.isProcessing}}" name="spinner" size="sm" :spin="true"/>
+          <span>{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 선택한 회원을 한꺼번에 탈퇴 처리하는 확인 창(활성 창과 같은 형태, `status` 만 다르다). -->
+    <modal data-type="composite" data-ref="bulk_withdraw_confirm_modal" title="$t:admin.users.modals.bulk_withdraw_title" size="sm">
+      <meta editor_label="$t:admin.modal_label.user_list.bulk_withdraw_confirm_modal"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.bulk_withdraw_confirm|count={{(_global.selectedIds_admin_users || []).length}}</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button disabled="{{_global.isProcessing}}" class="btn btn-secondary">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="bulk_withdraw_submit_button" disabled="{{_global.isProcessing || !(_global.selectedIds_admin_users?.length &gt; 0)}}" class="flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 일괄 탈퇴 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`withdrawn`)만 다르다. -->
+            <sequence>
+              <set-state target="global" :isProcessing="true"/>
+              <api-call :auth_required="true" target="/api/admin/users/bulk-status" method="PATCH">
+                <success>
+                  <set-state target="global" :isProcessing="false" :selectedIds_admin_users="[]"/>
+                  <close-modal/>
+                  <navigate path="/admin/users" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                  <!-- 탈퇴 불가 대상(관리자 계정 등)은 200 응답 안에서 건별로 실패한다 — failed_count 를 읽지 않으면 아무 일도 없었는데 성공으로 안내된다. -->
+                  <toast type="{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}" message="{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_withdraw_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isProcessing="false" errorMessage="{{error.message}}"/>
+                  <open-modal target="error_modal"/>
+                </fail>
+                <body ids="{{_global.selectedIds_admin_users}}" status="withdrawn"/>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.isProcessing}}" name="spinner" size="sm" :spin="true"/>
+          <span>{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <!-- 회원 역할 일괄 추가·제거 창 — 일괄 작업 바의 「역할 추가」「역할 제거」(모바일은 드롭다운)가 연다. -->
+  <modal src="partials/admin_user_list/_modal_bulk_roles.g7.html"/>
+</layout>

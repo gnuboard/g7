@@ -59,6 +59,23 @@ export interface ComponentMetadata {
    * - 미지정: 항상 value prop으로 바인딩 (RadioGroup, Select 등 기본값)
    */
   bindingType?: 'checked' | 'checkable';
+
+  /**
+   * Form 자동 바인딩 대상에서 제외 (engine-v1.68.1+)
+   *
+   * 자동 바인딩의 활성 조건은 "`name` prop 존재 + 부모 FormContext" 뿐이라,
+   * `name` 이 **폼 필드명이 아닌** 컴포넌트까지 대상이 된다 — Icon 의 `name` 은
+   * 아이콘 글리프 이름이고, Avatar·UserInfo 의 `name` 은 표시용 사람 이름이다.
+   * 이런 컴포넌트가 같은 이름의 폼 필드와 겹치면 그 필드 값이 `value` 로 주입되어
+   * DOM 에 `[object Object]` 로 새거나(배열/객체 필드) 표시가 깨진다.
+   *
+   * 매니페스트에서 `false` 로 선언하면 그 컴포넌트는 자동 바인딩에서 빠진다.
+   * 미선언(기본)은 종전과 동일하게 자동 바인딩 대상이다 — 선언을 빠뜨려도
+   * 기존 폼이 깨지지 않도록 fail-open 으로 둔다.
+   *
+   * 레이아웃 단위로 끄려면 노드 props 의 `autoBinding: false` 를 쓴다(같은 효과).
+   */
+  autoBinding?: false;
 }
 
 /**
@@ -82,6 +99,62 @@ export interface ComponentManifest {
     /** 레이아웃 컴포넌트 목록 */
     layout: ComponentMetadata[];
   };
+
+  /**
+   * 이 템플릿이 대체하는 확장 컴포넌트 선언 목록
+   *
+   * 확장이 제공한 컴포넌트를 템플릿이 자기 구현으로 갈아끼울 때 선언한다. 구현체는
+   * `components/overrides/{확장식별자}/{이름}.tsx` 에 두며, 디렉토리명이 곧 `target` 이다 —
+   * 레이아웃 오버라이드(`layouts/overrides/{확장식별자}/`)와 같은 규약.
+   *
+   * 대체 권한은 템플릿에만 있다. 확장 매니페스트가 이 키를 선언하면 컴파일러가 거부한다.
+   *
+   * @since engine-v1.67.0
+   */
+  overrides?: ComponentOverrideDeclaration[];
+}
+
+/**
+ * 템플릿이 확장 컴포넌트를 대체한다는 선언 하나
+ *
+ * @since engine-v1.67.0
+ */
+export interface ComponentOverrideDeclaration extends ComponentMetadata {
+  /** 대체 대상 확장 식별자 (예: `sirsoft-ecommerce`) */
+  target: string;
+
+  /**
+   * 템플릿 번들에서 이 대체본을 내보낸 이름 (미선언이면 `name`)
+   *
+   * `name` 은 대상 확장이 붙인 이름이라 템플릿 자신의 컴포넌트와 겹칠 수 있다 — 템플릿에도
+   * `ProductCard` 가 있으면 번들 전역에서 어느 쪽인지 가릴 수 없다. 그럴 때만 별도 export
+   * 이름을 준다.
+   */
+  exportName?: string;
+
+  /**
+   * 대상 확장의 허용 버전 제약 (Semver)
+   *
+   * 남의 컴포넌트를 대체하므로 그 남이 갱신되면 대체본이 낡는다. 비호환이면 대체본을
+   * 폐기하고 원본으로 폴백한다 — 레이아웃 오버라이드와 같은 규약.
+   */
+  targetVersion?: string;
+}
+
+/**
+ * 확장이 선언한 컴포넌트 판본 하나
+ *
+ * @since engine-v1.67.0
+ */
+export interface ExtensionComponentDeclaration {
+  /** 컴포넌트 구현체 */
+  component: ComponentType<any>;
+
+  /** 컴포넌트 메타데이터 */
+  metadata: ComponentMetadata;
+
+  /** 이 판본이 전용으로 쓰일 템플릿 id (미지정이면 기본 판본) */
+  forTemplate?: string;
 }
 
 /**
@@ -142,6 +215,41 @@ export class ComponentRegistry {
   private templateType: string | null = null;
 
   /**
+   * 템플릿이 대체한 확장 컴포넌트 이름 — 이 이름에 대한 확장의 자가등록은 무시된다.
+   *
+   * 확장 번들이 레지스트리 로딩보다 나중에 실행되므로(TemplateApp :468 → :687) 이 기록이
+   * 없으면 확장의 원본이 템플릿의 대체본을 되덮는다. 대체 권한은 템플릿 전용이라는 규약의
+   * 런타임 쪽 절반이다.
+   *
+   * @since engine-v1.67.0
+   */
+  private overriddenByTemplate: Set<string> = new Set();
+
+  /**
+   * 확장이 선언한 컴포넌트 판본 — **인스턴스가 아니라 클래스에 보관**한다.
+   *
+   * 확장 IIFE 는 페이지당 한 번 실행되고 그때 싱글톤에 등록한다. 그런데 레이아웃 편집기는
+   * **그 뒤에** 격리 인스턴스를 만들어 다른 템플릿을 렌더한다(`createIsolatedInstance`) —
+   * 선언을 인스턴스에만 담아 두면 그 격리 인스턴스에는 확장 컴포넌트가 영원히 없고, 편집기
+   * 미리보기에서 그 노드만 조용히 사라진다.
+   *
+   * 또 판본 선택은 **인스턴스마다 답이 다르다**. 호스트가 admin 템플릿을 띄운 채
+   * user 템플릿을 편집하면, 같은 선언에서 호스트는 기본 판본을, 편집기는 user 전용 판본을
+   * 골라야 한다. 그래서 "고른 결과" 가 아니라 **"선언 전체"** 를 보관하고 각 인스턴스가
+   * 자기 `templateId` 로 고른다.
+   *
+   * @since engine-v1.67.0
+   */
+  private static extensionDeclarations = new Map<string, ExtensionComponentDeclaration[]>();
+
+  /**
+   * 이 인스턴스가 확장 컴포넌트별로 실제 채택한 구현체 — 중복 등록(덮어쓰기 warn) 방지용.
+   *
+   * @since engine-v1.67.0
+   */
+  private appliedExtensionChoice: Map<string, ComponentType<any>> = new Map();
+
+  /**
    * private 생성자 (싱글톤 패턴)
    */
   private constructor() {}
@@ -178,6 +286,9 @@ export class ComponentRegistry {
    */
   public static resetInstance(): void {
     ComponentRegistry.instance = null;
+    // 확장 선언은 클래스에 살아 있어 인스턴스를 새로 만들어도 남는다 — 테스트가 서로
+    // 오염되지 않도록 함께 비운다.
+    ComponentRegistry.extensionDeclarations.clear();
   }
 
   /**
@@ -458,6 +569,47 @@ export class ComponentRegistry {
         this.registerComponent(componentName, component, metadata);
       }
     }
+
+    this.registerTemplateOverrides(module);
+  }
+
+  /**
+   * 템플릿이 선언한 확장 컴포넌트 대체본을 등록합니다.
+   *
+   * 대체본은 확장의 좌표(`{확장식별자}.{이름}`)에 그대로 들어앉는다 — 마크업 태그가 바뀌면
+   * 대체가 아니라 새 컴포넌트이기 때문이다. 확장 번들은 이보다 나중에 실행되므로
+   * (TemplateApp :468 → :687) 대체한 이름을 기록해 두어야 확장의 원본이 되덮지 않는다.
+   *
+   * 버전 제약 검사는 **서버(컴파일러)가 이미 수행**했다 — 대상 확장의 실제 버전을 아는 것은
+   * 서버이고, 비호환 선언은 컴파일 시점에 걸러져 원본으로 폴백된다. 런타임은 그 판정을
+   * 다시 하지 않고 선언을 그대로 이행한다(판정이 두 곳에 있으면 서로 갈린다).
+   *
+   * @param module 템플릿 번들 전역 객체
+   *
+   * @since engine-v1.67.0
+   */
+  private registerTemplateOverrides(module: any): void {
+    const overrides = this.manifest?.overrides ?? [];
+
+    for (const declaration of overrides) {
+      const exportName = declaration.exportName ?? declaration.name;
+      const component = module[exportName];
+
+      if (!component) {
+        logger.warn(
+          `[ComponentRegistry] 오버라이드 '${declaration.target}.${exportName}' 의 구현이 템플릿 번들에 없습니다 — 원본을 사용합니다`
+        );
+        continue;
+      }
+
+      // 좌표는 언제나 대상 확장이 붙인 이름이다. `exportName` 은 번들 전역의 평면성을 피하려고
+      // 템플릿이 붙인 로컬 별칭일 뿐이라 좌표에 섞이면 컴파일러가 방출한 노드 이름
+      // (`{확장식별자}.{이름}`) 과 갈라져 대체본이 아무도 안 보는 키에 등록된다.
+      const registryKey = `${declaration.target}.${declaration.name}`;
+
+      this.overriddenByTemplate.add(registryKey);
+      this.registerComponent(registryKey, component, { ...declaration, name: registryKey });
+    }
   }
 
   /**
@@ -490,6 +642,166 @@ export class ComponentRegistry {
     };
 
     logger.log(`[ComponentRegistry] Registered component: ${name} (${metadata.type})`);
+  }
+
+  /**
+   * 확장(모듈/플러그인)이 자기 컴포넌트를 등록합니다 — 확장 IIFE 전용 공개 API.
+   *
+   * 템플릿 컴포넌트는 매니페스트 → `window[PascalCase(templateId)]` 경로로 등록되지만
+   * (`loadComponents`), 확장은 그 전역에 실릴 자리가 없다. 확장은 액션 핸들러와 같은 방식으로
+   * 자기 번들에서 스스로 등록한다(`registerHandler` 선례).
+   *
+   * **호출 시점은 안전하다.** `TemplateApp.init()` 이 확장 번들 로드(:687)를 초기 라우트 처리
+   * **전에** await 하므로, 확장 IIFE 의 등록은 첫 렌더보다 반드시 먼저 끝난다. 번들 로드가
+   * 실패하면 등록은 영영 오지 않고 그 컴포넌트 노드는 조용히 사라지는데(DynamicRenderer 가
+   * 미발견 시 null 반환), 그 침묵은 `getMissingExtensionComponents()` 로 관측한다.
+   *
+   * **판본 선택은 코어가 한다.** 확장은 `forTemplate` 으로 "이 판본은 그 템플릿용" 이라고
+   * **선언만** 하고, 활성 템플릿과 대조해 고르는 판정은 여기서 전담한다. 확장이 활성 템플릿을
+   * 읽어 스스로 분기하면 확장마다 판정 규칙과 폴백이 갈리고, 그 순간 선언형이 아니라 명령형이
+   * 된다 — 확장 번들 priority 를 선언으로만 받고 코어가 정렬하는 규율과 같은 이유다.
+   *
+   * 등록 규칙:
+   *  - `name` 은 반드시 `{확장식별자}.{컴포넌트명}` — 핸들러의 네임스페이스 관례와 같다.
+   *    프리픽스가 없으면 템플릿 컴포넌트를 덮어쓸 수 있으므로 거부한다.
+   *  - 템플릿이 그 이름을 오버라이드했으면(매니페스트 `overrides`) 템플릿이 이긴다 — 확장의
+   *    등록은 무시된다. 대체 권한은 템플릿 전용이라는 규약의 런타임 쪽 절반이다.
+   *  - `forTemplate` 이 활성 템플릿과 맞으면 기본 판본을 이긴다. 맞지 않으면 무시된다.
+   *
+   * @param name 컴포넌트 이름 (`{확장식별자}.{컴포넌트명}`)
+   * @param component 컴포넌트 구현체
+   * @param metadata 컴포넌트 메타데이터
+   * @param options 등록 옵션 — `forTemplate` 은 이 판본이 전용으로 쓰일 템플릿 id
+   * @returns **이 판본이 채택되었으면** true, 규칙에 따라 물러났으면 false (다른 판본이 이겼거나 템플릿이 대체했거나 접두어가 없는 경우)
+   *
+   * @since engine-v1.67.0
+   */
+  public registerExtensionComponent(
+    name: string,
+    component: ComponentType<any>,
+    metadata: ComponentMetadata,
+    options?: { forTemplate?: string }
+  ): boolean {
+    if (!name.includes('.')) {
+      logger.error(
+        `[ComponentRegistry] 확장 컴포넌트 이름에는 확장 식별자 접두어가 필요합니다: '${name}' → '{확장식별자}.${name}'`
+      );
+      return false;
+    }
+
+    const declarations = ComponentRegistry.extensionDeclarations.get(name) ?? [];
+    const forTemplate = options?.forTemplate;
+    const existing = declarations.findIndex(d => d.forTemplate === forTemplate);
+
+    // 같은 자리를 두 번 선언하면 나중 것으로 갱신한다(핫 리로드 등). 판본이 다르면 나란히 쌓인다.
+    if (existing >= 0) {
+      declarations[existing] = { component, metadata, forTemplate };
+    } else {
+      declarations.push({ component, metadata, forTemplate });
+    }
+
+    ComponentRegistry.extensionDeclarations.set(name, declarations);
+
+    this.applyExtensionDeclaration(name);
+
+    // 이 인스턴스가 이 이름을 서빙하는지가 아니라 **방금 넘긴 이 판본이 채택됐는지**를
+    // 돌려준다 — 호출자가 알고 싶은 것은 자기 판본의 운명이다.
+    return this.appliedExtensionChoice.get(name) === component;
+  }
+
+  /**
+   * 확장이 선언해 둔 컴포넌트를 이 인스턴스에 반영합니다.
+   *
+   * 확장 IIFE 는 페이지당 한 번만 실행되므로, **그 뒤에 만들어지는 레지스트리**(레이아웃 편집기의
+   * 격리 인스턴스)는 이 메서드를 직접 불러야 확장 컴포넌트를 갖는다. 부르지 않으면 편집기
+   * 미리보기에서 그 노드만 조용히 사라진다.
+   *
+   * 템플릿 오버라이드를 먼저 알아야 하므로 `loadComponents()` **뒤에** 호출한다.
+   *
+   * @returns 이 인스턴스에 반영된 컴포넌트 수
+   *
+   * @since engine-v1.67.0
+   */
+  public applyExtensionComponents(): number {
+    let applied = 0;
+
+    for (const name of ComponentRegistry.extensionDeclarations.keys()) {
+      if (this.applyExtensionDeclaration(name)) applied++;
+    }
+
+    if (applied > 0) {
+      logger.log(`[ComponentRegistry] 확장 컴포넌트 ${applied}개를 ${this.templateId} 에 반영했습니다`);
+    }
+
+    return applied;
+  }
+
+  /**
+   * 이름 하나에 대해 이 인스턴스가 쓸 판본을 골라 등록합니다.
+   *
+   * 판정은 **선언 전체를 매번 다시 본다** — 그래서 확장이 기본 판본과 전용 판본을 어느 순서로
+   * 등록하든 결과가 같다(순서에 결과가 걸리면 그것 자체가 침묵 승자다).
+   *
+   * @param name 컴포넌트 이름 (`{확장식별자}.{컴포넌트명}`)
+   * @returns 등록되었으면 true, 규칙에 따라 물러났으면 false
+   */
+  private applyExtensionDeclaration(name: string): boolean {
+    // 템플릿의 오버라이드가 이 자리를 차지했으면 확장의 판본은 모두 물러난다.
+    if (this.overriddenByTemplate.has(name)) {
+      logger.log(`[ComponentRegistry] '${name}' 은 템플릿이 오버라이드했습니다 — 확장 등록을 건너뜁니다`);
+      return false;
+    }
+
+    const declarations = ComponentRegistry.extensionDeclarations.get(name) ?? [];
+    const scoped = declarations.find(d => d.forTemplate === this.templateId);
+    const base = declarations.find(d => d.forTemplate === undefined);
+    const chosen = scoped ?? base;
+
+    if (!chosen) {
+      // 다른 템플릿 전용 판본만 선언된 경우 — 이 인스턴스에는 쓸 것이 없다.
+      return false;
+    }
+
+    // 같은 구현체를 다시 넣으면 registerComponent 가 덮어쓰기 warn 을 낸다. 결과가 같은
+    // 재적용은 조용히 통과시킨다(편집기가 applyExtensionComponents 를 다시 부를 수 있다).
+    if (this.appliedExtensionChoice.get(name) === chosen.component) {
+      return true;
+    }
+
+    this.appliedExtensionChoice.set(name, chosen.component);
+    this.registerComponent(name, chosen.component, { ...chosen.metadata, name });
+
+    return true;
+  }
+
+  /**
+   * 템플릿이 오버라이드한 확장 컴포넌트 이름을 기록합니다.
+   *
+   * 템플릿 매니페스트의 `overrides` 선언이 이 목록을 채우며, 그 이름에 대한 확장의 자가등록은
+   * 이후 무시된다. 확장 번들이 레지스트리 로딩보다 나중에 실행되므로(TemplateApp :468 → :687)
+   * 이 기록이 없으면 확장의 원본이 템플릿의 대체본을 되덮는다.
+   *
+   * @param names 템플릿이 대체한 컴포넌트 이름 목록 (`{확장식별자}.{컴포넌트명}`)
+   *
+   * @since engine-v1.67.0
+   */
+  public markOverriddenByTemplate(names: string[]): void {
+    names.forEach(name => this.overriddenByTemplate.add(name));
+  }
+
+  /**
+   * 레이아웃이 쓰지만 아직 등록되지 않은 확장 컴포넌트 이름을 반환합니다.
+   *
+   * 미발견 컴포넌트는 렌더에서 조용히 사라지므로(DynamicRenderer 가 null 반환), 확장 번들
+   * 로드 실패를 화면이 아니라 이 목록으로 관측한다.
+   *
+   * @param usedNames 레이아웃이 참조하는 컴포넌트 이름 목록
+   * @returns 등록되지 않은 확장 컴포넌트 이름 목록
+   *
+   * @since engine-v1.67.0
+   */
+  public getMissingExtensionComponents(usedNames: string[]): string[] {
+    return usedNames.filter(name => name.includes('.') && !this.registry[name]);
   }
 
   /**
@@ -599,6 +911,8 @@ export class ComponentRegistry {
     this.error = null;
     this.templateId = null;
     this.templateType = null;
+    this.overriddenByTemplate.clear();
+    this.appliedExtensionChoice.clear();
     logger.log('Registry cleared');
   }
 }

@@ -1,0 +1,17 @@
+feature: 게시판 유형 이름 다국어 필수 문구의 칸 이름
+
+description: |
+  게시판 유형을 추가·수정하며 이름을 비우면 「한국어(ko) 값은 필수입니다.」처럼 칸 이름 없이 나왔다
+  (7.1.0 전수 실측 K4). 코어 규칙(LocaleRequiredTranslatable)은 요청에 표시 이름이 있는 칸에만 칸 이름을 싣는데,
+  두 요청에 매핑이 없었다. 결정(2026-10-08 「코어 요청 6종 모두 칸 이름 넣기」)으로 생성·수정 요청에
+  같은 표시 이름(ko 「게시판 유형 이름」, en 「Board Type Name」, ja 팩 「掲示板タイプ名」)을 둔다.
+  서버 문구 언어는 회원 언어를 따르므로 관리자 회원 언어를 바꿔 잰다.
+
+axes:
+  locale: [ko, en]
+
+effects:
+  - board_type_name_locale_required_message_names_field
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardTypeNameLocaleRequiredMessageTest.php

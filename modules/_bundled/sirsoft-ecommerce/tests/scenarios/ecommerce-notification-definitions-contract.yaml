@@ -1,0 +1,29 @@
+feature: 이커머스 알림 정의의 선언 SSoT 와 DB 동기화 계약
+
+description: |
+  module.php 의 `getNotificationDefinitions()` 가 이커머스 알림 정의의 단일 출처다. 이 선언이
+  빠짐없이 반환되고, 모든 정의가 mail·database 두 채널과 그 템플릿을 갖추며, database 템플릿이
+  ko·en 제목·본문을 담고, 동기화 헬퍼를 거치면 DB 에 활성 템플릿으로 실제 생성되는지를 고정한다.
+
+  클레임 알림(유형 × 고객 가시 상태)의 전수 대조는 claim-notification-and-activity-log.yaml
+  (ClaimNotificationDefinitionsTest)이 맡고, 여기서는 개수만 합산한다 — 두 벌로 열거하면 한쪽만
+  늘어난 채로 통과한다.
+
+  선언만 있고 DB 에 없으면 훅 구독이 일어나지 않아 알림이 조용히 안 나간다 — 그래서 선언 단계와
+  동기화 단계를 축으로 나눠 둘 다 덮는다.
+
+axes:
+  stage: [declaration, database_sync]
+
+effects:
+  - module_getter_returns_every_declared_definition
+  - every_definition_declares_mail_and_database_channels
+  - every_definition_has_mail_and_database_templates
+  - database_templates_carry_ko_and_en_subject_and_body
+  - sync_creates_active_database_templates_in_db
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Notifications/EcommerceNotificationDefinitionsTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

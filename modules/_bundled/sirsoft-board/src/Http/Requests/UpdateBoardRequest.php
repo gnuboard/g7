@@ -11,6 +11,8 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\MapsBoardSettingAttributes;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesLengthRange;
 use Modules\Sirsoft\Board\Rules\BoardTypeValidationRule;
@@ -18,6 +20,8 @@ use Modules\Sirsoft\Board\Rules\PermissionRolesRequiredRule;
 
 class UpdateBoardRequest extends FormRequest
 {
+    use MapsBoardSettingAttributes;
+    use ProvidesFallbackRuleMessages;
     use ReadsBoardLimits;
     use ValidatesLengthRange;
 
@@ -38,6 +42,8 @@ class UpdateBoardRequest extends FormRequest
      *
      * blocked_keywords가 문자열로 전송된 경우 배열로 변환하고, 조건부 배제(`exclude_if`)의
      * 판정 기준이 되는 토글이 요청에 없으면 기존 게시판의 저장값을 주입합니다.
+     *
+     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -53,6 +59,16 @@ class UpdateBoardRequest extends FormRequest
             if ($board !== null && isset($board->use_file_upload)) {
                 $data['use_file_upload'] = (bool) $board->use_file_upload;
             }
+        }
+
+        // active_reaction_types 가 명시적 null 로 오면 빈 배열로 정규화한다 (validation 전).
+        // boards.active_reaction_types 는 nullable·기본값 없음이라 값을 주지 않고 만든 게시판은
+        // NULL 이고, 그 게시판의 폼 데이터를 그대로 돌려보내면 키가 있는 채 값만 null 이 된다.
+        // 규칙 ['sometimes','array'] 는 명시적 null 을 거부하므로 저장이 422 가 된다.
+        // 규칙을 nullable 로 넓히는 대신 여기서 정규화한다 — "null 도 유효" 라는 새 계약을
+        // 만들지 않고, 컬럼의 array 캐스트 계약과도 일치한다 (StoreBoardRequest 와 대칭).
+        if (array_key_exists('active_reaction_types', $data) && $data['active_reaction_types'] === null) {
+            $data['active_reaction_types'] = [];
         }
 
         // blocked_keywords가 문자열이면 배열로 변환 (validation 전)
@@ -76,7 +92,7 @@ class UpdateBoardRequest extends FormRequest
         // boolean 필드 캐스팅 (Toggle 컴포넌트가 "on"/"off" 문자열을 전송할 수 있음)
         $booleanFields = [
             'is_active', 'use_comment', 'use_reply', 'use_file_upload',
-            'use_report', 'show_view_count', 'is_notice',
+            'use_report', 'use_scrap', 'use_reaction', 'use_comment_reaction', 'show_view_count', 'is_notice',
             'notify_admin_on_post', 'notify_author',
         ];
 
@@ -165,7 +181,13 @@ class UpdateBoardRequest extends FormRequest
             'use_comment' => ['sometimes', 'required', 'boolean'],
             'use_reply' => ['sometimes', 'required', 'boolean'],
             'use_report' => ['sometimes', 'required', 'boolean'],
+            'use_scrap' => ['sometimes', 'required', 'boolean'],
+            'use_reaction' => ['sometimes', 'required', 'boolean'],
+            'use_comment_reaction' => ['sometimes', 'required', 'boolean'],
+            'active_reaction_types' => ['sometimes', 'array'],
+            'active_reaction_types.*' => ['string'],
             'comment_order' => ['sometimes', 'required', 'in:ASC,DESC'],
+            // 하한 기본값 0 = 신규 배지를 붙이지 않음 (Post::isNew() 가 항상 false). 아카이브형 게시판이 쓰는 정상 값이다.
             'new_display_hours' => ['sometimes', 'nullable', 'integer', "min:{$newDisplayHoursMin}", "max:{$newDisplayHoursMax}"],
 
             // 제목 길이 제한
@@ -187,6 +209,7 @@ class UpdateBoardRequest extends FormRequest
             // 허용 확장자: 첨부 사용 게시판만 최소 1개 필수 (빈 값 저장 시 전 파일 거부되던 버그 방지).
             // 첨부 미사용 게시판은 exclude_if 로 검증 자체에서 배제한다 — 관리자 폼이 조회 응답
             // 전체를 그대로 PUT 하므로 요청에는 항상 이 키가 존재하고, sometimes 는 보호가 되지 않는다.
+            // (StoreBoardRequest 와 동일 규칙.)
             // exclude_if 는 배열 첫 번째여야 한다. 앞선 규칙이 먼저 실패하면 배제되어도 메시지가 남는다.
             'allowed_extensions' => ['exclude_if:use_file_upload,false', 'sometimes', 'required', 'array', 'min:1'],
             'allowed_extensions.*' => ['string', 'max:10'],
@@ -235,6 +258,7 @@ class UpdateBoardRequest extends FormRequest
      * 비교하므로 부분 수정(sometimes)에서는 적용되지 않습니다.
      *
      * @param  Validator  $validator  검증기
+     * @return void
      */
     public function withValidator(Validator $validator): void
     {
@@ -249,38 +273,17 @@ class UpdateBoardRequest extends FormRequest
     public function attributes(): array
     {
         $attributes = [
+            // 다국어 이름·설명 — 코어 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름을 싣는다.
+            // 없으면 「name의 한국어(ko) 값은 필수입니다」처럼 필드 키가 그대로 보인다
+            'name' => __('sirsoft-board::validation.attributes.board.name'),
+            'description' => __('sirsoft-board::validation.attributes.board.description'),
             'blocked_keywords' => __('sirsoft-board::validation.attributes.board.blocked_keywords'),
             'add_to_menu' => __('sirsoft-board::validation.attributes.board.add_to_menu'),
         ];
 
         // 정수/설정 필드의 표시명 매핑 (.integer 등 기본 메시지 폴백 시 :attribute 가
-        // 영문 snake_case 로 노출되는 것을 차단). 기존 settings.basic_defaults 라벨을 재사용.
-        // 라벨 배열의 키는 'basic_defaults.per_page' 형태(점 포함 단일 키)이므로
-        // settings 배열을 통째로 받아 인덱싱한다 (__() 의 점 경로 분해로는 도달 불가).
-        $settingLabels = __('sirsoft-board::validation.attributes.settings');
-
-        if (is_array($settingLabels)) {
-            $settingFieldKeys = [
-                'per_page', 'per_page_mobile', 'order_by', 'order_direction',
-                'secret_mode', 'use_comment', 'use_reply', 'use_report',
-                'comment_order', 'show_view_count',
-                'max_reply_depth', 'max_comment_depth',
-                'min_title_length', 'max_title_length',
-                'min_content_length', 'max_content_length',
-                'min_comment_length', 'max_comment_length',
-                'use_file_upload', 'max_file_size', 'max_file_count',
-                'allowed_extensions', 'notify_admin_on_post', 'notify_author',
-                'new_display_hours',
-            ];
-
-            foreach ($settingFieldKeys as $field) {
-                $labelKey = "basic_defaults.{$field}";
-
-                if (isset($settingLabels[$labelKey])) {
-                    $attributes[$field] = $settingLabels[$labelKey];
-                }
-            }
-        }
+        // 영문 snake_case 로 노출되는 것을 차단) — 생성 요청과 같은 매핑을 쓴다
+        $attributes = array_merge($attributes, $this->boardSettingAttributes());
 
         // 권한 필드에 대한 동적 속성 매핑
         $permissionDefinitions = config('sirsoft-board.board_permission_definitions', []);

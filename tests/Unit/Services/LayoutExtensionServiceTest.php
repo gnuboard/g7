@@ -42,6 +42,11 @@ class LayoutExtensionServiceTest extends TestCase
 
     private Template $template;
 
+    /**
+     * 활성 확장 목록을 모킹하고 서비스와 테스트용 템플릿을 준비합니다.
+     *
+     * @return void 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -67,6 +72,7 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * @param  array  $moduleIdentifiers  활성 모듈 식별자 목록
      * @param  array  $pluginIdentifiers  활성 플러그인 식별자 목록
+     * @return void 없음
      */
     private function mockActiveExtensions(array $moduleIdentifiers, array $pluginIdentifiers): void
     {
@@ -100,6 +106,12 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * Extension Point 확장이 올바르게 적용되는지 테스트
+     *
+     * @scenario kind=extension_point, merge_target=components
+     *
+     * @effects applies_extension_point_components, extension_point_node_receives_injected_components_as_children, extension_data_sources_merge_into_host_data_sources
+     *
+     * @return void 없음
      */
     public function test_applies_extension_point_components(): void
     {
@@ -154,8 +166,93 @@ class LayoutExtensionServiceTest extends TestCase
     }
 
     /**
+     * DataGrid 셀 템플릿(`props.columns[].cellChildren`) 안의 확장점도 채워지는지 검증한다.
+     *
+     * 셀 템플릿은 `children` 이 아니라 props 에 실린다. `children` 만 따라 내려가면 셀 안 확장점이
+     * 빈 자리로 남아 주입 조각이 행마다 사라진다(관리자 주문 목록 결제수단 칸의 결제 플러그인 배지).
+     * 카드 열(`cardColumns`)·확장 행(`expandChildren`)도 같은 규칙이고, 주입 데이터 소스는 레이아웃에 한 번만 병합된다.
+     *
+     * @scenario kind=extension_point, merge_target=components
+     *
+     * @effects applies_extension_points_inside_datagrid_cell_templates
+     *
+     * @return void 없음
+     */
+    public function test_applies_extension_points_inside_datagrid_cell_templates(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'order_payment_badges',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-payment',
+            'content' => [
+                'extension_point' => 'order_payment_badges',
+                'components' => [
+                    ['type' => 'basic', 'name' => 'Span', 'if' => '{{pay_test_map.data?.[row.order_number] === true}}', 'text' => 'TEST'],
+                ],
+                'data_sources' => [
+                    ['id' => 'pay_test_map', 'endpoint' => '/api/pay/test-map'],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $slot = ['type' => 'extension_point', 'name' => 'order_payment_badges'];
+        $layout = [
+            'layout_name' => 'admin_order_list',
+            'components' => [
+                [
+                    'id' => 'order_grid',
+                    'type' => 'composite',
+                    'name' => 'DataGrid',
+                    'props' => [
+                        'columns' => [
+                            ['field' => 'order_number', 'cellChildren' => [['type' => 'basic', 'name' => 'Span', 'text' => '{{row.order_number}}']]],
+                            [
+                                'field' => 'payment_method',
+                                'cellChildren' => [
+                                    ['type' => 'basic', 'name' => 'Div', 'children' => [
+                                        ['type' => 'basic', 'name' => 'Span', 'text' => '{{row.payment_method_label}}'],
+                                        $slot,
+                                    ]],
+                                ],
+                            ],
+                        ],
+                        'cardColumns' => [
+                            ['id' => 'payment', 'cellChildren' => [$slot]],
+                        ],
+                        'expandChildren' => [$slot],
+                    ],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+        $props = $result['components'][0]['props'];
+
+        $cellSlot = $props['columns'][1]['cellChildren'][0]['children'][1];
+        $this->assertSame('extension_point', $cellSlot['type']);
+        $this->assertSame('TEST', $cellSlot['children'][0]['text'] ?? null, '셀 템플릿 안 확장점에 조각이 주입되어야 한다');
+        $this->assertSame('TEST', $props['cardColumns'][0]['cellChildren'][0]['children'][0]['text'] ?? null);
+        $this->assertSame('TEST', $props['expandChildren'][0]['children'][0]['text'] ?? null);
+
+        // 다른 열은 그대로 — 확장점이 없는 셀을 건드리지 않는다
+        $this->assertSame($layout['components'][0]['props']['columns'][0], $props['columns'][0]);
+
+        // 조각의 데이터 소스는 셀이 아니라 레이아웃에 병합된다 — 행마다 다시 부르지 않는다
+        $this->assertContains('pay_test_map', array_column($result['data_sources'], 'id'));
+    }
+
+    /**
      * 편집 모드(withSourceMeta=true)에서 주입 노드의 __source 가 출처 타입/식별자를
      * 함께 담아, 편집기 오버레이가 "어느 확장인지" 표시할 수 있게 하는지 검증한다.
+     *
+     * @effects marks_extension_source_with_type_and_identifier_in_edit_mode, applyextensions_with_source_meta_tags_extension_nodes_and_injected_props
+     *
+     * @return void 없음
      */
     public function test_marks_extension_source_with_type_and_identifier_in_edit_mode(): void
     {
@@ -215,6 +312,10 @@ class LayoutExtensionServiceTest extends TestCase
      * 편집 모드에서 확장이 주입한 data_source 에도 출처 메타(__source)가 부여되어,
      * 데이터 소스 모달이 "어느 확장(모듈/플러그인)이 주입했는지" 표시할 수 있게 한다
      * 일반 렌더는 메타 미부여.
+     *
+     * @effects marks_extension_source_on_injected_data_sources_in_edit_mode, applyextensions_with_source_meta_tags_extension_nodes_and_injected_props
+     *
+     * @return void 없음
      */
     public function test_marks_extension_source_on_injected_data_sources_in_edit_mode(): void
     {
@@ -263,6 +364,10 @@ class LayoutExtensionServiceTest extends TestCase
     /**
      * 편집 모드(withSourceMeta=true)에서 inject_props 대상 호스트 노드에 `__injectedProps`
      * 메타가 부여되는지 검증한다.
+     *
+     * @effects marks_injected_props_on_host_node_in_edit_mode, applyextensions_with_source_meta_tags_extension_nodes_and_injected_props, inject_props_host_node_property_modal_shows_origin_section
+     *
+     * @return void 없음
      */
     public function test_marks_injected_props_on_host_node_in_edit_mode(): void
     {
@@ -318,6 +423,10 @@ class LayoutExtensionServiceTest extends TestCase
     /**
      * 확장의 호스트 레이아웃 후보 — overlay 는 target_layout 1개, extension_point 는
      * 그 확장점을 포함하는 레이아웃 전체.
+     *
+     * @effects get_extension_host_layouts_overlay_and_extension_point, extension_show_returns_host_layouts_candidates, extension_point_multiple_hosts_signals_needs_host_picker
+     *
+     * @return void 없음
      */
     public function test_get_extension_host_layouts_overlay_and_extension_point(): void
     {
@@ -375,6 +484,10 @@ class LayoutExtensionServiceTest extends TestCase
      * modals 만 주입하는 extension_point(예: 토스페이먼츠)도 주입은 성립하므로 호스트로 인정해
      * 트리에 노출한다(클릭 시 프론트가 시각 조각 유무를 판정해 디그레이드 안내 — 숨김이 아니라
      * 디그레이드). 완전 빈 content(병합할 payload 없음)만 제외한다.
+     *
+     * @effects get_extension_host_layouts_extension_point_requires_components, extension_show_returns_host_layouts_candidates
+     *
+     * @return void 없음
      */
     public function test_get_extension_host_layouts_extension_point_requires_components(): void
     {
@@ -432,6 +545,10 @@ class LayoutExtensionServiceTest extends TestCase
      * overlay 의 injection target_id 가 호스트에 실재할 때만 유효 호스트.
      * target_id 가 호스트에 없으면 applyExtensions 가 주입하지 못하므로 호스트 후보에서 제외한다
      * (결제 overlay 가 존재하지 않는 target 을 가리켜 "주입됨"으로 오판되던 결함 방지).
+     *
+     * @effects get_extension_host_layouts_overlay_requires_existing_target_id, extension_show_returns_host_layouts_candidates
+     *
+     * @return void 없음
      */
     public function test_get_extension_host_layouts_overlay_requires_existing_target_id(): void
     {
@@ -508,6 +625,12 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * Overlay가 타겟 ID에 올바르게 주입되는지 테스트
+     *
+     * @scenario kind=overlay, merge_target=components
+     *
+     * @effects applies_overlay_at_correct_position, overlay_append_child_adds_after_existing_children
+     *
+     * @return void 없음
      */
     public function test_applies_overlay_at_correct_position(): void
     {
@@ -567,6 +690,10 @@ class LayoutExtensionServiceTest extends TestCase
      *
      * 모듈이 호스트(예: _admin_base)가 모르는 _global 초기화(모듈별 표시 통화 복원 등)를
      * layout_extensions 로 기여할 수 있게 한다. 호스트 init_actions 뒤에 순서대로 추가된다.
+     *
+     * @effects merges_overlay_init_actions_after_host, overlay_init_actions_append_after_host_init_actions
+     *
+     * @return void 없음
      */
     public function test_merges_overlay_init_actions_after_host(): void
     {
@@ -625,6 +752,10 @@ class LayoutExtensionServiceTest extends TestCase
      * 실행되지 않아 통화/배송국가 선택기가 자체 initActions 를 가진 화면에서만 미표시되던 결함.
      * (admin_dashboard 는 자체 initActions 가 없어 정상 표시, admin_ecommerce_settings 등
      *  자체 initActions 를 가진 화면은 미표시 — Chrome MCP 실측으로 확인)
+     *
+     * @effects overlay_snake_init_actions_merge_into_standard_camel_key, snake_init_actions_absorbed_into_single_camel_init_actions
+     *
+     * @return void 없음
      */
     public function test_overlay_snake_init_actions_merge_into_standard_camel_key(): void
     {
@@ -679,6 +810,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * 호스트에 init_actions 가 없어도 확장 init_actions 만으로 배열을 생성한다.
+     *
+     * @effects merges_overlay_init_actions_when_host_has_none, init_actions_array_created_from_extension_only
+     *
+     * @return void 없음
      */
     public function test_merges_overlay_init_actions_when_host_has_none(): void
     {
@@ -725,6 +860,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * 확장 등록 테스트 (Extension Point 타입)
+     *
+     * @effects registers_extension_point, register_extension_derives_type_and_target_from_content
+     *
+     * @return void 없음
      */
     public function test_registers_extension_point(): void
     {
@@ -754,6 +893,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * 확장 등록 테스트 (Overlay 타입)
+     *
+     * @effects registers_overlay, register_extension_derives_type_and_target_from_content
+     *
+     * @return void 없음
      */
     public function test_registers_overlay(): void
     {
@@ -786,6 +929,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * 출처별 확장 제거 테스트 (Soft Delete)
+     *
+     * @effects unregisters_by_source, unregister_by_source_soft_deletes_only_that_sources_rows
+     *
+     * @return void 없음
      */
     public function test_unregisters_by_source(): void
     {
@@ -833,6 +980,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * 출처별 확장 복원 테스트
+     *
+     * @effects restores_by_source, restore_by_source_brings_back_soft_deleted_rows
+     *
+     * @return void 없음
      */
     public function test_restores_by_source(): void
     {
@@ -861,6 +1012,12 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * 템플릿 오버라이드 등록 테스트
+     *
+     * @scenario kind=template_override, merge_target=components
+     *
+     * @effects registers_template_override, register_template_override_records_override_target
+     *
+     * @return void 없음
      */
     public function test_registers_template_override(): void
     {
@@ -887,6 +1044,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * 우선순위 순서 테스트
+     *
+     * @effects extensions_ordered_by_priority, extensions_inject_in_ascending_priority_order
+     *
+     * @return void 없음
      */
     public function test_extensions_ordered_by_priority(): void
     {
@@ -941,6 +1102,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * 비활성 확장은 적용되지 않는지 테스트
+     *
+     * @effects inactive_extensions_not_applied, inactive_extension_contributes_nothing
+     *
+     * @return void 없음
      */
     public function test_inactive_extensions_not_applied(): void
     {
@@ -978,6 +1143,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * Overlay의 prepend 위치 테스트
+     *
+     * @effects overlay_prepend_position, overlay_prepend_inserts_before_target_keeping_siblings
+     *
+     * @return void 없음
      */
     public function test_overlay_prepend_position(): void
     {
@@ -1022,6 +1191,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * Overlay의 replace 위치 테스트
+     *
+     * @effects overlay_replace_position, overlay_replace_swaps_target_node_out
+     *
+     * @return void 없음
      */
     public function test_overlay_replace_position(): void
     {
@@ -1066,6 +1239,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * data_sources 병합 테스트
+     *
+     * @effects merges_data_sources_from_extensions, extension_data_sources_merge_into_host_data_sources
+     *
+     * @return void 없음
      */
     public function test_merges_data_sources_from_extensions(): void
     {
@@ -1111,6 +1288,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * 활성 모듈/플러그인의 확장이 특정 템플릿에 등록되는지 테스트
+     *
+     * @effects registers_all_active_extensions_to_template, register_all_active_loads_module_and_plugin_extension_files
+     *
+     * @return void 없음
      */
     public function test_registers_all_active_extensions_to_template(): void
     {
@@ -1161,6 +1342,18 @@ class LayoutExtensionServiceTest extends TestCase
             'status' => ExtensionStatus::Active->value,
         ]);
 
+        // 붙을 자리가 있는 템플릿에만 등록된다 (C10) — 확장점을 가진 호스트와 overlay 대상 레이아웃을 둔다.
+        TemplateLayout::factory()->create([
+            'template_id' => $newTemplate->id,
+            'name' => 'admin_dashboard',
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'admin_dashboard',
+                'components' => [['type' => 'extension_point', 'name' => 'admin.dashboard.widgets']],
+            ],
+        ]);
+        TemplateLayout::factory()->create(['template_id' => $newTemplate->id, 'name' => 'admin_settings']);
+
         $stats = $this->service->registerAllActiveExtensionsToTemplate($newTemplate->id);
 
         // 모듈 1건, 플러그인 1건 등록 확인
@@ -1190,6 +1383,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * 활성 모듈/플러그인이 없을 때 빈 결과를 반환하는지 테스트
+     *
+     * @effects registers_all_active_extensions_returns_empty_when_no_active_extensions, register_all_active_creates_nothing_without_active_extensions
+     *
+     * @return void 없음
      */
     public function test_registers_all_active_extensions_returns_empty_when_no_active_extensions(): void
     {
@@ -1211,6 +1408,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * 확장 파일이 없는 모듈/플러그인은 건너뛰는지 테스트
+     *
+     * @effects registers_all_active_extensions_skips_extensions_without_files, register_all_active_skips_sources_without_extension_files
+     *
+     * @return void 없음
      */
     public function test_registers_all_active_extensions_skips_extensions_without_files(): void
     {
@@ -1237,6 +1438,12 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * Extension Point에서 modals가 호스트 레이아웃에 병합되는지 테스트
+     *
+     * @scenario kind=extension_point, merge_target=modals
+     *
+     * @effects merges_modals_from_extension_point, extension_modals_create_modals_section_when_host_has_none
+     *
+     * @return void 없음
      */
     public function test_merges_modals_from_extension_point(): void
     {
@@ -1282,6 +1489,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * 호스트 레이아웃에 기존 modals가 있을 때 확장 modals가 병합되는지 테스트
+     *
+     * @effects merges_modals_with_existing_host_modals, extension_modals_merge_with_existing_host_modals
+     *
+     * @return void 없음
      */
     public function test_merges_modals_with_existing_host_modals(): void
     {
@@ -1339,6 +1550,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * 확장에 modals가 없을 때 기존 동작이 유지되는지 테스트 (회귀)
+     *
+     * @effects extension_without_modals_does_not_add_modals_key, no_modals_key_created_when_extension_declares_none
+     *
+     * @return void 없음
      */
     public function test_extension_without_modals_does_not_add_modals_key(): void
     {
@@ -1381,6 +1596,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * 여러 확장의 modals가 모두 병합되는지 테스트
+     *
+     * @effects merges_modals_from_multiple_extensions, modals_from_every_extension_survive_the_merge
+     *
+     * @return void 없음
      */
     public function test_merges_modals_from_multiple_extensions(): void
     {
@@ -1458,6 +1677,12 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * A-1: _append 배열 병합 — 기존 배열 prop에 항목 추가
+     *
+     * @scenario kind=extension_point, merge_target=props
+     *
+     * @effects inject_props_append_adds_items_to_array_prop, inject_props_append_adds_to_existing_array_prop
+     *
+     * @return void 없음
      */
     public function test_inject_props_append_adds_items_to_array_prop(): void
     {
@@ -1518,6 +1743,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * A-2: _prepend 배열 병합 — 기존 배열 prop 앞에 항목 추가
+     *
+     * @effects inject_props_prepend_adds_items_before_array_prop, inject_props_prepend_adds_before_existing_array_prop
+     *
+     * @return void 없음
      */
     public function test_inject_props_prepend_adds_items_before_array_prop(): void
     {
@@ -1576,6 +1805,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * A-3: _merge 객체 병합 — 기존 객체 prop에 키-값 병합
+     *
+     * @effects inject_props_merge_merges_object_prop, inject_props_merge_shallow_merges_object_prop
+     *
+     * @return void 없음
      */
     public function test_inject_props_merge_merges_object_prop(): void
     {
@@ -1628,6 +1861,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * A-4: 스칼라 값 덮어쓰기
+     *
+     * @effects inject_props_scalar_overwrites_value, inject_props_scalar_overwrites_host_value
+     *
+     * @return void 없음
      */
     public function test_inject_props_scalar_overwrites_value(): void
     {
@@ -1675,6 +1912,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * A-5: prop 미존재 시 신규 생성 — 빈 배열에 append
+     *
+     * @effects inject_props_creates_new_prop_when_not_exists, inject_props_creates_the_prop_when_host_lacks_it
+     *
+     * @return void 없음
      */
     public function test_inject_props_creates_new_prop_when_not_exists(): void
     {
@@ -1726,6 +1967,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * A-6: props 자체가 없는 컴포넌트에 주입
+     *
+     * @effects inject_props_creates_props_when_component_has_no_props, inject_props_creates_props_object_on_a_component_without_one
+     *
+     * @return void 없음
      */
     public function test_inject_props_creates_props_when_component_has_no_props(): void
     {
@@ -1771,6 +2016,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * A-7: 표현식 문자열 대상에 _append 시 경고 로그 + 값 변경 없음
+     *
+     * @effects inject_props_append_on_expression_string_logs_warning, inject_props_on_expression_string_warns_and_keeps_the_value
+     *
+     * @return void 없음
      */
     public function test_inject_props_append_on_expression_string_logs_warning(): void
     {
@@ -1830,6 +2079,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * A-8: 대상 컴포넌트 미발견 시 warning 로그
+     *
+     * @effects inject_props_logs_warning_when_target_not_found, inject_props_warns_when_the_target_node_is_absent
+     *
+     * @return void 없음
      */
     public function test_inject_props_logs_warning_when_target_not_found(): void
     {
@@ -1882,6 +2135,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * A-9: 깊은 중첩 컴포넌트에 inject_props 주입
+     *
+     * @effects inject_props_works_on_deeply_nested_component, inject_props_reaches_deeply_nested_target_nodes
+     *
+     * @return void 없음
      */
     public function test_inject_props_works_on_deeply_nested_component(): void
     {
@@ -1950,6 +2207,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * A-10: 동일 prop에 _append와 _merge 혼합 시 _append 우선 적용
+     *
+     * @effects inject_props_append_takes_precedence_over_merge_in_same_prop, inject_props_append_takes_precedence_over_merge_on_the_same_prop
+     *
+     * @return void 없음
      */
     public function test_inject_props_append_takes_precedence_over_merge_in_same_prop(): void
     {
@@ -2002,12 +2263,518 @@ class LayoutExtensionServiceTest extends TestCase
         $this->assertEquals('b', $tabs[1]['id']);
     }
 
+    /**
+     * A-11: `_patch` 는 **목록 전체를 복사하지 않고** 한 항목만 바꾼다. (S2-D13 회귀)
+     *
+     * 이것이 없으면 확장은 목록 전체를 복사해야 하고, 그 복사본은 만든 날짜에 얼어붙는다 —
+     * 호스트가 나중에 항목을 더해도 확장의 낡은 복사본이 그것을 **조용히 지운다.**
+     *
+     * 실제 사고(#599 S2-D13): 결제 플러그인 3종이 주문목록에 배지 하나를 달려고 컬럼
+     * 11칸을 통째로 복사했고, 뒤에 추가된 클레임 컬럼이 화면에서 사라졌다. 복사본 11칸 중
+     * 실제로 다른 칸은 **하나뿐**이었고 나머지 10칸은 원본과 완전히 같았다.
+     *
+     * @scenario layout_extension=patch_list_item
+     *
+     * @effects patching_one_item_keeps_every_other_item_of_the_host_list
+     *
+     * @return void 반환값 없음
+     */
+    public function test_inject_props_patch_replaces_only_the_named_item(): void
+    {
+        $layout = [
+            'layout_name' => 'test_layout',
+            'components' => [
+                [
+                    'id' => 'grid',
+                    'type' => 'composite',
+                    'name' => 'DataGrid',
+                    'props' => [
+                        'columns' => [
+                            ['field' => 'ordered_at', 'header' => '주문일시'],
+                            ['field' => 'payment_method', 'header' => '결제수단'],
+                            // 확장이 만들어진 **뒤에** 호스트가 더한 컬럼.
+                            ['field' => 'claim', 'header' => '클레임'],
+                        ],
+                    ],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'test_layout',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-payment',
+            'content' => [
+                'target_layout' => 'test_layout',
+                'injections' => [
+                    [
+                        'target_id' => 'grid',
+                        'position' => 'inject_props',
+                        'props' => [
+                            'columns' => [
+                                '_patch' => [
+                                    'by' => 'field',
+                                    'items' => [
+                                        ['field' => 'payment_method', 'header' => '결제수단(배지)'],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'priority' => 999,
+            'is_active' => true,
+        ]);
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+        $columns = $result['components'][0]['props']['columns'];
+
+        // 개수와 순서가 보존된다 — 손대지 않은 항목은 그대로.
+        $this->assertCount(3, $columns, '패치가 목록의 다른 항목을 지웠습니다.');
+        $this->assertSame(
+            ['ordered_at', 'payment_method', 'claim'],
+            array_column($columns, 'field'),
+            '패치가 순서를 바꾸거나 항목을 잃었습니다.'
+        );
+
+        // 지목한 항목만 바뀐다.
+        $this->assertSame('결제수단(배지)', $columns[1]['header']);
+
+        // **핵심**: 확장이 모르는 뒤늦은 컬럼이 살아남는다.
+        $this->assertSame(
+            '클레임',
+            $columns[2]['header'],
+            '확장이 만들어진 뒤 호스트가 더한 컬럼이 사라졌습니다 — S2-D13 의 증상입니다.'
+        );
+    }
+
+    /**
+     * A-12: `_patch` 는 지목한 항목에 **shallow 병합**한다 (적지 않은 키는 보존).
+     *
+     * 확장이 `cellChildren` 하나만 바꾸려는데 `width`·`sortable` 까지 다시 적어야 한다면
+     * 그것 역시 복사이고 같은 사고를 부른다.
+     *
+     * @scenario layout_extension=patch_list_item
+     *
+     * @effects patching_one_item_keeps_every_other_item_of_the_host_list
+     *
+     * @return void 반환값 없음
+     */
+    public function test_inject_props_patch_merges_into_the_item_instead_of_replacing_it(): void
+    {
+        $layout = [
+            'layout_name' => 'test_layout',
+            'components' => [
+                [
+                    'id' => 'grid',
+                    'type' => 'composite',
+                    'name' => 'DataGrid',
+                    'props' => [
+                        'columns' => [
+                            ['field' => 'payment_method', 'header' => '결제수단', 'width' => '100px', 'sortable' => false],
+                        ],
+                    ],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'test_layout',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-payment',
+            'content' => [
+                'target_layout' => 'test_layout',
+                'injections' => [
+                    [
+                        'target_id' => 'grid',
+                        'position' => 'inject_props',
+                        'props' => [
+                            'columns' => [
+                                '_patch' => [
+                                    'by' => 'field',
+                                    'items' => [
+                                        ['field' => 'payment_method', 'cellChildren' => [['type' => 'basic', 'name' => 'Span']]],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'priority' => 999,
+            'is_active' => true,
+        ]);
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+        $column = $result['components'][0]['props']['columns'][0];
+
+        $this->assertArrayHasKey('cellChildren', $column, '패치한 키가 들어가지 않았습니다.');
+        $this->assertSame('100px', $column['width'] ?? null, '적지 않은 키가 사라졌습니다.');
+        $this->assertSame('결제수단', $column['header'] ?? null, '적지 않은 키가 사라졌습니다.');
+        $this->assertFalse($column['sortable'] ?? null, '적지 않은 키가 사라졌습니다.');
+    }
+
+    /**
+     * A-13: `by` 값이 기존에 없으면 **새 항목으로 끝에 붙인다.**
+     *
+     * 확장이 항목을 더할 수 있어야 `_append` 없이도 한 전략으로 끝난다.
+     *
+     * @scenario layout_extension=patch_list_item
+     *
+     * @effects patching_one_item_keeps_every_other_item_of_the_host_list
+     *
+     * @return void 반환값 없음
+     */
+    public function test_inject_props_patch_appends_when_the_key_is_new(): void
+    {
+        $layout = [
+            'layout_name' => 'test_layout',
+            'components' => [
+                [
+                    'id' => 'grid',
+                    'type' => 'composite',
+                    'name' => 'DataGrid',
+                    'props' => [
+                        'columns' => [['field' => 'ordered_at', 'header' => '주문일시']],
+                    ],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'test_layout',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-payment',
+            'content' => [
+                'target_layout' => 'test_layout',
+                'injections' => [
+                    [
+                        'target_id' => 'grid',
+                        'position' => 'inject_props',
+                        'props' => [
+                            'columns' => [
+                                '_patch' => [
+                                    'by' => 'field',
+                                    'items' => [['field' => 'pg_status', 'header' => 'PG 상태']],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'priority' => 999,
+            'is_active' => true,
+        ]);
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+        $columns = $result['components'][0]['props']['columns'];
+
+        $this->assertCount(2, $columns);
+        $this->assertSame(['ordered_at', 'pg_status'], array_column($columns, 'field'));
+    }
+
+    /**
+     * A-14: `_patch` 형식이 어긋나면 **원본 목록을 그대로 둔다.**
+     *
+     * 잘못 쓴 패치가 목록을 비우면 그 화면이 통째로 사라진다 — 이 전략이 막으려던 사고와
+     * 같은 크기의 사고다. 조용히 빈 배열로 만들지 않는다.
+     *
+     * @scenario layout_extension=patch_list_item
+     *
+     * @effects malformed_patch_leaves_the_host_list_untouched
+     *
+     * @return void 반환값 없음
+     */
+    public function test_inject_props_patch_keeps_the_list_when_the_definition_is_malformed(): void
+    {
+        $layout = [
+            'layout_name' => 'test_layout',
+            'components' => [
+                [
+                    'id' => 'grid',
+                    'type' => 'composite',
+                    'name' => 'DataGrid',
+                    'props' => [
+                        'columns' => [
+                            ['field' => 'ordered_at', 'header' => '주문일시'],
+                            ['field' => 'claim', 'header' => '클레임'],
+                        ],
+                    ],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'test_layout',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-payment',
+            'content' => [
+                'target_layout' => 'test_layout',
+                'injections' => [
+                    [
+                        'target_id' => 'grid',
+                        'position' => 'inject_props',
+                        'props' => [
+                            // by 가 없다 — 어느 키로 짝을 지을지 알 수 없다.
+                            'columns' => ['_patch' => ['items' => [['field' => 'ordered_at']]]],
+                        ],
+                    ],
+                ],
+            ],
+            'priority' => 999,
+            'is_active' => true,
+        ]);
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+        $columns = $result['components'][0]['props']['columns'];
+
+        $this->assertCount(2, $columns, '형식 오류가 목록을 비웠습니다 — 화면이 통째로 사라집니다.');
+        $this->assertSame(['ordered_at', 'claim'], array_column($columns, 'field'));
+    }
+
+    /**
+     * A-15: 여러 확장이 **같은 항목의 같은 키**를 `_append` 로 쓰면 전부 살아남는다.
+     *
+     * 덮어쓰기면 priority 가 가장 높은 하나만 남는다. 실제로 결제 플러그인 3종이 주문목록
+     * 「결제수단」 칸의 `cellChildren` 에 각자 테스트결제 배지를 달았는데, 그 탓에 우선순위가
+     * 가장 높은 하나만 화면에 떴다. 그래서 그 하나가 나머지 두 결제사 몫까지 대신 그려 주는
+     * 계단식 우회가 생겼고, 그 우회는 **남의 플러그인이 선언한 데이터소스**를 참조해야 해서
+     * 그 플러그인이 없는 사이트에서는 미정의 참조가 됐다(#599).
+     *
+     * `_append` 가 있으면 각자 자기 것만 덧붙이면 되므로 그 의존이 사라진다.
+     *
+     * @scenario layout_extension=patch_list_item
+     *
+     * @effects appending_into_a_patched_item_keeps_every_extensions_contribution
+     *
+     * @return void 반환값 없음
+     */
+    public function test_inject_props_patch_append_keeps_every_extension_contribution(): void
+    {
+        $layout = [
+            'layout_name' => 'test_layout',
+            'components' => [
+                [
+                    'id' => 'grid',
+                    'type' => 'composite',
+                    'name' => 'DataGrid',
+                    'props' => [
+                        'columns' => [
+                            ['field' => 'ordered_at', 'header' => '주문일시'],
+                            [
+                                'field' => 'payment_method',
+                                'header' => '결제수단',
+                                'width' => '100px',
+                                // 호스트가 래퍼와 라벨을 소유하고 확장은 그 안에만 덧붙인다.
+                                'cellChildren' => [[
+                                    'type' => 'basic',
+                                    'name' => 'Div',
+                                    'id' => 'payment_method_cell',
+                                    'props' => ['className' => 'row-stack'],
+                                    'children' => [['type' => 'basic', 'name' => 'Span', 'id' => 'payment_method_label', 'text' => '{{row.payment_method_label}}']],
+                                ]],
+                            ],
+                            ['field' => 'claim', 'header' => '클레임'],
+                        ],
+                    ],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        // 세 결제 플러그인을 활성으로 둔다 — 비활성 출처의 확장은 적용 단계에서 걸러진다.
+        $this->mockActiveExtensions(
+            ['sirsoft-support', 'sirsoft-test', 'sirsoft-extra', 'sirsoft-marketing', 'module-a', 'module-b'],
+            ['sirsoft-test', 'sirsoft-payment', 'sirsoft-pay_nicepay', 'sirsoft-pay_nhnkcp', 'sirsoft-pay_kginicis']
+        );
+        $this->service = app(LayoutExtensionService::class);
+
+        // 결제 플러그인 3종이 각자 자기 배지 한 줄만 덧붙인다 (priority 낮은 순으로 적용).
+        foreach ([['nicepay', 100], ['nhnkcp', 200], ['kginicis', 999]] as [$pg, $priority]) {
+            LayoutExtension::create([
+                'template_id' => $this->template->id,
+                'extension_type' => LayoutExtensionType::Overlay,
+                'target_name' => 'test_layout',
+                'source_type' => LayoutSourceType::Plugin,
+                'source_identifier' => 'sirsoft-pay_'.$pg,
+                'content' => [
+                    'target_layout' => 'test_layout',
+                    'injections' => [
+                        [
+                            'target_id' => 'grid',
+                            'position' => 'inject_props',
+                            'props' => [
+                                'columns' => [
+                                    '_patch' => [
+                                        'by' => 'field',
+                                        'items' => [
+                                            [
+                                                'field' => 'payment_method',
+                                                'cellChildren' => [
+                                                    '_patch' => [
+                                                        'by' => 'id',
+                                                        'items' => [
+                                                            [
+                                                                'id' => 'payment_method_cell',
+                                                                'children' => [
+                                                                    '_append' => [
+                                                                        ['type' => 'basic', 'name' => 'Span', 'if' => '{{'.$pg.'_test_map.data}}', 'text' => '테스트 결제'],
+                                                                    ],
+                                                                ],
+                                                            ],
+                                                        ],
+                                                    ],
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'priority' => $priority,
+                'is_active' => true,
+            ]);
+        }
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+        $columns = $result['components'][0]['props']['columns'];
+
+        // 호스트 컬럼은 그대로다.
+        $this->assertSame(['ordered_at', 'payment_method', 'claim'], array_column($columns, 'field'));
+
+        // 래퍼는 하나로 유지된다 — 확장마다 래퍼가 늘면 셀이 세 번 겹쳐 그려진다.
+        $this->assertCount(1, $columns[1]['cellChildren'], '확장이 호스트 래퍼를 복제했습니다.');
+        $this->assertSame('row-stack', $columns[1]['cellChildren'][0]['props']['className'] ?? null);
+
+        $cell = $columns[1]['cellChildren'][0]['children'];
+
+        // 호스트의 원래 라벨 + 3종의 배지 = 4줄. 하나라도 덮이면 실패한다.
+        $this->assertCount(4, $cell, '확장 하나가 다른 확장의 기여를 덮었습니다.');
+
+        $conditions = array_values(array_filter(array_column($cell, 'if')));
+        $this->assertSame(
+            ['{{nicepay_test_map.data}}', '{{nhnkcp_test_map.data}}', '{{kginicis_test_map.data}}'],
+            $conditions,
+            '적용 순서(priority 오름차순)대로 세 배지가 모두 남아야 합니다.'
+        );
+
+        // 적지 않은 키는 보존된다.
+        $this->assertSame('100px', $columns[1]['width'] ?? null);
+        $this->assertSame('결제수단', $columns[1]['header'] ?? null);
+    }
+
+    /**
+     * A-16: `_append` 대상 키가 호스트에 없으면 **그 키를 새로 만든다.**
+     *
+     * 확장이 호스트가 아직 쓰지 않는 자리에 처음 붙이는 경우다. 여기서 원본 유지로
+     * 물러서면 확장의 기여가 조용히 사라진다.
+     *
+     * @scenario layout_extension=patch_list_item
+     *
+     * @effects appending_into_a_patched_item_keeps_every_extensions_contribution
+     *
+     * @return void 반환값 없음
+     */
+    public function test_inject_props_patch_append_creates_the_key_when_absent(): void
+    {
+        $layout = [
+            'layout_name' => 'test_layout',
+            'components' => [
+                [
+                    'id' => 'grid',
+                    'type' => 'composite',
+                    'name' => 'DataGrid',
+                    'props' => [
+                        // 래퍼는 있지만 그 안에 children 키가 아직 없다.
+                        'columns' => [[
+                            'field' => 'payment_method',
+                            'header' => '결제수단',
+                            'cellChildren' => [['type' => 'basic', 'name' => 'Div', 'id' => 'payment_method_cell']],
+                        ]],
+                    ],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'test_layout',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-payment',
+            'content' => [
+                'target_layout' => 'test_layout',
+                'injections' => [
+                    [
+                        'target_id' => 'grid',
+                        'position' => 'inject_props',
+                        'props' => [
+                            'columns' => [
+                                '_patch' => [
+                                    'by' => 'field',
+                                    'items' => [
+                                        [
+                                            'field' => 'payment_method',
+                                            'cellChildren' => [
+                                                '_patch' => [
+                                                    'by' => 'id',
+                                                    'items' => [
+                                                        [
+                                                            'id' => 'payment_method_cell',
+                                                            'children' => ['_append' => [['type' => 'basic', 'name' => 'Span', 'text' => '배지']]],
+                                                        ],
+                                                    ],
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+        $column = $result['components'][0]['props']['columns'][0];
+
+        $wrapper = $column['cellChildren'][0];
+
+        $this->assertCount(1, $wrapper['children'] ?? [], '없던 키에 덧붙이지 못했습니다.');
+        $this->assertSame('배지', $wrapper['children'][0]['text']);
+        $this->assertSame('결제수단', $column['header'], '적지 않은 키가 사라졌습니다.');
+    }
     // =========================================================================
     // Overlay 레이아웃 섹션 병합 단위 테스트 (B-1 ~ B-7)
     // =========================================================================
 
     /**
      * B-1: overlay에 computed 정의 시 레이아웃 computed에 병합
+     *
+     * @scenario kind=overlay, merge_target=sections
+     *
+     * @effects overlay_merges_computed_into_layout, overlay_computed_merges_into_host_computed
+     *
+     * @return void 없음
      */
     public function test_overlay_merges_computed_into_layout(): void
     {
@@ -2060,6 +2827,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * B-2: overlay에 state 정의 시 레이아웃 state에 병합
+     *
+     * @effects overlay_merges_state_into_layout, overlay_state_merges_into_host_state
+     *
+     * @return void 없음
      */
     public function test_overlay_merges_state_into_layout(): void
     {
@@ -2108,6 +2879,12 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * B-3: overlay에 modals 정의 시 레이아웃 modals에 병합
+     *
+     * @scenario kind=overlay, merge_target=modals
+     *
+     * @effects overlay_merges_modals_into_layout, overlay_modals_merge_into_host_modals
+     *
+     * @return void 없음
      */
     public function test_overlay_merges_modals_into_layout(): void
     {
@@ -2158,6 +2935,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * B-4: 기존 섹션 없을 때 신규 생성
+     *
+     * @effects overlay_creates_computed_when_layout_has_none, overlay_creates_missing_section_on_host
+     *
+     * @return void 없음
      */
     public function test_overlay_creates_computed_when_layout_has_none(): void
     {
@@ -2202,6 +2983,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * B-5: 하위 호환 — overlay에 computed/state/modals가 없을 때 기존 레이아웃 영향 없음
+     *
+     * @effects overlay_without_sections_does_not_affect_layout, overlay_without_sections_leaves_host_sections_untouched
+     *
+     * @return void 없음
      */
     public function test_overlay_without_sections_does_not_affect_layout(): void
     {
@@ -2247,6 +3032,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * B-6: 여러 overlay에서 동일 섹션 순차 병합
+     *
+     * @effects overlay_multiple_overlays_merge_computed_sequentially, multiple_overlays_accumulate_into_the_same_section
+     *
+     * @return void 없음
      */
     public function test_overlay_multiple_overlays_merge_computed_sequentially(): void
     {
@@ -2319,6 +3108,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * B-7: 동일 키 충돌 시 후순위 overlay 우선
+     *
+     * @effects overlay_later_priority_overwrites_same_computed_key, later_priority_overlay_wins_the_same_section_key
+     *
+     * @return void 없음
      */
     public function test_overlay_later_priority_overwrites_same_computed_key(): void
     {
@@ -2389,6 +3182,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * modals 내부의 extension_point에 플러그인 컴포넌트가 주입되는지 테스트
+     *
+     * @effects applies_extension_points_inside_modals, modal_extension_point_receives_injected_components
+     *
+     * @return void 없음
      */
     public function test_applies_extension_points_inside_modals(): void
     {
@@ -2461,6 +3258,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * modals 내부 extension_point에 extensionPointProps가 전달되는지 테스트
+     *
+     * @effects passes_extension_point_props_inside_modals, extension_point_props_forwarded_as_extension_point_props
+     *
+     * @return void 없음
      */
     public function test_passes_extension_point_props_inside_modals(): void
     {
@@ -2522,6 +3323,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * extension_point의 callbacks가 주입 컴포넌트에 extensionPointCallbacks로 전달되는지 테스트
+     *
+     * @effects passes_extension_point_callbacks_to_injected_components, extension_point_callbacks_forwarded_as_extension_point_callbacks
+     *
+     * @return void 없음
      */
     public function test_passes_extension_point_callbacks_to_injected_components(): void
     {
@@ -2581,6 +3386,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * callbacks가 없는 extension_point에서 extensionPointCallbacks가 생성되지 않는지 테스트
+     *
+     * @effects no_callbacks_key_when_extension_point_has_no_callbacks, no_extension_point_callbacks_key_when_extension_declares_none
+     *
+     * @return void 없음
      */
     public function test_no_callbacks_key_when_extension_point_has_no_callbacks(): void
     {
@@ -2621,6 +3430,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * components와 modals 양쪽에 동일 이름의 extension_point가 있을 때 모두 주입되는지 테스트
+     *
+     * @effects injects_into_both_components_and_modals_extension_points, same_extension_point_injects_into_both_components_and_modals
+     *
+     * @return void 없음
      */
     public function test_injects_into_both_components_and_modals_extension_points(): void
     {
@@ -2684,6 +3497,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * Extension Point mode: replace — default를 완전 교체하는지 테스트
+     *
+     * @effects extension_point_mode_replace_removes_default, extension_point_replace_mode_drops_host_default
+     *
+     * @return void 없음
      */
     public function test_extension_point_mode_replace_removes_default(): void
     {
@@ -2730,6 +3547,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * Extension Point mode: prepend — default 앞에 추가되는지 테스트
+     *
+     * @effects extension_point_mode_prepend_inserts_before_default, extension_point_prepend_mode_places_extension_before_default
+     *
+     * @return void 없음
      */
     public function test_extension_point_mode_prepend_inserts_before_default(): void
     {
@@ -2776,6 +3597,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * Extension Point mode 미지정 시 기본 동작 (append) 테스트
+     *
+     * @effects extension_point_default_mode_appends_after_default, extension_point_default_mode_appends_after_host_default
+     *
+     * @return void 없음
      */
     public function test_extension_point_default_mode_appends_after_default(): void
     {
@@ -2823,6 +3648,10 @@ class LayoutExtensionServiceTest extends TestCase
      * 확장 출처명(트리 `🔌 {sourceLabel}`)은 DB 레코드의 다국어 name 을
      * 우선 사용한다. 설치/동기화 시 manifest.translations 필터가 ja 를 DB name 에 병합하므로,
      * 매니페스트 객체(ko/en 만 보유)가 아니라 DB name 을 읽어야 ja locale 에서 일본어로 표시된다.
+     *
+     * @effects resolve_source_label_reads_ja_from_db_name, source_label_reads_db_name_for_the_current_locale
+     *
+     * @return void 없음
      */
     public function test_resolve_source_label_reads_ja_from_db_name(): void
     {
@@ -2861,6 +3690,10 @@ class LayoutExtensionServiceTest extends TestCase
 
     /**
      * DB 레코드가 없으면 매니페스트 객체 getName() 으로 폴백한다(역호환, 크래시 없음).
+     *
+     * @effects resolve_source_label_falls_back_to_manifest_when_no_db_row, source_label_falls_back_to_manifest_when_no_db_row
+     *
+     * @return void 없음
      */
     public function test_resolve_source_label_falls_back_to_manifest_when_no_db_row(): void
     {

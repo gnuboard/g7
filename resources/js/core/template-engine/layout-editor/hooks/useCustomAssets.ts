@@ -10,6 +10,8 @@
  *  - PUT    /api/admin/extensions/{type}/{id}/custom-assets/content   (본문 저장·생성)
  *  - POST   /api/admin/extensions/{type}/{id}/custom-assets/upload    (바이너리 업로드)
  *  - DELETE /api/admin/extensions/{type}/{id}/custom-assets           (삭제)
+ *  - POST   /api/admin/extensions/{type}/{id}/custom-assets/rename    (이름변경·이동)
+ *  - GET    /api/admin/extensions/{type}/{id}/custom-assets/search    (파일명·본문 검색)
  *
  * `{type}` 은 `module` | `plugin` | `template`. 세 타입이 한 엔드포인트를 공유하므로
  * 이 훅도 타입을 인자로 받는다 — 타입별 훅을 세 벌 두면 그중 하나만 고쳐 놓는 상태가 된다.
@@ -42,6 +44,22 @@ export interface CustomAssetFile {
   loaded: boolean;
 }
 
+/**
+ * 검색 결과 1건 — 한 파일에서 찾은 매치.
+ *
+ * @since engine-v1.71.0
+ */
+export interface CustomAssetSearchHit {
+  /** `custom/` 기준 상대 경로 */
+  path: string;
+  /** 파일명 자체가 검색어를 포함하는지 */
+  name_matched: boolean;
+  /** 본문에서 찾은 매치 수 */
+  match_count: number;
+  /** 매치 줄 (1-base 좌표 — 편집기 줄 번호와 같다) */
+  lines: Array<{ line: number; column: number; preview: string }>;
+}
+
 /** 목록 응답의 편집기 메타 */
 export interface CustomAssetMeta {
   editable_extensions: string[];
@@ -63,6 +81,18 @@ export interface UseCustomAssetsResult {
   save: (path: string, content: string) => Promise<boolean>;
   upload: (file: File, directory?: string) => Promise<boolean>;
   remove: (path: string) => Promise<boolean>;
+  /**
+   * 이름변경(= 이동). 대상이 이미 있으면 409 로 막힌다 — 덮어쓰지 않는다
+   *
+   * @since engine-v1.71.0
+   */
+  rename: (from: string, to: string) => Promise<boolean>;
+  /**
+   * 파일명·본문 검색 (2자 이상)
+   *
+   * @since engine-v1.71.0
+   */
+  search: (keyword: string) => Promise<CustomAssetSearchHit[]>;
 }
 
 /** 관리 대상 확장 — 타입 + 식별자. */
@@ -286,5 +316,63 @@ export function useCustomAssets(target: CustomAssetTarget): UseCustomAssetsResul
     [target.type, target.identifier, reload],
   );
 
-  return { files, meta, isLoading, forbidden, error, reload, read, save, upload, remove };
+  const rename = useCallback(
+    async (from: string, to: string): Promise<boolean> => {
+      setError(null);
+
+      try {
+        const response = await fetch(`${baseUrl(target)}/rename`, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { ...buildAuthHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ from, to }),
+        });
+        const body = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          setError(messageOf(body, response.status));
+
+          return false;
+        }
+
+        await reload();
+
+        return true;
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'network error');
+
+        return false;
+      }
+    },
+    [target.type, target.identifier, reload],
+  );
+
+  const search = useCallback(
+    async (keyword: string): Promise<CustomAssetSearchHit[]> => {
+      // 2자 미만은 서버가 422 로 막는다 — 왕복하기 전에 여기서 끊어 오류 표시를 만들지 않는다.
+      if (keyword.trim().length < 2) {
+        return [];
+      }
+
+      try {
+        const url = `${baseUrl(target)}/search?q=${encodeURIComponent(keyword.trim())}`;
+        const response = await fetch(url, { credentials: 'same-origin', headers: buildAuthHeaders() });
+        const body = await response.json().catch(() => null);
+
+        if (!response.ok) {
+          setError(messageOf(body, response.status));
+
+          return [];
+        }
+
+        return Array.isArray(body?.data) ? (body.data as CustomAssetSearchHit[]) : [];
+      } catch {
+        // 검색 실패는 화면을 세우지 않는다 — 이름 필터는 클라이언트에서 계속 동작한다.
+        return [];
+      }
+    },
+    [target.type, target.identifier],
+  );
+
+  return { files, meta, isLoading, forbidden, error, reload, read, save, upload, remove, rename, search };
 }

@@ -35,6 +35,10 @@
     "name": "注文編集",
     "description": "注文ステータス変更"
   },
+  "sirsoft-ecommerce.orders.delete": {
+    "name": "注文削除",
+    "description": "注文削除および個人情報保有期間「削除」方式の職権実行"
+  },
   "sirsoft-ecommerce.categories": {
     "name": "カテゴリ管理",
     "description": "カテゴリ管理権限"
@@ -258,5 +262,125 @@
   "sirsoft-ecommerce.user-reviews.write": {
     "name": "レビュー作成",
     "description": "商品レビュー作成"
+  },
+  "sirsoft-ecommerce.dashboard": {
+    "name": "ダッシュボード",
+    "description": "管理者ダッシュボードのeコマース領域の閲覧権限"
+  },
+  "sirsoft-ecommerce.dashboard.view": {
+    "name": "ダッシュボード閲覧",
+    "description": "管理者ダッシュボードのeコマース売上状況・レビュー・問い合わせウィジェットの閲覧"
+  },
+  "sirsoft-ecommerce.mileage": {
+    "name": "マイレージ管理",
+    "description": "マイレージ履歴の閲覧および手動付与・減算の権限"
+  },
+  "sirsoft-ecommerce.mileage.read": {
+    "name": "マイレージ履歴閲覧",
+    "description": "マイレージ履歴の一覧および詳細の閲覧"
+  },
+  "sirsoft-ecommerce.mileage.manage": {
+    "name": "マイレージ手動処理",
+    "description": "マイレージの手動付与・減算および有効期限の一括延長"
+  },
+  "sirsoft-ecommerce.user-currency": {
+    "name": "会員決済通貨管理",
+    "description": "管理者が会員ごとの決済通貨を変更する権限"
+  },
+  "sirsoft-ecommerce.user-currency.manage": {
+    "name": "会員決済通貨変更",
+    "description": "会員ごとの決済通貨の変更"
+  },
+  "sirsoft-ecommerce.user-shipping-country": {
+    "name": "会員配送国管理",
+    "description": "管理者が会員ごとの配送国を変更する権限"
+  },
+  "sirsoft-ecommerce.user-shipping-country.manage": {
+    "name": "会員配送国変更",
+    "description": "会員ごとの配送国の変更"
+  },
+  "sirsoft-ecommerce.inquiries.read": {
+    "name": "お問い合わせ閲覧",
+    "description": "全会員商品お問い合わせリスト閲覧"
+  },
+  "sirsoft-ecommerce.wishlists": {
+    "name": "お気に入り管理",
+    "description": "全会員お気に入り閲覧·削除権限"
+  },
+  "sirsoft-ecommerce.wishlists.read": {
+    "name": "お気に入り閲覧",
+    "description": "お気に入り閲覧"
+  },
+  "sirsoft-ecommerce.wishlists.manage": {
+    "name": "お気に入り削除",
+    "description": "お気に入り削除"
+  },
+  "sirsoft-ecommerce.carts": {
+    "name": "カート管理",
+    "description": "全会員カート閲覧·削除権限"
+  },
+  "sirsoft-ecommerce.carts.read": {
+    "name": "カート閲覧",
+    "description": "カート閲覧"
+  },
+  "sirsoft-ecommerce.carts.manage": {
+    "name": "カート削除",
+    "description": "カート削除"
+  },
+  "sirsoft-ecommerce.user-addresses": {
+    "name": "会員配送先管理",
+    "description": "全会員配送先閲覧·削除権限"
+  },
+  "sirsoft-ecommerce.user-addresses.read": {
+    "name": "配送先閲覧",
+    "description": "配送先閲覧"
+  },
+  "sirsoft-ecommerce.user-addresses.manage": {
+    "name": "配送先削除",
+    "description": "配送先削除"
+  },
+  "sirsoft-ecommerce.claims": {
+    "name": "キャンセル·返品·交換管理",
+    "description": "交換·返品·返金申請書管理権限"
+  },
+  "sirsoft-ecommerce.claims.read": {
+    "name": "クレーム閲覧",
+    "description": "交換·返品·返金申請一覧及び詳細閲覧"
+  },
+  "sirsoft-ecommerce.claims.update-status": {
+    "name": "クレームステータス変更",
+    "description": "承認·保留·却下·回収·再発送等ステータス遷移及び送り状入力"
+  },
+  "sirsoft-ecommerce.claims.update-amounts": {
+    "name": "クレーム金額修正",
+    "description": "クレーム配送料·差額·返金予定額修正"
+  },
+  "sirsoft-ecommerce.claims.execute-refund": {
+    "name": "クレーム返金実行",
+    "description": "返金実行(PG部分取消·マイレージ·口座)"
+  },
+  "sirsoft-ecommerce.user-claims": {
+    "name": "ユーザークレーム",
+    "description": "交換·返品·返金申請関連権限(ブラックコンシューマーブロック用)"
+  },
+  "sirsoft-ecommerce.user-claims.request": {
+    "name": "クレーム申請",
+    "description": "交換·返品·返金申請及び申請内容修正"
+  },
+  "sirsoft-ecommerce.user-claims.read": {
+    "name": "クレーム閲覧",
+    "description": "本人申請内容一覧及び詳細閲覧"
+  },
+  "sirsoft-ecommerce.user-claims.withdraw": {
+    "name": "クレーム撤回",
+    "description": "承認前申請撤回"
+  },
+  "sirsoft-ecommerce.user-claims.pay": {
+    "name": "クレーム追加決済",
+    "description": "クレーム配送料·差額追加決済"
+  },
+  "sirsoft-ecommerce.claims.create": {
+    "name": "クレーム職権受付",
+    "description": "注文詳細から顧客に代わって交換・返品・キャンセル・返金を受け付け"
   }
 }

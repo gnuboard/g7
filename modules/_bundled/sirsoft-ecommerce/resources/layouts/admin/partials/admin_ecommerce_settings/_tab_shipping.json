@@ -1,428 +1,441 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "쇼핑몰 설정 배송설정 탭 콘텐츠"
-  },
-  "id": "tab_content_shipping",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'shipping'}}",
-  "children": [
-    {
-      "id": "shipping_basic_card",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
+    "comment": "쇼핑몰 설정 — 배송 탭. 배송유형·택배사·국가 목록은 각각 별도 조각이 맡고, 이 탭은 그것을\n  담으면서 해외배송 사용 여부 같은 상위 스위치를 둔다.\n  \n  해외배송 스위치는 방향에 따라 갈린다. 켜는 쪽은 잃는 것이 없어 바로 반영한다. 끄는 쪽은\n  기본 국가 말고 활성 국가가 더 있을 때만 확인 창을 거친다 — 그 경우에만 이미 설정해 둔 값이\n  의미를 잃기 때문이다. 남은 활성 국가가 없으면 잃을 것이 없어 바로 반영한다.",
+    "meta": {
+        "is_partial": true,
+        "description": "쇼핑몰 설정 배송설정 탭 콘텐츠"
+    },
+    "id": "tab_content_shipping",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'shipping'}}",
+    "children": [
         {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.title"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.description"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "grid grid-cols-1 sm:grid-cols-2 gap-6"
-          },
-          "children": [
-            {
-              "id": "default_country_field",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label mb-1.5"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.default_country"
-                },
-                {
-                  "type": "basic",
-                  "name": "Select",
-                  "props": {
-                    "value": "{{_local.form?.shipping?.default_country ?? 'KR'}}",
-                    "className": "w-full",
-                    "options": "{{(_local.form?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({value: c.code, label: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code)}))}}",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form.shipping.default_country": "{{$event.target.value}}",
-                        "hasChanges": true
-                      }
-                    }
-                  ]
-                }
-              ]
+            "id": "shipping_basic_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
             },
-            {
-              "id": "international_shipping_field",
-              "type": "basic",
-              "name": "Div",
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label mb-1.5"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.international_shipping"
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.title"
                 },
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-3"
-                  },
-                  "children": [
-                    {
-                      "type": "composite",
-                      "name": "Toggle",
-                      "props": {
-                        "checked": "{{_local.form?.shipping?.international_shipping_enabled ?? false}}",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      },
-                      "actions": [
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.description"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid grid-cols-1 sm:grid-cols-2 gap-6"
+                    },
+                    "children": [
                         {
-                          "type": "change",
-                          "if": "{{$event.target.checked}}",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "form.shipping.international_shipping_enabled": true,
-                            "hasChanges": true
-                          }
+                            "id": "default_country_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label mb-1.5"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.default_country"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "기본 배송 국가. 선택지는 아래 국가 목록 중 is_active 인 것만이고, 라벨은 언어팩(settings.countries.{code}.name)이 없으면 코드로 폴백한다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.shipping.default_country": "{{$event.target.value}}",
+                                                "hasChanges": true
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "value": "{{_local.form?.shipping?.default_country ?? 'KR'}}",
+                                        "className": "w-full",
+                                        "options": "{{(_local.form?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({value: c.code, label: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code)}))}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
                         },
                         {
-                          "type": "change",
-                          "if": "{{!$event.target.checked}}",
-                          "handler": "conditions",
-                          "conditions": [
-                            {
-                              "if": "{{(_local.form?.shipping?.available_countries ?? []).some(c => c.code !== (_local.form?.shipping?.default_country ?? 'KR') && c.is_active)}}",
-                              "then": {
-                                "handler": "sequence",
-                                "actions": [
-                                  {
+                            "id": "international_shipping_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label mb-1.5"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.international_shipping"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "actions": [
+                                                {
+                                                    "comment": "해외배송 사용. 켜는 방향이라 바로 반영한다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "if": "{{$event.target.checked}}",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.shipping.international_shipping_enabled": true,
+                                                        "hasChanges": true
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "해외배송 끄기. 조건이 걸린 액션으로 확인 창을 띄운다 — 끄면 국가·권역 설정이 의미를 잃기 때문이다.",
+                                                    "type": "change",
+                                                    "handler": "conditions",
+                                                    "if": "{{!$event.target.checked}}",
+                                                    "conditions": [
+                                                        {
+                                                            "if": "{{(_local.form?.shipping?.available_countries ?? []).some(c => c.code !== (_local.form?.shipping?.default_country ?? 'KR') && c.is_active)}}",
+                                                            "then": {
+                                                                "handler": "sequence",
+                                                                "actions": [
+                                                                    {
+                                                                        "comment": "해외배송을 끄면 배송가능국가 추가 폼과 [추가] 버튼이 함께 사라진다(둘 다 이 토글을 게이트로 갖는다). 그런데 그 폼을 연 채 껐다면 isAddingCountry 는 켜진 채 남고, 그것을 끄는 유일한 액션(폼 안의 [확정]/[취소])이 화면에서 사라진다 — 이후 페이지 [저장]의 인라인 폼 가드가 어느 탭에서도 저장을 영구히 막는다(새로고침 외 탈출구가 없고, 새로고침은 다른 탭 편집까지 버린다). 폼이 도달 불가가 되는 바로 이 지점에서 표시도 함께 내린다.",
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.shipping.international_shipping_enabled": false,
+                                                                            "isAddingCountry": false,
+                                                                            "newCountry": null,
+                                                                            "disableIntlWasAddingCountry": "{{_local.isAddingCountry === true}}",
+                                                                            "disableIntlCountryBuffer": "{{_local.newCountry}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "openModal",
+                                                                        "target": "disable_international_shipping_modal"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        },
+                                                        {
+                                                            "then": {
+                                                                "comment": "위 분기와 같은 이유로 isAddingCountry 를 함께 내린다 — 해외배송을 끄면 배송가능국가 추가 폼이 도달 불가가 된다.",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "form.shipping.international_shipping_enabled": false,
+                                                                    "isAddingCountry": false,
+                                                                    "newCountry": null,
+                                                                    "hasChanges": true
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "checked": "{{_local.form?.shipping?.international_shipping_enabled ?? false}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.international_shipping_description"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "available_countries_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-header flex-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "card-title"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "card-description"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.description"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "add_country_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{!_local.isAddingCountry && (_local.form?.shipping?.international_shipping_enabled ?? false)}}",
+                            "actions": [
+                                {
+                                    "comment": "신규 국가의 name 은 활성 언어팩($locales) 전체에 대한 빈 문자열 맵으로 시드한다. 언어팩이 추가되면 입력칸도 함께 늘어나야 하므로 로케일을 리터럴로 열거하지 않는다.",
+                                    "type": "click",
                                     "handler": "setState",
                                     "params": {
-                                      "target": "local",
-                                      "form.shipping.international_shipping_enabled": false
+                                        "target": "local",
+                                        "isAddingCountry": true,
+                                        "newCountry": "{{ { code: '', name: Object.fromEntries(($locales ?? []).map(l => [l, ''])), is_active: true } }}"
                                     }
-                                  },
-                                  {
-                                    "handler": "openModal",
-                                    "target": "disable_international_shipping_modal"
-                                  }
-                                ]
-                              }
-                            },
-                            {
-                              "then": {
-                                "handler": "setState",
-                                "params": {
-                                  "target": "local",
-                                  "form.shipping.international_shipping_enabled": false,
-                                  "hasChanges": true
                                 }
-                              }
-                            }
-                          ]
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "plus",
+                                        "className": "text-xs"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.add"
+                                }
+                            ]
                         }
-                      ]
+                    ]
+                },
+                {
+                    "partial": "_shipping_country_table.json"
+                },
+                {
+                    "id": "add_country_form",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.isAddingCountry && (_local.form?.shipping?.international_shipping_enabled ?? false)}}",
+                    "props": {
+                        "className": "border-t border-gray-200 dark:border-gray-700 p-4"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.basic.international_shipping_description"
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-end gap-3 flex-wrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "text-tertiary block font-medium mb-1"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.country_code"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "국가 코드는 입력 시점에 대문자로 맞춘다. 기본 국가와의 대조(default_country)가 코드 문자열 일치라, 소문자로 들어가면 같은 국가가 다른 국가로 취급된다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "newCountry.code": "{{$event.target.value.toUpperCase()}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "value": "{{_local.newCountry?.code ?? ''}}",
+                                                "className": "w-20",
+                                                "placeholder": "KR",
+                                                "maxLength": 10,
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "국가명 입력칸은 활성 언어팩($locales) 마다 하나씩 생성된다. iteration 은 이 Div 자신을 로케일 수만큼 복제하므로, 부모(flex flex-wrap)가 입력칸들을 가로로 흘린다. 언어팩이 추가되면 입력칸도 자동으로 늘어난다 — 로케일 리터럴 열거 금지.",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{$locales ?? []}}",
+                                        "item_var": "loc"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "라벨 = 로케일 표시명(예: 한국어 / English / 日本語). appConfig.localeNames 부재 시 로케일 코드로 폴백.",
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "text-tertiary block font-medium mb-1"
+                                            },
+                                            "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
+                                        },
+                                        {
+                                            "comment": "setState 는 params 키의 표현식을 해석하지 않는다(엔진 제약). 따라서 `newCountry.name.<loc>` 같은 동적 키 대신 name 객체를 통째로 재구성해 넣는다.",
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "newCountry.name": "{{ { ...(_local.newCountry?.name ?? {}), [loc]: $event.target.value } }}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "value": "{{_local.newCountry?.name?.[loc] ?? ''}}",
+                                                "className": "w-40",
+                                                "placeholder": "{{$t('sirsoft-ecommerce.admin.settings.shipping.countries.country_name') + ' (' + (_global.appConfig?.localeNames?.[loc] ?? loc) + ')'}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "활성 조건: 국가코드 + 최소 하나의 로케일 이름. StoreEcommerceSettingsRequest 의 available_countries.*.name 규칙이 array 만 요구하고 특정 로케일 키를 강제하지 않으므로, 프론트도 ko 를 필수로 두지 않는다.",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "입력하지 않은 로케일의 빈 문자열은 저장본에 남기지 않는다 — 부재 로케일은 언어팩(settings.countries.{code}.name)이 보강하거나, 운영자가 나중에 채운다.",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "form.shipping.available_countries": "{{[...(_local.form?.shipping?.available_countries ?? []), { code: _local.newCountry.code.trim().toUpperCase(), name: Object.fromEntries(Object.entries(_local.newCountry?.name ?? {}).filter(e => (e[1] ?? '').trim() !== '').map(e => [e[0], e[1].trim()])), is_active: true }]}}",
+                                                                "isAddingCountry": false,
+                                                                "newCountry": null,
+                                                                "hasChanges": true
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "disabled": "{{_computed.isReadOnly || !(_local.newCountry?.code ?? '').trim() || !Object.values(_local.newCountry?.name ?? {}).some(v => (v ?? '').trim() !== '')}}",
+                                                "className": "px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:common.add"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "국가 추가를 취소한다. 입력 중이던 newCountry 를 버리는 것뿐이라 hasChanges 를 올리지 않는다 — 저장 대상에 들어간 적이 없다.",
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "isAddingCountry": false,
+                                                        "newCountry": null
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:common.cancel"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "available_countries_card",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-header flex-between"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "H3",
-                  "props": {
-                    "className": "card-title"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.title"
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "card-description"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.description"
-                }
-              ]
-            },
-            {
-              "id": "add_country_button",
-              "type": "basic",
-              "name": "Button",
-              "if": "{{!_local.isAddingCountry && (_local.form?.shipping?.international_shipping_enabled ?? false)}}",
-              "props": {
-                "type": "button",
-                "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{_computed.isReadOnly}}"
-              },
-              "actions": [
-                {
-                  "comment": "신규 국가의 name 은 활성 언어팩($locales) 전체에 대한 빈 문자열 맵으로 시드한다. 언어팩이 추가되면 입력칸도 함께 늘어나야 하므로 로케일을 리터럴로 열거하지 않는다.",
-                  "type": "click",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "isAddingCountry": true,
-                    "newCountry": "{{ { code: '', name: Object.fromEntries(($locales ?? []).map(l => [l, ''])), is_active: true } }}"
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "plus",
-                    "className": "text-xs"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.add"
-                }
-              ]
-            }
-          ]
+            ]
         },
         {
-          "partial": "_shipping_country_table.json"
+            "partial": "_shipping_type_section.json"
         },
         {
-          "id": "add_country_form",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_local.isAddingCountry && (_local.form?.shipping?.international_shipping_enabled ?? false)}}",
-          "props": {
-            "className": "border-t border-gray-200 dark:border-gray-700 p-4"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex items-end gap-3 flex-wrap"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "text-tertiary block font-medium mb-1"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.country_code"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "value": "{{_local.newCountry?.code ?? ''}}",
-                        "className": "w-20",
-                        "placeholder": "KR",
-                        "maxLength": 10,
-                        "disabled": "{{_computed.isReadOnly}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "newCountry.code": "{{$event.target.value.toUpperCase()}}"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "comment": "국가명 입력칸은 활성 언어팩($locales) 마다 하나씩 생성된다. iteration 은 이 Div 자신을 로케일 수만큼 복제하므로, 부모(flex flex-wrap)가 입력칸들을 가로로 흘린다. 언어팩이 추가되면 입력칸도 자동으로 늘어난다 — 로케일 리터럴 열거 금지.",
-                  "type": "basic",
-                  "name": "Div",
-                  "iteration": {
-                    "source": "{{$locales ?? []}}",
-                    "item_var": "loc"
-                  },
-                  "children": [
-                    {
-                      "comment": "라벨 = 로케일 표시명(예: 한국어 / English / 日本語). appConfig.localeNames 부재 시 로케일 코드로 폴백.",
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "text-tertiary block font-medium mb-1"
-                      },
-                      "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
-                    },
-                    {
-                      "comment": "setState 는 params 키의 표현식을 해석하지 않는다(엔진 제약). 따라서 `newCountry.name.<loc>` 같은 동적 키 대신 name 객체를 통째로 재구성해 넣는다.",
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "value": "{{_local.newCountry?.name?.[loc] ?? ''}}",
-                        "className": "w-40",
-                        "placeholder": "{{$t('sirsoft-ecommerce.admin.settings.shipping.countries.country_name') + ' (' + (_global.appConfig?.localeNames?.[loc] ?? loc) + ')'}}",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "newCountry.name": "{{ { ...(_local.newCountry?.name ?? {}), [loc]: $event.target.value } }}"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex gap-2"
-                  },
-                  "children": [
-                    {
-                      "comment": "활성 조건: 국가코드 + 최소 하나의 로케일 이름. StoreEcommerceSettingsRequest 의 available_countries.*.name 규칙이 array 만 요구하고 특정 로케일 키를 강제하지 않으므로, 프론트도 ko 를 필수로 두지 않는다.",
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "type": "button",
-                        "disabled": "{{_computed.isReadOnly || !(_local.newCountry?.code ?? '').trim() || !Object.values(_local.newCountry?.name ?? {}).some(v => (v ?? '').trim() !== '')}}",
-                        "className": "px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      },
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "sequence",
-                          "actions": [
-                            {
-                              "comment": "입력하지 않은 로케일의 빈 문자열은 저장본에 남기지 않는다 — 부재 로케일은 언어팩(settings.countries.{code}.name)이 보강하거나, 운영자가 나중에 채운다.",
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "form.shipping.available_countries": "{{[...(_local.form?.shipping?.available_countries ?? []), { code: _local.newCountry.code.trim().toUpperCase(), name: Object.fromEntries(Object.entries(_local.newCountry?.name ?? {}).filter(e => (e[1] ?? '').trim() !== '').map(e => [e[0], e[1].trim()])), is_active: true }]}}",
-                                "isAddingCountry": false,
-                                "newCountry": null,
-                                "hasChanges": true
-                              }
-                            }
-                          ]
-                        }
-                      ],
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:common.add"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "type": "button",
-                        "className": "px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "isAddingCountry": false,
-                            "newCountry": null
-                          }
-                        }
-                      ],
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:common.cancel"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+            "partial": "_shipping_carrier_section.json"
         }
-      ]
-    },
-    {
-      "partial": "_shipping_type_section.json"
-    },
-    {
-      "partial": "_shipping_carrier_section.json"
-    }
-  ],
-  "props": {}
+    ]
 }

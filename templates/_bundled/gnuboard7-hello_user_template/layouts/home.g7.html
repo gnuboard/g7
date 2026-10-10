@@ -1,0 +1,45 @@
+<!-- 학습용 사용자 첫 화면 — 모듈이 내보낸 공개 API 를 템플릿이 그대로 받아 쓰는 최소 예다 -->
+<layout name="home" version="1.0.0" extends="_user_base">
+  <meta title="$t:user.home.page_title" description="$t:user.home.page_description"/>
+  <!-- 공개 메모 10건. progressive 라 화면을 먼저 그리고 도착하는 대로 채운다 — 첫 화면이 이 목록 때문에 늦어지지 않게 -->
+  <data-source id="memos" label_key="$t:editor.data_source.memos" type="api" endpoint="/api/modules/gnuboard7-hello_module/memos" method="GET" :auto_fetch="true" loading_strategy="progressive">
+    <params :per_page="10"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <permissions/>
+  <slot name="content">
+    <!-- === 환영 카드 === -->
+    <div data-ref="welcome_card" class="rounded-lg border border-gray-200 bg-blue-50 px-6 py-6 mb-6">
+      <h1 class="text-2xl font-bold text-gray-900 mb-2">$t:user.home.welcome_title</h1>
+      <span class="text-base text-gray-700">$t:user.home.welcome_description</span>
+    </div>
+    <!-- === Memo 목록 섹션 === -->
+    <div data-ref="memo_section" class="mb-6">
+      <h2 class="text-xl font-semibold text-gray-900 mb-3">$t:user.home.memos_title</h2>
+      <!-- Memo 비어있음 안내 -->
+      <div data-if="{{(memos?.data?.data ?? []).length === 0}}" class="rounded border border-gray-200 bg-gray-50 px-4 py-6 text-center text-gray-500">
+        <span>$t:user.home.memos_empty</span>
+      </div>
+      <!-- Memo 목록 iteration -->
+      <div data-if="{{(memos?.data?.data ?? []).length > 0}}" class="space-y-3">
+        <div data-each="memo in {{memos?.data?.data ?? []}}" class="rounded border border-gray-200 bg-white px-4 py-3 hover:border-blue-400">
+          <h3 class="text-base font-semibold text-gray-900 mb-1">{{memo.title ?? ''}}</h3>
+          <span class="text-sm text-gray-600">{{memo.content ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+    <!-- === 홈 복귀 버튼 (액션 시연) === -->
+    <div data-ref="home_action" class="flex justify-center">
+      <button class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 cursor-pointer" data-testid="home-button">
+        <on type="click">
+          <navigate path="/"/>
+        </on>
+        $t:user.home.back_to_home
+      </button>
+    </div>
+  </slot>
+</layout>

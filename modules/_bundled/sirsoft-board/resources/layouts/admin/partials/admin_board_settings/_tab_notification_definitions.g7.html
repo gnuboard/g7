@@ -1,0 +1,177 @@
+<!-- 설정의 「알림 정의」 탭 — 세 층이다. 위에서 채널(메일·SMS 등)을 켜고 끄고, 가운데 서브탭에서 켜 둔 채널 하나를 고르고, 아래 목록은 «그 채널의 문안»만 보여준다. 그래서 목록의 거의 모든 표현이 「지금 채널에 해당하는 템플릿을 찾아」로 시작한다. 채널 켬/끔은 폼과 함께 저장되지만 문안 켬/끔은 그 자리에서 바로 서버에 간다 -->
+<partial _e2e_allow="e2e:allow 채널 토글 저장(upsert)·하단탭 필터는 레이아웃 회귀테스트(vitest) + MCP 실브라우저 검증(하단탭 노출/저장/발송)으로 커버. 알림설정 화면 Playwright 인프라 부재" description="게시판 알림 설정 탭 — 채널 토글 + 2단 탭 + 채널별 템플릿 목록">
+  <div data-ref="tab_content_notification_definitions" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'notification_definitions'}}">
+    <div data-ref="board_notif_header" class="section-header">
+      <h3>$t:sirsoft-board.admin.settings.notification_definitions.title</h3>
+      <p>$t:sirsoft-board.admin.settings.notification_definitions.description</p>
+    </div>
+    <div data-ref="board_channel_toggles" class="admin-card">
+      <h4 class="card-title">$t:sirsoft-board.admin.settings.notification_definitions.channel_management</h4>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div data-each="ch, chIdx in {{availableChannels?.data?.channels ?? []}}" class="flex-between p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div class="flex-center gap-2">
+            <icon name="{{ch.icon ?? 'fas fa-bell'}}" class="text-gray-500 dark:text-gray-400"/>
+            <div>
+              <span class="text-heading">{{ch.name ?? ch.id}}</span>
+              <span class="text-hint block">{{ch.source_label ?? ch.source}}</span>
+            </div>
+          </div>
+          <toggle data-type="composite" checked="{{(_local.form?.notifications?.channels ?? []).find(c => c.id === ch.id)?.is_active ?? false}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <!-- 채널 하나를 켜고 끈다 — 목록을 통째로 새로 만들면서 이 채널만 뒤집는다. 저장 버튼을 눌러야 반영되는 값이라 「변경 있음」도 함께 켠다. 저장은 게시판 환경설정 PUT(settings.update)이라 잠금도 같은 축(isReadOnly)을 본다 -->
+              <set-state target="local" form.notifications.channels="{{(_local.form?.notifications?.channels ?? []).some(c => c.id === ch.id) ? (_local.form?.notifications?.channels ?? []).map(c => c.id === ch.id ? {...c, is_active: !c.is_active} : c) : [...(_local.form?.notifications?.channels ?? []), {id: ch.id, is_active: true, sort_order: (_local.form?.notifications?.channels ?? []).length + 1}]}}" :hasChanges="true"/>
+            </on>
+          </toggle>
+        </div>
+      </div>
+    </div>
+    <div data-ref="board_channel_sub_tabs" class="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+      <button data-each="ch, chIdx in {{(availableChannels?.data?.channels ?? []).filter(c => c.hidden_tab !== true &amp;&amp; (c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false : (c.tab_channels ?? [c.id]).filter(tc => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === tc)?.is_active === true).length > 0))}}" type="button" class="{{(query.channel ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2">
+        <on type="click">
+          <!-- 채널 서브탭 갈아타기 — 고른 채널을 지역 상태와 URL 양쪽에 남긴다(둘 다 두는 이유는 아래 목록이 지역 값을 먼저 보고 없으면 URL 을 보기 때문). 채널이 바뀌면 보이는 문안 집합이 통째로 달라지므로 쪽수는 1 로 되돌린다 -->
+          <sequence>
+            <navigate path="/admin/boards/settings" :replace="true" :mergeQuery="true">
+              <query channel="{{ch.id}}" :page="1"/>
+            </navigate>
+          </sequence>
+        </on>
+        <icon name="{{ch.icon ?? 'fas fa-bell'}}" class="text-sm"/>
+        <span>{{ch.tab_label_key ? $t(ch.tab_label_key) : (ch.name ?? ch.id)}}</span>
+      </button>
+    </div>
+    <!-- 알림 정의 행 하단 확장 슬롯(범용). 각 소유 확장이 알림별 부가 UI(예: 채널 연동)를 이 자리에 주입한다. 특정 확장을 알지 못하며, 확장 미설치 시 빈 자리로 남는다. def·현재 채널을 extensionPointProps 로 전달한다. -->
+    <div data-ref="board_notif_channel_content">
+      <div data-ref="board_notif_list_info" class="flex-between py-3">
+        <span class="text-label-subtle">$t:sirsoft-board.admin.settings.notification_definitions.total_count|count={{boardNotificationDefinitions?.data?.pagination?.total ?? 0}}</span>
+        <div class="flex-center gap-2">
+          <span class="text-label-subtle">$t:sirsoft-board.admin.settings.notification_definitions.per_page_label</span>
+          <select name="notifPerPage" class="w-20 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{String(query.per_page || 20)}}">
+            <options>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+            </options>
+            <on type="change">
+              <!-- 한 쪽에 보일 건수 변경. 쪽수를 1로 되돌리지 않으면 늘어난 건수 기준으로 보던 쪽이 결과 범위를 벗어난다 -->
+              <navigate path="/admin/boards/settings" :replace="true" :mergeQuery="true">
+                <query per_page="{{$event.target.value}}" :page="1"/>
+              </navigate>
+            </on>
+          </select>
+        </div>
+      </div>
+      <div data-ref="board_notif_definitions_list">
+        <div data-each="def, defIdx in {{boardNotificationDefinitions?.data?.data ?? []}}" class="admin-card mb-3">
+          <div class="flex-start gap-3">
+            <div class="flex-shrink-0 pt-0.5">
+              <button aria-label="{{(_local.expandedNotifications ?? {})[def.id] ? '$t:common.collapse' : '$t:common.expand'}}" aria-expanded="{{!!(_local.expandedNotifications ?? {})[def.id]}}" type="button" class="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <on type="click">
+                  <!-- 이 정의의 상세를 접었다 편다. 정의마다 따로 기억해야 해서 id 를 키로 하는 객체에 담는다 -->
+                  <set-state target="local" expandedNotifications="{{Object.assign({}, _local.expandedNotifications ?? {}, {[def.id]: !(_local.expandedNotifications ?? {})[def.id]})}}"/>
+                </on>
+                <icon name="{{(_local.expandedNotifications ?? {})[def.id] ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" size="sm"/>
+              </button>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex-1 min-w-0">
+                  <div class="flex-center flex-wrap gap-2 mb-1">
+                    <h4 class="text-primary text-base font-medium">$t:sirsoft-board.admin.settings.notification_definitions.types.{{def.type}}</h4>
+                    <span class="text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{def.type}}</span>
+                    <span class="{{def.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}} text-xs font-medium px-2 py-0.5 rounded-full">{{def.is_active ? '$t:sirsoft-board.admin.settings.notification_definitions.active' : '$t:sirsoft-board.admin.settings.notification_definitions.inactive'}}</span>
+                    <span data-if="{{def.is_default}}" class="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs font-medium px-2 py-0.5 rounded-full">$t:sirsoft-board.admin.settings.notification_definitions.default_badge</span>
+                  </div>
+                  <p data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="text-label-subtle truncate">{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.subject?.[$locale] ?? ''}}</p>
+                  <p data-if="{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="text-sm text-gray-400 dark:text-gray-500 italic">$t:sirsoft-board.admin.settings.notification_definitions.no_template_for_channel</p>
+                  <div data-ref="board_recipients_badge_{{defIdx}}" data-if="{{((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []).length > 0}}" class="flex-center flex-wrap gap-1.5 mt-2">
+                    <span class="text-tertiary font-medium">$t:admin.settings.notification_definitions.recipients_label</span>
+                    <span data-each="rcpt in {{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []}}" class="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 rounded-full">
+                      <span>{{rcpt.type === 'trigger_user' ? '$t:admin.settings.notification_definitions.recipients.types.trigger_user' : rcpt.type === 'related_user' ? '$t:admin.settings.notification_definitions.recipients.types.related_user' + (rcpt.relation ? ' (' + (def.relation_labels?.[rcpt.relation] ?? rcpt.relation) + ')' : '') : rcpt.type === 'role' ? '$t:admin.settings.notification_definitions.recipients.types.role' + ': ' + ((rcpt.display_names ?? []).join(', ') || rcpt.display_name || '') : rcpt.type === 'specific_users' ? '$t:admin.settings.notification_definitions.recipients.types.specific_users' + ': ' + ((rcpt.display_names ?? []).join(', ') || '') : rcpt.type}}</span>
+                      <span data-if="{{rcpt.exclude_trigger_user}}" class="text-purple-500 dark:text-purple-400">$t:admin.settings.notification_definitions.recipients.badge.exclude_self</span>
+                    </span>
+                  </div>
+                  <div data-if="{{(def.variables ?? []).length > 0}}" class="flex flex-wrap gap-1 mt-2">
+                    <span data-each="v in {{def.variables ?? []}}" class="text-tertiary px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded font-mono">
+                      <span>{</span>
+                      <span>{{v.key}}</span>
+                      <span>}</span>
+                    </span>
+                  </div>
+                  <extension-point name="notification_definition_row_footer" definition="{{def}}" activeChannel="{{query.channel ?? 'mail'}}"/>
+                </div>
+                <div class="flex-center gap-3 flex-shrink-0">
+                  <toggle data-type="composite" data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" checked="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}" disabled="{{_computed.isNotificationReadOnly}}">
+                    <on type="change">
+                      <!-- 이 채널의 알림 사용 여부를 뒤집는다. 지금 보고 있는 채널의 템플릿을 골라 보내며, 성공하면 정의 목록을 다시 받아 표시를 맞춘다 -->
+                      <api-call :auth_required="true" target="{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.id + '/toggle-active'}}" method="PATCH">
+                        <success>
+                          <refetch-data-source dataSourceId="boardNotificationDefinitions"/>
+                          <toast message="$t:sirsoft-board.admin.settings.notification_definitions.toggle_success" type="success"/>
+                        </success>
+                        <fail>
+                          <toast type="error" message="{{error.message}}"/>
+                        </fail>
+                      </api-call>
+                    </on>
+                  </toggle>
+                  <!-- 알림 문안 편집. 편집기는 모달이라 이 화면의 상태를 읽지 못하므로 대상을 전역으로 옮겨 담은 뒤 연다 -->
+                  <button type="button" disabled="{{_computed.isNotificationReadOnly}}" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <on type="click">
+                      <sequence>
+                        <set-state target="global">
+                          <field name="board_notification_template_form_modal">
+                            <field name="template" value="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}"/>
+                            <field name="definition" value="{{def}}"/>
+                            <field name="recipients" value="{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []))}}"/>
+                            <field name="editLang" value="{{$locale}}"/>
+                            <field name="errors" :value="null"/>
+                            <field name="isSaving" :value="false"/>
+                            <field name="roleSearchResults" :value="[]"/>
+                            <field name="userSearchResults" :value="[]"/>
+                          </field>
+                        </set-state>
+                        <open-modal target="modal_board_notification_template_edit"/>
+                      </sequence>
+                    </on>
+                    $t:sirsoft-board.admin.settings.notification_definitions.btn_edit
+                  </button>
+                  <!-- 기본 문안으로 되돌리기 -->
+                  <button data-if="{{!def.is_default || def.has_customized_templates === true}}" type="button" disabled="{{_computed.isNotificationReadOnly}}" class="text-sm px-3 py-1.5 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <on type="click">
+                      <set-state target="global" resetTargetId="{{def.id}}" resetTargetName="{{$localized(def.name)}}"/>
+                      <open-modal target="modal_board_notification_definition_reset"/>
+                    </on>
+                    $t:sirsoft-board.admin.settings.notification_definitions.btn_reset
+                  </button>
+                </div>
+              </div>
+              <!-- 지금 채널의 문안 하나를 켜고 끈다 — 위 채널 토글과 달리 저장 버튼을 거치지 않고 바로 서버에 간다. 이 토글 자체가 그 채널에 문안이 있을 때만 뜬다 -->
+              <div data-if="{{(_local.expandedNotifications ?? {})[def.id]}}" class="mt-3 pt-3">
+                <span class="text-tertiary font-medium mb-2 block">$t:sirsoft-board.admin.settings.notification_definitions.body_preview</span>
+                <html-content data-type="composite" content="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}" isHtml="{{((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel ?? 'mail'))?.template_editor ?? 'plain') === 'rich'}}" class="prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto dark:text-white">
+                  <prop name="comment">"미리보기의 HTML 해석 여부는 **그 채널의 편집기 종류**를 따른다. 사이트내 알림은 알림센터가 평문으로 그리는데 여기서만 HTML 로 해석하면, 관리자가 본 문구와 사용자가 받는 문구가 다르다 — 태그가 글자 그대로 보이는 쪽은 사용자다."</prop>
+                </html-content>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="board_notif_empty" data-if="{{(boardNotificationDefinitions?.data?.data ?? []).length === 0}}" class="admin-card">
+        <div class="row-stack">
+          <icon name="fa-solid fa-envelope" class="text-4xl text-gray-300 dark:text-gray-600 mb-3"/>
+          <p class="text-label-subtle">$t:sirsoft-board.admin.settings.notification_definitions.empty_message</p>
+        </div>
+      </div>
+      <div data-ref="board_notif_pagination" class="flex justify-center">
+        <pagination data-type="composite" currentPage="{{boardNotificationDefinitions?.data?.pagination?.current_page || 1}}" totalPages="{{boardNotificationDefinitions?.data?.pagination?.last_page ?? null}}" hasMorePages="{{boardNotificationDefinitions?.data?.pagination?.has_more_pages ?? false}}">
+          <on type="action" event="onPageChange">
+            <!-- 쪽 넘기기 — 쪽수만 URL 에 다시 적으므로 고른 채널과 한 쪽 건수는 그대로 남는다 -->
+            <navigate path="/admin/boards/settings" :replace="true" :mergeQuery="true">
+              <query page="{{$args[0]}}"/>
+            </navigate>
+          </on>
+        </pagination>
+      </div>
+    </div>
+  </div>
+</partial>

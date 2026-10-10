@@ -1,0 +1,282 @@
+<!-- 할인코드 등록 (운영자) — 쿠폰과 달리 코드 문자열을 받아 적용하는 방식이라, 코드를 자동 생성할지
+  직접 지정할지와 공개/비공개 여부가 입력의 축이 된다. 아직 저장 배선 없이 폼 골격만 서 있다. -->
+<layout name="admin_ecommerce_promotion_discount_code_create" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.title" description="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.description"/>
+  <init-local>
+    <field name="form">
+      <field name="is_visible" :value="true"/>
+      <field name="benefit_type" value="product"/>
+      <field name="code_type" value="public_code"/>
+      <field name="discount_code_name" value=""/>
+      <field name="discount_code_description" value=""/>
+      <field name="benefit_amount" value=""/>
+      <field name="benefit_unit_fixed" value="won"/>
+      <field name="benefit_rate" value=""/>
+      <field name="benefit_unit_rate" value="percent"/>
+      <field name="max_discount" value=""/>
+      <field name="min_order_amount" value=""/>
+      <field name="validity_start_date" value=""/>
+      <field name="validity_end_date" value=""/>
+      <field name="code_generation_method" value="auto"/>
+      <field name="code_length" value="8"/>
+      <field name="manual_code" value=""/>
+      <field name="limit_type" value="unlimited"/>
+      <field name="limit_count" value=""/>
+      <field name="apply_target" value="no_limit"/>
+    </field>
+    <field name="selectedProducts" :value="[]"/>
+    <field name="selectedCategories" :value="[]"/>
+  </init-local>
+  <permissions>
+    <permission>sirsoft-ecommerce.promotion-coupon.create</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="discount_code_create_content" class="admin-page-content">
+      <responsive on="portable" class="admin-page-content-compact"/>
+      <div data-ref="page_header" class="flex-start justify-between gap-4 mb-6">
+        <responsive on="portable" class="row-stack mb-6"/>
+        <div data-ref="page_header_left" class="flex-center gap-3">
+          <button aria-label="$t:common.back" type="button" class="btn btn-icon">
+            <on type="click">
+              <navigate path="/admin/ecommerce/promotion-discount-codes"/>
+            </on>
+            <icon name="arrow-left" class="text-xl"/>
+          </button>
+          <div>
+            <h1 class="page-title mb-1">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.title</h1>
+            <p class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.description</p>
+          </div>
+        </div>
+        <div data-ref="page_header_actions" class="flex-center gap-2 flex-shrink-0">
+          <button type="button" class="btn btn-outline">
+            <on type="click">
+              <navigate path="/admin/ecommerce/promotion-discount-codes"/>
+            </on>
+            $t:sirsoft-ecommerce.common.cancel
+          </button>
+          <button type="button" class="btn btn-primary">
+            <icon name="save" class="text-base mr-1.5"/>
+            <span>$t:sirsoft-ecommerce.common.save</span>
+          </button>
+        </div>
+      </div>
+      <div data-ref="status_card" class="admin-card mb-6">
+        <div data-ref="status_header" class="flex-center gap-2 mb-4">
+          <icon name="eye" class="text-xl text-gray-700 dark:text-gray-300"/>
+          <h3 class="card-title">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.section.status</h3>
+        </div>
+        <div data-ref="field_issue_status" class="flex-center gap-4">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.issue_status</label>
+          <div class="flex-center gap-3">
+            <span class="text-sm">
+              <span>발급 </span>
+              <span class="font-semibold">8</span>
+              <span>건 / 사용 </span>
+              <span class="font-semibold">8</span>
+              <span>건</span>
+            </span>
+            <button type="button" class="btn btn-outline btn-sm">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.button.view_history</button>
+          </div>
+        </div>
+      </div>
+      <div data-ref="basic_info_card" class="admin-card mb-6">
+        <div data-ref="basic_info_header" class="flex-center gap-2 mb-4">
+          <icon name="user" class="text-xl text-gray-700 dark:text-gray-300"/>
+          <h3 class="card-title">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.section.basic_info</h3>
+        </div>
+        <div data-ref="field_is_visible" class="mb-4 flex-between">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.is_visible</label>
+          <toggle data-type="composite" name="is_visible" :checked="true"/>
+        </div>
+        <div data-ref="field_benefit_type" class="mb-4">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.benefit_type</label>
+          <div class="flex-center gap-6">
+            <label class="flex-center gap-2 cursor-pointer">
+              <input type="radio" name="benefit_type" value="product" class="radio" :checked="true"/>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.option.product</span>
+            </label>
+            <label class="flex-center gap-2 cursor-pointer">
+              <input type="radio" name="benefit_type" value="order" class="radio"/>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.option.order</span>
+            </label>
+            <label class="flex-center gap-2 cursor-pointer">
+              <input type="radio" name="benefit_type" value="shipping_fee" class="radio"/>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.option.shipping_fee</span>
+            </label>
+          </div>
+        </div>
+        <div data-ref="field_code_type" class="mb-4">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.code_type</label>
+          <div class="flex-center gap-6">
+            <label class="flex-center gap-2 cursor-pointer">
+              <input type="radio" name="code_type" value="public_code" class="radio" :checked="true"/>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.option.public_code</span>
+            </label>
+            <label class="flex-center gap-2 cursor-pointer">
+              <input type="radio" name="code_type" value="one_time_code" class="radio"/>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.option.one_time_code</span>
+            </label>
+          </div>
+        </div>
+        <div data-ref="field_discount_code_name" class="mb-4">
+          <label class="form-label">
+            <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.discount_code_name</span>
+            <span class="text-required">*</span>
+          </label>
+          <input type="text" name="discount_code_name" class="input" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.placeholder.discount_code_name"/>
+        </div>
+        <div data-ref="field_discount_code_description">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.discount_code_description</label>
+          <textarea name="discount_code_description" class="input w-full min-h-20" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.placeholder.discount_code_description" :rows="3"/>
+        </div>
+      </div>
+      <div data-ref="benefit_settings_card" class="admin-card mb-6">
+        <div data-ref="benefit_settings_header" class="flex-center gap-2 mb-4">
+          <icon name="globe" class="text-xl text-gray-700 dark:text-gray-300"/>
+          <h3 class="card-title">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.section.benefit_settings</h3>
+          <icon name="circle-question" class="text-base text-gray-400 dark:text-gray-500 ml-auto cursor-pointer"/>
+        </div>
+        <div data-ref="field_benefit" class="mb-4">
+          <label class="form-label">
+            <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.benefit</span>
+            <span class="text-required">*</span>
+          </label>
+          <div class="stack-tight">
+            <div class="flex-center gap-2">
+              <input type="text" name="benefit_amount" class="input w-24" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.placeholder.amount_input"/>
+              <select name="benefit_unit_fixed" aria-label="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.benefit_unit_fixed" class="w-20" value="{{_local.form.benefit_unit_fixed}}">
+                <options>
+                  <option value="won">원</option>
+                </options>
+              </select>
+            </div>
+            <div class="flex-center gap-2 flex-wrap">
+              <input type="text" name="benefit_rate" class="input w-24" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.placeholder.amount_input"/>
+              <select name="benefit_unit_rate" aria-label="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.benefit_unit_rate" class="w-20" value="{{_local.form.benefit_unit_rate}}">
+                <options>
+                  <option value="percent">%</option>
+                </options>
+              </select>
+              <span class="text-secondary text-sm ml-2">최대</span>
+              <input type="text" name="max_discount" class="input w-32" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.placeholder.max_discount"/>
+              <span class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.hint.max_discount_suffix</span>
+            </div>
+          </div>
+        </div>
+        <div data-ref="field_min_order_amount" class="mb-4">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.min_order_amount</label>
+          <div class="flex-center gap-2">
+            <input type="text" name="min_order_amount" class="input w-32" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.placeholder.min_order"/>
+            <span class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.hint.min_order_suffix</span>
+          </div>
+        </div>
+        <div data-ref="field_validity_period">
+          <label class="form-label">
+            <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.validity_period</span>
+            <span class="text-required">*</span>
+          </label>
+          <div class="flex-center gap-2">
+            <div class="relative">
+              <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"/>
+              <input type="text" name="validity_start_date" class="input w-32 pl-9" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.placeholder.start_date"/>
+            </div>
+            <span class="text-secondary">~</span>
+            <div class="relative">
+              <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"/>
+              <input type="text" name="validity_end_date" class="input w-32 pl-9" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.placeholder.end_date"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="code_issue_card" class="admin-card mb-6">
+        <div data-ref="code_issue_header" class="flex-center gap-2 mb-4">
+          <icon name="gear" class="text-xl text-gray-700 dark:text-gray-300"/>
+          <h3 class="card-title">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.section.code_issue</h3>
+        </div>
+        <div data-ref="field_code_generation_method" class="mb-4">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.code_generation_method</label>
+          <div class="flex-center gap-6">
+            <label class="flex-center gap-2 cursor-pointer">
+              <input type="radio" name="code_generation_method" value="auto" class="radio" :checked="true"/>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.option.auto_generate</span>
+            </label>
+            <label class="flex-center gap-2 cursor-pointer">
+              <input type="radio" name="code_generation_method" value="manual" class="radio"/>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.option.manual_generate</span>
+            </label>
+          </div>
+        </div>
+        <div data-ref="field_discount_code" class="mb-4">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.discount_code</label>
+          <div class="flex-center gap-2">
+            <select name="code_length" class="w-24" value="{{_local.form.code_length}}">
+              <options>
+                <option value="6">6자리</option>
+                <option value="8">8자리</option>
+                <option value="10">10자리</option>
+                <option value="12">12자리</option>
+              </options>
+            </select>
+            <span class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.hint.code_length_suffix</span>
+          </div>
+        </div>
+        <div data-ref="field_limit_type">
+          <label class="form-label">
+            <span>$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.limit_type</span>
+            <span class="text-required">*</span>
+          </label>
+          <div class="flex-center gap-6">
+            <label class="flex-center gap-2 cursor-pointer">
+              <input type="radio" name="limit_type" value="unlimited" class="radio" :checked="true"/>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.option.unlimited</span>
+            </label>
+            <label class="flex-center gap-2 cursor-pointer">
+              <input type="radio" name="limit_type" value="limited" class="radio"/>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.option.limited</span>
+            </label>
+            <input type="text" name="limit_count" class="input w-20" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.placeholder.limit_count"/>
+            <span class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.hint.limit_suffix</span>
+          </div>
+        </div>
+      </div>
+      <div data-ref="usage_limit_card" class="admin-card mb-6">
+        <div data-ref="usage_limit_header" class="flex-center gap-2 mb-4">
+          <icon name="ban" class="text-xl text-gray-700 dark:text-gray-300"/>
+          <h3 class="card-title">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.section.usage_limit</h3>
+        </div>
+        <div data-ref="field_apply_target">
+          <label class="form-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.apply_target</label>
+          <div class="flex-center gap-6">
+            <label class="flex-center gap-2 cursor-pointer">
+              <input type="radio" name="apply_target" value="no_limit" class="radio" :checked="true"/>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.option.no_limit</span>
+            </label>
+            <label class="flex-center gap-2 cursor-pointer">
+              <input type="radio" name="apply_target" value="specific_product" class="radio"/>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.option.specific_product</span>
+            </label>
+            <label class="flex-center gap-2 cursor-pointer">
+              <input type="radio" name="apply_target" value="specific_category" class="radio"/>
+              <span class="text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.option.specific_category</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div data-ref="footer_buttons" class="sticky-footer-buttons-between">
+        <div class=""/>
+        <div class="flex-center gap-3">
+          <button data-ref="cancel_button" type="button" class="btn btn-secondary">
+            <on type="click">
+              <navigate path="/admin/ecommerce/promotion-discount-codes"/>
+            </on>
+            <span>$t:sirsoft-ecommerce.common.cancel</span>
+          </button>
+          <button data-ref="save_button" type="button" class="flex-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors">
+            <icon name="save" class="text-base"/>
+            <span>$t:sirsoft-ecommerce.common.save</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </slot>
+</layout>

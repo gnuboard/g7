@@ -97,6 +97,7 @@ class SearchPreset extends Model
             SearchPresetTargetScreen::PRODUCTS => __('sirsoft-ecommerce::enums.target_screen.products'),
             SearchPresetTargetScreen::ORDERS => __('sirsoft-ecommerce::enums.target_screen.orders'),
             SearchPresetTargetScreen::CUSTOMERS => __('sirsoft-ecommerce::enums.target_screen.customers'),
+            SearchPresetTargetScreen::CLAIMS => __('sirsoft-ecommerce::enums.target_screen.claims'),
             default => $this->target_screen->value ?? $this->target_screen,
         };
     }

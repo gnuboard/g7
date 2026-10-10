@@ -1,0 +1,59 @@
+feature: 첨부 확장자 스푸핑 → SVG 인라인 저장형 XSS 차단 (KVE-2026-2366)
+
+description: |
+  업로드 검증(파일명 확장자)과 저장·서빙(내용 MIME)의 기준 불일치로, 내용이 SVG 인 `evil.png` 가
+  저장되고 공개 서빙이 `image/` 접두사로 인라인 판정해 앱 오리진에서 스크립트가 실행됐다.
+
+  심층방어 두 겹:
+    - 업로드: 코어 첨부 단건·일괄 요청이 `extensions:`(이름) 과 내용 추론 검사(AttachmentFileContent,
+      `mimes:` 와 같은 판정)를 함께 건다. 두 요청은 ValidatesAttachmentFileType trait 로 규칙을 공유한다.
+      원래 텍스트인 형식(md·markdown·log·csv·tsv)은 내용이 txt 로, eps 는 ai 로 추론돼도 인정한다
+      (이름이 그 형식이고 허용 목록에 있을 때만). 0바이트 파일은 빈 파일 안내로 거부한다.
+    - 서빙: 인라인 표시는 래스터 이미지(InlineMediaPolicy)만. 그 외(SVG 포함)는
+      Content-Disposition: attachment + CSP sandbox. 모든 응답에 nosniff.
+      코어 첨부·게시판·페이지·이커머스 이미지(클레임 신청서 첨부 포함)·에디터(ckeditor5) 이미지·템플릿 레이아웃 첨부 서빙이
+      같은 정책을 공유한다.
+
+  업로드 축은 코어 첨부만 대상이다 — 게시판(`mimes:`)·페이지(`mimetypes:`)·이커머스(`image`)는
+  이미 내용 기반 검증이라 수정 대상이 아니다(전수 조사 T-A). 서빙 축은 전 표면이다(전수 조사 T-B).
+
+axes:
+  entry_point: [single_upload, batch_upload, serving]
+  content: [svg_as_png, real_png, text_family, empty]
+  surface: [core_attachment, board_attachment, page_attachment, ecommerce_image, editor_image]
+
+exclusions:
+  - { entry_point: single_upload, surface: board_attachment, reason: "게시판 업로드는 이미 mimes: 내용 검증 — 업로드 축 수정 대상 아님" }
+  - { entry_point: batch_upload, surface: board_attachment, reason: "게시판 업로드는 이미 mimes: 내용 검증 — 업로드 축 수정 대상 아님" }
+  - { entry_point: single_upload, surface: page_attachment, reason: "페이지 업로드는 이미 mimetypes: 내용 검증" }
+  - { entry_point: batch_upload, surface: page_attachment, reason: "페이지 업로드는 이미 mimetypes: 내용 검증" }
+  - { entry_point: single_upload, surface: ecommerce_image, reason: "이커머스 이미지 업로드는 image 규칙으로 SVG 거부" }
+  - { entry_point: batch_upload, surface: ecommerce_image, reason: "이커머스 이미지 업로드는 image 규칙으로 SVG 거부" }
+  - { entry_point: single_upload, surface: editor_image, reason: "에디터 이미지 업로드는 image+mimes 로 SVG 거부" }
+  - { entry_point: batch_upload, surface: editor_image, reason: "에디터 이미지 업로드는 image+mimes 로 SVG 거부" }
+  - { entry_point: serving, content: text_family, reason: "텍스트 대응은 업로드 검증 축 — 서빙은 래스터 여부만 본다" }
+  - { entry_point: serving, content: empty, reason: "빈 파일은 업로드에서 거부되어 서빙 대상이 생기지 않는다" }
+
+effects:
+  - spoofed_svg_upload_returns_422
+  - genuine_raster_and_document_upload_succeeds
+  - batch_upload_applies_same_content_check
+  - svg_served_as_attachment_with_nosniff_and_csp
+  - raster_image_stays_inline_with_nosniff
+  - svg_is_not_treated_as_inline_image
+  - text_family_upload_succeeds_when_allowed
+  - text_alias_never_admits_svg_or_html
+  - empty_file_rejected_with_empty_message
+
+test_files:
+  - tests/Unit/Helpers/InlineMediaPolicyTest.php
+  - tests/Feature/Attachment/AttachmentContentSpoofingTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/AttachmentInlineServingPolicyTest.php
+  - modules/_bundled/sirsoft-page/tests/Unit/Models/PageAttachmentInlineImageTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ImageServingInlinePolicyTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimAttachmentInlinePolicyTest.php
+  - plugins/_bundled/sirsoft-ckeditor5/tests/Unit/ImageServeInlinePolicyTest.php
+
+rules_layer_coverage:
+  - rule: i18n-throw-hardcoded-korean
+    coverage: 내용 불일치·빈 파일 거부 메시지는 lang/{ko,en}/attachment.php#validation.file_mimetype_invalid·file_empty

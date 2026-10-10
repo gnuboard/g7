@@ -1,0 +1,36 @@
+<!-- 상품 폼 — 상세설명 구획. 편집기는 플러그인이 갈아 끼울 수 있는 자리(`extension-point`)로 두고,
+  설치된 플러그인이 없으면 기본 편집기가 선다. 본문은 언어별로 나뉘고, 글/HTML 중 어느 모드로
+  저장할지도 함께 기억한다. -->
+<partial description="Product Form - Description Section">
+  <div data-ref="description" class="admin-card-accordion">
+    <div class="card-header">
+      <on type="click">
+        <!-- 구획 접기/펼치기. 편 상태를 폼 상태에 두어 다른 구획과 함께 기억한다 -->
+        <set-state target="local" ui.descriptionExpanded="{{!_local.ui.descriptionExpanded}}"/>
+      </on>
+      <icon name="file-lines" class="text-gray-500 dark:text-gray-400"/>
+      <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.description</span>
+      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{_local.ui.descriptionExpanded !== false ? 'rotate-180' : ''}}"/>
+    </div>
+    <div data-ref="description_body" data-if="{{_local.ui.descriptionExpanded !== false}}" class="row-stack">
+      <div data-ref="description_editor_wrapper" class="{{_local.errors?.description ? 'border border-red-500 dark:border-red-500 rounded-lg overflow-hidden' : ''}}">
+        <extension-point name="html_editor" data-ref="description_editor" :multilingual="true" value="{{_local.form?.description ?? ''}}" :rows="15" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.description" label="$t:sirsoft-ecommerce.admin.product.fields.description" disabled="{{_computed.isReadOnly}}" :showHtmlModeToggle="true" isHtml="{{(_local.form?.description_mode ?? 'text') === 'html'}}">
+          <prop name="name">"description"</prop>
+          <default>
+            <html-editor data-type="composite" name="description" :multilingual="true" value="{{_local.form?.description ?? ''}}" :rows="15" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.description" label="$t:sirsoft-ecommerce.admin.product.fields.description" disabled="{{_computed.isReadOnly}}" :showHtmlModeToggle="true" isHtml="{{(_local.form?.description_mode ?? 'text') === 'html'}}">
+              <on type="change" event="onChange">
+                <!-- 본문이 바뀌면 변경 표시를 세운다 — 저장 버튼이 이 표시를 보고 열린다 -->
+                <set-state target="local" form.description="{{$event.target.value}}" :hasChanges="true"/>
+              </on>
+              <on type="change" event="onIsHtmlChange">
+                <!-- 글/HTML 모드 전환도 저장 대상이다 — 앞단이 이 값을 보고 본문을 그대로 뿌릴지 escape 할지 가른다 -->
+                <set-state target="local" form.description_mode="{{$args[0].target.checked ? 'html' : 'text'}}" :hasChanges="true"/>
+              </on>
+            </html-editor>
+          </default>
+        </extension-point>
+      </div>
+      <span data-if="{{_local.errors?.description || _local.errors?.['description.ko']}}" class="form-error-xs mt-1">{{_local.errors?.description?.[0] ?? _local.errors?.['description.ko']?.[0]}}</span>
+    </div>
+  </div>
+</partial>

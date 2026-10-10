@@ -93,7 +93,7 @@ class MessagePayloadBuilderTest extends PluginTestCase
         $this->assertSame('확인', $at['button'][0]['name']);
     }
 
-    public function test_forHistory는_sms_payload에서_to_refkey_type_message를_제외한다(): void
+    public function test_for_history는_sms_payload에서_to_refkey_type_message를_제외한다(): void
     {
         $builder = $this->makeBuilder([
             'bizppurio_id' => 'acct01',
@@ -112,7 +112,7 @@ class MessagePayloadBuilderTest extends PluginTestCase
         $this->assertSame('07012345678', $history['from']);
     }
 
-    public function test_forHistory는_lms_payload에서_subject는_유지하고_message만_제외한다(): void
+    public function test_for_history는_lms_payload에서_subject는_유지하고_message만_제외한다(): void
     {
         $builder = $this->makeBuilder([
             'bizppurio_id' => 'acct01',
@@ -126,7 +126,7 @@ class MessagePayloadBuilderTest extends PluginTestCase
         $this->assertSame('제목', $history['content']['lms']['subject'], 'subject 는 다른 컬럼에 없으므로 유지돼야 한다.');
     }
 
-    public function test_forHistory는_알림톡_payload에서_message만_제외하고_버튼_등_요소는_유지한다(): void
+    public function test_for_history는_알림톡_payload에서_message만_제외하고_버튼_등_요소는_유지한다(): void
     {
         $builder = $this->makeBuilder([
             'bizppurio_id' => 'acct01',
@@ -146,7 +146,7 @@ class MessagePayloadBuilderTest extends PluginTestCase
         $this->assertSame('확인', $at['button'][0]['name'], '버튼(요소)은 결함② URL 검증에 필요하므로 유지돼야 한다.');
     }
 
-    public function test_forHistory는_대체발송_recontent_message도_제외한다(): void
+    public function test_for_history는_대체발송_recontent_message도_제외한다(): void
     {
         $builder = $this->makeBuilder([
             'bizppurio_id' => 'acct01',

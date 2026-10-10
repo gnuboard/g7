@@ -1,0 +1,32 @@
+feature: 쇼핑몰 환경설정 알림 템플릿 편집 창 — 수신자 규칙 종류 전환·관계 선택 (#599 validate P7)
+
+description: |
+  코어 알림 템플릿 편집 창과 같은 결함(종류 전환 시 이전 값 잔존 → 수신자 0명, 관련 사용자 relation 미시드 → 422,
+  다중 선택 영어 문구)을 쇼핑몰 사본에서 닫는다. 표현식을 엔진에 그대로 넣어 평가한다.
+
+axes:
+  case: [named, specific_users_to_role, to_related_user, related_user_to_trigger_user, exclude_trigger_user_carry, other_rows_untouched, empty, undeclared, multiple, picked_role, picked_user, role_chip_remove, user_chip_remove, remove_rule_label, chips_above_open_dropdown]
+
+effects:
+  - recipient_rule_type_switch_clears_previous_value
+  - recipient_rule_related_user_seeds_first_declared_relation
+  - recipient_rule_exclude_trigger_user_only_carries_between_group_types
+  - recipient_relation_select_shows_placeholder
+  - recipient_relation_select_shows_relation_names
+  - recipient_relation_outside_declaration_warns
+  - recipient_multi_select_count_label_is_translated
+  # 7.1.0 실측 후속(코어 영역 G-D5·G-D6 와 같은 결함) — 방금 고른 역할·회원이 식별자·UUID 로 보이고 칩이 없던 결함
+  - recipient_picked_role_keeps_search_result_name
+  - recipient_picked_user_keeps_search_result_name
+  - role_chip_removes_value_and_name_together
+  - user_chip_removes_value_and_name_together
+  - remove_rule_button_has_accessible_name
+  # 열린 수신자 드롭다운이 칩 줄을 덮던 결함 — 칩 줄을 드롭다운 위로 옮긴다
+  - chips_stay_visible_while_dropdown_open
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-notification-template-recipient-rule-reset.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-notification-template-picked-names.test.ts
+
+notes: |
+  e2e_browser=not_applicable — 표현식 계약 수정. 브라우저 실측은 #599 통합 단계에서 한다.

@@ -1,0 +1,15 @@
+feature: Hello 사용자 템플릿 — 오류 화면 레이아웃 이름
+
+description: |
+  이 템플릿을 켜고 없는 주소를 열면 오류 화면(errors/404)을 찾지 못해 엔진의 「페이지 로딩 실패」 화면과 스택 추적이
+  그대로 보였다(7.1.0 전수 실측 M3). template.json 의 error_config.layouts 는 errors/404 를 가리키는데 오류 레이아웃
+  6개의 이름이 404 처럼 접두 없이 적혀 그 이름으로 등록됐다. 축 code 는 오류 화면 6종(401·403·404·500·503·점검)을 묶은 값이다.
+
+axes:
+  code: [all]
+
+effects:
+  - error_layout_name_matches_error_config
+
+test_files:
+  - templates/_bundled/gnuboard7-hello_user_template/__tests__/layouts/errorLayoutNames.test.ts

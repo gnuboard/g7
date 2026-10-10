@@ -6,7 +6,7 @@
 A modern, extensible CMS platform built with Laravel + React
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-7.0.11-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-7.1.0-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white" alt="PHP"></a>
   <a href="#"><img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?logo=laravel&logoColor=white" alt="Laravel"></a>
   <a href="#"><img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React"></a>
@@ -31,7 +31,7 @@ A modern, extensible CMS platform built with Laravel + React
 
 Laravel과 React를 기반으로, 보안부터 아키텍처까지 처음부터 다시 만들었습니다.
 
-- **JSON 레이아웃 엔진**: React를 몰라도 JSON만으로 React 기반 UI를 선언적으로 정의. 모듈/플러그인이 프론트엔드 빌드 없이 JSON만으로 UI를 동적으로 주입/확장. 고도화된 UI가 필요한 경우 커스텀 React 컴포넌트를 개발하여 등록 가능
+- **선언형 레이아웃 엔진**: React를 몰라도 HTML 유사 마크업(`.g7.html`)만으로 React 기반 UI를 선언적으로 정의. 설치 시 서버가 이를 런타임 JSON 계약으로 컴파일한다. 모듈/플러그인이 프론트엔드 빌드 없이 UI를 동적으로 주입/확장. 고도화된 UI가 필요한 경우 커스텀 React 컴포넌트를 개발하여 등록 가능
 - **하나의 플랫폼, 다양한 비즈니스**: 커뮤니티, 쇼핑몰, 구독, 예약 — 비즈니스 모델에 맞게 확장
 - **정교한 권한 관리**: 역할(Role) + 권한(Permission) + 스코프(Scope) 3단계 접근 제어로, 서비스 규모가 커져도 통제력 유지
 - **글로벌 레디**: 다국어(i18n) 네이티브 지원, 로케일 기반 UI, 다중 통화 대응
@@ -52,7 +52,7 @@ Laravel과 React를 기반으로, 보안부터 아키텍처까지 처음부터 �
 | **권한 제어** | 역할별 메뉴와 기능, 데이터 범위까지 제어할 수 있습니다. 역할(Role) + 권한(Permission) + 스코프(Scope) 3단계 접근 제어로 조직 구조에 맞는 유연한 접근 관리를 제공합니다 |
 | **본인인증 (IDV)** | 회원가입·비밀번호 재설정·민감 작업 등 모든 본인인증 시점을 라우트/훅 단위 선언형 정책으로 통합 관리합니다. 코어가 메일 프로바이더를 기본 내장하고, 외부 KCP·이니시스·SMS·PortOne·Stripe Identity 등은 동일한 Provider 계약으로 붙일 수 있는 확장점을 제공합니다. 서버가 HTTP 428 응답을 반환하면 프론트엔드 인터셉터가 자동으로 인증 모달을 띄우고 인증 성공 시 원 요청을 재실행합니다 |
 | **보안** | 입력값 자동 검증과 토큰 기반 인증을 제공합니다. 설계부터 보안을 고려한 다층 방어 구조(CSRF/XSS/SQL Injection), 로그인 시도 제한·계정 잠금(HTTP 423) 실제 구현, 설치 완료 후 인스톨러 엔드포인트 자동 차단(HTTP 410) 까지 다층 방어를 구성합니다 |
-| **유연한 화면 구성** | 화면 구조를 정의하면 즉시 반영할 수 있습니다. 프론트엔드 인프라 없이 JSON 선언만으로 웹앱 수준의 동적 화면 구현이 가능합니다 |
+| **유연한 화면 구성** | 화면 구조를 정의하면 즉시 반영할 수 있습니다. 프론트엔드 인프라 없이 마크업 소스(.g7.html)만으로 웹앱 수준의 동적 화면 구현이 가능합니다 |
 | **레이아웃 편집기** | 위지윅 기반 레이아웃 편집 기능으로 화면 블록을 직접 배치하고 수정 결과를 바로 확인할 수 있습니다 |
 | **검증된 기반** | Laravel + React 기반을 제공합니다. 글로벌 기업이 채택한 기술 스택으로 높은 확장성과 유연한 UI 구현이 가능합니다 |
 | **공통 캐시 시스템** | `CacheInterface` 와 코어/모듈/플러그인 3종 드라이버로 키 접두사(`g7:core:`, `g7:module.{id}:`, `g7:plugin.{id}:`) 를 자동 격리합니다. 태그 기반 자동 무효화와 `g7_core_settings('cache.*_ttl')` 중앙 관리로 하드코딩 없이 운영할 수 있습니다 |
@@ -101,19 +101,19 @@ Gnuboard7
 
 ### 템플릿 엔진 동작 흐름
 
-그누보드7의 템플릿 엔진은 **JSON으로 UI 구조를 선언**하면, 엔진이 이를 해석하여 React 컴포넌트로 렌더링합니다.
+그누보드7의 템플릿 엔진은 **`.g7.html` 마크업으로 UI 구조를 선언**하면, 설치 시 서버가 이를 JSON(런타임 계약)으로 컴파일하고 엔진이 그 JSON 을 해석하여 React 컴포넌트로 렌더링합니다.
 
 #### 제공 기능
 
-- JSON 선언만으로 React 기반 UI 구성 — React 전문 지식 없이도 화면 개발 가능
-- 모듈/플러그인이 프론트엔드 빌드 없이 JSON만으로 UI를 동적으로 주입/확장
+- 마크업 소스(.g7.html)만으로 React 기반 UI 구성 — React 전문 지식 없이도 화면 개발 가능
+- 모듈/플러그인이 프론트엔드 빌드 없이 UI를 동적으로 주입/확장
 - 고도화된 UI가 필요한 경우 커스텀 React 컴포넌트를 개발하여 등록 가능
 - UI가 코드가 아닌 데이터(JSON)로 정의되는 구조를 활용한 **위지윅 레이아웃 편집기** — 비개발자도 화면 블록을 직접 배치·편집하고 결과를 바로 확인할 수 있습니다
 
 ```mermaid
 flowchart TB
     subgraph Backend ["🔧 Backend — Laravel"]
-        A["📄 JSON 레이아웃 파일"] --> B["⚙️ LayoutService"]
+        A["📄 레이아웃 소스 .g7.html<br/>→ 설치 시 JSON 컴파일"] --> B["⚙️ LayoutService"]
         B --> |"상속 해석<br/>extends / partial"| B
         M["📦 모듈 레이아웃"] -.-> |"layout_extensions<br/>extension_point 주입"| B
         P["🔌 플러그인 레이아웃"] -.-> |"layout_extensions<br/>extension_point 주입"| B
@@ -177,40 +177,87 @@ flowchart TB
     linkStyle default stroke:#374151,stroke-width:2px
 ```
 
-**JSON 레이아웃 예시** — 아래 JSON이 실제 React UI로 렌더링됩니다:
+**레이아웃 예시** — 마크업은 아래와 같은 `.g7.html` 마크업으로 하고, 설치 시 서버가 그 아래 JSON(런타임 계약)으로 컴파일해 실제 React UI 로 렌더링합니다:
+
+```html
+<layout name="product_list" version="1.0.0">
+  <data-source id="products" endpoint="/api/modules/sirsoft-ecommerce/products" method="GET"/>
+  <div>
+    <h1>$t:product_list</h1>
+    <div data-each="item in {{products?.data?.data}}">
+      <span>{{item.name}}</span>
+    </div>
+    <button data-if="{{products?.data?.abilities?.can_create}}">
+      <on type="click">
+        <navigate path="/products/create"/>
+      </on>
+      $t:add
+    </button>
+  </div>
+</layout>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
+  "version": "1.0.0",
+  "layout_name": "product_list",
   "data_sources": [
-    { "id": "products", "endpoint": "/api/products", "method": "GET" }
+    {
+      "id": "products",
+      "endpoint": "/api/modules/sirsoft-ecommerce/products",
+      "method": "GET"
+    }
   ],
-  "layout": {
-    "type": "basic", "name": "Div",
-    "children": [
-      { "type": "basic", "name": "H1", "text": "$t:product_list" },
-      {
-        "type": "basic", "name": "Div",
-        "iteration": { "source": "{{products?.data?.data}}", "item_var": "$item" },
-        "children": [
-          { "type": "basic", "name": "Span", "text": "{{$item.name}}" }
-        ]
-      },
-      {
-        "type": "basic", "name": "Button", "text": "$t:add",
-        "if": "{{products?.data?.abilities?.can_create}}",
-        "actions": [{
-          "event": "onClick",
-          "handler": "navigate",
-          "params": { "path": "/products/create" }
-        }]
-      }
-    ]
-  }
+  "components": [
+    {
+      "type": "basic",
+      "name": "Div",
+      "children": [
+        {
+          "type": "basic",
+          "name": "H1",
+          "text": "$t:product_list"
+        },
+        {
+          "type": "basic",
+          "name": "Div",
+          "iteration": {
+            "source": "{{products?.data?.data}}",
+            "item_var": "item"
+          },
+          "children": [
+            {
+              "type": "basic",
+              "name": "Span",
+              "text": "{{item.name}}"
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "name": "Button",
+          "if": "{{products?.data?.abilities?.can_create}}",
+          "actions": [
+            {
+              "type": "click",
+              "handler": "navigate",
+              "params": {
+                "path": "/products/create"
+              }
+            }
+          ],
+          "text": "$t:add"
+        }
+      ]
+    }
+  ]
 }
 ```
 
 모듈/플러그인을 활성화하면 해당 UI와 컴포넌트가 자동으로 주입됩니다.
-개발자는 JSON만으로 UI를 추가하거나 변경할 수 있어 별도의 프론트엔드 빌드가 필요 없으며, 권한(abilities)에 따라 UI 요소가 자동으로 표시/숨김 처리됩니다.
+개발자는 마크업 작성만으로 UI를 추가하거나 변경할 수 있어 별도의 프론트엔드 빌드가 필요 없으며, 권한(abilities)에 따라 UI 요소가 자동으로 표시/숨김 처리됩니다.
 
 ### 핵심 시스템
 
@@ -297,7 +344,7 @@ HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
 ```
 
 - 코어 기본 알림 3종: `welcome`, `reset_password`, `password_changed`
-- 이커머스 모듈 알림 7종: `order_confirmed`, `order_shipped`, `order_completed`, `order_cancelled`, `new_order_admin`, `inquiry_received`, `inquiry_replied`
+- 이커머스 모듈 알림: 주문·문의 축 7종(`order_confirmed`, `order_shipped`, `order_completed`, `order_cancelled`, `new_order_admin`, `inquiry_received`, `inquiry_replied`) + 클레임(교환·반품·환불) 상태별 알림 + 마일리지 소멸 예정 알림. 정본은 `module.php::getNotificationDefinitions()`, 클레임 알림의 목록과 훅 이름은 `ClaimStatusNotificationListener::notifiableStatuses()` — 유형 × 고객 가시 상태의 곱이라 여기에 옮겨 적으면 곧 낡음
 - 실시간 브로드캐스트는 Laravel Reverb (WebSocket) 기반. Reverb 미구성 환경에서는 graceful skip 으로 오류 없이 동작
 - `GenericNotification` 단일 클래스가 모든 알림을 처리 — 신규 알림 타입 추가 시 개별 Notification 클래스 작성 불필요
 
@@ -314,7 +361,7 @@ HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
 | 가상 보호 행 | 코어/번들 확장에 내장된 한국어/영어는 별도 설치 없이 항상 활성/보호 상태로 노출 (수정/제거 차단) |
 | 보안 | 언어 번역 외의 PHP 실행 코드 포함 시 설치 차단 |
 
-공식 일본어(ja) 번들 16종(코어 + 주요 모듈/플러그인/템플릿) 이 즉시 사용 가능하며, 인스톨러 4단계에서 모듈/플러그인/템플릿 선택과 종속된 언어팩 카드가 자동 연동되어 함께 설치할 수 있습니다.
+공식 일본어(ja) 번들 17종(코어 + 주요 모듈/플러그인/템플릿) 이 즉시 사용 가능하며, 인스톨러 4단계에서 모듈/플러그인/템플릿 선택과 종속된 언어팩 카드가 자동 연동되어 함께 설치할 수 있습니다.
 
 > 상세: [docs/extension/language-packs.md](docs/extension/language-packs.md)
 
@@ -336,12 +383,24 @@ HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
 
 - **정책 SSoT** — 정책 enable 토글이 라우트 코드 수정 없이 즉시 적용. 모든 API 라우트가 정책 DB 와 자동 매칭
 - **428 인터셉터** — 서버가 HTTP 428 응답을 반환하면 프론트엔드가 자동으로 인증 모달을 띄우고 인증 성공 시 원 요청을 자동 재실행
-- **선언형 등록** — 모듈/플러그인은 `module.php::getIdentityPolicies()` / `getIdentityPurposes()` / `getIdentityMessages()` 만 선언하면 활성화/업데이트 시 자동 등록되며 운영자 편집값 보존
-- **메시지 템플릿** — 프로바이더와 (목적/정책)별로 다국어 제목/본문을 개별 정의. 정책 → 목적 → 프로바이더 기본값 순서로 fallback
+- **선언형 등록** — 모듈/플러그인은 `module.php::getIdentityPolicies()` / `getIdentityPurposes()` 와 인증 메시지용 알림 정의(`category => 'identity'`)만 선언하면 활성화/업데이트 시 자동 등록되며 운영자 편집값 보존
+- **메시지 템플릿** — 인증 메일은 알림 정의로, 환경설정 > 알림 설정에서 (목적/정책)별 다국어 제목/본문을 관리. 정책 → 목적 → 기본 순서로 fallback 하며 알림 채널 켜짐/꺼짐을 따름
 - **외부 Provider 슬롯** — 플러그인이 KCP·PortOne·토스인증·Stripe Identity 등을 G7 표준 Extension Point 패턴으로 자기 SDK UI 를 주입 가능
 - **이력 관리** — 관리자 화면에서 인증 수단 탭, 통합 검색, 상태/목적/채널/IP 멀티 필터, 보관주기(180일) 일괄 파기 제공
 
 > 상세: [docs/backend/identity-policies.md](docs/backend/identity-policies.md), [docs/backend/identity-providers.md](docs/backend/identity-providers.md), [docs/backend/identity-messages.md](docs/backend/identity-messages.md)
+
+#### 7. 개인정보 보유기간 처리
+
+보유기간이 지난 개인정보를 도메인별로 파기·익명화합니다. 코어는 수집·매일 새벽 배치·대상 건수·대상 명단·권한 검사라는 공통 절차를 맡고, 각 도메인 소유자(코어 회원, 이커머스 모듈, 게시판 모듈 …)는 무엇이 대상이고 어떻게 지우는지만 구현합니다.
+
+- **핸들러 계약** — 모듈·플러그인이 `PrivacyRetentionHandlerInterface` 를 구현해 `core.privacy.retention_handlers` 필터로 등록하면, 매일 새벽 `privacy:process-retention` 배치·대상 건수·대상 명단 API 가 코어 수정 없이 그 도메인을 함께 다룹니다
+- **기본 꺼짐** — 모든 핸들러가 자기 설정을 `false` 폴백으로 읽고, 배치는 되돌릴 수 없는 처리 직전에 토글을 다시 확인합니다
+- **켜기 전에 확인** — 각 설정 화면이 기능이 꺼져 있어도 처리될 건수를 보여 주고, 「대상 보기」가 배치가 처리할 바로 그 명단을 무한 스크롤 목록으로 엽니다(설정 읽기 + 도메인 읽기 권한 필요)
+- **같은 모집단** — 건수·명단·배치가 하나의 조건식을 공유하므로 화면의 숫자가 실제로 처리되는 양입니다
+- **휴면 계정** — 코어 전용 생명주기(사전 안내 → 휴면 전환 → 탈퇴 예고 → 자동 탈퇴)이며 같은 건수·명단 화면을 갖습니다
+
+> 상세: [docs/backend/privacy-retention.md](docs/backend/privacy-retention.md), [docs/backend/api/privacy.md](docs/backend/api/privacy.md)
 
 ---
 
@@ -382,7 +441,7 @@ cp .env.example .env
 | 모듈 | 설명 |
 |------|------|
 | **sirsoft-board** | 게시판 — 다중 게시판, 댓글, 파일 첨부 |
-| **sirsoft-ecommerce** | 쇼핑몰 — 상품, 주문, 결제, 배송, 쿠폰, 상품 문의 |
+| **sirsoft-ecommerce** | 쇼핑몰 — 상품, 주문, 결제, 배송, 취소/반품/교환/환불, 쿠폰, 마일리지, 상품 문의 |
 | **sirsoft-page** | 페이지 — 정적 콘텐츠 관리 |
 
 ### 플러그인
@@ -395,8 +454,10 @@ cp .env.example .env
 | **sirsoft-tosspayments** | 토스페이먼츠 결제 연동 |
 | **sirsoft-verification_kginicis** | KG이니시스 본인인증 |
 | **sirsoft-verification_nhnkcp** | NHN KCP 휴대폰 본인확인 |
+| **sirsoft-totp** | 인증 앱 2단계 인증 (RFC 6238 TOTP) |
 | **sirsoft-daum_postcode** | 다음 우편번호 검색 |
 | **sirsoft-marketing** | 마케팅 도구 |
+| **sirsoft-koreaexim** | 수출입은행 환율 자동 갱신·갱신 이력 |
 | **sirsoft-ckeditor5** | CKEditor 5 에디터 |
 | **sirsoft-gdpr** | 개인정보 보호(GDPR) |
 | **sirsoft-message_bizppurio** | 비즈뿌리오 메시지 발송 (문자·카카오 알림톡) |
@@ -422,11 +483,13 @@ cp .env.example .env
 | **g7-plugin-sirsoft-daum_postcode-ja** | 다음 우편번호 플러그인 일본어 |
 | **g7-plugin-sirsoft-gdpr-ja** | 개인정보 보호(GDPR) 플러그인 일본어 |
 | **g7-plugin-sirsoft-marketing-ja** | 마케팅 플러그인 일본어 |
+| **g7-plugin-sirsoft-koreaexim-ja** | 수출입은행 환율 플러그인 일본어 |
 | **g7-plugin-sirsoft-message_bizppurio-ja** | 비즈뿌리오 메시지 발송 플러그인 일본어 |
 | **g7-plugin-sirsoft-pay_kginicis-ja** | KG이니시스 결제 플러그인 일본어 |
 | **g7-plugin-sirsoft-pay_nicepayments-ja** | 나이스페이먼츠 결제 플러그인 일본어 |
 | **g7-plugin-sirsoft-pay_nhnkcp-ja** | NHN KCP 결제 플러그인 일본어 |
 | **g7-plugin-sirsoft-tosspayments-ja** | 토스페이먼츠 플러그인 일본어 |
+| **g7-plugin-sirsoft-totp-ja** | 인증 앱(TOTP) 2단계 인증 플러그인 일본어 |
 | **g7-plugin-sirsoft-verification_kginicis-ja** | KG이니시스 본인인증 플러그인 일본어 |
 | **g7-plugin-sirsoft-verification_nhnkcp-ja** | NHN KCP 휴대폰 본인확인 플러그인 일본어 |
 | **g7-template-sirsoft-admin_basic-ja** | 관리자 기본 템플릿 일본어 |
@@ -454,7 +517,7 @@ cp .env.example .env
 | 모델 | 설명 | 상태 |
 |------|------|------|
 | **커뮤니티** | 게시판, 댓글, 회원 관리 | 정식 |
-| **커머스** | 상품 등록, 주문, 결제, 배송 관리 | 정식 |
+| **커머스** | 상품 등록, 주문, 결제, 배송, 취소/반품/교환/환불 관리 | 정식 |
 
 ---
 

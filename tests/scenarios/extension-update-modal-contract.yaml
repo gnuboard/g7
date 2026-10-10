@@ -1,0 +1,28 @@
+feature: 확장 관리 목록의 업데이트 계약 — 페이지 요약·업데이트 확인 토스트·수정 감지 실패 안내 (브라우저)
+
+description: |
+  2026-07-31 Chrome MCP 정밀 점검에서 실측된 확장(모듈·플러그인) 관리 목록의 바인딩 결함 세 가지를 브라우저 경로로
+  고정한다. ① 목록 요약이 `data.total` 을 읽어 항상 「총 0개 중 1-0개 표시」였다(실제 경로 `data.pagination.total`).
+  ② `check-updates` 응답 필드 `updated_count` 를 `update_count` 로 읽어 감지돼도 「모두 최신 상태입니다」가 떴다.
+  ③ 업데이트 창의 수정 감지 조회가 실패해도 「수정된 레이아웃이 없습니다」라고 단언해 「모두 교체」로 사용자 수정이
+  소실될 수 있었다. 응답은 전부 page.route 로 고정하므로 공유 데이터를 바꾸지 않는다.
+  7.1.0 영역 J(D-J4)에서 아이콘을 꾸밈으로 숨기면서 행 업데이트 단추의 접근 가능한 이름이 「refresh 업데이트」에서
+  「업데이트」로 바뀌어, spec 의 단추 선택자가 그 이름을 정확 일치로 찾는다.
+
+axes:
+  contract: [pagination_summary, check_updates_toast, modified_layouts_check_failure]
+
+effects:
+  - pagination_summary_reads_pagination_total
+  - check_updates_toast_reads_updated_count
+  - modified_layouts_check_failure_is_reported
+  - row_update_button_name_excludes_icon_glyph
+
+test_files:
+  - tests/Playwright/specs/admin/extension-update-modal-contract.spec.ts
+
+validation:
+  note: |
+    모듈·플러그인 목록 2종에서 페이지 요약을, 모듈 목록에서 업데이트 확인 토스트와 수정 감지 실패 안내를 잰다.
+    레이아웃 단위 바인딩은 `admin-extension-update-screens.yaml` 의 Vitest 레이아웃 테스트가 따로 잠근다.
+  e2e_spec: tests/Playwright/specs/admin/extension-update-modal-contract.spec.ts

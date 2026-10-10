@@ -51,6 +51,7 @@
   "log": {
     "title": "Activity Log",
     "count": "{{count}} items",
+    "count_one": "{{count}} item",
     "sort": "Sort",
     "sort_options": {
       "latest": "Date (Latest)",

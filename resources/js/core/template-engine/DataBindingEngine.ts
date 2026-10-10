@@ -13,10 +13,34 @@ import { TranslationEngine } from './TranslationEngine';
 import { hasPipes, splitPipes, executePipeChain } from './PipeRegistry';
 import { classifyExpression, extractSingleBinding, isComplexExpression, LITERALS, scanBindings } from './BindingShape';
 import { RAW_PREFIX, wrapRaw, wrapRawDeep } from './rawMarkers';
-import { evaluateSafeExpression } from './SafeExpressionEvaluator';
+import { evaluateSafeExpression, isUnsafeHostValue, isExpressionSafeFunction } from './SafeExpressionEvaluator';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
+import { getCompiledExpression } from './ExpressionCompileCache';
+import { getEngineFlags } from './EngineFlags';
 
 const logger = createLogger('DataBindingEngine');
+
+/**
+ * 변수 추출에서 컨텍스트 변수로 보지 않는 JavaScript 키워드·예약어·허용 내장 이름.
+ *
+ * 종전에는 호출마다 새로 만들었다(@since engine-v1.74.0 모듈 상수).
+ */
+const EXPRESSION_RESERVED_WORDS: ReadonlySet<string> = new Set([
+  'true', 'false', 'null', 'undefined', 'NaN', 'Infinity',
+  'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'break', 'continue', 'return',
+  'function', 'class', 'const', 'let', 'var', 'new', 'delete', 'typeof', 'instanceof',
+  'this', 'super', 'import', 'export', 'default', 'try', 'catch', 'finally', 'throw',
+  // 내장 객체
+  'Math', 'Date', 'JSON', 'Array', 'Object', 'String', 'Number', 'Boolean', 'RegExp',
+  // 컬렉션/표준 내장 객체 (@since engine-v1.50.0)
+  // 이들이 reserved 에 없으면 컨텍스트 변수로 오인되어 undefined 로 가려지고
+  // new Function 본문에서 `new Set(...)` 가 `new undefined()` 가 되어 실패한다.
+  // eval/Function/globalThis/window 등 위험 전역은 의도적으로 제외한다.
+  'Set', 'Map', 'WeakSet', 'WeakMap', 'Symbol', 'Promise', 'BigInt', 'Error',
+  // 전역 함수
+  'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURI', 'decodeURI',
+  'encodeURIComponent', 'decodeURIComponent',
+]);
 
 /**
  * 함수 파라미터 이름으로 쓸 수 있는 식별자 패턴.
@@ -812,6 +836,18 @@ export class DataBindingEngine {
 
       // 다음 값으로 이동
       current = current[segment];
+
+      // 타입 경계 (KVE-2026-2350) — 호출 없는 경로 바인딩도 `….defaultView.localStorage.auth_token`
+      // 처럼 호스트 객체를 거쳐 값을 읽을 수 있다. 평가기(SafeExpressionEvaluator)와 같은 판정으로
+      // 호스트 capability 객체·허용목록 밖 네이티브 함수에 닿으면 기본값으로 끊는다.
+      if (
+        isUnsafeHostValue(current) ||
+        (typeof current === 'function' && !isExpressionSafeFunction(current))
+      ) {
+        logger.warn(`resolvePath: 호스트 객체 경로는 해석하지 않습니다 — ${path}`);
+        return options.defaultValue;
+      }
+
       // 디버깅 로그
       if (path === '_global.toasts') {
         logger.log(`[DataBindingEngine] segment: ${segment}, current:`, current);
@@ -1194,26 +1230,24 @@ export class DataBindingEngine {
     context: BindingContext,
     trackingInfo?: { componentId?: string; componentName?: string; propName?: string; skipCache?: boolean },
   ): any {
-    // DevTools: 바인딩 평가 추적
+    // DevTools: 바인딩 평가 추적 — 활성 여부는 호출당 1회만 확인한다(@since engine-v1.74.0)
     const devTools = getDevTools();
-    const startTime = devTools?.isEnabled() ? performance.now() : 0;
+    const devToolsEnabled = !!devTools?.isEnabled();
+    const startTime = devToolsEnabled ? performance.now() : 0;
 
-    if (devTools?.isEnabled()) {
-      devTools.trackBindingEval();
+    if (devToolsEnabled) {
+      devTools!.trackBindingEval();
     }
 
     try {
-      // 1. 표현식 전체에서 변수 접근을 optional chaining으로 변환
-      // 예: perm.identifier -> perm?.identifier
-      // 이를 통해 iteration 변수가 undefined일 때 에러 방지
-      let processedExpr = this.preprocessOptionalChaining(expr);
-
-      // 2. $t: 패턴을 문자열로 자동 변환 (예: $t:common.error -> "$t:common.error")
-      // 이를 통해 사용자가 따옴표 없이 $t: 문법을 사용할 수 있음
-      processedExpr = this.preprocessTranslationTokens(processedExpr);
-
-      // 표현식에서 사용되는 최상위 변수 추출
-      const usedVariables = this.extractVariablesFromExpression(processedExpr);
+      // 전처리(optional chaining·$t: 토큰)와 최상위 변수 추출은 식 문자열만의 순수 함수라
+      // 식 문자열 키로 기억한다(값은 담지 않는다 — 아래 컨텍스트 조립은 매번 수행).
+      // @since engine-v1.74.0
+      const compiled = getEngineFlags().expressionCompileCache
+        ? getCompiledExpression(expr, (source) => this.compileExpression(source))
+        : this.compileExpression(expr);
+      const processedExpr = compiled.processed;
+      const usedVariables = compiled.variables;
 
       // 컨텍스트에 없는 변수를 undefined로 추가
       const extendedContext = { ...context };
@@ -1357,6 +1391,13 @@ export class DataBindingEngine {
 
           // 다음 레벨로 이동
           current = current[key];
+
+          // 타입 경계 (KVE-2026-2350) — 평가기는 $get 의 최종 반환값만 검사하므로, 경로 도중의 호스트
+          // 객체(`…ownerDocument.defaultView.localStorage`)를 건너 문자열(토큰)을 꺼내지 못하게 여기서 끊는다.
+          // resolvePath 와 같은 판정이다.
+          if (isUnsafeHostValue(current) || (typeof current === 'function' && !isExpressionSafeFunction(current))) {
+            return fallback;
+          }
         }
 
         // 최종 값이 null/undefined이면 폴백 반환
@@ -1374,9 +1415,9 @@ export class DataBindingEngine {
       const result = evaluateSafeExpression(processedExpr, extendedContext);
 
       // DevTools: 표현식 평가 추적
-      if (devTools?.isEnabled()) {
+      if (devToolsEnabled) {
         const duration = performance.now() - startTime;
-        devTools.trackExpressionEval({
+        devTools!.trackExpressionEval({
           expression: expr,
           result: this.sanitizeResultForTracking(result),
           resultType: this.getResultType(result),
@@ -1396,6 +1437,26 @@ export class DataBindingEngine {
         `Failed to evaluate expression "${expr}": ${error instanceof Error ? error.message : String(error)}`,
       );
     }
+  }
+
+  /**
+   * 식을 평가 가능한 형태로 전처리하고 최상위 변수를 추출한다.
+   *
+   * 1. 변수 접근을 optional chaining 으로 변환(`perm.identifier` → `perm?.identifier`) —
+   *    iteration 변수가 undefined 일 때 에러 방지
+   * 2. `$t:` 패턴을 문자열/`$t()` 호출로 변환 — 따옴표 없는 `$t:` 문법 지원
+   * 3. 전처리된 식의 최상위 변수 추출
+   *
+   * 입력 문자열만으로 결과가 정해지므로 ExpressionCompileCache 에 보관된다.
+   *
+   * @param expr 원본 식
+   * @returns 전처리된 식과 변수 목록
+   * @since engine-v1.74.0
+   */
+  private compileExpression(expr: string): { processed: string; variables: string[] } {
+    let processed = this.preprocessOptionalChaining(expr);
+    processed = this.preprocessTranslationTokens(processed);
+    return { processed, variables: this.extractVariablesFromExpression(processed) };
   }
 
   /**
@@ -1536,25 +1597,11 @@ export class DataBindingEngine {
    * @returns 변수명 배열
    */
   private extractVariablesFromExpression(expr: string): string[] {
-    // JavaScript 키워드 및 예약어
-    const reserved = new Set([
-      'true', 'false', 'null', 'undefined', 'NaN', 'Infinity',
-      'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'break', 'continue', 'return',
-      'function', 'class', 'const', 'let', 'var', 'new', 'delete', 'typeof', 'instanceof',
-      'this', 'super', 'import', 'export', 'default', 'try', 'catch', 'finally', 'throw',
-      // 내장 객체
-      'Math', 'Date', 'JSON', 'Array', 'Object', 'String', 'Number', 'Boolean', 'RegExp',
-      // 컬렉션/표준 내장 객체 (@since engine-v1.50.0)
-      // 이들이 reserved 에 없으면 컨텍스트 변수로 오인되어 undefined 로 가려지고
-      // new Function 본문에서 `new Set(...)` 가 `new undefined()` 가 되어 실패한다.
-      // eval/Function/globalThis/window 등 위험 전역은 의도적으로 제외한다.
-      'Set', 'Map', 'WeakSet', 'WeakMap', 'Symbol', 'Promise', 'BigInt', 'Error',
-      // 전역 함수
-      'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'encodeURI', 'decodeURI',
-      'encodeURIComponent', 'decodeURIComponent',
-    ]);
+    const reserved = EXPRESSION_RESERVED_WORDS;
 
     // 식별자 패턴 (변수명 시작 위치)
+    // 지역 변수로 둔다 — /g + exec 루프라 모듈 상수로 올리면 루프 도중 예외 한 번에 lastIndex 가
+    // 남아 다음 호출이 오염된다. 결과가 ExpressionCompileCache 에 보관되므로 생성은 미스 때만 일어난다.
     // 식별자는 문자, $, _로 시작하고 문자, 숫자, $, _로 계속됨
     // @since engine-v1.60.6 lookbehind 제거 — 문두(^) 또는 선행 구분자 1글자를 소비한다.
     //   식별자 사이에는 항상 구분자가 1개 이상 있고 각 매치는 정확히 1개만 소비하므로

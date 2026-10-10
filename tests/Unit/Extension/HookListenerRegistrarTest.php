@@ -6,7 +6,11 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Jobs\DispatchHookListenerJob;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
@@ -14,6 +18,10 @@ use Tests\TestCase;
  * HookListenerRegistrar 테스트
  *
  * 리스너 등록 시 큐/동기 분기와 filter 등록을 검증합니다.
+ *
+ * @effects cache_registered_action_dispatches_queue_job,
+ *   cache_registered_sync_action_executes_immediately,
+ *   cache_registered_filter_executes_synchronously_and_returns_value
  */
 class HookListenerRegistrarTest extends TestCase
 {
@@ -59,11 +67,11 @@ class HookListenerRegistrarTest extends TestCase
     {
         Queue::fake();
 
-        $user = \App\Models\User::factory()->create();
-        \Illuminate\Support\Facades\Auth::login($user);
-        \Illuminate\Support\Facades\App::setLocale('ko');
+        $user = User::factory()->create();
+        Auth::login($user);
+        App::setLocale('ko');
 
-        $request = \Illuminate\Http\Request::create('/api/admin/users', 'GET', [], [], [], [
+        $request = Request::create('/api/admin/users', 'GET', [], [], [], [
             'REMOTE_ADDR' => '203.0.113.10',
             'HTTP_USER_AGENT' => 'TestAgent/1.0',
         ]);

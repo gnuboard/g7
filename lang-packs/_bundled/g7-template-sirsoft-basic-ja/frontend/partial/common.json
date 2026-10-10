@@ -14,6 +14,7 @@
   "create": "作成",
   "search": "検索",
   "search_placeholder": "検索キーワードを入力してください...",
+  "no_results": "検索結果がありません",
   "back": "戻る",
   "next": "次へ",
   "prev": "前へ",
@@ -37,6 +38,7 @@
   "processing": "処理中...",
   "member": "会員",
   "language": "言語",
+  "currency": "通貨",
   "admin_menu": "管理者",
   "theme": {
     "auto": "システム",
@@ -54,12 +56,28 @@
   "validation_error_title": "入力エラー",
   "validation_error_description": "入力項目を確認してください。",
   "reset": "初期化",
-  "currency_unit": "円",
-  "currency": "通貨",
   "pagination": "ページネーション",
   "first_page": "最初のページ",
   "prev_page": "前のページ",
   "next_page": "次のページ",
   "last_page": "最後のページ",
-  "page_n": "ページ {{n}}"
+  "page_n": "ページ {{n}}",
+  "currency_unit": "ウォン",
+  "select_all": "すべて選択",
+  "file_input": {
+    "clear": "ファイルを削除",
+    "browse": "ファイルを選択",
+    "no_file": "ファイルが選択されていません",
+    "too_large": "ファイルサイズが{{size}}MBを超えています。"
+  },
+  "theme_select": "画面テーマ",
+  "delete_notification": "通知を削除",
+  "expand": "展開",
+  "collapse": "折りたたむ",
+  "quantity": "数量",
+  "quantity_decrease": "数量を減らす",
+  "quantity_increase": "数量を増やす",
+  "close_menu": "メニューを閉じる",
+  "page_transitioning": "ページ切り替え中",
+  "page_loading": "ページ読み込み中"
 }

@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\Seo;
 
+use App\Enums\SitemapGenerationMode;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
+use App\Jobs\GenerateSitemapJob;
 use App\Listeners\NotificationHookListener;
 use App\Listeners\SeoNotificationDataListener;
+use App\Models\NotificationDefinition;
 use App\Models\User;
 use App\Notifications\GenericNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -101,7 +104,7 @@ class SitemapRegenerateNotificationTest extends TestCase
         Notification::fake();
 
         // Job::failed() (재시도 소진) 가 최종 실패 훅을 발화 → 유발 관리자에게 알림
-        (new \App\Jobs\GenerateSitemapJob(\App\Enums\SitemapGenerationMode::Full, $admin->id))
+        (new GenerateSitemapJob(SitemapGenerationMode::Full, $admin->id))
             ->failed(new \RuntimeException('boom'));
 
         Notification::assertSentTo($admin, GenericNotification::class);
@@ -113,7 +116,7 @@ class SitemapRegenerateNotificationTest extends TestCase
         Notification::fake();
 
         // 스케줄러/증분 잡(triggeredBy null)의 최종 실패는 알림 없음
-        (new \App\Jobs\GenerateSitemapJob(\App\Enums\SitemapGenerationMode::Auto, null))
+        (new GenerateSitemapJob(SitemapGenerationMode::Auto, null))
             ->failed(new \RuntimeException('boom'));
 
         Notification::assertNothingSent();
@@ -121,7 +124,7 @@ class SitemapRegenerateNotificationTest extends TestCase
 
     public function test_default_active_channel_is_database_only(): void
     {
-        $definition = \App\Models\NotificationDefinition::where('type', 'sitemap_regenerated')->first();
+        $definition = NotificationDefinition::where('type', 'sitemap_regenerated')->first();
 
         $this->assertNotNull($definition);
         $this->assertSame(['database'], $definition->channels);

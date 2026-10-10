@@ -1,0 +1,32 @@
+feature: 쇼핑몰 환경설정·은행 관리·배송정책 요청 검증 (다국어 이름 필수 언어 = 사이트 기본 언어)
+
+description: |
+  쇼핑몰 환경설정 저장 요청(StoreEcommerceSettingsRequest)·은행 관리 창 요청(StoreBanksRequest)의 탭 범위·구역별 규칙과,
+  카탈로그 이름(은행·택배사·배송유형·클레임 사유·배송정책 직접 배송명)의 필수 언어.
+
+  수정 이력: 후속 B 세션 B3 (2026-10-08, 제품 결정) — 다국어 필수 언어를 요청 언어에서 사이트 기본 언어
+  (`app.site_locale`)로 통일하면서, 규칙 밖에서 요청 언어로 이름 필수를 판정하던 자리(`Concerns\ResolvesSiteLocale`)를
+  같은 기준으로 맞췄다. 이 과정에서 두 기존 테스트 파일을 고쳐 매니페스트를 세우고 구역별로 효과를 매핑했다.
+
+axes:
+  area: [banks_modal, tab, basic_info, order_settings, banks, shipping, mileage, claim, site_locale]
+
+effects:
+  - bank_list_shape_validated
+  - bank_name_required_locale_is_site_locale
+  - settings_request_tab_field_scopes_validation
+  - settings_request_basic_info_rules
+  - settings_request_order_settings_rules
+  - settings_request_bank_names_follow_site_locale
+  - settings_request_carrier_rules
+  - settings_request_mileage_rules
+  - settings_request_claim_rules
+  - catalog_names_require_site_locale
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Requests/StoreBanksRequestTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Requests/StoreEcommerceSettingsRequestTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Requests/SiteLocaleRequiredNamesTest.php
+
+validation:
+  browser_check: 사이트 기본 언어 한국어 · 관리자 언어 English 로 쇼핑몰 환경설정 배송 탭 → 택배사 추가 폼에 EN 이름만 넣어 확정 → 막힘, KO(*) 를 채우면 추가·저장 200

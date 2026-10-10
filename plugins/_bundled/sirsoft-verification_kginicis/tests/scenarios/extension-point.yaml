@@ -72,7 +72,7 @@ effects:
   - start_auth_handler_shows_toast_and_skips_window_open_when_public_payload_missing
 
   # bridge → postMessage → resolve + close sequence
-  - bridge_postmessage_origin_check_against_window_location_origin_strict_equality
+  - bridge_postmessage_origin_check_against_site_origin_strict_equality
   - bridge_verified_dispatches_sequence_resolve_verified_and_close_modal
   - bridge_failed_dispatches_sequence_resolve_failed_with_failure_code_and_close_modal
   - bridge_no_data_dispatches_sequence_resolve_cancelled_and_close_modal
@@ -122,11 +122,11 @@ test_files:
 
 rules_layer_coverage:
   - rule: extension-point-mode-replace
-    coverage: identity_provider_inicis.json 은 mode='replace' 사용 + if=provider_id 조건으로 다른 provider 흐름 안전. providerInProgress 추가 분기로 같은 provider 안 두 상태 노출.
+    coverage: identity_provider_inicis.g7.html 은 mode='replace' 사용 + if=provider_id 조건으로 다른 provider 흐름 안전. providerInProgress 추가 분기로 같은 provider 안 두 상태 노출.
   - rule: api-resource-pii-masking
     coverage: InicisIdentityResource 마스킹 유지 (Phase E)
   - rule: middleware-auth-route-scoped
-    coverage: 카드 라우트 auth:sanctum + check.user_status:active (Phase E)
+    coverage: 카드 라우트 auth:sanctum + check.user_status (Phase E — `:active` 는 미들웨어가 읽지 않는 인자라 #636 S4 에서 제거)
   - rule: controller-direct-repository-injection
     coverage: 모든 controller 가 Service 만 주입 (Phase E)
   - rule: i18n-key-naming

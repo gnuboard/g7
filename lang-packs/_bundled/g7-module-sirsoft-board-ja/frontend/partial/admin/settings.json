@@ -2,11 +2,18 @@
   "title": "掲示板の環境設定",
   "description": "掲示板モジュールのデフォルト値とポリシーを管理します",
   "read_only_message": "閲覧権限のみです。編集が必要な場合は管理者にお問い合わせください。",
+  "board_types_no_permission": "掲示板タイプを管理するには掲示板の作成権限が必要です。",
   "page_info": "新しい掲示板を作成する際に適用されるデフォルト設定を管理します。各項目のチェックボックスを選択すると、既存の掲示板に一括適用できます。",
   "validation_error": "入力情報を確認してください。",
   "save_success": "設定が保存されました。",
   "save_error": "設定の保存に失敗しました。",
   "unsaved_changes": "保存されていない変更があります。",
+  "unsaved_tab_modal": {
+    "title": "保存されていない変更",
+    "message": "このタブで変更した内容はまだ保存されていません。別のタブに移動すると変更内容は破棄され、保存済みの値に戻ります。",
+    "btn_stay": "このタブにとどまる",
+    "btn_leave": "保存せずに移動"
+  },
   "tabs": {
     "general": "基本設定",
     "basic_defaults": "掲示板設定",
@@ -15,7 +22,8 @@
     "mail_templates": "メールテンプレート",
     "notification_definitions": "通知設定",
     "seo": "SEO設定",
-    "identity_policies": "本人認証ポリシー"
+    "identity_policies": "本人認証ポリシー",
+    "privacy_retention": "個人情報の保有期間"
   },
   "board_settings_tabs": {
     "basic": "基本",
@@ -26,7 +34,8 @@
     "comment": "コメント",
     "attachment": "添付ファイル",
     "notification": "通知",
-    "bulk_apply": "一括適用"
+    "bulk_apply": "一括適用",
+    "bulk_members": "管理者・スタッフ一括指定"
   },
   "sections": {
     "general": "基本設定",
@@ -179,12 +188,19 @@
       "use_file_upload": "ONに設定する必要があって、新しい掲示板にファイル添付機能が適用されます。",
       "max_file_size": "アップロード可能な最大ファイルサイズです (MB単位、{{min}}~{{max}})",
       "max_file_count": "投稿あたり添付可能な最大ファイル数です ({{min}}~{{max}})",
-      "allowed_extensions": "許可するファイル拡張子を最低1つ以上入力してください"
+      "allowed_extensions": "許可するファイル拡張子を最低1つ以上入力してください",
+      "use_scrap": "会員が投稿を個人フォルダに保存するスクラップ機能を有効化します",
+      "use_reaction": "投稿に推薦/非推薦などのリアクションを残す機能を有効化します",
+      "use_comment_reaction": "コメントにもリアクションボタンを追加します。「リアクション使用」を有効にした掲示板でのみ動作します。"
     },
     "attachment_purge_enabled": "削除済み添付ファイルの永久削除",
     "attachment_purge_enabled_hint": "デフォルトは無効です。運営者が有効にしたときにのみ毎日の自動整理が動作します。有効にすると、削除されてから保存期間が経過した添付ファイルとそのレコードが永久削除されます。サーバーで直接実行する整理コマンドはこの設定に左右されません。",
     "attachment_purge_retention_days": "削除済み添付ファイル保存期間（日）",
-    "attachment_purge_retention_days_hint": "ゴミ箱から投稿を復元すると、この期間内の添付ファイルは一緒に復元されます。ゴミ箱の復元可能期間と同じに保つようにしてください。（1～3650 日）"
+    "attachment_purge_retention_days_hint": "ゴミ箱から投稿を復元すると、この期間内の添付ファイルは一緒に復元されます。ゴミ箱の復元可能期間と同じに保つようにしてください。（1～3650 日）",
+    "use_scrap": "スクラップの使用",
+    "use_reaction": "リアクション使用",
+    "active_reaction_types": "使用するリアクションタイプを選択",
+    "use_comment_reaction": "コメントリアクション使用"
   },
   "options": {
     "date_display_format": {
@@ -260,7 +276,8 @@
       "comments.write": "コメント作成·編集·削除",
       "attachments.upload": "ファイルアップロード·削除",
       "attachments.download": "ファイルダウンロード",
-      "manager": "掲示板管理"
+      "manager": "掲示板管理",
+      "posts.write-notice": "お知らせ登録"
     }
   },
   "notification_channels": {
@@ -278,6 +295,7 @@
     "apply_selected": "選択した掲示板",
     "select_boards_placeholder": "掲示板を選択してください",
     "apply_button": "一括適用",
+    "no_permission": "一括適用には掲示板環境設定の更新権限と掲示板の更新権限の両方が必要です。",
     "no_fields_selected": "適用する項目が選択されていません。",
     "no_boards_selected": "適用する掲示板が選択されていません。",
     "checked_fields_notice": "全体設定を保存した後、チェックした項目のみ一括適用されます。",
@@ -312,7 +330,10 @@
       "new_display_hours": "新着表示時間",
       "blocked_keywords": "禁止ワード",
       "default_board_permissions": "デフォルト権限",
-      "manager": "掲示板管理"
+      "manager": "掲示板管理",
+      "use_scrap": "スクラップの使用",
+      "use_reaction": "リアクション使用",
+      "use_comment_reaction": "コメントリアクション使用"
     },
     "select_boards_hint": "下記から一括適用する掲示板を検索して選択してください。"
   },
@@ -370,6 +391,7 @@
       "cache_management": "SEOキャッシュ管理",
       "cache_description": "掲示板関連のSEOキャッシュを手動で初期化します。設定保存時に自動で初期化されます。",
       "clear_cache": "SEOキャッシュ初期化",
+      "clear_cache_no_permission": "SEOキャッシュを初期化するにはサイト環境設定の更新権限が必要です。",
       "clear_cache_success": "SEOキャッシュが初期化されました。",
       "clear_cache_error": "SEOキャッシュ初期化に失敗しました。"
     }
@@ -441,6 +463,8 @@
     "enable_success": "ポリシーが有効化されました。",
     "disable_success": "ポリシーが無効化されました。",
     "toggle_failed": "ポリシーステータス変更に失敗しました。",
+    "no_read_permission": "本人認証ポリシーを閲覧する権限がありません。「掲示板 本人認証ポリシー閲覧」権限が必要です。",
+    "read_only_notice": "本人認証ポリシーを編集する権限がないため、読み取り専用として表示されます。ポリシーを追加·編集·削除するには「掲示板 本人認証ポリシー編集」権限が必要です。",
     "col": {
       "key": "ポリシーキー",
       "scope": "範囲",
@@ -462,5 +486,138 @@
       "plugin": "プラグイン",
       "admin": "管理者"
     }
+  },
+  "reaction_types": {
+    "title": "リアクションタイプ管理",
+    "add_button": "タイプを追加",
+    "empty": "登録されたリアクションタイプがありません。「タイプを追加」で作成してから保存してください。",
+    "none_hint": "下のエディターでタイプを先に追加してください。",
+    "form": {
+      "code": "コード",
+      "name": "名前",
+      "name_placeholder": "例：推薦",
+      "confirm": "追加"
+    },
+    "columns": {
+      "order": "順序",
+      "code": "コード",
+      "name": "名前",
+      "icon": "アイコン",
+      "is_active": "使用",
+      "reaction_count": "リアクション数"
+    },
+    "actions": {
+      "move_up": "上へ",
+      "move_down": "下へ"
+    },
+    "badges": {
+      "inactive": "無効化"
+    },
+    "validation": {
+      "code_required": "コードを入力してください",
+      "code_duplicate": "既に存在するコードです",
+      "code_format": "英小文字で始め、英小文字・数字・アンダースコア(_)のみで2〜50文字で入力してください",
+      "name_required": "デフォルト言語の名前を入力してください"
+    },
+    "confirm_delete": "このリアクションタイプを削除しますか？保存を押して初めて反映されます。",
+    "icon_remove_confirm_title": "アイコンの削除",
+    "icon_remove_confirm_message": "このアイコンを削除しますか？保存を押さなくてもアップロードしたファイルはすぐに削除され、元に戻せません。削除後は既定のアイコンが使われます。",
+    "messages": {
+      "icon_upload_failed": "アイコンをアップロードできませんでした — 1MB以下のPNG・JPG・GIF・WEBP画像をアップロードしてください",
+      "icon_delete_failed": "アイコンの削除に失敗しました"
+    },
+    "delete_blocked_suffix": "件の反応があるため削除できません — 使用を無効化することのみ可能です"
+  },
+  "privacy_retention": {
+    "title": "個人情報保有期間",
+    "description": "保有期間が過ぎた投稿·コメントの作成IPと非会員作成者情報を毎日自動的に破棄します。有効化する前に個人情報処理方針に保有期間と破棄方法を事前にご案内ください。",
+    "enabled": "保有期間自動破棄",
+    "enabled_hint": "有効化すると、コア個人情報保有期間タスク(毎日実行)が以下の2つの基準で掲示板データを処理します。処理した内容は取り消すことができません。",
+    "target_count": "対象 {{count}}件",
+    "ip_retention_days": "作成IP保有期間 (日)",
+    "ip_retention_days_hint": "会員投稿を含むすべての投稿·コメントの作成IPを、作成後この期間が経過すると削除します。アクセス記録は最低1年(大規模事業者は2年)保管する必要があるため、それより短い期間に設定しないでください。",
+    "guest_retention_days": "非会員作成者情報保有期間 (日)",
+    "guest_retention_days_hint": "非会員が作成した投稿·コメントを、作成後この期間が経過すると以下の方法で処理します。0の場合は処理しません。",
+    "guest_mode": "非会員投稿処理方法",
+    "guest_mode_hint": "匿名化は作成者名のみ非表示にし、投稿はそのままにします。削除は投稿を一覧から削除し、タイトル·本文·添付ファイルまで破棄します。",
+    "modes": {
+      "anonymize": "匿名化 (作成者名非表示)",
+      "delete": "削除"
+    },
+    "delete_warning": "削除は取り消すことができません。非会員投稿に付いた返信とコメント(会員が作成したものを含む)も一緒に削除され、添付ファイルは直ちに削除されます。",
+    "preview_hint": "対象件数は保存された設定基準です。値を変更した場合は保存した後に再度確認してください。",
+    "withdrawn_notice": "退会した会員の投稿は画面に「退会したユーザー」と表示されるため、ここで別途処理することはありません。会員情報破棄はコア環境設定の個人情報タブで設定します。",
+    "targets": {
+      "title_ip": "作成IP削除対象 (投稿·コメント)",
+      "title_guest": "非会員作成者情報処理対象 (投稿·コメント)",
+      "total": "合計 {{count}}件",
+      "empty": "対象がありません。",
+      "loading": "読み込み中...",
+      "close": "閉じる",
+      "row_ip": "掲示板作成IP（投稿·コメント）",
+      "row_guest": "非会員作成者情報（投稿·コメント）",
+      "count": "対象 {{count}}件",
+      "view": "対象を表示",
+      "editor_label": "掲示板の個人情報保有期間の対象リスト"
+    },
+    "manual_run": {
+      "run": "今すぐ実行",
+      "save_first_hint": "保存されていない変更があります。職権実行は保存された設定で処理されるため、まず保存してください。",
+      "status_active": "{{status}} — {{at}}受け取り · {{by}}",
+      "last_completed": "最後の職権実行：{{at}} · {{by}} · {{count}}件処理",
+      "last_failed": "最後の職権実行失敗：{{at}} · {{by}} — {{error}}",
+      "unknown_requester": "不明",
+      "modal_title": "{{target}} — 職権実行",
+      "confirm_desc": "スケジューラーを待たずに今すぐ1回実行します。タスクはキューに受け取られ、順番に処理され、終了するとこの画面に結果が表示されます。",
+      "count_label": "処理予定",
+      "count_value": "{{count}}件",
+      "loading": "件数をカウント中...",
+      "mode_label": "処理方法",
+      "modes": {
+        "anonymize": "匿名化",
+        "delete": "削除",
+        "erase_ip": "作成IP削除"
+      },
+      "disabled_notice": "自動実行がオフになっています。職権実行はトグルと無関係に保存された設定値でこの1回だけ処理します。",
+      "irreversible": "実行するともとに戻せません。処理予定件数と対象リストを確認してから実行してください。",
+      "queue_hint": "キューワーカーが動作する必要があります。同じ対象に受け取られたタスクが終わる前は再実行できません。",
+      "cancel": "キャンセル",
+      "execute": "実行",
+      "executing": "受け取り中...",
+      "queued_toast": "実行をキューに受け取りました。処理が終了すると結果が表示されます。",
+      "queue_failed": "実行を受け取れませんでした。",
+      "preview_failed": "対象件数を読み込めませんでした。",
+      "editor_label": "掲示板の個人情報保有期間の職権実行"
+    }
+  },
+  "bulk_members": {
+    "title": "掲示板管理者・スタッフ一括指定",
+    "description": "複数の掲示板の管理者またはスタッフに会員をまとめて追加・削除します。",
+    "target_label": "対象掲示板",
+    "target_all": "すべての掲示板",
+    "target_selected": "選択した掲示板",
+    "boards_count": "掲示板{{count}}件",
+    "type_label": "区分",
+    "type_manager": "管理者",
+    "type_step": "スタッフ",
+    "users_label": "会員",
+    "mode_label": "操作",
+    "mode_add": "追加",
+    "mode_remove": "削除",
+    "hint": "管理者が0名になる掲示板は削除の対象から除外されます。",
+    "apply": "適用",
+    "confirm_title": "掲示板管理者・スタッフ一括指定",
+    "confirm_add_manager": "選択した会員を掲示板管理者に追加します。",
+    "confirm_add_step": "選択した会員を掲示板スタッフに追加します。",
+    "confirm_remove_manager": "選択した会員を掲示板管理者から削除します。",
+    "confirm_remove_step": "選択した会員を掲示板スタッフから削除します。",
+    "result_summary": "掲示板{{updated}}件変更、{{skipped}}件除外、変化なし{{unchanged}}件",
+    "reason_last_manager": "管理者が0名になる",
+    "reason_scope": "管理権限の範囲外",
+    "reason_not_grantable": "このロールを付与できない掲示板（権限不足）",
+    "reason_role_missing": "掲示板のロール情報がない（データ破損）",
+    "no_permission": "管理者・スタッフを一括指定するには掲示板の編集権限が必要です。",
+    "load_failed": "掲示板一覧を読み込めなかったため、一括指定を使用できません。しばらくしてから再度開いてください。",
+    "failed": "掲示板管理者・スタッフの一括指定に失敗しました。"
   }
 }

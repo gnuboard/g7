@@ -2,16 +2,21 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
+use App\Enums\UserStatus;
 use App\Models\User;
 use Carbon\Carbon;
 use Modules\Sirsoft\Ecommerce\DTO\MileageAdminDeductDto;
 use Modules\Sirsoft\Ecommerce\DTO\MileageAdminEarnDto;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
+use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
 use Modules\Sirsoft\Ecommerce\Exceptions\MileageValidationException;
 use Modules\Sirsoft\Ecommerce\Models\MileageBalance;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
+use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageBalanceRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
@@ -28,6 +33,11 @@ class UserMileageServiceTest extends ModuleTestCase
 
     private MileageBalanceRepositoryInterface $cache;
 
+    /**
+     * 마일리지 설정을 심고 서비스·원장·캐시 저장소를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,6 +47,11 @@ class UserMileageServiceTest extends ModuleTestCase
         $this->cache = app(MileageBalanceRepositoryInterface::class);
     }
 
+    /**
+     * 테스트가 심은 마일리지 설정 파일을 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $file = storage_path('framework/testing/modules/sirsoft-ecommerce/settings/mileage.json');
@@ -50,6 +65,7 @@ class UserMileageServiceTest extends ModuleTestCase
      * 마일리지 설정 파일을 작성합니다.
      *
      * @param  array  $overrides  덮어쓸 값
+     * @return void 반환값 없음
      */
     private function writeMileageSettings(array $overrides = []): void
     {
@@ -96,6 +112,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * 잔액 SSoT = 활성 lot SUM 확인.
+     *
+     * @effects balance_is_sum_of_active_lots
+     *
+     * @return void 반환값 없음
      */
     public function test_balance_is_sum_of_active_lots(): void
     {
@@ -108,6 +128,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * FIFO 차감이 만료 임박 lot 부터 소비하고 source 를 연결한다.
+     *
+     * @effects fifo_deducts_oldest_expiring_lot_first
+     *
+     * @return void 반환값 없음
      */
     public function test_fifo_deducts_oldest_expiring_lot_first(): void
     {
@@ -127,6 +151,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * 잔액 부족 시 차감이 예외로 거부된다.
+     *
+     * @effects deduct_throws_when_insufficient_balance
+     *
+     * @return void 반환값 없음
      */
     public function test_deduct_throws_when_insufficient_balance(): void
     {
@@ -140,6 +168,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * 사용 검증 — 최소금액/단위/최대한도/잔액.
+     *
+     * @effects validate_usage_rules
+     *
+     * @return void 반환값 없음
      */
     public function test_validate_usage_rules(): void
     {
@@ -161,6 +193,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * 최대 사용 한도(fixed) + 단위 내림 보정.
+     *
+     * @effects max_usable_caps_and_floors
+     *
+     * @return void 반환값 없음
      */
     public function test_max_usable_caps_and_floors(): void
     {
@@ -178,6 +214,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * 적립 — subtotal_earned_points_amount 기준 + 멱등 + 캐시 재계산.
+     *
+     * @effects earn_for_order_option_is_idempotent_and_updates_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_earn_for_order_option_is_idempotent_and_updates_cache(): void
     {
@@ -200,6 +240,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * 복원 — order_cancel_id 멱등 + 신규 lot.
+     *
+     * @effects restore_for_cancel_is_idempotent
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_for_cancel_is_idempotent(): void
     {
@@ -218,6 +262,10 @@ class UserMileageServiceTest extends ModuleTestCase
      * 복원 시 그 주문의 원 사용 거래에 동일 order_cancel_id 가 역주입되어 연결 거래로 조회된다.
      *
      * (회귀: 복원 거래를 펼치면 항상 "연결 거래 없음" 이던 결함 — 원 사용 거래에 cancel_id 미주입)
+     *
+     * @effects restore_links_original_use_transaction_via_cancel_id
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_links_original_use_transaction_via_cancel_id(): void
     {
@@ -249,6 +297,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * 자동 만료 — per-item expired 거래 + expired_at + 잔액 감소.
+     *
+     * @effects expire_lots_records_expired_transactions
+     *
+     * @return void 반환값 없음
      */
     public function test_expire_lots_records_expired_transactions(): void
     {
@@ -271,6 +323,10 @@ class UserMileageServiceTest extends ModuleTestCase
      *
      * 적립 520 중 310 을 사용해 잔여 210 이 된 lot 이 만료되면, 소멸 거래는 적립액(520)이
      * 아니라 잔여(210)만 -210 으로 소멸시킨다. (적립≠소멸 금액은 부분 사용의 정상 결과)
+     *
+     * @effects expire_lots_only_expires_remaining_not_full_earn
+     *
+     * @return void 반환값 없음
      */
     public function test_expire_lots_only_expires_remaining_not_full_earn(): void
     {
@@ -298,6 +354,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * 관리자 지급 — granted_by + 무기한 옵션.
+     *
+     * @effects admin_earn_unlimited
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_earn_unlimited(): void
     {
@@ -320,6 +380,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * 적립건 편집 — 사유(memo) + 만료일 직접 지정.
+     *
+     * @effects update_admin_transaction_edits_memo_and_expiry
+     *
+     * @return void 반환값 없음
      */
     public function test_update_admin_transaction_edits_memo_and_expiry(): void
     {
@@ -335,6 +399,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * 만료일을 적립일시(created_at)보다 과거로 지정하면 거부한다.
+     *
+     * @effects update_admin_transaction_rejects_expiry_before_earned
+     *
+     * @return void 반환값 없음
      */
     public function test_update_admin_transaction_rejects_expiry_before_earned(): void
     {
@@ -357,6 +425,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * 적립일시 이후 만료일은 허용 (경계 정상).
+     *
+     * @effects update_admin_transaction_allows_expiry_after_earned
+     *
+     * @return void 반환값 없음
      */
     public function test_update_admin_transaction_allows_expiry_after_earned(): void
     {
@@ -374,6 +446,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * 적립계가 아닌 거래는 편집 불가.
+     *
+     * @effects update_admin_transaction_rejects_non_earning
+     *
+     * @return void 반환값 없음
      */
     public function test_update_admin_transaction_rejects_non_earning(): void
     {
@@ -389,6 +465,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * 이미 소멸된 적립건은 만료일 변경 거부, memo 만 변경 허용.
+     *
+     * @effects update_admin_transaction_expired_lot_blocks_expiry_allows_memo
+     *
+     * @return void 반환값 없음
      */
     public function test_update_admin_transaction_expired_lot_blocks_expiry_allows_memo(): void
     {
@@ -414,6 +494,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * 관리자 차감 — 잔액 내 FIFO + 초과 시 거부.
+     *
+     * @effects admin_deduct_rejects_when_exceeds_balance
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_deduct_rejects_when_exceeds_balance(): void
     {
@@ -433,6 +517,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * 유효기간 연장 — 만료된 lot 부활 + 캐시 재계산.
+     *
+     * @effects extend_lot_expiry_revives_expired_lot
+     *
+     * @return void 반환값 없음
      */
     public function test_extend_lot_expiry_revives_expired_lot(): void
     {
@@ -452,21 +540,133 @@ class UserMileageServiceTest extends ModuleTestCase
     }
 
     /**
-     * 탈퇴 — 활성 lot 소멸 기록 (markExpired).
+     * 주문에 붙은 환불신청서 하나를 만듭니다. (마일리지 거래의 order_refund_id 외래키 대상)
+     *
+     * @param  Order  $order  주문
+     * @return int 환불신청서 ID
      */
-    public function test_record_withdrawal_expiry_marks_active_lots_expired(): void
+    private function makeRefundId(Order $order): int
+    {
+        return (int) OrderRefund::create([
+            'order_id' => $order->id,
+            'refund_source_type' => RefundSourceTypeEnum::DIRECT,
+            'refund_number' => 'RF-TEST-'.uniqid(),
+            'refund_status' => RefundStatusEnum::COMPLETED,
+            'refund_method' => RefundMethodEnum::POINTS,
+            'refund_amount' => 0,
+            'refund_points_amount' => 0,
+            'refund_shipping_amount' => 0,
+        ])->id;
+    }
+
+    /**
+     * 탈퇴 — 활성 lot 을 원장 소멸 거래로 기록하고 lot 을 소멸시킨다(E3, 거래 행 보존).
+     *
+     * @scenario member_state=active, event=withdraw
+     *
+     * @effects withdrawal_forfeits_balance_and_keeps_ledger
+     *
+     * @return void 반환값 없음
+     */
+    public function test_forfeit_for_withdrawal_writes_expired_rows_and_zeroes_balance(): void
     {
         $user = User::factory()->create();
         $lot = $this->seedLot($user->id, 700);
 
-        $this->service->recordWithdrawalExpiry($user->id);
+        $count = $this->service->forfeitForWithdrawal($user->id);
 
+        $this->assertSame(1, $count);
         $this->assertSame(0.0, (float) $lot->fresh()->remaining_amount);
         $this->assertNotNull($lot->fresh()->expired_at);
+        $expired = MileageTransaction::query()->where('source_transaction_id', $lot->id)->firstOrFail();
+        $this->assertSame(MileageTransactionTypeEnum::EXPIRED, $expired->type);
+        $this->assertEquals(0, (float) $expired->balance_after);
+        $this->assertSame(0.0, $this->ledger->getBalance($user->id));
+    }
+
+    /**
+     * 탈퇴 회원에게 환불 반환이 도착하면 원래 거래를 기록하고 바로 「탈퇴로 소멸」 거래로 0 을 만든다(Q18).
+     *
+     * @scenario member_state=withdrawn, event=credit_after_withdraw, refund_credit=absent
+     *
+     * @effects credit_to_withdrawn_member_is_recorded_then_forfeited
+     *
+     * @return void 반환값 없음
+     */
+    public function test_restore_for_withdrawn_member_records_then_forfeits(): void
+    {
+        $user = User::factory()->create();
+        $user->forceFill(['status' => UserStatus::Withdrawn->value, 'withdrawn_at' => now()])->save();
+        $order = Order::factory()->create(['user_id' => $user->id, 'currency' => 'KRW']);
+
+        $tx = $this->service->restoreForRefund($user->id, $order->id, $this->makeRefundId($order), 3000, 'KRW');
+
+        $this->assertNotNull($tx);
+        $this->assertSame(MileageTransactionTypeEnum::REFUND_RESTORE, $tx->fresh()->type);
+        $this->assertSame(0.0, (float) $tx->fresh()->remaining_amount);
+        $expired = MileageTransaction::query()->where('source_transaction_id', $tx->id)->firstOrFail();
+        $this->assertSame(MileageTransactionTypeEnum::EXPIRED, $expired->type);
+        $this->assertEquals(-3000, (float) $expired->amount);
+        $this->assertSame('withdrawal', $expired->metadata['reason'] ?? null);
+        $this->assertSame(0.0, $this->ledger->getBalance($user->id));
+    }
+
+    /**
+     * 현금 대신 지급하는 마일리지(refund_credit)와 구매 적립도 탈퇴 회원이면 같은 규칙이다(Q18).
+     *
+     * @scenario member_state=withdrawn, event=credit_after_withdraw, refund_credit=present
+     *
+     * @effects credit_to_withdrawn_member_is_recorded_then_forfeited
+     *
+     * @return void 반환값 없음
+     */
+    public function test_credit_and_earn_for_withdrawn_member_are_forfeited(): void
+    {
+        $this->writeMileageSettings();
+        $user = User::factory()->create();
+        $user->forceFill(['status' => UserStatus::Withdrawn->value, 'withdrawn_at' => now()])->save();
+        $order = Order::factory()->create(['user_id' => $user->id, 'currency' => 'KRW']);
+        $option = OrderOption::factory()->forOrder($order)->create(['subtotal_earned_points_amount' => 300]);
+
+        $credit = $this->service->creditForRefund($user->id, $order->id, $this->makeRefundId($order), 5000, 'KRW');
+        $earn = $this->service->earnForOrderOption($order, $option, MileageTransactionTypeEnum::PURCHASE_EARN);
+
+        foreach ([$credit, $earn] as $tx) {
+            $this->assertSame(0.0, (float) $tx->fresh()->remaining_amount);
+            $this->assertTrue(MileageTransaction::query()
+                ->where('source_transaction_id', $tx->id)
+                ->where('type', MileageTransactionTypeEnum::EXPIRED->value)
+                ->exists());
+        }
+        $this->assertSame(0.0, $this->ledger->getBalance($user->id));
+    }
+
+    /**
+     * 활성 회원에게는 소멸 거래가 생기지 않는다(회귀 가드).
+     *
+     * @scenario member_state=active, refund_credit=absent
+     *
+     * @effects credit_to_withdrawn_member_is_recorded_then_forfeited
+     *
+     * @return void 반환값 없음
+     */
+    public function test_restore_for_active_member_is_not_forfeited(): void
+    {
+        $user = User::factory()->create();
+        $order = Order::factory()->create(['user_id' => $user->id, 'currency' => 'KRW']);
+
+        $tx = $this->service->restoreForRefund($user->id, $order->id, $this->makeRefundId($order), 3000, 'KRW');
+
+        $this->assertEquals(3000, (float) $tx->fresh()->remaining_amount);
+        $this->assertFalse(MileageTransaction::query()->where('source_transaction_id', $tx->id)->exists());
     }
 
     /**
      * 비회원(user_id null) 적립 제외.
+     *
+     * @effects guest_order_earn_returns_null
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_order_earn_returns_null(): void
     {
@@ -478,6 +678,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * getBalance 화면 조회는 캐시에서 pending 포함 전 필드를 반환한다.
+     *
+     * @effects get_balance_reads_from_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_get_balance_reads_from_cache(): void
     {
@@ -495,6 +699,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * getBalance 는 mileage.enabled 설정값을 enabled 키로 반영한다 (화면 비활성 안내용).
+     *
+     * @effects get_balance_reflects_disabled_setting
+     *
+     * @return void 반환값 없음
      */
     public function test_get_balance_reflects_disabled_setting(): void
     {
@@ -511,6 +719,10 @@ class UserMileageServiceTest extends ModuleTestCase
      *
      * 유저가 표시통화를 USD 로 선택(order.currency='USD')해도, 주문 통화 스냅샷의
      * base_currency 가 KRW 이면 적립은 KRW lot 으로 기록되어야 한다 (주문서/PG 정산과 일치).
+     *
+     * @effects earn_uses_base_currency_not_display_currency
+     *
+     * @return void 반환값 없음
      */
     public function test_earn_uses_base_currency_not_display_currency(): void
     {
@@ -533,6 +745,10 @@ class UserMileageServiceTest extends ModuleTestCase
 
     /**
      * baseCurrencyForOrder: currency_snapshot.base_currency 우선, 없으면 설정 기본 통화 폴백.
+     *
+     * @effects base_currency_for_order_resolution
+     *
+     * @return void 반환값 없음
      */
     public function test_base_currency_for_order_resolution(): void
     {

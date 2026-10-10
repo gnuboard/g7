@@ -24,6 +24,11 @@ use Modules\Sirsoft\Board\Tests\ModuleTestCase;
  */
 class BoardLanguagePackSeederTriggerTest extends ModuleTestCase
 {
+    /**
+     * 이전 실행이 남긴 언어팩·게시판 유형 행을 비우고 번역 레지스트리 캐시를 무효화합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -34,10 +39,20 @@ class BoardLanguagePackSeederTriggerTest extends ModuleTestCase
             ->delete();
         DB::table('board_types')->where('id', '>', 0)->delete();
 
-        // 캐시된 LanguagePackRegistry/Injector 도 정리
-        app()->forgetInstance(LanguagePackRegistry::class);
+        // 캐시된 LanguagePackRegistry 정리 — 싱글톤을 갈아 끼우지 않고 캐시만 비운다. 부팅 때 등록된 번역 필터·주입기가
+        // 그 인스턴스를 쥐고 있어, 교체하면 옛 인스턴스가 캐시를 이미 채운 실행에서만 새 활성 팩이 안 보여 흔들렸다(#597 규칙).
+        app(LanguagePackRegistry::class)->invalidate();
     }
 
+    /**
+     * ja 모듈 언어팩을 켜면 게시판 유형 이름에 ja 가 채워지는지 검증합니다.
+     *
+     * @scenario entity=board_types,override=none
+     *
+     * @effects lang_pack_activation_injects_ja_into_seeded_rows
+     *
+     * @return void 반환값 없음
+     */
     public function test_module_lang_pack_activation_triggers_board_types_seeder(): void
     {
         // ja lang pack 비활성/없는 상태에서 시더 실행 — 환경에 따라 ja 키가 이미 있을 수 있으나
@@ -55,6 +70,15 @@ class BoardLanguagePackSeederTriggerTest extends ModuleTestCase
         $this->assertJaKeyPresentInAllBoardTypes();
     }
 
+    /**
+     * 운영자가 고친 ko 이름은 지키고 ja 만 채우는지 검증합니다.
+     *
+     * @scenario entity=board_types,override=name_ko
+     *
+     * @effects operator_ko_edit_survives_ja_sync
+     *
+     * @return void 반환값 없음
+     */
     public function test_user_overridden_ko_is_preserved_while_ja_auto_synced(): void
     {
         $this->ensureBoardTypesSeeded();
@@ -81,6 +105,11 @@ class BoardLanguagePackSeederTriggerTest extends ModuleTestCase
         $this->assertEquals('基本形', $name['ja'] ?? null, 'ja 자동 동기화 (lang pack seed/board_types.json SSoT)');
     }
 
+    /**
+     * 게시판 유형 시더를 실행합니다.
+     *
+     * @return void 반환값 없음
+     */
     private function ensureBoardTypesSeeded(): void
     {
         if (DB::table('board_types')->count() === 0) {
@@ -89,6 +118,11 @@ class BoardLanguagePackSeederTriggerTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 모든 게시판 유형 이름에 ja 키가 있는지 단언합니다.
+     *
+     * @return void 반환값 없음
+     */
     private function assertJaKeyPresentInAllBoardTypes(): void
     {
         $rows = DB::table('board_types')->get(['slug', 'name']);
@@ -99,6 +133,12 @@ class BoardLanguagePackSeederTriggerTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 게시판 ja 모듈 언어팩 행을 만듭니다.
+     *
+     * @param  LanguagePackStatus  $status  초기 상태
+     * @return LanguagePack 생성된 언어팩
+     */
     private function createBoardJaLanguagePack(LanguagePackStatus $status): LanguagePack
     {
         return LanguagePack::create([
@@ -126,10 +166,15 @@ class BoardLanguagePackSeederTriggerTest extends ModuleTestCase
         ]);
     }
 
+    /**
+     * 번역 레지스트리 캐시를 비우고 지원 로케일 설정을 다시 맞춥니다.
+     *
+     * @return void 반환값 없음
+     */
     private function refreshLanguagePackRegistry(): void
     {
-        app()->forgetInstance(LanguagePackRegistry::class);
         $registry = app(LanguagePackRegistry::class);
+        $registry->invalidate();
         config([
             'app.supported_locales' => $registry->getActiveCoreLocales(),
             'app.locale_names' => $registry->getLocaleNames(),

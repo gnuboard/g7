@@ -2,14 +2,25 @@
     "editor": {
         "data_source": {
             "memoData": "메모 데이터",
-            "memos": "메모 목록"
+            "memos": "메모 목록",
+            "memoCreateAbility": "메모 등록 권한"
+        },
+        "palette": {
+            "group": "Hello 모듈",
+            "memo_card": {
+                "label": "메모 카드",
+                "sample_title": "메모 제목",
+                "sample_body": "메모 본문이 여기에 표시됩니다."
+            }
         }
     },
     "admin": {
         "memos": {
             "index": {
                 "title": "Hello 메모",
-                "description": "학습용 메모 목록"
+                "description": "학습용 메모 목록",
+                "empty": "작성된 메모가 없습니다.",
+                "create_no_permission": "메모를 만들 권한이 없습니다."
             },
             "form": {
                 "title_create": "메모 생성",
@@ -21,14 +32,16 @@
                 "actions": {
                     "save": "저장",
                     "cancel": "취소"
-                }
+                },
+                "read_only": "이 메모를 저장할 권한이 없어 읽기 전용으로 표시됩니다."
             }
         }
     },
     "user": {
         "memos": {
             "index": {
-                "title": "메모 목록"
+                "title": "메모 목록",
+                "empty": "아직 메모가 없습니다."
             }
         }
     }

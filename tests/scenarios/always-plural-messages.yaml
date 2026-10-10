@@ -1,0 +1,19 @@
+feature: 늘 복수로 적혀 있던 서버 영어 문구의 단·복수 (7.1.0 결정)
+
+description: |
+  수 자리표시자 뒤 명사를 괄호 없이 늘 복수로 적은 영어 서버 문구(「(1 items)」·「1 layouts deleted」·
+  「1 minutes ago」 등)를 `(s)` 표기와 같은 방식으로 고친다 — 영어 값 `단수|복수` + `trans_choice`/`trans_count`.
+  1 이면 단수, 0·2 이상이면 복수. 한국어 값은 그대로다. 활동 로그는 저장된 `count` 로 고르고, 수를
+  `count` 가 아닌 이름으로만 저장한 옛 행은 처음 나오는 수 치환값으로 고른다.
+
+axes:
+  surface: [dictionary, activity_log, search_response]
+
+effects:
+  - english_message_singular_for_one_plural_otherwise
+  - korean_message_unchanged
+  - activity_log_description_follows_stored_number
+  - search_results_message_follows_total
+
+test_files:
+  - tests/Unit/Lang/AlwaysPluralMessagesTest.php

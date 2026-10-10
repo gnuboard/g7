@@ -6,6 +6,17 @@ import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
+import { isSameOriginRequest } from '../../support/sameOriginRequest';
+
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
+/** 로그아웃 후 이동 기본 경로 — `redirectPath` 가 동일 출처가 아니면 이 경로로 간다 */
+const DEFAULT_REDIRECT_PATH = '/admin/login';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:UserProfile')) ?? {
@@ -42,9 +53,9 @@ export interface UserProfileProps {
   onProfileClick?: () => void;
   onLogoutClick?: () => void;
   className?: string;
-  /** 로그아웃 API 엔드포인트 (기본값: /api/admin/auth/logout) */
+  /** 로그아웃 API 엔드포인트 (기본값: /api/admin/auth/logout). G7Core.api 로 요청 — 토큰은 코어가 동일 출처 대상에만 싣는다 */
   logoutEndpoint?: string;
-  /** 로그아웃 후 리다이렉션 경로 (기본값: /admin/login) */
+  /** 로그아웃 후 리다이렉션 경로 (기본값: /admin/login). 동일 출처가 아니면 기본값으로 이동한다 */
   redirectPath?: string;
   /** Chevron 아이콘 표시 여부 (기본값: true) */
   showChevron?: boolean;
@@ -82,21 +93,24 @@ export interface UserProfileProps {
  */
 export const UserProfile: React.FC<UserProfileProps> = ({
   user = { name: '', email: '' },
-  profileText = 'Profile Settings',
-  logoutText = 'Logout',
+  profileText: profileTextProp,
+  logoutText: logoutTextProp,
   // languageText / availableLocales: 언어가 헤더로 일원화되어 드롭다운에서 제거됨.
   // props 는 인터페이스에 유지(하위호환)하되 본문에서 사용하지 않으므로 destructure 생략.
   onProfileClick,
   onLogoutClick,
   className = '',
   logoutEndpoint = '/api/admin/auth/logout',
-  redirectPath = '/admin/login',
+  redirectPath = DEFAULT_REDIRECT_PATH,
   showChevron = true,
   dropdownDirection = 'up',
   dropdownOnly = false,
   id,
   editorAttrs,
 }) => {
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  const profileText = profileTextProp ?? tOr('admin.profile_settings', 'Profile Settings');
+  const logoutText = logoutTextProp ?? tOr('admin.logout', 'Logout');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -119,29 +133,28 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   }, []);
 
   /**
-   * 쿠키에서 XSRF 토큰 읽기
+   * 로그인 토큰 제거 — 코어 ApiClient 가 토큰 저장을 맡으므로 공개 API 로 지운다
    */
-  const getXsrfToken = (): string | null => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; XSRF-TOKEN=`);
-    if (parts.length === 2) {
-      return decodeURIComponent(parts.pop()?.split(';').shift() || '');
+  const clearAuthToken = (): void => {
+    const api = (window as any).G7Core?.api;
+    if (typeof api?.removeToken === 'function') {
+      api.removeToken();
+      return;
     }
-    return null;
-  };
-
-  /**
-   * 로컬 스토리지에서 Bearer 토큰 읽기
-   */
-  const getBearerToken = (): string | null => {
-    return localStorage.getItem('auth_token');
+    // 코어 미초기화 폴백 — 토큰이 남아 로그아웃 뒤에도 로그인 상태로 보이지 않게 한다
+    localStorage.removeItem('auth_token');
   };
 
   /**
    * 로그아웃 처리
+   *
+   * 요청은 코어 `G7Core.api` 로 보낸다 — Bearer·XSRF 첨부와 교차 출처 대상의 토큰 제외를 코어가 맡는다.
    */
   const handleLogout = async () => {
     if (isLoggingOut) return;
+
+    // 이동 대상은 동일 출처만 — 실행 스킴(`javascript:`)·외부 주소는 기본 로그인 경로로(KVE-2026-2348)
+    const safeRedirectPath = isSameOriginRequest(redirectPath) ? redirectPath : DEFAULT_REDIRECT_PATH;
 
     try {
       setIsLoggingOut(true);
@@ -153,38 +166,28 @@ export const UserProfile: React.FC<UserProfileProps> = ({
         return;
       }
 
-      // 토큰 가져오기
-      const xsrfToken = getXsrfToken();
-      const bearerToken = getBearerToken();
-
-      // API 호출
-      const response = await fetch(logoutEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(xsrfToken && { 'X-XSRF-TOKEN': xsrfToken }),
-          ...(bearerToken && { Authorization: `Bearer ${bearerToken}` }),
-        },
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        // 로그아웃 성공 - 로컬 스토리지에서 토큰 제거
-        localStorage.removeItem('auth_token');
-        // 로그인 페이지로 리다이렉션
-        window.location.href = redirectPath;
-      } else {
-        logger.error('로그아웃 실패:', response.statusText);
-        // 실패해도 토큰 제거 및 로그인 페이지로 이동 (토큰 만료 등의 경우)
-        localStorage.removeItem('auth_token');
-        window.location.href = redirectPath;
+      // 엔드포인트는 레이아웃 prop 이라 표현식으로 외부 주소를 만들 수 있다. 토큰은 코어가 동일 출처
+      // 대상에만 싣지만(KVE-2026-2350), 교차 출처 주소가 들어온 사실은 남긴다
+      if (!isSameOriginRequest(logoutEndpoint)) {
+        logger.warn('교차 출처 로그아웃 주소라 인증 정보를 싣지 않습니다.', logoutEndpoint);
       }
+
+      const api = (window as any).G7Core?.api;
+      if (typeof api?.post !== 'function') {
+        throw new Error('G7Core.api is not available');
+      }
+
+      // API 호출 — 실패(4xx·5xx)는 예외로 떨어진다
+      await api.post(logoutEndpoint);
+
+      // 로그아웃 성공 - 토큰 제거 후 로그인 페이지로 리다이렉션
+      clearAuthToken();
+      window.location.href = safeRedirectPath;
     } catch (error) {
       logger.error('로그아웃 오류:', error);
-      // 에러 발생 시에도 토큰 제거 및 로그인 페이지로 이동
-      localStorage.removeItem('auth_token');
-      window.location.href = redirectPath;
+      // 실패해도 토큰 제거 및 로그인 페이지로 이동 (토큰 만료 등의 경우)
+      clearAuthToken();
+      window.location.href = safeRedirectPath;
     } finally {
       setIsLoggingOut(false);
     }
@@ -194,6 +197,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({
     <Div ref={profileRef} className={dropdownOnly ? `absolute inset-0 ${className}` : `relative ${className}`} id={id} {...editorAttrs}>
       <Button
         onClick={() => setShowProfileMenu(!showProfileMenu)}
+        aria-label={dropdownOnly ? tOr('common.user_menu', 'User menu') : undefined}
+        aria-haspopup="menu"
+        aria-expanded={showProfileMenu}
         className={dropdownOnly
           ? "w-full h-full opacity-0 cursor-pointer"
           : "flex items-center gap-2 px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors w-full"}
@@ -267,7 +273,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-start gap-3 text-red-600 dark:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Icon name={IconName.ArrowRight} className="w-5 h-5" />
-              <Span>{isLoggingOut ? 'Logging out...' : logoutText}</Span>
+              <Span>{isLoggingOut ? tOr('common.logging_out', 'Logging out...') : logoutText}</Span>
             </Button>
           </Div>
         </Div>

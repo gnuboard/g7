@@ -1,0 +1,11 @@
+<!-- 관리자 503 화면 — 일시적으로 처리할 수 없는 상태 -->
+<layout name="errors/503" version="1.0.0" extends="_admin_base">
+  <meta title="$t:errors.503.title" :is_error_layout="true" :error_code="503"/>
+  <slot name="content">
+    <div data-ref="error_container" class="flex-center flex-col justify-center min-h-[60vh] text-center p-8">
+      <h1 data-ref="error_code" class="text-primary text-6xl font-bold mb-4">503</h1>
+      <h2 data-ref="error_title" class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2">$t:errors.503.title</h2>
+      <span data-ref="error_message" class="text-gray-500 dark:text-gray-400">$t:errors.503.message</span>
+    </div>
+  </slot>
+</layout>

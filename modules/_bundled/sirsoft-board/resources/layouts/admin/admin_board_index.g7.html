@@ -1,0 +1,224 @@
+<!-- 게시판 목록 화면. 표가 아니라 카드 한 장이 게시판 하나이고, 카드 안에서 활성 전환까지 바로 한다. 검색·페이지는 전부 URL query 로 남겨 새로고침·뒤로가기에도 같은 화면이 나오게 한다 -->
+<layout name="admin_board_index" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-board.admin.board.index.title" description="$t:sirsoft-board.admin.board.index.description"/>
+  <!-- 목록 본체 — 페이지·검색어를 URL 에서 그대로 받아 서버 페이지네이션에 넘긴다. 화면에 머무는 동안 활성 토글·삭제가 이 소스를 다시 읽으므로 `refetchOnMount` 로 들어올 때도 최신을 보장한다 -->
+  <data-source id="boards" label_key="$t:sirsoft-board.editor.data_source.boards" type="api" endpoint="/api/modules/sirsoft-board/admin/boards" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true" loading_strategy="progressive">
+    <params page="{{query.page}}" per_page="{{query.per_page ?? 10}}" search="{{query.search}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <permissions>
+    <permission>sirsoft-board.boards.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>boards</wait-for>
+  </transition-overlay>
+  <slot name="content">
+    <div data-ref="board_list_content" class="admin-page-content-responsive-fluid">
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-board.admin.board.index.title" description="$t:sirsoft-board.admin.board.index.description">
+        <button data-ref="refresh_button" class="btn-icon" aria-label="$t:common.refresh">
+          <on type="click">
+            <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색을 유지한다 (#75). -->
+            <navigate path="/admin/boards" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          <icon data-ref="refresh_icon" name="refresh" class="text-xl"/>
+        </button>
+        <button data-ref="add_board_button" disabled="{{boards?.data?.abilities?.can_create !== true}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 새 게시판 만들기. 만들기를 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다 -->
+            <navigate path="/admin/boards/create" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          <icon name="plus" class="text-xl"/>
+          <span>$t:sirsoft-board.admin.board.index.add_board</span>
+        </button>
+      </page-header>
+      <div data-ref="content_area" class="admin-card">
+        <div data-ref="search_area" class="flex justify-end mb-6">
+          <search-bar data-type="composite" data-ref="search_bar" name="search" placeholder="$t:sirsoft-board.admin.board.index.search_placeholder" value="{{query.search || ''}}" class="w-64">
+            <on type="submit">
+              <!-- 검색은 URL 로 남긴다 — 다른 query(per_page 등)는 두고 검색어만 갈아 끼우되 페이지는 1 로 되돌린다(3페이지에서 검색하면 결과가 없는 페이지에 떨어지므로) -->
+              <navigate path="/admin/boards" :mergeQuery="true">
+                <query :page="1" search="{{$event.target.search.value}}"/>
+              </navigate>
+            </on>
+          </search-bar>
+        </div>
+        <card-grid data-type="composite" data-ref="boards_card_grid" :data-blur-until-loaded="true" data="{{boards.data.data}}" :gridColumns="1" :gap="4" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{boards?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{boards?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{boards?.data?.pagination?.has_more_pages ?? false}}" :alwaysShowPagination="true" emptyMessage="$t:sirsoft-board.admin.board.index.empty_description" cardClassName="rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+          <card id="board_card">
+            <div data-ref="card_header_row" class="flex items-start justify-between">
+              <div data-ref="header_left" class="flex items-center gap-3">
+                <status-badge data-type="composite" data-ref="board_slug_badge" status="info" label="{{row.slug}}" :showIcon="false"/>
+                <h3 data-ref="board_name" class="section-heading">{{row.name}}</h3>
+                <span data-ref="board_type" class="text-label-subtle">({{row.type}})</span>
+              </div>
+              <div data-ref="header_right" class="flex items-center gap-3">
+                <toggle data-type="composite" data-ref="active_toggle" checked="{{row.is_active}}" name="is_active" size="sm" disabled="{{row.abilities?.can_update !== true}}">
+                  <on type="change">
+                    <!-- 카드에서 바로 활성/비활성을 뒤집는다. 보내는 값은 «지금의 반대」이고 토스트 문구도 뒤집기 «전» 값으로 고르므로 둘의 기준이 같다. 성공 후 목록을 동기로 다시 읽어 화면의 토글이 서버 값과 어긋난 채 남지 않게 한다 -->
+                    <sequence>
+                      <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/boards/{{row.slug}}" method="PUT">
+                        <success>
+                          <refetch-data-source dataSourceId="boards" :sync="true"/>
+                          <toast type="success" message="{{row.is_active ? '$t:sirsoft-board.admin.board.messages.deactivated' : '$t:sirsoft-board.admin.board.messages.activated'}}"/>
+                        </success>
+                        <fail>
+                          <toast type="error" message="{{error.message}}"/>
+                        </fail>
+                        <body is_active="{{!row.is_active}}"/>
+                      </api-call>
+                    </sequence>
+                  </on>
+                </toggle>
+                <action-menu data-type="composite" data-ref="action_menu" triggerLabel="" triggerIconName="ellipsis-h" position="right">
+                  <prop name="items">
+                    <item id="edit" label="$t:sirsoft-board.admin.board.actions.edit" iconName="pencil" disabled="{{row.abilities?.can_update !== true}}"/>
+                    <item id="manage_posts" label="$t:sirsoft-board.admin.board.actions.manage_posts" iconName="list"/>
+                    <item id="copy" label="$t:sirsoft-board.admin.board.actions.copy" iconName="copy" disabled="{{row.abilities?.can_create !== true}}"/>
+                    <item id="delete" label="$t:sirsoft-board.admin.board.actions.delete" iconName="trash" variant="danger" disabled="{{row.abilities?.can_delete !== true}}"/>
+                  </prop>
+                  <on event="onItemClick">
+                    <!-- 카드 메뉴 네 갈래. 편집·글 관리는 그냥 이동이고, 복제·삭제는 대상 행을 전역에 실어 둔 «뒤» 모달을 연다 — 모달은 별도 컨텍스트라 반복 변수 `row` 를 볼 수 없기 때문이다 -->
+                    <switch>
+                      <case when="edit">
+                        <navigate path="/admin/boards/{{row.slug}}/edit" :mergeQuery="true">
+                          <query/>
+                        </navigate>
+                      </case>
+                      <case when="manage_posts">
+                        <navigate path="/admin/board/{{row.slug}}"/>
+                      </case>
+                      <case when="copy">
+                        <set-state target="global" modal_data="{{row}}">
+                          <success>
+                            <open-modal target="copy_confirm_modal"/>
+                          </success>
+                        </set-state>
+                      </case>
+                      <case when="delete">
+                        <set-state target="global" modal_data="{{row}}">
+                          <success>
+                            <open-modal target="delete_confirm_modal"/>
+                          </success>
+                        </set-state>
+                      </case>
+                    </switch>
+                  </on>
+                </action-menu>
+              </div>
+            </div>
+            <div data-ref="board_meta_row" class="flex-center gap-2 text-label">
+              <span data-ref="post_count_label" class="font-semibold">$t:sirsoft-board.admin.board.index.post_count</span>
+              <span data-ref="post_count_value">{{row?.posts_count ?? 0}}</span>
+              <span data-ref="separator" class="mx-1">·</span>
+              <span data-ref="created_date_label" class="font-semibold">$t:sirsoft-board.admin.board.index.created_at</span>
+              <span data-ref="created_date_value">{{row?.created_at}}</span>
+            </div>
+            <div data-ref="categories_row" data-if="{{row.categories &amp;&amp; row.categories.length > 0}}" class="flex flex-wrap gap-2 items-center">
+              <span data-ref="category_label" class="text-label-subtle">$t:sirsoft-board.admin.board.index.categories_label</span>
+              <status-badge data-type="composite" data-ref="category_tag_{{categoryIdx}}" data-each="category, categoryIdx in row.categories" status="default" label="{{category}}" :showIcon="false"/>
+            </div>
+          </card>
+          <on type="change" event="onPageChange">
+            <!-- 페이지 이동도 상태가 아니라 URL 로 남긴다 — 데이터소스가 `query.page` 를 읽으므로 이 이동 하나로 목록이 다시 채워진다 -->
+            <navigate path="/admin/boards" :mergeQuery="true">
+              <query page="{{$args[0]}}"/>
+            </navigate>
+          </on>
+        </card-grid>
+      </div>
+    </div>
+  </slot>
+  <modal>
+    <!-- 복제 확인 — 복제가 무엇을 가져오고 무엇을 빼는지(글·slug) 먼저 알린 뒤, 실제 복제는 생성 화면에 `copy_id` 를 달아 넘기는 것으로 끝난다. 이 모달 자체는 아무것도 저장하지 않는다 -->
+    <modal data-type="composite" data-ref="copy_confirm_modal" title="$t:sirsoft-board.admin.modals.copy.title" size="sm">
+      <div data-ref="copy_modal_content" class="row-stack">
+        <p data-ref="copy_board_name" class="text-primary font-medium">$t:sirsoft-board.admin.modals.copy.message|name={{_global.modal_data.name}}</p>
+        <div data-ref="copy_info_box" class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3">
+          <p data-ref="copy_info_copied" class="text-label flex items-start gap-2">
+            <span class="text-tertiary">·</span>
+            <span>$t:sirsoft-board.admin.modals.copy.info_copied</span>
+          </p>
+          <p data-ref="copy_info_excluded" class="text-label flex items-start gap-2 mt-1">
+            <span class="text-tertiary">·</span>
+            <span>$t:sirsoft-board.admin.modals.copy.info_excluded</span>
+          </p>
+          <p data-ref="copy_info_slug" class="text-label flex items-start gap-2 mt-1">
+            <span class="text-tertiary">·</span>
+            <span>$t:sirsoft-board.admin.modals.copy.info_slug</span>
+          </p>
+        </div>
+        <div data-ref="copy_button_group" class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <button data-ref="copy_cancel_button" class="px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400">
+            <on type="click">
+              <close-modal target="copy_confirm_modal"/>
+            </on>
+            $t:common.cancel
+          </button>
+          <button data-ref="copy_confirm_button" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400">
+            <on type="click">
+              <close-modal target="copy_confirm_modal"/>
+            </on>
+            <on type="click">
+              <!-- 복사 생성 폼으로 이동 — copy_id 는 query 로 넘긴다. mergeQuery 는 path 의 인라인 쿼리스트링을 버리므로 path 에 붙여두면 사라진다 (#75). -->
+              <navigate path="/admin/boards/create" :mergeQuery="true">
+                <query copy_id="{{_global.modal_data.id}}"/>
+              </navigate>
+            </on>
+            $t:sirsoft-board.admin.board.actions.copy
+          </button>
+        </div>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 삭제 확인 — 남은 글 수에 따라 경고 등급과 문구가 갈린다(글이 있으면 error, 없으면 warning). 게시판 삭제는 글까지 함께 지우는 되돌릴 수 없는 동작이라 백업 안내를 함께 띄운다 -->
+    <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:sirsoft-board.admin.modals.delete.title" size="sm">
+      <div data-ref="delete_warning" class="row-stack">
+        <p data-ref="delete_board_name" class="text-primary font-semibold text-lg">$t:sirsoft-board.admin.modals.delete.confirm|name={{_global.modal_data.name}}</p>
+        <p data-ref="delete_posts_info" class="text-gray-700 dark:text-gray-300">{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.with_posts_info|count=' + _global.modal_data.posts_count + '|posts_count=' + _global.modal_data.posts_count : '$t:sirsoft-board.admin.modals.delete.no_posts_info'}}</p>
+        <alert data-type="composite" data-ref="delete_main_alert" type="{{_global.modal_data.posts_count > 0 ? 'error' : 'warning'}}" message="{{_global.modal_data.posts_count > 0 ? '$t:sirsoft-board.admin.modals.delete.force_delete_warning_with_posts' : '$t:sirsoft-board.admin.modals.delete.force_delete_warning_no_posts'}}"/>
+        <p data-ref="delete_backup_notice" data-if="{{_global.modal_data.posts_count > 0}}" class="text-label">$t:sirsoft-board.admin.modals.delete.backup_notice</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+          <on type="click">
+            <!-- 삭제 실행 — 진행 표시를 켜 두 번 눌리는 것을 막고, 성공하면 목록과 «관리자 메뉴」를 함께 다시 읽는다(게시판이 메뉴에 등재돼 있으면 사이드바에 유령 항목이 남기 때문) -->
+            <sequence>
+              <set-state target="global" :isDeleting="true"/>
+              <api-call :auth_required="true" target="/api/modules/sirsoft-board/admin/boards/{{_global.modal_data?.slug}}" method="DELETE">
+                <success>
+                  <set-state target="global" :isDeleting="false"/>
+                  <set-state target="global" :forceDeleteBoard="false" :modal_data="null"/>
+                  <refetch-data-source dataSourceId="boards" :sync="true"/>
+                  <refetch-data-source dataSourceId="admin_menu"/>
+                  <toast type="success" message="$t:sirsoft-board.admin.board.messages.deleted"/>
+                  <close-modal/>
+                </success>
+                <fail>
+                  <set-state target="global" :isDeleting="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <body/>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
+          <span>{{_global.isDeleting ? '$t:sirsoft-board.common.deleting' : '$t:sirsoft-board.common.delete'}}</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+</layout>

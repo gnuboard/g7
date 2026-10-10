@@ -2,11 +2,13 @@
 
 namespace App\Repositories;
 
+use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Models\Module;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Schema;
 
 class ModuleRepository implements ModuleRepositoryInterface
 {
@@ -268,11 +270,11 @@ class ModuleRepository implements ModuleRepositoryInterface
         $activeModules = Module::where('status', ExtensionStatus::Active->value)->get();
 
         if ($activeModules->isEmpty()) {
-            return new Collection();
+            return new Collection;
         }
 
         // ModuleManager를 통해 각 모듈의 의존성 확인
-        $moduleManager = app(\App\Contracts\Extension\ModuleManagerInterface::class);
+        $moduleManager = app(ModuleManagerInterface::class);
 
         return $activeModules->filter(function (Module $module) use ($moduleManager, $moduleIdentifier) {
             $moduleInstance = $moduleManager->getModule($module->identifier);
@@ -281,10 +283,11 @@ class ModuleRepository implements ModuleRepositoryInterface
                 return false;
             }
 
-            $dependencies = $moduleInstance->getDependencies();
+            // 매니페스트 dependencies.modules 는 「식별자 => 버전 제약」 맵이다(목록 모양도 받는다). 종전 판정은
+            // 매니페스트 전체에 in_array 를 쓰거나 존재하지 않는 메서드를 찾아 한 번도 의존을 찾지 못했다(#138 실측 ①).
+            $declared = $moduleInstance->getDependencies()['modules'] ?? [];
 
-            // 해당 모듈이 의존성에 포함되어 있는지 확인
-            return in_array($moduleIdentifier, $dependencies);
+            return is_array($declared) && (array_key_exists($moduleIdentifier, $declared) || in_array($moduleIdentifier, $declared, true));
         })->values();
     }
 
@@ -303,11 +306,11 @@ class ModuleRepository implements ModuleRepositoryInterface
         $activeModules = Module::where('status', ExtensionStatus::Active->value)->get();
 
         if ($activeModules->isEmpty()) {
-            return new Collection();
+            return new Collection;
         }
 
         // ModuleManager를 통해 각 모듈의 플러그인 의존성 확인
-        $moduleManager = app(\App\Contracts\Extension\ModuleManagerInterface::class);
+        $moduleManager = app(ModuleManagerInterface::class);
 
         return $activeModules->filter(function (Module $module) use ($moduleManager, $pluginIdentifier) {
             $moduleInstance = $moduleManager->getModule($module->identifier);
@@ -316,15 +319,11 @@ class ModuleRepository implements ModuleRepositoryInterface
                 return false;
             }
 
-            // getPluginDependencies 메서드가 있는지 확인
-            if (! method_exists($moduleInstance, 'getPluginDependencies')) {
-                return false;
-            }
+            // 매니페스트 dependencies.plugins 는 「식별자 => 버전 제약」 맵이다(목록 모양도 받는다). 종전 판정은
+            // 매니페스트 전체에 in_array 를 쓰거나 존재하지 않는 메서드를 찾아 한 번도 의존을 찾지 못했다(#138 실측 ①).
+            $declared = $moduleInstance->getDependencies()['plugins'] ?? [];
 
-            $pluginDependencies = $moduleInstance->getPluginDependencies();
-
-            // 해당 플러그인이 의존성에 포함되어 있는지 확인
-            return in_array($pluginIdentifier, $pluginDependencies);
+            return is_array($declared) && (array_key_exists($pluginIdentifier, $declared) || in_array($pluginIdentifier, $declared, true));
         })->values();
     }
 
@@ -335,7 +334,7 @@ class ModuleRepository implements ModuleRepositoryInterface
      */
     public function findAutoDeactivated(): Collection
     {
-        if (! \Illuminate\Support\Facades\Schema::hasColumn('modules', 'deactivated_reason')) {
+        if (! Schema::hasColumn('modules', 'deactivated_reason')) {
             return new Collection;
         }
 

@@ -1,0 +1,43 @@
+<!-- 의존 확장이 갖춰지지 않아 화면을 띄울 수 없을 때의 에러 화면. 에러 6종 중 **유일하게 내용이 있다** —
+  `_global.errorData` 의 `modules`/`plugins` 에 담긴 미충족 의존 목록을 필요 버전과 함께 보여 준다.
+  그 블록은 두 배열이 모두 비면 통째로 숨는다(의존 정보 없이 503 만 온 경우 빈 상자가 남지 않게).
+  값을 채우는 쪽은 이 레이아웃이 아니라 에러를 띄운 코어 가드다. -->
+<layout name="errors/503" version="1.0.0" extends="_admin_base">
+  <meta title="$t:errors.503.title" :is_error_layout="true" :error_code="503"/>
+  <slot name="content">
+    <div data-ref="error_container" class="flex-center flex-col justify-center min-h-[60vh] text-center p-8">
+      <icon data-ref="error_icon" name="triangle-exclamation" class="text-8xl text-orange-400 dark:text-orange-500 mb-6"/>
+      <h1 data-ref="error_code" class="text-primary text-6xl font-bold mb-4">503</h1>
+      <h2 data-ref="error_title" class="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2">$t:errors.503.title</h2>
+      <p data-ref="error_message" class="text-gray-500 dark:text-gray-400 mb-4 max-w-md">$t:errors.503.message</p>
+      <div data-ref="dependency_info" data-if="{{_global.errorData &amp;&amp; ((_global.errorData.modules &amp;&amp; _global.errorData.modules.length > 0) || (_global.errorData.plugins &amp;&amp; _global.errorData.plugins.length > 0))}}" class="alert-warning text-left max-w-md w-full">
+        <p class="text-sm font-medium text-orange-800 dark:text-orange-200 mb-3">$t:errors.503.unmet_dependencies</p>
+        <div data-ref="modules_list" data-if="{{_global.errorData.modules &amp;&amp; _global.errorData.modules.length > 0}}" class="mb-3">
+          <p class="text-secondary text-xs font-semibold mb-1">$t:errors.503.required_modules</p>
+          <div class="flex flex-wrap gap-2">
+            <span data-each="mod in _global.errorData.modules" class="text-danger-soft inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded">
+              <icon name="circle-xmark" class="text-xs"/>
+              <span>{{mod.name || mod.identifier}} ({{mod.required_version}})</span>
+            </span>
+          </div>
+        </div>
+        <div data-ref="plugins_list" data-if="{{_global.errorData.plugins &amp;&amp; _global.errorData.plugins.length > 0}}">
+          <p class="text-secondary text-xs font-semibold mb-1">$t:errors.503.required_plugins</p>
+          <div class="flex flex-wrap gap-2">
+            <span data-each="plug in _global.errorData.plugins" class="text-danger-soft inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded">
+              <icon name="circle-xmark" class="text-xs"/>
+              <span>{{plug.name || plug.identifier}} ({{plug.required_version}})</span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <p data-ref="contact_message" class="text-sm text-gray-400 dark:text-gray-500 mb-8">$t:errors.503.contact_admin</p>
+      <button data-ref="back_button" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+        <on type="click">
+          <navigate path="/admin"/>
+        </on>
+        $t:errors.back_home
+      </button>
+    </div>
+  </slot>
+</layout>

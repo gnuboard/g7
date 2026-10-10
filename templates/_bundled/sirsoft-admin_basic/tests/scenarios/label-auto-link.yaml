@@ -1,0 +1,28 @@
+feature: 입력칸·선택 상자·글상자의 라벨 자동 연결
+
+description: |
+  레이아웃은 보이는 라벨과 입력칸을 형제로만 두고 for/id 로 잇지 않아(관리자 레이아웃 약 460칸), 화면 낭독기가
+  칸을 이름 없이 읽었다. 곁 라벨 훅 하나(useAdjacentLabel — Input·Select·Textarea·Toggle·TagInput 공통)가 앞에 놓인
+  가장 가까운 라벨(라벨을 상자로 감싼 모양 포함, 최대 세 겹 위 조상까지 — FormField)을 찾아 aria-labelledby 로 잇는다.
+  라벨 범위(라벨 뒤 형제들 가운데 다음 라벨 전까지)에 이 칸 말고 다른 칸이 있으면 그룹 제목(회원 등록 「주소」)이나
+  칸이 둘인 상자(기간 시작·끝)의 제목으로 보고 잇지 않는다. 선택 상자 버튼은 라벨과 고른 값을 함께 읽는다. 이미 이름이
+  있는 칸(aria-label·aria-labelledby·라벨 안의 칸·for 연결)은 그대로 두고, id 가 겹친 라벨은 잇지 않는다. id 없는
+  라벨에는 문서에 없는 id(g7-auto-label-N)를 골라 단다 — Label 부품은 훅 없이 둔다.
+
+  수정 이력: 이커머스 전수 실측 후속 B7 (2026-10-08) — 배송정책 등록 회수지·배송비 칸.
+
+axes:
+  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11, c12, c13, c14, c15, c16]
+
+effects:
+  - form_control_named_by_preceding_label   # 앞에 놓인 가장 가까운 라벨(상자로 감싼 모양 포함) 글자가 칸 이름
+  - select_named_by_label_and_value         # 선택 상자는 라벨 + 고른 값, 기본 select 는 라벨
+  - existing_names_preserved                # 이미 이름이 있는 칸은 바꾸지 않음
+  - ambiguous_label_not_linked              # 라벨 범위에 칸이 둘 이상이면(입력칸·스위치) 잇지 않음
+  - no_duplicate_ids                        # 자동 id 는 문서에 있는 id 를 피하고, 겹친 id 라벨은 잇지 않음
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/LabelAutoLink.test.tsx
+
+validation:
+  browser_check: 관리자 배송정책 등록 — 회수지 우편번호·기본주소·상세주소, 배송비·반품/교환 배송비 칸의 접근성 이름이 라벨 글자

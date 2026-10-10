@@ -16,6 +16,10 @@
  * 편집기 코어 위젯이므로 `g7le-*` + 인라인 스타일만 쓴다(CSS 라이브러리 비종속).
  * 자산이 깨진 상황에서도 이 화면만은 떠야 하기 때문이다.
  *
+ * **편집 버퍼는 파일마다 따로다.** 종전에는 `draft` 문자열 한 벌이라 파일을 바꾸면 앞 파일의
+ * 저장하지 않은 편집이 경고 없이 사라졌고(D2), 대상 확장을 바꿀 때도 묻지 않고 버렸다(D3).
+ * 지금은 `Map<path, buffer>` 가 편집 값을 소유하고, 서버 본문은 **버퍼가 깨끗할 때만** 덮는다.
+ *
  * @since engine-v1.63.0
  */
 
@@ -23,8 +27,52 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   useCustomAssets,
   type CustomAssetFile,
+  type CustomAssetSearchHit,
   type CustomAssetTarget,
 } from '../hooks/useCustomAssets';
+import {
+  buildPathTree,
+  filterPathTree,
+  highlightMatch,
+  type PathTreeNode,
+} from '../shared/treeSearch';
+import { useEditorDialog } from './EditorDialog';
+
+/** 열린 파일을 클라이언트에서 훑을 때의 상한 — 서버 검색(`CustomAssetService::search`)과 같은 값. */
+const MAX_LOCAL_MATCHES_PER_FILE = 20;
+const MAX_LOCAL_PREVIEW_CHARS = 200;
+
+/**
+ * 열린 파일의 **현재 본문**을 검색어로 훑는다 (계획 §4.7 — 이미 열려 있는 파일은 클라이언트가 즉시 찾는다).
+ *
+ * 서버 검색은 저장된 본문만 보므로, 저장하지 않은 편집분은 여기서만 찾을 수 있다. 좌표(1-base)·
+ * 상한·preview 절단은 서버 응답과 같은 규약이라 결과 행이 같은 모양으로 트리에 얹힌다.
+ *
+ * @since engine-v1.71.0
+ */
+function scanBufferForHits(path: string, value: string, needle: string): CustomAssetSearchHit {
+  const lines: CustomAssetSearchHit['lines'] = [];
+  const rows = value.split('\n');
+
+  for (let i = 0; i < rows.length && lines.length < MAX_LOCAL_MATCHES_PER_FILE; i += 1) {
+    const column = rows[i].toLocaleLowerCase().indexOf(needle);
+
+    if (column === -1) {
+      continue;
+    }
+
+    const preview = rows[i].trim();
+
+    lines.push({
+      line: i + 1,
+      column: column + 1,
+      preview:
+        preview.length > MAX_LOCAL_PREVIEW_CHARS ? `${preview.slice(0, MAX_LOCAL_PREVIEW_CHARS)}…` : preview,
+    });
+  }
+
+  return { path, name_matched: path.toLocaleLowerCase().includes(needle), match_count: lines.length, lines };
+}
 
 export interface CustomAssetsModalProps {
   /** 편집 대상 템플릿 식별자 — 대상 목록의 기본 선택 */
@@ -33,6 +81,11 @@ export interface CustomAssetsModalProps {
   t: (key: string, params?: Record<string, string | number>) => string;
   /** 모달 닫기 */
   onClose: () => void;
+  /**
+   * 창 바깥(백드롭) 클릭에 쓸 닫기 요청을 등록한다 — 등록한 함수는 저장하지 않은 편집을 확인한 뒤 닫는다.
+   * 창이 사라지면 null 로 풀어 준다.
+   */
+  onRegisterCloseRequest?: (handler: (() => void) | null) => void;
 }
 
 const wrap: React.CSSProperties = {
@@ -265,8 +318,104 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+const treeRowBase: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  width: '100%',
+  padding: '5px 8px',
+  borderRadius: 6,
+  borderWidth: 1,
+  borderStyle: 'solid',
+  borderColor: 'transparent',
+  backgroundColor: 'transparent',
+  fontSize: 12,
+  color: '#334155',
+  cursor: 'pointer',
+  textAlign: 'left',
+};
+
+const folderRow: React.CSSProperties = {
+  ...treeRowBase,
+  color: '#475569',
+  fontWeight: 600,
+  cursor: 'pointer',
+};
+
+const dirtyDot: React.CSSProperties = {
+  width: 7,
+  height: 7,
+  borderRadius: '50%',
+  background: '#f59e0b',
+  flexShrink: 0,
+};
+
+const searchInput: React.CSSProperties = {
+  width: '100%',
+  boxSizing: 'border-box',
+  padding: '6px 8px',
+  marginBottom: 6,
+  borderRadius: 6,
+  borderWidth: 1,
+  borderStyle: 'solid',
+  borderColor: '#cbd5e1',
+  fontSize: 12,
+  color: '#334155',
+};
+
+const gutterStyle: React.CSSProperties = {
+  padding: '10px 8px',
+  textAlign: 'right',
+  color: '#94a3b8',
+  background: '#f8fafc',
+  borderRight: '1px solid #e2e8f0',
+  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+  fontSize: 12,
+  lineHeight: 1.6,
+  userSelect: 'none',
+  overflow: 'hidden',
+  minWidth: 34,
+};
+
+const editorFrame: React.CSSProperties = {
+  flex: 1,
+  minHeight: 220,
+  display: 'flex',
+  borderRadius: 6,
+  borderWidth: 1,
+  borderStyle: 'solid',
+  borderColor: '#cbd5e1',
+  overflow: 'hidden',
+};
+
+const hitRow: React.CSSProperties = {
+  ...treeRowBase,
+  paddingLeft: 22,
+  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+  fontSize: 11,
+  color: '#64748b',
+};
+
+/**
+ * 한 파일의 편집 버퍼 — 값과 그 기준선(서버에서 읽은 본문).
+ *
+ * @since engine-v1.71.0
+ */
+interface AssetBuffer {
+  value: string;
+  base: string;
+}
+
+/**
+ * 아직 저장하지 않은 새 파일의 버퍼 키 — 경로에는 NUL 이 올 수 없어 실제 파일 경로와 겹치지 않는다.
+ *
+ * 새 파일 본문을 «입력 중인 경로» 에 매달면 경로 칸을 고치는 순간 본문이 옛 경로 버퍼에 숨고, 경로보다 본문을
+ * 먼저 쓰면 입력이 버려진다. 본문은 경로와 따로 두고 저장에 성공했을 때 그 경로로 옮긴다.
+ */
+const NEW_FILE_BUFFER_KEY = '\u0000new-file';
+
 export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactElement {
-  const { templateIdentifier, t, onClose } = props;
+  const { templateIdentifier, t, onClose, onRegisterCloseRequest } = props;
 
   const targets = useMemo(() => buildTargets(templateIdentifier), [templateIdentifier]);
   const [targetKey, setTargetKey] = useState(`template:${templateIdentifier}`);
@@ -276,60 +425,148 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
   );
 
   const assets = useCustomAssets({ type: target.type, identifier: target.identifier });
+  // 확인·입력 대화상자 — 브라우저 기본 confirm/prompt 대신 편집기 모달 위에 띄운다(engine-v1.78.7).
+  const dialog = useEditorDialog(t);
   const { reload } = assets;
 
   const [selected, setSelected] = useState<CustomAssetFile | null>(null);
-  const [draft, setDraft] = useState('');
   const [newPath, setNewPath] = useState('');
   const [isBusy, setIsBusy] = useState(false);
+  const [query, setQuery] = useState('');
+  const [hits, setHits] = useState<CustomAssetSearchHit[]>([]);
+  const [collapsed, setCollapsed] = useState<string[]>([]);
+  const [wordWrap, setWordWrap] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const gutterRef = useRef<HTMLDivElement | null>(null);
+
+  /**
+   * 파일별 편집 버퍼.
+   *
+   * 종전에는 `draft` 문자열 **한 벌**이라 파일을 바꾸면 앞 파일의 저장하지 않은 편집이
+   * 경고 없이 사라졌다(D2 — 레이아웃 편집기와 같은 결함 클래스). 여기서도 방향을 뒤집어,
+   * 서버 본문은 읽어 오기만 하고 편집 중인 값은 이 맵이 소유한다.
+   */
+  const [buffers, setBuffers] = useState<Record<string, AssetBuffer>>({});
+
+  // 새 파일은 전용 버퍼를 그린다 — 빈 값으로 그리면 키마다 빈 값에 한 글자가 붙어 버퍼에 마지막 글자만
+  // 남는다(실측 2026-10-03: 한 줄을 쳐서 저장하니 「}」 1바이트).
+  const bufferKey = selected ? selected.path : NEW_FILE_BUFFER_KEY;
+  const draft = buffers[bufferKey]?.value ?? '';
+  const dirtyPaths = useMemo(
+    () => Object.entries(buffers).filter(([, b]) => b.value !== b.base).map(([path]) => path),
+    [buffers],
+  );
+  const dirtySet = useMemo(() => new Set(dirtyPaths), [dirtyPaths]);
 
   useEffect(() => {
     void reload();
   }, [reload]);
 
-  // 대상이 바뀌면 이전 확장의 선택·초안을 버린다. 남겨 두면 A 확장에서 열어 둔 본문을
-  // B 확장에 저장하게 되고, 경로가 유효하면 서버는 정상 200 으로 받아들인다.
-  useEffect(() => {
-    setSelected(null);
-    setDraft('');
-    setNewPath('');
-  }, [targetKey]);
+  /** 미저장이 있으면 되묻는다 — 없으면 그냥 진행한다. */
+  const confirmDiscard = useCallback(async (): Promise<boolean> => {
+    if (dirtyPaths.length === 0) {
+      return true;
+    }
 
+    return dialog.confirm({
+      title: t('layout_editor.chrome.dirty_guard.title'),
+      message: t('layout_editor.custom_assets.discard_confirm', { count: dirtyPaths.length }),
+      confirmLabel: t('layout_editor.chrome.dirty_guard.discard'),
+      cancelLabel: t('layout_editor.chrome.dirty_guard.stay'),
+      danger: true,
+    });
+  }, [dirtyPaths.length, dialog, t]);
+
+  /**
+   * 대상(확장)을 바꿉니다 — 미저장 편집이 있으면 확인을 받는다(D3).
+   *
+   * 종전에는 아무 말 없이 버렸다. 대상이 바뀌면 버퍼를 비워야 하는 것은 맞지만(A 확장의 본문을
+   * B 확장에 저장하면 경로만 맞으면 서버는 200 으로 받아들인다), **버릴지 말지는 사용자가 정한다**.
+   */
+  const changeTarget = useCallback(
+    async (nextKey: string) => {
+      if (nextKey === targetKey) {
+        return;
+      }
+
+      if (!(await confirmDiscard())) {
+        return;
+      }
+
+      setTargetKey(nextKey);
+      setSelected(null);
+      setNewPath('');
+      setBuffers({});
+      setQuery('');
+      setHits([]);
+    },
+    [targetKey, confirmDiscard],
+  );
+
+  /**
+   * 파일을 엽니다 — **미저장 버퍼가 있으면 서버 본문을 덮지 않는다**(D2 의 정면 해결).
+   */
   const openFile = useCallback(
     async (file: CustomAssetFile) => {
       setSelected(file);
 
       if (!file.editable) {
-        setDraft('');
+        return;
+      }
 
+      const existing = buffers[file.path];
+
+      if (existing && existing.value !== existing.base) {
         return;
       }
 
       setIsBusy(true);
       const content = await assets.read(file.path);
       setIsBusy(false);
-      setDraft(content ?? '');
+
+      const value = content ?? '';
+      setBuffers((current) => ({ ...current, [file.path]: { value, base: value } }));
     },
-    [assets],
+    [assets, buffers],
   );
 
   const handleSave = useCallback(async () => {
     const path = selected?.path ?? newPath.trim();
 
-    if (!path) return;
+    if (!path) {
+      return;
+    }
+
+    const value = draft;
 
     setIsBusy(true);
-    const ok = await assets.save(path, draft);
+    const ok = await assets.save(path, value);
     setIsBusy(false);
 
-    if (ok && !selected) {
+    if (!ok) {
+      return;
+    }
+
+    // 저장에 성공하면 기준선을 옮긴다 — 그래야 dirty 표시가 사라지고 다시 열 때 서버 본문을 받는다.
+    // 새 파일이었으면 전용 버퍼를 그 경로로 옮긴다.
+    setBuffers((current) => {
+      const next = { ...current, [path]: { value, base: value } };
+
+      if (!selected) {
+        delete next[NEW_FILE_BUFFER_KEY];
+      }
+
+      return next;
+    });
+
+    if (!selected) {
       setNewPath('');
       setSelected({
         path,
         name: path.split('/').pop() ?? path,
         extension: (path.split('.').pop() ?? '').toLowerCase(),
-        size: draft.length,
+        size: value.length,
         modified_at: new Date().toISOString(),
         editable: true,
         loaded: true,
@@ -340,9 +577,14 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
   const handleDelete = useCallback(async () => {
     if (!selected) return;
 
-    // 되돌릴 수 없는 조작이라 확인을 받는다. 편집기 코어 위젯이므로 모달 스택을
-    // 더 쌓지 않고 브라우저 확인을 쓴다(나가기·템플릿 전환과 같은 방식).
-    if (typeof window !== 'undefined' && !window.confirm(t('layout_editor.custom_assets.delete_confirm'))) {
+    // 되돌릴 수 없는 조작이라 확인을 받는다 — 편집기 대화상자(위험 확인, 처음 초점 [취소]).
+    const proceed = await dialog.confirm({
+      title: selected.path,
+      message: t('layout_editor.custom_assets.delete_confirm'),
+      confirmLabel: t('layout_editor.custom_assets.delete'),
+      danger: true,
+    });
+    if (!proceed) {
       return;
     }
 
@@ -351,10 +593,53 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
     setIsBusy(false);
 
     if (ok) {
+      setBuffers((current) => {
+        const next = { ...current };
+        delete next[selected.path];
+
+        return next;
+      });
       setSelected(null);
-      setDraft('');
     }
-  }, [assets, selected, t]);
+  }, [assets, selected, dialog, t]);
+
+  /** 이름변경(= 이동) — 확장자를 바꾸는 이름은 서버가 막는다(서빙 규약이 함께 바뀐다). */
+  const handleRename = useCallback(async () => {
+    if (!selected) return;
+
+    const next = await dialog.prompt({
+      title: t('layout_editor.custom_assets.rename'),
+      message: t('layout_editor.custom_assets.rename_prompt'),
+      defaultValue: selected.path,
+      confirmLabel: t('layout_editor.custom_assets.rename'),
+    });
+
+    if (!next || next.trim() === '' || next.trim() === selected.path) {
+      return;
+    }
+
+    setIsBusy(true);
+    const ok = await assets.rename(selected.path, next.trim());
+    setIsBusy(false);
+
+    if (!ok) {
+      return;
+    }
+
+    const from = selected.path;
+    setBuffers((current) => {
+      const moved = { ...current };
+      const buffer = moved[from];
+      delete moved[from];
+
+      if (buffer) {
+        moved[next.trim()] = buffer;
+      }
+
+      return moved;
+    });
+    setSelected({ ...selected, path: next.trim(), name: next.trim().split('/').pop() ?? next.trim() });
+  }, [assets, selected, dialog, t]);
 
   const handleUpload = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -374,13 +659,201 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
     [assets],
   );
 
+  const handleClose = useCallback(async () => {
+    if (!(await confirmDiscard())) {
+      return;
+    }
+
+    onClose();
+  }, [confirmDiscard, onClose]);
+
+  // 백드롭 클릭도 [✕]·Esc 와 같은 확인을 거치게 닫기 요청을 모달 루트에 넘긴다.
+  useEffect(() => {
+    onRegisterCloseRequest?.(handleClose);
+
+    return () => onRegisterCloseRequest?.(null);
+  }, [onRegisterCloseRequest, handleClose]);
+
+  // 내용 검색 — 파일명 거르기와 **열린 파일의 본문**은 클라이언트가 즉시 하고(아래 `localHits`),
+  // 열리지 않은 파일의 본문 검색만 서버에 맡긴다.
+  useEffect(() => {
+    const keyword = query.trim();
+
+    if (keyword.length < 2) {
+      setHits([]);
+
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      void assets.search(keyword).then((rows) => {
+        if (!cancelled) {
+          setHits(rows);
+        }
+      });
+    }, 500);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // `assets.search` 는 대상이 바뀔 때만 새로 만들어진다 — 검색어·대상이 기준이다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, target.type, target.identifier]);
+
+  // `mod+s` 저장 / `escape` 닫기 — 편집 중에도 잡아야 하므로 모달 루트에서 받는다.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        void handleSave();
+
+        return;
+      }
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        void handleClose();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleSave, handleClose]);
+
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+
+  // 열린 파일(버퍼가 있는 파일)은 서버를 기다리지 않고 현재 본문에서 바로 찾는다 — 저장하지 않은
+  // 편집분까지 검색되고, 같은 경로의 서버 결과(저장본 기준)는 이 결과로 대체한다 (§4.7).
+  const localHits = useMemo(
+    () =>
+      normalizedQuery.length < 2
+        ? []
+        : Object.entries(buffers)
+            .filter(([path]) => path !== NEW_FILE_BUFFER_KEY)
+            .map(([path, buffer]) => scanBufferForHits(path, buffer.value, normalizedQuery)),
+    [buffers, normalizedQuery],
+  );
+  const mergedHits = useMemo(() => {
+    const openPaths = new Set(localHits.map((h) => h.path));
+
+    return [
+      ...hits.filter((h) => !openPaths.has(h.path)),
+      ...localHits.filter((h) => h.match_count > 0 || h.name_matched),
+    ];
+  }, [hits, localHits]);
+  const hitPaths = useMemo(() => new Set(mergedHits.map((h) => h.path)), [mergedHits]);
+  const hitsByPath = useMemo(() => new Map(mergedHits.map((h) => [h.path, h])), [mergedHits]);
+
+  const tree = useMemo(() => {
+    const built = buildPathTree(assets.files, (file) => file.path);
+
+    return normalizedQuery ? filterPathTree(built, normalizedQuery, hitPaths) : built;
+  }, [assets.files, normalizedQuery, hitPaths]);
+
+  const lineNumbers = useMemo(() => {
+    const count = draft === '' ? 1 : draft.split('\n').length;
+
+    return Array.from({ length: count }, (_, i) => i + 1).join('\n');
+  }, [draft]);
+
+  /** 트리 한 갈래를 그린다 (폴더는 접힘 토글, 파일은 열기). */
+  const renderNodes = (nodes: Array<PathTreeNode<CustomAssetFile>>): React.ReactNode =>
+    nodes.map((node) => {
+      if (node.item === undefined) {
+        const isOpen = normalizedQuery !== '' || !collapsed.includes(node.path);
+
+        return (
+          <div key={`d:${node.path}`}>
+            <button
+              type="button"
+              style={{ ...folderRow, paddingLeft: 8 + node.depth * 12 }}
+              aria-expanded={isOpen}
+              onClick={() =>
+                setCollapsed((current) =>
+                  current.includes(node.path)
+                    ? current.filter((p) => p !== node.path)
+                    : [...current, node.path],
+                )
+              }
+              data-testid={`g7le-custom-asset-folder-${node.path}`}
+            >
+              <span aria-hidden="true">{isOpen ? '▾' : '▸'}</span>
+              <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {highlightMatch(node.label, normalizedQuery)}
+              </span>
+            </button>
+            {isOpen ? renderNodes(node.children) : null}
+          </div>
+        );
+      }
+
+      const file = node.item;
+      const isDirty = dirtySet.has(file.path);
+      const hit = hitsByPath.get(file.path);
+
+      return (
+        <div key={file.path}>
+          <button
+            type="button"
+            style={{
+              ...(selected?.path === file.path ? rowSelected : treeRowBase),
+              paddingLeft: 8 + node.depth * 12,
+              ...(isDirty ? { color: '#b45309', fontWeight: 600 } : null),
+            }}
+            onClick={() => void openFile(file)}
+            data-testid={`g7le-custom-asset-row-${file.path}`}
+            data-loaded={file.loaded ? 'true' : 'false'}
+            data-dirty={isDirty ? 'true' : 'false'}
+          >
+            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {highlightMatch(node.label, normalizedQuery)}
+            </span>
+            {hit && hit.match_count > 0 ? (
+              <span style={{ color: '#64748b', fontSize: 11 }}>{hit.match_count}</span>
+            ) : null}
+            {isDirty ? (
+              <span style={dirtyDot} role="img" aria-label={t('layout_editor.custom_assets.unsaved')} />
+            ) : null}
+            <span style={{ color: '#94a3b8', fontSize: 11 }}>{formatSize(file.size)}</span>
+          </button>
+
+          {hit?.lines?.slice(0, 3).map((line) => (
+            <button
+              key={`${file.path}@${line.line}`}
+              type="button"
+              style={{ ...hitRow, paddingLeft: 20 + node.depth * 12 }}
+              onClick={() => void openFile(file)}
+              data-testid={`g7le-custom-asset-hit-${file.path}-${line.line}`}
+            >
+              <span style={{ minWidth: 26, textAlign: 'right', color: '#94a3b8' }}>{line.line}</span>
+              <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {highlightMatch(line.preview, normalizedQuery)}
+              </span>
+            </button>
+          ))}
+        </div>
+      );
+    });
+
   return (
     <div className="g7le-custom-assets" style={wrap} data-testid="g7le-custom-assets-modal">
       <div style={header}>
-        <span>🎨 {t('layout_editor.custom_assets.title')}</span>
+        <span>
+          🎨 {t('layout_editor.custom_assets.title')}
+          {dirtyPaths.length > 0 ? (
+            <span style={{ marginLeft: 6, color: '#b45309', fontSize: 12 }} data-testid="g7le-custom-assets-dirty-count">
+              ● {dirtyPaths.length}
+            </span>
+          ) : null}
+        </span>
         <select
           value={targetKey}
-          onChange={(event) => setTargetKey(event.target.value)}
+          onChange={(event) => changeTarget(event.target.value)}
           style={selectStyle}
           aria-label={t('layout_editor.custom_assets.target_label')}
           data-testid="g7le-custom-assets-target"
@@ -394,7 +867,7 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
         <button
           type="button"
           style={closeBtn}
-          onClick={onClose}
+          onClick={handleClose}
           aria-label={t('layout_editor.custom_assets.close')}
           data-testid="g7le-custom-assets-close"
         >
@@ -409,6 +882,16 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
       ) : (
         <div style={body}>
           <div style={listPane} data-testid="g7le-custom-assets-list">
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t('layout_editor.custom_assets.search_placeholder')}
+              aria-label={t('layout_editor.custom_assets.search_placeholder')}
+              style={searchInput}
+              data-testid="g7le-custom-assets-search"
+            />
+
             {assets.isLoading && assets.files.length === 0 ? (
               <div style={{ padding: 12, color: '#94a3b8', fontSize: 12 }}>
                 {t('layout_editor.custom_assets.loading')}
@@ -421,21 +904,13 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
               </div>
             ) : null}
 
-            {assets.files.map((file) => (
-              <button
-                key={file.path}
-                type="button"
-                style={selected?.path === file.path ? rowSelected : rowBase}
-                onClick={() => void openFile(file)}
-                data-testid={`g7le-custom-asset-row-${file.path}`}
-                data-loaded={file.loaded ? 'true' : 'false'}
-              >
-                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {file.path}
-                </span>
-                <span style={{ color: '#94a3b8', fontSize: 11 }}>{formatSize(file.size)}</span>
-              </button>
-            ))}
+            {!assets.isLoading && assets.files.length > 0 && tree.length === 0 ? (
+              <div style={{ padding: 12, color: '#94a3b8', fontSize: 12 }} data-testid="g7le-custom-assets-no-match">
+                {t('layout_editor.custom_assets.no_match', { keyword: query })}
+              </div>
+            ) : null}
+
+            {renderNodes(tree)}
           </div>
 
           <div style={editPane}>
@@ -462,13 +937,33 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
                   style={button}
                   onClick={() => {
                     setSelected(null);
-                    setDraft('');
+                    setNewPath('');
                   }}
                   data-testid="g7le-custom-assets-new"
                 >
                   {t('layout_editor.custom_assets.new_file')}
                 </button>
               ) : null}
+              {selected ? (
+                <button
+                  type="button"
+                  style={button}
+                  disabled={isBusy}
+                  onClick={() => void handleRename()}
+                  data-testid="g7le-custom-assets-rename"
+                >
+                  {t('layout_editor.custom_assets.rename')}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                style={wordWrap ? primary : button}
+                aria-pressed={wordWrap}
+                onClick={() => setWordWrap((current) => !current)}
+                data-testid="g7le-custom-assets-wrap"
+              >
+                {t('layout_editor.custom_assets.word_wrap')}
+              </button>
             </div>
 
             {selected && !selected.editable ? (
@@ -476,14 +971,67 @@ export function CustomAssetsModal(props: CustomAssetsModalProps): React.ReactEle
                 {t('layout_editor.custom_assets.binary_hint', { extension: selected.extension })}
               </div>
             ) : (
-              <textarea
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                style={textarea}
-                spellCheck={false}
-                aria-label={t('layout_editor.custom_assets.content_label')}
-                data-testid="g7le-custom-assets-content"
-              />
+              <div style={editorFrame}>
+                <div style={gutterStyle} ref={gutterRef} aria-hidden="true">
+                  {lineNumbers}
+                </div>
+                <textarea
+                  ref={textareaRef}
+                  value={draft}
+                  onChange={(event) => {
+                    const key = bufferKey;
+
+                    setBuffers((current) => ({
+                      ...current,
+                      [key]: { value: event.target.value, base: current[key]?.base ?? '' },
+                    }));
+                  }}
+                  onKeyDown={(event) => {
+                    // Tab 은 포커스 이동이 아니라 들여쓰기다(계획 §4.7) — 코드 입력칸에서 Tab 이 포커스를
+                    // 옮기면 쓸 수 없다. Shift+Tab 은 그 줄 머리의 공백 2칸을 거둔다.
+                    if (event.key !== 'Tab') return;
+
+                    const key = bufferKey;
+
+                    event.preventDefault();
+
+                    const target = event.currentTarget;
+                    const { selectionStart, selectionEnd } = target;
+                    const apply = (next: string, cursor: number): void => {
+                      setBuffers((current) => ({
+                        ...current,
+                        [key]: { value: next, base: current[key]?.base ?? '' },
+                      }));
+                      requestAnimationFrame(() => {
+                        target.selectionStart = target.selectionEnd = cursor;
+                      });
+                    };
+
+                    if (event.shiftKey) {
+                      const lineStart = draft.lastIndexOf('\n', selectionStart - 1) + 1;
+
+                      if (draft.slice(lineStart, lineStart + 2) !== '  ') return;
+
+                      apply(`${draft.slice(0, lineStart)}${draft.slice(lineStart + 2)}`, Math.max(lineStart, selectionStart - 2));
+
+                      return;
+                    }
+
+                    apply(`${draft.slice(0, selectionStart)}  ${draft.slice(selectionEnd)}`, selectionStart + 2);
+                  }}
+                  onScroll={(event) => {
+                    // 줄번호가 본문과 함께 흐르게 — 따로 두면 긴 파일에서 번호가 어긋난다.
+                    if (gutterRef.current) {
+                      gutterRef.current.scrollTop = event.currentTarget.scrollTop;
+                    }
+                  }}
+                  style={{ ...textarea, border: 'none', borderRadius: 0, flex: 1 }}
+                  spellCheck={false}
+                  wrap={wordWrap ? 'soft' : 'off'}
+                  aria-label={t('layout_editor.custom_assets.content_label')}
+                  data-testid="g7le-custom-assets-content"
+                />
+              </div>
             )}
 
             <div style={actionRow}>

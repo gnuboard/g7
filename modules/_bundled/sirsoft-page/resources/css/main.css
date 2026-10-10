@@ -1,0 +1,21 @@
+/**
+ * sirsoft-page 화면 스타일 — 관리자 페이지 화면에만 있는 호버·다크 짝
+ *
+ * 관리자 템플릿은 자기 레이아웃만 훑어 Tailwind 규칙을 만들므로, 이 모듈 레이아웃에만 있는 유틸리티
+ * (`dark:hover:bg-blue-900/40` 등)는 규칙이 생성되지 않아 화면에서 조용히 빠졌다. 그런 자리는 이 파일에
+ * `page-` 접두 클래스로 직접 둔다(docs/extension/module-assets.md 「확장 화면의 의미 색은 확장 CSS 가 싣는다」).
+ *
+ * - 이 파일은 템플릿의 `@layer utilities` 밖에 실린다 — 같은 속성의 템플릿 유틸리티보다 항상 앞선다.
+ * - 다크 모드: 관리자 템플릿은 `<html class="dark">` 로 전환하므로 `.dark` 조상 선택자로 짝을 둔다.
+ * - 색은 템플릿 테마 변수를 먼저 쓰고, 없으면 Tailwind 4 기본 팔레트(oklch) 값으로 떨어진다.
+ */
+
+/* 첨부 다운로드 아이콘 — 첨부 행에 마우스를 올리면 다크 모드에서도 파란색 (페이지 상세) */
+.dark .group:hover .page-attachment-icon {
+    color: var(--color-blue-400, oklch(70.7% 0.165 254.624)); /* blue-400 */
+}
+
+/* 옅은 파란 버튼 — 다크 모드 호버 배경 (페이지 상세의 버전 미리보기 버튼) */
+.dark .page-soft-button:hover {
+    background-color: color-mix(in oklab, var(--color-blue-900, oklch(37.9% 0.146 265.522)) 40%, transparent); /* blue-900/40 */
+}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconName, IconStyle, IconSize } from './IconTypes';
+import { IconName, IconStyle, IconSize, iconNameMap } from './IconTypes';
 
 export interface IconProps extends Omit<React.HTMLAttributes<HTMLElement>, 'style'> {
   /**
@@ -137,6 +137,14 @@ export const Icon: React.FC<IconProps> = ({
   // 아이콘 이름에서 'fa-' 접두사 제거 (이미 있으면)
   iconName = iconName.replace(/^fa-/, '');
 
+  // 상태 의미 토큰(status-*) → 이 템플릿의 글리프. 서버(상태 Enum)는 아이콘 라이브러리를 알지
+  // 않고 라이브러리 중립 토큰만 내보내므로, 토큰을 글리프로 바꾸는 표(IconTypes.iconNameMap)를
+  // 여기서 해석한다. 토큰 접두에만 적용한다 — 표 전체를 무조건 태우면 FA5 별칭 항목이 기존 화면의
+  // 유효한 글리프(map-marker 등)를 다른 그림으로 바꾼다.
+  if (iconName.startsWith('status-') && iconNameMap[iconName]) {
+    iconName = String(iconNameMap[iconName]).replace(/^fa-/, '');
+  }
+
   // 클래스 조합
   const classes = [
     styleClassMap[resolvedStyle],
@@ -151,15 +159,18 @@ export const Icon: React.FC<IconProps> = ({
     .filter(Boolean)
     .join(' ');
 
-  // 접근성: ariaLabel이 없으면 name에서 생성
-  const accessibilityLabel = ariaLabel || iconName.replace(/-/g, ' ');
+  // 접근성: 이름(ariaLabel)을 받은 아이콘만 이미지로 읽힌다. 이름 없는 아이콘은 꾸밈이라 접근성 트리에서 숨긴다.
+  // 종전에는 글리프 이름(영어)을 이름표로 달아 버튼 이름이 「refresh 업데이트 확인」·「trash can」·「ellipsis」 로
+  // 읽혔다(7.1.0 영역 J D-J4). 아이콘만 있는 버튼은 버튼 쪽에 사람이 읽는 다국어 이름(aria-label)을 단다.
+  const a11yProps = ariaLabel
+    ? { role: 'img' as const, 'aria-label': ariaLabel }
+    : { 'aria-hidden': true as const };
 
   return (
     <i
       className={classes}
       style={style}
-      aria-label={accessibilityLabel}
-      role="img"
+      {...a11yProps}
       {...props}
     />
   );

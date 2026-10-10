@@ -1,176 +1,294 @@
 {
-  "meta": { "is_partial": true, "description": "검색 상태별 UI (요약, 초기, 빈 결과)" },
-  "type": "basic",
-  "name": "Div",
-  "children": [
-    {
-      "comment": "검색 결과 요약",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{query?.q && searchResults?.data}}",
-      "props": { "className": "mb-4" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "P",
-          "props": { "className": "text-sm text-gray-600 dark:text-gray-400" },
-          "children": [
-            { "type": "basic", "name": "Span", "props": { "className": "text-blue-600 dark:text-blue-400 font-medium" }, "text": "\"{{query?.q}}\"" },
-            { "type": "basic", "name": "Span", "text": " $t:search.results" },
-            { "type": "basic", "name": "Span", "props": { "className": "font-medium" }, "text": " {{(searchResults.data.total ?? 0) | number}}" },
-            {
-              "comment": "총 건수가 상한에 걸리면 '건' 이 아니라 '건 이상' — 세지 않은 값을 정확한 것처럼 말하지 않는다",
-              "type": "basic",
-              "name": "Span",
-              "if": "{{(searchResults?.data?.total_is_exact ?? true) === true}}",
-              "text": "$t:search.result_count_suffix"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{(searchResults?.data?.total_is_exact ?? true) === false}}",
-              "text": "$t:search.result_count_suffix_at_least"
-            }
-          ]
-        },
-        {
-          "comment": "상한 초과 안내 — 검색어를 좁히면 정확한 건수와 마지막 페이지를 볼 수 있다. 검색 실패도 total_is_exact=false 를 싣지만(실패한 0건을 '정확한 0건'으로 말하지 않기 위함) 그때는 검색어를 좁혀도 해소되지 않으므로 이 조치 안내를 그리지 않는다",
-          "type": "basic",
-          "name": "P",
-          "if": "{{(searchResults?.data?.total_is_exact ?? true) === false && !(searchResults?.data?.search_failed ?? false)}}",
-          "props": { "className": "mt-1 text-xs text-gray-500 dark:text-gray-400" },
-          "text": "$t:search.refine_query_hint"
-        }
-      ]
+    "comment": "검색 전·후 안내 — 아직 검색어가 없을 때, 찾은 것이 없을 때, 찾았을 때의 요약 줄을 한자리에 모았다. 결과 목록(위 조각)과 갈라 둔 것은 이 셋이 결과의 종류와 무관하기 때문이다.",
+    "meta": {
+        "is_partial": true,
+        "description": "검색 상태별 UI (요약, 초기, 빈 결과)"
     },
-    {
-      "comment": "검색어 없는 초기 상태",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{!query?.q}}",
-      "props": { "className": "py-16 text-center" },
-      "children": [
+    "type": "basic",
+    "name": "Div",
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "mb-5 text-gray-300 dark:text-gray-600" },
-          "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "search", "size": "4x" } }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": { "className": "text-lg font-medium text-gray-900 dark:text-white mb-2" },
-          "text": "$t:search.initial.title"
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "props": { "className": "text-sm text-gray-500 dark:text-gray-400 mb-6" },
-          "text": "$t:search.initial.description"
-        },
-        {
-          "comment": "검색 팁 섹션",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "max-w-md mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-left" },
-          "children": [
-            {
-              "type": "basic",
-              "name": "H4",
-              "props": { "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2" },
-              "children": [
-                { "type": "basic", "name": "Icon", "props": { "name": "lightbulb", "size": "sm" } },
-                { "type": "basic", "name": "Span", "text": "$t:search.initial.hint_title" }
-              ]
+            "comment": "검색 결과 요약",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{query?.q && searchResults?.data}}",
+            "props": {
+                "className": "mb-4"
             },
-            {
-              "type": "basic",
-              "name": "Ul",
-              "props": { "className": "space-y-2 text-sm text-gray-600 dark:text-gray-400" },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Li",
-                  "props": { "className": "flex items-center gap-2" },
-                  "children": [
-                    { "type": "basic", "name": "Icon", "props": { "name": "check", "size": "sm", "className": "text-green-500 flex-shrink-0" } },
-                    { "type": "basic", "name": "Span", "text": "$t:search.initial.hint_1" }
-                  ]
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-blue-600 dark:text-blue-400 font-medium"
+                            },
+                            "text": "\"{{query?.q}}\""
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": " $t:search.results"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "font-medium"
+                            },
+                            "text": " {{(searchResults.data.total ?? 0) | number}}"
+                        },
+                        {
+                            "comment": "총 건수가 상한에 걸리면 '건' 이 아니라 '건 이상' — 세지 않은 값을 정확한 것처럼 말하지 않는다",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{(searchResults?.data?.total_is_exact ?? true) === true}}",
+                            "text": "$t:search.result_count_suffix|count={{searchResults.data.total ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{(searchResults?.data?.total_is_exact ?? true) === false}}",
+                            "text": "$t:search.result_count_suffix_at_least"
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Li",
-                  "props": { "className": "flex items-center gap-2" },
-                  "children": [
-                    { "type": "basic", "name": "Icon", "props": { "name": "check", "size": "sm", "className": "text-green-500 flex-shrink-0" } },
-                    { "type": "basic", "name": "Span", "text": "$t:search.initial.hint_2" }
-                  ]
+                    "comment": "상한 초과 안내 — 검색어를 좁히면 정확한 건수와 마지막 페이지를 볼 수 있다. 검색 실패도 total_is_exact=false 를 싣지만(실패한 0건을 '정확한 0건'으로 말하지 않기 위함) 그때는 검색어를 좁혀도 해소되지 않으므로 이 조치 안내를 그리지 않는다",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{(searchResults?.data?.total_is_exact ?? true) === false && !(searchResults?.data?.search_failed ?? false)}}",
+                    "props": {
+                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:search.refine_query_hint"
                 }
-              ]
-            }
-          ]
+            ]
+        },
+        {
+            "comment": "검색어 없는 초기 상태",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!query?.q}}",
+            "props": {
+                "className": "py-16 text-center"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "mb-5 text-gray-300 dark:text-gray-600"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "search",
+                                "size": "4x"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "text-lg font-medium text-gray-900 dark:text-white mb-2"
+                    },
+                    "text": "$t:search.initial.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400 mb-6"
+                    },
+                    "text": "$t:search.initial.description"
+                },
+                {
+                    "comment": "검색 팁 섹션",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "max-w-md mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-left"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H4",
+                            "props": {
+                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "lightbulb",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:search.initial.hint_title"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Ul",
+                            "props": {
+                                "className": "space-y-2 text-sm text-gray-600 dark:text-gray-400"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "props": {
+                                        "className": "flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "check",
+                                                "size": "sm",
+                                                "className": "text-green-500 flex-shrink-0"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:search.initial.hint_1"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "props": {
+                                        "className": "flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "check",
+                                                "size": "sm",
+                                                "className": "text-green-500 flex-shrink-0"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:search.initial.hint_2"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "전체 탭 검색 실패 — 결과가 0건이고 실패가 있으면 '결과 없음' 대신 오류 안내 (키 부재(구버전 코어)는 종전 렌더 유지)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{query?.q && searchResults?.data && (searchResults?.data?.total ?? 0) === 0 && (query?.type ?? 'all') === 'all' && (searchResults?.data?.search_failed ?? false)}}",
+            "props": {
+                "className": "py-16 text-center"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "mb-5 text-red-300 dark:text-red-500/60"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "size": "4x"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "text-lg font-medium text-gray-900 dark:text-white mb-2"
+                    },
+                    "text": "$t:search.failed.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:search.failed.suggestion"
+                }
+            ]
+        },
+        {
+            "comment": "검색 결과 없음 (전체 탭)",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{query?.q && searchResults?.data && (searchResults?.data?.total ?? 0) === 0 && (query?.type ?? 'all') === 'all' && !(searchResults?.data?.search_failed ?? false)}}",
+            "props": {
+                "className": "py-16 text-center"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "mb-5 text-gray-300 dark:text-gray-600"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "search",
+                                "size": "4x"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "text-lg font-medium text-gray-900 dark:text-white mb-2"
+                    },
+                    "text": "$t:search.empty.all"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:search.empty.suggestion"
+                }
+            ]
         }
-      ]
-    },
-    {
-      "comment": "전체 탭 검색 실패 — 결과가 0건이고 실패가 있으면 '결과 없음' 대신 오류 안내 (키 부재(구버전 코어)는 종전 렌더 유지)",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{query?.q && searchResults?.data && (searchResults?.data?.total ?? 0) === 0 && (query?.type ?? 'all') === 'all' && (searchResults?.data?.search_failed ?? false)}}",
-      "props": { "className": "py-16 text-center" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "mb-5 text-red-300 dark:text-red-500/60" },
-          "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "triangle-exclamation", "size": "4x" } }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": { "className": "text-lg font-medium text-gray-900 dark:text-white mb-2" },
-          "text": "$t:search.failed.title"
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
-          "text": "$t:search.failed.suggestion"
-        }
-      ]
-    },
-    {
-      "comment": "검색 결과 없음 (전체 탭)",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{query?.q && searchResults?.data && (searchResults?.data?.total ?? 0) === 0 && (query?.type ?? 'all') === 'all' && !(searchResults?.data?.search_failed ?? false)}}",
-      "props": { "className": "py-16 text-center" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "mb-5 text-gray-300 dark:text-gray-600" },
-          "children": [
-            { "type": "basic", "name": "Icon", "props": { "name": "search", "size": "4x" } }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": { "className": "text-lg font-medium text-gray-900 dark:text-white mb-2" },
-          "text": "$t:search.empty.all"
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
-          "text": "$t:search.empty.suggestion"
-        }
-      ]
-    }
-  ]
+    ]
 }

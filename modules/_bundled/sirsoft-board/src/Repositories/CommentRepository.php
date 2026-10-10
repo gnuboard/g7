@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Board\Repositories;
 
 use App\Helpers\PermissionHelper;
+use App\Helpers\TimezoneHelper;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\BoundedCount;
 use App\Support\Query\BoundedPage;
@@ -198,6 +199,7 @@ class CommentRepository implements CommentRepositoryInterface
      * @param  array  &$result  결과 배열 (참조)
      * @param  Collection  $grouped  parent_id로 그룹화된 댓글 컬렉션
      * @param  int  $parentId  부모 댓글 ID
+     * @return void
      */
     private function addRepliesRecursively(array &$result, Collection $grouped, int $parentId): void
     {
@@ -219,6 +221,7 @@ class CommentRepository implements CommentRepositoryInterface
      * 모든 하위 자손(depth 2+)을 포함한 전체 답글 수로 재계산합니다.
      *
      * @param  Collection  $comments  정렬된 댓글 컬렉션
+     * @return void
      */
     private function recalculateDescendantCounts(Collection $comments): void
     {
@@ -768,30 +771,16 @@ class CommentRepository implements CommentRepositoryInterface
     {
         $boardSlugFilter = $filters['board_slug'] ?? null;
         $search = $filters['search'] ?? null;
+        // 검색 대상 (content 기본 / post_title). 모르는 값은 기본값으로 떨어뜨린다 —
+        // 허용값 게이트는 컨트롤러가 담당하고, 저장소는 닫힌 분기만 유지한다.
+        $searchField = $filters['search_field'] ?? 'content';
         $sort = $filters['sort'] ?? 'latest';
         $cachedTotal = $filters['cached_total'] ?? null;
 
         $orderDirection = $sort === 'oldest' ? 'asc' : 'desc';
 
-        // 비활성 게시판 제외 — JOIN 대신 whereNotIn으로 인덱스 활용
-        // audit:allow query-unbounded-get reason: 게시판은 운영자가 만든 수만큼만 존재한다 (글·댓글 수와 무관)
-        $inactiveBoardIds = Board::where('is_active', false)->pluck('id')->all();
-
         // 관계/정렬은 지연 조인이 담당한다 (inner 는 키 컬럼만 조회)
-        $query = Comment::query()
-            ->where('board_comments.user_id', $userId)
-            // 삭제된 게시글 제외 — whereExists로 JOIN 대체
-            ->whereExists(function ($q) {
-                $q->select(DB::raw(1))
-                    ->from((new Post)->getTable())
-                    ->whereColumn('board_posts.id', 'board_comments.post_id')
-                    ->whereNull('board_posts.deleted_at');
-            });
-
-        // 비활성 게시판 제외
-        if (! empty($inactiveBoardIds)) {
-            $query->whereNotIn('board_comments.board_id', $inactiveBoardIds);
-        }
+        $query = $this->userCommentsBaseQuery($userId);
 
         // 게시판 필터: board_slug → board_id 조회
         if ($boardSlugFilter) {
@@ -801,10 +790,24 @@ class CommentRepository implements CommentRepositoryInterface
             }
         }
 
-        // 검색 (댓글 내용)
+        // 검색 (댓글 내용 / 게시글 제목)
         if ($search) {
             $keyword = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $search).'%';
-            $query->where('board_comments.content', 'like', $keyword);
+
+            if ($searchField === 'post_title') {
+                // 원글 제목 매칭. 위의 whereExists 가 이미 삭제글을 걸렀지만, 이 조건은
+                // 별개의 목적(검색)이라 같은 서브쿼리에 얹지 않고 독립 조건으로 둔다 —
+                // 한쪽을 고칠 때 다른 쪽 의미가 딸려 바뀌는 것을 막는다.
+                $query->whereExists(function ($q) use ($keyword) {
+                    $q->select(DB::raw(1))
+                        ->from((new Post)->getTable())
+                        ->whereColumn('board_posts.id', 'board_comments.post_id')
+                        ->whereNull('board_posts.deleted_at')
+                        ->where('board_posts.title', 'like', $keyword);
+                });
+            } else {
+                $query->where('board_comments.content', 'like', $keyword);
+            }
         }
 
         // 캐시된 total 이 있으면 COUNT 를 건너뛴다. 검색/게시판 필터가 걸린 조회는 캐시를
@@ -848,6 +851,52 @@ class CommentRepository implements CommentRepositoryInterface
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function countUserComments(int $userId): int
+    {
+        return $this->userCommentsBaseQuery($userId)->count();
+    }
+
+    /**
+     * 「내가 쓴 댓글」 목록과 그 건수가 함께 쓰는 기본 조건을 만듭니다.
+     *
+     * 삭제된 글의 댓글, 비활성 게시판과 댓글 기능을 끈 게시판의 댓글은 뺀다 — 원글 화면에서 더 이상
+     * 보이지 않는 댓글이라 목록에도 통계에도 남기지 않는다. 목록과 통계가 같은 조건을 쓰도록 한곳에 둔다.
+     *
+     * @param  int  $userId  사용자 ID
+     * @return \Illuminate\Database\Eloquent\Builder<Comment> 댓글 쿼리
+     */
+    private function userCommentsBaseQuery(int $userId)
+    {
+        // 비활성 게시판 + 댓글 기능을 끈 게시판 제외 — JOIN 대신 whereNotIn으로 인덱스 활용.
+        // use_comment 를 끈 게시판의 기존 댓글은 원글에서 더 이상 보이지 않으므로
+        // 마이페이지 "내 댓글" 에도 남기지 않는다 (게시판 비활성과 같은 기준).
+        // audit:allow query-unbounded-get reason: 게시판은 운영자가 만든 수만큼만 존재한다 (글·댓글 수와 무관)
+        $excludedBoardIds = Board::where('is_active', false)
+            ->orWhere('use_comment', false)
+            ->pluck('id')
+            ->all();
+
+        $query = Comment::query()
+            ->where('board_comments.user_id', $userId)
+            // 삭제된 게시글 제외 — whereExists로 JOIN 대체
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from((new Post)->getTable())
+                    ->whereColumn('board_posts.id', 'board_comments.post_id')
+                    ->whereNull('board_posts.deleted_at');
+            });
+
+        // 비활성·댓글 비활성 게시판 제외
+        if (! empty($excludedBoardIds)) {
+            $query->whereNotIn('board_comments.board_id', $excludedBoardIds);
+        }
+
+        return $query;
+    }
+
+    /**
      * 부모 댓글의 replies_count 컬럼을 활성 대댓글 수로 재계산해 갱신합니다.
      *
      * @param  int  $parentCommentId  부모 댓글 ID
@@ -864,13 +913,16 @@ class CommentRepository implements CommentRepositoryInterface
     /**
      * 특정 날짜에 작성된 전체 게시판의 댓글 수를 조회합니다 (대시보드 집계용).
      *
-     * @param  string  $date  집계 기준 날짜 (Y-m-d)
+     * 날짜는 사이트 표준시의 하루로 풀어 UTC 범위로 센다(게시글 집계와 같은 경계 — 7.1.0 O-CF3).
+     *
+     * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시)
      * @return int 해당 날짜 작성 댓글 수
      */
     public function countCreatedOnDate(string $date): int
     {
-        $start = CarbonImmutable::parse($date)->startOfDay();
-        $end = $start->addDay();
+        $siteDay = CarbonImmutable::parse($date, TimezoneHelper::getSiteTimezone() ?: 'UTC')->startOfDay();
+        $start = $siteDay->utc();
+        $end = $siteDay->addDay()->utc();
 
         return Comment::query()
             ->whereNull('deleted_at')

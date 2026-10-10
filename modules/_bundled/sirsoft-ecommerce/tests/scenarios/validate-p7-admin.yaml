@@ -1,0 +1,82 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 결함 회귀 묶음이라 축이 서로 독립이다(화면·결함 종류). 교차 조합에 뜻이 없고, 효과마다 그 효과를 여는 조합을 테스트 docblock 이 직접 적는다.
+feature: "#599 validate P7 — 이커머스 관리자 화면(클레임·주문·배송정책·회원 배송지·쿠폰·설정) 결함 수정"
+
+description: |
+  브랜치 검증(2026-09-23)이 이커머스 관리자 화면과 그 핸들러에서 찾은 결함을 잠근다.
+  레이아웃은 구워진 짝 `.json`(런타임 값)으로, 주석 정합처럼 JSON 에 남지 않는 것은 소스로 잰다.
+
+  ① 클레임 목록의 설정 게이트 소스(사유 카탈로그·쇼핑몰 설정)가 claims.read 만 가진 운영자에게
+     진입마다 403 토스트를 띄웠다 — 403 을 억제한다.
+  ② 되돌릴 수 없는 첨부 일괄 정리에 확인 창이 없었다.
+  ③ Select 는 placeholder 를 그리지 않는다 — 택배사를 비울 수 없어 송장 삭제에 도달할 수 없었다.
+  ④ 정의 없는 클래스(btn-square·text-caption·input-sm)·prop(DataGrid loading·columnSelectorId)을 걷어냈다.
+  ⑤ 재진입 초기화 누락: 클레임 상세 전이 선택, 배송정책 폼 회수지·저장 id, 주문 취소의 「환불까지 한 번에 처리」.
+  ⑥ 금액 표기: 환불 합계의 부동소수 오차를 걷고, 은행 코드는 코드표에서 고른다.
+  ⑦ 권한·실패 경로: 취소 뒤 클레임 권한 없는 운영자를 신청서로 보내지 않고, orderClaims 실패가 화면 전체를
+     막지 않으며, 클레임 신청일 역전 구간이 목록 전체를 422 로 만들지 않는다.
+  ⑧ 문구: 모듈 핸들러 키를 모듈 접두사로 옮기고(번역 없으면 폴백), 취소신청서 전용 안내·ID 라벨 키·
+     쿠폰 모바일 라벨 키·누락 키 2개를 바로잡았다.
+
+axes:
+  surface: [admin_datagrids, admin_list_filters, admin_lists, admin_modals, claim_complete_modal, claim_detail, claim_list, claim_refund_execute_modal, claim_screens, coupon_list, member_autocomplete, order_detail, order_detail_cancel, order_list, settings_currency, shipping_policy_form, user_address_index, user_claim_handlers]
+  defect: [requester_link_numeric_id, client_formatted_points, dead_lang_key, client_authored_cancel_message, auto_advance_sticks, auto_branch_wrong_message, bank_code_free_text, btn_square_undefined, bulk_image_clear_without_confirm, cancel_item_transition_wrong_notice, claim_date_range_inverted_422, unreachable_mobile_cards, comment_prop_leaks, dark_hover_pair, darkmode_pair_missing, datagrid_undefined_props, dead_tab_change_binding, early_return_closes_modal, empty_reason_detail, float_refund_total, hardcoded_id_label, keyword_compare_without_trim, manual_transfer_notice_in_button_row, member_filter_without_stale_guard, navigate_without_claim_permission, order_claims_500_propagates, preset_drops_per_page, reentry_keeps_claim_state, row_actions_without_member, search_row_overflow_375, select_placeholder_ignored, settings_gate_403_toast, stale_filter_comment, tab_count_from_array_length, template_scoped_keys, transition_choice_survives_reentry, undefined_class_input_sm, undefined_class_text_caption, unstyled_text_input, uploader_max_size_zero]
+
+effects:
+  - address_member_filter_renders_only_current_keyword
+  - address_row_actions_disabled_without_member
+  - admin_layouts_have_dark_pairs
+  - admin_layouts_use_defined_classes
+  - cancel_item_transition_uses_dedicated_key
+  - cancel_modal_uses_defined_text_class
+  - claim_activity_log_id_label_translated
+  - claim_carrier_empty_option_is_selectable
+  - claim_completion_early_exit_rejects
+  - claim_dark_hover_pairs_are_hover
+  - claim_detail_init_resets_transition_choice
+  - claim_empty_reason_detail_shows_placeholder
+  - claim_image_bulk_clear_requires_confirm_modal
+  - claim_list_settings_gated_sources_suppress_403
+  - claim_manual_transfer_notice_above_buttons
+  - claim_preset_keeps_per_page
+  - claim_refund_bank_code_is_select
+  - claim_refund_total_rounded
+  - claim_search_row_fits_portable
+  - claim_selects_lead_with_empty_option
+  - claim_uploader_max_size_from_server_mb
+  - claim_user_handlers_use_module_keys
+  - comment_is_node_comment_not_prop
+  - coupon_list_has_no_unreachable_mobile_cards
+  - address_list_has_no_unreachable_mobile_cards
+  - currency_inputs_are_styled
+  - datagrids_carry_only_defined_props
+  - detail_tab_nav_has_no_dead_binding
+  - list_back_button_uses_defined_classes
+  - member_search_guard_compares_trimmed_keyword
+  - order_cancel_auto_advance_resets_after_success
+  - order_cancel_auto_advance_resets_on_open
+  - order_cancel_message_follows_branch
+  - order_cancel_navigates_only_with_claim_access
+  - order_claim_date_range_is_normalized
+  - order_claim_tab_count_from_counts
+  - order_claims_failure_stays_in_section
+  - order_filter_comments_match_behavior
+  - shipping_policy_form_reentry_resets_claim_state
+  # P7 후속 — 서버가 확정한 응답 필드로 옮김
+  - claim_requester_link_uses_uuid
+  - claim_earned_points_render_server_formatted
+  - claim_refund_bank_placeholder_key_removed
+  - order_cancel_message_from_server_by_cancelled
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/validateP7AdminClaimLayouts.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/validateP7AdminOrderLayouts.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/validateP7AdminHandlers.test.ts
+
+notes: |
+  P7 후속(HTTP 묶음이 응답 필드를 확정한 뒤): 신청자 링크는 `requester_user_uuid`, 적립 포인트 표기는
+  `total_earned_points_amount_formatted`(결제 카드 · 비교 스냅샷 양쪽)를 먼저 읽고 필드가 없는 옛 응답만
+  종전 표기로 떨어진다. [주문취소] 안내는 서버 `message`(cancelled 로 둘로 갈림)를 그대로 쓴다.
+  사유 카탈로그 게이트가 `claims.read` 로도 열려 목록의 403 억제는 걷어냈다(게이트가 다시 좁혀지면 드러나야 한다).
+  환불 우선순위 서버값은 이 묶음 범위 밖이다.
+  2026-10-04: 쿠폰 목록과 회원 배송지 목록의 좁은 화면 카드 블록은 아무도 채우지 않는 `_global.isPortable` 에 묶여
+  한 번도 보이지 않아 걷어냈다(2026-10-04 결정 3). ⑧ 의 쿠폰 모바일 라벨 키 잠금은 블록과 그 키가 남지 않음을 잠그는 것으로 바꿨다.

@@ -216,7 +216,7 @@ MCP 서버가 등록되어 있으면, AI 코딩 도구에서 자연어로 요청
 
 | 도구 | 설명 | 주요 파라미터 |
 |------|------|-------------|
-| `g7-computed` | Computed 속성 의존성 추적, 순환 감지 | - |
+| `g7-computed` | Computed 속성 의존성 추적, 순환 감지 (engine-v1.74.0+: 값을 직접 계산한 컴포넌트에서만 기록 — 부모 값을 물려받은 컴포넌트는 기록이 없음) | - |
 | `g7-nested-context` | 중첩 컨텍스트 전파 (expandChildren, iteration, modal, slot) | - |
 | `g7-modal-state` | 모달 스코프 상태 추적 (격리, 유출 감지, 중첩 모달) | - |
 | `g7-sequence` | Sequence 핸들러 실행 추적 (각 액션별 상태 변화) | - |

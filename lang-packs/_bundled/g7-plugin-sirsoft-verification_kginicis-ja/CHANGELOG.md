@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.3] - 2026-10-10
+
+### Added
+
+- 환경설정 저장 오류 안내의 항목 이름(테스트 모드 `settings.is_test_mode_attribute`·테스트 MID `settings.test_mid_attribute`·테스트 API 키 `settings.test_api_key_attribute`·중복체크 기준 `settings.duplicate_field_attribute`·중복 가입 차단 `settings.duplicate_block_enabled_attribute`)을 일본어로 번역했습니다.
+- 플러그인 설정 읽기 전용 안내의 일본어 번역을 추가했습니다.
+
 ## [1.0.2] - 2026-08-10
 
 ### Added

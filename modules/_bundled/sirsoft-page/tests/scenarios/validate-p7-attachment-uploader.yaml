@@ -1,0 +1,21 @@
+feature: 페이지 작성 화면 첨부 업로더 — 서버 공개 한도 그대로 넘기기 (#599 validate P7)
+
+description: |
+  서버 publicLimits() 가 개수 상한 없음(max_count=null)을 알려도 레이아웃 `?? 5` 가 5개 상한으로 바꿨고,
+  허용 형식이 비면(accept='') `??` 가 빈 문자열을 통과시켜 파일 선택창이 모든 형식을 열었다.
+  FileUploader 에 없는 compact prop 도 걷어낸다.
+
+axes:
+  case: [max_count_null, max_count_set, accept_empty, noop_prop_compact]
+
+effects:
+  - page_attachment_unlimited_count_uses_component_default
+  - page_attachment_limits_follow_server
+  - page_attachment_empty_accept_falls_back_to_default
+  - page_attachment_uploader_has_no_noop_props
+
+test_files:
+  - modules/_bundled/sirsoft-page/resources/js/__tests__/layouts/adminPageAttachmentUploaderProps.test.ts
+
+notes: |
+  e2e_browser=not_applicable — props 표현식 수정. 브라우저 실측은 #599 통합 단계에서 한다.

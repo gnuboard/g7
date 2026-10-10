@@ -4,6 +4,9 @@ namespace App\Extension\Helpers;
 
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Enums\ExtensionStatus;
+use App\Support\ExtensionIntegrations;
 use Composer\Semver\Semver;
 use Illuminate\Support\Facades\App;
 
@@ -32,6 +35,47 @@ class DependencyEnricher
 
         foreach (self::enrichByType($dependencies, 'plugins') as $item) {
             $result[] = $item;
+        }
+
+        return $result;
+    }
+
+    /**
+     * 선택 연동 선언(`integrations`)을 화면 표시용 목록으로 보강합니다 (#639).
+     *
+     * `dependencies` 와 달리 버전 제약이 없고 설치를 막지 않으므로, 각 연동 대상의 이름과 설치·활성 여부만 싣습니다
+     * (관리자 확장 상세의 「함께 쓰면 연동되는 확장」 행, 미설치면 「미설치」 배지).
+     *
+     * @param  mixed  $integrations  manifest 의 integrations 값 (정규화 전·후 모두 받음)
+     * @return array<int, array{identifier: string, name: string, type: string, is_installed: bool, is_active: bool}> 보강된 연동 목록
+     */
+    public static function enrichIntegrations(mixed $integrations): array
+    {
+        $normalized = ExtensionIntegrations::normalize($integrations);
+        $repositories = [
+            'modules' => [ModuleRepositoryInterface::class, 'module'],
+            'plugins' => [PluginRepositoryInterface::class, 'plugin'],
+            'templates' => [TemplateRepositoryInterface::class, 'template'],
+        ];
+
+        $result = [];
+        foreach ($repositories as $type => [$contract, $singular]) {
+            if ($normalized[$type] === []) {
+                continue;
+            }
+
+            $repository = app($contract);
+            foreach ($normalized[$type] as $identifier) {
+                $record = $repository->findByIdentifier($identifier);
+
+                $result[] = [
+                    'identifier' => $identifier,
+                    'name' => self::resolveName($record, $identifier),
+                    'type' => $singular,
+                    'is_installed' => $record !== null,
+                    'is_active' => $record !== null && ($record->status ?? null) === ExtensionStatus::Active->value,
+                ];
+            }
         }
 
         return $result;
@@ -129,6 +173,7 @@ class DependencyEnricher
             }
         }
 
-        return (string) ($name ?? $fallback);
+        // 빈 문자열 이름도 식별자로 대체한다 — 화면은 이 값을 그대로 보여 주므로 빈 칸이 된다(#736 O-F10).
+        return is_string($name) && $name !== '' ? $name : $fallback;
     }
 }

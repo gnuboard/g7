@@ -1,0 +1,869 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Admin Claim Request Modal — exchange / return on behalf of the customer (#599 §3-11)",
+        "editor_label": "$t:sirsoft-ecommerce.admin.order.claim_request.editor_label"
+    },
+    "comment": "관리자 직권 접수 창 (교환·반품 — D5~D8). 주문 상세 선택 바의 [교환 접수]·[반품 접수] 가 연다. 모달은 부모 `_local` 을 해석하지 못하므로 상태는 전부 `_global.adminClaimRequest` 다(핸들러 `adminClaimRequestHandlers`). 사유는 판매자 귀책(고객 비노출) 사유까지, 청구는 사유로 자동 계산한 값을 미리보기가 보여 주고 운영자가 배송비·청구 방식(「무료」 포함)을 고친다. 선택지는 `claimRequestContext` 가 나른다(사유 카탈로그·청구 방식 설정은 `settings.read` 게이트).",
+    "id": "modal_admin_claim_request",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "{{_global.adminClaimRequest?.type === 'exchange' ? '$t:sirsoft-ecommerce.admin.order.claim_request.title_exchange' : '$t:sirsoft-ecommerce.admin.order.claim_request.title_return'}}",
+        "size": "lg"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-4"
+            },
+            "children": [
+                {
+                    "id": "acr_001_description",
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-label"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.order.claim_request.description"
+                },
+                {
+                    "comment": "상품 줄 — 수량은 가용 수량(다른 신청서가 잡은 수량을 뺀 값)까지. 교환은 줄마다 교환 옵션을 고른다(비우면 같은 옵션).",
+                    "id": "acr_002_rows",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-200 dark:divide-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "{{_global.adminClaimRequest?.rows ?? []}}",
+                                "item_var": "reqRow",
+                                "index_var": "reqRowIdx"
+                            },
+                            "props": {
+                                "className": "flex-between gap-3 p-3 flex-wrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-900 dark:text-gray-100 flex-1 min-w-0 truncate"
+                                    },
+                                    "text": "{{reqRow.label}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "if": "{{_global.adminClaimRequest?.type === 'exchange'}}",
+                                    "actions": [
+                                        {
+                                            "comment": "교환 신청 행의 교환 옵션을 고른다 — 행 단위 값은 전용 핸들러가 행 배열 안에서 고친다",
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.setAdminClaimRequestRow",
+                                            "params": {
+                                                "optionId": "{{reqRow.id}}",
+                                                "newProductOptionId": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "className": "w-56 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                        "value": "{{reqRow.newProductOptionId ?? ''}}",
+                                        "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.claim_request.same_option') }].concat(reqRow.optionChoices ?? [])}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-2 whitespace-nowrap"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "신청 수량을 행에 반영한다 — 핸들러가 1 ~ 신청 가능 수량 범위로 맞춘다",
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.setAdminClaimRequestRow",
+                                                    "params": {
+                                                        "optionId": "{{reqRow.id}}",
+                                                        "quantity": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "number",
+                                                "min": "1",
+                                                "max": "{{reqRow.max}}",
+                                                "className": "w-20 px-2 py-1 text-sm text-right rounded",
+                                                "value": "{{reqRow.quantity}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-secondary"
+                                            },
+                                            "text": "{{'/ ' + reqRow.max}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "grid grid-cols-1 gap-4"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-2 gap-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.order.claim_request.reason"
+                                },
+                                {
+                                    "id": "acr_003_reason",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "직권 신청 사유 코드",
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                            "params": {
+                                                "field": "reasonCode",
+                                                "value": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                        "value": "{{_global.adminClaimRequest?.reasonCode ?? ''}}",
+                                        "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.claim_request.reason_placeholder'), disabled: true }].concat((claimRequestContext?.data?.reasons?.[_global.adminClaimRequest?.type ?? 'return'] ?? []).map(r => ({ value: r.value, label: r.label + (r.fault_type === 'seller' ? ' · ' + $t('sirsoft-ecommerce.admin.order.claim_request.seller_fault') : '') })))}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.order.claim_request.charge_method"
+                                },
+                                {
+                                    "id": "acr_004_charge_method",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "반품·교환 배송비를 누가 부담하는지(과금 방식) — 무료를 고르면 배송비 입력칸이 잠긴다",
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                            "params": {
+                                                "field": "chargeMethod",
+                                                "value": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                        "value": "{{_global.adminClaimRequest?.chargeMethod ?? ''}}",
+                                        "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.claim_request.charge_method_auto') }].concat(claimRequestContext?.data?.charge_methods ?? [])}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "acr_005_reason_detail",
+                    "type": "basic",
+                    "name": "Textarea",
+                    "actions": [
+                        {
+                            "comment": "직권 신청 사유 상세",
+                            "type": "change",
+                            "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                            "params": {
+                                "field": "reasonDetail",
+                                "value": "{{$event.target.value}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "rows": 2,
+                        "maxLength": 1000,
+                        "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                        "placeholder": "$t:sirsoft-ecommerce.admin.order.claim_request.reason_detail_placeholder",
+                        "value": "{{_global.adminClaimRequest?.reasonDetail ?? ''}}"
+                    }
+                },
+                {
+                    "comment": "재발송지 (교환만) — 주문 배송지로 미리 채운다. 우편번호가 바뀌면 배송비가 다시 계산된다(도서산간). 국가는 바꿀 수 없다(교환 해외배송 미지원).",
+                    "id": "acr_006_redelivery",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.adminClaimRequest?.type === 'exchange'}}",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "grid grid-cols-1 gap-2"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "grid grid-cols-2 gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "form-label md:col-span-2"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.order.claim_request.redelivery_address"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "교환 재발송지 — 받는 사람",
+                                    "type": "change",
+                                    "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                    "params": {
+                                        "field": "redelivery.recipient_name",
+                                        "value": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "className": "px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.order.claim_request.recipient_name",
+                                "value": "{{_global.adminClaimRequest?.redelivery?.recipient_name ?? ''}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "교환 재발송지 — 연락처",
+                                    "type": "change",
+                                    "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                    "params": {
+                                        "field": "redelivery.phone",
+                                        "value": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "className": "px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.order.claim_request.phone",
+                                "value": "{{_global.adminClaimRequest?.redelivery?.phone ?? ''}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "교환 재발송지 — 우편번호",
+                                    "type": "change",
+                                    "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                    "params": {
+                                        "field": "redelivery.zipcode",
+                                        "value": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "className": "px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.order.claim_request.zipcode",
+                                "value": "{{_global.adminClaimRequest?.redelivery?.zipcode ?? ''}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "교환 재발송지 — 기본 주소",
+                                    "type": "change",
+                                    "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                    "params": {
+                                        "field": "redelivery.address1",
+                                        "value": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "className": "px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.order.claim_request.address1",
+                                "value": "{{_global.adminClaimRequest?.redelivery?.address1 ?? ''}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "교환 재발송지 — 상세 주소",
+                                    "type": "change",
+                                    "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                    "params": {
+                                        "field": "redelivery.address2",
+                                        "value": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "className": "md:col-span-2 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.order.claim_request.address2",
+                                "value": "{{_global.adminClaimRequest?.redelivery?.address2 ?? ''}}"
+                            }
+                        },
+                        {
+                            "comment": "해외 주문의 도시 — 재발송지 스냅샷이 따로 담는 칸이라 빠지면 주소가 완결되지 않는다(S2-D8). 국내 주문에는 칸이 없어 핸들러의 해외 표식으로 가른다.",
+                            "type": "basic",
+                            "name": "Input",
+                            "if": "{{_global.adminClaimRequest?.redeliveryInternational === true}}",
+                            "actions": [
+                                {
+                                    "comment": "교환 재발송지 — 도시 (해외)",
+                                    "type": "change",
+                                    "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                    "params": {
+                                        "field": "redelivery.city",
+                                        "value": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "maxLength": 100,
+                                "className": "px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.order.claim_request.city",
+                                "value": "{{_global.adminClaimRequest?.redelivery?.city ?? ''}}"
+                            }
+                        },
+                        {
+                            "comment": "해외 주문의 주/지역",
+                            "type": "basic",
+                            "name": "Input",
+                            "if": "{{_global.adminClaimRequest?.redeliveryInternational === true}}",
+                            "actions": [
+                                {
+                                    "comment": "교환 재발송지 — 주/지역 (해외)",
+                                    "type": "change",
+                                    "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                    "params": {
+                                        "field": "redelivery.state",
+                                        "value": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "maxLength": 100,
+                                "className": "px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.order.claim_request.state",
+                                "value": "{{_global.adminClaimRequest?.redelivery?.state ?? ''}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "환불 계좌 (반품만) — 종전 취소 창과 같은 조건·같은 문구다: 사람이 송금하는 결제수단(가상계좌·무통장)이고 돌려줄 돈이 있을 때만 선다. 주문 때 적은 계좌를 핸들러가 미리 채운다(`payment.refund_bank_*`).",
+                    "id": "acr_012_refund_bank",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.adminClaimRequest?.type === 'return' && ['vbank', 'dbank'].includes(order.data?.payment?.payment_method) && ((Number(order.data?.total_paid_amount ?? 0) - Number(order.data?.total_refunded_amount ?? 0)) > 0)}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "grid grid-cols-1 gap-3"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "grid grid-cols-3 gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "환불 계좌 — 은행",
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                            "params": {
+                                                "field": "refundBank.bank_code",
+                                                "value": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_name",
+                                        "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                        "value": "{{_global.adminClaimRequest?.refundBank?.bank_code ?? ''}}",
+                                        "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_select') }].concat((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "환불 계좌 — 계좌번호",
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                            "params": {
+                                                "field": "refundBank.account_number",
+                                                "value": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_account_placeholder",
+                                        "value": "{{_global.adminClaimRequest?.refundBank?.account_number ?? ''}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "환불 계좌 — 예금주",
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                            "params": {
+                                                "field": "refundBank.holder",
+                                                "value": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_holder_placeholder",
+                                        "value": "{{_global.adminClaimRequest?.refundBank?.holder ?? ''}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(paymentSettings.data?.order_settings?.banks ?? []).length === 0}}",
+                            "props": {
+                                "className": "text-xs text-amber-600 dark:text-amber-400 mt-1"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_empty_hint"
+                        }
+                    ]
+                },
+                {
+                    "comment": "환불 우선순위 (반품만) — 종전 취소 창과 같은 조건: PG 환불이 걸리는 주문에서만 서고, 포인트를 쓰지 않았으면 배분 순서가 무의미하므로 선택을 막는다. 바꾸면 환불 예상액을 다시 받는다.",
+                    "id": "acr_013_refund_priority",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.adminClaimRequest?.type === 'return' && order.data?.payment?.requires_pg_cancellation === true}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{(order.data?.total_points_used_amount ?? 0) <= 0}}",
+                            "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400 block mb-2"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_no_points_hint"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-2 p-2 rounded-lg border {{(order.data?.total_points_used_amount ?? 0) <= 0 ? 'cursor-not-allowed opacity-50 border-gray-200 dark:border-gray-700' : ((_global.adminClaimRequest?.refundPriority ?? 'pg_first') === 'pg_first' ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700')}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "환불 우선순위: 결제수단(PG)으로 먼저 돌려준다 — 적립금을 쓰지 않은 주문에서는 고를 수 없다",
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                                    "params": {
+                                                        "field": "refundPriority",
+                                                        "value": "pg_first"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "adminClaimRefundPriority",
+                                                "value": "pg_first",
+                                                "checked": "{{(_global.adminClaimRequest?.refundPriority ?? 'pg_first') === 'pg_first'}}",
+                                                "disabled": "{{(order.data?.total_points_used_amount ?? 0) <= 0}}",
+                                                "className": "radio"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_pg_first"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-2 p-2 rounded-lg border {{(order.data?.total_points_used_amount ?? 0) <= 0 ? 'cursor-not-allowed opacity-50 border-gray-200 dark:border-gray-700' : ((_global.adminClaimRequest?.refundPriority ?? 'pg_first') === 'points_first' ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700')}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "환불 우선순위: 적립금으로 먼저 돌려준다 — 적립금을 쓰지 않은 주문에서는 고를 수 없다",
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                                    "params": {
+                                                        "field": "refundPriority",
+                                                        "value": "points_first"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "adminClaimRefundPriority",
+                                                "value": "points_first",
+                                                "checked": "{{(_global.adminClaimRequest?.refundPriority ?? 'pg_first') === 'points_first'}}",
+                                                "disabled": "{{(order.data?.total_points_used_amount ?? 0) <= 0}}",
+                                                "className": "radio"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_priority_points_first"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "청구 미리보기 (D7) — 사유로 자동 계산한 배송비를 보여 주고, 운영자가 고치면 그 값으로 다시 계산한다. 「무료」 면 배송비 칸을 잠근다(배송비 0).",
+                    "id": "acr_007_charge",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 flex-wrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-secondary w-28"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.order.claim_request.shipping_fee"
+                                },
+                                {
+                                    "id": "acr_008_shipping_fee",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "운영자가 정한 반품·교환 배송비(원) — 과금 방식이 무료면 잠긴다",
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                            "params": {
+                                                "field": "shippingFee",
+                                                "value": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "number",
+                                        "min": "0",
+                                        "className": "w-32 px-2 py-1 text-sm text-right rounded disabled:opacity-50",
+                                        "disabled": "{{_global.adminClaimRequest?.chargeMethod === 'free'}}",
+                                        "value": "{{_global.adminClaimRequest?.chargeMethod === 'free' ? '0' : (_global.adminClaimRequest?.shippingFee ?? '')}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.adminClaimRequest?.previewLoading === true}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "spinner-sm"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!_global.adminClaimRequest?.preview}}",
+                            "props": {
+                                "className": "text-sm text-gray-900 dark:text-gray-100 space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "comment": "금액 표기는 핸들러가 주문 통화로 만든 `previewFormatted` 다(구매자 신청 화면과 같은 포맷터) — 응답에는 표기 문자열이 없다.",
+                                    "id": "acr_014_total_charge",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.adminClaimRequest?.type === 'exchange'}}",
+                                    "text": "$t:sirsoft-ecommerce.admin.order.claim_request.total_charge|amount={{_global.adminClaimRequest?.previewFormatted?.total_charge_amount ?? ''}}"
+                                },
+                                {
+                                    "id": "acr_015_refund_estimate",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.adminClaimRequest?.type === 'return' && !!_global.adminClaimRequest?.previewFormatted?.refund_total}}",
+                                    "text": "$t:sirsoft-ecommerce.admin.order.claim_request.refund_estimate|amount={{_global.adminClaimRequest?.previewFormatted?.refund_total ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!_global.adminClaimRequest?.previewError}}",
+                            "props": {
+                                "className": "text-xs text-red-600 dark:text-red-400"
+                            },
+                            "text": "{{_global.adminClaimRequest?.previewError}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(_global.adminClaimRequest?.reasonCode ?? '') === ''}}",
+                            "props": {
+                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.order.claim_request.preview_needs_reason"
+                        }
+                    ]
+                },
+                {
+                    "comment": "「접수와 함께 승인」(D6) — 기본 켜짐. 추가결제가 필요한 건은 승인 대신 결제대기로 간다. 승인은 상태 변경 권한(claims.update-status)의 일이라, 그 권한이 없으면 꺼진 채 잠그고 제출에도 싣지 않는다(서버도 403).",
+                    "id": "acr_009_approve",
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "flex-center gap-2 text-sm text-gray-700 dark:text-gray-300 {{claimRequestContext?.data?.abilities?.can_update_status === true ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Checkbox",
+                            "actions": [
+                                {
+                                    "comment": "접수와 동시에 승인까지 할지 — 기본은 승인",
+                                    "type": "change",
+                                    "handler": "sirsoft-ecommerce.setAdminClaimRequestField",
+                                    "params": {
+                                        "field": "approve",
+                                        "value": "{{$event.target.checked}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "autoBinding": false,
+                                "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600",
+                                "checked": "{{_global.adminClaimRequest?.approve !== false && claimRequestContext?.data?.abilities?.can_update_status === true}}",
+                                "disabled": "{{claimRequestContext?.data?.abilities?.can_update_status !== true}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.order.claim_request.approve"
+                        }
+                    ]
+                },
+                {
+                    "id": "acr_009_approve_no_permission",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{claimRequestContext?.data?.abilities?.can_update_status !== true}}",
+                    "props": {
+                        "className": "text-xs text-amber-600 dark:text-amber-400"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.order.claim_request.approve_no_permission"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.order.claim_request.customer_notice"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-2 pt-2"
+                    },
+                    "children": [
+                        {
+                            "id": "acr_010_cancel",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "타이머 정리가 창 닫기보다 먼저다 — 입력 직후 닫으면 예약된 미리보기가 닫힌 뒤에 나간다(형제 취소 창과 같은 규율).",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "sirsoft-ecommerce.clearAdminClaimRequestTimers"
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            },
+                            "text": "$t:common.cancel"
+                        },
+                        {
+                            "id": "acr_011_submit",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "직권 신청서를 제출한다 — 입력값은 창을 여는 핸들러가 채운 _global.adminClaimRequest 에서 모은다",
+                                    "type": "click",
+                                    "handler": "sirsoft-ecommerce.submitAdminClaimRequest",
+                                    "params": {
+                                        "canApprove": "{{claimRequestContext?.data?.abilities?.can_update_status === true}}"
+                                    },
+                                    "onError": {
+                                        "comment": "실패 사유는 핸들러가 이미 띄운다 — 기본 정책까지 돌면 같은 문구가 두 번 뜬다.",
+                                        "handler": "suppress"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.adminClaimRequest?.submitting === true || (_global.adminClaimRequest?.reasonCode ?? '') === ''}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.adminClaimRequest?.submitting === true}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "spinner-sm mr-1"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.order.claim_request.submit"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

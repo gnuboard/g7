@@ -1,0 +1,47 @@
+feature: 확장 동기화·재시드가 운영자 수정을 되돌리지 않는다 — 역할·메뉴·알림·본인인증 정책
+
+description: |
+  확장 업데이트·언어팩 전환으로 선언값을 다시 동기화할 때, 운영자가 관리자 화면에서 고친 값은 살아남고
+  고치지 않은 값만 새 선언값을 받아야 한다 (#727 D5·W8·W10~W13).
+
+  이 매니페스트가 고정하는 결함군:
+    - 기록 키(`name.ko`)와 판정 키(`name`)가 달라 역할 이름·설명이 업데이트마다 되돌아갔다.
+    - 확장 역할·메뉴의 `is_active`, 메뉴 `parent_id` 를 추적하지 않아 끄거나 옮긴 것이 되살아났다.
+    - 메뉴 드래그 한 번에 모든 메뉴 순서가 「수정됨」 으로 기록됐다.
+    - 값을 바꾸지 않은 저장(공백·빈 문자열·숫자 문자열 등 표기만 다른 값)도 「수정됨」 으로 기록돼
+      이후 선언 갱신이 영영 막히고 「기본」 표시가 사라졌다. 이미 남은 거짓 표식은 7.1.0 업그레이드 스텝이 지운다.
+    - (본인인증 메시지 템플릿 편집 창의 `is_active` 재전송 결함은 7.1.0 에서 그 창이 알림 템플릿 창으로 통합되어 사라졌다 — #699)
+    - 운영자 값과 새 선언값이 같아지면 표식을 푼다(합의 해제).
+
+axes:
+  surface: [role, menu, notification_template, identity_policy, value_comparator, upgrade_prune]
+
+effects:
+  - role_locale_edit_survives_sync
+  - disabled_extension_role_stays_disabled
+  - override_released_when_declaration_catches_up
+  - disabled_or_moved_menu_survives_sync
+  - menu_order_save_marks_only_moved_menus
+  - notification_sync_keeps_customized_state
+  - same_meaning_values_are_not_overrides
+  - real_change_is_recorded_per_field
+  - serialized_empty_array_save_is_not_a_change
+  - serialized_real_array_change_is_recorded
+  - false_overrides_are_pruned_on_upgrade
+  - menu_override_listener_records_changes
+  - extension_menu_sync_respects_operator_edits
+  # 기존 계약 (회귀 보호)
+  - identity_policy_admin_crud_contract
+
+test_files:
+  - tests/Feature/Extension/ExtensionSyncUserOverridesTest.php
+  - tests/Unit/Models/Concerns/UserOverrideValueComparatorTest.php
+  - tests/Unit/Models/Concerns/HasUserOverridesSerializedArrayTest.php
+  - tests/Feature/Upgrade/PruneFalseUserOverridesTest.php
+  - tests/Unit/Listeners/MenuUserOverridesListenerTest.php
+  - tests/Unit/Extension/ExtensionMenuSyncHelperTest.php
+  - tests/Feature/Api/Admin/Identity/AdminIdentityPolicyCrudTest.php
+
+notes:
+  - 알림 템플릿 저장 경로(값이 같으면 「기본」 유지·실제 변경만 표식)는 notification-template-admin-screen.yaml 이 소유한다.
+  - 시더가 운영자 행을 지우지 않는 계약은 각 모듈의 tests/scenarios 가 소유한다(게시판 유형·클레임 사유·배송유형·택배사).

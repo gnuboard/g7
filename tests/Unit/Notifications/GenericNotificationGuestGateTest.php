@@ -3,12 +3,14 @@
 namespace Tests\Unit\Notifications;
 
 use App\Models\NotificationDefinition;
+use App\Models\NotificationLog;
 use App\Models\NotificationTemplate;
 use App\Models\User;
 use App\Notifications\GenericNotification;
 use App\Notifications\GuestNotifiable;
 use App\Services\NotificationChannelService;
 use App\Services\NotificationTemplateService;
+use Tests\Helpers\MocksChannelReadiness;
 use Tests\TestCase;
 
 /**
@@ -19,15 +21,18 @@ use Tests\TestCase;
  */
 class GenericNotificationGuestGateTest extends TestCase
 {
+    use MocksChannelReadiness;
+
     private NotificationDefinition $definition;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        // 메일 발송 통과를 단언하므로 mail 채널을 준비 완료 상태로 만든다
-        // (기본 테스트 설정은 from_address 가 플레이스홀더라 readiness 가 false 다)
-        $this->enableMailChannelReadiness();
+        // 게스트 게이트가 관심사다 — readiness 는 고정한다. 이 테스트는 mail 과 database 를
+        // 함께 태우므로 mail 만 여는 enableMailChannelReadiness() 로는 부족하다
+        // (기본 테스트 설정은 from_address 가 플레이스홀더라 mail readiness 가 false 다).
+        $this->mockAllChannelsReady();
 
         $templateService = app(NotificationTemplateService::class);
         foreach (['mail', 'database'] as $ch) {
@@ -64,6 +69,9 @@ class GenericNotificationGuestGateTest extends TestCase
 
     protected function tearDown(): void
     {
+        // RefreshDatabase 미사용 — 남긴 행이 커밋된 채 다음 테스트에 보인다. 게이트가 채널을 막을 때
+        // skip 로그가 쌓이므로 notification_logs 도 함께 지운다(절대 건수를 세는 테스트 오염 방지).
+        NotificationLog::where('notification_type', 'guest_gate_check')->delete();
         NotificationTemplate::where('definition_id', $this->definition->id)->delete();
         $this->definition->delete();
         parent::tearDown();

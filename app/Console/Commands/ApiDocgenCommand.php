@@ -92,6 +92,7 @@ class ApiDocgenCommand extends Command
         // --seed: 도메인별 완전 샘플을 시드해 상세 GET 실측 시 null 응답을 최소화
         // (인증보다 먼저 수행해 완전 샘플 사용자로 토큰을 발급 → /me 응답도 채워짐)
         $sampleMap = [];
+        $sampleService = null;
         if ($this->option('seed')) {
             if (app()->environment('production')) {
                 $this->error('--seed 는 개발 환경 전용입니다 (production 차단).');
@@ -100,12 +101,14 @@ class ApiDocgenCommand extends Command
             }
 
             // 코어 샘플 우선 시드 — 확장 샘플의 소유자/actor 로 쓰이는 완전 사용자를 확보한다.
-            $sampleMap = (new ApiDocSampleService)->seed();
+            $sampleService = new ApiDocSampleService;
+            $sampleMap = $sampleService->seed();
             $this->info('완전 샘플 시드: '.count($sampleMap).'개 도메인 (코어)');
 
             // 확장 소유 라우트가 있으면 그 확장의 규약 시더를 발견해 도메인 샘플을 병합한다.
+            // 확장 시더가 만든 행도 같은 기록에 넣어 실측 뒤 함께 걷는다.
             foreach ($this->discoverExtensionSeeders($routes) as $label => $seeder) {
-                $extMap = $seeder->seed();
+                $extMap = $sampleService->track(fn () => $seeder->seed());
                 $sampleMap = array_merge($sampleMap, $extMap);
                 $this->info('완전 샘플 시드: '.count($extMap)."개 도메인 ({$label})");
             }
@@ -188,6 +191,8 @@ class ApiDocgenCommand extends Command
                         'response_fields' => $schema !== null
                             ? $scaffolder->responseFieldTableBlock($schema, $probeMeta, $commentMap)
                             : null,
+                        // 실측이 제외되면 사람이 써 둔 예시를 덮지 않는다(스캐폴더가 기존 예시 보존)
+                        'skipped' => $probeMeta['skipped_reason'] !== null,
                     ];
                     $stats['endpoints']++;
 
@@ -255,6 +260,12 @@ class ApiDocgenCommand extends Command
         }
 
         $probe->cleanup();
+
+        // 실측이 끝났으면 샘플을 걷는다 — 남기면 관리자 메뉴·역할·사용자·권한 목록에 실제 데이터처럼 보이고
+        // 샘플 권한은 실제 역할에 배정될 수 있다(O-D2, O-E-4). 시드 중 만든 행과 앞선 실행이 남긴 샘플을 함께 지운다.
+        if ($sampleService !== null) {
+            $this->info('완전 샘플 정리: '.$sampleService->cleanup().'행');
+        }
 
         // 대상별 API 문서 목차(README.md) 생성/갱신 — 확장 API 레퍼런스 발견성의 규약 진입점.
         // check/dry-run 은 파일을 쓰지 않으므로 제외. examples-only 는 목차도 최신화한다.

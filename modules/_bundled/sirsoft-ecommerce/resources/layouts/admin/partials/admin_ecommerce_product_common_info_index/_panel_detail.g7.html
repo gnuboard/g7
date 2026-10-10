@@ -1,0 +1,13 @@
+<!-- 공통정보 화면 오른쪽 패널의 껍데기. 빈 안내만 스스로 그리고, 보기·편집 두 조각은 각자
+  `_global.panelMode` 를 보고 나타난다.
+  빈 안내의 예외가 셋이다(등록·편집·복사) — 브랜드·분류와 달리 **복사 모드가 하나 더 있기**
+  때문이고, 복사는 선택 없이도 폼이 떠야 한다. -->
+<partial description="Common Info Detail Panel - View/Form Container">
+  <div data-ref="detail_panel" class="admin-card col-span-2-lg">
+    <div class="row-stack">
+      <empty-state data-type="composite" data-ref="empty_state_panel" data-if="{{!_global.selectedId &amp;&amp; _global.panelMode !== 'create' &amp;&amp; _global.panelMode !== 'edit' &amp;&amp; _global.panelMode !== 'copy'}}" icon="info-circle" title="$t:sirsoft-ecommerce.admin.common_info.empty_state.title" description="$t:sirsoft-ecommerce.admin.common_info.empty_state.description" class="py-16"/>
+      <include src="_panel_view.g7.html"/>
+      <include src="_panel_form.g7.html"/>
+    </div>
+  </div>
+</partial>

@@ -11,27 +11,35 @@ description: |
 
   조치: index() 에서 이미 조회한 단일 $board 를 목록 각 게시글에 setRelation 주입.
 
+  관리자 게시글 목록(Admin/PostController::index())도 같은 주입을 받는다(2026-10-04).
+  상세가 답변 글을 따로 불러오는 PostRepository::loadAllDescendantReplies 도 답변 글마다 같은 Board 를 붙인다(7.1.0 실측 K3,
+  2026-10-07 — 표시 기간 0 게시판에서 원글은 New 가 없는데 답변 글 3개에만 New 가 붙었다). 그 전에는
+  관리자 목록의 New 판정만 24시간 기본값이라, 같은 글이 사용자 목록과 관리자 목록에서 달리 보였다.
+
   크롬 MCP 실측 (2026-06-18): 사용자 게시판 화면에서 nh=48 → 06-17 작성글 [N] 배지 표시,
   nh=1 로 변경+새로고침 → 동일 글 [N] 배지 제거 (DOM 렌더 before/after 대조).
 
 # axis 의미:
 #   case 는 (new_display_hours 설정값 + 게시글 경과의 기준 내/외) 의 의미 있는 조합을
 #   한 축으로 열거한다. 짧은 기간(nh=1)에서 초과 글이 New 가 아님, 긴 기간(nh=48)에서
-#   24h 초과 글이 New 임, 기본값(nh=24) 의 내/외 경계를 전수 단언한다.
+#   24h 초과 글이 New 임, 기본값(nh=24) 의 내/외 경계를 전수 단언한다. admin_* 두 값은 같은 기준을
+#   관리자 게시글 목록(관리자 API)에서 단언한다.
 axes:
-  case: [nh1_beyond_not_new, nh48_within_new, default24_within_new, default24_beyond_not_new]
+  case: [nh1_beyond_not_new, nh48_within_new, default24_within_new, default24_beyond_not_new, admin_nh1_beyond_not_new, admin_nh48_within_new, admin_detail_reply_nh0_not_new, admin_detail_reply_nh48_within_new]
 
 effects:
   - list_is_new_true_when_post_within_window
   - list_is_new_false_when_post_beyond_window
   - default_24h_window_preserved_when_unset
+  - admin_list_is_new_follows_board_window
+  - detail_reply_is_new_follows_board_window      # 상세가 따로 불러오는 답변 글(손자 포함)도 게시판 기간을 따른다
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/PostNewBadgeDisplayTest.php
 
 validation:
   note: |
-    new_display_hours × post_age 4조합 + 기본 24h 보존은 PostNewBadgeDisplayTest 의
+    new_display_hours × post_age 4조합 + 기본 24h 보존, 관리자 목록 2조합은 PostNewBadgeDisplayTest 의
     docblock 마킹 테스트군이 커버한다 (nh=1 beyond→false, nh=48 within→true, 기본 24h
     within→true/beyond→false).
     목록↔상세 일치 및 [New] 배지 DOM 렌더(nh 토글 시 표시/제거)는 크롬 MCP 수동 실측으로

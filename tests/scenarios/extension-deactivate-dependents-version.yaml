@@ -1,0 +1,17 @@
+feature: 확장 비활성화 경고의 의존 확장 목록이 버전을 싣는다
+
+description: |
+  모듈·플러그인 비활성화 경고(409) 창은 의존하는 모듈·플러그인마다 「v{버전}」 배지를 그리는데, 서버 응답의
+  dependent_modules·dependent_plugins 가 식별자·이름만 실어 「Hello 플러그인 v」 처럼 빈 버전이 보였다
+  (Q-G2 Hello 실측 — Hello 플러그인이 켜진 채 Hello 모듈 끄기). 두 목록에 버전을 싣는다.
+
+axes:
+  case:
+    - module_deactivate_warning
+    - plugin_deactivate_warning
+
+effects:
+  - deactivate_warning_dependents_carry_version
+
+test_files:
+  - tests/Feature/Extension/ExtensionDeactivateDependentsVersionTest.php

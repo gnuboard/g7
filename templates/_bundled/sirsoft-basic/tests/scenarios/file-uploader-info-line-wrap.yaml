@@ -1,0 +1,16 @@
+feature: sirsoft-basic FileUploader — 첨부 목록 아래 안내 줄의 줄바꿈
+
+description: |
+  첨부 목록 아래 「최대 10MB (.jpg,.jpeg,…,.zip)」 안내가 쉼표로만 이어진 긴 허용 형식 목록이라 줄바꿈할 자리가 없어,
+  한 줄 justify-between 안에서 칸 밖으로 넘쳐 좁은 화면(390px)에 가로 스크롤이 생겼다(7.1.0 전수 실측 M3).
+  첨부가 없을 때의 드롭존 안내 문단도 같은 이유로 넘쳤다. 안내 줄을 줄바꿈 가능한 flex 로 두고 형식 목록은 어디서든 끊어 접히게 한다. 축 accept 는 허용 형식 목록의 길이다.
+
+axes:
+  accept: [long_list]
+
+effects:
+  - info_line_wraps_within_container
+  - dropzone_hint_wraps_within_container
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/FileUploaderInfoLineWrap.test.tsx

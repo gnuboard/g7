@@ -171,6 +171,141 @@
       }
     },
     {
+      "path": "*/admin/analytics",
+      "layout": "admin_analytics_overview",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.analytics.overview.title",
+        "permission": "core.analytics.read"
+      }
+    },
+    {
+      "path": "*/admin/analytics/pages",
+      "layout": "admin_analytics_pages",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.analytics.pages.title",
+        "permission": "core.analytics.read"
+      }
+    },
+    {
+      "path": "*/admin/analytics/referrers",
+      "layout": "admin_analytics_referrers",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.analytics.referrers.title",
+        "permission": "core.analytics.read"
+      }
+    },
+    {
+      "path": "*/admin/analytics/environment",
+      "layout": "admin_analytics_environment",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.analytics.environment.title",
+        "permission": "core.analytics.read"
+      }
+    },
+    {
+      "path": "*/admin/analytics/regions",
+      "layout": "admin_analytics_regions",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.analytics.regions.title",
+        "permission": "core.analytics.read"
+      }
+    },
+    {
+      "path": "*/admin/analytics/patterns",
+      "layout": "admin_analytics_patterns",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.analytics.patterns.title",
+        "permission": "core.analytics.read"
+      }
+    },
+    {
+      "path": "*/admin/analytics/actions",
+      "layout": "admin_analytics_actions",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.analytics.actions.title",
+        "permission": "core.analytics.read"
+      }
+    },
+    {
+      "path": "*/admin/analytics/realtime",
+      "layout": "admin_analytics_realtime",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.analytics.realtime.title",
+        "permission": "core.analytics.read"
+      }
+    },
+    {
+      "path": "*/admin/analytics/visitors",
+      "layout": "admin_analytics_visitors",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.analytics.visitors.title",
+        "permission": "core.analytics.privacy"
+      }
+    },
+    {
+      "path": "*/admin/analytics/visitors/:key",
+      "layout": "admin_analytics_visitor_detail",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.analytics.visitor_detail.title",
+        "permission": "core.analytics.privacy"
+      }
+    },
+    {
+      "path": "*/admin/analytics/bots",
+      "layout": "admin_analytics_bots",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.analytics.bots.title",
+        "permission": "core.analytics.read"
+      }
+    },
+    {
+      "path": "*/admin/analytics/diagnostics",
+      "layout": "admin_analytics_diagnostics",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.analytics.diagnostics.title",
+        "permission": "core.analytics.read"
+      }
+    },
+    {
+      "path": "*/admin/analytics/privacy-requests",
+      "layout": "admin_analytics_privacy_requests",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.analytics.privacy_requests.title",
+        "permission": "core.analytics.privacy"
+      }
+    },
+    {
+      "path": "*/admin/analytics/settings",
+      "layout": "admin_analytics_settings",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.analytics.settings.title",
+        "permission": "core.analytics.update"
+      }
+    },
+    {
+      "path": "*/admin/member-notifications",
+      "layout": "admin_member_notification_list",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.member_notification.page_title",
+        "permission": "core.member-notifications.read"
+      }
+    },
+    {
       "path": "*/admin/notification-logs",
       "layout": "admin_notification_log_list",
       "auth_required": true,

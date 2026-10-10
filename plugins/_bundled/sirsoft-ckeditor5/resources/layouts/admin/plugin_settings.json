@@ -1,9 +1,7 @@
 {
+    "comment": "CKEditor 5 플러그인 환경설정 화면 — 툴바·높이·이미지 업로드 등 편집기 동작을 정하고 아래 미리보기로 바로 확인한다\ne2e:allow 의미 클래스 위치 교정(입력 줄 3열 그리드·섹션 제목) — 구조 Vitest(pluginSettingsSemanticClasses.test.ts) + Playwright 격리 브라우저 1440·375px 재실측",
     "version": "1.0.0",
     "layout_name": "plugin_settings",
-    "permissions": [
-        "core.plugins.update"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-ckeditor5.settings.title",
@@ -19,8 +17,15 @@
             "auto_fetch": true,
             "auth_required": true,
             "initLocal": "form",
-            "refetchOnMount": true
+            "refetchOnMount": true,
+            "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form)"
         }
+    ],
+    "computed": {
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}"
+    },
+    "permissions": [
+        "core.plugins.update"
     ],
     "slots": {
         "content": [
@@ -46,6 +51,34 @@
                         }
                     },
                     {
+                        "id": "plugin_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "alert-warning mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-warning-soft"
+                                },
+                                "text": "$t:sirsoft-ckeditor5.plugin_read_only"
+                            }
+                        ]
+                    },
+                    {
                         "id": "notice_banner",
                         "type": "basic",
                         "name": "Div",
@@ -56,7 +89,9 @@
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "flex-center gap-3" },
+                                "props": {
+                                    "className": "flex-center gap-3"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -70,7 +105,9 @@
                                     {
                                         "type": "basic",
                                         "name": "P",
-                                        "props": { "className": "text-info-soft" },
+                                        "props": {
+                                            "className": "text-info-soft"
+                                        },
                                         "text": "$t:sirsoft-ckeditor5.settings.notice"
                                     }
                                 ]
@@ -89,7 +126,9 @@
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "flex-center gap-3" },
+                                "props": {
+                                    "className": "flex-center gap-3"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -107,23 +146,29 @@
                                             {
                                                 "type": "basic",
                                                 "name": "H3",
-                                                "props": { "className": "text-error-soft" },
+                                                "props": {
+                                                    "className": "text-error-strong"
+                                                },
                                                 "text": "$t:admin.plugins.settings.validation_error"
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Ul",
                                                 "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
-                                                "props": { "className": "mt-2 list-disc list-inside space-y-1" },
                                                 "iteration": {
                                                     "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
                                                     "item_var": "message"
+                                                },
+                                                "props": {
+                                                    "className": "mt-2 list-disc list-inside space-y-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Li",
-                                                        "props": { "className": "grid-3col-responsive" },
+                                                        "props": {
+                                                            "className": "text-error-soft"
+                                                        },
                                                         "text": "{{message}}"
                                                     }
                                                 ]
@@ -146,12 +191,16 @@
                                 "id": "section_toolbar_header",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "panel-header-row" },
+                                "props": {
+                                    "className": "panel-header-row"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "H3",
-                                        "props": { "className": "text-error-strong" },
+                                        "props": {
+                                            "className": "section-heading-md"
+                                        },
                                         "text": "$t:sirsoft-ckeditor5.settings.section_toolbar"
                                     }
                                 ]
@@ -160,29 +209,39 @@
                                 "id": "section_toolbar_fields",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "p-6 space-y-6" },
+                                "props": {
+                                    "className": "p-6 space-y-6"
+                                },
                                 "children": [
                                     {
                                         "id": "field_toolbar",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "section-heading-md" },
+                                        "props": {
+                                            "className": "grid-3col-responsive"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-1" },
+                                                "props": {
+                                                    "className": "lg:col-span-1"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "form-label" },
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.toolbar.label"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "form-hint" },
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.toolbar.hint"
                                                     }
                                                 ]
@@ -190,32 +249,41 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-2" },
+                                                "props": {
+                                                    "className": "lg:col-span-2"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Select",
                                                         "props": {
                                                             "name": "toolbar",
-                                                            "className": "focus:border-transparent"
+                                                            "className": "focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Option",
-                                                                "props": { "value": "minimal" },
+                                                                "props": {
+                                                                    "value": "minimal"
+                                                                },
                                                                 "text": "$t:sirsoft-ckeditor5.settings.fields.toolbar.minimal"
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Option",
-                                                                "props": { "value": "standard" },
+                                                                "props": {
+                                                                    "value": "standard"
+                                                                },
                                                                 "text": "$t:sirsoft-ckeditor5.settings.fields.toolbar.standard"
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Option",
-                                                                "props": { "value": "full" },
+                                                                "props": {
+                                                                    "value": "full"
+                                                                },
                                                                 "text": "$t:sirsoft-ckeditor5.settings.fields.toolbar.full"
                                                             }
                                                         ]
@@ -228,23 +296,31 @@
                                         "id": "field_editor_height",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "section-heading-md" },
+                                        "props": {
+                                            "className": "grid-3col-responsive"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-1" },
+                                                "props": {
+                                                    "className": "lg:col-span-1"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "form-label" },
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.editor_height.label"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "form-hint" },
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.editor_height.hint"
                                                     }
                                                 ]
@@ -252,7 +328,9 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-2" },
+                                                "props": {
+                                                    "className": "lg:col-span-2"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
@@ -260,7 +338,8 @@
                                                         "props": {
                                                             "type": "number",
                                                             "name": "editorHeight",
-                                                            "className": "focus:border-transparent"
+                                                            "className": "focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -283,12 +362,16 @@
                                 "id": "section_image_header",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "panel-header-row" },
+                                "props": {
+                                    "className": "panel-header-row"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "H3",
-                                        "props": { "className": "text-error-strong" },
+                                        "props": {
+                                            "className": "section-heading-md"
+                                        },
                                         "text": "$t:sirsoft-ckeditor5.settings.section_image"
                                     }
                                 ]
@@ -297,29 +380,39 @@
                                 "id": "section_image_fields",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "p-6 space-y-6" },
+                                "props": {
+                                    "className": "p-6 space-y-6"
+                                },
                                 "children": [
                                     {
                                         "id": "field_image_upload",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "section-heading-md" },
+                                        "props": {
+                                            "className": "grid-3col-responsive"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-1" },
+                                                "props": {
+                                                    "className": "lg:col-span-1"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "form-label" },
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.image_upload.label"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "form-hint" },
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.image_upload.hint"
                                                     }
                                                 ]
@@ -327,12 +420,17 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-2" },
+                                                "props": {
+                                                    "className": "lg:col-span-2"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "composite",
                                                         "name": "Toggle",
-                                                        "props": { "name": "imageUpload" }
+                                                        "props": {
+                                                            "name": "imageUpload",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                        }
                                                     }
                                                 ]
                                             }
@@ -342,23 +440,31 @@
                                         "id": "field_image_max_size",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "section-heading-md" },
+                                        "props": {
+                                            "className": "grid-3col-responsive"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-1" },
+                                                "props": {
+                                                    "className": "lg:col-span-1"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "form-label" },
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.image_max_size.label"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "form-hint" },
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.image_max_size.hint"
                                                     }
                                                 ]
@@ -366,7 +472,9 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-2" },
+                                                "props": {
+                                                    "className": "lg:col-span-2"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
@@ -374,7 +482,8 @@
                                                         "props": {
                                                             "type": "number",
                                                             "name": "imageMaxSizeMb",
-                                                            "className": "focus:border-transparent"
+                                                            "className": "focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -385,23 +494,31 @@
                                         "id": "field_public_asset_disk",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "section-heading-md" },
+                                        "props": {
+                                            "className": "grid-3col-responsive"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-1" },
+                                                "props": {
+                                                    "className": "lg:col-span-1"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "form-label" },
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.label"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "form-hint" },
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.hint"
                                                     }
                                                 ]
@@ -409,16 +526,30 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-2" },
+                                                "props": {
+                                                    "className": "lg:col-span-2"
+                                                },
                                                 "children": [
                                                     {
-                                                        "type": "composite",
+                                                        "type": "basic",
                                                         "name": "Select",
                                                         "props": {
                                                             "name": "public_asset_disk",
                                                             "className": "w-full",
-                                                            "options": "{{[{value: '', label: $t('sirsoft-ckeditor5.settings.fields.public_asset_disk.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}"
+                                                            "options": "{{[{value: '', label: $t('sirsoft-ckeditor5.settings.fields.public_asset_disk.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
+                                                    },
+                                                    {
+                                                        "comment": "쓸 수 없게 된 디스크 안내 — 저장했던 디스크를 등록하던 확장이 꺼지면 서버가 값을 실제 동작(스트리밍)으로 바꿔 내려주고 옛 이름을 알린다. 선택 칸만 보면 이유 없이 값이 바뀐 것처럼 보이므로 무엇이 왜 바뀌었는지 적는다",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{!!_local.form?.public_asset_disk_unavailable}}",
+                                                        "props": {
+                                                            "role": "status",
+                                                            "className": "text-warning-soft mt-2"
+                                                        },
+                                                        "text": "$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.unavailable|disk={{_local.form?.public_asset_disk_unavailable}}"
                                                     }
                                                 ]
                                             }
@@ -440,12 +571,16 @@
                                 "id": "section_cleanup_header",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "panel-header-row" },
+                                "props": {
+                                    "className": "panel-header-row"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "H3",
-                                        "props": { "className": "text-error-strong" },
+                                        "props": {
+                                            "className": "section-heading-md"
+                                        },
                                         "text": "$t:sirsoft-ckeditor5.settings.section_cleanup"
                                     }
                                 ]
@@ -454,29 +589,39 @@
                                 "id": "section_cleanup_fields",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "p-6 space-y-6" },
+                                "props": {
+                                    "className": "p-6 space-y-6"
+                                },
                                 "children": [
                                     {
                                         "id": "field_unused_image_cleanup",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "section-heading-md" },
+                                        "props": {
+                                            "className": "grid-3col-responsive"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-1" },
+                                                "props": {
+                                                    "className": "lg:col-span-1"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "form-label" },
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
                                                         "text": "$t:sirsoft-ckeditor5.settings.cleanup.toggle_label"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "form-hint" },
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
                                                         "text": "$t:sirsoft-ckeditor5.settings.cleanup.toggle_hint"
                                                     }
                                                 ]
@@ -484,12 +629,17 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-2" },
+                                                "props": {
+                                                    "className": "lg:col-span-2"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "composite",
                                                         "name": "Toggle",
-                                                        "props": { "name": "unusedImageCleanup" }
+                                                        "props": {
+                                                            "name": "unusedImageCleanup",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                        }
                                                     }
                                                 ]
                                             }
@@ -499,23 +649,31 @@
                                         "id": "field_unused_image_retention_days",
                                         "type": "basic",
                                         "name": "Div",
-                                        "props": { "className": "section-heading-md" },
+                                        "props": {
+                                            "className": "grid-3col-responsive"
+                                        },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-1" },
+                                                "props": {
+                                                    "className": "lg:col-span-1"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
-                                                        "props": { "className": "form-label" },
+                                                        "props": {
+                                                            "className": "form-label"
+                                                        },
                                                         "text": "$t:sirsoft-ckeditor5.settings.cleanup.retention_label"
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
-                                                        "props": { "className": "form-hint" },
+                                                        "props": {
+                                                            "className": "form-hint"
+                                                        },
                                                         "text": "$t:sirsoft-ckeditor5.settings.cleanup.retention_hint"
                                                     }
                                                 ]
@@ -523,7 +681,9 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "props": { "className": "lg:col-span-2" },
+                                                "props": {
+                                                    "className": "lg:col-span-2"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
@@ -532,7 +692,8 @@
                                                             "type": "number",
                                                             "name": "unusedImageRetentionDays",
                                                             "min": 1,
-                                                            "className": "focus:border-transparent"
+                                                            "className": "focus:border-transparent",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
                                                 ]
@@ -550,17 +711,15 @@
                                             {
                                                 "type": "basic",
                                                 "name": "P",
-                                                "props": { "className": "text-sm text-gray-600 dark:text-gray-300 break-all" },
+                                                "props": {
+                                                    "className": "text-sm text-gray-600 dark:text-gray-300 break-all"
+                                                },
                                                 "text": "$t:sirsoft-ckeditor5.settings.cleanup.manual_hint"
                                             },
                                             {
                                                 "id": "open_uploads_button",
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "props": {
-                                                    "type": "button",
-                                                    "className": "btn btn-secondary"
-                                                },
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -570,6 +729,10 @@
                                                         }
                                                     }
                                                 ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "btn btn-secondary"
+                                                },
                                                 "children": [
                                                     {
                                                         "type": "basic",
@@ -595,42 +758,56 @@
                             {
                                 "type": "basic",
                                 "name": "H3",
-                                "props": { "className": "section-heading mb-4" },
+                                "props": {
+                                    "className": "section-heading mb-4"
+                                },
                                 "text": "$t:sirsoft-ckeditor5.settings.guide.title"
                             },
                             {
                                 "type": "basic",
                                 "name": "Ol",
-                                "props": { "className": "list-decimal list-inside space-y-3" },
+                                "props": {
+                                    "className": "list-decimal list-inside space-y-3"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Li",
-                                        "props": { "className": "text-label" },
+                                        "props": {
+                                            "className": "text-label"
+                                        },
                                         "text": "$t:sirsoft-ckeditor5.settings.guide.step1"
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Li",
-                                        "props": { "className": "text-label" },
+                                        "props": {
+                                            "className": "text-label"
+                                        },
                                         "text": "$t:sirsoft-ckeditor5.settings.guide.step2"
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Li",
-                                        "props": { "className": "text-label" },
+                                        "props": {
+                                            "className": "text-label"
+                                        },
                                         "text": "$t:sirsoft-ckeditor5.settings.guide.step3"
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Li",
-                                        "props": { "className": "text-label" },
+                                        "props": {
+                                            "className": "text-label"
+                                        },
                                         "text": "$t:sirsoft-ckeditor5.settings.guide.step4"
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Li",
-                                        "props": { "className": "text-label" },
+                                        "props": {
+                                            "className": "text-label"
+                                        },
                                         "text": "$t:sirsoft-ckeditor5.settings.guide.step5"
                                     }
                                 ]
@@ -649,9 +826,9 @@
                                 "id": "section_preview_header",
                                 "type": "basic",
                                 "name": "Div",
-                                "props": { "className": "px-6 py-4 flex-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" },
                                 "actions": [
                                     {
+                                        "comment": "미리보기 접기·펴기 — 화면 안에서만 쓰는 상태다",
                                         "type": "click",
                                         "handler": "setState",
                                         "params": {
@@ -660,6 +837,9 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "className": "px-6 py-4 flex-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -668,13 +848,17 @@
                                             {
                                                 "type": "basic",
                                                 "name": "H3",
-                                                "props": { "className": "text-error-strong" },
+                                                "props": {
+                                                    "className": "section-heading-md"
+                                                },
                                                 "text": "$t:sirsoft-ckeditor5.settings.section_preview"
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "P",
-                                                "props": { "className": "form-hint" },
+                                                "props": {
+                                                    "className": "form-hint"
+                                                },
                                                 "text": "$t:sirsoft-ckeditor5.settings.section_preview_hint"
                                             }
                                         ]
@@ -694,19 +878,21 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "if": "{{_local.showPreview}}",
-                                "props": { "className": "p-6 border-t border-gray-200 dark:border-gray-700" },
+                                "props": {
+                                    "className": "p-6 border-t border-gray-200 dark:border-gray-700"
+                                },
                                 "children": [
                                     {
+                                        "comment": "trackChanges:false — 미리보기는 설정을 시험해 보는 자리라 저장 대상이 아니다(위 저장 액션의 body 에서도 제외된다). 이것을 빼면 미리보기에 글자만 쳐도 _local.hasChanges 가 켜져 [저장] 버튼이 활성화되고, 운영자는 바뀐 것이 없는데 바뀐 줄 알고 누르게 된다. 어느 편집기가 저장 대상인지는 레이아웃만 알므로 핸들러가 필드명으로 알아보게 하지 않고 여기서 선언한다.",
                                         "id": "preview_editor",
                                         "type": "extension_point",
                                         "name": "html_editor",
-                                        "comment": "trackChanges:false — 미리보기는 설정을 시험해 보는 자리라 저장 대상이 아니다(위 저장 액션의 body 에서도 제외된다). 이것을 빼면 미리보기에 글자만 쳐도 _local.hasChanges 가 켜져 [저장] 버튼이 활성화되고, 운영자는 바뀐 것이 없는데 바뀐 줄 알고 누르게 된다. 어느 편집기가 저장 대상인지는 레이아웃만 알므로 핸들러가 필드명으로 알아보게 하지 않고 여기서 선언한다.",
                                         "props": {
-                                            "name": "preview_content",
                                             "content": "",
                                             "placeholder": "$t:sirsoft-ckeditor5.settings.preview_placeholder",
                                             "multilingual": true,
-                                            "trackChanges": false
+                                            "trackChanges": false,
+                                            "name": "preview_content"
                                         },
                                         "default": [
                                             {
@@ -719,7 +905,8 @@
                                                     "placeholder": "{{extensionPointProps.placeholder ?? ''}}",
                                                     "isHtml": true,
                                                     "rows": 15,
-                                                    "showHtmlModeToggle": false
+                                                    "showHtmlModeToggle": false,
+                                                    "disabled": "{{_computed.isPluginReadOnly}}"
                                                 }
                                             }
                                         ]
@@ -732,23 +919,27 @@
                         "id": "footer_buttons",
                         "type": "basic",
                         "name": "Div",
-                        "props": { "className": "sticky-footer-buttons" },
+                        "props": {
+                            "className": "sticky-footer-buttons"
+                        },
                         "children": [
                             {
                                 "id": "cancel_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
-                                        "params": { "path": "/admin/plugins" }
+                                        "params": {
+                                            "path": "/admin/plugins"
+                                        }
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-secondary"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -761,13 +952,9 @@
                                 "id": "save_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "disabled": "{{!_local.hasChanges || _local.isSaving}}",
-                                    "className": "btn btn-primary flex-center gap-1.5"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "미리보기 편집기(preview_editor)는 props.name 이 preview_content 라 폼 자동바인딩으로 _local.form 에 쌓인다. 저장 대상이 아니므로 body 에서 제외한다 — 그대로 두면 운영자가 미리보기에 입력한 내용이 플러그인 설정으로 저장된다. 표현식 평가기는 구조분해 rest(const { a, ...rest } = obj)와 콜백 안의 멤버 대입(out[k] = v)을 지원하지 않는다 — 쓰면 식이 평가되지 않고 원문 문자열이 그대로 body 로 전송된다(오류 없이 200 이 떨어져 드러나지 않는다). Object.entries/filter/fromEntries 조합만 사용할 것(브라우저 실측으로 확인). 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보낸다. 성공하면 전역 플러그인 설정까지 갱신하고 미리보기 에디터를 다시 마운트한다 — 툴바 구성은 에디터 생성 시점에 굳어 새로 만들지 않으면 바뀐 설정이 미리보기에 반영되지 않는다.",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -781,27 +968,29 @@
                                             },
                                             {
                                                 "handler": "apiCall",
-                                                "comment": "미리보기 편집기(preview_editor)는 props.name 이 preview_content 라 폼 자동바인딩으로 _local.form 에 쌓인다. 저장 대상이 아니므로 body 에서 제외한다 — 그대로 두면 운영자가 미리보기에 입력한 내용이 플러그인 설정으로 저장된다. 표현식 평가기는 구조분해 rest(const { a, ...rest } = obj)와 콜백 안의 멤버 대입(out[k] = v)을 지원하지 않는다 — 쓰면 식이 평가되지 않고 원문 문자열이 그대로 body 로 전송된다(오류 없이 200 이 떨어져 드러나지 않는다). Object.entries/filter/fromEntries 조합만 사용할 것(브라우저 실측으로 확인).",
-                                                "auth_required": true,
                                                 "target": "/api/admin/plugins/{{route.identifier}}/settings",
+                                                "auth_required": true,
                                                 "params": {
                                                     "method": "PUT",
                                                     "body": "{{(function() { const form = _local.form || {}; return Object.fromEntries(Object.entries(form).filter(entry => entry[0] !== 'preview_content' && entry[0] !== 'preview_content_mode')); })()}}"
                                                 },
                                                 "onSuccess": [
                                                     {
+                                                        "comment": "쓸 수 없게 된 디스크 안내는 응답값으로 덮는다 — 설정 재조회는 폼에 없는 키를 지우지 않아, 새 디스크를 골라 저장해도 옛 안내가 남았다",
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "local",
                                                             "isSaving": false,
-                                                            "hasChanges": false
+                                                            "hasChanges": false,
+                                                            "form.public_asset_disk_unavailable": "{{response.data?.public_asset_disk_unavailable ?? null}}"
                                                         }
                                                     },
                                                     {
+                                                        "comment": "전역 plugins 는 코어 소유 계약이다 — 자기 식별자 하위 키만 갱신한다(#639 state_contracts)",
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "global",
-                                                            "plugins": "{{Object.assign({}, _global.plugins ?? {}, { 'sirsoft-ckeditor5': _local.form })}}"
+                                                            "plugins.sirsoft-ckeditor5": "{{_local.form}}"
                                                         }
                                                     },
                                                     {
@@ -813,11 +1002,15 @@
                                                     },
                                                     {
                                                         "handler": "refetchDataSource",
-                                                        "params": { "dataSourceId": "settings" }
+                                                        "params": {
+                                                            "dataSourceId": "settings"
+                                                        }
                                                     },
                                                     {
                                                         "handler": "remount",
-                                                        "params": { "componentId": "preview_editor" }
+                                                        "params": {
+                                                            "componentId": "preview_editor"
+                                                        }
                                                     }
                                                 ],
                                                 "onError": [
@@ -841,12 +1034,21 @@
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
+                                    "className": "btn btn-primary flex-center gap-1.5"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Icon",
                                         "if": "{{_local.isSaving}}",
-                                        "props": { "name": "spinner", "size": "sm", "className": "animate-spin" }
+                                        "props": {
+                                            "name": "spinner",
+                                            "size": "sm",
+                                            "className": "animate-spin"
+                                        }
                                     },
                                     {
                                         "type": "basic",

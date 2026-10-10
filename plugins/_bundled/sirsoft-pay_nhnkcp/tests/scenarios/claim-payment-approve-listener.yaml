@@ -1,0 +1,29 @@
+# 시나리오 매니페스트 — NHN KCP 클레임 추가결제 승인 리스너의 기본 판정
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: nhnkcp_claim_payment_approve_listener
+
+description: |
+  클레임 추가결제 승인은 모듈의 `claim_payment.approve` 필터를 KCP 승인 리스너가 받아 처리한다.
+  이 매니페스트는 리스너의 기본 판정을 다룬다 (금액 대조와 저장된 결제수단 판정은
+  approval-amount-verification.yaml, claim-approve-deposit-method-guard.yaml 이 소유한다).
+
+  - 승인 훅을 필터로 구독하고, 다른 PG 의 결제 건은 처리하지 않는다.
+  - 결제창 단계 실패는 PG 결과 코드로 거절한다.
+  - KRW 가 아닌 주문, 콜백 결제수단이 입금 대기 수단인 결제는 승인 호출 전에 거절한다.
+  - CLI 승인 성공은 거래번호·결제 금액과 환급용 site_cd·모드 메타를, 거절은 PG 코드·메시지를 돌려준다.
+
+axes:
+  case: [hook_subscription, other_provider, window_failure, non_krw, deposit_method, cli_approved, cli_refused]
+
+effects:
+  - kcp_claim_approve_listener_subscribes_the_approve_filter      # 승인 훅을 필터로 구독
+  - kcp_claim_approve_listener_skips_other_providers              # 다른 PG 결제 건은 미처리
+  - kcp_claim_window_failure_is_rejected_with_the_pg_code         # 결제창 실패 → PG 코드로 거절
+  - kcp_claim_non_krw_payment_is_rejected_before_approval         # KRW 외 통화 → 승인 전 거절
+  - kcp_claim_deposit_pending_method_is_rejected_before_approval  # 콜백 결제수단 VCNT → 승인 전 거절
+  - kcp_claim_cli_approval_returns_transaction_and_credential_meta # 승인 성공 → 거래번호·금액·환급 메타
+  - kcp_claim_cli_refusal_returns_a_failure_result                # 승인 거절 → PG 코드·메시지
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/ClaimPaymentApproveListenerTest.php

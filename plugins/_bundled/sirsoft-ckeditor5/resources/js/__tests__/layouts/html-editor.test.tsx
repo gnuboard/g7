@@ -5,7 +5,7 @@
  * 테스트 환경 특성:
  * - extension_point는 백엔드 주입 없이 children을 렌더링
  * - 플러그인 미설치 = children 없음 → 빈 컨테이너
- * - 플러그인 설치 = 백엔드가 html-editor.json 컴포넌트를 children에 주입
+ * - 플러그인 설치 = 백엔드가 html-editor.g7.html 컴포넌트를 children에 주입
  * - HtmlEditor 컴포넌트 동작은 type: "composite"로 직접 배치하여 검증
  */
 
@@ -75,7 +75,7 @@ const htmlEditorNoPluginLayout = {
   ],
 };
 
-// 플러그인 설치 시: 백엔드가 html-editor.json 컴포넌트를 children에 주입
+// 플러그인 설치 시: 백엔드가 html-editor.g7.html 컴포넌트를 children에 주입
 const htmlEditorWithPluginLayout = {
   version: '1.0.0',
   layout_name: 'test_html_editor_with_plugin',
@@ -98,7 +98,6 @@ const htmlEditorWithPluginLayout = {
               name: 'Div',
               props: {
                 id: 'ckeditor5-content',
-                className: 'ckeditor5-wrapper',
                 'data-testid': 'ckeditor5-container',
               },
             },

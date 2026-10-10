@@ -31,7 +31,7 @@
 | option_ids | body | array | 아니오 | — | option 식별자 배열 |
 | method | body | string | 예 | `increase`, `decrease`, `fixed` | 가격 변경 방식 (increase 인상 / decrease 인하 / fixed 고정가로 설정) |
 | value | body | number | 예 | min 0 | 값 |
-| unit | body | string | 예 | `won`, `percent` | 변경 단위 (won 금액 기준 / percent 비율 기준) |
+| unit | body | string | 예 | `won`, `percent` | 변경 단위 (won 금액 기준 / percent 옵션 판매가(상품 판매가 + 추가금액) 기준 비율 — 결과는 추가금액으로 저장, 판매가 하한 0) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.product_option.bulk_price_validation_rules`).
 
@@ -71,7 +71,7 @@ _단건 응답: `data` 객체의 필드 (`ProductOptionService::bulkUpdatePriceB
 ```json
 {
     "success": true,
-    "message": ":count개 옵션의 가격이 수정되었습니다.",
+    "message": "2개 옵션의 가격이 수정되었습니다.",
     "data": {
         "updated_count": 3,
         "requested_product_count": 1
@@ -79,7 +79,7 @@ _단건 응답: `data` 객체의 필드 (`ProductOptionService::bulkUpdatePriceB
 }
 ```
 
-> `message` 는 `sirsoft-ecommerce::messages.options.bulk_price_updated` 를 그대로 사용합니다. 컨트롤러가 `messageParams` 를 전달하지 않으므로 `:count` 플레이스홀더는 치환되지 않은 채 응답됩니다 (변경 건수는 `data.updated_count` 로 확인).
+> 응답 `message` 의 `:count` 는 `updated_count` 로 치환됩니다.
 
 **에러 응답**
 
@@ -147,7 +147,7 @@ _단건 응답: `data` 객체의 필드 (`ProductOptionService::bulkUpdateStockB
 ```json
 {
     "success": true,
-    "message": ":count개 옵션의 재고가 수정되었습니다.",
+    "message": "2개 옵션의 재고가 수정되었습니다.",
     "data": {
         "updated_count": 3,
         "requested_product_count": 1
@@ -155,7 +155,7 @@ _단건 응답: `data` 객체의 필드 (`ProductOptionService::bulkUpdateStockB
 }
 ```
 
-> `message` 는 `sirsoft-ecommerce::messages.options.bulk_stock_updated` 를 그대로 사용합니다. 컨트롤러가 `messageParams` 를 전달하지 않으므로 `:count` 플레이스홀더는 치환되지 않은 채 응답됩니다 (변경 건수는 `data.updated_count` 로 확인).
+> 응답 `message` 의 `:count` 는 `updated_count` 로 치환됩니다.
 
 **에러 응답**
 
@@ -184,7 +184,7 @@ _단건 응답: `data` 객체의 필드 (`ProductOptionService::bulkUpdateStockB
 | ids | body | array | 예 | min 1 | 대상 옵션 식별자 배열. 각 원소는 `"productId-optionId"` 형식 문자열 (`regex:/^\d+-\d+$/`) |
 | bulk_changes | body | array | 아니오 | — | 옵션 일괄 변경 조건 (`price_adjustment`/`stock_quantity` 각각 method+value, 설정된 필드가 개별 수정보다 우선 적용) |
 | bulk_changes.price_adjustment | body | array | 아니오 | — | 옵션 추가금액(`price_adjustment`) 일괄 변경 조건 객체. 존재 시 하위 `method`/`value` 필수 |
-| bulk_changes.price_adjustment.method | body | string | 아니오 | `set`, `add`, `percent` | 추가금액 변경 방식 (set 지정값으로 설정 / add 기존값에 가산 / percent 기존값에 비율 적용) |
+| bulk_changes.price_adjustment.method | body | string | 아니오 | `set`, `add`, `percent` | 추가금액 변경 방식 (set 지정값으로 설정 / add 기존값에 가산 / percent 옵션 판매가(상품 판매가 + 추가금액)에 비율을 적용한 뒤 추가금액으로 저장 — 판매가 하한 0) |
 | bulk_changes.price_adjustment.value | body | number | 아니오 | — | 추가금액 변경 값 (`method` 에 따라 설정값·가감액·비율로 해석. 소수 통화 대응) |
 | bulk_changes.stock_quantity | body | array | 아니오 | — | 옵션 재고수량(`stock_quantity`) 일괄 변경 조건 객체. 존재 시 하위 `method`/`value` 필수 |
 | bulk_changes.stock_quantity.method | body | string | 아니오 | `set`, `add`, `subtract` | 재고 변경 방식 (set 특정 수량으로 설정 / add 증가 / subtract 감소) |

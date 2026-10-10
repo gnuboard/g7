@@ -1,1069 +1,1086 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "마이페이지 주문내역 탭"
-  },
-  "type": "basic",
-  "name": "Div",
-  "blur_until_loaded": {
-    "enabled": true,
-    "data_sources": "orders"
-  },
-  "props": { "className": "mt-6" },
-  "responsive": {
-    "portable": {
-      "props": { "className": "mt-4" }
-    }
-  },
-  "children": [
-    {
-      "comment": "주문상태별 통계 섹션",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "bg-white dark:bg-gray-800 rounded-xl p-6 mb-6 shadow-sm" },
-      "responsive": {
-        "portable": {
-          "props": { "className": "bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 shadow-sm" }
-        }
-      },
-      "children": [
-        {
-          "comment": "PC: 가로 배치 / Mobile: 3열 그리드",
-          "type": "basic",
-          "name": "Div",
-          "props": { "className": "flex items-center justify-between" },
-          "responsive": {
-            "portable": {
-              "props": { "className": "grid grid-cols-3 gap-4" }
-            }
-          },
-          "children": [
-            {
-              "comment": "입금대기",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex flex-col items-center cursor-pointer group" },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    { "handler": "setState", "params": { "target": "local", "ordersStatus": "pending_payment", "ordersPage": 1 } },
-                    { "handler": "navigate", "params": { "path": "/mypage/orders", "mergeQuery": true, "query": { "status": "pending_payment", "page": "1" }, "replace": true } }
-                  ]
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "classMap": {
-                    "base": "w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors",
-                    "variants": { "pending_payment": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
-                    "key": "{{_local.ordersStatus ?? ''}}",
-                    "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
-                  },
-                  "responsive": {
-                    "portable": {
-                      "classMap": {
-                        "base": "w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors",
-                        "variants": { "pending_payment": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
-                        "key": "{{_local.ordersStatus ?? ''}}",
-                        "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
-                      }
-                    }
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "classMap": {
-                        "base": "text-xl font-bold",
-                        "variants": { "pending_payment": "text-primary-600 dark:text-primary-400" },
-                        "key": "{{_local.ordersStatus ?? ''}}",
-                        "default": "text-gray-600 dark:text-gray-300"
-                      },
-                      "responsive": {
-                        "portable": {
-                          "classMap": {
-                            "base": "text-lg font-bold",
-                            "variants": { "pending_payment": "text-primary-600 dark:text-primary-400" },
-                            "key": "{{_local.ordersStatus ?? ''}}",
-                            "default": "text-gray-600 dark:text-gray-300"
-                          }
-                        }
-                      },
-                      "text": "{{orders.data.statistics.pending_payment ?? 0}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "classMap": {
-                    "base": "text-xs mt-2 text-center",
-                    "variants": { "pending_payment": "text-primary-600 dark:text-primary-400 font-semibold" },
-                    "key": "{{_local.ordersStatus ?? ''}}",
-                    "default": "text-gray-500 dark:text-gray-400"
-                  },
-                  "text": "$t:sirsoft-ecommerce.enums.order_status.pending_payment"
-                }
-              ]
-            },
-            {
-              "comment": "화살표 1",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex items-center" },
-              "responsive": { "portable": { "props": { "className": "hidden" } } },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": { "name": "chevron-right", "size": "sm", "className": "text-gray-300 dark:text-gray-600" }
-                }
-              ]
-            },
-            {
-              "comment": "결제완료",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex flex-col items-center cursor-pointer group" },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    { "handler": "setState", "params": { "target": "local", "ordersStatus": "payment_complete", "ordersPage": 1 } },
-                    { "handler": "navigate", "params": { "path": "/mypage/orders", "mergeQuery": true, "query": { "status": "payment_complete", "page": "1" }, "replace": true } }
-                  ]
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "classMap": {
-                    "base": "w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors",
-                    "variants": { "payment_complete": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
-                    "key": "{{_local.ordersStatus ?? ''}}",
-                    "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
-                  },
-                  "responsive": {
-                    "portable": {
-                      "classMap": {
-                        "base": "w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors",
-                        "variants": { "payment_complete": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
-                        "key": "{{_local.ordersStatus ?? ''}}",
-                        "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
-                      }
-                    }
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "classMap": {
-                        "base": "text-xl font-bold",
-                        "variants": { "payment_complete": "text-primary-600 dark:text-primary-400" },
-                        "key": "{{_local.ordersStatus ?? ''}}",
-                        "default": "text-gray-600 dark:text-gray-300"
-                      },
-                      "responsive": {
-                        "portable": {
-                          "classMap": {
-                            "base": "text-lg font-bold",
-                            "variants": { "payment_complete": "text-primary-600 dark:text-primary-400" },
-                            "key": "{{_local.ordersStatus ?? ''}}",
-                            "default": "text-gray-600 dark:text-gray-300"
-                          }
-                        }
-                      },
-                      "text": "{{orders.data.statistics.payment_complete ?? 0}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "classMap": {
-                    "base": "text-xs mt-2 text-center",
-                    "variants": { "payment_complete": "text-primary-600 dark:text-primary-400 font-semibold" },
-                    "key": "{{_local.ordersStatus ?? ''}}",
-                    "default": "text-gray-500 dark:text-gray-400"
-                  },
-                  "text": "$t:sirsoft-ecommerce.enums.order_status.payment_complete"
-                }
-              ]
-            },
-            {
-              "comment": "화살표 2",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex items-center" },
-              "responsive": { "portable": { "props": { "className": "hidden" } } },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": { "name": "chevron-right", "size": "sm", "className": "text-gray-300 dark:text-gray-600" }
-                }
-              ]
-            },
-            {
-              "comment": "배송준비중",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex flex-col items-center cursor-pointer group" },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    { "handler": "setState", "params": { "target": "local", "ordersStatus": "preparing", "ordersPage": 1 } },
-                    { "handler": "navigate", "params": { "path": "/mypage/orders", "mergeQuery": true, "query": { "status": "preparing", "page": "1" }, "replace": true } }
-                  ]
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "classMap": {
-                    "base": "w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors",
-                    "variants": { "preparing": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
-                    "key": "{{_local.ordersStatus ?? ''}}",
-                    "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
-                  },
-                  "responsive": {
-                    "portable": {
-                      "classMap": {
-                        "base": "w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors",
-                        "variants": { "preparing": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
-                        "key": "{{_local.ordersStatus ?? ''}}",
-                        "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
-                      }
-                    }
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "classMap": {
-                        "base": "text-xl font-bold",
-                        "variants": { "preparing": "text-primary-600 dark:text-primary-400" },
-                        "key": "{{_local.ordersStatus ?? ''}}",
-                        "default": "text-gray-600 dark:text-gray-300"
-                      },
-                      "responsive": {
-                        "portable": {
-                          "classMap": {
-                            "base": "text-lg font-bold",
-                            "variants": { "preparing": "text-primary-600 dark:text-primary-400" },
-                            "key": "{{_local.ordersStatus ?? ''}}",
-                            "default": "text-gray-600 dark:text-gray-300"
-                          }
-                        }
-                      },
-                      "text": "{{orders.data.statistics.preparing ?? 0}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "classMap": {
-                    "base": "text-xs mt-2 text-center",
-                    "variants": { "preparing": "text-primary-600 dark:text-primary-400 font-semibold" },
-                    "key": "{{_local.ordersStatus ?? ''}}",
-                    "default": "text-gray-500 dark:text-gray-400"
-                  },
-                  "text": "$t:sirsoft-ecommerce.enums.order_status.preparing"
-                }
-              ]
-            },
-            {
-              "comment": "화살표 3",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex items-center" },
-              "responsive": { "portable": { "props": { "className": "hidden" } } },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": { "name": "chevron-right", "size": "sm", "className": "text-gray-300 dark:text-gray-600" }
-                }
-              ]
-            },
-            {
-              "comment": "배송중",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex flex-col items-center cursor-pointer group" },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    { "handler": "setState", "params": { "target": "local", "ordersStatus": "shipping", "ordersPage": 1 } },
-                    { "handler": "navigate", "params": { "path": "/mypage/orders", "mergeQuery": true, "query": { "status": "shipping", "page": "1" }, "replace": true } }
-                  ]
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "classMap": {
-                    "base": "w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors",
-                    "variants": { "shipping": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
-                    "key": "{{_local.ordersStatus ?? ''}}",
-                    "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
-                  },
-                  "responsive": {
-                    "portable": {
-                      "classMap": {
-                        "base": "w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors",
-                        "variants": { "shipping": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
-                        "key": "{{_local.ordersStatus ?? ''}}",
-                        "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
-                      }
-                    }
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "classMap": {
-                        "base": "text-xl font-bold",
-                        "variants": { "shipping": "text-primary-600 dark:text-primary-400" },
-                        "key": "{{_local.ordersStatus ?? ''}}",
-                        "default": "text-gray-600 dark:text-gray-300"
-                      },
-                      "responsive": {
-                        "portable": {
-                          "classMap": {
-                            "base": "text-lg font-bold",
-                            "variants": { "shipping": "text-primary-600 dark:text-primary-400" },
-                            "key": "{{_local.ordersStatus ?? ''}}",
-                            "default": "text-gray-600 dark:text-gray-300"
-                          }
-                        }
-                      },
-                      "text": "{{orders.data.statistics.shipping ?? 0}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "classMap": {
-                    "base": "text-xs mt-2 text-center",
-                    "variants": { "shipping": "text-primary-600 dark:text-primary-400 font-semibold" },
-                    "key": "{{_local.ordersStatus ?? ''}}",
-                    "default": "text-gray-500 dark:text-gray-400"
-                  },
-                  "text": "$t:sirsoft-ecommerce.enums.order_status.shipping"
-                }
-              ]
-            },
-            {
-              "comment": "화살표 4",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex items-center" },
-              "responsive": { "portable": { "props": { "className": "hidden" } } },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": { "name": "chevron-right", "size": "sm", "className": "text-gray-300 dark:text-gray-600" }
-                }
-              ]
-            },
-            {
-              "comment": "배송완료",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex flex-col items-center cursor-pointer group" },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    { "handler": "setState", "params": { "target": "local", "ordersStatus": "delivered", "ordersPage": 1 } },
-                    { "handler": "navigate", "params": { "path": "/mypage/orders", "mergeQuery": true, "query": { "status": "delivered", "page": "1" }, "replace": true } }
-                  ]
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "classMap": {
-                    "base": "w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors",
-                    "variants": { "delivered": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
-                    "key": "{{_local.ordersStatus ?? ''}}",
-                    "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
-                  },
-                  "responsive": {
-                    "portable": {
-                      "classMap": {
-                        "base": "w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors",
-                        "variants": { "delivered": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
-                        "key": "{{_local.ordersStatus ?? ''}}",
-                        "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
-                      }
-                    }
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "classMap": {
-                        "base": "text-xl font-bold",
-                        "variants": { "delivered": "text-primary-600 dark:text-primary-400" },
-                        "key": "{{_local.ordersStatus ?? ''}}",
-                        "default": "text-gray-600 dark:text-gray-300"
-                      },
-                      "responsive": {
-                        "portable": {
-                          "classMap": {
-                            "base": "text-lg font-bold",
-                            "variants": { "delivered": "text-primary-600 dark:text-primary-400" },
-                            "key": "{{_local.ordersStatus ?? ''}}",
-                            "default": "text-gray-600 dark:text-gray-300"
-                          }
-                        }
-                      },
-                      "text": "{{orders.data.statistics.delivered ?? 0}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "classMap": {
-                    "base": "text-xs mt-2 text-center",
-                    "variants": { "delivered": "text-primary-600 dark:text-primary-400 font-semibold" },
-                    "key": "{{_local.ordersStatus ?? ''}}",
-                    "default": "text-gray-500 dark:text-gray-400"
-                  },
-                  "text": "$t:sirsoft-ecommerce.enums.order_status.delivered"
-                }
-              ]
-            },
-            {
-              "comment": "화살표 5",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex items-center" },
-              "responsive": { "portable": { "props": { "className": "hidden" } } },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": { "name": "chevron-right", "size": "sm", "className": "text-gray-300 dark:text-gray-600" }
-                }
-              ]
-            },
-            {
-              "comment": "구매확정",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex flex-col items-center cursor-pointer group" },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    { "handler": "setState", "params": { "target": "local", "ordersStatus": "confirmed", "ordersPage": 1 } },
-                    { "handler": "navigate", "params": { "path": "/mypage/orders", "mergeQuery": true, "query": { "status": "confirmed", "page": "1" }, "replace": true } }
-                  ]
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "classMap": {
-                    "base": "w-16 h-16 rounded-full border-2 flex items-center justify-center transition-colors",
-                    "variants": { "confirmed": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
-                    "key": "{{_local.ordersStatus ?? ''}}",
-                    "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
-                  },
-                  "responsive": {
-                    "portable": {
-                      "classMap": {
-                        "base": "w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors",
-                        "variants": { "confirmed": "border-primary-500 bg-primary-50 dark:bg-primary-900/30" },
-                        "key": "{{_local.ordersStatus ?? ''}}",
-                        "default": "border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700"
-                      }
-                    }
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "classMap": {
-                        "base": "text-xl font-bold",
-                        "variants": { "confirmed": "text-primary-600 dark:text-primary-400" },
-                        "key": "{{_local.ordersStatus ?? ''}}",
-                        "default": "text-gray-600 dark:text-gray-300"
-                      },
-                      "responsive": {
-                        "portable": {
-                          "classMap": {
-                            "base": "text-lg font-bold",
-                            "variants": { "confirmed": "text-primary-600 dark:text-primary-400" },
-                            "key": "{{_local.ordersStatus ?? ''}}",
-                            "default": "text-gray-600 dark:text-gray-300"
-                          }
-                        }
-                      },
-                      "text": "{{orders.data.statistics.confirmed ?? 0}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "classMap": {
-                    "base": "text-xs mt-2 text-center",
-                    "variants": { "confirmed": "text-primary-600 dark:text-primary-400 font-semibold" },
-                    "key": "{{_local.ordersStatus ?? ''}}",
-                    "default": "text-gray-500 dark:text-gray-400"
-                  },
-                  "text": "$t:sirsoft-ecommerce.enums.order_status.confirmed"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "주문 내역 목록 본체. 상태 필터가 상태와 URL 을 **둘 다** 건드린다 — 목록은 URL 쿼리를 읽는 `orders`\n     소스가 채우고 셀렉트의 현재 값은 `_local` 을 읽는다. `replace` 로 이동해 필터를 여러 번 눌러도\n     뒤로가기 이력이 쌓이지 않는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "마이페이지 주문내역 탭"
     },
-    {
-      "comment": "상태 필터 (셀렉트박스)",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "flex justify-end mb-4" },
-      "responsive": {
-        "portable": {
-          "props": { "className": "flex justify-end mb-3" }
-        }
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Select",
-          "props": {
-            "value": "{{_local.ordersStatus || ''}}",
-            "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "value": "{{_local.ordersStatus || ''}}",
-                "className": "min-w-[100px] px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-              }
-            }
-          },
-          "children": [
-            { "type": "basic", "name": "Option", "props": { "value": "" }, "text": "$t:mypage.orders.filter.all" },
-            { "type": "basic", "name": "Option", "props": { "value": "pending_payment" }, "text": "$t:mypage.orders.filter.pending" },
-            { "type": "basic", "name": "Option", "props": { "value": "payment_complete" }, "text": "$t:mypage.orders.filter.paid" },
-            { "type": "basic", "name": "Option", "props": { "value": "preparing" }, "text": "$t:mypage.orders.filter.preparing" },
-            { "type": "basic", "name": "Option", "props": { "value": "shipping" }, "text": "$t:mypage.orders.filter.shipped" },
-            { "type": "basic", "name": "Option", "props": { "value": "delivered" }, "text": "$t:mypage.orders.filter.delivered" },
-            { "type": "basic", "name": "Option", "props": { "value": "confirmed" }, "text": "$t:mypage.orders.filter.confirmed" },
-            { "type": "basic", "name": "Option", "props": { "value": "cancelled" }, "text": "$t:mypage.orders.filter.cancelled" }
-          ],
-          "actions": [
-            {
-              "type": "change",
-              "handler": "sequence",
-              "actions": [
-                { "handler": "setState", "params": { "target": "local", "ordersStatus": "{{$event.target.value}}", "ordersPage": 1 } },
-                { "handler": "navigate", "params": { "path": "/mypage/orders", "mergeQuery": true, "query": { "status": "{{$event.target.value}}", "page": "1" }, "replace": true } }
-              ]
-            }
-          ]
-        }
-      ]
+    "type": "basic",
+    "name": "Div",
+    "blur_until_loaded": {
+        "enabled": true,
+        "data_sources": "orders"
     },
-    {
-      "comment": "주문 목록 컨테이너",
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "space-y-4" },
-      "responsive": {
+    "responsive": {
         "portable": {
-          "props": { "className": "space-y-3" }
+            "props": {
+                "className": "mt-4"
+            }
         }
-      },
-      "children": [
+    },
+    "props": {
+        "className": "mt-6"
+    },
+    "children": [
         {
-          "comment": "주문 카드 반복",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{orders.data.data && orders.data.data.length > 0}}",
-          "iteration": { "source": "{{orders.data.data ?? []}}", "item_var": "order" },
-          "children": [
-            {
-              "comment": "주문 카드",
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4" },
-              "responsive": {
+            "comment": "주문상태별 통계 섹션 — 상세 화면 진행단계와 같은 생김새(원 64px·아이콘·꺾쇠·균일 칸·모바일 줄바꿈)의 건수 칸.",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
                 "portable": {
-                  "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3" }
+                    "props": {
+                        "className": "bg-white dark:bg-gray-800 rounded-xl p-4 mb-4 shadow-sm"
+                    }
                 }
-              },
-              "children": [
+            },
+            "props": {
+                "className": "bg-white dark:bg-gray-800 rounded-xl p-6 mb-6 shadow-sm"
+            },
+            "children": [
                 {
-                  "comment": "주문 헤더 (날짜/번호 + 상태)",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "flex items-start justify-between mb-3" },
-                  "responsive": {
-                    "portable": {
-                      "props": { "className": "flex items-start justify-between mb-2" }
-                    }
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "P",
-                          "props": { "className": "text-sm text-gray-500 dark:text-gray-400" },
-                          "responsive": {
-                            "portable": {
-                              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" }
-                            }
-                          },
-                          "text": "{{order.ordered_at_formatted ?? ''}}"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "P",
-                          "props": { "className": "text-sm font-medium text-gray-900 dark:text-white" },
-                          "responsive": {
-                            "portable": {
-                              "props": { "className": "text-xs font-medium text-gray-900 dark:text-white" }
-                            }
-                          },
-                          "text": "{{order.order_number}}"
-                        }
-                      ]
-                    },
-                    {
-                      "comment": "주문상태 배지 묶음 — 상태 배지 아래에 부분취소 보조 배지를 세로로 배치",
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "flex flex-col items-end gap-1 flex-shrink-0" },
-                      "children": [
-                        {
-                          "comment": "주문상태 배지",
-                          "type": "basic",
-                          "name": "Span",
-                          "classMap": {
-                            "base": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
-                            "key": "{{order.status}}",
-                            "variants": {
-                              "pending_payment": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-                              "payment_complete": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-                              "preparing": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-                              "shipping_ready": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-                              "shipping": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
-                              "delivered": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-                              "confirmed": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-                              "cancelled": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                            },
-                            "default": "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                          },
-                          "text": "{{order.status_label}}"
-                        },
-                        {
-                          "comment": "부분취소 보조 배지 — 일부 옵션만 취소된 주문(별도 주문상태 아님, 파생 플래그 is_partially_cancelled)",
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{order.is_partially_cancelled}}",
-                          "props": {
-                            "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400"
-                          },
-                          "text": "$t:mypage.orders.partial_cancelled_badge"
-                        },
-                        {
-                          "comment": "배송국가 칩 (D9 — 항상 표시, KR 포함)",
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{order.recipient_country_code}}",
-                          "props": {
-                            "className": "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                          },
-                          "children": [
-                            { "type": "basic", "name": "Span", "props": { "className": "{{'fi fi-' + (order.recipient_country_code ?? 'kr').toLowerCase()}}" } },
-                            { "type": "basic", "name": "Span", "text": "{{order.recipient_country_name?.[_global.locale] ?? order.recipient_country_name?.ko ?? order.recipient_country_code}}" }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "comment": "주문 상품 목록",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "space-y-3" },
-                  "responsive": {
-                    "portable": {
-                      "props": { "className": "space-y-2" }
-                    }
-                  },
-                  "iteration": { "source": "{{order.items ?? []}}", "item_var": "item" },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": { "className": "flex gap-3" },
-                      "children": [
-                        {
-                          "comment": "상품 이미지",
-                          "type": "basic",
-                          "name": "Div",
-                          "props": { "className": "w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0" },
-                          "responsive": {
-                            "portable": {
-                              "props": { "className": "w-14 h-14 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0" }
-                            }
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Img",
-                              "if": "{{item.thumbnail_url}}",
-                              "props": { "src": "{{item.thumbnail_url}}", "alt": "{{item.product_name}}", "className": "w-full h-full object-cover" }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "if": "{{!item.thumbnail_url}}",
-                              "props": { "className": "w-full h-full flex items-center justify-center" },
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Icon",
-                                  "props": { "name": "image", "size": "lg", "className": "text-gray-400 dark:text-gray-500" }
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        {
-                          "comment": "상품 정보",
-                          "type": "basic",
-                          "name": "Div",
-                          "props": { "className": "flex-1 min-w-0" },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "P",
-                              "props": { "className": "text-sm font-medium text-gray-900 dark:text-white truncate" },
-                              "responsive": {
-                                "portable": {
-                                  "props": { "className": "text-xs font-medium text-gray-900 dark:text-white truncate" }
-                                }
-                              },
-                              "text": "{{item.product_name}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "P",
-                              "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5" },
-                              "text": "{{item.product_option_name}}"
-                            },
-                            {
-                              "comment": "추가옵션 요약 — 첫 1건(직접입력 병기) + 외 N건 (Q-E2)",
-                              "type": "basic",
-                              "name": "P",
-                              "if": "{{item.additional_options_summary}}",
-                              "props": { "className": "text-xs text-gray-400 dark:text-gray-500 mt-0.5" },
-                              "text": "{{item.additional_options_summary?.label}}{{(item.additional_options_summary?.extra_count ?? 0) > 0 ? ' 외 ' + item.additional_options_summary.extra_count + '건' : ''}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "P",
-                              "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-1" },
-                              "responsive": {
-                                "portable": {
-                                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5" }
-                                }
-                              },
-                              "text": "{{item.unit_price_formatted}} × {{item.quantity}}$t:shop.count_unit"
-                            },
-                            {
-                              "comment": "옵션 소계",
-                              "type": "basic",
-                              "name": "P",
-                              "props": { "className": "text-sm font-medium text-gray-900 dark:text-white mt-0.5" },
-                              "responsive": {
-                                "portable": {
-                                  "props": { "className": "text-xs font-medium text-gray-900 dark:text-white mt-0.5" }
-                                }
-                              },
-                              "text": "{{item.subtotal_price_formatted}}"
-                            },
-                            {
-                              "comment": "보조 통화들 (선택된 통화 제외)",
-                              "type": "basic",
-                              "name": "Div",
-                              "props": { "className": "flex flex-wrap gap-x-2 mt-0.5" },
-                              "iteration": {
-                                "source": "{{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
-                                "item_var": "currency"
-                              },
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Span",
-                                  "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
-                                  "text": "{{currency[1]?.formatted}}"
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "comment": "배송비 + 결제금액 + 상세보기",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": { "className": "flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700" },
-                  "responsive": {
-                    "portable": {
-                      "props": { "className": "flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700" }
-                    }
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        {
-                          "comment": "배송비",
-                          "type": "basic",
-                          "name": "Div",
-                          "props": { "className": "flex items-center gap-2 mb-1" },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
-                              "text": "$t:mypage.orders.shipping_fee"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "if": "{{order.total_shipping_amount > 0}}",
-                              "props": { "className": "text-xs text-gray-600 dark:text-gray-300" },
-                              "text": "+{{order.total_shipping_amount_formatted}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "if": "{{!order.total_shipping_amount || order.total_shipping_amount == 0}}",
-                              "props": { "className": "text-xs text-green-600 dark:text-green-400" },
-                              "text": "$t:mypage.orders.free_shipping"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "P",
-                          "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
-                          "text": "$t:mypage.orders.total_amount"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "P",
-                          "props": { "className": "text-lg font-bold text-gray-900 dark:text-white" },
-                          "responsive": {
-                            "portable": {
-                              "props": { "className": "text-base font-bold text-gray-900 dark:text-white" }
-                            }
-                          },
-                          "text": "{{order.total_amount_formatted}}"
-                        },
-                        {
-                          "comment": "보조 통화들 (선택된 통화 제외)",
-                          "type": "basic",
-                          "name": "Div",
-                          "props": { "className": "flex flex-wrap gap-x-2" },
-                          "iteration": {
-                            "source": "{{Object.entries(order.mc_total_amount ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
-                            "item_var": "currency"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": { "className": "text-xs text-gray-500 dark:text-gray-400" },
-                              "text": "{{currency[1]?.formatted}}"
-                            }
-                          ]
-                        },
-                        {
-                          "comment": "마일리지 사용 (있을 때만) — base_currency 단일 정산",
-                          "type": "basic",
-                          "name": "P",
-                          "if": "{{(order.total_points_used_amount ?? 0) > 0}}",
-                          "props": { "className": "text-xs text-red-500 dark:text-red-400 mt-0.5" },
-                          "text": "$t:mypage.orders.points_used -{{order.total_points_used_amount_formatted}}"
-                        },
-                        {
-                          "comment": "적립 예정 마일리지 (있을 때만)",
-                          "type": "basic",
-                          "name": "P",
-                          "if": "{{(order.total_earned_points_amount ?? 0) > 0 && order.status !== 'cancelled' && !order.is_partially_cancelled}}",
-                          "props": { "className": "text-xs text-blue-600 dark:text-blue-400" },
-                          "text": "$t:mypage.orders.points_earning +{{order.total_earned_points_amount_formatted}}"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "type": "button",
-                        "className": "inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
-                      },
-                      "responsive": {
+                    "comment": "상태별 건수 칸. 배열(키·라벨·아이콘 토큰·색·건수)은 서버(`OrderService::getUserStatusSummary`)가 만든다 — 키는 통계·클릭 필터와 같은 어휘라 '상품준비중' 칸은 배송준비중을 합산한다(필터 규칙과 같은 집합). 칸 폭은 균일하고 모바일은 3칸/줄. 선택된 칸은 현재 칸 스타일, 건수 0 은 회색.",
+                    "id": "order_summary_steps",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
                         "portable": {
-                          "props": {
-                            "type": "button",
-                            "className": "inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
-                          }
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-2 gap-y-5"
+                            }
                         }
-                      },
-                      "actions": [
+                    },
+                    "props": {
+                        "className": "grid grid-cols-6 gap-x-2 gap-y-6"
+                    },
+                    "children": [
                         {
-                          "type": "click",
-                          "handler": "navigate",
-                          "params": { "path": "/mypage/orders/{{order.order_number}}", "mergeQuery": true, "query": {} }
+                            "comment": "상태 칸은 셀렉트와 같은 필터다 — 누르면 셀렉트가 읽는 값과 목록이 읽는 주소 쿼리를 함께 그 상태로 바꾸고 쪽수를 1로 되돌린다. 같은 칸을 다시 눌러도 전체 보기로 돌아가지 않으므로 해제는 셀렉트의 '전체'로 한다.",
+                            "id": "order_summary_step_{{stepIdx}}",
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "{{orders.data?.status_summary ?? []}}",
+                                "item_var": "step",
+                                "index_var": "stepIdx"
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "ordersStatus": "{{step.key}}",
+                                                "ordersPage": 1
+                                            }
+                                        },
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/mypage/orders",
+                                                "mergeQuery": true,
+                                                "replace": true,
+                                                "query": {
+                                                    "status": "{{step.key}}",
+                                                    "page": "1"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "relative flex flex-col items-center gap-2 min-w-0 cursor-pointer",
+                                "role": "button",
+                                "data-summary-key": "{{step.key ?? ''}}",
+                                "data-summary-count": "{{step.count ?? 0}}"
+                            },
+                            "children": [
+                                {
+                                    "comment": "원 + 건수 배지. 원 크기와 아이콘 크기는 이 래퍼가 정한다(아이콘은 부모 font-size 상속). 배지는 원 오른쪽 위에 겹친다.",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "relative w-14 h-14 text-xl"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "relative w-16 h-16 text-2xl"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "선택된 칸은 현재 칸 스타일(옅은 바탕·테두리·그림자), 건수가 있는 칸은 그 상태 색으로 채우고, 0 건은 회색.",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "classMap": {
+                                                "base": "flex items-center justify-center w-full h-full rounded-full border-2 transition-colors",
+                                                "key": "{{((_local.ordersStatus ?? '') === step.key ? 'current' : ((step.count ?? 0) > 0 ? 'done' : 'upcoming')) + ':' + (step.variant ?? 'secondary')}}",
+                                                "variants": {
+                                                    "done:success": "border-transparent bg-green-600 text-white dark:bg-green-500",
+                                                    "current:success": "border-green-600 bg-green-100 text-green-800 shadow-md dark:bg-green-900/30 dark:text-green-400",
+                                                    "off_path:success": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                                    "done:warning": "border-transparent bg-yellow-600 text-white dark:bg-yellow-500",
+                                                    "current:warning": "border-yellow-600 bg-yellow-100 text-yellow-800 shadow-md dark:bg-yellow-900/30 dark:text-yellow-400",
+                                                    "off_path:warning": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                                    "done:info": "border-transparent bg-blue-600 text-white dark:bg-blue-500",
+                                                    "current:info": "border-blue-600 bg-blue-100 text-blue-800 shadow-md dark:bg-blue-900/30 dark:text-blue-400",
+                                                    "off_path:info": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                                    "done:primary": "border-transparent bg-indigo-600 text-white dark:bg-indigo-500",
+                                                    "current:primary": "border-indigo-600 bg-indigo-100 text-indigo-800 shadow-md dark:bg-indigo-900/30 dark:text-indigo-400",
+                                                    "off_path:primary": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                                    "done:secondary": "border-transparent bg-gray-600 text-white dark:bg-gray-500",
+                                                    "current:secondary": "border-gray-600 bg-gray-100 text-gray-700 shadow-md dark:bg-gray-700 dark:text-gray-300",
+                                                    "off_path:secondary": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                                    "done:danger": "border-transparent bg-red-600 text-white dark:bg-red-500",
+                                                    "current:danger": "border-red-500 bg-red-100 text-red-800 shadow-md dark:bg-red-900/30 dark:text-red-400",
+                                                    "off_path:danger": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                                    "done:dark": "border-transparent bg-slate-600 text-white dark:bg-slate-500",
+                                                    "current:dark": "border-slate-600 bg-slate-200 text-slate-800 shadow-md dark:bg-slate-800 dark:text-slate-200",
+                                                    "off_path:dark": "border-transparent bg-red-500 text-white dark:bg-red-600"
+                                                },
+                                                "default": "border-gray-300 bg-white text-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-500"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "{{step.icon ?? 'circle'}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "건수 배지 — 0 건이면 그리지 않는다(원이 회색으로 이미 말한다).",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{(step.count ?? 0) > 0}}",
+                                            "props": {
+                                                "className": "absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white dark:bg-red-600 dark:text-white text-xs font-bold leading-none flex items-center justify-center ring-2 ring-white dark:ring-gray-800",
+                                                "data-summary-badge": "{{step.key ?? ''}}"
+                                            },
+                                            "text": "{{step.count ?? 0}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "라벨은 칸 폭 안에서 띄어쓰기 기준으로 줄바꿈한다.",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "classMap": {
+                                        "base": "w-full text-xs text-center break-words leading-tight",
+                                        "key": "{{(_local.ordersStatus ?? '') === step.key ? 'current' : ((step.count ?? 0) > 0 ? 'done' : 'upcoming')}}",
+                                        "variants": {
+                                            "done": "text-gray-700 dark:text-gray-300",
+                                            "current": "font-bold text-gray-900 dark:text-gray-100",
+                                            "upcoming": "text-gray-400 dark:text-gray-500"
+                                        },
+                                        "default": "text-gray-400 dark:text-gray-500"
+                                    },
+                                    "text": "{{step.label ?? ''}}"
+                                },
+                                {
+                                    "comment": "칸 사이 꺾쇠 (PC) — 마지막 칸에는 없다. 칸이 10개 이상이면 PC 도 한 줄 6칸으로 줄바꿈하므로 그때는 줄 끝(6n번째)에도 세우지 않는다. 칸 오른쪽 경계에서 그리드 간격의 절반(-mr-1 = 4px)만큼 밀고 자기 폭의 절반을 되돌려(translate-x-1/2) 두 원 사이 정중앙에 세운다 — 칸 폭이 몇이든 양쪽 원과의 거리가 같다. 숨김은 래퍼 Div 가 맡는다: Icon 에 직접 `hidden` 을 주면 Font Awesome 의 `display` 규칙(레이어 밖)이 Tailwind 유틸리티(레이어 안)를 이겨 숨겨지지 않는다.",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{stepIdx < (orders.data?.status_summary ?? []).length - 1 && ((orders.data?.status_summary ?? []).length <= 9 || stepIdx % 6 !== 5)}}",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "hidden",
+                                                "data-step-chevron": "pc"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "absolute right-0 top-0 h-16 flex items-center translate-x-1/2 -mr-1 text-sm text-gray-300 dark:text-gray-600",
+                                        "data-step-chevron": "pc"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "chevron-right"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "칸 사이 꺾쇠 (모바일) — 한 줄 3칸이라 줄 끝(3n번째) 칸에는 세우지 않는다.",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{stepIdx < (orders.data?.status_summary ?? []).length - 1 && stepIdx % 3 !== 2}}",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "absolute right-0 top-0 h-14 flex items-center translate-x-1/2 -mr-1 text-xs text-gray-300 dark:text-gray-600",
+                                                "data-step-chevron": "mobile"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "hidden",
+                                        "data-step-chevron": "mobile"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "chevron-right"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
                         }
-                      ],
-                      "children": [
-                        { "type": "basic", "name": "Icon", "props": { "name": "eye", "size": "sm" } },
-                        { "type": "basic", "name": "Span", "text": "$t:mypage.orders.view_detail" }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         },
         {
-          "comment": "주문 없음",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{!orders.data.data || orders.data.data.length === 0}}",
-          "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center" },
-          "responsive": {
-            "portable": {
-              "props": { "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center" }
-            }
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": { "name": "package", "size": "3x", "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3" },
-              "responsive": {
+            "comment": "상태 필터 (셀렉트박스)",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
                 "portable": {
-                  "props": { "name": "package", "size": "2x", "className": "mx-auto text-gray-300 dark:text-gray-600 mb-2" }
+                    "props": {
+                        "className": "flex justify-end mb-3"
+                    }
                 }
-              }
             },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": { "className": "text-gray-500 dark:text-gray-400" },
-              "responsive": {
-                "portable": {
-                  "props": { "className": "text-sm text-gray-500 dark:text-gray-400" }
-                }
-              },
-              "text": "$t:mypage.orders.empty"
+            "props": {
+                "className": "flex justify-end mb-4"
             },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer"
-              },
-              "responsive": {
-                "portable": {
-                  "props": {
-                    "type": "button",
-                    "className": "inline-block mt-3 px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium cursor-pointer"
-                  }
-                }
-              },
-              "actions": [
+            "children": [
                 {
-                  "comment": "audit:allow layout-list-context-navigate-merge-query 쇼핑하러 가기 — 주문 내역이 비었을 때 상품 목록으로 내보내는 이동이다.",
-                  "type": "click",
-                  "handler": "navigate",
-                  "params": { "path": "{{_global.shopBase}}/products" }
+                    "type": "basic",
+                    "name": "Select",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "value": "{{_local.ordersStatus || ''}}",
+                                "className": "min-w-[100px] px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "comment": "주문 상태 필터. 셀렉트가 읽는 폼 값과 목록이 읽는 주소를 함께 맞춘다",
+                            "type": "change",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "comment": "셀렉트가 읽는 로컬 값과 목록이 읽는 URL 쿼리를 함께 맞춘다. 쪽수를 1 로 되돌리지 않으면\n                 3쪽을 보던 중 상태를 바꿨을 때 빈 쪽이 뜬다",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "ordersStatus": "{{$event.target.value}}",
+                                        "ordersPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/mypage/orders",
+                                        "mergeQuery": true,
+                                        "replace": true,
+                                        "query": {
+                                            "status": "{{$event.target.value}}",
+                                            "page": "1"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "value": "{{_local.ordersStatus || ''}}",
+                        "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": ""
+                            },
+                            "text": "$t:mypage.orders.filter.all"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "pending_payment"
+                            },
+                            "text": "$t:mypage.orders.filter.pending"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "payment_complete"
+                            },
+                            "text": "$t:mypage.orders.filter.paid"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "preparing"
+                            },
+                            "text": "$t:mypage.orders.filter.preparing"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "shipping"
+                            },
+                            "text": "$t:mypage.orders.filter.shipped"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "delivered"
+                            },
+                            "text": "$t:mypage.orders.filter.delivered"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "confirmed"
+                            },
+                            "text": "$t:mypage.orders.filter.confirmed"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "cancelled"
+                            },
+                            "text": "$t:mypage.orders.filter.cancelled"
+                        }
+                    ]
                 }
-              ],
-              "text": "$t:mypage.orders.go_shopping"
-            }
-          ]
+            ]
         },
         {
-          "comment": "페이지네이션",
-          "type": "composite",
-          "name": "Pagination",
-          "if": "{{((orders.data.pagination.last_page ?? 0) > 1) || (orders.data.pagination.has_more_pages === true) || ((orders.data.pagination.current_page ?? 1) > 1)}}",
-          "props": {
-            "currentPage": "{{orders.data.pagination.current_page}}",
-            "totalPages": "{{orders.data.pagination.last_page ?? null}}",
-            "hasMorePages": "{{orders.data.pagination.has_more_pages ?? false}}",
-            "className": "mt-4"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "currentPage": "{{orders.data.pagination.current_page}}",
-                "totalPages": "{{orders.data.pagination.last_page ?? null}}",
-                "hasMorePages": "{{orders.data.pagination.has_more_pages ?? false}}",
-                "className": "mt-3"
-              }
-            }
-          },
-          "actions": [
-            {
-              "event": "onPageChange",
-              "handler": "sequence",
-              "actions": [
-                { "handler": "setState", "params": { "target": "local", "ordersPage": "{{$args[0]}}" } },
-                { "handler": "navigate", "params": { "path": "/mypage/orders", "mergeQuery": true, "query": { "page": "{{$args[0]}}" }, "replace": true } }
-              ]
-            }
-          ]
+            "comment": "주문 목록 컨테이너",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "space-y-3"
+                    }
+                }
+            },
+            "props": {
+                "className": "space-y-4"
+            },
+            "children": [
+                {
+                    "comment": "주문 카드 반복",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{orders.data.data && orders.data.data.length > 0}}",
+                    "iteration": {
+                        "source": "{{orders.data.data ?? []}}",
+                        "item_var": "order"
+                    },
+                    "children": [
+                        {
+                            "comment": "주문 카드",
+                            "type": "basic",
+                            "name": "Div",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                            },
+                            "children": [
+                                {
+                                    "comment": "주문 헤더 (날짜/번호 + 상태)",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "flex items-start justify-between mb-2"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "flex items-start justify-between mb-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "responsive": {
+                                                        "portable": {
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            }
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "{{order.ordered_at_formatted ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "responsive": {
+                                                        "portable": {
+                                                            "props": {
+                                                                "className": "text-xs font-medium text-gray-900 dark:text-white"
+                                                            }
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "{{order.order_number}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "주문상태 배지 묶음 — 상태 배지 아래에 부분취소 보조 배지를 세로로 배치",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-col items-end gap-1 flex-shrink-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "comment": "주문상태 배지",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "classMap": {
+                                                        "base": "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
+                                                        "key": "{{order.status}}",
+                                                        "variants": {
+                                                            "pending_payment": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+                                                            "payment_complete": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                                                            "preparing": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                                                            "shipping_ready": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                                                            "shipping": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+                                                            "delivered": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+                                                            "confirmed": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+                                                            "cancelled": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                                                        },
+                                                        "default": "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{!!order.status_icon}}",
+                                                            "props": {
+                                                                "name": "{{order.status_icon ?? ''}}",
+                                                                "className": "text-xs"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{order.status_label}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "부분취소 보조 배지 — 일부 옵션만 취소된 주문(별도 주문상태 아님, 파생 플래그 is_partially_cancelled)",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{order.is_partially_cancelled}}",
+                                                    "props": {
+                                                        "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400"
+                                                    },
+                                                    "text": "$t:mypage.orders.partial_cancelled_badge"
+                                                },
+                                                {
+                                                    "comment": "클레임 배지 (D22) — 이 주문에 접수된 교환·반품·환불·취소의 유형별 최신 상태. 서버가 유형별 최신 1건만 요약해 내려주므로(claim_summary) 접수 건이 있는 유형만 그린다. status_label 이 유형 접두를 포함한다(예: '교환회수중').",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{(order.claim_summary ?? []).length > 0}}",
+                                                    "props": {
+                                                        "className": "flex flex-col items-end gap-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "comment": "반복은 배지 자신에 건다 — 래퍼에 걸면 래퍼가 유형 수만큼 복제돼 배지 사이 gap 이 적용되지 않는다 (관리자 목록 `_partial_order_datagrid` 와 같은 형태).",
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "iteration": {
+                                                                "source": "{{order.claim_summary ?? []}}",
+                                                                "item_var": "claim"
+                                                            },
+                                                            "classMap": {
+                                                                "base": "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap",
+                                                                "key": "{{claim.status_variant}}",
+                                                                "variants": {
+                                                                    "success": "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+                                                                    "danger": "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+                                                                    "warning": "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+                                                                    "info": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+                                                                    "primary": "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+                                                                    "secondary": "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+                                                                    "dark": "bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
+                                                                },
+                                                                "default": "bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "{{claim.status_label ?? claim.type_label ?? ''}}"
+                                                                },
+                                                                {
+                                                                    "comment": "같은 유형이 2건 이상이면 건수를 함께 보인다 — 배지는 최신 1건의 상태라 건수가 없으면 나머지가 없는 것처럼 읽힌다.",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{(claim.count ?? 0) > 1}}",
+                                                                    "props": {
+                                                                        "className": "opacity-70"
+                                                                    },
+                                                                    "text": "{{'(' + claim.count + ')'}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "배송국가 칩 (D9 — 항상 표시, KR 포함)",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{order.recipient_country_code}}",
+                                                    "props": {
+                                                        "className": "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "{{'fi fi-' + (order.recipient_country_code ?? 'kr').toLowerCase()}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{$localized(order.recipient_country_name) || order.recipient_country_code}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "주문 상품 목록",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{order.items ?? []}}",
+                                        "item_var": "item"
+                                    },
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "space-y-2"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "space-y-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex gap-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "comment": "상품 이미지",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "responsive": {
+                                                        "portable": {
+                                                            "props": {
+                                                                "className": "w-14 h-14 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0"
+                                                            }
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "className": "w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Img",
+                                                            "if": "{{item.thumbnail_url}}",
+                                                            "props": {
+                                                                "src": "{{item.thumbnail_url}}",
+                                                                "alt": "{{item.product_name}}",
+                                                                "className": "w-full h-full object-cover"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "if": "{{!item.thumbnail_url}}",
+                                                            "props": {
+                                                                "className": "w-full h-full flex items-center justify-center"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "image",
+                                                                        "size": "lg",
+                                                                        "className": "text-gray-400 dark:text-gray-500"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "상품 정보",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-1 min-w-0"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "responsive": {
+                                                                "portable": {
+                                                                    "props": {
+                                                                        "className": "text-xs font-medium text-gray-900 dark:text-white truncate"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "props": {
+                                                                "className": "text-sm font-medium text-gray-900 dark:text-white truncate"
+                                                            },
+                                                            "text": "{{item.product_name}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                                            },
+                                                            "text": "{{item.product_option_name}}"
+                                                        },
+                                                        {
+                                                            "comment": "추가옵션 요약 — 첫 1건(직접입력 병기) + 외 N건 (Q-E2)",
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "if": "{{item.additional_options_summary}}",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-400 dark:text-gray-500 mt-0.5"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "{{item.additional_options_summary?.label}}"
+                                                                },
+                                                                {
+                                                                    "comment": "「외 N건」 은 번역 키로 — 한국어를 이어 붙이면 다른 언어 화면에 한국어가 섞인다.",
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{(item.additional_options_summary?.extra_count ?? 0) > 0}}",
+                                                                    "props": {
+                                                                        "className": "ml-1"
+                                                                    },
+                                                                    "text": "$t:mypage.orders.additional_options_more|count={{item.additional_options_summary?.extra_count ?? 0}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "responsive": {
+                                                                "portable": {
+                                                                    "props": {
+                                                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                            },
+                                                            "text": "{{item.unit_price_formatted}} × {{item.quantity}}$t:shop.count_unit"
+                                                        },
+                                                        {
+                                                            "comment": "옵션 소계",
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "responsive": {
+                                                                "portable": {
+                                                                    "props": {
+                                                                        "className": "text-xs font-medium text-gray-900 dark:text-white mt-0.5"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "props": {
+                                                                "className": "text-sm font-medium text-gray-900 dark:text-white mt-0.5"
+                                                            },
+                                                            "text": "{{item.subtotal_price_formatted}}"
+                                                        },
+                                                        {
+                                                            "comment": "보조 통화들 (선택된 통화 제외)",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "iteration": {
+                                                                "source": "{{Object.entries(item.mc_subtotal_price ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                                "item_var": "currency"
+                                                            },
+                                                            "props": {
+                                                                "className": "flex flex-wrap gap-x-2 mt-0.5"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                    },
+                                                                    "text": "{{currency[1]?.formatted}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "배송비 + 결제금액 + 상세보기",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "comment": "배송비",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex items-center gap-2 mb-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:mypage.orders.shipping_fee"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{order.total_shipping_amount > 0}}",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-600 dark:text-gray-300"
+                                                            },
+                                                            "text": "+{{order.total_shipping_amount_formatted}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!order.total_shipping_amount || order.total_shipping_amount == 0}}",
+                                                            "props": {
+                                                                "className": "text-xs text-green-600 dark:text-green-400"
+                                                            },
+                                                            "text": "$t:mypage.orders.free_shipping"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:mypage.orders.total_amount"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "responsive": {
+                                                        "portable": {
+                                                            "props": {
+                                                                "className": "text-base font-bold text-gray-900 dark:text-white"
+                                                            }
+                                                        }
+                                                    },
+                                                    "props": {
+                                                        "className": "text-lg font-bold text-gray-900 dark:text-white"
+                                                    },
+                                                    "text": "{{order.total_amount_formatted}}"
+                                                },
+                                                {
+                                                    "comment": "보조 통화들 (선택된 통화 제외)",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "{{Object.entries(order.mc_total_amount ?? {}).filter(([code]) => code !== (order.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                        "item_var": "currency"
+                                                    },
+                                                    "props": {
+                                                        "className": "flex flex-wrap gap-x-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "{{currency[1]?.formatted}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "마일리지 사용 (있을 때만) — base_currency 단일 정산",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(order.total_points_used_amount ?? 0) > 0}}",
+                                                    "props": {
+                                                        "className": "text-xs text-red-500 dark:text-red-400 mt-0.5"
+                                                    },
+                                                    "text": "$t:mypage.orders.points_used -{{order.total_points_used_amount_formatted}}"
+                                                },
+                                                {
+                                                    "comment": "적립 예정 마일리지 (있을 때만)",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(order.total_earned_points_amount ?? 0) > 0 && order.status !== 'cancelled' && !order.is_partially_cancelled}}",
+                                                    "props": {
+                                                        "className": "text-xs text-blue-600 dark:text-blue-400"
+                                                    },
+                                                    "text": "$t:mypage.orders.points_earning +{{order.total_earned_points_amount_formatted}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "responsive": {
+                                                "portable": {
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                                                    }
+                                                }
+                                            },
+                                            "actions": [
+                                                {
+                                                    "comment": "주문 상세로. 보던 목록 상태를 이고 가므로 상세에서 돌아오면 같은 자리가 열린다",
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/mypage/orders/{{order.order_number}}",
+                                                        "mergeQuery": true,
+                                                        "query": {}
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "eye",
+                                                        "size": "sm"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:mypage.orders.view_detail"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "주문 없음",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!orders.data.data || orders.data.data.length === 0}}",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "name": "package",
+                                        "size": "2x",
+                                        "className": "mx-auto text-gray-300 dark:text-gray-600 mb-2"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "name": "package",
+                                "size": "3x",
+                                "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.orders.empty"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "type": "button",
+                                        "className": "inline-block mt-3 px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium cursor-pointer"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 쇼핑하러 가기 — 주문 내역이 비었을 때 상품 목록으로 내보내는 이동이다.",
+                                    "type": "click",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{_global.shopBase}}/products"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer"
+                            },
+                            "text": "$t:mypage.orders.go_shopping"
+                        }
+                    ]
+                },
+                {
+                    "comment": "페이지네이션",
+                    "type": "composite",
+                    "name": "Pagination",
+                    "if": "{{((orders.data.pagination.last_page ?? 0) > 1) || (orders.data.pagination.has_more_pages === true) || ((orders.data.pagination.current_page ?? 1) > 1)}}",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "currentPage": "{{orders.data.pagination.current_page}}",
+                                "totalPages": "{{orders.data.pagination.last_page ?? null}}",
+                                "hasMorePages": "{{orders.data.pagination.has_more_pages ?? false}}",
+                                "className": "mt-3"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "event": "onPageChange",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "ordersPage": "{{$args[0]}}"
+                                    }
+                                },
+                                {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/mypage/orders",
+                                        "mergeQuery": true,
+                                        "replace": true,
+                                        "query": {
+                                            "page": "{{$args[0]}}"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "currentPage": "{{orders.data.pagination.current_page}}",
+                        "totalPages": "{{orders.data.pagination.last_page ?? null}}",
+                        "hasMorePages": "{{orders.data.pagination.has_more_pages ?? false}}",
+                        "className": "mt-4"
+                    }
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

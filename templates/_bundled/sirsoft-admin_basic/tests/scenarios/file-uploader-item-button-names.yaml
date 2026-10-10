@@ -1,0 +1,18 @@
+feature: sirsoft-admin_basic FileUploader — 첨부 썸네일 아이콘 단추의 접근 이름
+
+description: |
+  페이지 작성·게시판 관리자 글쓰기 화면의 첨부 업로더에서 「순서 바꾸기」·「다운로드」·「삭제」 단추의 접근 이름이
+  빈 문자열이었다(7.1.0 전수 실측, 원 세션 관측 O-RF-1). 단추에 title 만 있고 안의 Font Awesome 아이콘이
+  CSS 글리프를 내용으로 내놓아 그 글리프가 이름이 됐다. 사용자 템플릿(sirsoft-basic)과 같은 방식으로 단추에 번역된
+  이름(aria-label)을 달고 아이콘은 꾸밈(aria-hidden)으로 숨긴다. 축 file 은 썸네일 종류(기존 첨부, 대표 이미지 단추가
+  있는 이미지, 업로드 실패로 다시 시도 단추가 있는 파일)다.
+
+axes:
+  file: [existing_attachment, image_with_primary, failed_upload]
+
+effects:
+  - icon_buttons_have_readable_names
+  - icons_are_decorative
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileUploaderItemButtonNames.test.tsx

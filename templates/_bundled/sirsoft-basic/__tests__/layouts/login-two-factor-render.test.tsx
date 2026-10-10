@@ -18,6 +18,7 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createLayoutTest } from '@/core/template-engine/__tests__/utils/layoutTestUtils';
+import { asArray, actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 import { ComponentRegistry } from '@/core/template-engine/ComponentRegistry';
 
 import loginForm from '../../layouts/partials/auth/_login_form.json';
@@ -289,8 +290,8 @@ describe('sirsoft-basic 로그인 폼 렌더링 — 2단계 인증', () => {
     await t.render();
 
     // 이 레이아웃이 실제로 선언한 login 액션 — 자격 증명만 리터럴로 채운다.
-    const submitSequence = (loginForm as any).actions[0];
-    const loginAction = submitSequence.actions.find(
+    const submitSequence = asArray((loginForm as any).actions)[0];
+    const loginAction = actionsOf(submitSequence).find(
       (a: any) => a.handler === 'login'
     );
     expect(loginAction, 'login 액션이 제출 시퀀스에서 사라졌습니다').toBeDefined();
@@ -337,7 +338,7 @@ describe('sirsoft-basic 로그인 폼 렌더링 — 2단계 인증', () => {
     const t = createLayoutTest(layout, { componentRegistry: setupRegistry() });
     await t.render();
 
-    const loginAction = (loginForm as any).actions[0].actions.find(
+    const loginAction = actionsOf(asArray((loginForm as any).actions)[0]).find(
       (a: any) => a.handler === 'login'
     );
 

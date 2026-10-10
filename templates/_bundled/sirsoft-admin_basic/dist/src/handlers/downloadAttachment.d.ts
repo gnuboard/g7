@@ -18,7 +18,10 @@
  * ActionDispatcher 는 handler(action, context) 형태로 호출한다.
  * params 는 resolveParams 로 이미 표현식이 해석된 값을 받는다.
  *
- * @param action 액션 정의 (params.url=다운로드 URL, params.filename=저장 파일명)
+ * `method: "POST"` 와 `body` 를 주면 POST 본문으로 요청한다 — 방문자 통계의 정보주체 내보내기처럼
+ * 서버가 파일을 POST 응답으로 흘려보내는 경로용이다(GET 이 기본이며 종전 호출은 그대로 동작한다).
+ *
+ * @param action 액션 정의 (params.url=다운로드 URL, params.filename=저장 파일명, params.method=GET|POST, params.body=POST 본문)
  * @param _context 액션 컨텍스트 (미사용)
  * @return Promise<void>
  */

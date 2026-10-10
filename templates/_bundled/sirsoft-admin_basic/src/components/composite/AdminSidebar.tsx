@@ -5,6 +5,14 @@ import { Span } from '../basic/Span';
 import { Button } from '../basic/Button';
 import { I } from '../basic/I';
 import type { EditorAttrs } from '../../types';
+import { isSameOriginRequest } from '../../support/sameOriginRequest';
+
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
 
 // G7Core 전역 객체 접근 헬퍼
 const G7Core = () => (window as any).G7Core;
@@ -75,7 +83,7 @@ export interface AdminSidebarProps {
  */
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   logo,
-  logoAlt = 'Logo',
+  logoAlt: logoAltProp,
   menu = [],
   collapsed = false,
   onToggleCollapse,
@@ -84,6 +92,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   id,
   editorAttrs,
 }) => {
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  const logoAlt = logoAltProp ?? tOr('common.logo', 'Logo');
   const [expandedItems, setExpandedItems] = useState<Set<string | number>>(new Set());
   const [locale, setLocale] = useState<string>(currentLocaleProp || G7Core()?.locale?.current?.() || 'ko');
   const [currentPath, setCurrentPath] = useState<string>(window.location.pathname);
@@ -120,7 +130,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     if (!g7core?.state?.subscribe) return;
 
     const unsubscribe = g7core.state.subscribe((state: any) => {
-      const newLocale = state?._global?.locale || g7core?.locale?.current?.() || 'ko';
+      // 현재 로케일의 출처는 엔진 하나다 — `_global.locale` 은 어디서도 채워지지 않는 경로라
+      // 항상 undefined 로 떨어졌다(엔진은 `state.locale` → 전역 변수 `$locale` 로만 노출한다).
+      // 폴백이 뒤에 있어 동작은 정상이었지만, 죽은 경로를 앞에 두면 다음 사람이 그것을 선례로 복사한다.
+      const newLocale = g7core?.locale?.current?.() || 'ko';
       setLocale(newLocale);
 
       // 현재 경로 업데이트
@@ -128,7 +141,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       setCurrentPath(newPath);
     });
 
-    return unsubscribe;
+    // 언마운트 시 구독 해제 — 코어는 해제 함수를 돌려준다(함수가 아니면 정리할 것이 없다)
+    return typeof unsubscribe === 'function' ? unsubscribe : undefined;
   }, []);
 
   // 브라우저 뒤로가기/앞으로가기 감지
@@ -275,8 +289,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         handler: 'navigate',
         params: { path: url },
       });
-    } else {
-      // fallback: 전체 페이지 리로드
+    } else if (isSameOriginNavPath(url)) {
+      // fallback: 전체 페이지 리로드 — 보안: 같은 출처 경로로만(메뉴 데이터의 외부 주소 차단)
       window.location.href = url;
     }
   };
@@ -475,3 +489,19 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     </Div>
   );
 };
+
+/**
+ * 이동 폴백이 따라가도 되는 같은 출처 주소인지 판정합니다.
+ *
+ * `/` 하나로 시작하는 경로(`//`·`/\` 제외)는 문서 주소와 무관하게 같은 출처이고, 그 밖의 주소는 출처를 비교한다.
+ *
+ * @param target 이동할 주소
+ * @returns 같은 출처면 true
+ */
+function isSameOriginNavPath(target: unknown): boolean {
+  if (typeof target === 'string' && /^\/(?![/\\])/.test(target)) {
+    return true;
+  }
+
+  return isSameOriginRequest(target);
+}

@@ -7,5 +7,13 @@
   "translation_load_failed": "Failed to load translation file",
   "translation_load_failed_with_locale": "Failed to load {locale} translation file",
   "template_init_error": "An error occurred while initializing the template engine",
-  "network_request_failed": "The request could not be sent. Check your network connection and try again."
+  "network_request_failed": "The request could not be sent. Check your network connection and try again.",
+  "page_load_failed": "Page failed to load",
+  "init_failed": "Initialization failed",
+  "reload": "Reload",
+  "layout_forbidden": "You do not have permission to view this page.",
+  "layout_not_found": "The requested page could not be found.",
+  "layout_editor_load_failed": "Layout editor failed to load",
+  "layout_editor_bundle_failed": "The editor could not be loaded. Check your network connection and try again.",
+  "layout_editor_init_failed": "The editor was loaded but could not start. Please reload the page."
 }

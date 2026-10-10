@@ -1,0 +1,24 @@
+feature: 확장 manifest 의 hidden 플래그가 관리자 목록과 artisan 목록 커맨드에 반영된다
+
+description: |
+  module.json / plugin.json / template.json 에 `"hidden": true` 를 적은 확장은 기본 목록에서 숨고, 명시적으로
+  요청할 때만 보인다.
+
+    - 각 Manager 의 미설치 목록 출력에 hidden 필드가 manifest 값 그대로 실린다.
+    - `module:list` / `plugin:list` / `template:list` 는 기본적으로 hidden 확장을 출력하지 않는다.
+    - `--hidden` 옵션을 주면 hidden 확장도 함께 출력한다.
+
+axes:
+  ext_type: [module, plugin, template]
+  surface: [manager_listing, list_command_default, list_command_hidden_option]
+
+effects:
+  - manager_listing_exposes_hidden_field
+  - list_command_omits_hidden_by_default
+  - list_command_hidden_option_includes_hidden
+
+test_files:
+  - tests/Feature/Extension/HiddenFlagTest.php
+
+notes:
+  - 관리자 API 의 include_hidden 필터(Service 계층)는 이 매니페스트 범위 밖이다 — 여기서는 Manager 출력 필드와 artisan 커맨드만 고정한다.

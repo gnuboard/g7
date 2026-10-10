@@ -12,6 +12,8 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Routing\CompiledRouteCollection;
+use Illuminate\Routing\RouteCollection;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Page\Providers\PageServiceProvider;
@@ -25,7 +27,9 @@ use Tests\TestCase;
  */
 abstract class ModuleTestCase extends TestCase
 {
-    use DatabaseTransactions;
+    use DatabaseTransactions {
+        beginDatabaseTransaction as protected beginTransactionAfterSchema;
+    }
 
     /**
      * 마이그레이션 완료 플래그 (프로세스당 한 번만 실행)
@@ -51,6 +55,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 테스트 환경 설정
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -67,6 +73,7 @@ abstract class ModuleTestCase extends TestCase
         $this->app->register(PageServiceProvider::class);
 
         // 모듈 마이그레이션 실행 (pages 테이블 등)
+        // 보통은 beginDatabaseTransaction() 이 트랜잭션 전에 이미 끝냈다 — 트랜잭션을 쓰지 않는 하위 클래스용 안전망
         $this->runModuleMigrationIfNeeded();
 
         // 기본 역할 생성
@@ -85,6 +92,8 @@ abstract class ModuleTestCase extends TestCase
      * _bundled 디렉토리 모듈 인스턴스 + 훅 리스너 수동 등록.
      *
      * sirsoft-board ModuleTestCase 와 동일 패턴 — 자세한 설명은 board 측 주석 참조.
+     *
+     * @return void 반환값 없음
      */
     protected function registerBundledModuleInstance(): void
     {
@@ -127,6 +136,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * tearDown 에 HookManager 상태 복원.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -137,6 +148,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * HookManager static $hooks / $filters / $dispatching 를 스냅샷.
+     *
+     * @return void 반환값 없음
      */
     private function snapshotHookManager(): void
     {
@@ -150,6 +163,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 스냅샷 시점으로 HookManager 복원.
+     *
+     * @return void 반환값 없음
      */
     private function restoreHookManager(): void
     {
@@ -166,9 +181,28 @@ abstract class ModuleTestCase extends TestCase
     }
 
     /**
+     * 스키마를 먼저 끝낸 뒤 시험 트랜잭션을 엽니다.
+     *
+     * Laravel 은 `parent::setUp()` 안(트레이트 초기화)에서 이 트랜잭션을 연다. 그 뒤 setUp 에서 프로세스 첫
+     * 시험의 `migrate:fresh` 를 돌리면 MySQL 이 DDL 마다 열린 트랜잭션을 암묵 커밋해, 첫 시험이 만든 행
+     * (기본 역할, 시더가 넣은 행 등)이 롤백되지 않고 테스트 DB 에 남았다. 마이그레이션 경로는 코어
+     * TestCase::setUpTraits() 가 이미 등록한 뒤라 스키마 구성은 종전과 같다.
+     *
+     * @return void 반환값 없음
+     */
+    public function beginDatabaseTransaction()
+    {
+        $this->runModuleMigrationIfNeeded();
+
+        $this->beginTransactionAfterSchema();
+    }
+
+    /**
      * 모듈 마이그레이션 실행 (필요한 경우에만)
      *
      * static $migrated 플래그로 프로세스당 한 번만 실행합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function runModuleMigrationIfNeeded(): void
     {
@@ -192,6 +226,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 모듈을 활성화 상태로 등록합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerModuleAsActive(): void
     {
@@ -211,6 +247,8 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 모듈 오토로드를 등록합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function registerModuleAutoload(): void
     {
@@ -259,7 +297,7 @@ abstract class ModuleTestCase extends TestCase
      * PageServiceProvider의 storageServices 바인딩 클로저가 실행될 때
      * 모듈 인스턴스가 등록되어 있어야 합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function registerModuleInManager(): void
     {
@@ -288,6 +326,13 @@ abstract class ModuleTestCase extends TestCase
 
     /**
      * 모듈 라우트를 등록합니다.
+     *
+     * 앱 부팅이 끝난 뒤 덧붙이는 라우트라 이름·액션 조회표를 다시 만든다. 부팅 시점의 활성
+     * 모듈 목록은 캐시를 타서 앞선 테스트 클래스(다른 모듈)의 값이 남을 수 있고, 그러면 이 모듈
+     * 라우트는 부팅 때 실리지 않고 여기서만 실린다 — 조회표를 다시 만들지 않으면 `route()` 가
+     * 「Route [...] not defined」 로 실패한다(단독 통과 / 묶음 실패, 2026-09-27 실측).
+     *
+     * @return void 반환값 없음
      */
     protected function registerModuleRoutes(): void
     {
@@ -298,11 +343,42 @@ abstract class ModuleTestCase extends TestCase
                 ->name('api.modules.sirsoft-page.')
                 ->middleware('api')
                 ->group($apiRoutesFile);
+
+            $this->rebuildRouteNameLookups();
         }
     }
 
     /**
+     * 런타임에 등록한 라우트의 이름·액션 조회표를 다시 만듭니다.
+     *
+     * fluent `->name()` 은 컬렉션에 추가된 **뒤** 이름을 붙이므로 추가 시점의 조회표에 오르지 않는다.
+     * 라우트 캐시가 있는 머신의 `CompiledRouteCollection` 은 `refreshNameLookups()` 가 이 몫을 채우지
+     * 못하므로 새 `RouteCollection` 에 옮겨 담는다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function rebuildRouteNameLookups(): void
+    {
+        $routes = Route::getRoutes();
+
+        if ($routes instanceof CompiledRouteCollection) {
+            $rebuilt = new RouteCollection;
+            foreach ($routes->getRoutes() as $route) {
+                $rebuilt->add($route);
+            }
+            Route::setRoutes($rebuilt);
+
+            return;
+        }
+
+        $routes->refreshNameLookups();
+        $routes->refreshActionLookups();
+    }
+
+    /**
      * 기본 역할들을 생성합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function createDefaultRoles(): void
     {
@@ -333,7 +409,7 @@ abstract class ModuleTestCase extends TestCase
      * 실패하는 순서 의존이 생긴다.
      *
      * @param  array  $permissions  추가 권한 목록
-     * @return User
+     * @return User 생성된 관리자 사용자
      */
     protected function createAdminUser(array $permissions = []): User
     {
@@ -366,7 +442,7 @@ abstract class ModuleTestCase extends TestCase
     /**
      * 일반 사용자를 생성합니다.
      *
-     * @return User
+     * @return User 생성된 일반 사용자
      */
     protected function createUser(): User
     {

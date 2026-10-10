@@ -4,6 +4,7 @@ namespace Tests\Unit\Seo;
 
 use App\Extension\Cache\CoreCacheDriver;
 use App\Seo\SeoCacheManager;
+use App\Seo\SeoUrl;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
@@ -13,6 +14,8 @@ class SeoCacheManagerTest extends TestCase
 
     /**
      * 테스트 초기화 - SeoCacheManager 인스턴스를 준비합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -30,6 +33,10 @@ class SeoCacheManagerTest extends TestCase
 
     /**
      * put 후 get 호출 시 저장된 HTML이 반환되는지 확인합니다.
+     *
+     * @effects page_cache_round_trip
+     *
+     * @return void 반환값 없음
      */
     public function test_put_and_get_returns_stored_html(): void
     {
@@ -46,6 +53,10 @@ class SeoCacheManagerTest extends TestCase
 
     /**
      * 캐시되지 않은 URL에 대해 get 호출 시 null을 반환합니다.
+     *
+     * @effects page_cache_round_trip
+     *
+     * @return void 반환값 없음
      */
     public function test_get_returns_null_when_not_cached(): void
     {
@@ -56,6 +67,10 @@ class SeoCacheManagerTest extends TestCase
 
     /**
      * cache_enabled=false일 때 put이 무시되고 get이 null을 반환합니다.
+     *
+     * @effects disabled_cache_is_noop
+     *
+     * @return void 반환값 없음
      */
     public function test_cache_disabled_ignores_put_and_returns_null(): void
     {
@@ -75,6 +90,10 @@ class SeoCacheManagerTest extends TestCase
 
     /**
      * invalidateByUrl로 정확한 URL의 캐시만 제거됩니다.
+     *
+     * @effects invalidation_by_url_layout_and_all
+     *
+     * @return void 반환값 없음
      */
     public function test_invalidate_by_url_removes_exact_url_cache(): void
     {
@@ -92,6 +111,10 @@ class SeoCacheManagerTest extends TestCase
 
     /**
      * invalidateByLayout으로 해당 레이아웃의 캐시가 모두 제거됩니다.
+     *
+     * @effects invalidation_by_url_layout_and_all
+     *
+     * @return void 반환값 없음
      */
     public function test_invalidate_by_layout_removes_matching_layout_caches(): void
     {
@@ -109,6 +132,10 @@ class SeoCacheManagerTest extends TestCase
 
     /**
      * clearAll로 모든 SEO 캐시가 제거됩니다.
+     *
+     * @effects invalidation_by_url_layout_and_all
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_all_removes_all_seo_caches(): void
     {
@@ -126,6 +153,10 @@ class SeoCacheManagerTest extends TestCase
 
     /**
      * 캐시 키에 로케일이 포함되어 다른 로케일은 별도로 저장됩니다.
+     *
+     * @effects locale_is_a_separate_key_axis
+     *
+     * @return void 반환값 없음
      */
     public function test_cache_key_includes_locale_stores_separately(): void
     {
@@ -146,6 +177,10 @@ class SeoCacheManagerTest extends TestCase
 
     /**
      * getCachedUrls가 캐시된 URL 목록을 반환합니다.
+     *
+     * @effects page_cache_round_trip
+     *
+     * @return void 반환값 없음
      */
     public function test_get_cached_urls_returns_list(): void
     {
@@ -161,6 +196,10 @@ class SeoCacheManagerTest extends TestCase
 
     /**
      * putWithLayout이 레이아웃 정보를 인덱스에 함께 저장합니다.
+     *
+     * @effects page_cache_round_trip
+     *
+     * @return void 반환값 없음
      */
     public function test_put_with_layout_stores_layout_info_in_index(): void
     {
@@ -181,6 +220,10 @@ class SeoCacheManagerTest extends TestCase
 
     /**
      * invalidateByUrl에 와일드카드 패턴을 사용하여 여러 URL을 제거합니다.
+     *
+     * @effects invalidation_by_url_layout_and_all
+     *
+     * @return void 반환값 없음
      */
     public function test_invalidate_by_url_with_wildcard_pattern(): void
     {
@@ -198,6 +241,10 @@ class SeoCacheManagerTest extends TestCase
 
     /**
      * cache_enabled=false일 때 putWithLayout도 무시됩니다.
+     *
+     * @effects disabled_cache_is_noop
+     *
+     * @return void 반환값 없음
      */
     public function test_put_with_layout_ignored_when_cache_disabled(): void
     {
@@ -215,6 +262,8 @@ class SeoCacheManagerTest extends TestCase
      * 같은 경로의 변종 수가 상한에 닿으면 페이지도 인덱스도 쓰지 않는다.
      *
      * @effects store_skips_write_at_path_variant_cap
+     *
+     * @return void 반환값 없음
      */
     public function test_put_with_layout_skips_write_when_path_variant_cap_reached(): void
     {
@@ -239,6 +288,8 @@ class SeoCacheManagerTest extends TestCase
      * 전체 항목 수 상한에 닿으면 새 URL 을 저장하지 않는다.
      *
      * @effects store_skips_write_at_global_cap
+     *
+     * @return void 반환값 없음
      */
     public function test_put_with_layout_skips_write_when_global_cap_reached(): void
     {
@@ -259,6 +310,8 @@ class SeoCacheManagerTest extends TestCase
      * 이미 있는 키의 **갱신**은 상한과 무관하다 — 저장 규모가 늘지 않는다.
      *
      * @effects store_skips_write_at_global_cap
+     *
+     * @return void 반환값 없음
      */
     public function test_put_with_layout_updates_existing_key_regardless_of_caps(): void
     {
@@ -278,6 +331,7 @@ class SeoCacheManagerTest extends TestCase
      * 페이지만 만료시킵니다 — 인덱스 항목은 그대로 남는 실제 만료 상태를 만듭니다.
      *
      * @param  CoreCacheDriver  $driver  매니저가 쓰는 캐시 드라이버
+     * @return void 반환값 없음
      */
     private function expirePages(CoreCacheDriver $driver): void
     {
@@ -292,6 +346,8 @@ class SeoCacheManagerTest extends TestCase
      * 판정하지 않으면, 한 번 닿은 경로는 실제 캐시가 비어도 영영 저장이 막힌다.
      *
      * @effects expired_index_entries_are_pruned_before_cap_verdict
+     *
+     * @return void 반환값 없음
      */
     public function test_put_with_layout_prunes_expired_entries_when_path_variant_cap_reached(): void
     {
@@ -319,6 +375,8 @@ class SeoCacheManagerTest extends TestCase
      * 전체 항목 수 상한에서도 같다 — 정리 후 자리가 나면 저장한다.
      *
      * @effects expired_index_entries_are_pruned_before_cap_verdict
+     *
+     * @return void 반환값 없음
      */
     public function test_put_with_layout_prunes_expired_entries_when_global_cap_reached(): void
     {
@@ -346,6 +404,8 @@ class SeoCacheManagerTest extends TestCase
      * 상한이 한쪽에만 있으면 다른 쪽이 우회로가 된다 — 확장은 인터페이스를 직접 호출한다.
      *
      * @effects put_and_put_with_layout_share_the_storage_cap
+     *
+     * @return void 반환값 없음
      */
     public function test_put_applies_the_same_storage_cap_as_put_with_layout(): void
     {
@@ -366,6 +426,8 @@ class SeoCacheManagerTest extends TestCase
      * 만료 항목 정리도 형제 메서드가 함께 갖는다.
      *
      * @effects put_and_put_with_layout_share_the_storage_cap
+     *
+     * @return void 반환값 없음
      */
     public function test_put_prunes_expired_entries_when_cap_reached(): void
     {
@@ -394,6 +456,8 @@ class SeoCacheManagerTest extends TestCase
      * 그 빈도는 봇 미스 렌더 예산만큼이다. 그래서 정리는 간격 표식으로 묶는다.
      *
      * @effects index_prune_is_throttled_to_one_scan_per_interval
+     *
+     * @return void 반환값 없음
      */
     public function test_index_prune_is_throttled_to_one_scan_per_interval(): void
     {
@@ -429,6 +493,8 @@ class SeoCacheManagerTest extends TestCase
      * 않으므로 요청 속성에 레이아웃명이 없고, 캐시 항목이 그것을 알아야 통계가 화면별로 귀속된다.
      *
      * @effects cache_hit_carries_layout_name_from_cache_entry
+     *
+     * @return void 반환값 없음
      */
     public function test_get_entry_returns_layout_stored_with_page(): void
     {
@@ -443,19 +509,27 @@ class SeoCacheManagerTest extends TestCase
     }
 
     /**
-     * 이전 버전이 문자열로만 저장한 항목도 그대로 읽힌다 — 배포 직후 살아 있는 캐시를 버리지 않는다.
+     * 문자열로만 저장된 항목(이전 값 형식)도 그대로 읽힌다.
+     *
+     * 키에 사이트 origin 이 들어간 뒤(KVE-2026-2333)로는 그 이전 키의 항목은 의도적으로 읽지 않는다
+     * — 위조 Host 로 오염됐을 수 있는 항목을 배포와 함께 버리기 위해서다. 이 테스트는 값 형식
+     * 호환만 고정한다.
      *
      * @effects cache_hit_carries_layout_name_from_cache_entry
+     *
+     * @return void 반환값 없음
      */
     public function test_get_reads_legacy_string_entries(): void
     {
         $driver = new CoreCacheDriver('array');
         $manager = new SeoCacheManager($driver);
 
-        $driver->put('seo.page.'.md5('/legacy|ko'), '<html>legacy</html>', 3600);
+        $driver->put('seo.page.'.md5(SeoUrl::origin().'|/legacy|ko'), '<html>legacy</html>', 3600);
+        $driver->put('seo.page.'.md5('/stale|ko'), '<html>pre-origin key</html>', 3600);
 
         $this->assertSame('<html>legacy</html>', $manager->get('/legacy', 'ko'));
         $this->assertSame(['html' => '<html>legacy</html>', 'layout' => null], $manager->getEntry('/legacy', 'ko'));
+        $this->assertNull($manager->get('/stale', 'ko'), 'origin 없는 이전 키의 항목은 읽지 않는다');
     }
 
     /**
@@ -463,6 +537,8 @@ class SeoCacheManagerTest extends TestCase
      * 합산하면 언어 수만큼 실효 상한이 줄어, 다국어 사이트의 목록 뒤쪽 페이지가 캐시에서 빠진다.
      *
      * @effects store_counts_path_variants_per_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_path_variant_cap_is_counted_per_locale(): void
     {

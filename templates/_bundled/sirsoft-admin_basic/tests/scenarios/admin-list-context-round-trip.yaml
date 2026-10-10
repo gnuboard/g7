@@ -12,7 +12,7 @@ description: |
 
 axes:
   # 목록 클러스터 안팎에서 발생하는 이동 leg
-  leg: [enter, cancel, tab_switch]   # 목록→폼 진입 / 폼 취소→목록 / 탭 전환(다른 목록)
+  leg: [enter, cancel, tab_switch, search]   # 목록→폼 진입 / 폼 취소→목록 / 탭 전환(다른 목록) / 목록 안 검색(조건 변경, 표시 개수 유지)
 
 effects:
   - list_return_preserves_query   # 클러스터 내 이동이 URL 목록 상태를 그대로 이어받음

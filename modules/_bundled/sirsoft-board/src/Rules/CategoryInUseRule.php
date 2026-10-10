@@ -11,6 +11,10 @@ class CategoryInUseRule implements ValidationRule
 {
     /**
      * 생성자
+     *
+     * @param  string  $boardSlug  게시판 슬러그
+     * @param  array  $existingCategories  기존 분류 목록
+     * @param  array  $newCategories  저장하려는 분류 목록
      */
     public function __construct(
         private string $boardSlug,
@@ -24,6 +28,7 @@ class CategoryInUseRule implements ValidationRule
      * @param  string  $attribute  속성명
      * @param  mixed  $value  검증할 값
      * @param  Closure  $fail  실패 콜백
+     * @return void 반환값 없음
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
@@ -48,7 +53,7 @@ class CategoryInUseRule implements ValidationRule
                 ->count();
 
             if ($count > 0) {
-                $fail(__('sirsoft-board::validation.category_in_use', [
+                $fail(trans_count('sirsoft-board::validation.category_in_use', [
                     'category' => $category,
                     'count' => $count,
                 ]));

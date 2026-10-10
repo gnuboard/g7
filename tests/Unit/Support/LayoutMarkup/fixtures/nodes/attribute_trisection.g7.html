@@ -1,0 +1,12 @@
+<data-grid data-type="composite" data-ref="user_grid"
+           class="admin-card"
+           data-testid="grid"
+           aria-label="$t:admin.users.title"
+           :serverSidePagination="true"
+           :pageSize="20"
+           data="{{users?.data?.data ?? []}}"
+           data-key="userForm"
+           data-track-changes
+           data-debounce="300"
+           data-slot="content"
+           data-slot-order="2"/>

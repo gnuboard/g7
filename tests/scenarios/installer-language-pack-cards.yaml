@@ -64,6 +64,9 @@ effects:
   - save_extensions_persists_language_packs_array_to_state_json
   - state_json_default_includes_language_packs_empty_array
   - task_runner_installs_language_packs_after_all_extension_activations
+  # best-effort 실패 문구는 작업 종류를 부른다 — 종전에는 언어팩 전용 문구를 재사용해
+  # 대상이 없는 static_publish·config_cache 실패가 언어팩 실패로 찍혔다
+  - installer_best_effort_message_names_the_task
   - task_runner_invokes_artisan_with_source_bundled_flag
   - task_runner_treats_language_pack_failure_as_best_effort_no_rollback
   - task_runner_logs_warning_on_partial_failure_and_continues
@@ -117,3 +120,4 @@ manual_verifications:
 test_files:
   - tests/Unit/Installer/ScanLanguagePacksTest.php
   - tests/Unit/Installer/InstallerStateSchemaTest.php
+  - tests/Unit/Installer/InstallerBestEffortMessageTest.php

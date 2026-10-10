@@ -1,0 +1,56 @@
+# 시나리오 매니페스트 — 관리자 주문 일괄 상태 변경 핸들러 (목록 일괄 · 상세 옵션 일괄, #747 C12 M4)
+feature: 관리자 주문 일괄 상태 변경 핸들러 — 운송장 요구 · 택배사 키 · 송장번호 보정 · 422 사유 노출과 확인 창 유지
+
+description: |
+  관리자 주문 화면에는 상태를 한꺼번에 바꾸는 길이 두 개 있다. 레이아웃은 핸들러 이름만 부르고
+  판정은 전부 핸들러에서 나므로, 핸들러가 조용히 틀리면 화면에는 아무 오류도 뜨지 않는다.
+
+  ① **목록 일괄 확인 데이터**(`buildOrderBulkConfirmDataHandler`, `orderHandlers`) — 운송장 필수는
+     배송 출발 단계(`shipping_ready` · `shipping`)에만 걸린다. 이 둘은 운송장이 없으면 경고 토스트만
+     띄우고 확인 창을 열지 않는다. `delivered` 는 운송장 없이도 확인 창을 열고, 운송장을 함께 넣었으면
+     확인 데이터가 입력한 택배사를 그대로 싣는다.
+
+  ② **목록 일괄 실행**(`executeOrderBulkActionHandler`, `orderHandlers`) — 서버가 상태 전이를 422 로
+     막으면 axios 원문("Request failed with status code 422")이 아니라 응답 본문의 검증 메시지를
+     토스트로 **한 번만** 띄운다.
+
+  ③ **상세 옵션 일괄 실행**(`processOrderDetailBulkChangeHandler`, `orderDetailHandlers`) — 택배사는
+     서버 검증 규칙이 읽는 `carrier_id` 키로 보내고, 고르지 않았으면 키를 싣지 않는다. 송장번호는
+     인자 → 화면 입력칸(`input[name=batchTrackingNumber]`, 앞뒤 공백 제거) → 페이지 `_local` 순으로
+     보정한다 — 송장 입력칸이 폼 자동바인딩으로 `_local.form` 에 값을 써 인자와 경로가 어긋나는
+     결함의 회귀 고정이다. 422 면 고정 실패 문구가 아니라 서버 검증 메시지를 토스트로 띄운다.
+
+  ②·③ 공통 — 실패 토스트를 띄운 뒤 **오류를 다시 던진다**. 삼키면 확인 창의 성공 분기
+  (`<close-modal/>`)가 돌아 창이 닫히고 운영자가 고른 값이 사라진다. 다시 던져야 레이아웃의
+  `<fail>` 분기(창 유지)로 넘어간다(#747 C12 M4).
+
+  상세 화면 핸들러의 나머지 계약(폼 초기화·상품 선택·확인 모달 수량·데이터소스 재조회)은
+  `admin-order-detail-handlers.yaml` 이 소유한다.
+
+# axis 의미:
+#   handler — 화면이 부르는 액션 이름. 세 핸들러가 각자 독립된 계약이라 이것이 유일한 직교 축이다.
+#             목표 상태·운송장 유무·송장 출처·422 는 핸들러마다 의미가 달라 축으로 곱하면 존재하지
+#             않는 조합만 늘어나므로 이름 붙은 effect 가 덮는다.
+axes:
+  handler: [build_list_bulk_confirm, execute_list_bulk_action, process_detail_bulk_change]
+
+effects:
+  # ① 목록 일괄 확인 데이터
+  - list_bulk_confirm_delivered_opens_modal_without_tracking
+  - list_bulk_confirm_delivered_keeps_entered_courier
+  - list_bulk_confirm_shipping_states_require_tracking_and_stay_closed
+  # ② 목록 일괄 실행
+  - list_bulk_action_422_toasts_server_message_once
+  - list_bulk_action_server_error_toasts_localized_fallback   # 5xx·전송 실패는 원문 대신 번역 폴백 (S1-D12)
+  # ③ 상세 옵션 일괄 실행
+  - detail_bulk_change_sends_carrier_under_carrier_id_key
+  - detail_bulk_change_omits_carrier_id_when_not_entered
+  - detail_bulk_change_reads_tracking_from_dom_input_trimmed
+  - detail_bulk_change_falls_back_to_local_tracking_number
+  - detail_bulk_change_prefers_params_tracking_over_fallbacks
+  - detail_bulk_change_422_toasts_server_message
+  # ②·③ 공통
+  - bulk_status_422_rethrows_to_keep_confirm_modal_open
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/orderBulkStatusHandlers.test.ts

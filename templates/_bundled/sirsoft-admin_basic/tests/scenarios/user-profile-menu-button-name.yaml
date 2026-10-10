@@ -1,0 +1,22 @@
+feature: 관리자 머리말 사용자 메뉴 버튼 이름
+
+description: |
+  관리자 머리말은 이름·이메일 글자 위에 UserProfile(dropdownOnly)의 투명 버튼을 덮어 사용자 메뉴(프로필 설정·언어·로그아웃)를 연다.
+  이 버튼에 이름이 없어 화면 낭독기가 모든 관리자 화면에서 이름 없는 「버튼」 으로만 읽었고 메뉴 열림도 알리지 않았다.
+  「사용자 메뉴」(common.user_menu — 7.1.0 영역 J 에서 같은 버튼에 붙인 문구)로 읽고 aria-haspopup·aria-expanded 로
+  메뉴와 열림 상태를 알린다.
+
+  수정 이력: 이커머스 전수 실측 S5-D33 (2026-10-07).
+
+axes:
+  case: [c01, c02, c03]
+
+effects:
+  - user_menu_button_named             # 글자 없는 버튼의 읽기 이름
+  - user_menu_announces_expanded       # 메뉴 열림 상태
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/UserProfileMenuButtonName.test.tsx
+
+validation:
+  browser_check: 관리자 화면 머리말 이름 영역 — 「사용자 메뉴」·aria-expanded=false, 누르면 true 와 함께 메뉴 표시

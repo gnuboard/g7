@@ -1,0 +1,21 @@
+feature: 번들 레이아웃의 번역 인자 공급 가드
+
+description: |
+  `$t:키` 의 번역문에 `{{이름}}` 자리가 있으면 그 키를 쓰는 레이아웃이 같은 이름의 인자를 넘겨야 한다.
+  넘기지 않으면 엔진이 그 자리를 건드리지 않아 화면에 `{{count}}` 가 글자 그대로 나온다. 7.1.0 실측에서
+  할인코드 일괄 상태 변경 창이 「선택된 {{count}}개 할인코드의 상태가 {{status}}으로 변경됩니다.」를 그대로
+  보여 줬다. 인자 판독은 엔진(`TRANSLATION_PATTERN`, `parseParams`)과 같은 규칙을 쓰고, 모집단(번들 레이아웃과
+  번역 키)은 저장소에서 파생한다.
+
+  축 source 는 검사 대상이다. fixture 는 인자 판독 규칙(문자열 표본), bundled 는 번들 레이아웃 전수 대조다.
+
+axes:
+  source: [fixture, bundled]
+
+effects:
+  - layout_translation_population_is_derived_from_repository
+  - layout_translation_params_parsed_like_engine
+  - layout_translation_placeholders_supplied_by_every_bundled_layout
+
+test_files:
+  - resources/js/core/template-engine/__tests__/LayoutTranslationParamsSupplied.test.ts

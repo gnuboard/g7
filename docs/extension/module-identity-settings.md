@@ -3,12 +3,13 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. 정책/목적/메시지: module.php::getIdentity{Policies,Purposes,Messages}() 로 declarative 선언 — Manager 가 install/update 시 자동 동기화
-2. UI 탭: 모듈 환경설정에 _tab_identity_policies.json partial + 코어 API source_type=module&source_identifier=... 호출
+1. 정책/목적: module.php::getIdentity{Policies,Purposes}() 로 declarative 선언 — Manager 가 install/update 시 자동 동기화
+   메일 문구: getNotificationDefinitions() 에 category=identity, type identity.purpose.{purpose} 로 선언 (getIdentityMessages() 는 @deprecated 7.1.0)
+2. UI 탭: 모듈 환경설정에 _tab_identity_policies.g7.html partial + 코어 API source_type=module&source_identifier=... 호출
 3. 권한: {vendor-module}.identity.policies.{read,update} 모듈 자체 네임스페이스 신설 (최소 권한 원칙)
 4. 편집 권한: 모듈 source 정책은 enabled/grace_minutes/provider_id/fail_mode/conditions 5 필드만 (코어가 강제), admin source 는 자유
 5. 결제 등 도메인 액션 가드: scope=hook 정책 + EnforceIdentityPolicyListener 가 자동 구독 → IdentityVerificationRequiredException → HTTP 428
-6. 다국어: purpose label/description, 메시지 정의 등은 모듈 i18n 표준(`{vendor-module}::identity.purposes.*`) lang 키 사용 — `__()` 자동 해석
+6. 다국어: purpose label/description 은 모듈 i18n 표준(`{vendor-module}::identity.purposes.*`) lang 키 사용 — `__()` 자동 해석. 본인인증 알림 문구는 알림 정의와 같이 다국어 배열 + 언어팩 seed/notifications.json
 ```
 
 ## 개요
@@ -97,26 +98,26 @@ return [
 
 **필드 명명 — `label` / `description` 만 인식**: meta 의 키는 반드시 `'label'` / `'description'` 이어야 합니다. `'label_key'` / `'description_key'` 같은 변형 명명은 controller 의 `resolvePurposeText` 가 인식하지 못해 응답에서 라벨이 raw 키로 노출되는 결함이 발생합니다. `IdentityVerificationManager::registerDeclaredPurposes` 가 legacy `label_key` / `description_key` 입력을 자동 정규화하지만 안전망일 뿐 — 신규 작성 시 표준 명명을 사용하세요.
 
-### IDV 메시지 정의 declarative 등록 (engine-v1.46+)
+### 본인인증 알림 declarative 등록 (7.1.0+)
 
-정책 트리거 시 발송되는 본인인증 메일 문구를 모듈이 자기 도메인에 맞춰 등록할 수 있습니다. `getIdentityMessages()` 메서드를 오버라이드하면 `ModuleManager` / `PluginManager` 가 install/update 시 `IdentityMessageSyncHelper` 를 통해 `identity_message_definitions` / `identity_message_templates` 테이블에 자동 동기화합니다 (uninstall + deleteData=true 시 자동 정리).
+정책 트리거 시 발송되는 본인인증 메일 문구를 모듈이 자기 도메인에 맞춰 등록할 수 있습니다. 본인인증 메일 문구는 알림 정의(`notification_definitions.category = 'identity'`) + 메일 채널 템플릿이므로, `getNotificationDefinitions()` 에 일반 알림과 나란히 `category => 'identity'` 항목으로 선언합니다. `ModuleManager` / `PluginManager` 가 install/update 시 다른 알림 정의와 같은 경로(`NotificationSyncHelper`)로 `notification_definitions` / `notification_templates` 에 동기화합니다.
 
 ```php
-public function getIdentityMessages(): array
+use App\Notifications\Identity\IdentityNotificationType;
+
+public function getNotificationDefinitions(): array
 {
     return [
+        // ... 일반 알림 정의 ...
         [
-            'provider_id' => 'g7:core.mail',
-            'scope_type' => \App\Models\IdentityMessageDefinition::SCOPE_PURPOSE,
-            'scope_value' => 'checkout_verification',
+            'type' => IdentityNotificationType::forPurpose('checkout_verification'), // identity.purpose.checkout_verification
+            'category' => IdentityNotificationType::CATEGORY,                        // 'identity'
+            'hook_prefix' => 'sirsoft-ecommerce',
+            'hooks' => [],                                                            // 훅으로 발송하지 않음
+            'channels' => ['mail'],
             'name' => ['ko' => '결제 시 본인 확인', 'en' => 'Checkout Verification'],
             'description' => ['ko' => '결제 진행 전 본인/성인 확인 인증 코드 메일', 'en' => 'Identity/adult verification code mail before checkout'],
-            'channels' => ['mail'],
-            'variables' => [
-                ['key' => 'code', 'description' => '인증 코드'],
-                ['key' => 'expire_minutes', 'description' => '만료까지 남은 분'],
-                ['key' => 'app_name', 'description' => '사이트명'],
-            ],
+            'variables' => IdentityNotificationType::commonVariables(), // code, action_url, expire_minutes, purpose_label, app_name, site_url, recipient_email
             'templates' => [
                 [
                     'channel' => 'mail',
@@ -129,19 +130,25 @@ public function getIdentityMessages(): array
 }
 ```
 
-| scope_type | 사용 시점 |
+type 은 손으로 조립하지 않고 `IdentityNotificationType` 으로 만듭니다. 발송 시 정책 → 목적 → 기본 순으로 활성 + `category = identity` + 메일 템플릿이 있는 첫 정의를 씁니다.
+
+| type | 사용 시점 |
 | ---------- | -------- |
-| `SCOPE_PURPOSE` | purpose 단위 메시지. 신규 purpose(`checkout_verification` 등) 도입 시 필수 — 코어에 해당 purpose fallback 이 없으므로 `provider_default` 로 떨어지는 것을 방지 |
-| `SCOPE_POLICY` | 특정 `policy_key` 전용 메시지. purpose 보다 우선 — 같은 purpose 라도 정책별 차별화된 문구가 필요할 때 |
-| `SCOPE_PROVIDER_DEFAULT` | provider 기본 fallback. 외부 IDV provider 플러그인이 자기 default 를 등록할 때 사용 |
+| `identity.purpose.{purpose}` (`forPurpose()`) | purpose 단위 문구. 신규 purpose(`checkout_verification` 등) 도입 시 필수 — 코어에 해당 purpose 정의가 없으므로 공통 기본 문구(`identity.default`)로 떨어지는 것을 방지 |
+| `identity.policy.{policy_key}` (`forPolicy()`) | 특정 `policy_key` 전용 문구. purpose 보다 우선 — 같은 purpose 라도 정책별 차별화된 문구가 필요할 때 (type 이 100자를 넘으면 `forPolicy()` 가 해시로 줄임) |
+| `identity.default` | 코어 소유 공통 기본 문구 — 확장은 선언하지 않습니다 |
 
 **언제 등록해야 하나**:
 
-- 신규 purpose 를 도입했다면 **반드시** 그 purpose 의 메시지 정의 1건 이상 등록 (안 하면 결제 등 도메인 정보 없는 일반 fallback 발송)
-- 기존 purpose(`sensitive_action` 등) 만 사용한다면 빈 배열 반환 + 의도 주석 권장 (코어 fallback 그대로 사용)
-- 같은 purpose 라도 정책별로 도메인 특화 문구가 필요하면 `SCOPE_POLICY` 로 정책별 메시지 추가
+- 신규 purpose 를 도입했다면 **반드시** 그 purpose 의 본인인증 알림 정의 1건 이상 등록 (안 하면 결제 등 도메인 정보 없는 공통 기본 문구 발송)
+- 기존 purpose(`sensitive_action` 등) 만 사용한다면 선언하지 않음 (코어 목적별 문구 그대로 사용)
+- 같은 purpose 라도 정책별로 도메인 특화 문구가 필요하면 `forPolicy()` type 으로 정책별 정의 추가
 
-`extension_type='module'`, `extension_identifier=$this->getIdentifier()` 는 Manager 가 자동 주입하므로 반환 배열에 포함하지 않습니다. 운영자가 관리자 UI(환경설정 → 본인인증 → 메시지 템플릿) 에서 편집한 필드는 `user_overrides` JSON 으로 보존되어 모듈 update 재시딩 시에도 덮어쓰이지 않습니다.
+`extension_type='module'`, `extension_identifier=$this->getIdentifier()` 는 Manager 가 자동 주입하므로 반환 배열에 포함하지 않습니다. 운영자가 관리자 UI(환경설정 → 알림 설정 → 분류 「본인인증」, 확장 소유 문구는 그 확장의 설정 → 알림) 에서 편집한 필드는 `user_overrides` JSON 으로 보존되어 모듈 update 재시딩 시에도 덮어쓰이지 않습니다. 다국어는 일반 알림 정의와 같이 언어팩 `seed/notifications.json` 의 type 키로 보강됩니다.
+
+> **`getIdentityMessages()` (@deprecated 7.1.0)**: 7.0.x 계약입니다. 아직 구현한 확장은 install/update 때 Manager 가 `IdentityMessageDeclarationConverter` 로 알림 정의 선언으로 바꿔 합칩니다 — `getNotificationDefinitions()` 에 같은 type 이 있으면 그쪽이 우선이고, 다른 소유자가 이미 가진 type 은 경고 후 건너뛰며, 메일 외 `provider_id` 선언은 경고 후 메일 채널 템플릿으로 흡수됩니다. 신규 확장은 쓰지 않습니다.
+
+상세: [docs/backend/notification-system.md 「본인인증 알림」](../backend/notification-system.md#본인인증-알림-categoryidentity) · [docs/backend/identity-messages.md](../backend/identity-messages.md)
 
 ### 도메인 액션 가드 (결제·삭제 등)
 
@@ -163,15 +170,15 @@ Listener 의 모듈 hook 동적 구독은 [app/Listeners/Identity/EnforceIdentit
 
 ### 탭 추가 (admin layout)
 
-`modules/_bundled/{vendor-module}/resources/layouts/admin/admin_*_settings.json` 에 다음을 추가:
+`modules/_bundled/{vendor-module}/resources/layouts/admin/admin_*_settings.g7.html` (소스 SSoT) 에 다음을 추가:
 
 1. `data_sources` 배열에 `{vendor}IdentityPolicies` 추가 — 코어 API `/api/admin/identity/policies` 를 `source_type=module` + `source_identifier={vendor-module}` 로 호출
 2. `TabNavigation.tabs` 배열에 `{ "id": "identity_policies", "label": "$t:..." }` 추가
-3. `partials` 배열에 `{ "partial": "partials/.../_tab_identity_policies.json" }` 추가
+3. 조각 참조 `<include src="partials/.../_tab_identity_policies.g7.html"/>` 추가 — **소스는 소스를 가리킨다**. 산출 JSON 의 `{ "partial": "..._tab_identity_policies.json" }` 표기는 컴파일러가 경계에서 만든다(`PartialReferenceNotation`). `<include src>` 에 `.json` 을 쓰면 컴파일 에러(`partial_src_not_authoring`)로 막힌다
 
 ### partial 골격
 
-게시판/이커머스의 `_tab_identity_policies.json` 파일이 참고용 레퍼런스 — 안내 카드 + Desktop/Tablet 테이블(`responsive.mobile.if = false`) + Mobile 카드(`responsive.mobile.if = true`) + 인라인 enabled 토글 + [+ 정책 추가] 버튼(코어 페이지로 navigate)으로 구성됩니다.
+게시판/이커머스의 `_tab_identity_policies.g7.html` 파일이 참고용 레퍼런스 — 안내 카드 + Desktop/Tablet 테이블(`responsive.mobile.if = false`) + Mobile 카드(`responsive.mobile.if = true`) + 인라인 enabled 토글 + [+ 정책 추가] 버튼(코어 페이지로 navigate)으로 구성됩니다.
 
 ### 인라인 토글 동작
 
@@ -185,6 +192,16 @@ Listener 의 모듈 hook 동적 구독은 [app/Listeners/Identity/EnforceIdentit
 ### 정책 추가 / 편집
 
 운영자 자유 정책의 신규 추가/편집은 모듈 탭에서 직접 폼 모달을 열지 않고, 코어 환경설정 페이지(`/admin/settings?tab=identity&sub_tab=policies`)로 navigate 하여 코어 모달을 사용합니다. `[+ 정책 추가]` 버튼은 query 에 `source_identifier=module:{vendor-module}` 를 포함시켜 모듈 컨텍스트 귀속을 보장합니다.
+
+```html
+<on type="click">
+  <navigate path="/admin/settings">
+    <query tab="identity" sub_tab="policies" source_identifier="module:sirsoft-board" action="add"/>
+  </navigate>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {
@@ -240,57 +257,49 @@ Listener 의 모듈 hook 동적 구독은 [app/Listeners/Identity/EnforceIdentit
 - `IdentityPolicyService::enforce()` 가 정책 활성+미인증 시 `IdentityVerificationRequiredException` throw
 - `EnforceIdentityPolicyListener::getSubscribedHooks()` 가 모듈 hook target 을 동적 구독
 
-## 외부 IDV provider 플러그인 — 메시지 정의 기여
+## 외부 IDV provider 플러그인 — 메일 문구 기여
 
-외부 IDV provider 플러그인(KCP / PortOne / 토스인증 / 자체 메일 provider 등)이 자기 메일/SMS 문구의 기본값을 코어에 기여하는 패턴.
+본인인증 알림(`category = 'identity'`)은 코어 메일 provider(`g7:core.mail`)가 보내는 메일 문구입니다. 알림 정의에는 provider 축이 없으므로 외부 provider(KCP / PortOne / 토스인증 등)가 자체 채널로 보내는 문구는 이 시스템의 대상이 아니며, 플러그인이 코어 메일 발송에 쓰일 문구를 기여하려면 위 「본인인증 알림 declarative 등록」과 같이 `getNotificationDefinitions()` 에 `category => 'identity'` 정의를 선언합니다.
 
-### Filter 훅: `core.identity.filter_default_message_definitions`
+### [기본값 복원] 기여 — Filter 훅 `core.notification.filter_default_definitions`
 
-코어 reset 로직이 운영자가 "기본값으로 복원" 클릭 시 시드 데이터를 모으는데, 플러그인이 자기 정의를 추가할 수 있도록 노출됩니다. 알림 시스템의 `core.notification.filter_default_definitions` 와 동형 패턴.
+운영자가 "기본값으로 복원" 을 누르면 코어 reset 로직이 `config('core.notification_definitions')` 에 이 필터를 적용해 기본값을 모읍니다. 확장 소유 정의(본인인증 알림 포함)가 복원되려면 확장이 자기 선언을 이 필터로 더해야 합니다 — 이커머스 `EcommerceNotificationDataListener::contributeDefaultDefinitions()` 와 같은 패턴입니다.
 
 ```php
 // 플러그인 Listener
 public static function getSubscribedHooks(): array
 {
     return [
-        'core.identity.filter_default_message_definitions' => [
-            'method' => 'contributeDefinitions',
+        'core.notification.filter_default_definitions' => [
+            'method' => 'contributeDefaultDefinitions',
             'priority' => 20,
             'type' => 'filter',
         ],
     ];
 }
 
-public function contributeDefinitions(array $definitions, array $context = []): array
+public function contributeDefaultDefinitions(array $definitions, array $context = []): array
 {
-    return array_merge($definitions, [
-        [
-            'provider_id' => 'kcp',
-            'scope_type' => \App\Models\IdentityMessageDefinition::SCOPE_PROVIDER_DEFAULT,
-            'scope_value' => '',
+    // plugin.php 의 getNotificationDefinitions() 가 SSoT — 같은 선언을 그대로 더한다
+    $plugin = app(PluginManager::class)->getPlugin('vendor-plugin');
+    if (! $plugin) {
+        return $definitions;
+    }
+
+    foreach ($plugin->getNotificationDefinitions() as $data) {
+        $definitions[] = array_merge($data, [
             'extension_type' => 'plugin',
-            'extension_identifier' => 'sirsoft-kcp',
-            'name' => ['ko' => 'KCP 본인 확인 (기본)', 'en' => 'KCP Verification (default)'],
-            'channels' => ['mail'],
-            'variables' => [
-                ['key' => 'code', 'description' => '인증 코드'],
-                ['key' => 'expire_minutes', 'description' => '만료 분'],
-            ],
-            'templates' => [
-                [
-                    'channel' => 'mail',
-                    'subject' => ['ko' => '[KCP] 본인 확인', 'en' => '[KCP] Verification'],
-                    'body' => ['ko' => '<p>코드: {code}</p>', 'en' => '<p>Code: {code}</p>'],
-                ],
-            ],
-        ],
-    ]);
+            'extension_identifier' => $plugin->getIdentifier(),
+        ]);
+    }
+
+    return $definitions;
 }
 ```
 
-플러그인 자체 시더로도 동일 구조를 등록하면 설치 직후 즉시 발송 가능. 운영자는 환경설정 → 본인인증 → 메시지 템플릿 서브탭에서 다국어 제목/본문을 편집할 수 있습니다.
+운영자는 환경설정 → 알림 설정 → 분류 「본인인증」(확장 소유 문구는 그 확장의 설정 → 알림)에서 다국어 제목/본문을 편집할 수 있습니다.
 
-상세: [docs/backend/identity-messages.md](../backend/identity-messages.md)
+상세: [docs/backend/notification-system.md 「모듈/플러그인 기본 정의 기여 (Filter 훅)」](../backend/notification-system.md#모듈플러그인-기본-정의-기여-filter-훅) · [docs/backend/identity-messages.md](../backend/identity-messages.md)
 
 ## 외부 IDV provider 플러그인 — Extension Point 사용 (engine-v1.46.0+)
 
@@ -298,7 +307,7 @@ KCP / PortOne / 토스인증 / Stripe Identity 등 외부 IDV provider 를 G7 �
 
 ### 모듈/플러그인이 새 정책을 추가할 때 프론트엔드 작업이 필요 없음
 
-코어 모달(`_identity_challenge_modal.json`) 이 `text_code` / `link` 두 render_hint 를 기본 처리하므로, 새 정책의 purpose 가 기존 render_hint 중 하나로 매핑되면 **프론트엔드 추가 작업 없이 동일한 모달이 자동 적용**됩니다.
+코어 모달(`_identity_challenge_modal.g7.html`) 이 `text_code` / `link` 두 render_hint 를 기본 처리하므로, 새 정책의 purpose 가 기존 render_hint 중 하나로 매핑되면 **프론트엔드 추가 작업 없이 동일한 모달이 자동 적용**됩니다.
 
 ### 외부 provider 가 자기 launcher 를 작성하는 경우 — SSoT 스키마 준수 의무
 
@@ -326,7 +335,9 @@ provider 가 자체 launcher / 모달 파셜을 추가하는 경우 (PortOne / K
 - `identity_provider_ui:link` — 링크 안내 슬롯 (코어 default)
 - `identity_provider_ui:provider` — provider 별 SDK 주입 슬롯 (비어있음)
 
-플러그인 extension JSON 예시 (`plugins/{id}/resources/extensions/identity-provider.json`):
+플러그인 extension fragment 는 `plugins/{id}/resources/extensions/identity-provider.g7.html` (소스 SSoT) 로 작성합니다. 아래는 컴파일된 런타임 JSON 계약 기준 예시입니다 (마크업 문법은 [layout-markup.md](../frontend/layout-markup.md) 참조).
+
+`scripts[].src` 의 외부 호스트는 그 레이아웃을 가진 확장·템플릿이 매니페스트의 `trusted_script_hosts` 로 선언합니다([module-assets.md](module-assets.md) 「`trusted_script_hosts`」). 런타임·저장·점검 커맨드는 활성 확장·템플릿의 선언 집계(개발 커맨드는 문서 소유 확장의 선언, 운영자 설정 `config/template.php` 의 `layout_markup.script_src_allowlist` 도 더함)에 없는 호스트를 거부합니다(`script_src_not_allowed`). 코어 설정 기본값은 비어 있고, 설치 경로의 컴파일은 JSON 설치처럼 호스트를 대조하지 않습니다. 예시의 `sdk.example.com` 은 자리표시자입니다.
 
 ```json
 {
@@ -338,25 +349,22 @@ provider 가 자체 launcher / 모달 파셜을 추가하는 경우 (PortOne / K
     {
       "name": "Button",
       "if": "{{_global.identityChallenge?.provider_id === 'vendor.method'}}",
-      "events": {
-        "onClick": {
-          "actions": [
-            {
-              "handler": "callExternalEmbed",
-              "params": {
-                "constructor": "VendorSdk.IdentityVerification",
-                "config": { "channelKey": "..." },
-                "callbackAction": [
-                  {
-                    "handler": "resolveIdentityChallenge",
-                    "params": { "result": "verified", "token": "{{result.verification_token}}" }
-                  }
-                ]
+      "actions": [
+        {
+          "type": "click",
+          "handler": "callExternalEmbed",
+          "params": {
+            "constructor": "VendorSdk.IdentityVerification",
+            "config": { "channelKey": "..." },
+            "callbackAction": [
+              {
+                "handler": "resolveIdentityChallenge",
+                "params": { "result": "verified", "token": "{{result.verification_token}}" }
               }
-            }
-          ]
+            ]
+          }
         }
-      }
+      ]
     }
   ]
 }
@@ -379,10 +387,10 @@ provider 가 webhook 또는 redirect 콜백으로 결과를 보내는 경우 코
 
 ## 참고 파일
 
-- 게시판 모듈 구현 예: [modules/_bundled/sirsoft-board/module.php](../../modules/_bundled/sirsoft-board/module.php), [_tab_identity_policies.json](../../modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_identity_policies.json)
+- 게시판 모듈 구현 예: [modules/_bundled/sirsoft-board/module.php](../../modules/_bundled/sirsoft-board/module.php), [_tab_identity_policies.g7.html](../../modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_identity_policies.g7.html)
 - 이커머스 모듈 구현 예 (purpose 등록 + 결제 가드): [modules/_bundled/sirsoft-ecommerce/module.php](../../modules/_bundled/sirsoft-ecommerce/module.php)
 - 코어 IDV 인프라 가이드: [docs/backend/identity-policies.md](../backend/identity-policies.md)
-- 코어 정책 관리 partial 레퍼런스: [_tab_identity_policies.json (코어)](../../templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_identity_policies.json)
+- 코어 정책 관리 partial 레퍼런스: [_tab_identity_policies.g7.html (코어)](../../templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_identity_policies.g7.html)
 - 모달 UI 표준 + Extension Point 슬롯: [../frontend/identity-verification-ui.md](../frontend/identity-verification-ui.md)
 - 외부 템플릿 launcher 등록 가이드: [template-idv-bootstrap.md](template-idv-bootstrap.md)
 - 외부 SDK 통합 사례: [`sirsoft-daum_postcode/resources/extensions/`](../../plugins/_bundled/sirsoft-daum_postcode/resources/extensions/), [`sirsoft-ckeditor5/resources/extensions/`](../../plugins/_bundled/sirsoft-ckeditor5/resources/extensions/)

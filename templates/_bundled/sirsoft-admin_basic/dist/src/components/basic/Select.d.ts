@@ -17,6 +17,8 @@ export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectE
     searchable?: boolean;
     /** 검색 input placeholder */
     searchPlaceholder?: string;
+    /** 값이 비었을 때 버튼에 흐리게 보이는 안내 글자 — 버튼의 읽기 이름도 된다 */
+    placeholder?: string;
     /**
      * 레이아웃 편집기 주입 속성 (편집 모드 전용). Select 는 커스텀 드롭다운 루트에
      * 개별 data-editor-* 키를 spread 해야 선택/편집이 닿는다(커스텀 루트

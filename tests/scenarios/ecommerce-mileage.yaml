@@ -79,6 +79,10 @@ effects:
   - cache_available_matches_ledger_sum_definition
   - extend_lot_expiry_revives_expired_lot_and_recalculates_cache  # §6.1 표8
   - cache_is_display_only_money_paths_use_ledger_for_update  # drift 무해
+  # 원장 저장소 원자성 (MileageTransactionRepositoryTest) — 낡은 스냅샷으로 커밋된 값을 덮지 않는다
+  - lot_decrement_applies_to_the_committed_value
+  - lot_increment_applies_to_the_committed_value_and_refreshes_the_model
+  - earn_lot_lookup_for_update_returns_the_same_row
   # 관리자 수동
   - admin_earn_issues_lot_with_granted_by_and_memo_and_policy_or_direct_or_unlimited_expiry
   - admin_deduct_consumes_fifo_and_rejects_when_exceeds_balance_with_422
@@ -100,7 +104,20 @@ effects:
   - admin_mileage_manual_modal_grant_deduct_with_user_search
   - admin_mileage_row_expand_shows_linked_transactions
   - admin_badge_group_distinguishes_eight_types_in_five_color_groups
+  # ── 거래 유형 · 적립 시점 enum 의 값 계약 (Unit/Enums) ──
+  # 저장된 문자열 값은 ledger 행에 그대로 박히므로 바뀌면 옛 행의 유형이 사라진다.
+  - transaction_type_values_and_case_count_are_stable_with_a_label_for_each
+  # 적립/차감 분류는 잔액 방향의 SSoT 다 — 한 유형이 양쪽에 걸리거나 어느 쪽에도 없으면
+  # 잔액 합산과 요약 집계가 서로 다른 답을 낸다.
+  - earning_and_deducting_classification_is_total_and_mutually_exclusive
+  # 적립 시점 설정값이 어느 타임스탬프 컬럼을 읽을지까지 enum 이 정한다 — 호출부가 컬럼명을
+  # 따로 적으면 설정을 바꿨을 때 한쪽만 따라간다.
+  - earn_trigger_maps_each_case_to_its_timestamp_column
   - user_mileage_history_filters_by_four_display_categories
+  # 마이페이지 마일리지 탭 화면(sirsoft-basic 레이아웃) — 탭·라우트·데이터소스·요약 카드·빈 상태·비활성 안내·다크 모드
+  - mypage_mileage_tab_renders_balance_history_and_disabled_state
+  # 내역 금액은 숫자 + P(요약 칸과 같은 단위) — 통화 서식(amount_formatted 「240원」)을 쓰면 「240원 P」 (이커머스 전수 실측 S4-D12)
+  - mypage_mileage_history_amount_is_signed_points_not_currency
   - user_display_category_collapses_restore_admin_into_adjust
   - member_balance_injected_into_admin_user_detail_and_mypage_profile_via_resource_hook
   - member_balance_injection_uses_cache_not_ledger_sum
@@ -211,6 +228,8 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Console/MileageCommandsTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/MileageTransactionControllerTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserMileageControllerTest.php
+  # 원장 저장소 — 잔액 합산·FIFO 순서·적립/복원 멱등 판정·lot 원자 갱신의 근거 계층
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Repositories/MileageTransactionRepositoryTest.php
   # 부분취소 재안분 회귀 (§6.3) — 기존 파일에 회귀 테스트 추가
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderAdjustmentServiceTest.php
   # 적립률 패치 (§6.2)

@@ -24,8 +24,8 @@ enum ConsentAction: string
     /**
      * 저장 값(value/rejection 신호)으로부터 행위를 판정합니다.
      *
-     * @param bool $value 동의 여부 (true=동의, false=미동의)
-     * @param bool $isRejection 명시적 거부 신호 여부
+     * @param  bool  $value  동의 여부 (true=동의, false=미동의)
+     * @param  bool  $isRejection  명시적 거부 신호 여부
      * @return self value=true 시 Granted, false+거부 시 Rejected, 그 외 Revoked
      */
     public static function fromDecision(bool $value, bool $isRejection = false): self

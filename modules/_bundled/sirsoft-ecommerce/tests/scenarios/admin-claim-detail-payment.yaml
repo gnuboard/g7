@@ -1,0 +1,223 @@
+feature: 관리자 클레임 상세 결제 정보·정산·환불 실행 (#599 S9b — D17-③·D18·D19)
+
+description: |
+  S9a 가 의도적으로 비워 둔 두 탭을 섹션과 함께 세운다. 결제 정보(원 주문의 결제수단 카드와
+  금액 행 세트 + '이 클레임의 정산')는 네 유형 모두에 있고, 환불 실행(취소 가능 금액 산정 +
+  환불 금액 수정 + 실행)은 환불신청서에만 있다. 이 화면에서 조용히 깨지는 지점은 여섯이다.
+
+  ① **주문 결제 정보를 주문 상세 엔드포인트에서 읽으면** 그 게이트가 `orders.read` 라 클레임
+     권한만 가진 운영자(기본 역할 `manager`)에게만 403 이 되어 결제 정보 탭이 통째로 빈다.
+     전권 계정에서는 재현되지 않는다 — 상세 봉투(`data.order`)가 그 값의 통로다. 청구 방식·
+     환불 수단 어휘도 같은 이유로 봉투가 나른다(설정 조회는 `settings.read` 게이트다).
+
+  ② **그 봉투에 주문 상세를 통째로 실으면** 이 화면이 그리지도 않는 주문 옵션·배송·주소가
+     응답에 실리고, 미로드 관계가 직렬화 시점에 터진다. 결제 정보 섹션이 실제로 그리는 축만
+     싣는다.
+
+  ③ **행 마크업이나 라벨이 주문상세 정본과 갈리면** 같은 주문이 두 화면에서 다르게 보인다
+     (D17-③). 눈으로는 알아채기 어렵고 오류도 남지 않으므로, 정본이 쓰는 행 클래스 밖의
+     형태를 결제 정보 카드에 새로 만들지 않고 **라벨 키도 정본의 것을 그대로 읽는다** —
+     사본을 두면 정본의 문구가 바뀔 때 이 화면만 옛 문구로 남는다(실측이 "과세 금액" ↔
+     "과세금액" 처럼 갈린 세 행을 잡았다).
+
+  ④ **환불 예정액을 화면이 다시 계산하면** 완료 처리 모달이 보여 주는 숫자와 갈린다. 교환·
+     반품의 환불 예정액은 헤더 컬럼이 아니라 완료 시점의 주문 재계산 결과이고, 그 값의 SSoT
+     는 완료 미리보기 경로다. 접수 불가 사유 둘(이미 접수됨 / 대상 없음)은 뜻이 달라 구분해
+     알린다 — 감추면 0원 예고가 정상으로 보인다.
+
+  ⑤ **취소 가능 금액의 세 축을 감추면** 왜 그 금액인지 알 수 없다 (D19). 한도를 정한 축에
+     따라 조치가 갈린다 — 선점이면 다른 클레임을 먼저 끝내야 하고, 결제수단 잔여면 더
+     되돌릴 수 없다. 산정도 표기도 서버가 하며, 형제 엔드포인트와 **같은 지점**에서 만든다.
+     "산정 불가" 와 "0원" 은 다른 사실이라 뭉뚱그리지 않는다.
+
+  ⑥ **환불 실행이 곧바로 나가면** 오클릭 한 번이 되돌릴 수 없는 환불이 된다. 확인 모달을
+     거치되, 모달은 부모 화면과 다른 컨텍스트라 `_local` 을 해석하지 못한다 — 여는 핸들러가
+     지금 입력된 값을 전역 문맥으로 넘겨야 **모달이 예고한 값 = 실행하는 본문** 이 성립한다.
+     저장과 실행은 게이트가 다르며(`claims.update-amounts` vs `claims.execute-refund`), 재실행
+     (더블클릭)은 입력 오류가 아니라 충돌(409)이라 확정된 상태를 다시 읽어 보여 준다.
+
+# axis 의미:
+#   claim_type — 결제 정보는 전 유형에 있고, 정산 블록은 청구(교환·반품) / 환불 요약(환불)로
+#                갈리며, 환불 실행 섹션은 환불신청서에만 있다. 취소(cancel)는 관리자 상세
+#                화면 자체가 없다 (S9a 와 같다).
+#   cancellable — 취소 가능 금액 산정 결과의 유무. `present` 는 세 축과 한도를 정한 축이 함께
+#                 온 상태, `absent` 는 산정 자체가 없는 상태다 — "산정 불가" 와 "0원" 은 다른
+#                 사실이라 화면이 뭉뚱그리지 않는다.
+#
+# 원 주문의 결제 사실(결제행 유무 · 누적 환불 유무)은 이 두 축과 직교하지 않는 파생 상태라
+# axis 로 세우지 않고 이름 붙은 effect 가 덮는다 — `claim_payment_shows_empty_notice`(결제행
+# 없는 주문) · `claim_payment_renders_refund_rows_after_execution`(§4-3-1 의 누적 환불 두 행).
+# 쓰기 권한 조합도 같은 이유로 `claim_amount_controls_gate_on_update_amounts` 와
+# `claim_refund_save_and_execute_are_separate` 두 effect 가 덮는다.
+axes:
+  claim_type: [exchange, return, refund]
+  cancellable: [present, absent]
+
+exclusions:
+  - { claim_type: exchange, cancellable: present, reason: "취소 가능 금액은 환불신청서 문맥의 산정이라 교환 상세에는 그 섹션 자체가 없다" }
+  - { claim_type: return, cancellable: present, reason: "위와 같다 — 반품의 환불은 완료 처리가 접수한 환불신청서가 맡는다 (D26)" }
+
+effects:
+  - claim_linked_refunds_listed_from_source_axis   # #747 보완 5
+  - claim_linked_refunds_empty_notice   # #747 보완 5
+  - claim_header_links_source_and_result_cancel   # #747 보완 5
+  # 봉투 — 게이트 폭과 전달 통로 (①·②)
+  - claim_payment_reads_detail_envelope_only
+  - claim_payment_order_context_is_pruned
+  - claim_charge_method_options_come_from_detail_response
+  - claim_refund_method_options_come_from_detail_response
+  # 결제 정보 섹션 — 정본 동형 (③)
+  - claim_payment_rows_match_order_detail_source
+  - claim_payment_labels_reuse_order_detail_keys
+  - claim_payment_shows_empty_notice
+  - claim_payment_renders_refund_rows_after_execution
+  # 정산 칸 추가결제 건의 부분 환급액 (2026-09-26 3차 검증 인터뷰)
+  - claim_settlement_payment_row_shows_partial_refund
+  # 이 클레임의 정산 (④)
+  - claim_settlement_blocks_split_by_type
+  - claim_settlement_preview_comes_from_server
+  - claim_settlement_blocked_reason_shown
+  # 취소 가능 금액 산정 (⑤ — D19)
+  - claim_cancellable_axes_come_from_server
+  - claim_refund_input_shows_per_method_remaining
+  - claim_cancellable_unavailable_distinguished_from_zero
+  - claim_cancellable_payload_is_identical_across_endpoints
+  # 환불 금액 수정·실행 (⑥ — D18)
+  - claim_detail_refund_execute_condition_identical
+  - claim_refund_execute_section_absent_for_non_refund
+  - claim_amount_controls_gate_on_update_amounts
+  - claim_amounts_send_only_the_axes_of_this_type
+  - claim_amounts_blank_input_is_not_zero
+  - claim_amounts_no_request_when_nothing_changed
+  - claim_amounts_refetch_detail_and_logs
+  - claim_amounts_restore_button_on_failure
+  - claim_refund_execute_requires_confirm_modal
+  - claim_refund_modal_does_not_read_parent_local
+  - claim_refund_execute_seeds_modal_context
+  # T2-D6 (#599 3차 실측 L-8) — 계좌 없이 「환불완료」가 찍히던 길을 창에서 먼저 막는다
+  - claim_refund_execute_modal_gates_on_the_bank_account
+  - claim_refund_execute_modal_clears_the_bank_inputs_on_open
+  - claim_refund_execute_body_carries_the_typed_bank_account
+  - claim_refund_execute_body_carries_the_force_consent
+  - claim_refund_execute_requires_identity
+  - claim_refund_execute_requires_seeded_context
+  - claim_refund_execute_body_carries_edited_amounts
+  - claim_refund_execute_conflict_refetches_detail
+  - claim_refund_execute_surfaces_server_reason
+  - claim_refund_execute_refetches_detail_and_logs
+  - claim_refund_save_and_execute_are_separate
+  - claim_refund_execute_locks_page_button_while_running
+  # 서버 계약 (환불 실행 · 금액 저장)
+  - claim_refund_execute_uses_request_body_amounts
+  - claim_refund_execute_rejects_over_the_cancellable_limit
+  # D19 상한은 **저장·실행 두 지점** 모두에서 판정한다(`UpdateClaimAmountsRequest` 독블록 ·
+  # `OrderRefundRequestService:1318`). 실행만 잠그면 초과값이 신청서에 저장된 채 approved 로
+  # 남아 화면에 승인된 금액처럼 보이고, D19 ③ 축(다른 미실행 클레임의 **저장 금액** 합)이
+  # 그 값을 읽어 **다른 신청서의 상한까지 깎는다**. 대조군(이내 저장 200)이 함께 있어야
+  # 422 가 「상한 판정」인지 「경로가 막힘」인지 갈린다. (#599 세션2 2-M)
+  - claim_refund_save_rejects_over_the_cancellable_limit
+  - claim_refund_save_accepts_within_the_cancellable_limit
+  - claim_refund_execute_twice_is_a_conflict
+  - claim_refund_execute_accumulates_order_refund_totals
+  - claim_settlement_breaks_down_the_expected_refund
+  - claim_shipping_fee_basis_is_visible
+  - claim_cancellable_method_label_from_catalog
+  - claim_cancellable_formatting_uses_the_order_currency_snapshot
+  # 서버 계약 — 환불 실행 (ClaimRefundExecutionTest: 상태·권한 게이트 · 누적 · 마일리지 환급)
+  - execute_completes_an_approved_direct_refund_and_cancels_the_option_quantity
+  - claim_refund_execute_accepts_a_cancel_sourced_refund
+  - execute_requires_an_approved_refund
+  - execute_requires_the_execute_refund_permission
+  - execute_refunds_used_mileage_with_the_refund_idempotency_axis
+  - execute_of_an_exchange_sourced_refund_accumulates_without_touching_options
+  - execute_rejects_mileage_refunds_for_guest_orders
+  - execute_splits_a_mixed_pg_and_mileage_refund
+  - execute_links_the_mileage_restore_to_the_original_usage_transaction
+  - execute_preserves_the_option_processed_by_when_none_is_given
+  # 서버 계약 — 취소 가능 금액 산정 (D19 세 축 · 자기 제외 · 문맥 배타 · 교차 접근 · 다통화)
+  - cancellable_amount_returns_the_three_axes_with_methods
+  - cancellable_amount_reserves_other_pending_refunds
+  - cancellable_amount_with_refund_context_excludes_itself_from_the_reserve
+  - cancellable_amount_for_an_exchange_sourced_refund_excludes_its_own_filing
+  - cancellable_amount_is_404_for_a_refund_of_another_order
+  - cancellable_amount_reports_the_payment_currency_remaining_separately_from_the_base
+  - cancellable_amount_requires_the_claims_read_permission
+  - cancellable_amount_rejects_the_refund_context_together_with_items
+  - cancellable_amount_accepts_items_when_the_refund_context_is_blank
+  - cancellable_amount_scopes_the_requested_items_to_the_order
+  - cancellable_amount_reports_the_reserved_axis_but_does_not_bind_on_it
+  - cancellable_amount_reports_the_payment_axis_as_binding
+  - cancellable_amount_answers_a_fully_cancelled_order_with_the_base_currency
+  # 서버 계약 — 환불 금액 수정 (D18 환불 축 · 상한 · 직렬화 · 상태 게이트)
+  - amounts_updates_the_refund_amounts_within_the_cancellable_limit
+  - amounts_locks_the_order_row_for_the_cancellable_aggregate
+  - amounts_rejects_a_refund_amount_exceeding_the_cancellable_limit
+  - amounts_rejects_mileage_refunds_for_guest_orders
+  - amounts_prohibits_shipping_fee_fields_on_the_refund_type
+  - amounts_requires_the_update_amounts_permission
+  - amounts_rejects_a_cancel_sourced_refund
+  - amounts_rejects_a_processing_refund
+  # 서버 계약 — 취소 미리보기 (클레임 코스·수량 잠금 422 · 관리자 사유 원문)
+  - estimate_refund_is_422_for_items_locked_by_a_claim_course
+  - estimate_refund_is_422_for_items_locked_by_a_pending_refund_quantity
+  - estimate_refund_reports_the_reason_detail_for_admins
+  # 브라우저 실측 (E2E)
+  - detail_payment_tab_reveals_order_amounts
+  - detail_refund_execute_tab_present_only_for_refund
+  - detail_refund_execute_confirm_modal_opens
+
+  # 접수 시점 주문금액 비교표 — '이 클레임의 정산' 카드 · 취소 신청서 카드 (#599 후속 P8)
+  - admin_claim_detail_comparison_in_settlement_card
+  - admin_claim_cancel_card_comparison
+  # 2026-09-11 관리자 화면 실측이 드러낸 두 결함의 고정
+  - admin_claim_settlement_card_hides_comparison_for_cancel
+  - admin_claim_detail_nested_partial_refs_are_sibling_relative
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimLinkedClaimsTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimDetail.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminClaimDetailRender.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimDetailHandlers.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimDetailScreenTest.php
+  # 환불 실행의 서버 계약(200·409·422·본문 금액·누적)은 이 파일이 고정한다 — 화면 축의 DoD 가
+  # 서버 쪽에서 기대는 유일한 근거인데 목록에 없으면 삭제·약화돼도 커버리지가 줄지 않는다.
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/ClaimRefundExecutionTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-claim-detail.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/UserClaimDetailCalculationComparisonTest.php
+
+notes: |
+  **마커와 이 목록은 양방향으로 맞춘다.** 정적 검사는 선언된 effect 에 테스트가 붙었는지만
+  본다 — 테스트가 건 핀이 여기에 없으면 커버리지가 실제보다 작게 보이는데도 초록이다.
+
+  **금액 합계의 표기 기준.** 화면에 그려지는 금액은 전부 서버가 만든 `*_formatted` 다. 예외는
+  운영자가 지금 입력 중인 두 칸의 합계 하나뿐이며, 그것은 서버 왕복 없이 화면이 더한 값이라
+  통화 기호를 붙이지 않고 서버가 준 통화 코드를 그대로 병기한다 — 기호를 화면이 만들면
+  기본 통화가 원이 아닌 상점에서 값은 맞고 단위만 틀린 금액이 나간다.
+
+  **상한 안내는 가드가 아니다.** 입력 합이 취소 가능 금액을 넘으면 화면이 미리 알리지만,
+  실제 차단은 서버가 실행 직전에 같은 식으로 재계산해 한다(422). 화면 안내를 가드로 삼으면
+  저장·실행 사이에 다른 클레임이 선점한 금액이 반영되지 않는다.
+
+  **`payment_state: none` 축이 실재한다.** 전액 할인·전액 마일리지 주문은 결제행이 없다.
+  안내를 두지 않으면 카드가 통째로 사라져 운영자가 "아직 안 불러왔다" 와 "결제 건이 없다" 를
+  구분할 수 없다.
+
+  **브라우저 실측의 선행 조건**은 S9a 와 같다 — `playwright:seed-ecommerce` 의 클레임 축이
+  아직 stub 이라(계획서 이월 4) spec 은 목록 API 로 신청서를 발견해 진행하고, 한 건도 없으면
+  그 사실을 드러내며 건너뛴다.
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: Playwright MCP   # #599 3차 실측 세션2 — 실제 주문·신청으로 재실측
+  note: |
+    T2-D6(계좌도 동의도 없으면 [환불하기]가 잠긴다)의 브라우저 축은 Playwright MCP 재실측이
+    덮는다. spec 을 새로 두지 않는 이유는 이 축이 **무통장 결제 → 배송완료 → 환불신청 → 승인**
+    까지 실제 상태를 만들어야 성립하는데, 이 모듈의 spec 들은 클레임 시드가 stub 이라(위 선행
+    조건) 승인된 무통장 환불신청서를 만들지 못하고, 그 상태에서 재현하면 창이 아예 뜨지 않아
+    **잠금이 아니라 부재를 재게 되기 때문이다**(가짜 초록 — 게이트를 지워도 통과한다).
+
+    대신 세 겹으로 받친다. ① 레이아웃 테스트가 창의 게이트와 입력 칸을 정적으로 잠근다
+    (`adminClaimDetail.test.ts` 2건). ② 핸들러 테스트가 본문에 실리는 값을 잠근다
+    (`claimDetailHandlers.test.ts` 3건 — 게이트를 빼면 red 임을 실측 확인). ③ 서버가 같은
+    술어로 422 를 낸다(`AdminRefundExecuteRequiresBankTest` 7건). 화면과 서버가 같은 판정
+    (`refund_account_required` ← `OrderRefundRequestService::refundsToBankAccount()`)을 쓰므로
+    한쪽만 통과하는 상태가 생기지 않는다.

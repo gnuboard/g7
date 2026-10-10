@@ -1,0 +1,56 @@
+<!-- 쇼핑몰 설정 — 무통장 입금계좌, 좁은 화면용 카드. 넓은 화면용 표(`_bank_accounts_table`)와
+  **같은 배열을 같은 방식으로 편집한다** — 보이는 형태만 다르므로 한쪽을 고치면 다른 쪽도
+  함께 고쳐야 한다.
+  
+  계좌는 폼 상태(`_local.form.order_settings.bank_accounts`) 안의 배열이고 저장은 설정 화면의
+  저장 버튼이 한꺼번에 한다 — 이 조각에는 서버 호출이 없다.
+  반복 항목에 `_idx`(원본 위치)를 미리 붙여 두는데, 입력칸 이름과 오류 키가 그 번호로 만들어지기
+  때문이다. 눈에 보이는 순서가 아니라 배열의 실제 위치여야 서버 오류가 맞는 칸에 붙는다. -->
+<partial description="무통장 계좌번호 설정 - Mobile 카드 뷰">
+  <div data-ref="bank_accounts_cards" class="stack-tight">
+    <div data-if="{{!_local.form?.order_settings?.bank_accounts || _local.form.order_settings.bank_accounts.length === 0}}" class="text-center text-tertiary">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.empty</div>
+    <div data-each="account, accountIndex in (Array.isArray(_local.form?.order_settings?.bank_accounts) ? _local.form.order_settings.bank_accounts : []).map((a, i) => ({...a, _idx: i}))" class="excel-card">
+      <div class="excel-card-header">
+        <div class="flex-center gap-2 flex-1 min-w-0">
+          <button type="button" class="btn-icon flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.is_default" aria-pressed="{{account.is_default ? 'true' : 'false'}}">
+            <on type="click">
+              <!-- 대표 계좌 지정. 하나만 대표일 수 있으므로 배열 전체를 다시 만들면서 고른 것만 참으로 둔다 — 끄는 동작은 없다(다른 것을 고르면 옮겨간다). -->
+              <set-state target="local" form.order_settings.bank_accounts="{{(_local.form?.order_settings?.bank_accounts ?? []).map((a, i) => ({...a, is_default: i === account._idx}))}}" :hasChanges="true"/>
+            </on>
+            <icon name="{{account.is_default ? 'circle-dot' : 'circle'}}" class="{{account.is_default ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}}"/>
+          </button>
+          <span class="font-medium text-gray-900 dark:text-gray-100">{{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number') + ' ' + (accountIndex + 1)}}</span>
+        </div>
+        <div class="flex-center gap-2 flex-shrink-0">
+          <toggle data-type="composite" name="{{'order_settings.bank_accounts.' + account._idx + '.is_active'}}" value="{{account.is_active}}" disabled="{{_computed.isReadOnly}}"/>
+          <button data-if="{{(_local.form?.order_settings?.bank_accounts ?? []).length > 1}}" type="button" class="btn-icon text-red-500 dark:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.delete">
+            <on type="click">
+              <!-- 계좌 삭제. 마지막 한 줄은 지울 수 없게 버튼 자체를 숨긴다 — 계좌가 0개면 무통장 결제를 받을 수 없기 때문이다. -->
+              <set-state target="local" form.order_settings.bank_accounts="{{(_local.form?.order_settings?.bank_accounts ?? []).filter((_, i) => i !== account._idx)}}" :hasChanges="true"/>
+            </on>
+            <icon name="trash"/>
+          </button>
+        </div>
+      </div>
+      <div class="excel-card-body">
+        <div>
+          <div class="form-group">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.bank</label>
+            <select name="{{'order_settings.bank_accounts.' + account._idx + '.bank_code'}}" value="{{account.bank_code}}" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code'] ? 'w-full input-error' : 'w-full'}}" options="{{(_local.form?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: typeof b.name === 'object' ? $localized(b.name) : b.name }))}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']}}" class="form-error">{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']?.[0] ?? ''}}</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number</label>
+            <input type="text" name="{{'order_settings.bank_accounts.' + account._idx + '.account_number'}}" value="{{account.account_number ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number_placeholder" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']}}" class="form-error">{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']?.[0] ?? ''}}</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder</label>
+            <input type="text" name="{{'order_settings.bank_accounts.' + account._idx + '.account_holder'}}" value="{{account.account_holder ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder_placeholder" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']}}" class="form-error">{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']?.[0] ?? ''}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

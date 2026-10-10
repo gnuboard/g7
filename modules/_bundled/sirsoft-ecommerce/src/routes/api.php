@@ -1,17 +1,25 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminCartController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminInquiryController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminUserAddressController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminUserCurrencyController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminUserShippingCountryController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminWishlistController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\BrandController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CashReceiptController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CategoryController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController as AdminClaimController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimReasonController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CouponController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\DashboardController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\EcommerceSettingsController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ExtraFeeTemplateController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\IdentityPolicyController as AdminIdentityPolicyController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\MileageTransactionController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\OrderClaimController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\OrderController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ProductCommonInfoController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ProductController as AdminProductController;
@@ -28,7 +36,9 @@ use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CashReceiptController as G
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CategoryController as PublicCategoryController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CategoryImageController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CheckoutController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ClaimImageDownloadController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\EcommerceSettingsController as PublicEcommerceSettingsController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\OrderController as PublicOrderController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ProductController as PublicProductController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ProductImageController;
@@ -38,6 +48,9 @@ use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\PublicCouponController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\WishlistController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Shop\PaymentConfigController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\User\CashReceiptController as UserCashReceiptController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimController as UserClaimController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimImageController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimPaymentController as UserClaimPaymentController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\User\OrderController as UserOrderController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\User\ProductInquiryController as UserProductInquiryController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\User\ProductReviewController as UserProductReviewController;
@@ -96,31 +109,31 @@ Route::prefix('products')->middleware(['optional.sanctum', 'permission:user,sirs
     Route::get('/recent', [PublicProductController::class, 'recent'])
         ->name('products.recent');
 
-    // 상품 상세 — product_code(16자 영숫자) 기준. 숫자 ID 도 하위호환 허용
+    // 상품 상세 — product_code 기준(상품코드 규칙과 같은 문자: 영문·숫자·하이픈·밑줄 — StoreProductRequest::PRODUCT_CODE_PATTERN). 숫자 ID 도 하위호환 허용
     // (Product::resolveRouteBinding 이 code/id 자동 해석).
     Route::get('/{product}', [PublicProductController::class, 'show'])
-        ->where('product', '[0-9A-Za-z]+')
+        ->where('product', '[0-9A-Za-z_-]+')
         ->name('products.show');
 
     Route::get('/{product}/downloadable-coupons', [PublicCouponController::class, 'downloadableCoupons'])
-        ->where('product', '[0-9A-Za-z]+')
+        ->where('product', '[0-9A-Za-z_-]+')
         ->name('products.downloadable-coupons');
 
     // 상품 공개 리뷰 목록 및 별점 통계 조회
     Route::get('/{product}/reviews', [PublicProductReviewController::class, 'index'])
-        ->where('product', '[0-9A-Za-z]+')
+        ->where('product', '[0-9A-Za-z_-]+')
         ->name('products.reviews.index');
 
     // 상품 1:1 문의 목록 조회 (비회원 포함)
     // GET /api/modules/sirsoft-ecommerce/products/{product}/inquiries
     Route::get('/{product}/inquiries', [PublicProductInquiryController::class, 'index'])
-        ->where('product', '[0-9A-Za-z]+')
+        ->where('product', '[0-9A-Za-z_-]+')
         ->name('products.inquiries.index');
 
     // 상품 1:1 문의 작성 (회원 전용)
     // POST /api/modules/sirsoft-ecommerce/products/{product}/inquiries
     Route::post('/{product}/inquiries', [PublicProductInquiryController::class, 'store'])
-        ->where('product', '[0-9A-Za-z]+')
+        ->where('product', '[0-9A-Za-z_-]+')
         ->middleware('auth:sanctum')
         ->name('products.inquiries.store');
 });
@@ -263,8 +276,11 @@ Route::post('user/orders', [PublicOrderController::class, 'store'])
 // POST /api/modules/sirsoft-ecommerce/guest/orders/verify
 // 무차별 대입 방어는 라우트 throttle(분당 20회, IP 기준) + 조회 비밀번호 정책(영문+숫자 8자 이상)이
 // 담당한다. 업계 표준·로그인/IDV 일관성을 고려해 별도 N회 잠금은 두지 않는다(#55 결정).
+// 상한은 **이름 있는 리미터**다(`EcommerceServiceProvider::registerRateLimiters()`). 이름 없는
+// `throttle:20,1` 은 키가 IP 하나라, 같은 IP 에서 나간 다른 이름 없는 throttle 라우트의 요청과
+// 한 카운터를 나눠 쓴다 — 클레임 미리보기 몇 번에 조회 인증이 429 로 막힌다.
 Route::post('guest/orders/verify', [PublicOrderController::class, 'verify'])
-    ->middleware('throttle:20,1')
+    ->middleware('throttle:sirsoft-ecommerce.guest-order-verify')
     ->name('guest.orders.verify');
 
 // 비회원 주문 상세/액션 API (조회 인증 토큰 X-Guest-Order-Token 으로 보호)
@@ -276,12 +292,18 @@ Route::post('guest/orders/verify', [PublicOrderController::class, 'verify'])
 // 만 본 그룹에 둔다.
 Route::prefix('guest/orders/{orderNumber}')
     ->group(function () {
-        // POST /guest/orders/{orderNumber}/cancel - 주문 취소
+        // POST /guest/orders/{orderNumber}/cancel - 주문 취소 (구 취소 API — 주문 조회 화면은 아래 refund-requests 를 쓴다)
+        // 회원 취소 라우트·사유 목록 API 와 같은 「주문 취소」 권한(비로그인은 guest 역할)으로 판정한다.
+        // 비회원 주문 조회 화면의 [취소·환불 신청]은 `refund-requests` 로 가고, 그 신청이 즉시 취소 분기(결제완료 이전
+        // 상품)면 컨트롤러가 같은 「주문 취소」 권한을 다시 본다 — 버튼은 신청 가능 상품 응답의 `abilities.can_cancel`
+        // 로 잠긴다. 그래서 운영자가 권한을 거두면 이 API·즉시 취소 신청·버튼이 함께 닫힌다.
         Route::post('/cancel', [PublicOrderController::class, 'cancel'])
+            ->middleware('permission:user,sirsoft-ecommerce.user-orders.cancel')
             ->name('guest.orders.cancel');
 
-        // POST /guest/orders/{orderNumber}/estimate-refund - 환불 예상
+        // POST /guest/orders/{orderNumber}/estimate-refund - 환불 예상 (취소 창 전용 — 취소와 같은 권한)
         Route::post('/estimate-refund', [PublicOrderController::class, 'estimateRefund'])
+            ->middleware('permission:user,sirsoft-ecommerce.user-orders.cancel')
             ->name('guest.orders.estimate-refund');
 
         // PUT /guest/orders/{orderNumber}/shipping-address - 배송지 수정 (배송 전 상태)
@@ -289,8 +311,11 @@ Route::prefix('guest/orders/{orderNumber}')
             ->name('guest.orders.update-shipping-address');
 
         // POST /guest/orders/{orderNumber}/options/{optionId}/confirm - 구매확정
+        // 회원 구매확정 라우트와 같은 「구매확정」 권한(비로그인은 guest 역할)으로 판정한다 — 운영자가 권한을
+        // 거두면 버튼(options.*.can_confirm)과 API 가 함께 닫힌다.
         Route::post('/options/{optionId}/confirm', [PublicOrderController::class, 'confirmOption'])
             ->whereNumber('optionId')
+            ->middleware('permission:user,sirsoft-ecommerce.user-orders.confirm')
             ->name('guest.orders.confirm-option');
 
         // GET /guest/orders/{orderNumber}/cash-receipt - 현금영수증 상태 조회
@@ -301,6 +326,87 @@ Route::prefix('guest/orders/{orderNumber}')
         // 발급취소는 제공하지 않는다 (관리자 전용).
         Route::post('/cash-receipt', [GuestCashReceiptController::class, 'issue'])
             ->name('guest.orders.cash-receipt.issue');
+
+        // ── 비회원 클레임(교환/반품/취소·환불) ─────────────────────────────
+        // 회원 경로와 같은 FormRequest·액션 본문을 쓴다(HandlesClaimActions). 주문은 토큰이 검증한 guest_order 만.
+        //
+        // 요청 빈도 제한 — 이 블록에는 전역 API 리미터가 없고 형제 라우트(`guest/orders/verify`)만
+        // 자기 상한을 갖는다. 조회 토큰을 손에 넣은 쪽이 신청·미리보기·첨부 업로드를 무제한으로
+        // 반복할 수 있으면 파일 쓰기(`claim-images.store`)가 디스크를 채우고, 철회가 행을 남기는 신청↔철회
+        // 반복은 그 주문의 목록을 계속 부풀린다. 정상 사용은 이 상한 훨씬 아래다 — 신청서 한 장을 쓰는
+        // 동안 미리보기가 입력마다(debounce) 나가는 것이 가장 잦은 호출이다.
+        //
+        // 상한은 **이름 있는 리미터**로 건다(`EcommerceServiceProvider::registerRateLimiters()`). 이름 없는
+        // `throttle:N,1` 은 키가 IP 하나뿐이라, 이 블록과 업로드의 좁은 상한과 조회 인증이 **한 카운터**를
+        // 나눠 썼다 — 미리보기를 스무 번 부르면 업로드·조회 인증까지 429 가 됐다.
+        //
+        // 권한 — 회원 경로와 같은 `user-claims.*` 를 건다. 미들웨어는 비로그인 요청을 guest 역할의
+        // 권한으로 판정하므로, 운영자가 guest 역할에서 클레임 권한을 빼면(블랙컨슈머 차단용 축) 비회원
+        // 경로도 함께 닫힌다. 걸지 않으면 그 축이 회원에게만 작동하고 비회원 창구는 언제나 열려 있다.
+        Route::middleware('throttle:sirsoft-ecommerce.guest-claims')->group(function () {
+            // GET /guest/orders/{orderNumber}/claimable-options - 클레임 가능 상품·유형·사유·설정
+            Route::get('/claimable-options', [GuestClaimController::class, 'claimableOptions'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.read')
+                ->name('guest.orders.claimable-options');
+
+            // POST /guest/orders/{orderNumber}/claims/preview - 신청 미리보기 (배송비·차액·환불 예정액)
+            Route::post('/claims/preview', [GuestClaimController::class, 'preview'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+                ->name('guest.orders.claims.preview');
+
+            // POST /guest/orders/{orderNumber}/exchanges - 교환 신청
+            Route::post('/exchanges', [GuestClaimController::class, 'storeExchange'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+                ->name('guest.orders.exchanges.store');
+
+            // POST /guest/orders/{orderNumber}/returns - 반품 신청
+            Route::post('/returns', [GuestClaimController::class, 'storeReturn'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+                ->name('guest.orders.returns.store');
+
+            // POST /guest/orders/{orderNumber}/refund-requests - 취소·환불 신청 (상태 자동 분기)
+            // 즉시 취소 분기는 「주문 취소」(`user-orders.cancel`) 권한도 컨트롤러가 본다 (회원 경로와 같다).
+            Route::post('/refund-requests', [GuestClaimController::class, 'storeRefund'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+                ->name('guest.orders.refund-requests.store');
+
+            // GET /guest/orders/{orderNumber}/claims - 이 주문의 클레임 목록 (비회원 주문상세 섹션)
+            Route::get('/claims', [GuestClaimController::class, 'index'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.read')
+                ->name('guest.orders.claims.index');
+
+            // 클레임 번호 단위 — GET 상세 / PATCH 수정(승인 전) / POST 철회
+            Route::get('/claims/{claimNumber}', [GuestClaimController::class, 'show'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.read')
+                ->name('guest.orders.claims.show');
+            Route::patch('/claims/{claimNumber}', [GuestClaimController::class, 'update'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+                ->name('guest.orders.claims.update');
+            Route::post('/claims/{claimNumber}/withdraw', [GuestClaimController::class, 'withdraw'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.withdraw')
+                ->name('guest.orders.claims.withdraw');
+
+            // 첨부 이미지 — POST 업로드(신청서 작성 중, 주문 스코프 · 신청서 미귀속) / DELETE 삭제
+            // 업로드는 이 블록에서 유일한 파일 쓰기이므로 블록 상한 위에 좁은 상한을 겹친다 —
+            // 한 신청서의 첨부 장수 상한(설정)은 신청서 단위이지 시간 단위가 아니라, 신청서를
+            // 만들지 않고 업로드만 반복하는 경로를 막지 못한다. 좁은 상한도 자기 이름의 리미터라
+            // 블록 상한의 카운터와 섞이지 않는다.
+            Route::post('/claims/images', [GuestClaimController::class, 'storeImage'])
+                ->middleware(['throttle:sirsoft-ecommerce.guest-claim-uploads', 'permission:user,sirsoft-ecommerce.user-claims.request'])
+                ->name('guest.orders.claim-images.store');
+            Route::delete('/claims/images/{image}', [GuestClaimController::class, 'destroyImage'])
+                ->whereNumber('image')
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+                ->name('guest.orders.claim-images.destroy');
+
+            // 추가결제 — POST 결제 시작 / POST PG 승인 콜백
+            Route::post('/claim-payments/{paymentNumber}/pay', [GuestClaimController::class, 'pay'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.pay')
+                ->name('guest.orders.claim-payments.pay');
+            Route::post('/claim-payments/{paymentNumber}/approve', [GuestClaimController::class, 'approve'])
+                ->middleware('permission:user,sirsoft-ecommerce.user-claims.pay')
+                ->name('guest.orders.claim-payments.approve');
+        });
     });
 
 // 회원/비회원 공유 주문 상세 조회 (optional.sanctum)
@@ -329,6 +435,14 @@ Route::post('orders/{orderNumber}/cancel-payment', [PublicOrderController::class
 Route::get('user/claim-reasons', [ClaimReasonController::class, 'userSelectableReasons'])
     ->middleware(['optional.sanctum', 'permission:user,sirsoft-ecommerce.user-orders.cancel'])
     ->name('user.claim-reasons.index');
+
+// 클레임 첨부 이미지 서빙 (한시 서명 URL / 신청자 본인 / 운영자 — 직접 URL 없음)
+// GET /api/modules/sirsoft-ecommerce/claim-image/{hash}
+// 로그인 없이도 열리는 경로(한시 서명)라 회원 전용 컨트롤러(`User\ClaimImageController`)에 두지 않는다.
+Route::get('claim-image/{hash}', [ClaimImageDownloadController::class, 'download'])
+    ->where('hash', '[a-zA-Z0-9]{12}')
+    ->middleware('optional.sanctum')
+    ->name('claim-image.download');
 
 // PG 결제 클라이언트 설정 API (프론트엔드 SDK 키 조회)
 // GET /api/modules/sirsoft-ecommerce/payments/client-config/{provider} - PG사별 클라이언트 설정
@@ -440,6 +554,84 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/cash-receipt', [UserCashReceiptController::class, 'issue'])
             ->whereNumber('id')
             ->name('user.orders.cash-receipt.issue');
+
+        // ── 클레임(교환/반품/취소·환불) 신청 — 주문 스코프 ─────────────────
+        // GET /api/modules/sirsoft-ecommerce/user/orders/{id}/claims - 이 주문의 신청 내역 (마이페이지 주문상세 섹션)
+        Route::get('/{id}/claims', [UserClaimController::class, 'orderClaims'])
+            ->whereNumber('id')
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.read')
+            ->name('user.orders.claims.index');
+
+        // GET /api/modules/sirsoft-ecommerce/user/orders/{id}/claimable-options - 클레임 가능 상품·유형·사유·설정
+        Route::get('/{id}/claimable-options', [UserClaimController::class, 'claimableOptions'])
+            ->whereNumber('id')
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.read')
+            ->name('user.orders.claimable-options');
+
+        // POST /api/modules/sirsoft-ecommerce/user/orders/{id}/claims/preview - 신청 미리보기
+        Route::post('/{id}/claims/preview', [UserClaimController::class, 'preview'])
+            ->whereNumber('id')
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+            ->name('user.orders.claims.preview');
+
+        // POST /api/modules/sirsoft-ecommerce/user/orders/{id}/exchanges · /returns · /refund-requests - 신청 3종
+        Route::post('/{id}/exchanges', [UserClaimController::class, 'storeExchange'])
+            ->whereNumber('id')
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+            ->name('user.orders.exchanges.store');
+        Route::post('/{id}/returns', [UserClaimController::class, 'storeReturn'])
+            ->whereNumber('id')
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+            ->name('user.orders.returns.store');
+        // 즉시 취소 분기는 「주문 취소」(`user-orders.cancel`) 권한도 컨트롤러가 본다(`HandlesClaimActions::respondStoreRefund()`).
+        Route::post('/{id}/refund-requests', [UserClaimController::class, 'storeRefund'])
+            ->whereNumber('id')
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+            ->name('user.orders.refund-requests.store');
+
+        // POST /api/modules/sirsoft-ecommerce/user/orders/{id}/claims/images - 첨부 업로드 (신청서 작성 중, 주문 스코프 · 신청서 미귀속)
+        Route::post('/{id}/claims/images', [ClaimImageController::class, 'store'])
+            ->whereNumber('id')
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+            ->name('user.orders.claim-images.store');
+    });
+
+    // 클레임 API (인증 사용자) — 신청 내역·상세·수정·철회·첨부 삭제·추가결제
+    // GET    /api/modules/sirsoft-ecommerce/user/claims?type=exchange|return|refund|cancel - 신청 내역 (유형 서브탭)
+    // GET    /api/modules/sirsoft-ecommerce/user/claims/{claimNumber} - 상세
+    // PATCH  /api/modules/sirsoft-ecommerce/user/claims/{claimNumber} - 수정 (승인 전 — 사유·상세·첨부·재발송지)
+    // POST   /api/modules/sirsoft-ecommerce/user/claims/{claimNumber}/withdraw - 철회
+    // DELETE /api/modules/sirsoft-ecommerce/user/claims/images/{image} - 첨부 삭제
+    Route::prefix('claims')->group(function () {
+        Route::get('/', [UserClaimController::class, 'index'])
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.read')
+            ->name('user.claims.index');
+
+        // 정적 경로(images)가 와일드카드({claimNumber}) 보다 먼저 정의되어야 한다.
+        Route::delete('/images/{image}', [ClaimImageController::class, 'destroy'])
+            ->whereNumber('image')
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+            ->name('user.claims.images.destroy');
+
+        Route::get('/{claimNumber}', [UserClaimController::class, 'show'])
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.read')
+            ->name('user.claims.show');
+        Route::patch('/{claimNumber}', [UserClaimController::class, 'update'])
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.request')
+            ->name('user.claims.update');
+        Route::post('/{claimNumber}/withdraw', [UserClaimController::class, 'withdraw'])
+            ->middleware('permission:user,sirsoft-ecommerce.user-claims.withdraw')
+            ->name('user.claims.withdraw');
+    });
+
+    // 클레임 추가결제 API (인증 사용자)
+    // POST /api/modules/sirsoft-ecommerce/user/claim-payments/{paymentNumber}/pay - 결제 시작 (결제 수단 확정)
+    // POST /api/modules/sirsoft-ecommerce/user/claim-payments/{paymentNumber}/approve - PG 승인 콜백
+    Route::prefix('claim-payments')->middleware('permission:user,sirsoft-ecommerce.user-claims.pay')->group(function () {
+        Route::post('/{paymentNumber}/pay', [UserClaimPaymentController::class, 'pay'])
+            ->name('user.claim-payments.pay');
+        Route::post('/{paymentNumber}/approve', [UserClaimPaymentController::class, 'approve'])
+            ->name('user.claim-payments.approve');
     });
 
     // 리뷰 API (인증 사용자)
@@ -565,7 +757,7 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
 
     // 대시보드 API (관리자 대시보드 이커머스 영역)
-    // GET /api/modules/sirsoft-ecommerce/admin/dashboard/overview         - 오늘 주문 상태별 판매 수량
+    // GET /api/modules/sirsoft-ecommerce/admin/dashboard/overview         - 오늘 상태 배지별 주문 수
     // GET /api/modules/sirsoft-ecommerce/admin/dashboard/sales-graph      - 7일 판매 추세 + 합계 + 변화율
     // GET /api/modules/sirsoft-ecommerce/admin/dashboard/recent-reviews   - 최신 리뷰
     // GET /api/modules/sirsoft-ecommerce/admin/dashboard/pending-inquiries - 미답변 문의
@@ -606,9 +798,36 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
         ->name('admin.settings.seo-cache-info');
 
+    // GET  /api/modules/sirsoft-ecommerce/admin/settings/privacy-retention-preview - 보유기간 처리 대상 건수 (이슈 #636)
+    Route::get('settings/privacy-retention-preview', [EcommerceSettingsController::class, 'privacyRetentionPreview'])
+        ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
+        ->name('admin.settings.privacy-retention-preview');
+
     Route::get('settings/{category}', [EcommerceSettingsController::class, 'show'])
         ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
         ->name('admin.settings.show');
+
+    // 환경설정 「본인인증 정책」 탭 — 코어 정책 표에서 이커머스 몫(source_identifier=sirsoft-ecommerce)만 다룬다.
+    // 조회는 identity.policies.read, 추가·수정·삭제는 identity.policies.update(응답 abilities 와 같은 권한).
+    // 이커머스 몫이 아닌 정책 ID 는 404 로 답한다.
+    // GET    /api/modules/sirsoft-ecommerce/admin/identity-policies       - 목록
+    // POST   /api/modules/sirsoft-ecommerce/admin/identity-policies       - 운영자 정책 추가
+    // PUT    /api/modules/sirsoft-ecommerce/admin/identity-policies/{id}  - 수정(활성 토글 포함)
+    // DELETE /api/modules/sirsoft-ecommerce/admin/identity-policies/{id}  - 운영자 정책 삭제
+    Route::get('identity-policies', [AdminIdentityPolicyController::class, 'index'])
+        ->middleware('permission:admin,sirsoft-ecommerce.identity.policies.read')
+        ->name('admin.identity-policies.index');
+    Route::post('identity-policies', [AdminIdentityPolicyController::class, 'store'])
+        ->middleware('permission:admin,sirsoft-ecommerce.identity.policies.update')
+        ->name('admin.identity-policies.store');
+    Route::put('identity-policies/{id}', [AdminIdentityPolicyController::class, 'update'])
+        ->whereNumber('id')
+        ->middleware('permission:admin,sirsoft-ecommerce.identity.policies.update')
+        ->name('admin.identity-policies.update');
+    Route::delete('identity-policies/{id}', [AdminIdentityPolicyController::class, 'destroy'])
+        ->whereNumber('id')
+        ->middleware('permission:admin,sirsoft-ecommerce.identity.policies.update')
+        ->name('admin.identity-policies.destroy');
 
     // 마일리지 내역 관리 API
     Route::prefix('mileage-transactions')->group(function () {
@@ -635,16 +854,14 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->name('admin.mileage-transactions.linked');
     });
 
-    // 회원 결제 통화 변경 (A3 — 관리자 회원 편집에서 통화 지정)
-    // PATCH /api/modules/sirsoft-ecommerce/admin/users/{user}/currency
-    // 회원 식별은 UUID (User::getRouteKeyName()='uuid' — 관리자 회원 URL 규약과 동일). 라우트 모델 바인딩.
+    // 회원 결제 통화·배송국가 변경 — 폐기 예고(deprecated, 1.3.0). 번들 관리자 회원 수정 화면은 이제 코어 회원
+    // 저장(PUT /api/admin/users/{user}) 본문에 함께 실어 보내고 UserPreferenceCoreSaveListener 가 코어 훅으로
+    // 검증·저장한다. 이 두 라우트는 그 변경 전 관리자 템플릿과 함께 쓰는 사이트를 위해 한 버전 더 남기며,
+    // 다음 이커머스 버전에서 제거한다(결정 2026-09-28).
     Route::patch('users/{user}/currency', [AdminUserCurrencyController::class, 'update'])
         ->middleware('permission:admin,sirsoft-ecommerce.user-currency.manage')
         ->name('admin.users.currency.update');
 
-    // 회원 배송국가 변경 (MP08 후속 — 관리자 회원 편집에서 배송국가 지정)
-    // PATCH /api/modules/sirsoft-ecommerce/admin/users/{user}/shipping-country
-    // 회원 식별은 UUID (User::getRouteKeyName()='uuid'). 라우트 모델 바인딩.
     Route::patch('users/{user}/shipping-country', [AdminUserShippingCountryController::class, 'update'])
         ->middleware('permission:admin,sirsoft-ecommerce.user-shipping-country.manage')
         ->name('admin.users.shipping-country.update');
@@ -664,6 +881,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     // PATCH  /api/modules/sirsoft-ecommerce/admin/shipping-policies/{id}/toggle-active - 사용여부 토글
     // DELETE /api/modules/sirsoft-ecommerce/admin/shipping-policies/bulk - 일괄 삭제
     // PATCH  /api/modules/sirsoft-ecommerce/admin/shipping-policies/bulk-toggle-active - 일괄 사용여부 변경
+    // GET    /api/modules/sirsoft-ecommerce/admin/shipping-policies/{id}/claim-settings - 클레임 설정 조회 (회수지+국가별 클레임 배송비)
+    // PUT    /api/modules/sirsoft-ecommerce/admin/shipping-policies/{id}/claim-settings - 클레임 설정 수정
     Route::prefix('shipping-policies')->group(function () {
         Route::get('/', [ShippingPolicyController::class, 'index'])
             ->middleware('permission:admin,sirsoft-ecommerce.shipping-policies.read')
@@ -717,6 +936,19 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->middleware('permission:admin,sirsoft-ecommerce.shipping-policies.update')
             ->whereNumber('id')
             ->name('admin.shipping-policies.set-default');
+
+        // 클레임 설정 (회수지 + 국가별 클레임 배송비 — S6c)
+        // GET /api/modules/sirsoft-ecommerce/admin/shipping-policies/{id}/claim-settings
+        // PUT /api/modules/sirsoft-ecommerce/admin/shipping-policies/{id}/claim-settings
+        Route::get('/{id}/claim-settings', [ShippingPolicyController::class, 'claimSettings'])
+            ->middleware('permission:admin,sirsoft-ecommerce.shipping-policies.read')
+            ->whereNumber('id')
+            ->name('admin.shipping-policies.claim-settings.show');
+
+        Route::put('/{id}/claim-settings', [ShippingPolicyController::class, 'updateClaimSettings'])
+            ->middleware('permission:admin,sirsoft-ecommerce.shipping-policies.update')
+            ->whereNumber('id')
+            ->name('admin.shipping-policies.claim-settings.update');
     });
 
     // 배송사 관리 API
@@ -780,8 +1012,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->name('admin.claim-reasons.store');
 
         // 활성 사유 목록 (Select 옵션용) - 와일드카드보다 먼저 정의
+        // 클레임 화면(목록 사유 필터)도 이 카탈로그를 읽는다. 설정 권한만 받으면 클레임 권한만 가진
+        // 운영자(기본 역할 manager)는 진입할 때마다 403 을 받고 사유 필터가 빈다 — 코드와 표시명뿐인
+        // 선택지라 클레임 조회 권한으로도 연다(둘 중 하나, OR).
         Route::get('/active', [ClaimReasonController::class, 'active'])
-            ->middleware('permission:admin,sirsoft-ecommerce.settings.read')
+            ->middleware('permission:admin,sirsoft-ecommerce.settings.read|sirsoft-ecommerce.claims.read,false')
             ->name('admin.claim-reasons.active');
 
         Route::get('/{id}', [ClaimReasonController::class, 'show'])
@@ -894,7 +1129,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         // 여러 상품의 옵션 배치 조회 (목록에서 행을 펼칠 때)
         // GET /api/modules/sirsoft-ecommerce/admin/products/options?product_ids[]=1&product_ids[]=2
         //
-        // `/{identifier}` 보다 반드시 위에 둔다 — identifier 제약이 [0-9a-zA-Z]+ 라 리터럴
+        // `/{identifier}` 보다 반드시 위에 둔다 — identifier 제약이 [0-9a-zA-Z_-]+(상품코드 규칙과 같은 문자) 라 리터럴
         // "options" 를 삼켜 상품 상세로 잘못 라우팅된다 (generate-code / by-code 와 같은 규칙).
         Route::get('/options', [AdminProductController::class, 'options'])
             ->middleware('permission:admin,sirsoft-ecommerce.products.read')
@@ -915,35 +1150,35 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         // ID 또는 상품코드(product_code)로 조회 가능
         Route::get('/{identifier}', [AdminProductController::class, 'show'])
             ->middleware('permission:admin,sirsoft-ecommerce.products.read')
-            ->where('identifier', '[0-9a-zA-Z]+')
+            ->where('identifier', '[0-9a-zA-Z_-]+')
             ->name('admin.products.show');
 
         // 상품 폼 데이터 조회 (수정 모드용)
         // GET /api/modules/sirsoft-ecommerce/admin/products/{product}/form
         Route::get('/{product}/form', [AdminProductController::class, 'showForForm'])
             ->middleware('permission:admin,sirsoft-ecommerce.products.read')
-            ->where('product', '[0-9a-zA-Z]+')
+            ->where('product', '[0-9a-zA-Z_-]+')
             ->name('admin.products.show-for-form');
 
         // 상품 복사용 데이터 조회
         // GET /api/modules/sirsoft-ecommerce/admin/products/{product}/copy
         Route::get('/{product}/copy', [AdminProductController::class, 'showForCopy'])
             ->middleware('permission:admin,sirsoft-ecommerce.products.read')
-            ->where('product', '[0-9a-zA-Z]+')
+            ->where('product', '[0-9a-zA-Z_-]+')
             ->name('admin.products.show-for-copy');
 
         // 상품 삭제 가능 여부 확인
         // GET /api/modules/sirsoft-ecommerce/admin/products/{product}/can-delete
         Route::get('/{product}/can-delete', [AdminProductController::class, 'canDelete'])
             ->middleware('permission:admin,sirsoft-ecommerce.products.delete')
-            ->where('product', '[0-9a-zA-Z]+')
+            ->where('product', '[0-9a-zA-Z_-]+')
             ->name('admin.products.can-delete');
 
         // 상품 활동 로그 조회
         // GET /api/modules/sirsoft-ecommerce/admin/products/{product}/logs
         Route::get('/{product}/logs', [AdminProductController::class, 'logs'])
             ->middleware('permission:admin,sirsoft-ecommerce.products.read')
-            ->where('product', '[0-9a-zA-Z]+')
+            ->where('product', '[0-9a-zA-Z_-]+')
             ->name('admin.products.logs');
 
         Route::put('/{product}', [AdminProductController::class, 'update'])
@@ -978,8 +1213,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         // DELETE /api/modules/sirsoft-ecommerce/admin/products/images/{id} - 이미지 삭제
         // PATCH  /api/modules/sirsoft-ecommerce/admin/products/images/reorder - 순서 변경
         // PATCH  /api/modules/sirsoft-ecommerce/admin/products/{productId}/images/{imageId}/thumbnail - 대표 이미지 설정
+        // 임시 업로드는 등록 화면도 쓴다 — 등록 또는 수정 권한(OR)으로 연다. 이미 있는 상품에 바로 올리는 아래 경로는 수정 권한이다.
         Route::post('/images', [AdminProductController::class, 'uploadImage'])
-            ->middleware('permission:admin,sirsoft-ecommerce.products.update')
+            ->middleware('permission:admin,sirsoft-ecommerce.products.create|sirsoft-ecommerce.products.update,false')
             ->name('admin.products.images.upload-temp');
 
         Route::post('/{productId}/images', [AdminProductController::class, 'uploadImage'])
@@ -1075,8 +1311,9 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->name('admin.categories.toggle-status');
 
         // 카테고리 이미지 관리
+        // 임시 업로드는 등록 화면도 쓴다 — 등록 또는 수정 권한(OR)으로 연다.
         Route::post('/images', [CategoryController::class, 'uploadImage'])
-            ->middleware('permission:admin,sirsoft-ecommerce.categories.update')
+            ->middleware('permission:admin,sirsoft-ecommerce.categories.create|sirsoft-ecommerce.categories.update,false')
             ->name('admin.categories.images.upload-temp');
 
         Route::post('/{categoryId}/images', [CategoryController::class, 'uploadImage'])
@@ -1135,22 +1372,25 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     // POST   /api/modules/sirsoft-ecommerce/admin/presets - 프리셋 생성
     // PUT    /api/modules/sirsoft-ecommerce/admin/presets/{preset} - 프리셋 수정
     // DELETE /api/modules/sirsoft-ecommerce/admin/presets/{preset} - 프리셋 삭제
+    // 클레임·주문 목록 화면도 프리셋을 쓰므로 각 화면의 조회 권한으로도 연다(셋 중 하나, OR) — 상품 권한만 받으면
+    // 클레임·주문 권한만 가진 운영자가 그 목록에 들어갈 때마다 403 오류 알림을 받는다. 프리셋은 운영자
+    // 본인의 조회 조건(소유권은 서비스가 검사)이라 넓혀도 남의 데이터가 열리지 않는다.
     Route::prefix('presets')->group(function () {
         Route::get('/', [SearchPresetController::class, 'index'])
-            ->middleware('permission:admin,sirsoft-ecommerce.products.read')
+            ->middleware('permission:admin,sirsoft-ecommerce.products.read|sirsoft-ecommerce.claims.read|sirsoft-ecommerce.orders.read,false')
             ->name('admin.presets.index');
 
         Route::post('/', [SearchPresetController::class, 'store'])
-            ->middleware('permission:admin,sirsoft-ecommerce.products.update')
+            ->middleware('permission:admin,sirsoft-ecommerce.products.update|sirsoft-ecommerce.claims.read|sirsoft-ecommerce.orders.read,false')
             ->name('admin.presets.store');
 
         Route::put('/{preset}', [SearchPresetController::class, 'update'])
-            ->middleware('permission:admin,sirsoft-ecommerce.products.update')
+            ->middleware('permission:admin,sirsoft-ecommerce.products.update|sirsoft-ecommerce.claims.read|sirsoft-ecommerce.orders.read,false')
             ->whereNumber('preset')
             ->name('admin.presets.update');
 
         Route::delete('/{preset}', [SearchPresetController::class, 'destroy'])
-            ->middleware('permission:admin,sirsoft-ecommerce.products.update')
+            ->middleware('permission:admin,sirsoft-ecommerce.products.update|sirsoft-ecommerce.claims.read|sirsoft-ecommerce.orders.read,false')
             ->whereNumber('preset')
             ->name('admin.presets.destroy');
     });
@@ -1287,6 +1527,12 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
             ->name('admin.orders.bulk');
 
+        // 일괄변경 확인 창의 수동 결제 처리 항목 미리보기 (DB 변경 없음 — Q13·Q14·Q26)
+        // POST /api/modules/sirsoft-ecommerce/admin/orders/bulk/manual-paid-preview
+        Route::post('/bulk/manual-paid-preview', [OrderController::class, 'bulkManualPaidPreview'])
+            ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
+            ->name('admin.orders.bulk.manual-paid-preview');
+
         Route::get('/{order}', [OrderController::class, 'show'])
             ->middleware('permission:admin,sirsoft-ecommerce.orders.read')
             ->name('admin.orders.show');
@@ -1317,17 +1563,52 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
             ->name('admin.orders.options.bulk-status');
 
-        // 환불 예상금액 조회
+        // 상품 일괄 상태 변경 확인 창의 수동 결제 처리 항목 미리보기 (DB 변경 없음 — Q13·Q14·Q26)
+        // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/options/bulk-status/manual-paid-preview
+        Route::post('/{order}/options/bulk-status/manual-paid-preview', [OrderController::class, 'optionBulkManualPaidPreview'])
+            ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
+            ->name('admin.orders.options.bulk-status.manual-paid-preview');
+
+        // 환불 예상금액 조회 — 취소·환불 접수 창 전용이라 접수(`cancel-refund`)와 같은 권한이다.
         // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/estimate-refund
         Route::post('/{order}/estimate-refund', [OrderController::class, 'estimateRefund'])
-            ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.create')
             ->name('admin.orders.estimate-refund');
 
-        // 주문 취소 (전체취소/부분취소)
+        // 주문 취소 (전체취소/부분취소) — 관리자 직권 [취소·환불 접수] 와 같은 서비스로 위임한다(§3-11).
+        // 주문 상세 화면은 아래 `cancel-refund` 를 쓴다. 이 경로는 기존 API 호출부 호환용이다.
+        // `auto_advance_refund` 를 켜면 환불 실행 권한(`claims.execute-refund`)도 요구한다(컨트롤러가 403).
         // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancel
         Route::post('/{order}/cancel', [OrderController::class, 'cancelOrder'])
             ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
             ->name('admin.orders.cancel');
+
+        // 관리자 직권 접수 (§3-11 · D5~D8) — 주문 상세 상품 표 선택 바의 [교환 접수]·[반품 접수]·[취소·환불 접수].
+        // 게이트는 물리 게이트(물건이 고객에게 갔는지)이고 신청 기간·신청 가능 상태 설정은 따르지 않는다.
+        // GET  /api/modules/sirsoft-ecommerce/admin/orders/{order}/claims/request-context - 게이트 상태·사유·청구 방식
+        // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/claims/preview - 접수 창 청구 미리보기 (DB 변경 없음)
+        // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/exchanges      - 교환 접수
+        // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/returns        - 반품 접수
+        // POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancel-refund  - 취소·환불 접수
+        Route::get('/{order}/claims/request-context', [OrderClaimController::class, 'context'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.create')
+            ->name('admin.orders.claims.request-context');
+
+        Route::post('/{order}/claims/preview', [OrderClaimController::class, 'preview'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.create')
+            ->name('admin.orders.claims.preview');
+
+        Route::post('/{order}/exchanges', [OrderClaimController::class, 'storeExchange'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.create')
+            ->name('admin.orders.exchanges.store');
+
+        Route::post('/{order}/returns', [OrderClaimController::class, 'storeReturn'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.create')
+            ->name('admin.orders.returns.store');
+
+        Route::post('/{order}/cancel-refund', [OrderClaimController::class, 'storeCancelRefund'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.create')
+            ->name('admin.orders.cancel-refund.store');
 
         // 무통장 입금확인 (무통장·미결제 주문 → 결제완료)
         // PATCH /api/modules/sirsoft-ecommerce/admin/orders/{order}/confirm-deposit
@@ -1358,7 +1639,171 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::post('/{order}/cash-receipt/reissue', [CashReceiptController::class, 'reissue'])
             ->middleware('permission:admin,sirsoft-ecommerce.orders.update')
             ->name('admin.orders.cash-receipt.reissue');
+
+        // 취소 가능 금액 산정 (D19 — 환불 상세 화면·주문상세 환불 모달 공용)
+        // GET /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancellable-amount
+        Route::get('/{order}/cancellable-amount', [AdminClaimController::class, 'cancellableAmount'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.read')
+            ->name('admin.claims.cancellable-amount');
+
+        // 주문 스코프 클레임 내역 (D20 — 주문상세 '클레임 내역' 섹션, 유형별 건수 + 그룹 응답)
+        // GET /api/modules/sirsoft-ecommerce/admin/orders/{order}/claims
+        Route::get('/{order}/claims', [AdminClaimController::class, 'orderClaims'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.read')
+            ->name('admin.claims.order-claims');
     });
+
+    // 클레임(취소/반품/교환) 관리 API
+    // GET    /api/modules/sirsoft-ecommerce/admin/claims - 통합 목록 (유형 서브탭 + 건수 뱃지)
+    // GET    /api/modules/sirsoft-ecommerce/admin/claims/{claimNumber} - 번호 기반 상세 (관리자 상세 화면 진입)
+    // GET    /api/modules/sirsoft-ecommerce/admin/claims/{claimNumber}/logs - 활동 로그 (신청서 + 추가결제 + 첨부)
+    // POST   /api/modules/sirsoft-ecommerce/admin/claims/bulk-status - 일괄 전이 (부분 성공 계약)
+    // POST   /api/modules/sirsoft-ecommerce/admin/claims/completion-preview - 완료 처리 모달 미리보기 (D26)
+    // GET    /api/modules/sirsoft-ecommerce/admin/{claimType}/{id} - 상세 (exchanges/returns/refunds)
+    // PATCH  /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/status - 단건 전이 (완료 시 completion 필수)
+    // PUT    /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/amounts - 금액 수정 (D18)
+    // POST   /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images - 운영자 대리 첨부
+    // DELETE /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/images - 첨부 일괄 정리
+    // PATCH  /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/bulk-status - 상품 단위 일괄 전이 (교환·반품·환불)
+    // POST   /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/refund-request - 환불신청서 수동 접수 (교환·반품, D26)
+    // PATCH  /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/options/tracking - 「송장만 저장」 상품 행 송장 (교환·반품)
+    // POST   /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/tracking/deliver - 운송장 단위 도착 처리 (교환·반품)
+    // POST   /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/items/restore-stock - 뒤늦은 재고 복구 (교환·반품, S13)
+    // POST   /api/modules/sirsoft-ecommerce/admin/{claimType}/{id}/withdraw - 고객 요청 대리 철회 (S14)
+    // PATCH  /api/modules/sirsoft-ecommerce/admin/{claimType}/{id} - 신청 내용 수정 (S15)
+    // PUT    /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/exchange-mode - 진행 방식 (일반 교환 · 선교환)
+    // POST   /api/modules/sirsoft-ecommerce/admin/refunds/{id}/execute - 환불 실행 (D18·D19)
+    // GET    /api/modules/sirsoft-ecommerce/admin/orders/{order}/cancellable-amount - 취소 가능 금액 (D19, orders 그룹에 등록)
+    // GET    /api/modules/sirsoft-ecommerce/admin/orders/{order}/claims - 주문 스코프 클레임 내역 (D20, orders 그룹에 등록)
+    Route::prefix('claims')->group(function () {
+        Route::get('/', [AdminClaimController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.read')
+            ->name('admin.claims.index');
+
+        Route::post('/bulk-status', [AdminClaimController::class, 'bulkStatus'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+            ->name('admin.claims.bulk-status');
+
+        Route::post('/completion-preview', [AdminClaimController::class, 'completionPreview'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+            ->name('admin.claims.completion-preview');
+
+        // 번호 기반 상세 — 관리자 상세 화면(`/admin/ecommerce/claims/{claimNumber}`)의 진입 경로.
+        // 정적 경로(bulk-status/completion-preview)보다 **뒤에** 정의해야 그 둘이 먼저 잡힌다
+        // (유저 `claims/images` 와 같은 규율). 채번 접두는 운영자가 바꿀 수 있으므로 세그먼트에
+        // 형식 제약을 걸지 않는다 — 유형 해석은 서버(`AdminClaimService::findForDetailByNumber()`)가 한다.
+        // 활동 로그는 상세와 같은 번호 축을 쓴다 — 상세 화면의 두 데이터소스가 같은 URL
+        // 파라미터(`route.claimNumber`)만 읽으면 되므로, 로그 조회가 상세 응답의 도착을
+        // 기다리지 않는다. 정적 경로보다 뒤, 와일드카드 상세보다 **앞**에 둔다.
+        Route::get('/{claimNumber}/logs', [AdminClaimController::class, 'logs'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.read')
+            ->name('admin.claims.logs');
+
+        Route::get('/{claimNumber}', [AdminClaimController::class, 'showByNumber'])
+            ->middleware('permission:admin,sirsoft-ecommerce.claims.read')
+            ->name('admin.claims.show-by-number');
+    });
+
+    // 유형 스코프 세그먼트(`{claimType}`)의 어휘는 ClaimTypeEnum::adminPathSegments() 가 단일
+    // 출처다 — FormRequest 의 세그먼트 해석(fromAdminPathSegment)과 같은 목록을 공유한다.
+    Route::whereIn('claimType', ClaimTypeEnum::adminPathSegments())
+        ->prefix('{claimType}')
+        ->group(function () {
+            Route::get('/{id}', [AdminClaimController::class, 'show'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.read')
+                ->name('admin.claims.show');
+
+            Route::patch('/{id}/status', [AdminClaimController::class, 'updateStatus'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.status');
+
+            Route::put('/{id}/amounts', [AdminClaimController::class, 'updateAmounts'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-amounts')
+                ->name('admin.claims.amounts');
+
+            Route::post('/{id}/images', [AdminClaimController::class, 'storeImage'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.images.store');
+
+            Route::delete('/{id}/images', [AdminClaimController::class, 'destroyImages'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.images.clear');
+
+            // 첨부 한 장 삭제. 전체 삭제와 세그먼트 수가 달라 충돌하지 않는다.
+            // 권한은 업로드·일괄삭제와 **같은** 식별자다 — 새 식별자를 만들면 기존 역할이
+            // 자동으로 못 쓰게 되고 선언형 권한 동기화까지 딸려온다.
+            Route::delete('/{id}/images/{image}', [AdminClaimController::class, 'destroyImage'])
+                ->whereNumber('id')
+                ->whereNumber('image')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.images.destroy');
+
+            // 상품 단위 전이는 세 유형 모두에 있다 — 취소는 `adminPathSegment()` 가 null 이라
+            // 이 스코프 어휘에 애초에 없다(리터럴 배열로 다시 적지 않는 이유다). 컨트롤러가
+            // 취소 신청서를 한 번 더 404 로 세운다.
+            Route::patch('/{id}/options/bulk-status', [AdminClaimController::class, 'bulkOptionStatus'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.options.bulk-status');
+
+            // 고객 요청 대리 철회 (S14) — 고객 철회와 같은 단계에서만 된다. 판매자 접수 건도 철회할 수 있다.
+            Route::post('/{id}/withdraw', [AdminClaimController::class, 'withdrawOnBehalf'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.withdraw');
+
+            // 신청 내용 수정 (S15) — 사유·상세 사유·교환 재발송지. 수정 가능 단계는 고객 수정과 같다.
+            Route::patch('/{id}', [AdminClaimController::class, 'updateRequest'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.update');
+        });
+
+    // 송장은 교환·반품 축에만 있다 (환불은 상품 회수가 없음). 송장은 **상품 행**마다 둔다 —
+    // 「송장만 저장」 은 고른 행(수량 지정 시 쪼갠 행)에 쓰고 상태를 바꾸지 않는다.
+    Route::whereIn('claimType', ['exchanges', 'returns'])
+        ->prefix('{claimType}')
+        ->group(function () {
+            Route::patch('/{id}/options/tracking', [AdminClaimController::class, 'updateItemTracking'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.options.tracking');
+
+            Route::post('/{id}/tracking/deliver', [AdminClaimController::class, 'deliverTracking'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.tracking.deliver');
+
+            Route::post('/{id}/refund-request', [AdminClaimController::class, 'storeRefundRequest'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.refund-request');
+
+            // 뒤늦은 재고 복구 (S13) — 완료됐지만 재고를 복구하지 않은 상품 행. 멱등하다.
+            Route::post('/{id}/items/restore-stock', [AdminClaimController::class, 'restoreStock'])
+                ->whereNumber('id')
+                ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+                ->name('admin.claims.items.restore-stock');
+        });
+
+    // 교환 진행 방식 (일반 교환 · 선교환 — 교환 전용)
+    // PUT /api/modules/sirsoft-ecommerce/admin/exchanges/{id}/exchange-mode
+    Route::put('exchanges/{id}/exchange-mode', [AdminClaimController::class, 'updateExchangeMode'])
+        ->whereNumber('id')
+        ->middleware('permission:admin,sirsoft-ecommerce.claims.update-status')
+        ->name('admin.claims.exchange-mode');
+
+    // 환불 실행 ('환불하기' — 승인된 환불신청서 전용, D18·D19)
+    // POST /api/modules/sirsoft-ecommerce/admin/refunds/{id}/execute
+    Route::post('refunds/{id}/execute', [AdminClaimController::class, 'executeRefund'])
+        ->whereNumber('id')
+        ->middleware('permission:admin,sirsoft-ecommerce.claims.execute-refund')
+        ->name('admin.claims.refunds.execute');
 
     // 리뷰 관리 API (관리자)
     // GET    /api/modules/sirsoft-ecommerce/admin/reviews - 리뷰 목록 조회
@@ -1465,7 +1910,71 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     // PUT    /api/modules/sirsoft-ecommerce/admin/inquiries/{inquiryId}/reply   - 답변 수정
     // DELETE /api/modules/sirsoft-ecommerce/admin/inquiries/{inquiryId}/reply   - 답변 삭제
     // DELETE /api/modules/sirsoft-ecommerce/admin/inquiries/{inquiryId}         - 문의 삭제
+    /*
+    |--------------------------------------------------------------------------
+    | 회원 소유 데이터 관리자 목록 (찜 · 장바구니 · 배송지)
+    |--------------------------------------------------------------------------
+    |
+    | 회원이 만든 데이터인데 관리자 표면이 없던 축을 채운다(#524 §4.1). 세 목록 모두
+    | 같은 모양이다 — 조회는 read, 삭제는 manage. `/bulk` 는 `/{id}` 보다 먼저 선언해야
+    | "bulk" 가 id 로 잡히지 않는다.
+    |
+    */
+    Route::prefix('wishlists')->group(function () {
+        Route::delete('/bulk', [AdminWishlistController::class, 'bulkDestroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.wishlists.manage')
+            ->name('admin.wishlists.bulk-destroy');
+
+        Route::get('/', [AdminWishlistController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.wishlists.read')
+            ->name('admin.wishlists.index');
+
+        Route::delete('/{id}', [AdminWishlistController::class, 'destroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.wishlists.manage')
+            ->whereNumber('id')
+            ->name('admin.wishlists.destroy');
+    });
+
+    Route::prefix('carts')->group(function () {
+        Route::delete('/bulk', [AdminCartController::class, 'bulkDestroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.carts.manage')
+            ->name('admin.carts.bulk-destroy');
+
+        Route::get('/', [AdminCartController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.carts.read')
+            ->name('admin.carts.index');
+
+        Route::delete('/{id}', [AdminCartController::class, 'destroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.carts.manage')
+            ->whereNumber('id')
+            ->name('admin.carts.destroy');
+    });
+
+    Route::prefix('user-addresses')->group(function () {
+        Route::delete('/bulk', [AdminUserAddressController::class, 'bulkDestroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.user-addresses.manage')
+            ->name('admin.user-addresses.bulk-destroy');
+
+        Route::get('/', [AdminUserAddressController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.user-addresses.read')
+            ->name('admin.user-addresses.index');
+
+        Route::delete('/{id}', [AdminUserAddressController::class, 'destroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.user-addresses.manage')
+            ->whereNumber('id')
+            ->name('admin.user-addresses.destroy');
+    });
+
     Route::prefix('inquiries')->group(function () {
+        // 목록·일괄 삭제 (#524 §4.1) — `/bulk` 는 `/{inquiryId}` 패턴보다 먼저 선언한다
+        Route::get('/', [AdminInquiryController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.inquiries.read')
+            ->name('admin.inquiries.index');
+
+        Route::delete('/bulk', [AdminInquiryController::class, 'bulkDestroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.inquiries.delete')
+            ->name('admin.inquiries.bulk-destroy');
+
         Route::post('/{inquiryId}/reply', [AdminProductInquiryController::class, 'reply'])
             ->middleware('permission:admin,sirsoft-ecommerce.inquiries.update')
             ->whereNumber('inquiryId')

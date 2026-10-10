@@ -1,0 +1,38 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   보관 기간 출처(설정·--days) × 액션 부류(일반·장기 보관) × 나이(경계 전후)는 한 테스트가 행 묶음을 심고 한 번 파기해
+#   전부 대조한다(조합마다 파기를 따로 돌리면 같은 판정을 반복할 뿐이다). 역할 변경 기록은 진입 경로마다 요청 형태가
+#   달라 메서드 안에서 경로별로 돌린다. effects·test_files 는 계속 검사한다.
+
+feature: 활동 로그(접속기록) 보관 기간과 권한 변경 기록 (#736 D14·D23)
+
+description: |
+  개인정보의 안전성 확보조치 기준 — 접속기록 1년(5만 명 이상·고유식별/민감정보 처리 시 2년, 제8조) · 권한 부여·변경·말소
+  내역 3년(제5조③). 활동 로그 자동 파기(activity-log:prune, 매일 04:45)는 환경설정 > 보안 「활동 로그 보관 기간」
+  (security.activity_log_retention_days, 365~3650, 기본 365)을 따르고, --days 를 직접 줘도 365일 바닥 아래로는
+  지우지 않는다. 역할·권한 변경 기록(config core.activity_log.long_retention_actions)은 그 값과 관계없이
+  최소 1095일(3년) 보관한다. 회원 등록·수정 화면에서 역할이나 최고관리자 지정이 바뀌면 user.roles_update 를
+  남겨 그 3년 보관 대상에 넣는다(일괄 변경 user.bulk_roles 와 짝).
+
+axes:
+  retention_source: [setting, days_option]
+  action_class: [regular, long_retention]
+  age: [within, beyond_retention, beyond_long_retention]
+  entry_point: [admin_create_user, admin_update_user, service_update_user, settings_save]
+  change: [attach, attach_and_detach, unchanged, roles_absent, is_super]
+
+effects:
+  - prune_uses_configured_retention
+  - prune_never_goes_below_legal_floor
+  - long_retention_actions_kept_three_years
+  - prune_hooks_receive_effective_days
+  - retention_setting_bounds_enforced
+  - role_change_logged_with_identifiers
+  - unchanged_roles_not_logged
+  - is_super_change_logged
+  - hook_carries_ids_and_source
+
+test_files:
+  - tests/Feature/ActivityLog/ActivityLogRetentionTest.php
+  - tests/Feature/ActivityLog/UserRoleChangeLogTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-security-activity-log.test.ts
+  - tests/Playwright/specs/admin/settings-activity-log-retention.spec.ts

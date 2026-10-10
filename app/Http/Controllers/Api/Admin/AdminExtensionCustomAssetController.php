@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Exceptions\CustomAssetOperationException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\Extension\ReadExtensionCustomAssetRequest;
+use App\Http\Requests\Admin\Extension\RenameExtensionCustomAssetRequest;
 use App\Http\Requests\Admin\Extension\SaveExtensionCustomAssetRequest;
+use App\Http\Requests\Admin\Extension\SearchExtensionCustomAssetRequest;
 use App\Http\Requests\Admin\Extension\UploadExtensionCustomAssetRequest;
 use App\Rules\AllowedTemplateFileType;
 use App\Services\CustomAssetService;
@@ -41,6 +43,9 @@ class AdminExtensionCustomAssetController extends AdminBaseController
         'template' => 'templates',
     ];
 
+    /**
+     * @param  CustomAssetService  $service  확장 `custom/` 자산 읽기·쓰기·이름변경·검색
+     */
     public function __construct(
         private CustomAssetService $service,
     ) {
@@ -203,6 +208,69 @@ class AdminExtensionCustomAssetController extends AdminBaseController
         }
 
         return $this->success('custom_assets.messages.deleted', ['path' => $path]);
+    }
+
+    /**
+     * 파일 이름변경 (= 이동).
+     *
+     * @param  RenameExtensionCustomAssetRequest  $request  검증된 요청 (`from`, `to`)
+     * @param  string  $type  확장 타입
+     * @param  string  $identifier  확장 식별자
+     * @return JsonResponse 200 바뀐 파일 정보 | 409 대상 존재 | 422 경로 무효·확장자 변경
+     */
+    public function rename(RenameExtensionCustomAssetRequest $request, string $type, string $identifier): JsonResponse
+    {
+        $from = (string) $request->validated('from');
+        $to = (string) $request->validated('to');
+
+        try {
+            $file = $this->service->rename($this->resolveType($type), $identifier, $from, $to);
+        } catch (CustomAssetOperationException $e) {
+            // 대상이 이미 있는 것은 입력 오류가 아니라 상태 충돌이다 — 409 로 갈라야 화면이
+            // "덮어쓸까요?" 를 물을지 "경로를 고치세요" 를 말할지 판단할 수 있다.
+            $status = $e->errorKey === 'custom_assets.errors.rename_target_exists' ? 409 : 422;
+
+            return $this->error($e->errorKey, $status, null, $e->params);
+        } catch (\Throwable $e) {
+            Log::error('사용자 추가 에셋 이름변경 실패', [
+                'type' => $type,
+                'identifier' => $identifier,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->error('custom_assets.errors.write_failed', 500, $e, ['path' => $to]);
+        }
+
+        return $this->success('custom_assets.messages.renamed', $file);
+    }
+
+    /**
+     * 파일명·본문 검색.
+     *
+     * @param  SearchExtensionCustomAssetRequest  $request  검증된 요청 (`q`)
+     * @param  string  $type  확장 타입
+     * @param  string  $identifier  확장 식별자
+     * @return JsonResponse 200 검색 결과 | 422 `q` 규칙 위반
+     */
+    public function search(SearchExtensionCustomAssetRequest $request, string $type, string $identifier): JsonResponse
+    {
+        $keyword = (string) $request->validated('q');
+
+        try {
+            $results = $this->service->search($this->resolveType($type), $identifier, $keyword);
+        } catch (CustomAssetOperationException $e) {
+            return $this->error($e->errorKey, 422, null, $e->params);
+        } catch (\Throwable $e) {
+            Log::error('사용자 추가 에셋 검색 실패', [
+                'type' => $type,
+                'identifier' => $identifier,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->error('common.failed', 500, $e);
+        }
+
+        return $this->success('custom_assets.messages.listed', $results);
     }
 
     /**

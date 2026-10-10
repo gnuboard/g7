@@ -13,6 +13,8 @@ class NotificationDefinitionCollection extends BaseApiCollection
     {
         return [
             'can_update' => 'core.settings.update',
+            // 본인인증 알림 「정책별 문구 추가」 버튼 — 화면은 분류=본인인증일 때만 그린다.
+            'can_create' => 'core.settings.update',
         ];
     }
 

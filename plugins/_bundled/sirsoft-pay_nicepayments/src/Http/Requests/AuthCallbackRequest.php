@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNicepayments\Http\Requests;
 
+use App\Support\SiteUrl;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Plugins\Sirsoft\PayNicepayments\Support\ShopRedirectUrl;
-use Plugins\Sirsoft\PayNicepayments\Support\UrlHelper;
 
 /**
  * 나이스페이먼츠 결제 승인 콜백 요청 검증
@@ -76,6 +76,14 @@ class AuthCallbackRequest extends FormRequest
         ];
     }
 
+    /**
+     * 검증 실패 시 사이트 주소 기준 결제 실패 화면으로 보냅니다.
+     *
+     * @param  Validator  $validator  실패한 검증기
+     * @return void 반환값 없음
+     *
+     * @throws HttpResponseException 결제 실패 화면으로의 302 (`error=invalid_params`)
+     */
     protected function failedValidation(Validator $validator): void
     {
         $settings = plugin_settings(self::PLUGIN_IDENTIFIER);
@@ -84,7 +92,7 @@ class AuthCallbackRequest extends FormRequest
         $url = $baseUrl.$separator.http_build_query(['error' => 'invalid_params']);
 
         throw new HttpResponseException(
-            redirect(UrlHelper::toAbsolute($url))
+            redirect(SiteUrl::absolute($url))
         );
     }
 }

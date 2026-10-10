@@ -7,12 +7,12 @@ use App\Enums\UserStatus;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
 use App\Services\IdentityVerificationService;
-use Database\Seeders\IdentityMessageDefinitionSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
 
 /**
@@ -25,10 +25,16 @@ use Tests\TestCase;
  */
 class IdentityLoginPurposeGateTest extends TestCase
 {
+    use CapturesSentMail;
     use RefreshDatabase;
 
     private User $user;
 
+    /**
+     * 메일 격리·IDV 권한·본인인증 알림을 준비하고 2단계 인증을 켠 뒤 테스트 사용자를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,7 +44,7 @@ class IdentityLoginPurposeGateTest extends TestCase
         // 공개 IDV 라우트는 permission 미들웨어가 가드한다 — guest 역할 권한이 없으면
         // 원하는 게이트에 도달하기 전에 401 로 막혀 검사 자체가 공허해진다.
         $this->seed(RolePermissionSeeder::class);
-        $this->seed(IdentityMessageDefinitionSeeder::class);
+        $this->prepareIdentityNotifications();
 
         $this->user = User::factory()->create([
             'email' => 'purpose-gate@test.com',
@@ -50,9 +56,13 @@ class IdentityLoginPurposeGateTest extends TestCase
     }
 
     /**
+     * 로그인 2단계 인증 challenge 를 공개 verify 엔드포인트로 검증하면 403 과 PURPOSE_NOT_ALLOWED 로 거절된다.
+     *
      * @scenario two_factor=on, controller=user, code=consumed_by_public_verify
      *
      * @effects public_verify_rejects_login_purpose
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_public_verify_endpoint_refuses_a_login_challenge(): void
@@ -68,9 +78,13 @@ class IdentityLoginPurposeGateTest extends TestCase
     }
 
     /**
+     * 로그인 2단계 인증 challenge 를 공개 cancel 엔드포인트로 취소하면 403 으로 거절된다.
+     *
      * @scenario two_factor=on, controller=user, code=consumed_by_public_verify
      *
      * @effects public_cancel_rejects_login_purpose
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_public_cancel_endpoint_refuses_a_login_challenge(): void
@@ -82,9 +96,13 @@ class IdentityLoginPurposeGateTest extends TestCase
     }
 
     /**
+     * 공개 verify·cancel 이 거절한 뒤에도 같은 challenge 로 로그인 2단계 인증을 완료해 토큰을 받는다.
+     *
      * @scenario two_factor=on, controller=user, code=valid
      *
      * @effects login_completes_after_public_endpoints_refuse
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_login_challenge_still_completes_after_the_public_endpoints_refuse_it(): void
@@ -106,9 +124,13 @@ class IdentityLoginPurposeGateTest extends TestCase
     }
 
     /**
+     * 가입 목적 challenge 의 공개 verify 는 로그인 목적 게이트에 막히지 않는다(403 아님).
+     *
      * @scenario two_factor=on, controller=user, code=valid
      *
      * @effects signup_purpose_unaffected_by_login_gate
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_signup_challenge_is_unaffected_by_the_gate(): void
@@ -130,7 +152,7 @@ class IdentityLoginPurposeGateTest extends TestCase
     /**
      * 로그인 2단계 인증 challenge 를 발급하고 그 id 를 돌려줍니다.
      *
-     * @return string challenge UUID
+     * @return string 발급된 인증 요청(challenge) UUID
      */
     private function startLoginChallenge(): string
     {
@@ -143,7 +165,7 @@ class IdentityLoginPurposeGateTest extends TestCase
     /**
      * challenge 에 알려진 인증 코드를 심고 그 값을 돌려줍니다.
      *
-     * @param  string  $challengeId  challenge UUID
+     * @param  string  $challengeId  인증 요청(challenge) UUID
      * @return string 심어 둔 인증 코드
      */
     private function issuedCode(string $challengeId): string

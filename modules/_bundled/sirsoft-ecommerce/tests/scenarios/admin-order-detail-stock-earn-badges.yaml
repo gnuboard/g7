@@ -26,6 +26,24 @@ description: |
       실제 적립됨 → "적립완료"(green) / 미적립 → "적립예정"(gray)
     - 사용/취소복원 등 비-구매적립 거래는 '적립완료' 판정에서 제외 (PURCHASE_EARN 한정)
 
+  그러나 배지는 둘이었고 도메인 상태는 셋이다 (S1-D19).
+
+  취소된 옵션은 `MileageTransactionListener` 가 기적립분을 회수하고, 스케줄러의
+  `getEarnableOptions` 는 `option_status = 적립트리거`(confirmed·delivered) 만 곱으므로
+  **어떤 설정에서도** 다시 적립 대상이 되지 않는다. 그런데 화면은 「적립예정」을 말했다 —
+  지킬 수 없는 예정이다.
+
+  실측(#599 통합실측 세션1 · 1-M · 주문 108 `20260915-0604289654`): 전량 취소되어 76,500원
+  전액 환불된 주문의 옵션 3행이 각각 `228P 적립예정` · `160P 적립예정` · `440P 적립예정` 을
+  말하고 있었다 — 그 주문의 `purchase_earn` 거래는 0건이고 앞으로도 0건이다. 오류도 나지
+  않고 잡히는 신호도 없다 — 운영자가 물어봐야 생기는 차이다.
+
+  경계: 지연 적립 설정에서는 구매확정 후 적립된 다음 취소가 들어오는 시간차가 있다(회수 전
+  한 찰나). 그 사이엔 「적립 없음」이 아니라 「적립완료」를 말해야 한다 — 돈은 실제로 나갔다.
+
+  판정은 화면이 아니라 Resource(`is_points_earn_cancelled`) 가 소유하며, 레이아웃 조건은
+  서로 배타적이다 — pending 조건이 취소를 배제하지 않으면 배지가 **둘** 붙는다.
+
 axes:
   stock_deduction:
     - deducted        # 재고 차감 완료 → "재고 차감" 배지
@@ -34,6 +52,7 @@ axes:
     - earned          # 구매 적립(PURCHASE_EARN) 발행됨 → "적립완료" 배지
     - pending         # 적립예정액 있으나 미발행 → "적립예정" 배지
     - no_points       # 적립예정액 0 → 배지 미노출
+    - earn_cancelled  # 취소된 옵션 — 다시 적립 대상이 될 수 없다 → 「적립 없음」 배지 (S1-D19)
   non_purchase_tx:
     - none            # 적립/사용 거래 없음
     - order_use_only  # 사용(ORDER_USE) 거래만 존재 — '적립완료'로 오탐되면 안 됨
@@ -44,6 +63,7 @@ effects:
   - resource_is_points_earned_false_without_earn_tx   # 적립 거래 미발행 → false
   - resource_is_points_earned_true_with_purchase_earn # PURCHASE_EARN 발행 → true
   - resource_is_points_earned_ignores_non_purchase_tx # ORDER_USE 등 비-구매적립 → false
+  - resource_marks_cancelled_option_as_earn_cancelled  # 취소 옵션 → 「적립 없음」 · 이미 지급된 취소 옵션은 「적립완료」 유지 (S1-D19)
   - repository_loads_earn_exists_without_n_plus_one    # withExists 집계 컬럼 단일 쿼리 로드
   # 프론트 렌더링/구조 (Vitest 레이아웃 렌더링 커버)
   - quantity_column_renders_stock_badge_by_deduction   # is_stock_deducted 분기 배지

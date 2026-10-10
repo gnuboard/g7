@@ -1,0 +1,507 @@
+{
+    "comment": "쇼핑몰 설정 — 개인정보 보유기간 탭 (이슈 #636). 종결 주문(구매확정·취소, 진행 중 환불 없음)의 주문자·수령인 정보를 보유기간이 지나면 익명화하거나 주문째 삭제한다.\n  켜는 순간부터 되돌릴 수 없는 처리가 매일 돌므로 법령 안내(전자상거래법 5년 보존)와 처리방침 사전 안내 의무를 맨 위에 두고, 두 방식이 각각 무엇을 잃게 하는지(익명화 — 비회원 주문조회·관리자 이름 검색 / 삭제 — 상품 리뷰·결제 영수증 조회·쿠폰·마일리지 주문 연결)를 방식별로 적는다.\n  세 칸 모두 `name` 바인딩만 쓴다(코어 개인정보 탭과 같은 패턴) — 토글에만 명시 set-state 를 섞으면 방식 라디오의 이름 바인딩이 카테고리를 옛 값으로 되써 토글이 꺼진다(게시판 E2E 실측).\n  대상 건수는 저장된 설정 기준(코어 보유기간 커맨드의 dry-run 과 같은 조건식)이고 **꺼져 있어도** 보인다(켜기 전에 규모를 본다 — #636).\n  건수 옆 버튼은 대상 주문 창을 여는데, 주문 읽기 권한이 있으면 대상이 0건이어도 그린다(빈 명단은 창이 안내한다).",
+    "meta": {
+        "is_partial": true,
+        "description": "쇼핑몰 설정 개인정보 보유기간 탭 콘텐츠"
+    },
+    "id": "tab_content_privacy_retention",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'privacy_retention'}}",
+    "props": {
+        "className": "card-stack"
+    },
+    "children": [
+        {
+            "id": "privacy_retention_notice",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "alert-info"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-info",
+                                "className": "text-xl flex-shrink-0 mt-0.5"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.notice_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label-subtle mt-1"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.notice_desc"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "privacy_retention_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.description"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "privacy_retention_enabled_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.enabled"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.enabled_hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "privacy_retention.enabled",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "조치 대상 — 코어 개인정보 탭과 같은 「대상 행」 양식(이름 · 건수 배지 · 오른쪽 끝 대상 보기·지금 실행 · 그 행의 결과 줄).\n             되돌릴 수 없는 실행은 채운 강조색을 쓰지 않는다(2026-09-26 결정).",
+                            "id": "privacy_retention_target_list",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(ecommercePrivacyRetentionPreview?.data?.orders !== null && ecommercePrivacyRetentionPreview?.data?.orders !== undefined) || privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.can_run}}",
+                            "props": {
+                                "className": "space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "rounded-lg border border-gray-200 dark:border-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "privacy_retention_target_row",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "px-4 py-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-wrap-center gap-2 min-w-0"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-heading"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.row_label"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{ecommercePrivacyRetentionPreview?.data?.orders !== null && ecommercePrivacyRetentionPreview?.data?.orders !== undefined}}",
+                                                                    "props": {
+                                                                        "className": "badge badge-yellow"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.target_count|count={{ecommercePrivacyRetentionPreview?.data?.orders ?? 0}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-wrap-center gap-2"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "id": "view_privacy_retention_targets",
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{ecommercePrivacyRetentionPreview?.data?.can_view_targets}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "대상 주문 명단 — 목록 경로·제목을 주문 핸들러로 맞추고 쪽 상태를 1쪽으로 되돌린 뒤 첫 쪽을 다시 받아 창을 연다.\n                           창은 스스로 조회하지 않으므로 이 버튼이 받아 주지 않으면 빈 명단이 뜬다.",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "privacyTargets": "{{({ path: 'retention-targets/sirsoft-ecommerce.order', currentPage: 1, hasMore: true, isLoadingMore: false })}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "privacyTargets.title": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.title"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "refetchDataSource",
+                                                                                    "params": {
+                                                                                        "dataSourceId": "privacyTargets"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "privacy_targets_modal"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "btn btn-sm btn-ghost"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.view"
+                                                                },
+                                                                {
+                                                                    "id": "run_privacy_retention",
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.can_run}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "주문 보유기간 지금 실행 — 확인 창을 먼저 열고 실행 시점의 대상 건수와 처리 방식(익명화·삭제)을 받아 채운다.\n                           삭제 방식이면 창이 연쇄 영향 경고를 한 줄 더 띄운다. 저장 전 변경이 있으면 잠긴다 — 실행은 저장된 설정을 따른다.",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "privacyRun": "{{({ key: 'retention:sirsoft-ecommerce.order', label: privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.label ?? '', supportsSkip: false, skipWaiting: false, preview: null, loading: true, submitting: false })}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "privacy_run_modal"
+                                                                                },
+                                                                                {
+                                                                                    "handler": "apiCall",
+                                                                                    "target": "/api/admin/privacy/manual-runs/retention:sirsoft-ecommerce.order/preview",
+                                                                                    "auth_required": true,
+                                                                                    "params": {
+                                                                                        "method": "GET"
+                                                                                    },
+                                                                                    "onSuccess": {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "global",
+                                                                                            "privacyRun.preview": "{{response.data}}",
+                                                                                            "privacyRun.loading": false
+                                                                                        }
+                                                                                    },
+                                                                                    "onError": [
+                                                                                        {
+                                                                                            "handler": "setState",
+                                                                                            "params": {
+                                                                                                "target": "global",
+                                                                                                "privacyRun.loading": false
+                                                                                            }
+                                                                                        },
+                                                                                        {
+                                                                                            "handler": "toast",
+                                                                                            "params": {
+                                                                                                "type": "error",
+                                                                                                "message": "{{error.message ?? '$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.preview_failed'}}"
+                                                                                            }
+                                                                                        }
+                                                                                    ]
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "btn btn-sm btn-outline",
+                                                                        "disabled": "{{_local.hasChanges || privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.is_active}}"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.run"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "privacy_retention_manual_run_status",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run}}",
+                                                    "props": {
+                                                        "className": "text-hint mt-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.is_active}}",
+                                                            "props": {
+                                                                "className": "text-blue-600 dark:text-blue-400"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.requester_name ?? $t('sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.unknown_requester')}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.status === 'completed'}}",
+                                                            "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.requester_name ?? $t('sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.processed_count ?? 0}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.status === 'failed'}}",
+                                                            "props": {
+                                                                "className": "text-error-soft"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.requester_name ?? $t('sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.error ?? ''}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "privacy_retention_save_first",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_local.hasChanges && privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.can_run}}",
+                                    "props": {
+                                        "className": "text-hint"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.save_first_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "privacy_retention_fields",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!_local.form?.privacy_retention?.enabled}}",
+                            "props": {
+                                "className": "space-y-6"
+                            },
+                            "children": [
+                                {
+                                    "id": "privacy_retention_years_field",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.retention_years"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "props": {
+                                                        "type": "number",
+                                                        "name": "privacy_retention.retention_years",
+                                                        "min": "{{_local?.form?._meta?.limits?.privacy_retention_years_min ?? 5}}",
+                                                        "max": "{{_local?.form?._meta?.limits?.privacy_retention_years_max ?? 20}}",
+                                                        "step": "1",
+                                                        "className": "input w-20 {{_local.errors?.['privacy_retention.retention_years'] ? 'input-error' : ''}}",
+                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-body"
+                                                    },
+                                                    "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.years_unit"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['privacy_retention.retention_years']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['privacy_retention.retention_years']?.[0] ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.retention_years_hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "privacy_retention_mode_field",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "space-y-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.mode"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "RadioGroup",
+                                            "props": {
+                                                "name": "privacy_retention.mode",
+                                                "inline": true,
+                                                "size": "md",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "options": [
+                                                    {
+                                                        "value": "anonymize",
+                                                        "label": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.modes.anonymize"
+                                                    },
+                                                    {
+                                                        "value": "delete",
+                                                        "label": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.modes.delete"
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "id": "privacy_retention_anonymize_notice",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{(_local.form?.privacy_retention?.mode ?? 'anonymize') === 'anonymize'}}",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.anonymize_notice"
+                                        },
+                                        {
+                                            "id": "privacy_retention_delete_warning",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{_local.form?.privacy_retention?.mode === 'delete'}}",
+                                            "props": {
+                                                "className": "text-error-soft"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.delete_warning"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.preview_hint"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

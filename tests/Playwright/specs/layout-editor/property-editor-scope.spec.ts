@@ -14,6 +14,8 @@
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
 import { editorPath as resolveEditorPath } from '../../fixtures/layout-editor';
+// 저장까지 수행하는 테스트는 제품 화면을 오염시키지 않도록 E2E 전용 시드 화면을 쓴다.
+import { SANDBOX_ROOT_ID, sandboxRouteParam } from '../../fixtures/seed-layout';
 
 /** 로그인 카드(Div) — 본문 루트 기준 상대 경로 */
 const CARD_REL = 'children.5.children.0.children.0.children.1';
@@ -57,6 +59,7 @@ function classOf(page: Page, path: string): Promise<string> {
 }
 
 test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', () => {
+  /** @effects modal_scope_snapshots_toolbar_on_open */
   test('T1: 모달 열면 색 모드 + 디바이스 세부탭 노출(기본 공통/라이트 스냅샷)', async ({ page }) => {
     await openEditorLogin(page);
     await openPropsFor(page, CARD);
@@ -213,5 +216,134 @@ test.describe('@layout-editor 스타일 탭 색 모드 × 디바이스 scope', (
         document.querySelector('[data-testid="g7le-preview-frame"]')?.classList.contains('g7le-preview-dark') ?? false,
       ),
     ).toBe(false);
+  });
+
+  /**
+   * 모달 세부탭은 **열릴 때 한 번** 툴바를 스냅샷한다(T1). 열린 뒤 툴바를 바꾸면 편집 대상이
+   * 따라 움직여선 안 된다 — 운영자가 태블릿을 고쳐 놓고 미리보기만 모바일로 넘겨 보는 동안
+   * 입력이 모바일 scope 에 기록되면 엉뚱한 디바이스가 바뀐다.
+   */
+  /** @effects modal_scope_independent_after_toolbar_change */
+  test('T13: 모달 연 뒤 툴바 디바이스를 바꿔도 모달 세부탭은 따라가지 않는다', async ({ page }) => {
+    await openEditorLogin(page);
+    await openPropsFor(page, CARD);
+
+    // 모달 세부탭을 태블릿으로 고정 (툴바 스냅샷값과 다르게 만든다)
+    await page.getByTestId('g7le-style-bp-tablet').click();
+    await expect(page.getByTestId('g7le-style-bp-tablet')).toHaveAttribute('data-active', 'true');
+
+    // 툴바 디바이스를 모바일로 전환
+    await page.getByTestId('g7le-device-mobile').click();
+    await expect
+      .poll(async () =>
+        page.evaluate(
+          () =>
+            document.querySelector('[data-testid="g7le-device-mobile"]')?.getAttribute('data-active') ??
+            document.querySelector('[data-testid="g7le-device-mobile"]')?.getAttribute('aria-pressed') ??
+            'unknown',
+        ),
+      )
+      .not.toBe('unknown'); // 툴바 전환이 실제로 반영됐다
+
+    // 모달 세부탭은 그대로 태블릿
+    await expect(page.getByTestId('g7le-style-bp-tablet')).toHaveAttribute('data-active', 'true');
+    await expect(page.getByTestId('g7le-style-bp-mobile')).toHaveAttribute('data-active', 'false');
+  });
+
+  /**
+   * 「정렬 박스 해제」는 scope 가 기본값(공통)이 아니면 토큰을 **지우는 게 아니라** 명시 해제
+   * 토큰(`block`)을 기록한다. 지우기만 하면 그 디바이스가 공통값(`flex`)을 도로 상속해
+   * "껐는데 그대로" 가 된다.
+   */
+  /** @effects device_flex_disable_writes_explicit_off_token_breaking_base_inheritance */
+  test('T14: 디바이스 탭에서 정렬 박스 해제 → 공통 상속을 끊는 명시 해제 토큰이 기록된다', async ({ page }) => {
+    await openEditorLogin(page);
+    await openPropsFor(page, CARD);
+
+    // 공통(base) 탭에서 정렬 박스를 켠다 — 이 화면 카드가 flex 가 아닐 수 있으므로 전제를 만든다.
+    await page.getByTestId('g7le-style-bp-base').click();
+    if ((await page.getByTestId('g7le-flex-disable').count()) === 0) {
+      await page.getByTestId('g7le-flex-enable').click();
+    }
+    await expect(page.getByTestId('g7le-flex-disable')).toBeVisible({ timeout: 10_000 });
+    await page.getByTestId('g7le-device-desktop').click();
+    await expect.poll(() => classOf(page, CARD)).toContain('flex');
+
+    // 태블릿 탭 — 이 scope 에 명시 설정이 없으면 "꺼짐"으로 보이므로(공통값을 그대로 물려받는
+    // 상태) 먼저 켜서 명시 설정을 만든 뒤 해제한다. 운영자가 실제로 밟는 순서다.
+    await page.getByTestId('g7le-style-bp-tablet').click();
+    if ((await page.getByTestId('g7le-flex-disable').count()) === 0) {
+      await page.getByTestId('g7le-flex-enable').click();
+      await expect(page.getByTestId('g7le-flex-disable')).toBeVisible({ timeout: 10_000 });
+    }
+    await page.getByTestId('g7le-flex-disable').click();
+
+    await page.getByTestId('g7le-device-tablet').click();
+    await expect.poll(() => classOf(page, CARD)).toContain('block');
+    expect((await classOf(page, CARD)).split(/\s+/)).not.toContain('flex');
+
+    // 공통은 그대로 flex — 해제가 태블릿에만 적용됐다
+    await page.getByTestId('g7le-device-desktop').click();
+    await expect.poll(() => classOf(page, CARD).then((c) => c.split(/\s+/))).toContain('flex');
+  });
+
+  /**
+   * 디바이스별 스타일과 표시조건은 저장돼야 의미가 있다. 화면에는 반영되는데 저장 페이로드에서
+   * 빠지면 새로고침 한 번에 사라지고, 운영자는 저장을 눌렀으므로 남았다고 믿는다.
+   *
+   * 저장을 수행하므로 대상은 E2E 전용 시드 화면이다(제품 화면 불변).
+   */
+  /** @effects save_persists_responsive_and_if_on_reload */
+  test('T15: 디바이스 스타일 + 표시조건을 저장하면 새로고침 후에도 남아 있다', async ({ page }) => {
+    test.setTimeout(90_000);
+    const token = issueToken('core.templates.layouts.edit');
+    await authenticatePage(page, token);
+
+    const enter = async (): Promise<string> => {
+      await page.goto(`/admin/layout-editor/sirsoft-basic?route=${sandboxRouteParam()}`);
+      await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+      await page.waitForSelector('[data-testid="g7le-preview-frame"]', { timeout: 30_000 });
+      await page.waitForFunction(() => document.querySelectorAll('[data-editor-path]').length > 0, {
+        timeout: 20_000,
+      });
+      return resolveEditorPath(page, '', SANDBOX_ROOT_ID);
+    };
+
+    const target = await enter();
+    await openPropsFor(page, target);
+
+    // ① 태블릿 scope 에 정렬(textAlign) 지정
+    await page.getByTestId('g7le-style-bp-tablet').click();
+    await page.getByTestId('g7le-segment-center').click();
+
+    // ② 표시조건 — 로그인 회원일 때
+    await page.getByTestId('g7le-property-tab-visibility').click();
+    await page.getByTestId('g7le-condition-add-and').click();
+    await page.getByTestId('g7le-condition-select-0').selectOption('isLoggedIn');
+    await expect(page.getByTestId('g7le-condition-preview')).toContainText('currentUser', {
+      timeout: 10_000,
+    });
+
+    // 저장
+    const saved = page.waitForResponse(
+      (r) => /\/api\/admin\/templates\/[^/]+\/layouts\//.test(r.url()) && r.request().method() === 'PUT',
+      { timeout: 20_000 },
+    );
+    await page.getByTestId('g7le-property-modal-done').click().catch(() => undefined);
+    await page.getByTestId('g7le-toolbar-save').click();
+    expect((await saved).status()).toBe(200);
+
+    // 새로 진입해 둘 다 살아 있는지 확인
+    const again = await enter();
+    await openPropsFor(page, again);
+
+    await page.getByTestId('g7le-style-bp-tablet').click();
+    await expect(page.getByTestId('g7le-segment-center')).toHaveAttribute('data-active', 'true', {
+      timeout: 10_000,
+    });
+
+    await page.getByTestId('g7le-property-tab-visibility').click();
+    await expect(page.getByTestId('g7le-condition-clause-0')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('g7le-condition-select-0')).toHaveValue('isLoggedIn');
   });
 });

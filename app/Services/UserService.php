@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Enums\PasswordChangeSource;
 use App\Enums\UserStatus;
+use App\Exceptions\CannotDeleteSelfException;
 use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Exceptions\PermissionEscalationException;
 use App\Extension\HookManager;
@@ -18,6 +20,7 @@ use App\Support\UserGradeGuard;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -26,22 +29,43 @@ use Illuminate\Validation\ValidationException;
 
 class UserService
 {
+    /**
+     * 사용자 서비스를 생성합니다.
+     *
+     * @param  UserRepositoryInterface  $userRepository  사용자 저장소
+     * @param  RoleRepositoryInterface  $roleRepository  역할 저장소
+     * @param  AttachmentService  $attachmentService  첨부파일 서비스 (아바타 정리)
+     * @param  PermissionEscalationGuard  $escalationGuard  역할 부여 상한 가드
+     * @param  PasswordChangeService  $passwordChangeService  비밀번호 변경 기록 서비스
+     */
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private RoleRepositoryInterface $roleRepository,
         private AttachmentService $attachmentService,
-        private PermissionEscalationGuard $escalationGuard
+        private PermissionEscalationGuard $escalationGuard,
+        private PasswordChangeService $passwordChangeService
     ) {}
 
     /**
      * 필터링된 사용자 목록을 페이지네이션으로 조회합니다.
+     *
+     * 확장이 회원 목록 필터를 더하는 두 훅을 여기서 발화한다(저장소 계층에는 훅을 들이지 않는다).
+     * - `core.user.filter_list_params` — 파라미터 정규화·기본값
+     * - `core.user.list_query_extensions` — `fn(Builder $q, array $filters)` 클로저 목록. 저장소가
+     *   코어 조건을 다 건 뒤 차례로 적용한다. 확장 값은 `$filters['ext'][확장id][키]` 에 있다.
      *
      * @param  array  $filters  필터 조건 배열
      * @return LengthAwarePaginator 페이지네이션된 사용자 목록
      */
     public function getPaginatedUsers(array $filters = []): LengthAwarePaginator
     {
-        $result = $this->userRepository->getPaginatedUsers($filters);
+        $filters = HookManager::applyFilters('core.user.filter_list_params', $filters);
+        $extensions = HookManager::applyFilters('core.user.list_query_extensions', [], $filters);
+
+        $result = $this->userRepository->getPaginatedUsers(
+            $filters,
+            is_array($extensions) ? array_values(array_filter($extensions, 'is_callable')) : []
+        );
 
         HookManager::doAction('core.user.after_list', $result->total());
 
@@ -59,8 +83,9 @@ class UserService
     public function createUser(array $data): User
     {
         try {
-            // 원본 데이터 보관 (after_create 훅에서 사용)
-            $originalData = $data;
+            // 원본 데이터 보관 (after_create 훅에서 사용) — 비밀번호 원문은 뺀다: 큐 구독자마다 작업 표에 사본이 남고
+            // 읽는 구독자가 없다(#138 후속 — 설계 결정, 회원가입 훅과 같은 방식)
+            $originalData = Arr::except($data, ['password', 'password_confirmation']);
 
             // Before 훅: 데이터 검증/전처리
             HookManager::doAction('core.user.before_create', $data);
@@ -71,6 +96,11 @@ class UserService
             // 비밀번호 해싱
             if (isset($data['password'])) {
                 $data['password'] = Hash::make($data['password']);
+            }
+
+            // 비밀번호 만료 설정(#736)을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
+            if (array_key_exists('password_expiry_policy', $data) && $data['password_expiry_policy'] === null) {
+                unset($data['password_expiry_policy']);
             }
 
             // 역할 처리: roles 객체 배열이 오면 role_ids로 변환
@@ -98,16 +128,36 @@ class UserService
                 $this->escalationGuard->assertRoleAssignmentWithinActorCeiling($roleIds);
             }
 
+            // 상태에 딸린 시각 컬럼을 생성 시점에도 채운다 — 검증은 Enum 전체를 허용하므로
+            // (`Rule::in(UserStatus::values())`) 관리자가 `status=dormant` 로 바로 만들 수 있다.
+            // 그때 `dormant_at` 이 비어 있으면 휴면 후 탈퇴 전환이 기준점을 잃어(그 쿼리가
+            // `whereNotNull('dormant_at')` 이다) 그 회원만 영원히 전환되지 않는다.
+            // 수정 경로(`updateUser`)·일괄 경로(`bulkUpdateStatus`)·로그인 해제 경로
+            // (`AuthService::restoreDormantAccount()`)와 **같은 한 곳**(`transitionTimestamps()`)
+            // 을 읽는다. 탈퇴 상태로의 직접 생성은 익명화·훅을 건너뛰므로 시각만 맞춰 둔다.
+            $statusEnum = isset($data['status']) ? UserStatus::tryFrom((string) $data['status']) : null;
+
+            if ($statusEnum !== null) {
+                $data = array_merge($data, $statusEnum->transitionTimestamps());
+            }
+
             $user = $this->userRepository->create($data);
 
+            // 관리자가 정해 준 비밀번호 — 변경일을 남기고 다음 로그인 때 회원이 바꾸도록 표시한다(D11).
+            $this->passwordChangeService->initializeNewUser($user, PasswordChangeSource::AdminCreate);
+
             // 역할 동기화
+            $roleSync = null;
             if ($roleIds !== null && count($roleIds) > 0) {
-                $user->roles()->sync($roleIds);
+                $roleSync = $user->roles()->sync($roleIds);
                 $user->flushPermissionCaches();
             }
 
             // After 훅: 사용자 객체와 원본 데이터 전달
             HookManager::doAction('core.user.after_create', $user, $originalData);
+
+            // 권한 부여 기록(D23) — 새 회원에게 붙은 역할과 최고관리자 지정을 별도 훅으로 알린다.
+            $this->dispatchRoleChange($user, $roleSync, false, 'create');
 
             return $user->fresh(['modules', 'plugins', 'menus', 'roles']);
         } catch (Exception $e) {
@@ -145,8 +195,10 @@ class UserService
         UserGradeGuard::assertActorMayModify($user);
 
         try {
-            // 원본 데이터 보관 (after_update 훅에서 사용)
-            $originalData = $data;
+            // 원본 데이터 보관 (after_update 훅에서 사용) — 비밀번호 원문은 뺀다(after_create 와 같은 이유).
+            // 현재 비밀번호(정보수정·관리자 본인 변경의 본인 확인용)도 같은 원문이라 함께 뺀다 — 큐 구독자마다
+            // 작업 표에 평문 사본이 남는다(D18).
+            $originalData = Arr::except($data, ['password', 'password_confirmation', 'current_password']);
 
             // Before 훅: 데이터 검증/전처리
             HookManager::doAction('core.user.before_update', $user, $data);
@@ -154,8 +206,15 @@ class UserService
             // Filter 훅: 모듈이 자신의 데이터를 추출하고 코어 데이터에서 제거
             $data = HookManager::applyFilters('core.user.filter_update_data', $data, $user);
 
-            // 비밀번호 처리
+            // 비밀번호 만료 설정(#736)을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
+            if (array_key_exists('password_expiry_policy', $data) && $data['password_expiry_policy'] === null) {
+                unset($data['password_expiry_policy']);
+            }
+
+            // 비밀번호 처리 — 변경 기록(이력)에 남길 이전 해시는 update 전에 잡아 둔다.
             $passwordChanged = ! empty($data['password']);
+            $oldPasswordHash = $passwordChanged ? $user->getRawOriginal('password') : null;
+            unset($data['current_password']);
             if ($passwordChanged) {
                 $data['password'] = Hash::make($data['password']);
             } else {
@@ -238,17 +297,23 @@ class UserService
 
             if ($newStatus && $newStatus !== $oldStatus) {
                 $newStatusEnum = UserStatus::from($newStatus);
-                $data = match ($newStatusEnum) {
-                    UserStatus::Blocked => array_merge($data, ['blocked_at' => now()]),
-                    // 탈퇴는 위 위임 경로(withdrawUser)가 전담하므로 여기로는 도달하지 않는다.
-                    UserStatus::Withdrawn => $data,
-                    UserStatus::Active => array_merge($data, ['blocked_at' => null, 'withdrawn_at' => null]),
-                    UserStatus::Inactive => $data,
-                };
+                // 짝 컬럼의 정의는 Enum 한 곳(`transitionTimestamps()`)이 소유한다 — 생성·일괄·
+                // 로그인 해제 경로가 같은 표를 읽어야 어휘가 갈라지지 않는다. 이전에는 이 자리가
+                // `dormant_notified_at` 을 빠뜨려, 관리자가 푼 회원이 안내 없이 다시 잠겼다.
+                //
+                // 탈퇴만 예외로 건너뛴다 — 위 위임 경로(withdrawUser)가 익명화·훅과 함께
+                // 전담하므로 여기로는 도달하지 않는다.
+                if ($newStatusEnum !== UserStatus::Withdrawn) {
+                    $data = array_merge($data, $newStatusEnum->transitionTimestamps());
+                }
             }
 
             // 스냅샷 캡처 (ChangeDetector용)
             $snapshot = $user->toArray();
+
+            // 역할 변경 기록(D23)의 최고관리자 지정 전후 비교용
+            $wasSuper = (bool) $user->is_super;
+            $roleSync = null;
 
             // 탈퇴 위임 시 아바타는 커밋 후에 지운다 (트랜잭션 안에서 지우면 롤백돼도 파일은 안 돌아온다).
             $avatarAttachment = $withdrawViaStatus ? $user->avatarAttachment : null;
@@ -258,8 +323,25 @@ class UserService
             // 상태 변경 경유 탈퇴는 **탈퇴까지 같은 트랜잭션**에 넣는다 — 프로필 갱신을
             // 먼저 커밋하고 탈퇴를 따로 커밋하면, 탈퇴가 실패했을 때 이름·이메일 변경만
             // 남아 "전부 성공하거나 전부 취소" 가 그 경로에서만 깨진다.
-            DB::transaction(function () use ($user, $data, $newStatus, $oldStatus, $roleIds, $withdrawViaStatus) {
+            DB::transaction(function () use ($user, $data, $newStatus, $oldStatus, $roleIds, $withdrawViaStatus, $passwordChanged, $oldPasswordHash, &$roleSync) {
                 $this->userRepository->update($user, $data);
+
+                // 비밀번호 변경 기록 — 출처는 행위자로 판정한다. 본인이면 현재 기기 토큰만 남기고,
+                // 관리자가 다른 회원의 비밀번호를 정했으면 그 회원의 토큰을 전부 폐기하고 다음 로그인 때
+                // 바꾸도록 표시한다(D11·D17).
+                if ($passwordChanged) {
+                    $actor = Auth::user();
+                    $actor = $actor instanceof User ? $actor : null;
+                    $source = $this->passwordChangeService->sourceFor($user, $actor);
+
+                    $this->passwordChangeService->recordChange(
+                        $user,
+                        is_string($oldPasswordHash) ? $oldPasswordHash : null,
+                        $source,
+                        $actor,
+                        $source === PasswordChangeSource::Self_ ? $this->passwordChangeService->currentTokenId($actor) : null,
+                    );
+                }
 
                 // 상태가 Active 외로 변경되었으면 토큰 삭제 (즉시 로그아웃)
                 if ($newStatus && $newStatus !== $oldStatus && $newStatus !== UserStatus::Active->value) {
@@ -268,7 +350,7 @@ class UserService
 
                 // 역할 동기화
                 if ($roleIds !== null) {
-                    $user->roles()->sync($roleIds);
+                    $roleSync = $user->roles()->sync($roleIds);
                 }
 
                 // 익명화 + before_withdraw 훅 + 연계 데이터 정리 (본인 탈퇴와 동일 코드)
@@ -284,6 +366,9 @@ class UserService
 
             // After 훅: 사용자 객체와 원본 데이터, 스냅샷 전달
             HookManager::doAction('core.user.after_update', $user, $originalData, $snapshot);
+
+            // 권한 변경 기록(D23) — 역할·최고관리자 지정이 실제로 바뀐 경우만, 커밋 뒤에 알린다.
+            $this->dispatchRoleChange($user, $roleSync, $wasSuper, 'update');
 
             if ($withdrawViaStatus) {
                 $this->runWithdrawAfterEffects($user, $avatarAttachment);
@@ -326,6 +411,7 @@ class UserService
      * 쓰도록 한 곳에 둡니다 — 한쪽만 느슨하면 그 경로가 우회로가 됩니다.
      *
      * @param  User  $user  검사 대상 사용자
+     * @return void 차단 대상이면 예외를 던진다
      *
      * @throws CannotDeleteSuperAdminException 슈퍼 관리자인 경우
      * @throws ValidationException 관리자 역할을 가진 경우
@@ -363,6 +449,9 @@ class UserService
         // 약관 동의 이력 삭제 (명시적 삭제 - CASCADE 의존 금지)
         $user->consents()->delete();
 
+        // 이전 비밀번호 해시 이력 삭제 (명시적 삭제 - CASCADE 의존 금지)
+        $this->passwordChangeService->purgeHistory($user);
+
         // 토큰 삭제 (로그아웃 처리)
         $user->tokens()->delete();
 
@@ -375,6 +464,7 @@ class UserService
      *
      * @param  User  $user  탈퇴 처리된 사용자 모델
      * @param  Attachment|null  $avatarAttachment  탈퇴 전 캡처한 아바타 첨부
+     * @return void
      */
     private function runWithdrawAfterEffects(User $user, $avatarAttachment): void
     {
@@ -452,6 +542,7 @@ class UserService
      * @return bool 삭제 성공 여부
      *
      * @throws CannotDeleteSuperAdminException 슈퍼 관리자 삭제 시도 시
+     * @throws CannotDeleteSelfException 인증 액터가 자기 계정을 삭제하려 할 때
      * @throws ValidationException 관리자 계정 삭제 시도 또는 삭제 실패 시
      */
     public function deleteUser(User $user): bool
@@ -460,6 +551,12 @@ class UserService
             // 슈퍼 관리자는 시스템 불변식으로 삭제 불가 (관리 anchor 보호)
             if ($user->isSuperAdmin()) {
                 throw new CannotDeleteSuperAdminException;
+            }
+
+            // 관리자 화면에서 운영자 본인 계정은 지울 수 없다(제품 결정 2026-10-09) — 탈퇴는 마이페이지 경로로만.
+            // 인증 액터가 없는 경로(Artisan·내부 호출)는 해당 없음.
+            if (Auth::id() !== null && Auth::id() === $user->id) {
+                throw new CannotDeleteSelfException;
             }
 
             // 관리자 계정 삭제 가능 여부는 G7 역할/퍼미션/스코프 시스템에 위임
@@ -483,6 +580,9 @@ class UserService
 
                 // 약관 동의 이력 삭제
                 $user->consents()->delete();
+
+                // 이전 비밀번호 해시 이력 삭제 (명시적 삭제 - CASCADE 의존 금지)
+                $this->passwordChangeService->purgeHistory($user);
 
                 // API 토큰 삭제
                 $user->tokens()->delete();
@@ -514,7 +614,8 @@ class UserService
                 throw $e;
             }
 
-            if ($e instanceof CannotDeleteSuperAdminException) {
+            // 정책상 거부는 그대로 올려 컨트롤러가 전용 안내를 내게 한다(삭제 실패로 바꾸지 않는다)
+            if ($e instanceof CannotDeleteSuperAdminException || $e instanceof CannotDeleteSelfException) {
                 throw $e;
             }
 
@@ -530,12 +631,15 @@ class UserService
     /**
      * ID로 사용자 상세 정보를 조회합니다.
      *
+     * 현재 사용자의 `core.users.read` 조회 범위 밖의 회원은 없는 것으로 돌려준다
+     * (scopeVisibleUser 참고).
+     *
      * @param  int  $id  사용자 ID
      * @return User|null 사용자 모델 또는 null
      */
     public function getUserById(int $id): ?User
     {
-        $user = $this->userRepository->findById($id);
+        $user = $this->scopeVisibleUser($this->userRepository->findById($id));
 
         if ($user) {
             HookManager::doAction('core.user.after_show', $user);
@@ -547,15 +651,38 @@ class UserService
     /**
      * UUID로 사용자를 조회합니다.
      *
+     * 현재 사용자의 `core.users.read` 조회 범위 밖의 회원은 없는 것으로 돌려준다
+     * (scopeVisibleUser 참고).
+     *
      * @param  string  $uuid  사용자 UUID
      * @return User|null 사용자 모델 또는 null
      */
     public function getUserByUuid(string $uuid): ?User
     {
-        $user = $this->userRepository->findByUuid($uuid);
+        $user = $this->scopeVisibleUser($this->userRepository->findByUuid($uuid));
 
         if ($user) {
             HookManager::doAction('core.user.after_show', $user);
+        }
+
+        return $user;
+    }
+
+    /**
+     * 현재 사용자의 회원 조회 범위 밖이면 null 로 바꿉니다.
+     *
+     * 한 건 조회는 목록처럼 쿼리에 스코프 조건을 걸 수 없어 찾은 뒤에 판정한다. 회원 검색의
+     * uuid·id 경로가 이 판정 없이 찾은 회원을 그대로 돌려줘, 본인만 볼 수 있는 위임 관리자가
+     * 다른 회원의 uuid 하나로 그 회원의 개인정보를 받던 전례가 있다(KVE-2026-2368).
+     * 「권한 없음」 대신 「없음」 으로 답해 범위 밖 회원의 존재 여부도 흘리지 않는다.
+     *
+     * @param  User|null  $user  조회된 회원
+     * @return User|null 범위 안이면 그 회원, 아니면 null
+     */
+    private function scopeVisibleUser(?User $user): ?User
+    {
+        if ($user === null || ! PermissionHelper::checkScopeAccess($user, 'core.users.read')) {
+            return null;
         }
 
         return $user;
@@ -665,7 +792,9 @@ class UserService
                 'action' => $log->action,
                 'action_label' => $log->action_label,
                 'description' => $log->localized_description,
-                'ip_address' => $log->ip_address,
+                // 접속 IP 는 관리자 응답에만 싣는다(UserResource 의 withAdminInfo 와 같은 기준).
+                // 이 목록은 본인 전용이지만 응답 필드를 관리자 전용 값의 통로로 두지 않는다 — 키는 호환을 위해 유지.
+                'ip_address' => null,
                 'created_at' => $log->created_at?->toIso8601String(),
             ]);
     }
@@ -719,9 +848,9 @@ class UserService
     /**
      * 여러 사용자의 상태를 일괄 변경합니다.
      *
-     * @param  array<int>  $ids  사용자 ID 배열
-     * @param  string  $status  변경할 상태 (active, inactive)
-     * @return array{updated_count: int} 업데이트 결과
+     * @param  array<int, string>  $uuids  대상 사용자 UUID 배열
+     * @param  string  $status  변경할 상태 ({@see UserStatus} 의 값)
+     * @return array{updated_count: int, failed_count: int, failed_reasons: array<int, mixed>} 업데이트 결과
      */
     public function bulkUpdateStatus(array $uuids, string $status): array
     {
@@ -739,12 +868,25 @@ class UserService
 
         // ① 등급 축: 비-슈퍼관리자 액터가 포함시킨 슈퍼 관리자 대상은 제외한다
         // (슈퍼 관리자 무력화 차단 — 슈퍼 세션 유지).
-        $modifiable = UserGradeGuard::filterModifiable($targets);
+        $gradeAllowed = UserGradeGuard::filterModifiable($targets);
 
         // ② 스코프 축: 액터의 유효 스코프(self/role/글로벌) 밖 대상은 제외한다.
         // 판정은 상세 경로와 동일한 SSoT(PermissionHelper::checkScopeAccess)에 위임한다 —
         // 여기서 재구현하면 role 분기만 빠지는 식으로 두 경로의 강도가 갈린다.
-        $modifiable = PermissionHelper::filterByScope($modifiable, 'core.users.update');
+        $modifiable = PermissionHelper::filterByScope($gradeAllowed, 'core.users.update');
+
+        // 제외는 조용히 하되 결과에는 남긴다 — 200 응답에 제외 건수가 없으면 화면은 고른 전원이
+        // 바뀐 것처럼 성공만 안내한다. 두 축의 사유를 따로 실어 운영자가 왜 빠졌는지 알게 한다.
+        $excludedCount = count($targets) - count($modifiable);
+        $excludedReasons = [];
+
+        if (count($targets) > count($gradeAllowed)) {
+            $excludedReasons[] = __('exceptions.cannot_modify_super_admin');
+        }
+
+        if (count($gradeAllowed) > count($modifiable)) {
+            $excludedReasons[] = __('user.bulk_status_out_of_scope');
+        }
 
         // 일괄 '탈퇴'는 건별 정식 탈퇴로 전환한다 — 상태 컬럼만 바꾸면 익명화와
         // before/after_withdraw 훅이 통째로 생략되어, 본인 탈퇴와 결과가 달라진다.
@@ -752,18 +894,26 @@ class UserService
         if ($statusEnum === UserStatus::Withdrawn) {
             $modifiableUuids = array_map(static fn (User $u): string => $u->uuid, $modifiable);
 
-            return $this->bulkWithdraw($modifiableUuids, $status);
+            $result = $this->bulkWithdraw($modifiableUuids, $status);
+
+            return [
+                'updated_count' => $result['updated_count'],
+                'failed_count' => $result['failed_count'] + $excludedCount,
+                'failed_reasons' => array_values(array_unique(array_merge($excludedReasons, $result['failed_reasons']))),
+            ];
         }
 
         $userIds = array_map(static fn (User $u): int => $u->id, $modifiable);
 
         if (empty($userIds)) {
-            HookManager::doAction('sirsoft-core.user.after_bulk_update', $uuids, $status, 0);
+            // 훅에는 실제로 바뀐 회원만 싣는다 — 활동 로그 리스너가 이 목록의 회원마다 「상태 변경」 을 남기므로,
+            // 등급·범위로 제외된 회원을 실으면 바뀌지 않은 회원에게 변경 기록이 생긴다(#736 영역 C 실측).
+            HookManager::doAction('sirsoft-core.user.after_bulk_update', [], $status, 0);
 
             return [
                 'updated_count' => 0,
-                'failed_count' => 0,
-                'failed_reasons' => [],
+                'failed_count' => $excludedCount,
+                'failed_reasons' => $excludedReasons,
             ];
         }
 
@@ -771,13 +921,13 @@ class UserService
         $updatedCount = DB::transaction(function () use ($userIds, $statusEnum) {
             // 타임스탬프 자동 설정
             $updateData = ['status' => $statusEnum->value];
-            $updateData = match ($statusEnum) {
-                UserStatus::Blocked => array_merge($updateData, ['blocked_at' => now()]),
-                // 탈퇴는 위에서 건별 withdrawUser() 로 분기하므로 여기로는 도달하지 않는다.
-                UserStatus::Withdrawn => $updateData,
-                UserStatus::Active => array_merge($updateData, ['blocked_at' => null, 'withdrawn_at' => null]),
-                UserStatus::Inactive => $updateData,
-            };
+            // 개별 경로(updateUser)와 **같은 표**(`transitionTimestamps()`)를 읽는다 — 한쪽만
+            // 고치면 일괄은 통과하고 개별은 거부하는(또는 그 반대) 강도 비대칭이 된다.
+            //
+            // 탈퇴는 위에서 건별 withdrawUser() 로 분기하므로 여기로는 도달하지 않는다.
+            if ($statusEnum !== UserStatus::Withdrawn) {
+                $updateData = array_merge($updateData, $statusEnum->transitionTimestamps());
+            }
 
             $count = $this->userRepository->updateManyByIds($userIds, $updateData);
 
@@ -789,14 +939,201 @@ class UserService
             return $count;
         });
 
-        // after_bulk_update 훅 실행
-        HookManager::doAction('sirsoft-core.user.after_bulk_update', $uuids, $status, $updatedCount);
+        // after_bulk_update 훅 실행 — 실제로 바뀐 회원(등급·범위를 통과한 대상)만 싣는다(위 빈 목록 분기와 같은 이유).
+        $changedUuids = array_map(static fn (User $u): string => $u->uuid, $modifiable);
+        HookManager::doAction('sirsoft-core.user.after_bulk_update', $changedUuids, $status, $updatedCount);
 
         return [
             'updated_count' => $updatedCount,
-            'failed_count' => 0,
-            'failed_reasons' => [],
+            'failed_count' => $excludedCount,
+            'failed_reasons' => $excludedReasons,
         ];
+    }
+
+    /**
+     * 여러 회원에게 역할을 한꺼번에 더하거나 뺍니다 (회원 목록 「역할 추가·제거」).
+     *
+     * 정적 라우트(`PATCH users/bulk-roles`)라 미들웨어의 범위 검사가 빠지므로, 일괄 상태 변경과
+     * 같은 두 축(등급·범위)을 여기서 다시 건다. 역할 상한은 단건 수정과 같이 **요청 전체**를
+     * 거부하고(액터가 부여할 수 없는 역할은 붙이지도 떼지도 못한다), 등급·범위·자기 잠금·마지막 역할로
+     * 걸러진 회원은 사유와 함께 돌려준다.
+     *
+     * 이미 원하는 상태인 회원(추가할 역할을 이미 가짐·뺄 역할을 가지지 않음)은 변경도 제외도 아니므로
+     * `unchanged` 에 사유(`already_assigned`/`not_assigned`)와 함께 따로 돌려준다 — 고른 회원 수가
+     * 변경·제외·변경 없음의 합으로 맞아떨어지게.
+     *
+     * @param  array<int, string>  $uuids  대상 회원 UUID
+     * @param  array<int, int|string>  $roleIds  더하거나 뺄 역할 ID
+     * @param  string  $mode  'add' | 'remove'
+     * @return array{updated_count: int, skipped_count: int, skipped: array<int, array{uuid: string, reason: string}>, unchanged_count: int, unchanged: array<int, array{uuid: string, reason: string}>} 처리 결과
+     *
+     * @throws PermissionEscalationException 액터 상한을 넘는 역할이 포함된 경우
+     */
+    public function bulkUpdateRoles(array $uuids, array $roleIds, string $mode): array
+    {
+        $roleIds = array_values(array_unique(array_map('intval', $roleIds)));
+
+        HookManager::doAction('core.user.before_bulk_update_roles', $uuids, $roleIds, $mode);
+
+        // ① 상한: 붙이든 떼든 액터가 부여할 수 없는 역할이면 요청 전체를 거부한다.
+        $this->escalationGuard->assertRoleAssignmentWithinActorCeiling($roleIds);
+
+        $targets = $this->userRepository->findManyByUuids($uuids);
+        $skipped = [];
+
+        // ② 등급 축 → ③ 범위 축 (일괄 상태 변경과 같은 순서·같은 SSoT)
+        $gradeAllowed = UserGradeGuard::filterModifiable($targets);
+        foreach ($this->excludedUsers($targets, $gradeAllowed) as $user) {
+            $skipped[] = ['uuid' => $user->uuid, 'reason' => 'grade'];
+        }
+
+        $modifiable = PermissionHelper::filterByScope($gradeAllowed, 'core.users.update');
+        foreach ($this->excludedUsers($gradeAllowed, $modifiable) as $user) {
+            $skipped[] = ['uuid' => $user->uuid, 'reason' => 'scope'];
+        }
+
+        // ④ 자기 잠금: 이번 제거로 admin 이 한 명도 남지 않게 되면 액터 자신은 빼 둔다
+        // (단건 수정의 「마지막 admin 은 자기 admin 을 못 뗀다」 와 같은 규칙).
+        $actor = Auth::user();
+        $adminRole = $this->roleRepository->findByIdentifier('admin');
+        if ($mode === 'remove' && $actor instanceof User && $adminRole && in_array((int) $adminRole->id, $roleIds, true)) {
+            $targetIds = array_map(static fn (User $u): int => $u->id, $modifiable);
+            $actorTargeted = in_array($actor->id, $targetIds, true);
+            $remainingAdmins = $adminRole->users()->whereNotIn('users.id', $targetIds)->count();
+
+            if ($actorTargeted && $remainingAdmins === 0 && $actor->roles()->where('roles.id', $adminRole->id)->exists()) {
+                $modifiable = array_values(array_filter($modifiable, static fn (User $u): bool => $u->id !== $actor->id));
+                $skipped[] = ['uuid' => $actor->uuid, 'reason' => 'last_admin'];
+            }
+        }
+
+        // ⑤ 마지막 역할: 빼고 나면 역할이 하나도 남지 않는 회원은 건너뛴다
+        // (단건 수정의 「역할을 하나 이상 선택」 규칙과 같다 — 일괄 제거가 단건 폼이 막는 상태를 만들지 않게).
+        if ($mode === 'remove') {
+            $modifiable = array_values(array_filter($modifiable, function (User $user) use ($roleIds, &$skipped): bool {
+                $current = $user->roles()->pluck('roles.id')->map(fn ($id) => (int) $id)->all();
+                if ($current !== [] && array_diff($current, $roleIds) === []) {
+                    $skipped[] = ['uuid' => $user->uuid, 'reason' => 'last_role'];
+
+                    return false;
+                }
+
+                return true;
+            }));
+        }
+
+        $unchanged = [];
+        $changedUsers = DB::transaction(function () use ($modifiable, $roleIds, $mode, $actor, &$unchanged) {
+            $changed = [];
+            foreach ($modifiable as $user) {
+                $before = $user->roles()->pluck('roles.id')->map(fn ($id) => (int) $id)->all();
+
+                if ($mode === 'add') {
+                    $attach = array_values(array_diff($roleIds, $before));
+                    if ($attach === []) {
+                        $unchanged[] = ['uuid' => $user->uuid, 'reason' => 'already_assigned'];
+
+                        continue;
+                    }
+                    $pivot = ['assigned_by' => $actor instanceof User ? $actor->id : null, 'assigned_at' => now()];
+                    $user->roles()->syncWithoutDetaching(array_fill_keys($attach, $pivot));
+                    $changed[] = ['user' => $user, 'added' => $attach, 'removed' => []];
+                } else {
+                    $detach = array_values(array_intersect($roleIds, $before));
+                    if ($detach === []) {
+                        $unchanged[] = ['uuid' => $user->uuid, 'reason' => 'not_assigned'];
+
+                        continue;
+                    }
+                    $user->roles()->detach($detach);
+                    $changed[] = ['user' => $user, 'added' => [], 'removed' => $detach];
+                }
+            }
+
+            return $changed;
+        });
+
+        // 커밋 후 부수효과 (캐시는 롤백 대상이 아니다). 액터가 자기 역할을 바꿨으면 이 요청이
+        // 들고 있는 액터 인스턴스의 판정 캐시도 비운다 — 이어지는 훅이 옛 권한으로 판정하지 않게.
+        foreach ($changedUsers as $entry) {
+            $entry['user']->flushPermissionCaches();
+            if ($actor instanceof User && $entry['user']->id === $actor->id) {
+                $actor->unsetRelation('roles');
+                $actor->flushPermissionCaches();
+            }
+        }
+
+        $result = [
+            'updated_count' => count($changedUsers),
+            'skipped_count' => count($skipped),
+            'skipped' => $skipped,
+            'unchanged_count' => count($unchanged),
+            'unchanged' => $unchanged,
+        ];
+
+        HookManager::doAction(
+            'core.user.after_bulk_update_roles',
+            array_map(static fn (array $entry): int => $entry['user']->id, $changedUsers),
+            $roleIds,
+            $mode,
+            array_map(static fn (array $entry): array => [
+                'user_id' => $entry['user']->id,
+                'added' => $entry['added'],
+                'removed' => $entry['removed'],
+            ], $changedUsers),
+        );
+
+        return $result;
+    }
+
+    /**
+     * 회원 등록·수정으로 역할 또는 최고관리자 지정이 바뀌었으면 `core.user.after_update_roles` 를 발행합니다.
+     *
+     * 개인정보의 안전성 확보조치 기준 제5조③(권한 부여·변경·말소 내역 3년 보관)의 기록 지점이다(#736 D23).
+     * 일괄 경로(`bulkUpdateRoles`)는 `core.user.after_bulk_update_roles` 가 따로 남긴다. 바뀐 것이 없으면 발행하지 않는다.
+     *
+     * @param  User  $user  대상 회원
+     * @param  array{attached?: array<int, int|string>, detached?: array<int, int|string>}|null  $roleSync  `sync()` 결과 (역할을 건드리지 않았으면 null)
+     * @param  bool  $wasSuper  변경 전 최고관리자 여부
+     * @param  string  $source  'create' | 'update'
+     * @return void 반환값 없음
+     */
+    private function dispatchRoleChange(User $user, ?array $roleSync, bool $wasSuper, string $source): void
+    {
+        $attached = array_values(array_map('intval', $roleSync['attached'] ?? []));
+        $detached = array_values(array_map('intval', $roleSync['detached'] ?? []));
+        $isSuper = (bool) $user->is_super;
+        $superChange = $wasSuper !== $isSuper ? ['from' => $wasSuper, 'to' => $isSuper] : null;
+
+        if ($attached === [] && $detached === [] && $superChange === null) {
+            return;
+        }
+
+        HookManager::doAction('core.user.after_update_roles', $user, [
+            'attached' => $attached,
+            'detached' => $detached,
+            'is_super' => $superChange,
+        ], $source);
+    }
+
+    /**
+     * 앞 목록에는 있고 뒤 목록에는 없는 회원을 돌려줍니다.
+     *
+     * @param  iterable<User>  $from  전체 목록
+     * @param  array<int, User>  $kept  남은 목록
+     * @return array<int, User> 빠진 회원
+     */
+    private function excludedUsers(iterable $from, array $kept): array
+    {
+        $keptIds = array_map(static fn (User $u): int => $u->id, $kept);
+        $excluded = [];
+        foreach ($from as $user) {
+            if (! in_array($user->id, $keptIds, true)) {
+                $excluded[] = $user;
+            }
+        }
+
+        return $excluded;
     }
 
     /**
@@ -837,6 +1174,7 @@ class UserService
         $updatedCount = 0;
         $failedCount = 0;
         $failedReasons = [];
+        $withdrawnUuids = [];
 
         foreach ($uuids as $uuid) {
             $user = $this->userRepository->findByUuid($uuid);
@@ -851,6 +1189,7 @@ class UserService
             try {
                 $this->withdrawUser($user);
                 $updatedCount++;
+                $withdrawnUuids[] = $uuid;
             } catch (Exception $e) {
                 $failedCount++;
                 $failedReasons[] = $this->describeWithdrawFailure($e);
@@ -862,8 +1201,8 @@ class UserService
             }
         }
 
-        // after_bulk_update 훅 실행
-        HookManager::doAction('sirsoft-core.user.after_bulk_update', $uuids, $status, $updatedCount);
+        // after_bulk_update 훅 실행 — 탈퇴가 실제로 끝난 회원만 싣는다(실패한 회원에 상태 변경 기록이 남지 않게).
+        HookManager::doAction('sirsoft-core.user.after_bulk_update', $withdrawnUuids, $status, $updatedCount);
 
         // 사유를 함께 돌려주지 않으면 화면은 "몇 건 실패" 까지만 말할 수 있다 —
         // 운영자는 왜 안 됐는지 알 방법이 없어 같은 조작을 반복하게 된다.
@@ -920,6 +1259,9 @@ class UserService
         [$showAvatar, $showBio, $showCreatedAt] = match ($status) {
             UserStatus::Active => [true, true, true],
             UserStatus::Inactive => [true, false, true],
+            // 휴면은 "정책상 비활성" 이라 비활성과 같게 둔다 — default 로 흘려보내면 차단 회원과
+            // 같은 취급이 되어, 돌아오면 원래대로 보일 프로필이 공개 화면에서 통째로 사라진다.
+            UserStatus::Dormant => [true, false, true],
             default => [false, false, false], // blocked 등
         };
 

@@ -1,0 +1,19 @@
+feature: 관리 환율 갱신 후 통화 설정 저장 (#703)
+
+description: |
+  환율 제공자가 관리하는 통화의 환율 칸은 잠겨 있는데, 저장 버튼이 화면이 받아 둔 환율을 다시 보내
+  그 사이 제공자가 갱신했으면 「관리 환율 변경」 422 로 통화 설정 저장 전체가 막혔다. 화면은 저장돼 있는
+  관리 통화의 환율을 빼고 보내고, 서버는 빠진 관리 환율을 저장값으로 채운다. 값을 명시해 바꾸는 요청은
+  종전대로 거절한다. 다른 탭 저장은 language_currency 를 싣지 않아 이 검증과 무관하다.
+
+axes:
+  managed_rate_param: [omitted, changed]
+  provider_refreshed: ["yes"]
+
+effects:
+  - omitted_managed_rate_keeps_saved_value
+  - explicit_managed_rate_change_rejected
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ManagedExchangeRateStaleSaveTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/managedRateSaveBody.test.ts

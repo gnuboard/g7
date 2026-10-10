@@ -2,12 +2,14 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
+use App\Extension\HookManager;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\MissingValue;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Concerns\LocalizesCountryName;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\SummarizesAdditionalOptions;
+use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\SummarizesClaims;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 
@@ -19,6 +21,7 @@ class OrderListResource extends BaseApiResource
     use HasMultiCurrencyPrices;
     use LocalizesCountryName;
     use SummarizesAdditionalOptions;
+    use SummarizesClaims;
 
     /**
      * 리소스를 배열로 변환
@@ -46,6 +49,8 @@ class OrderListResource extends BaseApiResource
             'order_status' => $this->order_status,
             'order_status_label' => $this->order_status ? $this->order_status->label() : null,
             'order_status_variant' => $this->order_status ? $this->order_status->variant() : null,
+            // 아이콘 의미 토큰(status-*) — 글리프 이름이 아니다. 템플릿 Icon 이 해석한다.
+            'order_status_icon' => $this->order_status ? $this->order_status->icon() : null,
             // 금액 표기 기준 통화(base) + 결제 통화(order_currency) + 교차 통화 여부.
             'base_currency' => $orderCurrency,
             'payment_currency' => $paymentCurrency,
@@ -69,7 +74,7 @@ class OrderListResource extends BaseApiResource
             'total_points_used_amount' => $this->roundToOrderCurrency($this->total_points_used_amount, $orderCurrency),
             'total_points_used_amount_formatted' => $this->formatOrderCurrency($this->total_points_used_amount, $orderCurrency),
             'total_earned_points_amount' => $this->roundToOrderCurrency($this->total_earned_points_amount, $orderCurrency),
-            'total_earned_points_amount_formatted' => $this->formatOrderCurrency($this->total_earned_points_amount, $orderCurrency),
+            'total_earned_points_amount_formatted' => $this->formatEarnedPoints($this->total_earned_points_amount),
 
             // 일시 — raw ISO 와 사용자 타임존 변환된 *_formatted 를 함께 제공 (OrderResource 와 동일 패턴)
             'ordered_at' => $this->ordered_at?->toIso8601String(), // audit:allow datetime-display-user-timezone reason: paired with *_formatted user-tz field
@@ -123,6 +128,8 @@ class OrderListResource extends BaseApiResource
             'payment' => $this->whenLoaded('payment', fn () => [
                 'payment_method' => $this->payment->payment_method,
                 'payment_method_label' => $this->payment->payment_method ? $this->payment->paymentMethodLabel() : null,
+                // 화면 표시용 라벨 — 간편결제처럼 PG 만 아는 원 수단은 결제 플러그인이 채운다(없으면 null → 화면은 기본 라벨)
+                'payment_method_display_label' => $this->resolvePaymentMethodDisplayLabel(),
             ]),
 
             // 배송 (대표 1건)
@@ -143,6 +150,10 @@ class OrderListResource extends BaseApiResource
                     'tracking_number' => $shipping?->tracking_number,
                 ];
             }),
+
+            // 클레임 요약 (D22 — '클레임' 컬럼). 로드 여부는 Repository 가 정하며 목록은
+            // 항상 싣는다 — 컬럼을 끄더라도 응답에는 있다(표시 여부는 화면의 판단이다).
+            'claim_summary' => $this->resolveClaimSummary(),
 
             // 권한 정보 (is_owner + abilities)
             ...$this->resourceMeta($request),
@@ -254,6 +265,27 @@ class OrderListResource extends BaseApiResource
     }
 
     /**
+     * 결제수단의 화면 표시용 라벨을 해석합니다.
+     *
+     * 간편결제(PAYCO·네이버페이 등)처럼 원 결제수단을 PG 만 아는 경우, 그 PG 플러그인이 필터 훅
+     * `sirsoft-ecommerce.order.filter_payment_method_display_label` 로 라벨을 채운다. 이 모듈은 PG 를 모르므로
+     * 직접 조립하지 않는다. 한 목록에 여러 PG 의 주문이 섞이므로 구독자는 자기 결제(`pg_provider`)가 아니면
+     * 받은 값을 그대로 돌려줘야 한다. 아무도 채우지 않으면 null 이고 화면은 기본 라벨(`payment_method_label`)을 쓴다.
+     *
+     * @return string|null 표시용 라벨 (없으면 null)
+     */
+    private function resolvePaymentMethodDisplayLabel(): ?string
+    {
+        $label = HookManager::applyFilters(
+            'sirsoft-ecommerce.order.filter_payment_method_display_label',
+            null,
+            $this->payment
+        );
+
+        return is_string($label) && $label !== '' ? $label : null;
+    }
+
+    /**
      * 권한 체크 매핑을 반환합니다.
      *
      * @return array<string, string>
@@ -268,6 +300,8 @@ class OrderListResource extends BaseApiResource
 
     /**
      * 소유자 필드명을 반환합니다.
+     *
+     * @return string|null 소유자 컬럼명
      */
     protected function ownerField(): ?string
     {
@@ -278,6 +312,7 @@ class OrderListResource extends BaseApiResource
      * 스냅샷 기반 배송방법 라벨을 해석합니다.
      *
      * @param  OrderShipping|null  $shipping  배송 레코드
+     * @return string|null 배송방법 라벨 (없으면 null)
      */
     private function resolveSnapshotMethodLabel(?OrderShipping $shipping): ?string
     {

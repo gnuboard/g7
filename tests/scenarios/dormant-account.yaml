@@ -1,0 +1,142 @@
+feature: 휴면 계정 생명주기 (이슈 #636 트랙4 코어 · 2단계형)
+
+description: |
+  장기 미접속 회원을 사전 안내 후 휴면으로 전환하고, 로그인하면 되돌린다. 설정에 따라
+  휴면이 오래 이어진 계정을 탈퇴까지 처리한다. 전 단계 기본 꺼짐.
+
+    ① 사전 안내 → ② 휴면 전환 → ③ 해제(로그인) → ④ 탈퇴 예고 → 탈퇴
+
+  ③ 만 로그인 경로(`AuthService`)가 담당하고 나머지는 커맨드(`privacy:process-dormant`)가
+  한 번의 실행에서 위 순서로 처리한다. 순서가 중요하다 — 안내를 먼저 보내야 다음 주기부터
+  전환·탈퇴 조건이 성립하므로 오늘 안내받은 회원이 오늘 전환되지 않는다.
+
+  설계에서 못박은 것:
+
+  - **유예 기간은 우회할 수 없다.** 전환·탈퇴 조건이 "통지 단계를 거쳤고 그로부터 통지
+    기간이 지났다"(`dormant_notified_at`)를 포함한다. 그래서 운영자가 기능을 오늘 처음 켜도
+    이미 오래 미접속인 회원이 그날 바로 전환되지 않는다 — 유효기간제 폐지(2023-09-15) 이후
+    휴면 정책의 요건이 "자율 정책 + 사전 안내" 이기 때문이다.
+    강제되는 것은 **유예 기간이지 통지의 도달이 아니다.** 실제 발송은 코어 알림 정의와 그
+    채널 템플릿이 켜져 있을 때만 일어나고, 운영자가 알림을 끄고 휴면 정책만 운영하는 것은
+    의도된 구성이다(그 경우에도 유예 기간은 지켜지고 회원이 통지를 받지 못할 뿐이다).
+  - **안내문의 예정일은 수신자 시간대로 적는다 (설계 확정 2026-09-23).** 저장 시각은 UTC 고정
+    이고 예약은 사이트 시간대로 돌기 때문에, 계산 결과를 그대로 `toDateString()` 하면 UTC
+    달력 날짜가 나가 실제 집행일보다 하루 이르다(05:10 KST = 전날 20:10 UTC). 회원 개인
+    시간대는 `User::getTimezone()` 이 소유하고 비어 있으면 사이트 기본값으로 떨어져,
+    알림 목록 시각(`UserNotificationResource`)과 같은 어휘가 된다.
+  - **활동 기준은 로그인 시각만이 아니다 (설계 확정 2026-09-21).** 판정은
+    `max(users.last_login_at, personal_access_tokens.last_used_at)` 이다. `last_login_at` 은
+    로그인 폼을 통과할 때만 갱신되고 토큰은 요청마다 만료가 미뤄지므로
+    (`RefreshTokenExpiration`), `security.auth_token_lifetime = 0`(무한대) 사이트에서는 매일
+    접속하는 회원도 그 값이 첫 로그인 날짜에 얼어붙는다. 로그인 시각만 보면 **활동 중인
+    회원이 휴면 → 자동 탈퇴(익명화)로 사라진다.** 되돌릴 수 없는 종류의 오차다.
+  - **해제는 설정을 보지 않는다.** 운영자가 기능을 끈 뒤에도 이미 휴면인 회원은 남아 있고,
+    설정을 조건으로 걸면 그 회원들이 되돌릴 방법 없이 갇힌다.
+  - **통지 표지는 단계마다 초기화된다.** 활성 단계에서는 휴면 전환 예고, 휴면 단계에서는
+    탈퇴 예고에 같은 컬럼을 재사용한다. 해제 시에도 비운다 — 남겨 두면 그 회원이 다시 장기
+    미접속이 됐을 때 예고 없이 전환된다. **표지를 비우는 것은 상태가 바뀌는 해제만이
+    아니다** — 사전 안내를 받고 안내대로 로그인한 회원은 상태가 `active` 그대로라 상태
+    전환 표를 거치지 않으므로, 로그인 자체를 활동으로 보고 표지를 무효로 만들어야 한다.
+    그러지 않으면 사전 안내 쿼리(`whereNull`)가 그 회원을 영구히 배제하는 동안 전환
+    쿼리(`whereNotNull` + 기한 경과)가 즉시 잡아 **이미 취소된 옛 안내가 마지막 통지인
+    채로** 전환된다.
+  - **집행 직전에 상태를 다시 읽는다.** 순회의 인스턴스는 SELECT 시점 스냅샷이고 청크
+    하나를 처리하는 동안 그 회원이 로그인해 되살아날 수 있다. 탈퇴는 익명화를 동반해
+    되돌릴 수 없으므로, 재확인 없이는 방금 계정을 되살린 회원이 낡은 스냅샷으로 사라진다.
+  - **탈퇴는 기존 경로를 재사용한다.** 상태 컬럼만 바꾸면 익명화·훅·연계 정리가 통째로
+    생략되어 본인 탈퇴와 결과가 달라진다. 그 경로의 관리자 보호 가드도 함께 적용되므로
+    관리자 계정은 자동 탈퇴되지 않는다.
+  - **상태에 딸린 시각 컬럼은 모든 쓰기 경로에서 짝을 맞춘다.** 생성(`createUser`)·수정
+    (`updateUser`)·일괄(`bulkUpdateStatus`) 셋이 같은 어휘를 써야 한다. 생성 검증이
+    `Rule::in(UserStatus::values())` 로 Enum 전량을 받으므로 관리자가 `status=dormant` 로 바로
+    만들 수 있고, 그때 `dormant_at` 이 비면 탈퇴 전환 쿼리(`whereNotNull('dormant_at')`)가
+    **그 회원만 영원히 건너뛴다.**
+  - **로그인 화면과 토큰 재사용 경로의 정책이 같다.** 휴면 회원이 전환 전에 받아 둔 토큰으로
+    계속 쓸 수 있으면 "장기 미접속이라 휴면으로 돌렸다" 는 판정이 무의미해진다.
+  - **이 기능의 감사 로그는 실명을 남기지 않는다.** 개인정보를 파기하는 쪽이 파기 사실을
+    남기려고 실명 사본을 만들면, 2차 파기 핸들러가 `users` 에서 이름을 지워도 그 사본이
+    `activity_logs` 에 남아 "지운다" 가 거짓이 된다 — 그 테이블은 핸들러의 대상이 아니다.
+    특히 탈퇴 로그는 익명화가 끝난 **직후**에 찍히므로 낡은 인스턴스의 익명화 이전 실명을
+    복사하게 된다. 어휘는 형제 `user.withdraw` 와 같은 uuid 다.
+  - **통지 표지는 발송이 실패하면 되돌아간다.** 표지를 발송보다 먼저 찍는 것은 중복 발송을
+    막기 위해서이고, 그 순서는 발송이 성공할 때만 옳다. 실패한 회원의 표지를 남기면 재통지
+    쿼리(`whereNull`)가 그를 영구히 배제하는 동안 집행 쿼리는 기한이 지나면 즉시 잡아,
+    **안내를 한 번도 받지 못한 회원이 예고 없이 전환·탈퇴된다.**
+  - **단계도 건도 서로를 죽이지 않는다.** 한 회원의 예외가 같은 청크의 나머지를, 한 단계의
+    예외가 나머지 단계를 막으면 그날의 파기·안내가 통째로 밀린다. 실패는 종료 코드로
+    드러난다 — 언제나 성공으로 끝나면 스케줄러가 영구히 정상으로 읽어 아무도 모른다.
+  - **보유기간 판독에는 바닥값이 있다.** 저장 검증(`min:1`)을 거치지 않는 쓰기가 `0`·음수·빈
+    문자열을 남기면 임계가 `now()` 로 올라붙어 탈퇴 당일 회원까지 전원 즉시 파기된다.
+  - **해제 경로는 안내까지가 한 벌이다.** 관리자 로그인에 비관리자 휴면 회원이 들어오면
+    비밀번호 확인 성공으로 휴면은 이미 풀렸는데 응답은 403 이라, 안내를 붙이지 않으면 그
+    회원은 로그인이 실패한 줄로만 안다. 2단계 인증 수단이 없어 차단되는 경로도 마찬가지로
+    세션을 남기지 않아야 한다 — 남기면 해제되지 않은 채 자동 탈퇴 시계만 돈다.
+
+axes:
+  stage: [pre_notice, convert, restore, withdraw]
+  toggle: [off, on]
+
+exclusions:
+  - { toggle: off, stage: pre_notice, reason: "기능이 꺼져 있으면 커맨드가 조기 종료해 단계 분기에 도달하지 않는다 — 꺼짐 축은 convert 1건으로 충분" }
+  - { toggle: off, stage: withdraw, reason: "같은 이유 — 조기 종료 지점이 하나다" }
+  - { toggle: off, stage: restore, reason: "해제는 설정을 보지 않는다(끈 뒤에도 이미 휴면인 회원이 갇히면 안 된다) — 토글 축이 뜻을 갖지 않는다" }
+
+sub_flows:
+  - id: advance_notice_gate
+    description: |
+      사전 안내를 보낸 사실과 그 경과 기간이 전환·탈퇴의 전제다. 안내는 한 번만 나가고
+      (매일 재발송 금지), 안내 없이는 아무리 오래 미접속이어도 전환되지 않는다.
+    effects:
+      - dormancy_requires_advance_notice_before_conversion
+      - dormant_withdrawal_requires_its_own_advance_notice
+  - id: restore_on_login
+    description: |
+      로그인 성공을 본인확인으로 본다. 해제 사실은 해제됐을 때만 응답에 실린다 — 늘 실려
+      나가면 화면이 그 키의 존재를 조건으로 써서 매 로그인마다 안내가 뜬다.
+    effects:
+      - dormant_account_is_restored_on_login
+      - dormant_token_reuse_is_blocked_by_status_middleware
+      - dormancy_login_clears_a_stale_notice_marker
+      - dormancy_restored_flag_reaches_login_layouts
+
+effects:
+  - dormancy_requires_advance_notice_before_conversion
+  - dormant_account_is_restored_on_login
+  - dormant_activity_basis_includes_token_last_used_at
+  - dormant_conversion_revokes_existing_tokens
+  - dormant_token_reuse_is_blocked_by_status_middleware
+  - dormant_withdrawal_requires_its_own_advance_notice
+  - dormant_withdrawal_reuses_the_standard_withdraw_path
+  - dormancy_is_off_by_default_and_falls_back_to_false
+  - dry_run_deletes_nothing
+  - dormant_conversion_timestamp_is_paired_on_every_write_path
+  - dormant_withdrawal_excludes_admin_accounts_from_notice_and_execution
+  - dry_run_command_counts_match_the_preview_badge_source
+  - dormancy_notice_schedules_the_date_the_enforcement_query_uses
+  - dormancy_login_clears_a_stale_notice_marker
+  - dormant_withdrawal_rechecks_status_before_enforcing
+  - dormancy_activity_log_records_uuid_not_real_name
+  - withdrawn_retention_days_never_collapses_to_same_day_purge
+  - dormancy_notice_marker_rolls_back_when_delivery_throws
+  - dormancy_command_isolates_stage_failures_and_reports_them
+  - login_blocked_for_missing_two_factor_leaves_no_session
+  - admin_login_rejection_still_reports_dormancy_restoration
+  - dormancy_notice_date_is_rendered_in_the_recipient_timezone
+  - scheduler_flag_is_recorded_when_the_signature_promises_it
+  - measurement_seed_stages_land_in_their_target_lists
+  - purge_also_removes_seeds_anonymized_by_the_measured_action
+  - dormancy_restored_flag_reaches_login_layouts
+
+test_files:
+  - tests/Feature/Privacy/DormantLifecycleTest.php
+  - tests/Feature/Console/PlaywrightSeedDormantCommandTest.php
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.loginServerFlags.test.ts
+  - tests/Playwright/specs/auth/dormant-login-restore.spec.ts
+
+rules_layer_coverage:
+  - rule: offset-chunk-mutates-filter
+    coverage: |
+      단계별 순회는 `chunkById` 다 — 각 단계가 자기 조건에서 행을 빼내므로 OFFSET 순회는
+      커서가 밀려 건을 건너뛴다.
+  - rule: console-confirm
+    coverage: 무인 실행 전용 커맨드로 확인 프롬프트가 없다 — 안전장치는 설정 토글과 사전 안내 선행 조건이다.

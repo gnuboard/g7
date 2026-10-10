@@ -1,0 +1,698 @@
+<!-- 공개 사용자 화면 전체의 상속원 — 홈·게시판·검색·쇼핑·마이페이지·인증·에러가 모두 이 레이아웃을 extends 하고 자기 본문을 content 슬롯에 넣는다. 여기서 세운 전역값(통화·배송국가·장바구니 키·비회원 주문 토큰)과 헤더/드로어/푸터는 자식이 다시 정의하지 않는다. 상속원이라 이 파일의 변경은 공개 사이트 전 화면에 동시에 닿는다. -->
+<layout name="_user_base" version="1.0.0">
+  <meta title="$t:user.base_layout_title" description="$t:user.base_layout_description" :is_base="true">
+    <seo :enabled="false">
+      <data-sources>
+        <item>boards</item>
+      </data-sources>
+      <vars site_name="$core_settings:general.site_name"/>
+      <og type="website"/>
+    </seo>
+  </meta>
+  <!-- 헤더 상단 메뉴와 모바일 드로어의 게시판 목록 — 게시판 모듈이 없거나 응답이 실패하면 fallback 빈 배열이라 메뉴만 비고 화면은 선다. -->
+  <data-source id="boards" label_key="$t:editor.data_source.boards" type="api" endpoint="/api/modules/sirsoft-board/boards/board-menu" method="GET" :auto_fetch="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 로그인 사용자 — initGlobal 로 _global.currentUser 에 올라가 헤더·드로어·본문의 로그인 분기가 전부 이 값을 본다. 비회원도 매 페이지 호출하며 401 은 아래에서 정상 흐름으로 삼킨다. -->
+  <data-source id="current_user" label_key="$t:editor.data_source.current_user" type="api" endpoint="/api/auth/user" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" initGlobal="currentUser">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+    <success>
+      <!-- 로그인 유저 로드 후 선호 통화 재해석 (D-LOGIN-CUR). current_user 는 비동기 data_source 라 init_actions 의 통화 초기화 시점엔 currentUser 가 비어 localStorage 세션값으로 폴백된다. 로드 완료 후 갓 받은 응답값(accountCurrency)을 직접 넘겨 재실행하면 계정 영속 통화(ecommerce_preferred_currency)가 1순위로 덮어쓴다(로그인/새로고침 모두). 핸들러는 이커머스 모듈 소유. -->
+      <action handler="sirsoft-ecommerce.initPreferredCurrency" accountCurrency="{{response.data?.data?.ecommerce_preferred_currency ?? response.data?.ecommerce_preferred_currency}}" defaultCurrency="{{_global.defaultCurrency}}"/>
+      <!-- 로그인 유저 로드 후 선호 배송국가 재해석 (MP08 후속). 계정 영속 배송국가(ecommerce_preferred_shipping_country)를 1순위로 덮어쓴다. -->
+      <action handler="sirsoft-ecommerce.initPreferredShippingCountry" accountCountry="{{response.data?.data?.ecommerce_preferred_shipping_country ?? response.data?.ecommerce_preferred_shipping_country}}" defaultCountry="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
+    </success>
+    <error-handling>
+      <on-code code="401">
+        <!-- 비회원의 /api/auth/user 401은 정상 — fallback 사용, 레이아웃 에러 핸들링으로 전파 방지 -->
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 헤더 장바구니 배지 수량 — 비회원도 세야 하므로 인증 대신 카트 키 헤더로 식별한다(auth_mode=optional). 담기/빼기 화면이 refetch 로 다시 부른다. -->
+  <data-source id="cart" label_key="$t:editor.data_source.cart" type="api" endpoint="/api/modules/sirsoft-ecommerce/cart/count" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+    <headers X-Cart-Key="{{_global.cartKey}}"/>
+    <init-global>
+      <field name="key" value="cartCount"/>
+      <field name="path" value="count"/>
+    </init-global>
+    <fallback>
+      <field name="data">
+        <field name="count" :value="0"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 알림 배지 숫자만 따로 받는다 — 목록(notifications)은 드롭다운을 열 때 쓰는 무거운 응답이라 배지 갱신마다 그것을 다시 부르지 않기 위해 분리했다. 읽음 처리·삭제·웹소켓 수신이 이것만 refetch 한다. -->
+  <data-source id="notification_unread_count" label_key="$t:editor.data_source.notification_unread_count" type="api" endpoint="/api/user/notifications/unread-count" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <init-global>
+      <field name="key" value="notificationCount"/>
+      <field name="path" value="unread_count"/>
+    </init-global>
+    <fallback>
+      <field name="data">
+        <field name="unread_count" :value="0"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="401">
+        <suppress/>
+      </on-code>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 알림 목록 — 드롭다운 NotificationCenter 에서 사용. unreadOnly 토글에 따라 read 필터 동적 적용 -->
+  <data-source id="notifications" label_key="$t:editor.data_source.notifications" type="api" endpoint="/api/user/notifications" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params :per_page="15" read="{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="401">
+        <suppress/>
+      </on-code>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 알림 실시간 수신 — 서버가 밀어주는 순간 배지와 목록을 다시 받고 토스트를 띄운다. 자기 채널(uuid)이라 로그인 상태에서만 붙는다. -->
+  <data-source id="user_notification_ws" label_key="$t:editor.data_source.user_notification_ws" type="websocket" channel="core.user.notifications.{{_global.currentUser?.uuid}}" event="notification.received" channel_type="private" target_source="notification_unread_count">
+    <on-receive>
+      <refetch-data-source dataSourceId="notification_unread_count"/>
+      <refetch-data-source dataSourceId="notifications"/>
+      <toast type="info" message="{{$args[0].subject ?? '$t:mypage.notifications.new_notification_received'}}" :duration="5000"/>
+    </on-receive>
+  </data-source>
+  <global-headers>
+    <match pattern="/api/modules/sirsoft-ecommerce/*" X-Cart-Key="{{_global.cartKey}}" X-Currency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" X-Shipping-Country="{{_global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
+    <match pattern="/api/auth/*" X-Cart-Key="{{_global.cartKey}}"/>
+    <!-- 비회원 주문 후속 액션 (cancel/estimate-refund/update-shipping-address/options/{}/confirm) — 토큰 필수 prefix. 통합 상세조회(user/orders/{N}) 는 헤더가 회원 라우트에 광범위 노출되지 않도록 데이터소스 개별 headers 로 명시 (order_complete.g7.html, guest_order_show.g7.html). -->
+    <match pattern="/api/modules/sirsoft-ecommerce/guest/orders/*" X-Guest-Order-Token="{{_global.guestOrderToken}}"/>
+    <!-- 비밀글 열람 확인 토큰 — 비밀번호로 원문을 연 사실을 다음 요청(댓글·답글·신고)으로 넘긴다. 서버가 토큰을 게시글에 결속시키므로 다른 글에는 통하지 않고, 비밀글이 아닌 요청에서는 아예 평가되지 않는다. 결제 취소 기록(orders/{n}/cancel-payment) 처럼 헤더 없이는 정당 사용자가 막히는 경로라 globalHeaders 로 단일 배선한다. -->
+    <match pattern="/api/modules/sirsoft-board/*" X-Board-Secret-View-Token="{{_global.secretViewToken}}"/>
+  </global-headers>
+  <transition-overlay enabled style="spinner" target="main_content_area">
+    <spinner component="PageLoading"/>
+  </transition-overlay>
+  <init>
+    <action handler="initTheme"/>
+    <action handler="initCartKey"/>
+    <!-- 기본 통화(default_currency)를 코어 _global.modules 노출값에서 _global 에 주입 (A1-③). loadFromLocalStorage 의 fallback 기준값. -->
+    <set-state target="global" defaultCurrency="{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}"/>
+    <!-- 선호(표시) 통화를 _global 에 동기 주입. 우선순위 = 로그인 유저 계정 영속 통화(currentUser.ecommerce_preferred_currency, D-LOGIN-CUR) > localStorage 세션값(g7_preferred_currency, ISO형식) > 게스트 사이트 언어(g7_locale) 기반 통화 추정(currencies[].locales 매핑, 회원가입 통화 부여와 동일 입력·우선순위) > default_currency > KRW. 핸들러는 이커머스 모듈 소유(sirsoft-ecommerce.initPreferredCurrency) — 통화=커머스 책임. 모듈 미설치 시 미등록 핸들러로 무동작(통화 globals 자체가 빈 값). -->
+    <action handler="sirsoft-ecommerce.initPreferredCurrency" defaultCurrency="{{_global.defaultCurrency}}"/>
+    <!-- 셀렉터 통화 목록 주입 (A1-①). is_default 또는 환율>0 인 통화만 (U11-B 미설정 통화 숨김, 백엔드 buildMultiCurrencyPrices 규칙과 1:1 일치). -->
+    <set-state target="global" availableCurrencies="{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0)}}"/>
+    <!-- 선호 배송국가를 _global 에 동기 주입 (MP08 후속). 우선순위 = 계정 영속(currentUser.ecommerce_preferred_shipping_country) > localStorage(g7_preferred_shipping_country) > default_country > KR. 핸들러는 이커머스 모듈 소유 — 배송국가=커머스 책임. 모듈 미설치 시 무동작. -->
+    <action handler="sirsoft-ecommerce.initPreferredShippingCountry" defaultCountry="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
+    <!-- 헤더 배송국가 셀렉터 목록 주입 (MP08 후속). 활성 국가만 {code, name(현지화), flag_class(fi fi-xx)} 형태로. 해외배송 OFF 시 KR 만 활성이라 셀렉터 자연 숨김(2개↑ 게이트). 국가명 $localized(name, fallbackKey): 활성 로케일 키는 서버(localize_catalog_field)가 settings.countries.{code}.name 으로 미리 보강해 통상 즉시 hit 한다. fallbackKey 와 || c.code 는 보강이 실패한 경우의 방어선. -->
+    <set-state target="global" availableShippingCountries="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ code: c.code, name: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code), flag_class: ('fi fi-' + (c.code ?? '').toLowerCase()) }))}}"/>
+    <!-- 비회원 주문 조회 토큰 (30분 유효) — 커스텀 핸들러가 localStorage 의 g7_guest_order_token 을 G7Core.state.set 으로 _global.guestOrderToken 에 직접 저장. 표준 loadFromLocalStorage 는 context.setState 를 통해 _local 에만 영향을 주므로 _global 에 토큰이 안 들어가는 문제 회피. initCartKey 패턴 동일. -->
+    <action handler="initGuestOrderToken"/>
+    <set-state target="global" shopBase="{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : ('/' + (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop'))}}"/>
+  </init>
+  <!-- 통화 선택기 슬롯 주입 앵커 — 이커머스 모듈이 layout_extensions 로 'header_currency' 슬롯 노드를 여기에 주입한다(slot 노드는 원위치 렌더 안 함, SlotContext 등록만 → 헤더의 SlotContainer 가 떙겨 렌더). 미설치 시 빈 슬롯(렌더 영향 0). 헤더는 주입 모듈을 모른다. -->
+  <div data-ref="header_currency_inject_anchor"/>
+  <toast data-type="composite" data-ref="global_toast" toasts="{{_global.toasts}}" position="bottom-center" :duration="5000"/>
+  <page-transition-indicator data-type="composite" data-ref="page_transition_indicator"/>
+  <div data-ref="user_layout_root" class="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <on type="keydown" key="Escape">
+      <!-- 모바일 서랍 Esc 닫기 — 서랍을 연 직후 초점은 서랍 밖 [메뉴] 단추에 있어 서랍 자신은 키를 못 받는다.
+           뿌리에서 받되 열려 있을 때만 닫는다(닫혀 있을 때 Esc 마다 전역을 흔들지 않게). 7.1.0 N O-N6. -->
+      <conditions>
+        <when if="{{_global.mobileMenuOpen}}">
+          <set-state target="global" :mobileMenuOpen="false"/>
+        </when>
+      </conditions>
+    </on>
+    <!-- === Extension Point: 모든 사용자 페이지에서 플러그인이 전역 오버레이 영역을 노출할 수 있도록 공용 확장 지점 제공 === -->
+    <extension-point name="user_global_overlay" data-ref="user_global_overlay_slot">
+      <default/>
+    </extension-point>
+    <!-- === 모바일 오버레이 (사이드 메뉴 열릴 때) === -->
+    <div data-ref="mobile_overlay" data-if="{{false}}" class="fixed inset-0 z-40 bg-black/50">
+      <responsive on="portable" data-if="{{_global.mobileMenuOpen}}"/>
+      <on type="click">
+        <set-state target="global" :mobileMenuOpen="false"/>
+      </on>
+    </div>
+    <!-- === 모바일 헤더 (툴바) - 데스크톱에서 숨김 === -->
+    <div data-ref="mobile_header" class="hidden">
+      <responsive on="portable" class="flex items-center justify-between h-14 px-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30"/>
+      <!-- 모바일 헤더 좌측 - 로고 -->
+      <button data-ref="mobile_header_left" class="flex items-center cursor-pointer">
+        <on type="click">
+          <navigate path="/"/>
+        </on>
+        <div data-if="{{_global.settings?.general?.site_logo_url}}">
+          <img src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? 'Site'}}" class="h-8 w-auto"/>
+        </div>
+        <span data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-lg font-bold text-gray-900 dark:text-white">{{_global.settings?.general?.site_name ?? 'Site'}}</span>
+      </button>
+      <!-- 모바일 헤더 우측 - 액션 버튼들 -->
+      <div data-ref="mobile_header_right" class="flex items-center gap-1">
+        <!-- 다크모드 전환 -->
+        <theme-toggle data-type="composite" data-ref="mobile_theme_btn" autoText="$t:common.theme.auto" lightText="$t:common.theme.light" darkText="$t:common.theme.dark"/>
+        <!-- 알림센터 드롭다운 — 모바일 (PC와 동일 순서: 알림 → 장바구니) -->
+        <notification-center data-type="composite" data-ref="mobile_notification_center" data-if="{{_global.currentUser?.uuid}}" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.notificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" titleText="$t:mypage.notifications.title" emptyText="$t:mypage.notifications.empty" markAllReadText="$t:mypage.notifications.mark_all_read" deleteAllText="$t:mypage.notifications.delete_all" unreadOnlyText="$t:mypage.notifications.unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}" dropdownAlign="right">
+          <on event="onClose">
+            <!-- 드로어 알림 드롭다운을 닫을 때 그 사이 노출된 알림들을 일괄 읽음 처리한다 — 항목을 누르지 않고 훑어본 것도 읽은 것으로 본다. 배지만 다시 받고 목록은 그대로 둔다. -->
+            <sequence>
+              <api-call if="{{notifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/read-batch" method="POST">
+                <success>
+                  <refetch-data-source dataSourceId="notification_unread_count"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <body ids="{{$args[0]}}"/>
+              </api-call>
+            </sequence>
+          </on>
+          <on event="onNotificationClick">
+            <!-- 모바일 알림 클릭 — 이동과 읽음 처리를 병렬로 낸다(데스크톱 헤더는 읽음을 끝낸 뒤 이동하는 순차). url 이 없는 알림은 알림함으로 보낸다. -->
+            <parallel>
+              <navigate path="{{$args[0].url ?? '/mypage/notifications'}}"/>
+              <api-call if="{{notifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/{{$args[0].id}}/read" method="PATCH">
+                <success>
+                  <refetch-data-source dataSourceId="notification_unread_count"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </parallel>
+          </on>
+          <on event="onMarkAllRead">
+            <!-- 모바일 전체 읽음 — 목록이 미읽음 필터로 걸려 있으면 비워져야 하므로 배지만이 아니라 목록도 페이지 상태를 되돌린 뒤 다시 받는다. -->
+            <sequence>
+              <api-call if="{{notifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/read-all" method="POST">
+                <success>
+                  <set-state target="global" :notificationsCurrentPage="1" :notificationsHasMore="null" :notificationsLoadingMore="false"/>
+                  <refetch-data-source dataSourceId="notifications"/>
+                  <refetch-data-source dataSourceId="notification_unread_count"/>
+                </success>
+                <fail>
+                  <set-state target="global" :notificationsLoadingMore="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <on event="onUnreadOnlyToggle">
+            <!-- 미읽음만 보기 토글 — 필터가 바뀌면 그때까지 이어 붙인 페이지가 뜻을 잃으므로 페이지 상태를 초기화하고 처음부터 다시 받는다(필터 값 자체는 notifications 의 params 가 _global 에서 읽는다). -->
+            <sequence>
+              <set-state target="global" notificationsUnreadOnly="{{$args[0]}}" :notificationsCurrentPage="1" :notificationsHasMore="null" :notificationsLoadingMore="false"/>
+              <refetch-data-source dataSourceId="notifications"/>
+            </sequence>
+          </on>
+          <on event="onDelete">
+            <!-- 알림 1건 삭제 — 지운 것이 미읽음일 수 있어 목록과 배지를 함께 다시 받는다. -->
+            <api-call if="{{notifications?.data?.abilities?.can_delete === true}}" :auth_required="true" target="/api/user/notifications/{{$args[0].id}}" method="DELETE">
+              <success>
+                <set-state target="global" :notificationsCurrentPage="1" :notificationsHasMore="null"/>
+                <refetch-data-source dataSourceId="notifications"/>
+                <refetch-data-source dataSourceId="notification_unread_count"/>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </on>
+          <on event="onDeleteAll">
+            <!-- 「모두 삭제」 확인 창 — 알림 삭제 권한이 없는 회원에게는 열지 않는다(서버도 같은 권한으로 거부) -->
+            <open-modal if="{{notifications?.data?.abilities?.can_delete === true}}" target="notification_delete_all_confirm_modal"/>
+          </on>
+          <on event="onLoadMore">
+            <!-- 더 보기 — 다음 페이지를 받아 기존 목록 뒤에 이어 붙인다(refetch 로 받으면 앞 페이지가 날아간다). 실패해도 로딩 표시는 반드시 내린다. -->
+            <sequence>
+              <set-state target="global" :notificationsLoadingMore="true"/>
+              <api-call :auth_required="true" target="/api/user/notifications" method="GET">
+                <success>
+                  <append-data-source dataSourceId="notifications" dataPath="data.data" newData="{{response.data.data ?? []}}"/>
+                  <set-state target="global" notificationsCurrentPage="{{response.data.pagination.current_page}}" notificationsHasMore="{{response.data.pagination.has_more_pages}}" :notificationsLoadingMore="false"/>
+                </success>
+                <fail>
+                  <set-state target="global" :notificationsLoadingMore="false"/>
+                </fail>
+                <query page="{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}" :per_page="15"/>
+              </api-call>
+            </sequence>
+          </on>
+        </notification-center>
+        <!-- 장바구니 — PC와 동일 순서 (알림 → 장바구니) -->
+        <button data-ref="mobile_cart_btn" type="button" aria-label="$t:nav.cart_with_count|count={{_global.cartCount ?? 0}}" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative cursor-pointer">
+          <on type="click">
+            <navigate path="{{_global.shopBase}}/cart"/>
+          </on>
+          <icon name="shopping-cart" size="md"/>
+          <!-- 수 배지 — PC 머리글(Header.tsx)과 같이 최소 폭 + 좌우 여백으로 「99+」 가 원 밖으로 넘치지 않게 한다(7.1.0 D-N2 모바일 짝). -->
+          <span data-if="{{_global.cartCount > 0}}" class="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-blue-500 dark:bg-blue-500 text-white text-xs font-bold rounded-full flex items-center justify-center">{{_global.cartCount > 99 ? '99+' : _global.cartCount}}</span>
+        </button>
+        <!-- 사용자 아이콘 (로그인 시) / 로그인 버튼. 아이콘만 있는 단추라 aria-label 로 용도를 말한다(7.1.0 O-C1-3) — 장바구니는 담긴 수, 메뉴는 열림 여부(aria-expanded)도 함께 알린다. -->
+        <button type="button" aria-label="{{_global.currentUser?.uuid ? '$t:common.mypage' : '$t:common.login'}}" data-ref="mobile_user_btn" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+          <on type="click">
+            <navigate path="{{_global.currentUser ? '/mypage' : '/login'}}"/>
+          </on>
+          <icon name="user" size="md"/>
+        </button>
+        <!-- 햄버거 메뉴 버튼 -->
+        <button type="button" aria-label="$t:user.menu" aria-expanded="{{!!_global.mobileMenuOpen}}" data-ref="mobile_menu_toggle" class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+          <on type="click">
+            <set-state target="global" mobileMenuOpen="{{!_global.mobileMenuOpen}}"/>
+          </on>
+          <icon name="menu" size="md"/>
+        </button>
+      </div>
+    </div>
+    <!-- === 모바일 사이드 메뉴 (MobileNav 드로어) ===
+         닫힌 서랍은 화면 밖으로 밀기만 하면 Tab·화면 읽기가 그 안으로 들어간다 — invisible 로 숨기고,
+         밀려 나가는 움직임이 끝난 뒤 숨도록 visibility 도 전환에 넣는다(transition-all). -->
+    <div data-ref="mobile_nav_drawer" class="hidden">
+      <responsive on="portable" class="{{_global.mobileMenuOpen ? 'translate-x-0 visible' : 'translate-x-full invisible'}} fixed inset-y-0 right-0 z-50 w-80 max-w-full transition-all duration-300 bg-white dark:bg-gray-800 shadow-xl overflow-y-auto"/>
+      <!-- 드로어 헤더 - 닫기 버튼 -->
+      <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <span class="font-semibold text-gray-900 dark:text-white">$t:user.menu</span>
+        <button data-ref="mobile_drawer_close_btn" type="button" aria-label="$t:nav.close_menu" class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+          <on type="click">
+            <!-- 드로어 닫기 — 열림 여부는 전역이라 오버레이 클릭·메뉴 이동도 같은 값을 내린다. -->
+            <set-state target="global" :mobileMenuOpen="false"/>
+          </on>
+          <icon name="x" size="md"/>
+        </button>
+      </div>
+      <!-- 검색바 -->
+      <div class="p-4">
+        <div class="relative">
+          <icon name="search" size="sm" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"/>
+          <input type="text" name="q" placeholder="$t:user.search_placeholder" class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
+            <on type="keydown" key="Enter">
+              <!-- 드로어 검색 — 엔터에서만 나간다(입력 중에는 아무 요청도 없다). 검색 결과로 이동하기 전에 드로어를 닫아 두어야 돌아왔을 때 열린 채로 남지 않는다. -->
+              <sequence>
+                <set-state target="global" :mobileMenuOpen="false"/>
+                <navigate path="/search">
+                  <query q="{{$event.target.value}}"/>
+                </navigate>
+              </sequence>
+            </on>
+          </input>
+        </div>
+      </div>
+      <!-- 언어/통화 선택 — 회원·비회원 공통. 헤더 우측 그룹에서 이동(모바일 오버플로 해소). 통화는 이커머스 모듈이 header_currency 슬롯에 주입하므로 SlotContainer 만 배치(모듈 비활성 시 자동 미렌더). -->
+      <div data-ref="mobile_drawer_prefs" class="px-4 pb-4 border-b border-gray-200 dark:border-gray-700 space-y-3">
+        <!-- 언어 선택 (여러 언어 지원 시). 접기/펼치기 — 접힘이 기본이고 트리거에 현재 언어를 요약 표기한다. 통화/배송국가(이커머스 주입 슬롯)와는 독립된 토글(_global.mobileLanguageOpen)이라 서로 영향 없음. -->
+        <div data-ref="mobile_drawer_language" data-if="{{$locales.length > 1}}">
+          <!-- 트리거 — 좌측 '언어' 라벨, 우측 현재 언어명 + chevron. 접힘 상태에서 현재 값을 알 수 있어야 하므로 요약을 항상 노출한다. -->
+          <button data-ref="mobile_drawer_language_toggle" type="button" class="w-full flex items-center justify-between py-1 cursor-pointer" aria-expanded="{{_global.mobileLanguageOpen ?? false}}">
+            <on type="click">
+              <set-state target="global" mobileLanguageOpen="{{!_global.mobileLanguageOpen}}"/>
+            </on>
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">$t:common.language</span>
+            <span class="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
+              <!-- 접힘 상태 요약 = 현재 언어명 -->
+              <span class="font-medium">{{_global.appConfig?.localeNames?.[$locale] ?? $locale}}</span>
+              <icon name="chevron-down" class="{{_global.mobileLanguageOpen ? 'rotate-180' : ''}} text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200"/>
+            </span>
+          </button>
+          <!-- 펼침 영역 — 사용자 정보 아코디언과 동일한 max-h/opacity 트랜지션. overflow-hidden 이라 접힘 시 칩이 잘려 사라진다. -->
+          <div class="overflow-hidden transition-all duration-300 ease-in-out {{_global.mobileLanguageOpen ? 'max-h-screen opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'}}">
+            <!-- 가로 나열 칩. iteration 은 반드시 Button 자신에 건다 — 엔진은 iteration 을 가진 노드를 항목 수만큼 복제하므로, flex 컨테이너에 걸면 컨테이너가 복제되어 칩이 세로로 쌓인다. -->
+            <div class="flex flex-wrap gap-2" role="listbox" aria-label="$t:common.language">
+              <button data-each="loc in {{$locales}}" type="button" class="{{loc === $locale ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}} inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap" role="option" aria-selected="{{loc === $locale}}">
+                <on type="click">
+                  <set-locale target="{{loc}}"/>
+                </on>
+                <icon name="globe" size="sm"/>
+                <span>{{_global.appConfig?.localeNames?.[loc] ?? loc}}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- 통화 선택 — 이커머스 모듈 주입 슬롯(헤더에서 이동). 모듈 미설치 시 빈 슬롯 → 렌더 영향 0. 헤더는 가로 flex 였으나 드로어는 세로 블록이므로 block 으로 둔다(flex items-center 면 주입 루트가 콘텐츠 폭으로 줄어 펼친 목록이 좁아짐). 주입 루트가 portable 에서 스스로 w-full 을 갖는다. -->
+        <slot-container data-type="composite" data-ref="mobile_drawer_currency_wrap" slotId="header_currency" class="block"/>
+      </div>
+      <!-- 로그인된 사용자 정보 - 아코디언 토글 -->
+      <div data-if="{{_global.currentUser?.uuid}}" class="px-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <!-- 사용자 프로필 버튼 (아코디언 토글) -->
+        <button class="w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer">
+          <on type="click">
+            <set-state target="global" mobileUserMenuOpen="{{!_global.mobileUserMenuOpen}}"/>
+          </on>
+          <avatar data-type="composite" avatar="{{_global.currentUser?.avatar}}" name="{{_global.currentUser?.name ?? '?'}}" size="md"/>
+          <div class="flex-1 min-w-0 text-left">
+            <div class="font-medium text-gray-900 dark:text-white truncate">{{_global.currentUser?.name}}</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 truncate">{{_global.currentUser?.email}}</div>
+          </div>
+          <!-- 아코디언 화살표 아이콘 -->
+          <icon name="chevron-down" size="md" class="{{_global.mobileUserMenuOpen ? 'rotate-180' : ''}} text-gray-400 dark:text-gray-500 transition-transform duration-200"/>
+        </button>
+        <!-- 아코디언 펼침 영역 - 부드러운 애니메이션 -->
+        <div class="overflow-hidden transition-all duration-300 ease-in-out {{_global.mobileUserMenuOpen ? 'max-h-screen opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'}}">
+          <div class="overflow-hidden min-h-0 py-2 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
+            <!-- 관리자 메뉴 (is_admin일 때만) - 하이퍼링크로 전체 페이지 새로고침 -->
+            <a data-if="{{_global.currentUser?.is_admin}}" href="/admin" class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-blue-600 dark:text-blue-400 hover:bg-gray-200 dark:hover:bg-gray-600 font-medium">
+              <icon name="settings" size="sm"/>
+              <span>$t:common.admin_menu</span>
+            </a>
+            <!-- 마이페이지 -->
+            <button class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer">
+              <on type="click">
+                <set-state target="global" :mobileMenuOpen="false" :mobileUserMenuOpen="false"/>
+                <navigate path="/mypage"/>
+              </on>
+              <icon name="user" size="sm"/>
+              <span>$t:common.mypage</span>
+            </button>
+            <!-- 주문 내역 -->
+            <button class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer">
+              <on type="click">
+                <set-state target="global" :mobileMenuOpen="false" :mobileUserMenuOpen="false"/>
+                <navigate path="/mypage/orders"/>
+              </on>
+              <icon name="shopping-bag" size="sm"/>
+              <span>$t:mypage.tabs.orders</span>
+            </button>
+            <!-- 위시리스트 -->
+            <button class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer">
+              <on type="click">
+                <set-state target="global" :mobileMenuOpen="false" :mobileUserMenuOpen="false"/>
+                <navigate path="/mypage/wishlist"/>
+              </on>
+              <icon name="heart" size="sm"/>
+              <span>$t:mypage.tabs.wishlist</span>
+            </button>
+            <!-- 로그아웃 버튼 -->
+            <button class="w-full flex items-center gap-3 px-4 py-2.5 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer">
+              <on type="click">
+                <logout>
+                  <success>
+                    <set-state target="global" :mobileMenuOpen="false" :mobileUserMenuOpen="false"/>
+                  </success>
+                </logout>
+              </on>
+              <icon name="right-from-bracket" size="sm"/>
+              <span>$t:auth.logout</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- 비로그인 상태 - 로그인/회원가입 버튼 -->
+      <div data-if="{{!_global.currentUser?.uuid}}" class="px-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex gap-2">
+          <button class="flex-1 py-2.5 text-center bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm cursor-pointer">
+            <on type="click">
+              <!-- 로그인으로 — 드로어는 라우트가 바뀌어도 살아 있으므로 이동 전에 직접 닫는다. -->
+              <sequence>
+                <set-state target="global" :mobileMenuOpen="false"/>
+                <navigate path="/login"/>
+              </sequence>
+            </on>
+            $t:auth.login
+          </button>
+          <button class="flex-1 py-2.5 text-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium text-sm cursor-pointer">
+            <on type="click">
+              <!-- 회원가입으로 — 드로어를 닫고 이동한다. -->
+              <sequence>
+                <set-state target="global" :mobileMenuOpen="false"/>
+                <navigate path="/register"/>
+              </sequence>
+            </on>
+            $t:auth.register_link
+          </button>
+        </div>
+        <!-- 비회원 주문 조회 진입 — 비로그인일 때만 노출 (모바일 nav) -->
+        <button class="block w-full mt-3 py-2 text-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
+          <on type="click">
+            <set-state target="global" :mobileMenuOpen="false"/>
+            <!-- 주문조회 — 로그인 페이지로 진입 후 redirect 분기. 헤더와 동일 흐름. -->
+            <navigate path="/login?redirect=/mypage/orders"/>
+          </on>
+          $t:shop.guest_order_form.nav_link
+        </button>
+      </div>
+      <!-- 메뉴 섹션 - 홈 -->
+      <div class="p-4">
+        <button class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium cursor-pointer">
+          <on type="click">
+            <!-- 홈으로 — 드로어를 닫고 이동한다. -->
+            <sequence>
+              <set-state target="global" :mobileMenuOpen="false"/>
+              <navigate path="/"/>
+            </sequence>
+          </on>
+          <icon name="home" size="md"/>
+          <span>$t:user.nav.home</span>
+        </button>
+        <button class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+          <on type="click">
+            <!-- 인기글 모아보기로 — 특정 게시판이 아니라 전 게시판 통합 목록이다. -->
+            <sequence>
+              <set-state target="global" :mobileMenuOpen="false"/>
+              <navigate path="/boards/popular"/>
+            </sequence>
+          </on>
+          <icon name="flame" size="md" class="text-orange-500"/>
+          <span>$t:user.nav.popular</span>
+        </button>
+      </div>
+      <!-- 메뉴 섹션 - 게시판 -->
+      <div class="px-4 pb-4">
+        <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-3">$t:user.nav.boards</div>
+        <div data-each="board in {{boards.data ?? []}}">
+          <button class="w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+            <on type="click">
+              <!-- 그 게시판 목록으로 — 경로는 관리자가 정한 슬러그라 게시판이 늘면 메뉴도 따라 는다(boards 응답이 곧 이 목록). -->
+              <sequence>
+                <set-state target="global" :mobileMenuOpen="false"/>
+                <navigate path="/board/{{board.slug}}"/>
+              </sequence>
+            </on>
+            <span>{{board.name}}</span>
+            <span data-if="{{board.post_count > 0}}" class="text-xs text-gray-500 dark:text-gray-400">{{board.post_count}}</span>
+          </button>
+        </div>
+      </div>
+      <!-- 메뉴 섹션 - 쇼핑 -->
+      <div class="px-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-3">$t:user.nav.shop</div>
+        <button class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+          <on type="click">
+            <!-- 상품 목록으로 — 앞머리(shopBase)는 이커머스 설정에서 온다. 쇼핑을 루트에 붙이는 설정이면 빈 문자열이라 그냥 /products 가 된다. -->
+            <sequence>
+              <set-state target="global" :mobileMenuOpen="false"/>
+              <navigate path="{{_global.shopBase}}/products"/>
+            </sequence>
+          </on>
+          <icon name="shopping-bag" size="md"/>
+          <span>$t:user.nav.products</span>
+        </button>
+        <button class="w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+          <on type="click">
+            <!-- 장바구니로 — 옆 배지 수량은 cart 데이터소스가 채우므로 비회원도 담은 것이 보인다. -->
+            <sequence>
+              <set-state target="global" :mobileMenuOpen="false"/>
+              <navigate path="{{_global.shopBase}}/cart"/>
+            </sequence>
+          </on>
+          <div class="flex items-center gap-3">
+            <icon name="shopping-cart" size="md"/>
+            <span>$t:user.nav.cart</span>
+          </div>
+          <span data-if="{{_global.cartCount > 0}}" class="px-2 py-0.5 bg-red-500 dark:bg-red-500 text-white text-xs font-bold rounded-full">{{_global.cartCount}}</span>
+        </button>
+      </div>
+      <!-- 메뉴 섹션 - 정보/정책 -->
+      <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="grid grid-cols-2 gap-x-4">
+          <div>
+            <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">$t:user.footer.info</div>
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+              <on type="click">
+                <!-- 소개 문서로 — /page/* 는 페이지 모듈이 슬러그로 서빙하므로 관리자가 그 슬러그의 문서를 만들지 않았으면 빈 화면이 된다. -->
+                <sequence>
+                  <set-state target="global" :mobileMenuOpen="false"/>
+                  <navigate path="/page/about"/>
+                </sequence>
+              </on>
+              $t:user.footer.about
+            </button>
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+              <on type="click">
+                <!-- 자주 묻는 질문 문서로. -->
+                <sequence>
+                  <set-state target="global" :mobileMenuOpen="false"/>
+                  <navigate path="/page/faq"/>
+                </sequence>
+              </on>
+              $t:user.footer.faq
+            </button>
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+              <on type="click">
+                <!-- 문의 안내 문서로 — 문의 폼이 아니라 페이지 모듈 문서다. -->
+                <sequence>
+                  <set-state target="global" :mobileMenuOpen="false"/>
+                  <navigate path="/page/contact"/>
+                </sequence>
+              </on>
+              $t:user.footer.contact
+            </button>
+          </div>
+          <div>
+            <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">$t:user.footer.policy</div>
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+              <on type="click">
+                <!-- 이용약관 문서로 — 회원가입 폼의 약관 모달과 다른 경로다(그쪽은 가입 화면 안에서 띄우는 조각). -->
+                <sequence>
+                  <set-state target="global" :mobileMenuOpen="false"/>
+                  <navigate path="/page/terms"/>
+                </sequence>
+              </on>
+              $t:user.footer.terms
+            </button>
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+              <on type="click">
+                <!-- 개인정보처리방침 문서로. -->
+                <sequence>
+                  <set-state target="global" :mobileMenuOpen="false"/>
+                  <navigate path="/page/privacy"/>
+                </sequence>
+              </on>
+              $t:user.footer.privacy
+            </button>
+            <button class="block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer">
+              <on type="click">
+                <!-- 환불·교환 정책 문서로 — 주문 화면의 실제 취소/환불 흐름과는 무관한 안내 문서다. -->
+                <sequence>
+                  <set-state target="global" :mobileMenuOpen="false"/>
+                  <navigate path="/page/refund"/>
+                </sequence>
+              </on>
+              $t:user.footer.refund
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- === 데스크톱 헤더 (Header 컴포넌트) - 모바일에서 숨김 === -->
+    <header data-type="composite" data-ref="desktop_header" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? 'Site'}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
+      <responsive on="desktop" class="block"/>
+      <on event="onNotificationClose">
+        <!-- 데스크톱 드롭다운을 닫을 때 노출된 알림 일괄 읽음 — 드롭다운이 닫혀도 목록 데이터는 남아 다음에 열 때 그대로 쓰이므로, 배지뿐 아니라 목록도 처음부터 다시 받아 읽음 상태를 맞춘다. -->
+        <sequence>
+          <api-call if="{{notifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/read-batch" method="POST">
+            <success>
+              <set-state target="global" :notificationsCurrentPage="1" :notificationsHasMore="null" :notificationsLoadingMore="false"/>
+              <refetch-data-source dataSourceId="notifications"/>
+              <refetch-data-source dataSourceId="notification_unread_count"/>
+            </success>
+            <fail>
+              <set-state target="global" :notificationsLoadingMore="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+            <body ids="{{$args[0]}}"/>
+          </api-call>
+        </sequence>
+      </on>
+      <on event="onNotificationClick">
+        <!-- 데스크톱 알림 클릭 — 읽음 처리를 먼저 내고 url 이 있을 때만 이동한다. url 없는 알림은 그 자리에 머문다(모바일은 알림함으로 보내는 병렬 흐름). -->
+        <sequence>
+          <api-call if="{{notifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/{{$args[0].id}}/read" method="PATCH">
+            <success>
+              <refetch-data-source dataSourceId="notification_unread_count"/>
+            </success>
+            <fail>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+          </api-call>
+          <navigate if="{{$args[0].url}}" path="{{$args[0].url ?? '/mypage/notifications'}}"/>
+        </sequence>
+      </on>
+      <on event="onNotificationMarkAllRead">
+        <!-- 데스크톱 전체 읽음 — 미읽음 필터가 걸려 있으면 목록이 비워져야 하므로 페이지 상태를 되돌린 뒤 목록·배지를 다시 받는다. -->
+        <sequence>
+          <api-call if="{{notifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/read-all" method="POST">
+            <success>
+              <set-state target="global" :notificationsCurrentPage="1" :notificationsHasMore="null" :notificationsLoadingMore="false"/>
+              <refetch-data-source dataSourceId="notifications"/>
+              <refetch-data-source dataSourceId="notification_unread_count"/>
+            </success>
+            <fail>
+              <set-state target="global" :notificationsLoadingMore="false"/>
+              <toast type="error" message="{{error.message}}"/>
+            </fail>
+          </api-call>
+        </sequence>
+      </on>
+      <on event="onNotificationUnreadOnlyToggle">
+        <!-- 데스크톱 미읽음만 보기 토글 — 누적된 페이지를 버리고 새 필터로 처음부터 다시 받는다. -->
+        <sequence>
+          <set-state target="global" notificationsUnreadOnly="{{$args[0]}}" :notificationsCurrentPage="1" :notificationsHasMore="null" :notificationsLoadingMore="false"/>
+          <refetch-data-source dataSourceId="notifications"/>
+        </sequence>
+      </on>
+      <on event="onNotificationDelete">
+        <!-- 데스크톱 알림 1건 삭제 — 지운 것이 미읽음일 수 있어 목록과 배지를 함께 다시 받는다. -->
+        <api-call if="{{notifications?.data?.abilities?.can_delete === true}}" :auth_required="true" target="/api/user/notifications/{{$args[0].id}}" method="DELETE">
+          <success>
+            <set-state target="global" :notificationsCurrentPage="1" :notificationsHasMore="null"/>
+            <refetch-data-source dataSourceId="notifications"/>
+            <refetch-data-source dataSourceId="notification_unread_count"/>
+          </success>
+          <fail>
+            <toast type="error" message="{{error.message}}"/>
+          </fail>
+        </api-call>
+      </on>
+      <on event="onNotificationDeleteAll">
+        <!-- 「모두 삭제」 확인 창 — 알림 삭제 권한이 없는 회원에게는 열지 않는다(서버도 같은 권한으로 거부) -->
+        <open-modal if="{{notifications?.data?.abilities?.can_delete === true}}" target="notification_delete_all_confirm_modal"/>
+      </on>
+      <on event="onNotificationLoadMore">
+        <!-- 데스크톱 더 보기 — 다음 페이지를 이어 붙인다. 모바일과 달리 현재 미읽음 필터를 질의에 함께 실어 필터가 걸린 목록에서도 같은 조건으로 이어진다. -->
+        <sequence>
+          <set-state target="global" :notificationsLoadingMore="true"/>
+          <api-call :auth_required="true" target="/api/user/notifications" method="GET">
+            <success>
+              <append-data-source dataSourceId="notifications" dataPath="data.data" newData="{{response.data.data ?? []}}"/>
+              <set-state target="global" notificationsCurrentPage="{{response.data.pagination.current_page}}" notificationsHasMore="{{response.data.pagination.has_more_pages}}" :notificationsLoadingMore="false"/>
+            </success>
+            <fail>
+              <set-state target="global" :notificationsLoadingMore="false"/>
+            </fail>
+            <query page="{{(_global.notificationsCurrentPage ?? notifications?.data?.pagination?.current_page ?? 1) + 1}}" :per_page="15" read="{{(_global.notificationsUnreadOnly ?? true) ? 'unread' : 'all'}}"/>
+          </api-call>
+        </sequence>
+      </on>
+    </header>
+    <!-- === 메인 콘텐츠 영역 === -->
+    <div data-ref="main_content_area" class="flex-1">
+      <container data-type="layout" data-ref="main_content" data-slot="content" class="min-h-fit px-4">
+        <responsive on="desktop" class="min-h-fit max-w-7xl mx-auto px-8"/>
+      </container>
+    </div>
+    <!-- === 푸터 (Footer 컴포넌트) === -->
+    <footer data-type="composite" data-ref="footer" siteName="{{_global.settings?.general?.site_name ?? 'Site'}}" siteDescription="{{_global.settings?.general?.site_description ?? ''}}" copyrightText="$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? '그누보드7'}}">
+      <prop name="socialLinks">
+        <field name="github" value="{{_global.settings?.social?.github}}"/>
+        <field name="twitter" value="{{_global.settings?.social?.twitter}}"/>
+        <field name="discord" value="{{_global.settings?.social?.discord}}"/>
+      </prop>
+    </footer>
+    <!-- === Extension Point: 모든 사용자 페이지 푸터 직후에 플러그인이 정보 영역을 노출할 수 있도록 공용 확장 지점 제공 === -->
+    <extension-point name="user_global_footer" data-ref="user_global_footer_slot">
+      <default/>
+    </extension-point>
+  </div>
+  <!-- 본인인증 요구 창 — 코어 인터셉터가 428 응답을 받으면 어느 화면에서든 띄우므로 상속원에 둔다. -->
+  <modal src="partials/_identity_challenge_modal.g7.html"/>
+  <!-- 알림 전체 삭제 확인 창 — 헤더와 모바일 드로어의 알림센터가 공유한다(둘 다 onDeleteAll 에서 이 이름을 연다). -->
+  <modal src="partials/_modal_notification_delete_all_confirm.g7.html"/>
+</layout>

@@ -1,0 +1,17 @@
+# e2e:allow 화면 변경 없음(배너는 이커머스 관리자 화면 — 모듈 매니페스트 unpaid-vbank-cancel 이 맡는다).
+feature: 토스 — 입금 전 취소 가상계좌 발급 취소와 취소 후 입금 기록 (P-D1 · Q11) — #747 C7
+
+description: |
+  이커머스가 입금 전 취소 커밋 뒤 sirsoft-ecommerce.payment.close_vbank 필터로 부르면 자기 결제의 가상계좌를 결제 취소
+  API(전액 — cancelAmount·refundReceiveAccount 없이)로 발급 취소한다. 입금통보가 취소된 주문을 만나면 주문을 되살리지
+  않고 DepositAfterCancelRecorder 로 기록·알림을 남긴 뒤 OK 로 답한다.
+
+axes:
+  role: [close, deposit_webhook]
+
+effects:
+  - toss_closes_unpaid_vbank_with_full_cancel
+  - toss_deposit_on_cancelled_order_is_recorded
+
+test_files:
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/VbankCancelBeforeDepositTest.php

@@ -1,0 +1,20 @@
+<!-- 500 서버 오류 — 사용자가 고칠 수 있는 것이 없으므로 다시 시도와 홈으로만 안내한다. -->
+<layout name="errors/500" version="1.0.0" extends="_user_base">
+  <meta title="$t:error.500.title" description="$t:error.500.description"/>
+  <slot name="content">
+    <div class="min-h-[60vh] flex items-center justify-center">
+      <div class="text-center px-4">
+        <div class="text-8xl font-bold text-gray-200 dark:text-gray-700 mb-4">500</div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">$t:error.500.title</h1>
+        <p class="text-gray-600 dark:text-gray-400 mb-8">$t:error.500.description</p>
+        <button class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors cursor-pointer">
+          <on type="click">
+            <navigate path="/"/>
+          </on>
+          <icon name="home" class="text-xl"/>
+          <span>$t:error.500.back_to_home</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+</layout>

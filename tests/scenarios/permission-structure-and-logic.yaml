@@ -1,0 +1,107 @@
+feature: 권한 구조 검증 규칙과 AND, OR 권한 판정
+
+description: |
+  레이아웃 권한 선언 구조를 검사하는 규칙과, 권한 배열을 AND, OR 로 묶어 판정하는 AuthServiceProvider 논리를 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
+  축 checker 는 판정 주체(보유 권한 판정 논리, 선언 구조 검증 규칙), permission_shape 는 권한 선언의 형태, held_permissions 는 사용자가 가진 권한이 선언을 충족하는지다.
+  nested_depth2 는 AND, OR 묶음 안에 묶음이 한 겹 더 있는 형태, nested_depth3 은 두 겹 더 있는 형태다.
+
+axes:
+  checker: [grant_logic, structure_rule]
+  permission_shape: [empty, flat, or_group, and_group, nested_depth2, nested_depth3, nested_too_deep,
+                     invalid_operator, degenerate_group, invalid_identifier, non_array_input]
+  held_permissions: [satisfying, not_satisfying, not_applicable]
+
+exclusions:
+  - { checker: structure_rule, held_permissions: [satisfying, not_satisfying],
+      reason: "구조 검증 규칙은 선언 형태만 보고 사용자 보유 권한을 읽지 않는다." }
+  - { checker: grant_logic, held_permissions: not_applicable,
+      reason: "보유 권한 판정은 언제나 사용자 보유 권한을 선언과 대조하므로 대조하지 않는 경우가 없다." }
+  - { checker: grant_logic, permission_shape: [invalid_operator, degenerate_group, invalid_identifier, non_array_input],
+      reason: "판정 논리에는 저장 때 구조 검증을 통과한 선언만 들어오므로 잘못된 연산자, 항목 하나 이하 묶음, 잘못된 식별자, 배열 아닌 입력은 판정 단계의 입력이 아니다." }
+  - { checker: grant_logic, permission_shape: empty, held_permissions: not_satisfying,
+      reason: "빈 선언은 요구 권한이 없어 충족하지 못하는 보유 상태가 생기지 않는다." }
+  - { checker: grant_logic, permission_shape: nested_too_deep, held_permissions: satisfying,
+      reason: "허용 깊이를 넘는 중첩은 보유 권한과 상관없이 거부되므로 충족 상태가 결과를 바꾸지 않는다." }
+
+effects:
+  - a1_empty_array_passes
+  - a1_single_permission_with_permission
+  - a1_single_permission_without_permission
+  - a1_multiple_and_all_granted
+  - a1_multiple_and_partial
+  - a1_multiple_and_none
+  - a2_or_first_only
+  - a2_or_second_only
+  - a2_or_both
+  - a2_or_none
+  - a2_or_three_items_one_match
+  - a2_or_three_items_none
+  - a3_explicit_and_all
+  - a3_explicit_and_partial
+  - a3_explicit_and_three_partial
+  - a4_and_or_a_and_b
+  - a4_and_or_a_and_c
+  - a4_and_or_a_only
+  - a4_and_or_b_only
+  - a4_or_and_first_group
+  - a4_or_and_second_group
+  - a4_or_and_cross_partial
+  - a4_or_and_none
+  - a5_depth3_a_and_b
+  - a5_depth3_a_and_cd
+  - a5_depth3_a_and_c_only
+  - a5_depth3_cd_without_a
+  - a6_depth4_exceeds_max
+  - a7_and_or_or_ac
+  - a7_and_or_or_bd
+  - a7_and_or_or_ad
+  - a7_and_or_or_a_only
+  - a7_and_or_or_c_only
+  - a7_or_or_or_a
+  - a7_or_or_or_d
+  - a7_or_or_or_none
+  - a8_admin_or
+  - a8_admin_nested
+  - a8_admin_depth3
+  - a9_guest_flat_with_permission
+  - a9_guest_or_with_permission
+  - a9_guest_or_without_permission
+  - a10_user_form_create_only
+  - a10_user_form_update_only
+  - a10_user_form_read_only
+  - a10_menu_form_read_create
+  - a10_menu_form_read_only
+  - b1_empty_array
+  - b1_single_identifier
+  - b1_multiple_identifiers
+  - b1_or_structure
+  - b1_and_structure
+  - b1_and_or_nested
+  - b1_or_and_and_nested
+  - b1_depth3_nested
+  - b2_invalid_operator
+  - b2_uppercase_or
+  - b2_not_operator
+  - b2_xor_operator
+  - b2_multiple_keys
+  - b3_or_one_item
+  - b3_and_one_item
+  - b3_or_empty
+  - b4_depth4
+  - b4_depth5
+  - b5_space_in_identifier
+  - b5_empty_string
+  - b5_integer_in_array
+  - b5_null_in_array
+  - b5_integer_in_or
+  - b5_null_in_or
+  - b6_string_input
+  - b6_integer_input
+  - b6_null_input
+  - b6_or_value_not_array
+
+test_files:
+  - tests/Unit/Providers/AuthServiceProviderPermissionLogicTest.php
+  - tests/Unit/Rules/ValidPermissionStructureTest.php

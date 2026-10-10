@@ -4,8 +4,11 @@ namespace Tests\Feature\LanguagePack;
 
 use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackSourceType;
+use App\Extension\ModuleManager;
 use App\Models\LanguagePack;
+use App\Models\Module;
 use App\Services\LanguagePackService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -19,32 +22,54 @@ use Tests\TestCase;
  * 그런데 언어팩 시스템이 다른 경로를 스캔하면, 관리자 화면이 "내장 번역" 이라고 보여주는 것과
  * 실제 화면에 나오는 문구의 출처가 어긋난다. 그 디렉토리에만 있는 문구는 번역 대상으로 노출되면서
  * 정작 어디에도 렌더되지 않는다.
+ *
+ * 소유 시나리오: `language-pack-policy-alignment`
  */
 class ModuleLangPathAlignmentTest extends TestCase
 {
-    // 파일시스템 기반 가상 언어팩만 읽고 DB 에 쓰지 않는다 — 마이그레이션 재실행이 불필요하다.
+    use RefreshDatabase;
 
     /**
-     * 번들 모듈의 내장 언어팩이 런타임이 읽는 경로(src/lang)를 가리키는지 검증합니다.
+     * 설치된 모듈의 내장 언어팩이 설치본의 런타임 경로(src/lang)를 가리키는지 검증합니다.
+     *
+     * 픽스처 모듈은 런타임이 읽지 않는 `resources/lang/ko` 에도 디렉토리를 두어, 스캔이 그 자리를
+     * 내장 번역으로 잘못 잡지 않는지까지 본다.
+     *
+     * @scenario row_origin=extension_virtual
+     *
+     * @effects module_built_in_pack_points_to_runtime_lang_path
+     *
+     * @return void 반환값 없음
      */
     #[Test]
-    public function bundled_module_built_in_pack_points_to_runtime_lang_path(): void
+    public function installed_module_built_in_pack_points_to_runtime_lang_path(): void
     {
-        $packs = app(LanguagePackService::class)->getVirtualBuiltInPacks();
+        $root = base_path('modules/test-langpath-mod');
+        File::ensureDirectoryExists($root.'/src/lang/ko');
+        File::ensureDirectoryExists($root.'/resources/lang/en');
+        File::put($root.'/module.json', (string) json_encode(['vendor' => 'test', 'version' => '1.0.0']));
+        Module::factory()->create(['identifier' => 'test-langpath-mod', 'status' => 'active']);
+        ModuleManager::invalidateModuleStatusCache();
 
-        $modulePacks = $packs->filter(
-            fn (LanguagePack $p) => $p->scope === LanguagePackScope::Module->value
-                && $p->source_type === LanguagePackSourceType::BuiltIn->value
-        );
-
-        $this->assertNotEmpty($modulePacks, '번들 모듈의 내장 언어팩이 하나 이상 합성되어야 합니다.');
-
-        foreach ($modulePacks as $pack) {
-            $this->assertMatchesRegularExpression(
-                '#^modules/_bundled/[^/]+/src/lang/(ko|en)$#',
-                (string) $pack->source_url,
-                "모듈 내장 언어팩 경로는 런타임이 로드하는 src/lang 이어야 합니다: {$pack->target_identifier} ({$pack->locale}) → {$pack->source_url}"
+        try {
+            $modulePacks = app(LanguagePackService::class)->getVirtualBuiltInPacks()->filter(
+                fn (LanguagePack $p) => $p->scope === LanguagePackScope::Module->value
+                    && $p->source_type === LanguagePackSourceType::BuiltIn->value
+                    && $p->target_identifier === 'test-langpath-mod'
             );
+
+            $this->assertCount(1, $modulePacks, '설치본 src/lang 에 있는 로케일(ko)만 내장 언어팩으로 합성되어야 합니다.');
+
+            foreach ($modulePacks as $pack) {
+                $this->assertSame(
+                    'modules/test-langpath-mod/src/lang/ko',
+                    (string) $pack->source_url,
+                    "모듈 내장 언어팩 경로는 런타임이 로드하는 설치본 src/lang 이어야 합니다: {$pack->target_identifier} ({$pack->locale}) → {$pack->source_url}"
+                );
+            }
+        } finally {
+            File::deleteDirectory($root);
+            ModuleManager::invalidateModuleStatusCache();
         }
     }
 
@@ -54,6 +79,10 @@ class ModuleLangPathAlignmentTest extends TestCase
      * `resources/lang/{locale}/*.php` 는 프런트엔드용 `resources/lang/{locale}.json` ·
      * `resources/lang/partial/{locale}/` 와 달리 아무도 읽지 않는다. 거기 문구를 고치면
      * 고쳐지지 않고, 그 사실이 드러나지 않는다.
+     *
+     * @effects bundled_module_source_keeps_backend_lang_in_runtime_path
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function bundled_modules_have_no_backend_lang_outside_runtime_path(): void

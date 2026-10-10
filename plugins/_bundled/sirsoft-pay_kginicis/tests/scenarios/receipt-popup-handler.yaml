@@ -1,0 +1,19 @@
+feature: 영수증 창 핸들러 — 조각이 받아 둔 영수증 응답으로 창만 연다 (#639)
+
+description: |
+  주문 상세·주문 완료 조각의 버튼은 `sirsoft-pay_kginicis.openReceipt` 핸들러에 마운트 때 받아 둔 영수증 조회 응답을 넘긴다.
+  핸들러는 다시 조회하지 않는다(예전 주입 스크립트는 클릭마다 로그인 토큰을 저장소에서 읽어 직접 조회했다). 외부 영수증
+  주소는 https 만, opener 를 끊은 크기 지정 창으로 열고, CBT 결제확인서는 응답 항목을 이스케이프해 인쇄용 문서로 그린다.
+
+axes:
+  receipt: [inicis_url, non_https_url, cbt_confirmation, empty]
+
+effects:
+  - opens_https_receipt_without_opener
+  - no_fetch_on_click
+  - cbt_confirmation_document_escapes_fields
+  - nothing_opened_without_receipt
+  - handler_registered_with_plugin_prefix
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/handlers/openReceipt.test.ts

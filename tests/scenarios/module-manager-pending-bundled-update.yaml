@@ -1,0 +1,38 @@
+feature: 모듈 관리자가 _pending·_bundled 원본을 읽어 업데이트를 판정하고 활성 디렉토리로 복사한다
+
+description: |
+  ModuleManager 의 업데이트 관련 메서드를 단위로 고정한다.
+
+    - loadModules 가 `_pending`·`_bundled` 메타데이터를 각각의 목록에 싣는다.
+    - checkModuleUpdate 는 `_bundled` 만 업데이트 원본으로 본다. `_pending` 은 임시 스테이징이라 버전 비교 대상이 아니다.
+      미설치이거나 이미 최신이면 업데이트 없음이다.
+    - checkAllModulesForUpdates 는 설치된 모듈을 훑어 DB 를 갱신하고 `_bundled` 업데이트만 집계한다.
+    - getUninstalledModules 는 `_pending`·`_bundled` 모듈을 is_pending/is_bundled 표시와 함께 돌려준다.
+    - copyFromPendingOrBundled 는 `_pending` → `_bundled` 순으로 원본을 고르고, 활성 디렉토리가 있으면 건드리지 않는다.
+      force=true 면 불완전한 활성 디렉토리를 원본으로 덮어써 복구한다.
+    - installing·updating 상태의 모듈은 설치·업데이트를 다시 시작하지 않는다.
+    - resolveForceUpdateSource 는 `_bundled` 에 있으면 'bundled', 없으면 null 이다.
+
+axes:
+  operation: [source_loading, update_check, bulk_update_check, uninstalled_listing, source_copy, status_guard, force_update_source]
+
+effects:
+  - pending_and_bundled_metadata_loaded
+  - pending_ignored_for_update_check
+  - bundled_newer_version_detected_as_update
+  - no_update_for_uninstalled_or_latest
+  - bulk_check_records_only_bundled_updates
+  - uninstalled_list_flags_pending_and_bundled
+  - copy_prefers_pending_then_bundled
+  - copy_keeps_existing_active_unless_forced
+  - forced_copy_restores_incomplete_active_directory
+  - in_progress_status_blocks_lifecycle
+  - force_update_source_resolved_from_bundled
+  - force_update_source_null_without_bundled
+
+test_files:
+  - tests/Unit/Extension/ModuleManagerUpdateTest.php
+
+notes:
+  - 모듈·플러그인·템플릿 세 종류를 가로지르는 _pending·_bundled 통합 흐름은 extension-pending-bundled-sources.yaml 이 소유한다.
+  - 업데이트 동시 실행 차단(원자적 상태 전이)은 extension-update-concurrency.yaml 이 소유한다 — 여기서는 이미 진행 중 상태인 레코드의 차단만 본다.

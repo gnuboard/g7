@@ -19,7 +19,7 @@ description: |
     · PostRepository::findWithCounts 가 관리 권한(admin.control / admin.manage /
       User manager)을 조회 이전에 계산해 attachments 클로저에서도 cascade-only
       withTrashed 를 적용한다 (댓글의 cascade-only 노출과 일관).
-    · 레이아웃(admin _comment.json / user _comment_item.json)이 is_cascade_deleted
+    · 레이아웃(admin _comment.g7.html / user _comment_item.g7.html)이 is_cascade_deleted
       를 보고 cascade 댓글은 마스킹 없이 읽기 모드 본문으로 노출한다.
 
   표시 자격(권한)·cascade 분류는 백엔드, 모양은 프론트가 담당한다.

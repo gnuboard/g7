@@ -1,6 +1,6 @@
 # 컨트롤러 계층 구조
 
-> **관련 문서**: [index.md](index.md) | [service-repository.md](service-repository.md) | [validation.md](validation.md)
+> **관련 문서**: [README.md](README.md) | [service-repository.md](service-repository.md) | [validation.md](validation.md)
 
 ---
 
@@ -292,6 +292,7 @@ public function show(int $id): JsonResponse
 - `ValidationException`은 `\Exception`보다 **먼저** catch해야 함 (하위 클래스 우선)
 - 에러 메시지는 반드시 `__()` 다국어 키 사용 (하드코딩 금지)
 - `$e->getMessage()`는 **로깅 목적**으로만 사용 (사용자에게 직접 노출 금지)
+- 관리자 화면에 실패 사유를 실어야 하면(`:error` 치환·`errors` 배열·`reason`) `App\Support\SafeExceptionMessage::for($e)` 를 거친다 — 운영 모드에서 DB 예외·PHP 오류(SQL·DB 호스트·서버 경로가 담김)는 일반 문구로 바꾸고 원문은 서버 로그에 남긴다. `ResponseHelper::error()` 가 운영 모드에서 가리는 것은 500 의 **문자열** `errors` 와 `Throwable` 뿐이라, 422 로 감싼 사유나 배열 `errors` 는 그대로 나간다
 
 ---
 
@@ -313,7 +314,7 @@ public function show(int $id): JsonResponse
 
 ## 관련 문서
 
-- [index.md](index.md) - 백엔드 가이드 인덱스
+- [README.md](README.md) - 백엔드 가이드 인덱스
 - [service-repository.md](service-repository.md) - Service-Repository 패턴
 - [validation.md](validation.md) - 검증 로직 구현 원칙
 - [response-helper.md](response-helper.md) - API 응답 규칙

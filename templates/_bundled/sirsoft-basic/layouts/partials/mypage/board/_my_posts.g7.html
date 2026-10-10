@@ -1,0 +1,152 @@
+<!-- 게시판 활동의 「내 글」 하위 탭. 조건이 URL 이 아니라 `_global.myPosts*` 에 살기 때문에 이 조각은
+     조건을 바꾼 뒤 **스스로 refetch 를 걸어야** 한다 — 목록 화면들이 `navigate` 만으로 끝나는 것과 갈리는 자리다.
+     상태 이름에 `myPosts` 접두어가 붙는 것은 옆 「내 댓글」 탭이 같은 모양의 조건을 따로 들고 있기 때문이다. -->
+<partial description="마이페이지 내 게시글 활동 - 내가 쓴 글 탭">
+  <div>
+    <!-- 필터 영역 -->
+    <div class="flex flex-col sm:flex-row gap-3 mb-4">
+      <!-- 게시판 필터 -->
+      <select value="{{_global.myPostsBoard ?? ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <on type="change">
+          <set-state target="global" myPostsBoard="{{$event.target.value}}" :myPostsPage="1"/>
+          <refetch-data-source dataSourceId="myPosts"/>
+        </on>
+        <option value="">$t:mypage.board_activities.filter.all_boards</option>
+        <option data-each="board in {{boards?.data ?? []}}" value="{{board.slug}}">{{board.name}}</option>
+      </select>
+      <!-- 정렬 필터 -->
+      <select value="{{_global.myPostsSort ?? 'latest'}}" class="min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <on type="change">
+          <set-state target="global" myPostsSort="{{$event.target.value}}" :myPostsPage="1"/>
+          <refetch-data-source dataSourceId="myPosts"/>
+        </on>
+        <option value="latest">$t:mypage.board_activities.sort.latest</option>
+        <option value="oldest">$t:mypage.board_activities.sort.oldest</option>
+        <option value="views">$t:mypage.board_activities.sort.views</option>
+      </select>
+      <!-- 검색 영역 -->
+      <div class="flex-1 flex gap-2">
+        <!-- 검색 대상 — 제목만/내용만을 백엔드가 갈라 준다. 담아만 두고 조회는 검색 버튼이 한다 -->
+        <select data-ref="my_posts_search_field_select" value="{{_global.myPostsSearchField ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+          <options>
+            <option value="title_content">$t:mypage.board_activities.search_fields.title_content</option>
+            <option value="title">$t:mypage.board_activities.search_fields.title</option>
+            <option value="content">$t:mypage.board_activities.search_fields.content</option>
+          </options>
+          <on type="change">
+            <set-state target="global" myPostsSearchField="{{$event.target.value}}"/>
+          </on>
+        </select>
+        <input type="text" placeholder="$t:mypage.board_activities.search_placeholder" value="{{_global.myPostsSearch ?? ''}}" class="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
+          <on type="change">
+            <!-- 글 제목·본문 검색어 — 타이핑은 담기만 하고 조회는 옆 검색 버튼이 한다 -->
+            <set-state target="global" myPostsSearch="{{$event.target.value}}"/>
+          </on>
+          <on type="keypress" key="Enter">
+            <!-- Enter 검색 — 검색 버튼과 같은 순서를 탄다. 적용 검색어는 입력칸 값에서 바로 읽는다(상태가 아직 따라오지 않은 마지막 글자도 빠지지 않게). 한글 조합 중 Enter 는 엔진 키 필터가 건너뛴다 -->
+            <sequence>
+              <set-state target="global" :myPostsPage="1" myPostsSearch="{{$event.target.value}}" myPostsSearchApplied="{{$event.target.value}}"/>
+              <refetch-data-source dataSourceId="myPosts"/>
+            </sequence>
+          </on>
+        </input>
+        <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+          <on type="click">
+            <!-- 검색 — 조건이 URL 이 아니라 전역 상태에 있어 스스로 refetch 를 걸어야 한다. 쪽수를 1 로 되돌리지 않으면 3쪽을 보던 중 검색했을 때 빈 쪽이 뜬다 -->
+            <sequence>
+              <set-state target="global" :myPostsPage="1" myPostsSearchApplied="{{_global.myPostsSearch ?? ''}}"/>
+              <refetch-data-source dataSourceId="myPosts"/>
+            </sequence>
+          </on>
+          $t:common.search
+        </button>
+        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <!-- 초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다 -->
+            <sequence>
+              <set-state target="global" myPostsBoard="" myPostsSearch="" myPostsSearchApplied="" myPostsSearchField="title_content" myPostsSort="latest" :myPostsPage="1"/>
+              <refetch-data-source dataSourceId="myPosts"/>
+            </sequence>
+          </on>
+          $t:common.reset
+        </button>
+      </div>
+    </div>
+    <!-- 검색 조건 표시 영역 (API 응답의 query 값 기반) -->
+    <div data-if="{{myPosts?.data?.query?.search || myPosts?.data?.query?.board_slug}}" class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-between">
+      <div class="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+        <icon name="search" size="sm"/>
+        <span>$t:mypage.board_activities.search_result</span>
+        <span data-if="{{myPosts?.data?.query?.search}}" class="font-medium">"{{myPosts?.data?.query?.search}}"</span>
+        <span>({{myPosts?.data?.total ?? 0}}$t:mypage.board_activities.search_result_unit|count={{myPosts?.data?.total ?? 0}}</span><span>)</span>
+      </div>
+      <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-sm">
+        <on type="click">
+          <!-- 초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다 -->
+          <sequence>
+            <set-state target="global" myPostsBoard="" myPostsSearch="" myPostsSearchApplied="" myPostsSearchField="title_content" myPostsSort="latest" :myPostsPage="1"/>
+            <refetch-data-source dataSourceId="myPosts"/>
+          </sequence>
+        </on>
+        $t:common.reset
+      </button>
+    </div>
+    <!-- 게시글 목록 -->
+    <div class="space-y-3">
+      <!-- 게시글 카드 반복 -->
+      <div data-if="{{myPosts?.data?.data &amp;&amp; myPosts.data.data.length > 0}}" data-each="post in {{myPosts?.data?.data ?? []}}">
+        <button class="w-full text-left block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer">
+          <on type="click">
+            <navigate path="/board/{{post.board_slug}}/{{post.id}}"/>
+          </on>
+          <!-- 상단: [게시판명] 제목 + 비밀글 아이콘 (한 줄) -->
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex-1 min-w-0 flex items-center gap-2">
+              <!-- 게시판 이름 -->
+              <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded flex-shrink-0">{{post.board_name}}</span>
+              <!-- 제목 -->
+              <span class="text-base font-medium text-gray-900 dark:text-white truncate">{{post.title}}</span>
+              <!-- 비밀글 아이콘 -->
+              <icon data-if="{{post.is_secret}}" name="lock" size="xs" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+            </div>
+            <!-- 작성일시 -->
+            <span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 whitespace-nowrap" title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
+          </div>
+          <!-- 게시글 내용 요약 (2줄, HTML 태그 제거된 plain text 사용) -->
+          <p data-if="{{post.content_plain}}" class="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2">{{post.content_plain}}</p>
+          <!-- 하단: 조회수 + 댓글수 -->
+          <div class="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+            <span class="flex items-center gap-1">
+              <span>$t:mypage.board_activities.meta.views</span>
+              <span>{{post.view_count ?? 0}}</span>
+            </span>
+            <span class="flex items-center gap-1">
+              <span>$t:mypage.board_activities.meta.comments</span>
+              <span>{{post.comment_count ?? 0}}$t:mypage.board_activities.meta.comments_unit</span>
+            </span>
+          </div>
+        </button>
+      </div>
+      <!-- 게시글 없음 -->
+      <div data-if="{{!myPosts?.data?.data || myPosts.data.data.length === 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+        <icon name="file-text" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+        <!-- 검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다 -->
+        <p data-if="{{!(!!_global.myPostsSearchApplied || !!_global.myPostsBoard)}}" class="text-gray-500 dark:text-gray-400">$t:mypage.board_activities.empty_posts</p>
+        <p data-if="{{!!_global.myPostsSearchApplied || !!_global.myPostsBoard}}" class="text-gray-500 dark:text-gray-400">$t:board.no_search_results</p>
+        <button class="inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+          <on type="click">
+            <navigate path="/boards"/>
+          </on>
+          $t:mypage.board_activities.go_boards
+        </button>
+      </div>
+    </div>
+    <!-- 페이지네이션 -->
+    <pagination data-type="composite" data-if="{{((myPosts?.data?.last_page ?? 0) > 1) || (myPosts?.data?.has_more_pages === true) || ((myPosts?.data?.current_page ?? 1) > 1)}}" currentPage="{{myPosts?.data?.current_page ?? 1}}" totalPages="{{myPosts?.data?.last_page ?? null}}" hasMorePages="{{myPosts?.data?.has_more_pages ?? false}}" class="mt-4 flex justify-center">
+      <on event="onPageChange">
+        <set-state target="global" myPostsPage="{{$args[0]}}"/>
+        <refetch-data-source dataSourceId="myPosts"/>
+      </on>
+    </pagination>
+  </div>
+</partial>

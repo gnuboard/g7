@@ -15,7 +15,7 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
 {
     public function test_plugin_registers_cbt_settings_validation_listener(): void
     {
-        $this->assertContains(ValidateCbtSettingsListener::class, (new Plugin())->getHookListeners());
+        $this->assertContains(ValidateCbtSettingsListener::class, (new Plugin)->getHookListeners());
 
         $hooks = ValidateCbtSettingsListener::getSubscribedHooks();
         $this->assertSame('validateBeforeSave', $hooks['core.plugin_settings.before_save']['method'] ?? null);
@@ -25,7 +25,7 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
 
     public function test_plugin_schema_includes_jpy_payment_method_restriction_option(): void
     {
-        $plugin = new Plugin();
+        $plugin = new Plugin;
 
         $schema = $plugin->getSettingsSchema();
         $config = $plugin->getConfigValues();
@@ -38,7 +38,7 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
 
     public function test_plugin_schema_includes_easy_pay_brand_button_option(): void
     {
-        $plugin = new Plugin();
+        $plugin = new Plugin;
 
         $schema = $plugin->getSettingsSchema();
         $config = $plugin->getConfigValues();
@@ -77,7 +77,7 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
 
     public function test_ignores_other_plugins(): void
     {
-        $listener = new ValidateCbtSettingsListener();
+        $listener = new ValidateCbtSettingsListener;
 
         $listener->validateBeforeSave('other-plugin', [
             'japan_enabled' => true,
@@ -91,7 +91,7 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
     {
         $this->mockCurrentSettings([]);
 
-        $listener = new ValidateCbtSettingsListener();
+        $listener = new ValidateCbtSettingsListener;
 
         $this->expectException(ValidationException::class);
 
@@ -138,7 +138,7 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
         $this->mockCurrentSettings([]);
         app()->setLocale('ko');
 
-        $listener = new ValidateCbtSettingsListener();
+        $listener = new ValidateCbtSettingsListener;
 
         try {
             $listener->validateBeforeSave('sirsoft-pay_kginicis', [
@@ -160,7 +160,7 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
         $this->mockCurrentSettings([]);
         app()->setLocale('ko');
 
-        $listener = new ValidateCbtSettingsListener();
+        $listener = new ValidateCbtSettingsListener;
 
         try {
             $listener->validateBeforeSave('sirsoft-pay_kginicis', $this->validLiveSettings([
@@ -186,7 +186,7 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
     {
         $this->mockCurrentSettings([]);
 
-        $listener = new ValidateCbtSettingsListener();
+        $listener = new ValidateCbtSettingsListener;
         $listener->validateBeforeSave('sirsoft-pay_kginicis', $this->validLiveSettings());
 
         $this->assertTrue(true);
@@ -196,7 +196,7 @@ class ValidateCbtSettingsListenerTest extends PluginTestCase
     {
         $this->mockCurrentSettings([]);
 
-        $listener = new ValidateCbtSettingsListener();
+        $listener = new ValidateCbtSettingsListener;
 
         $this->expectException(ValidationException::class);
 

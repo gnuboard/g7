@@ -78,6 +78,10 @@ function findButtonByChildText(allNodes: any[], textMatch: string): any {
 describe('배송설정 탭에서 택배사 섹션 참조', () => {
     const allTabNodes = flattenAll(tabShipping);
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_shipping_tab_includes_carrier_section
+     */
     it('_tab_shipping.json에 _shipping_carrier_section.json partial이 포함되어 있다', () => {
         const partialRef = allTabNodes.find(
             (n: any) => n.partial?.includes('_shipping_carrier_section.json')
@@ -90,12 +94,20 @@ describe('배송설정 탭에서 택배사 섹션 참조', () => {
 // 2. 택배사 섹션 루트 구조
 // ══════════════════════════════════════════════════════════
 describe('택배사 섹션 루트 구조 (_shipping_carrier_section.json)', () => {
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_section_root_structure
+     */
     it('루트 노드가 card 클래스의 Div이다', () => {
         expect(carrierSection.name).toBe('Div');
         expect(carrierSection.type).toBe('basic');
         expect(carrierSection.props?.className).toContain('card');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_section_root_structure
+     */
     it('card-header 영역이 존재한다', () => {
         const allNodes = flattenAll(carrierSection);
         const headerDiv = allNodes.find(
@@ -104,6 +116,10 @@ describe('택배사 섹션 루트 구조 (_shipping_carrier_section.json)', () =
         expect(headerDiv).toBeDefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_section_root_structure
+     */
     it('섹션 제목(H3)이 다국어 키로 표시된다', () => {
         const allNodes = flattenAll(carrierSection);
         const title = allNodes.find(
@@ -120,11 +136,19 @@ describe('택배사 섹션 루트 구조 (_shipping_carrier_section.json)', () =
 describe('택배사 추가 버튼', () => {
     const allNodes = flattenAll(carrierSection);
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_button_opens_inline_form
+     */
     it('추가 버튼이 존재한다 (children Span에 add_button 텍스트)', () => {
         const addBtn = findButtonByChildText(allNodes, 'carriers.add_button');
         expect(addBtn).toBeDefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_button_opens_inline_form
+     */
     it('추가 폼이 열려있지 않을 때만 버튼이 표시된다', () => {
         const addBtn = findButtonByChildText(allNodes, 'carriers.add_button');
         // 추가 버튼은 if에 !_local.isAddingCarrier 조건이 있어야 함
@@ -133,6 +157,10 @@ describe('택배사 추가 버튼', () => {
         expect(headerAddBtn).toBeDefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_button_opens_inline_form
+     */
     it('추가 버튼에 type="button"이 명시되어 있다 (submit 방지)', () => {
         const addBtn = findButtonByChildText(allNodes, 'carriers.add_button');
         // 헤더 추가 버튼 (if 조건 있는 것)
@@ -142,6 +170,10 @@ describe('택배사 추가 버튼', () => {
         expect(headerAddBtn?.props?.type).toBe('button');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_button_opens_inline_form
+     */
     it('추가 버튼에 Tailwind className 스타일이 적용되어 있다', () => {
         const headerAddBtn = findAllByName(allNodes, 'Button').find(
             (b: any) => b.if?.includes('!_local.isAddingCarrier')
@@ -152,6 +184,10 @@ describe('택배사 추가 버튼', () => {
         expect(headerAddBtn?.props?.className).toContain('font-medium');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_button_opens_inline_form
+     */
     it('추가 버튼 클릭 시 isAddingCarrier가 true로 설정되고 carrierForm 초기화가 된다', () => {
         const headerAddBtn = findAllByName(allNodes, 'Button').find(
             (b: any) => b.if?.includes('!_local.isAddingCarrier')
@@ -161,23 +197,44 @@ describe('택배사 추가 버튼', () => {
         );
         expect(clickAction).toBeDefined();
         expect(clickAction.params?.isAddingCarrier).toBe(true);
-        expect(clickAction.params?.carrierForm).toBeDefined();
-        expect(clickAction.params?.carrierForm.code).toBe('');
-        expect(clickAction.params?.carrierForm.type).toBe('domestic');
-        expect(clickAction.params?.carrierForm.tracking_url).toBe('');
-        expect(clickAction.params?.carrierForm.is_active).toBe(true);
+
+        // 시드는 객체 리터럴이 아니라 **표현식**이다 — 이름 맵을 활성 언어팩에서 파생시켜야
+        // 하기 때문이다(아래 케이스). 나머지 축은 그 표현식 안에 그대로 담긴다.
+        const seed = String(clickAction.params?.carrierForm ?? '');
+
+        expect(seed).toContain("code: ''");
+        expect(seed).toContain("type: 'domestic'");
+        expect(seed).toContain("tracking_url: ''");
+        expect(seed).toContain('is_active: true');
     });
 
-    it('추가 버튼 클릭 시 carrierForm.name이 다국어 객체로 초기화된다', () => {
+    // 종전 계약은 `{ ko: '', en: '' }` 리터럴이었다. 그런데 [추가] 확정 게이트는 **현재 로케일**
+    // 의 이름을 요구하므로(10차 B1), ko/en 을 리터럴로 열거하면 그 밖의 로케일 운영자에게는
+    // 그 언어의 입력칸이 없고 — `MultilingualInput` 은 표시 로케일을 value 의 키에서 뽑고 언어
+    // 추가 버튼을 현재 로케일 필드에만 붙인다 — 언어 추가 버튼조차 나오지 않는다. 폼을 확정할
+    // 수 없는데 페이지 [저장]은 그 폼을 확정하라고 막는다. 프로덕션이 옳고 이 단언이 낡았다.
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_button_opens_inline_form
+     */
+    it('추가 버튼 클릭 시 carrierForm.name이 활성 언어팩 전체에서 파생된다', () => {
         const headerAddBtn = findAllByName(allNodes, 'Button').find(
             (b: any) => b.if?.includes('!_local.isAddingCarrier')
         );
         const clickAction = headerAddBtn?.actions?.find(
             (a: any) => a.type === 'click' && a.handler === 'setState'
         );
-        expect(clickAction.params?.carrierForm.name).toEqual({ ko: '', en: '' });
+        const seed = String(clickAction.params?.carrierForm ?? '');
+
+        expect(seed).toContain('$locales');
+        // 리터럴 열거로 되돌리면 붉어진다.
+        expect(seed).not.toContain("ko: ''");
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_button_opens_inline_form
+     */
     it('추가 버튼 클릭 시 carrierFormErrors가 null로 초기화된다', () => {
         const headerAddBtn = findAllByName(allNodes, 'Button').find(
             (b: any) => b.if?.includes('!_local.isAddingCarrier')
@@ -195,6 +252,10 @@ describe('택배사 추가 버튼', () => {
 describe('택배사 추가 폼', () => {
     const allNodes = flattenAll(carrierSection);
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_form_requires_site_locale_name
+     */
     it('isAddingCarrier가 true일 때만 폼이 표시된다', () => {
         const formContainer = allNodes.find(
             (n: any) =>
@@ -205,6 +266,10 @@ describe('택배사 추가 폼', () => {
         expect(formContainer).toBeDefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_form_requires_site_locale_name
+     */
     it('코드(code) 입력 Input이 존재한다', () => {
         const inputs = findAllByName(allNodes, 'Input');
         const codeInput = inputs.find(
@@ -214,6 +279,10 @@ describe('택배사 추가 폼', () => {
         expect(codeInput.props?.type).toBe('text');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_form_requires_site_locale_name
+     */
     it('코드 Input의 onChange가 carrierForm.code를 setState한다', () => {
         const inputs = findAllByName(allNodes, 'Input');
         const codeInput = inputs.find(
@@ -226,9 +295,13 @@ describe('택배사 추가 폼', () => {
         expect(action.params?.['carrierForm.code']).toContain('$event.target.value');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_form_requires_site_locale_name
+     */
     it('이름(name) 필드가 MultilingualInput 컴포지트 컴포넌트이다', () => {
         const composites = allNodes.filter(
-            (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+            (n: any) => n.name === 'MultilingualInput'
         );
         const addFormMultilingual = composites.find(
             (c: any) => c.props?.value?.includes('carrierForm?.name')
@@ -237,9 +310,13 @@ describe('택배사 추가 폼', () => {
         expect(addFormMultilingual.props?.layout).toBe('inline');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_form_requires_site_locale_name
+     */
     it('MultilingualInput의 onChange가 carrierForm.name을 setState한다', () => {
         const composites = allNodes.filter(
-            (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+            (n: any) => n.name === 'MultilingualInput'
         );
         const addFormMultilingual = composites.find(
             (c: any) => c.props?.value?.includes('carrierForm?.name')
@@ -251,6 +328,10 @@ describe('택배사 추가 폼', () => {
         expect(action.params?.['carrierForm.name']).toContain('$event.target.value');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_form_requires_site_locale_name
+     */
     it('택배사 유형 Select가 domestic/international 옵션을 갖는다', () => {
         const selects = findAllByName(allNodes, 'Select');
         const typeSelect = selects.find(
@@ -264,6 +345,10 @@ describe('택배사 추가 폼', () => {
         expect(values).toContain('international');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_form_requires_site_locale_name
+     */
     it('택배사 유형 Select의 onChange가 carrierForm.type을 setState한다', () => {
         const selects = findAllByName(allNodes, 'Select');
         const typeSelect = selects.find(
@@ -276,6 +361,10 @@ describe('택배사 추가 폼', () => {
         expect(action.params?.['carrierForm.type']).toContain('$event.target.value');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_form_requires_site_locale_name
+     */
     it('추적 URL Input이 존재한다', () => {
         const inputs = findAllByName(allNodes, 'Input');
         const trackingInput = inputs.find(
@@ -284,6 +373,10 @@ describe('택배사 추가 폼', () => {
         expect(trackingInput).toBeDefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_form_requires_site_locale_name
+     */
     it('추적 URL 도움말이 존재한다', () => {
         const helpTexts = allNodes.filter(
             (n: any) =>
@@ -293,6 +386,10 @@ describe('택배사 추가 폼', () => {
         expect(helpTexts.length).toBeGreaterThan(0);
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_form_requires_site_locale_name
+     */
     it('취소 버튼이 isAddingCarrier를 false로 설정하고 carrierForm/carrierFormErrors를 null로 초기화한다', () => {
         const cancelBtn = findButtonByChildText(allNodes, 'form.cancel');
         expect(cancelBtn).toBeDefined();
@@ -305,6 +402,10 @@ describe('택배사 추가 폼', () => {
         expect(action.params?.carrierFormErrors).toBeNull();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_form_requires_site_locale_name
+     */
     it('취소 버튼에 Tailwind outline 스타일이 적용되어 있다', () => {
         const cancelBtn = findButtonByChildText(allNodes, 'form.cancel');
         expect(cancelBtn.props?.className).toContain('border');
@@ -312,6 +413,10 @@ describe('택배사 추가 폼', () => {
         expect(cancelBtn.props?.className).toContain('rounded-lg');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_form_requires_site_locale_name
+     */
     it('저장 버튼이 conditions 핸들러로 로컬 검증을 수행한다 (apiCall 아님)', () => {
         // 추가 폼의 저장 버튼 (add_button 텍스트 + if 없음 = 폼 내부 저장)
         const buttons = findAllByName(allNodes, 'Button');
@@ -334,6 +439,10 @@ describe('택배사 추가 폼', () => {
         expect(apiAction).toBeUndefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_form_requires_site_locale_name
+     */
     it('저장 conditions: 유효하면 배열에 추가 + 폼 닫기 + hasChanges=true', () => {
         const buttons = findAllByName(allNodes, 'Button');
         const formSaveBtn = buttons.find((b: any) => {
@@ -348,7 +457,10 @@ describe('택배사 추가 폼', () => {
         const validCondition = action.conditions[0];
         expect(validCondition.if).toContain('carrierForm?.code');
         expect(validCondition.if).toContain('trim()');
-        expect(validCondition.if).toContain('carrierForm?.name?.ko');
+        // 이름 필수 판정은 **사이트 기본 언어**다 — `ko` 고정도, 보는 언어도 아니다. 서버 규칙과 같은 축이라
+        // (후속 B 세션 B3, 종전 S10 은 현재 로케일) 다른 언어로 보는 운영자도 같은 칸을 채운다.
+        expect(validCondition.if).toContain("carrierForm?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')]");
+        expect(validCondition.if).not.toContain('carrierForm?.name?.ko');
         expect(validCondition.then.handler).toBe('setState');
         expect(validCondition.then.params?.['form.shipping.carriers']).toContain('...');
         expect(validCondition.then.params?.['form.shipping.carriers']).toContain('carrierForm');
@@ -358,6 +470,10 @@ describe('택배사 추가 폼', () => {
         expect(validCondition.then.params?.hasChanges).toBe(true);
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_form_requires_site_locale_name
+     */
     it('저장 conditions: 검증 실패 시 carrierFormErrors에 에러 플래그를 설정한다', () => {
         const buttons = findAllByName(allNodes, 'Button');
         const formSaveBtn = buttons.find((b: any) => {
@@ -375,7 +491,10 @@ describe('택배사 추가 폼', () => {
         expect(elseCondition.then.handler).toBe('setState');
         expect(elseCondition.then.params?.carrierFormErrors).toBeDefined();
         expect(elseCondition.then.params?.carrierFormErrors.code).toContain('carrierForm?.code');
-        expect(elseCondition.then.params?.carrierFormErrors.name_ko).toContain('carrierForm?.name?.ko');
+        expect(elseCondition.then.params?.carrierFormErrors.name_ko).toContain(
+            "carrierForm?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')]"
+        );
+        expect(elseCondition.then.params?.carrierFormErrors.name_ko).not.toContain('carrierForm?.name?.ko');
     });
 });
 
@@ -385,6 +504,10 @@ describe('택배사 추가 폼', () => {
 describe('추가 폼 Validation 에러 표시', () => {
     const allNodes = flattenAll(carrierSection);
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_form_shows_validation_errors
+     */
     it('코드 Input에 carrierFormErrors.code 조건부 input-error 클래스가 적용된다', () => {
         const inputs = findAllByName(allNodes, 'Input');
         const codeInput = inputs.find(
@@ -394,6 +517,10 @@ describe('추가 폼 Validation 에러 표시', () => {
         expect(codeInput?.props?.className).toContain('input-error');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_form_shows_validation_errors
+     */
     it('코드 에러 Span이 carrierFormErrors.code 조건으로 표시된다', () => {
         const spans = findAllByName(allNodes, 'Span');
         const errorSpan = spans.find(
@@ -406,9 +533,13 @@ describe('추가 폼 Validation 에러 표시', () => {
         expect(errorSpan.props?.className).toContain('form-error');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_add_form_shows_validation_errors
+     */
     it('이름 MultilingualInput에 error prop이 carrierFormErrors.name_ko 기반으로 설정된다', () => {
         const composites = allNodes.filter(
-            (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+            (n: any) => n.name === 'MultilingualInput'
         );
         const addFormMultilingual = composites.find(
             (c: any) => c.props?.value?.includes('carrierForm?.name')
@@ -424,6 +555,10 @@ describe('추가 폼 Validation 에러 표시', () => {
 describe('택배사 빈 상태 표시', () => {
     const allNodes = flattenAll(carrierSection);
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_empty_state_shown
+     */
     it('_local.form.shipping.carriers 기반으로 빈 상태 메시지가 표시된다', () => {
         const emptyDiv = allNodes.find(
             (n: any) =>
@@ -434,6 +569,10 @@ describe('택배사 빈 상태 표시', () => {
         expect(emptyDiv.text).toBe('$t:sirsoft-ecommerce.admin.settings.shipping.carriers.empty');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_empty_state_shown
+     */
     it('빈 상태 메시지에 다크모드 클래스가 있다', () => {
         const emptyDiv = allNodes.find(
             (n: any) =>
@@ -450,6 +589,10 @@ describe('택배사 빈 상태 표시', () => {
 describe('택배사 테이블 구조', () => {
     const allNodes = flattenAll(carrierSection);
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_table_structure
+     */
     it('_local.form.shipping.carriers 기반으로 테이블 영역이 표시된다', () => {
         const tableContainer = allNodes.find(
             (n: any) =>
@@ -459,16 +602,28 @@ describe('택배사 테이블 구조', () => {
         expect(tableContainer).toBeDefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_table_structure
+     */
     it('Table 컴포넌트가 존재한다', () => {
         const tables = findAllByName(allNodes, 'Table');
         expect(tables.length).toBeGreaterThan(0);
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_table_structure
+     */
     it('Thead에 7개 컬럼 헤더가 있다 (드래그핸들, code, name, type, tracking_url, is_active, actions)', () => {
         const thNodes = findAllByName(allNodes, 'Th');
         expect(thNodes.length).toBe(7);
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_table_structure
+     */
     it('컬럼 헤더에 올바른 다국어 키가 사용된다', () => {
         const thNodes = findAllByName(allNodes, 'Th');
         const expectedKeys = [
@@ -485,6 +640,10 @@ describe('택배사 테이블 구조', () => {
         }
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_table_structure
+     */
     it('Tbody에 sortable이 정의되어 carriers를 드래그앤드롭으로 순서 변경할 수 있다', () => {
         const tbodies = allNodes.filter((n: any) => n.name === 'Tbody');
         const sortableTbody = tbodies.find((tb: any) => tb.sortable);
@@ -494,6 +653,10 @@ describe('택배사 테이블 구조', () => {
         expect(sortableTbody.sortable.wrapperElement).toBe('tr');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_table_structure
+     */
     it('sortable onSortEnd가 sort_order를 재계산한다', () => {
         const tbodies = allNodes.filter((n: any) => n.name === 'Tbody');
         const sortableTbody = tbodies.find((tb: any) => tb.sortable);
@@ -510,6 +673,10 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
     const allNodes = flattenAll(carrierSection);
 
     describe('코드(code) 컬럼', () => {
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_row_fields_update_by_map
+         */
         it('코드 Input의 value가 $carrier.code를 직접 참조한다', () => {
             const inputs = findAllByName(allNodes, 'Input');
             const codeInput = inputs.find(
@@ -521,6 +688,10 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
             expect(codeInput.props?.value).toBe('{{$carrier.code ?? \'\'}}');
         });
 
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_row_fields_update_by_map
+         */
         it('코드 Input 변경 시 .map() 패턴 setState로 carriers 배열을 수정한다', () => {
             const inputs = findAllByName(allNodes, 'Input');
             const codeInput = inputs.find(
@@ -538,6 +709,10 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
             expect(action.params?.hasChanges).toBe(true);
         });
 
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_row_fields_update_by_map
+         */
         it('코드 Input에 conditions 핸들러가 아닌 setState 핸들러를 사용한다', () => {
             const inputs = findAllByName(allNodes, 'Input');
             const codeInput = inputs.find(
@@ -553,9 +728,13 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
     });
 
     describe('이름(name) 컬럼', () => {
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_row_fields_update_by_map
+         */
         it('이름 필드가 MultilingualInput 컴포지트 컴포넌트이다 (compact 레이아웃)', () => {
             const composites = allNodes.filter(
-                (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+                (n: any) => n.name === 'MultilingualInput'
             );
             const tableMultilingual = composites.find(
                 (c: any) =>
@@ -565,9 +744,13 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
             expect(tableMultilingual).toBeDefined();
         });
 
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_row_fields_update_by_map
+         */
         it('이름 MultilingualInput 변경 시 .map() 패턴 setState로 carriers 배열을 수정한다', () => {
             const composites = allNodes.filter(
-                (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+                (n: any) => n.name === 'MultilingualInput'
             );
             const tableMultilingual = composites.find(
                 (c: any) =>
@@ -585,6 +768,10 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
     });
 
     describe('유형(type) 컬럼', () => {
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_row_fields_update_by_map
+         */
         it('유형 Select의 value가 $carrier.type을 직접 참조한다', () => {
             const selects = findAllByName(allNodes, 'Select');
             const typeSelect = selects.find(
@@ -595,6 +782,10 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
             expect(typeSelect).toBeDefined();
         });
 
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_row_fields_update_by_map
+         */
         it('유형 Select에 domestic/international 옵션이 있다', () => {
             const selects = findAllByName(allNodes, 'Select');
             const typeSelect = selects.find(
@@ -607,6 +798,10 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
             expect(values).toContain('international');
         });
 
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_row_fields_update_by_map
+         */
         it('유형 Select 변경 시 .map() 패턴 setState로 carriers 배열을 수정한다', () => {
             const selects = findAllByName(allNodes, 'Select');
             const typeSelect = selects.find(
@@ -625,6 +820,10 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
     });
 
     describe('추적 URL(tracking_url) 컬럼', () => {
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_row_fields_update_by_map
+         */
         it('추적 URL Input의 value가 $carrier.tracking_url을 직접 참조한다', () => {
             const inputs = findAllByName(allNodes, 'Input');
             const trackingInput = inputs.find(
@@ -635,6 +834,10 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
             expect(trackingInput).toBeDefined();
         });
 
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_row_fields_update_by_map
+         */
         it('추적 URL Input 변경 시 .map() 패턴 setState로 carriers 배열을 수정한다', () => {
             const inputs = findAllByName(allNodes, 'Input');
             const trackingInput = inputs.find(
@@ -653,6 +856,10 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
     });
 
     describe('활성/비활성(is_active) 컬럼', () => {
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_row_fields_update_by_map
+         */
         it('Toggle의 checked가 $carrier.is_active를 직접 참조한다', () => {
             const toggles = findAllByName(allNodes, 'Toggle');
             const activeToggle = toggles.find(
@@ -661,6 +868,10 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
             expect(activeToggle).toBeDefined();
         });
 
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_row_fields_update_by_map
+         */
         it('Toggle에 size="sm"이 적용되어 있다', () => {
             const toggles = findAllByName(allNodes, 'Toggle');
             const activeToggle = toggles.find(
@@ -669,6 +880,10 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
             expect(activeToggle?.props?.size).toBe('sm');
         });
 
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_row_fields_update_by_map
+         */
         it('Toggle 변경 시 .map() 패턴 setState로 is_active를 토글한다 (apiCall 아님)', () => {
             const toggles = findAllByName(allNodes, 'Toggle');
             const activeToggle = toggles.find(
@@ -696,6 +911,10 @@ describe('테이블 행 필드 — .map() 패턴 setState', () => {
 describe('테이블 행 Validation 에러 표시', () => {
     const allNodes = flattenAll(carrierSection);
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_row_shows_server_errors
+     */
     it('코드 Input에 _local.errors 기반 조건부 input-error 클래스가 적용된다', () => {
         const inputs = findAllByName(allNodes, 'Input');
         const codeInput = inputs.find(
@@ -708,6 +927,10 @@ describe('테이블 행 Validation 에러 표시', () => {
         expect(codeInput?.props?.className).toContain('input-error');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_row_shows_server_errors
+     */
     it('코드 에러 Span이 _local.errors 기반으로 표시된다', () => {
         const spans = findAllByName(allNodes, 'Span');
         const errorSpan = spans.find(
@@ -721,9 +944,13 @@ describe('테이블 행 Validation 에러 표시', () => {
         expect(errorSpan.props?.className).toContain('form-error');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_row_shows_server_errors
+     */
     it('이름 MultilingualInput에 _local.errors 기반 error prop이 설정된다', () => {
         const composites = allNodes.filter(
-            (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+            (n: any) => n.name === 'MultilingualInput'
         );
         const tableMultilingual = composites.find(
             (c: any) =>
@@ -735,6 +962,10 @@ describe('테이블 행 Validation 에러 표시', () => {
         expect(tableMultilingual?.props?.error).toContain('name');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_row_shows_server_errors
+     */
     it('추적 URL Input에 _local.errors 기반 조건부 input-error 클래스가 적용된다', () => {
         const inputs = findAllByName(allNodes, 'Input');
         const trackingInput = inputs.find(
@@ -746,6 +977,10 @@ describe('테이블 행 Validation 에러 표시', () => {
         expect(trackingInput?.props?.className).toContain('input-error');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_row_shows_server_errors
+     */
     it('추적 URL 에러 Span이 _local.errors 기반으로 표시된다', () => {
         const spans = findAllByName(allNodes, 'Span');
         const errorSpan = spans.find(
@@ -765,12 +1000,20 @@ describe('테이블 행 Validation 에러 표시', () => {
 describe('택배사 삭제 버튼', () => {
     const allNodes = flattenAll(carrierSection);
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_delete_button
+     */
     it('삭제 아이콘(fa-trash) 버튼이 존재한다 (if 조건 없이 항상 표시)', () => {
         const deleteBtn = findButtonWithIcon(allNodes, 'fa-trash');
         expect(deleteBtn).toBeDefined();
         expect(deleteBtn.if).toBeUndefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_delete_button
+     */
     it('삭제 버튼이 setState 핸들러를 사용한다 (apiCall 아님)', () => {
         const deleteBtn = findButtonWithIcon(allNodes, 'fa-trash');
         const action = deleteBtn.actions?.find(
@@ -784,6 +1027,10 @@ describe('택배사 삭제 버튼', () => {
         expect(apiAction).toBeUndefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_delete_button
+     */
     it('삭제 버튼에 confirm 속성이 있다', () => {
         const deleteBtn = findButtonWithIcon(allNodes, 'fa-trash');
         const action = deleteBtn.actions?.find(
@@ -794,6 +1041,10 @@ describe('택배사 삭제 버튼', () => {
         );
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_delete_button
+     */
     it('삭제 시 .filter() 패턴으로 carriers 배열에서 해당 항목을 제거한다', () => {
         const deleteBtn = findButtonWithIcon(allNodes, 'fa-trash');
         const action = deleteBtn.actions?.find(
@@ -811,31 +1062,55 @@ describe('택배사 삭제 버튼', () => {
 describe('Per-row 저장/취소 버튼 제거 확인', () => {
     const allNodes = flattenAll(carrierSection);
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_rows_saved_with_page
+     */
     it('fa-check 아이콘 버튼이 존재하지 않는다 (per-row 저장 제거)', () => {
         const saveBtn = findButtonWithIcon(allNodes, 'fa-check');
         expect(saveBtn).toBeUndefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_rows_saved_with_page
+     */
     it('fa-xmark 아이콘 버튼이 존재하지 않는다 (per-row 취소 제거)', () => {
         const cancelBtn = findButtonWithIcon(allNodes, 'fa-xmark');
         expect(cancelBtn).toBeUndefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_rows_saved_with_page
+     */
     it('editingCarrierId 참조가 JSON에 존재하지 않는다', () => {
         const jsonStr = JSON.stringify(carrierSection);
         expect(jsonStr).not.toContain('editingCarrierId');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_rows_saved_with_page
+     */
     it('editingCarrierForm 참조가 JSON에 존재하지 않는다', () => {
         const jsonStr = JSON.stringify(carrierSection);
         expect(jsonStr).not.toContain('editingCarrierForm');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_rows_saved_with_page
+     */
     it('apiCall 핸들러가 JSON에 존재하지 않는다 (모든 CRUD를 로컬 상태로 관리)', () => {
         const jsonStr = JSON.stringify(carrierSection);
         expect(jsonStr).not.toContain('"apiCall"');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_rows_saved_with_page
+     */
     it('refetchDataSource 핸들러가 JSON에 존재하지 않는다', () => {
         const jsonStr = JSON.stringify(carrierSection);
         expect(jsonStr).not.toContain('refetchDataSource');
@@ -846,6 +1121,10 @@ describe('Per-row 저장/취소 버튼 제거 확인', () => {
 // 12. 다국어 키 검증
 // ══════════════════════════════════════════════════════════
 describe('다국어 키', () => {
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_i18n_keys_exist
+     */
     it('모든 i18n 키가 sirsoft-ecommerce 또는 common 네임스페이스를 사용한다', () => {
         const keys = collectI18nKeys(carrierSection);
         const moduleKeys = keys.filter((k) => k.startsWith('$t:sirsoft-ecommerce.'));
@@ -853,6 +1132,10 @@ describe('다국어 키', () => {
         expect(moduleKeys.length + commonKeys.length).toBe(keys.length);
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_i18n_keys_exist
+     */
     it('필수 다국어 키가 존재한다', () => {
         const keys = collectI18nKeys(carrierSection);
         const requiredKeys = [
@@ -890,11 +1173,19 @@ describe('다국어 키', () => {
 // 13. 다크모드 검증
 // ══════════════════════════════════════════════════════════
 describe('다크모드', () => {
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_dark_mode_pairs
+     */
     it('_shipping_carrier_section.json에 dark: 클래스가 사용된다', () => {
         const json = JSON.stringify(carrierSection);
         expect(json).toContain('dark:');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_dark_mode_pairs
+     */
     it('추가 폼 영역에 다크모드 클래스가 적용되어 있다', () => {
         const allNodes = flattenAll(carrierSection);
         const formContainer = allNodes.find(
@@ -903,6 +1194,10 @@ describe('다크모드', () => {
         expect(formContainer?.props?.className).toContain('dark:');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_dark_mode_pairs
+     */
     it('itemTemplate에 다크모드 border 클래스가 적용되어 있다', () => {
         const allNodes = flattenAll(carrierSection);
         const tbodies = allNodes.filter((n: any) => n.name === 'Tbody');
@@ -917,6 +1212,10 @@ describe('다크모드', () => {
 describe('입력 필드 스타일', () => {
     const allNodes = flattenAll(carrierSection);
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_input_styles
+     */
     it('추가 폼 Input에 input 기본 시맨틱이 적용되어 있다 — w-full 은 .input 자산이 흡수', () => {
         const inputs = findAllByName(allNodes, 'Input');
         const addFormInputs = inputs.filter(
@@ -927,6 +1226,10 @@ describe('입력 필드 스타일', () => {
         }
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_input_styles
+     */
     it('테이블 행 Input에 input 기본 시맨틱이 적용되어 있다 — w-full 은 .input 자산이 흡수', () => {
         const inputs = findAllByName(allNodes, 'Input');
         const tableInputs = inputs.filter(
@@ -941,6 +1244,10 @@ describe('입력 필드 스타일', () => {
         }
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_input_styles
+     */
     it('추가 폼 Select에 w-full 클래스가 적용되어 있다', () => {
         const selects = findAllByName(allNodes, 'Select');
         const addTypeSelect = selects.find(
@@ -949,6 +1256,10 @@ describe('입력 필드 스타일', () => {
         expect(addTypeSelect?.props?.className).toContain('w-full');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_input_styles
+     */
     it('테이블 행 Select에 w-full 클래스가 적용되어 있다', () => {
         const selects = findAllByName(allNodes, 'Select');
         const tableTypeSelect = selects.find(
@@ -959,6 +1270,10 @@ describe('입력 필드 스타일', () => {
         expect(tableTypeSelect?.props?.className).toContain('w-full');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_input_styles
+     */
     it('추가/취소 버튼에 className(Tailwind)이 적용되어 있다 (variant가 아닌 className)', () => {
         // 추가 버튼
         const headerAddBtn = findAllByName(allNodes, 'Button').find(
@@ -972,6 +1287,10 @@ describe('입력 필드 스타일', () => {
         expect(cancelBtn?.props?.variant).toBeUndefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_input_styles
+     */
     it('Input에 size prop이 사용되지 않는다 (지원하지 않는 prop)', () => {
         const inputs = findAllByName(allNodes, 'Input');
         for (const input of inputs) {
@@ -988,6 +1307,10 @@ describe('도서산간 배송비 입력필드 (_tab_shipping.json)', () => {
 
     // 환경설정 탭의 전역 도서산간 배송비 (remote_area_extra_fee/island_extra_fee)
     // 가 제거되고 배송정책 단위 surcharge 로 이전됨 (shippingPolicySettingsTab 참조)
+    /**
+     * @scenario section=carrier
+     * @effects settings_remote_area_fee_inputs
+     */
     it('산간지역 추가배송비 Input 이 환경설정 탭에서 제거되었다', () => {
         const inputs = findAllByName(allTabNodes, 'Input');
         const remoteInput = inputs.find(
@@ -996,6 +1319,10 @@ describe('도서산간 배송비 입력필드 (_tab_shipping.json)', () => {
         expect(remoteInput).toBeUndefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_remote_area_fee_inputs
+     */
     it('도서지역 추가배송비 Input 이 환경설정 탭에서 제거되었다', () => {
         const inputs = findAllByName(allTabNodes, 'Input');
         const islandInput = inputs.find(
@@ -1011,27 +1338,47 @@ describe('도서산간 배송비 입력필드 (_tab_shipping.json)', () => {
 describe('택배사 테이블 → 카드 responsive 전환', () => {
     const allNodes = flattenAll(carrierSection);
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_table_switches_to_cards
+     */
     it('테이블 wrapper에 id="carrier_list"가 존재한다', () => {
         const wrapper = allNodes.find((n: any) => n.id === 'carrier_list');
         expect(wrapper).toBeDefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_table_switches_to_cards
+     */
     it('carrier_list에 overflow-x-clip 사용 (Select 드롭다운 가려짐 방지)', () => {
         const wrapper = allNodes.find((n: any) => n.id === 'carrier_list');
         expect(wrapper?.props?.className).toContain('overflow-x-clip');
         expect(wrapper?.props?.className).not.toContain('overflow-x-auto');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_table_switches_to_cards
+     */
     it('carrier_list에 responsive.portable이 존재한다', () => {
         const wrapper = allNodes.find((n: any) => n.id === 'carrier_list');
         expect(wrapper?.responsive?.portable).toBeDefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_table_switches_to_cards
+     */
     it('responsive.portable에서 overflow-x-auto가 제거된다 (빈 className)', () => {
         const wrapper = allNodes.find((n: any) => n.id === 'carrier_list');
         expect(wrapper?.responsive?.portable?.props?.className).toBe('');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_table_switches_to_cards
+     */
     it('responsive.portable children에 _shipping_carrier_cards.json partial이 참조된다', () => {
         const wrapper = allNodes.find((n: any) => n.id === 'carrier_list');
         const partial = wrapper?.responsive?.portable?.children?.find(
@@ -1040,6 +1387,10 @@ describe('택배사 테이블 → 카드 responsive 전환', () => {
         expect(partial).toBeDefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_table_switches_to_cards
+     */
     it('기존 테이블 children이 그대로 유지된다 (Table 컴포넌트 존재)', () => {
         const wrapper = allNodes.find((n: any) => n.id === 'carrier_list');
         const wrapperNodes = flattenAll(wrapper);
@@ -1052,14 +1403,26 @@ describe('택배사 테이블 → 카드 responsive 전환', () => {
 // 17. 카드 뷰 루트 구조 (_shipping_carrier_cards.json)
 // ══════════════════════════════════════════════════════════
 describe('택배사 카드 뷰 루트 구조', () => {
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_root_structure
+     */
     it('meta.is_partial이 true이다', () => {
         expect((carrierCards as any).meta?.is_partial).toBe(true);
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_root_structure
+     */
     it('루트에 className 이 정의되지 않는다 — partial root 의 spacing 은 부모 레이아웃/카드 자체 책임', () => {
         expect(carrierCards.props?.className).toBeUndefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_root_structure
+     */
     it('카드 iteration이 테이블과 동일한 source를 사용한다', () => {
         const allNodes = flattenAll(carrierCards);
         const iterCard = allNodes.find((n: any) => n.iteration);
@@ -1070,6 +1433,10 @@ describe('택배사 카드 뷰 루트 구조', () => {
         expect(iterCard.iteration.item_var).toBe('$carrier');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_root_structure
+     */
     it('카드에 excel-card 클래스가 적용되어 있다', () => {
         const allNodes = flattenAll(carrierCards);
         const iterCard = allNodes.find((n: any) => n.iteration);
@@ -1083,6 +1450,10 @@ describe('택배사 카드 뷰 루트 구조', () => {
 describe('택배사 카드 헤더', () => {
     const allCardNodes = flattenAll(carrierCards);
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_header
+     */
     it('excel-card-header가 존재한다', () => {
         const header = allCardNodes.find(
             (n: any) => n.props?.className?.includes('excel-card-header')
@@ -1090,6 +1461,10 @@ describe('택배사 카드 헤더', () => {
         expect(header).toBeDefined();
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_header
+     */
     it('$carrier.code가 excel-card-title + font-mono 클래스로 표시된다', () => {
         const titleDiv = allCardNodes.find(
             (n: any) =>
@@ -1100,6 +1475,10 @@ describe('택배사 카드 헤더', () => {
         expect(titleDiv.text).toContain('$carrier.code');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_header
+     */
     it('$localized($carrier.name)이 text-tertiary로 표시된다', () => {
         const nameDiv = allCardNodes.find(
             (n: any) =>
@@ -1110,6 +1489,10 @@ describe('택배사 카드 헤더', () => {
         expect(nameDiv.text).toContain('$carrier.name');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_header
+     */
     it('Toggle(is_active, sm)이 헤더에 존재한다', () => {
         const toggles = findAllByName(allCardNodes, 'Toggle');
         const activeToggle = toggles.find(
@@ -1119,6 +1502,10 @@ describe('택배사 카드 헤더', () => {
         expect(activeToggle.props?.size).toBe('sm');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_header
+     */
     it('삭제 버튼(fa-trash)이 헤더에 존재한다', () => {
         const deleteBtn = findButtonWithIcon(allCardNodes, 'fa-trash');
         expect(deleteBtn).toBeDefined();
@@ -1132,6 +1519,10 @@ describe('택배사 카드 바디 필드', () => {
     const allCardNodes = flattenAll(carrierCards);
 
     describe('코드(code) 필드', () => {
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_card_body_fields
+         */
         it('form-group + form-label 구조이다', () => {
             const labels = findAllByName(allCardNodes, 'Label');
             const codeLabel = labels.find(
@@ -1141,6 +1532,10 @@ describe('택배사 카드 바디 필드', () => {
             expect(codeLabel.props?.className).toContain('form-label');
         });
 
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_card_body_fields
+         */
         it('코드 Input에 font-mono가 적용되어 있다', () => {
             const inputs = findAllByName(allCardNodes, 'Input');
             const codeInput = inputs.find(
@@ -1151,6 +1546,10 @@ describe('택배사 카드 바디 필드', () => {
             expect(codeInput).toBeDefined();
         });
 
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_card_body_fields
+         */
         it('코드 Input 변경 시 테이블과 동일한 .map() 패턴 setState를 사용한다', () => {
             const inputs = findAllByName(allCardNodes, 'Input');
             const codeInput = inputs.find(
@@ -1169,9 +1568,13 @@ describe('택배사 카드 바디 필드', () => {
     });
 
     describe('이름(name) 필드', () => {
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_card_body_fields
+         */
         it('MultilingualInput (compact)이다', () => {
             const composites = allCardNodes.filter(
-                (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+                (n: any) => n.name === 'MultilingualInput'
             );
             const nameInput = composites.find(
                 (c: any) => c.props?.value?.includes('$carrier.name')
@@ -1180,9 +1583,13 @@ describe('택배사 카드 바디 필드', () => {
             expect(nameInput.props?.layout).toBe('compact');
         });
 
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_card_body_fields
+         */
         it('이름 변경 시 테이블과 동일한 .map() 패턴 setState를 사용한다', () => {
             const composites = allCardNodes.filter(
-                (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+                (n: any) => n.name === 'MultilingualInput'
             );
             const nameInput = composites.find(
                 (c: any) => c.props?.value?.includes('$carrier.name')
@@ -1198,6 +1605,10 @@ describe('택배사 카드 바디 필드', () => {
     });
 
     describe('유형(type) 필드', () => {
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_card_body_fields
+         */
         it('Select에 domestic/international 옵션이 있다', () => {
             const selects = findAllByName(allCardNodes, 'Select');
             const typeSelect = selects.find(
@@ -1209,6 +1620,10 @@ describe('택배사 카드 바디 필드', () => {
             expect(values).toContain('international');
         });
 
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_card_body_fields
+         */
         it('유형 변경 시 테이블과 동일한 .map() 패턴 setState를 사용한다', () => {
             const selects = findAllByName(allCardNodes, 'Select');
             const typeSelect = selects.find(
@@ -1225,6 +1640,10 @@ describe('택배사 카드 바디 필드', () => {
     });
 
     describe('추적 URL(tracking_url) 필드', () => {
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_card_body_fields
+         */
         it('추적 URL Input이 존재한다', () => {
             const inputs = findAllByName(allCardNodes, 'Input');
             const trackingInput = inputs.find(
@@ -1233,6 +1652,10 @@ describe('택배사 카드 바디 필드', () => {
             expect(trackingInput).toBeDefined();
         });
 
+        /**
+         * @scenario section=carrier
+         * @effects settings_carrier_card_body_fields
+         */
         it('추적 URL 변경 시 테이블과 동일한 .map() 패턴 setState를 사용한다', () => {
             const inputs = findAllByName(allCardNodes, 'Input');
             const trackingInput = inputs.find(
@@ -1255,6 +1678,10 @@ describe('택배사 카드 바디 필드', () => {
 describe('택배사 카드 validation 에러', () => {
     const allCardNodes = flattenAll(carrierCards);
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_shows_server_errors
+     */
     it('코드 Input에 _local.errors 기반 조건부 input-error 클래스가 적용된다', () => {
         const inputs = findAllByName(allCardNodes, 'Input');
         const codeInput = inputs.find(
@@ -1266,6 +1693,10 @@ describe('택배사 카드 validation 에러', () => {
         expect(codeInput?.props?.className).toContain('input-error');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_shows_server_errors
+     */
     it('코드 에러 Span이 _local.errors 기반으로 표시된다', () => {
         const spans = findAllByName(allCardNodes, 'Span');
         const errorSpan = spans.find(
@@ -1278,9 +1709,13 @@ describe('택배사 카드 validation 에러', () => {
         expect(errorSpan.props?.className).toContain('form-error');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_shows_server_errors
+     */
     it('이름 MultilingualInput에 _local.errors 기반 error prop이 설정된다', () => {
         const composites = allCardNodes.filter(
-            (n: any) => n.type === 'composite' && n.name === 'MultilingualInput'
+            (n: any) => n.name === 'MultilingualInput'
         );
         const nameInput = composites.find(
             (c: any) => c.props?.value?.includes('$carrier.name')
@@ -1289,15 +1724,25 @@ describe('택배사 카드 validation 에러', () => {
         expect(nameInput?.props?.error).toContain('name');
     });
 
-    it('유형 Select에 _local.errors 기반 조건부 select-error 클래스가 적용된다', () => {
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_shows_server_errors
+     */
+    it('유형 Select에 _local.errors 기반 조건부 input-error 클래스가 적용된다', () => {
         const selects = findAllByName(allCardNodes, 'Select');
         const typeSelect = selects.find(
             (s: any) => s.props?.value?.includes('$carrier.type')
         );
         expect(typeSelect?.props?.className).toContain('_local.errors');
-        expect(typeSelect?.props?.className).toContain('select-error');
+        // 관리자 템플릿에 `select-error` 규칙은 없다 — 오류 테두리는 입력칸과 같은 `input-error` (7.1.0 출시 점검 D3-4)
+        expect(typeSelect?.props?.className).toContain('input-error');
+        expect(typeSelect?.props?.className).not.toContain('select-error');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_shows_server_errors
+     */
     it('추적 URL Input에 _local.errors 기반 조건부 input-error 클래스가 적용된다', () => {
         const inputs = findAllByName(allCardNodes, 'Input');
         const trackingInput = inputs.find(
@@ -1307,6 +1752,10 @@ describe('택배사 카드 validation 에러', () => {
         expect(trackingInput?.props?.className).toContain('input-error');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_shows_server_errors
+     */
     it('추적 URL 에러 Span이 _local.errors 기반으로 표시된다', () => {
         const spans = findAllByName(allCardNodes, 'Span');
         const errorSpan = spans.find(
@@ -1326,6 +1775,10 @@ describe('택배사 카드 validation 에러', () => {
 describe('택배사 카드 삭제/토글', () => {
     const allCardNodes = flattenAll(carrierCards);
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_delete_and_toggle
+     */
     it('삭제 버튼이 .filter() 패턴 setState를 사용한다', () => {
         const deleteBtn = findButtonWithIcon(allCardNodes, 'fa-trash');
         const action = deleteBtn?.actions?.find(
@@ -1337,6 +1790,10 @@ describe('택배사 카드 삭제/토글', () => {
         expect(action.params?.hasChanges).toBe(true);
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_delete_and_toggle
+     */
     it('삭제 버튼에 confirm 속성이 있다', () => {
         const deleteBtn = findButtonWithIcon(allCardNodes, 'fa-trash');
         const action = deleteBtn?.actions?.find(
@@ -1345,11 +1802,19 @@ describe('택배사 카드 삭제/토글', () => {
         expect(action?.confirm).toContain('confirm_delete');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_delete_and_toggle
+     */
     it('삭제 버튼에 type="button"이 명시되어 있다', () => {
         const deleteBtn = findButtonWithIcon(allCardNodes, 'fa-trash');
         expect(deleteBtn?.props?.type).toBe('button');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_delete_and_toggle
+     */
     it('Toggle 변경 시 .map() 패턴 setState로 is_active를 토글한다', () => {
         const toggles = findAllByName(allCardNodes, 'Toggle');
         const activeToggle = toggles.find(
@@ -1364,6 +1829,10 @@ describe('택배사 카드 삭제/토글', () => {
         expect(action.params?.hasChanges).toBe(true);
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_delete_and_toggle
+     */
     it('Toggle/삭제에 apiCall이 사용되지 않는다 (로컬 상태만)', () => {
         const jsonStr = JSON.stringify(carrierCards);
         expect(jsonStr).not.toContain('"apiCall"');
@@ -1374,6 +1843,10 @@ describe('택배사 카드 삭제/토글', () => {
 // 22. 카드 다국어/다크모드
 // ══════════════════════════════════════════════════════════
 describe('택배사 카드 다국어/다크모드', () => {
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_i18n_and_dark_mode
+     */
     it('모든 i18n 키가 sirsoft-ecommerce 또는 common 네임스페이스를 사용한다', () => {
         const keys = collectI18nKeys(carrierCards);
         const moduleKeys = keys.filter((k) => k.startsWith('$t:sirsoft-ecommerce.'));
@@ -1381,6 +1854,10 @@ describe('택배사 카드 다국어/다크모드', () => {
         expect(moduleKeys.length + commonKeys.length).toBe(keys.length);
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_i18n_and_dark_mode
+     */
     it('카드에 다크모드 지원 시맨틱 클래스(excel-card, form-label, text-tertiary)가 사용된다', () => {
         const json = JSON.stringify(carrierCards);
         expect(json).toContain('excel-card');
@@ -1388,6 +1865,10 @@ describe('택배사 카드 다국어/다크모드', () => {
         expect(json).toContain('text-tertiary');
     });
 
+    /**
+     * @scenario section=carrier
+     * @effects settings_carrier_card_i18n_and_dark_mode
+     */
     it('에러 표시에 form-error 시맨틱이 사용된다', () => {
         const json = JSON.stringify(carrierCards);
         // .form-error CSS 시맨틱이 text-red-500 + text-xs + mt-1 + block + dark variant 를 흡수.

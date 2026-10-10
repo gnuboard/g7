@@ -1,0 +1,294 @@
+<!-- 역할 등록·수정 폼. 회원 폼과 마찬가지로 한 레이아웃이 두 모드를 겸하되, **소스가 모드마다 갈린다** —
+  수정이면 대상 역할을, 등록이면 권한 확인용 목록을, 복제 진입이면 원본 역할을 각각 부른다
+  (셋 다 `if` 로 서로 배타적이라 한 화면에서 둘이 동시에 돌지 않는다).
+  권한 선택은 종류별 탭 + 트리 한 벌이고, 고른 값은 `_local.form.permission_values` 한 배열에 모인다. -->
+<layout name="admin_role_form" version="1.0.0" extends="_admin_base">
+  <meta title="{{route?.id ? '$t:admin.roles.form.edit_title' : '$t:admin.roles.form.create_title'}}" description="{{route?.id ? '$t:admin.roles.form.edit_description' : '$t:admin.roles.form.create_description'}}"/>
+  <!-- 수정 모드에서만 도는 대상 역할 조회. 응답을 폼 초기값으로 풀고(`initLocal`), 조회는 되지만
+       수정 권한이 없으면 스스로 403 으로 접는다. `blocking` 인 이유는 값이 늦게 오면 빈 폼을
+       먼저 보여 주게 되기 때문이다. -->
+  <data-source id="role" label_key="$t:editor.data_source.role" type="api" endpoint="/api/admin/roles/{{route?.id}}" method="GET" :auto_fetch="true" auth_mode="required" loading_strategy="blocking" if="{{route?.id}}" initLocal="form" :refetchOnMount="true">
+    <field name="errorCondition">
+      <field name="if" value="{{response?.data?.abilities?.can_update === false}}"/>
+      <field name="errorCode" :value="403"/>
+    </field>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+    <fallback :data="null"/>
+  </data-source>
+  <!-- 등록 모드 전용 — **권한 확인만이 목적**이라 1건만 받는다. 목록 응답에 실려 오는
+       `abilities.can_create` 가 false 면 화면을 403 으로 접는다(등록 전용 권한 조회 API 가 없어
+       목록 API 를 그 용도로 쓴다). 받은 데이터 자체는 화면에서 쓰지 않는다. -->
+  <data-source id="role_check" label_key="$t:editor.data_source.role_check" type="api" endpoint="/api/admin/roles" method="GET" :auto_fetch="true" auth_mode="required" if="{{!route?.id}}">
+    <params :per_page="1"/>
+    <field name="errorCondition">
+      <field name="if" value="{{response?.data?.abilities?.can_create === false}}"/>
+      <field name="errorCode" :value="403"/>
+    </field>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+    <fallback :data="null"/>
+  </data-source>
+  <!-- 복제 진입(`?clone_from=`) 전용. 원본을 받아 폼 초기값으로 그대로 푼다 — 복제는 서버가 아니라
+       **여기서 값을 채워 새로 저장하는 방식**이므로 저장 전까지 원본은 손대지 않는다.
+       등록 모드에서만 돈다(수정 중에 복제 쿼리가 붙어 있어도 무시). -->
+  <data-source id="clone_source" label_key="$t:editor.data_source.clone_source" type="api" endpoint="/api/admin/roles/{{query.clone_from}}" method="GET" :auto_fetch="true" auth_mode="required" if="{{!!query?.clone_from &amp;&amp; !route?.id}}" initLocal="form">
+    <fallback :data="null"/>
+  </data-source>
+  <!-- 선택 가능한 권한 전체(종류·기본 종류·범위 옵션 포함). 두 모드 모두에서 돈다.
+       탭 목록도 이 응답의 `types` 에서 만들므로, 확장이 권한을 새로 실으면 탭이 저절로 늘어난다. -->
+  <data-source id="permissions" label_key="$t:editor.data_source.permissions" type="api" endpoint="/api/admin/permissions" method="GET" :auto_fetch="true" auth_mode="required">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 「접근 가능 메뉴」 트리 — 메뉴 관리 화면과 같은 관리 목록이라 **액터가 관리할 수 있는 메뉴만** 온다
+       (비활성 확장 메뉴·자기 역할로 접근할 수 없는 메뉴는 빠진다). 메뉴 조회 권한이 없는 운영자에게는 403 이
+       정상이라 상위 오류 처리로 넘기지 않고 빈 트리로 둔다 — 그때 카드는 읽기 전용 안내만 보인다. -->
+  <data-source id="role_menus_tree" label_key="$t:editor.data_source.role_menus_tree" type="api" endpoint="/api/admin/menus" method="GET" :auto_fetch="true" auth_mode="required">
+    <params :with_children="true" :hierarchical="true"/>
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <init-local>
+    <field name="form">
+      <field name="is_active" :value="true"/>
+      <field name="password_expiry_policy" value="inherit"/>
+    </field>
+  </init-local>
+  <permissions>
+    <permission>core.permissions.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>role_check</wait-for>
+    <wait-for>clone_source</wait-for>
+    <wait-for>permissions</wait-for>
+    <wait-for>role_menus_tree</wait-for>
+  </transition-overlay>
+  <init>
+    <!-- 생성 모드: 역할 수정 화면에서 SPA 로 넘어오면 같은 레이아웃(admin_role_form)이라 엔진이 `_local` 을 비우지 않아 직전 역할의 form(id·identifier 등)이 등록 폼에 남는다. form=null 로 먼저 지운다(깊은 병합이 객체 대신 null 로 덮어써 완전 삭제). 복제 진입(clone_from)은 clone_source 의 initLocal 이 init_actions 뒤에 병합되므로 영향 없음. -->
+    <set-state if="{{!route?.id}}" target="local" :form="null"/>
+    <!-- 생성 모드 기본값 복원 — 레이아웃 `state.form` 은 같은 레이아웃 재진입에서 다시 적용되지 않으므로(기존 키 유지) 같은 값을 여기서 다시 쓴다. -->
+    <set-state if="{{!route?.id}}" target="local">
+      <field name="form">
+        <field name="is_active" :value="true"/>
+        <field name="password_expiry_policy" value="inherit"/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="role_form_content" class="admin-page-content">
+      <responsive on="portable" class="admin-page-content-compact pb-24"/>
+      <page-header data-type="composite" data-ref="page_header" title="{{route?.id ? $t:admin.roles.form.edit_title : $t:admin.roles.form.create_title}}" description="{{route?.id ? $t:admin.roles.form.edit_description : $t:admin.roles.form.create_description}}"/>
+      <div data-ref="validation_error" data-if="{{_global.formErrors}}" class="alert-danger">
+        <div class="flex gap-3">
+          <icon name="triangle-exclamation" size="lg" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+          <div>
+            <h3 class="text-error-strong">$t:common.validation_error</h3>
+            <ul data-if="{{typeof _global.formErrors === 'object'}}" data-each="message in Object.entries(_global.formErrors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+              <li class="text-error-soft">{{message}}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <form data-ref="role_form" data-key="form" data-track-changes id="role_form">
+        <on type="submit">
+          <!-- 저장. 등록/수정/복제가 한 자리로 모인다 — 복제도 `route.id` 가 없으므로 등록으로 나간다.
+               검증 실패는 필드 오류를 전역 `formErrors` 에 담아 각 칸이 읽게 하고, 403·500 은 문구만
+               다르게 낸다. 어느 갈래든 진행 표시를 끈다(빠뜨리면 저장 버튼이 잠긴 채 남는다).
+               접근 가능 메뉴(menu_ids)는 메뉴 수정 권한이 있고 관리자 역할이 아닐 때만 싣는다 — 안 실으면 서버는 메뉴를
+               건드리지 않는다. 트리에 보이는 메뉴(관리할 수 있는 메뉴)로만 거른다: 관리 밖 메뉴의 기존 할당은 서버가
+               보존하고, 복제 진입이 원본의 관리 밖 메뉴를 새 역할로 끌어오지 않게 한다. -->
+          <sequence>
+            <set-state target="global" :isSaving="true" :formErrors="null"/>
+            <api-call auth_mode="required" target="{{route?.id ? '/api/admin/roles/' + route.id : '/api/admin/roles'}}" method="{{route?.id ? 'PUT' : 'POST'}}">
+              <success>
+                <sequence>
+                  <set-state target="global" :isSaving="false"/>
+                  <toast type="success" message="{{route?.id ? $t:admin.roles.modals.update_success : $t:admin.roles.modals.create_success}}"/>
+                  <navigate path="/admin/roles" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                </sequence>
+              </success>
+              <fail>
+                <set-state target="global" :isSaving="false" formErrors="{{error.errors}}"/>
+                <toast type="error" message="{{error.message ?? '$t:common.validation_error'}}"/>
+              </fail>
+              <error-handling>
+                <on-code code="403">
+                  <sequence>
+                    <set-state target="global" :isSaving="false"/>
+                    <toast type="error" message="$t:auth.permission_denied"/>
+                  </sequence>
+                </on-code>
+                <on-code code="500">
+                  <sequence>
+                    <set-state target="global" :isSaving="false"/>
+                    <toast type="error" message="$t:errors.server_error"/>
+                  </sequence>
+                </on-code>
+              </error-handling>
+              <body identifier="{{!route?.id ? (_local.form.identifier ?? '') : undefined}}" name="{{_local.form.name_raw ?? form.name}}" description="{{_local.form.description_raw ?? form.description}}" is_active="{{_local.form.is_active === true}}" password_expiry_policy="{{_local.form.password_expiry_policy ?? 'inherit'}}" permissions="{{_local.form.permission_values ?? []}}" menu_ids="{{role_menus_tree?.data?.abilities?.can_update === true &amp;&amp; _local.form?.identifier !== 'admin' ? (_local.form?.menu_ids ?? []).filter(menuId => (role_menus_tree?.data?.data ?? []).flatMap(m => [m.id, ...(m.children ?? []).map(c => c.id)]).includes(menuId)) : undefined}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <div data-ref="basic_info_section" class="admin-card">
+          <h3 class="card-title">$t:admin.roles.form.basic_info</h3>
+          <div class="row-stack">
+            <div data-ref="name_field">
+              <label class="form-label">
+                <span>$t:admin.roles.form.name</span>
+                <span class="text-red-500 ml-1">*</span>
+              </label>
+              <multilingual-input data-type="composite" name="name_raw" placeholder="$t:admin.roles.form.name_placeholder" :maxLength="100" :required="true" layout="tabs" error="{{_global.formErrors?.name || _global.formErrors?.name_raw}}"/>
+              <span data-if="{{_global.formErrors?.name || _global.formErrors?.name_raw}}" class="text-red-500 text-xs">{{_global.formErrors?.name?.[0] ?? _global.formErrors?.name_raw?.[0] ?? ''}}</span>
+            </div>
+            <div data-ref="identifier_field">
+              <label class="form-label">
+                <span>$t:admin.roles.form.identifier</span>
+                <span data-if="{{!route?.id}}" class="text-red-500 ml-1">*</span>
+              </label>
+              <input name="identifier" type="text" placeholder="$t:admin.roles.form.identifier_placeholder" :maxLength="100" disabled="{{!!route?.id}}" error="{{_global.formErrors?.identifier}}" class="input {{_global.formErrors?.identifier ? 'input-error' : ''}}"/>
+              <span data-if="{{_global.formErrors?.identifier}}" class="text-red-500 text-xs mt-1">{{_global.formErrors?.identifier?.[0] ?? ''}}</span>
+              <span data-if="{{!route?.id}}" class="text-tertiary mt-1">$t:admin.roles.form.identifier_hint</span>
+              <span data-if="{{!!route?.id}}" class="text-tertiary mt-1">$t:admin.roles.form.identifier_readonly_hint</span>
+            </div>
+            <div data-ref="description_field">
+              <label class="form-label">$t:admin.roles.form.description</label>
+              <multilingual-input data-type="composite" name="description_raw" placeholder="$t:admin.roles.form.description_placeholder" :maxLength="500" :multiline="true" :rows="3" layout="tabs" error="{{_global.formErrors?.description || _global.formErrors?.description_raw}}"/>
+              <span data-if="{{_global.formErrors?.description || _global.formErrors?.description_raw}}" class="text-red-500 text-xs">{{_global.formErrors?.description?.[0] ?? _global.formErrors?.description_raw?.[0] ?? ''}}</span>
+            </div>
+            <!-- 비밀번호 만료(#736) — 이 역할을 가진 회원에게 사이트 적용 범위와 다르게 만료를 적용하거나 뺀다. 우선순위는
+                 회원 개별 > 역할 > 사이트 범위이고, 한 회원의 역할끼리 부딪치면 「적용」이 이긴다(보안 우선). -->
+            <div data-ref="password_expiry_policy_field">
+              <label class="form-label">$t:admin.roles.form.password_expiry</label>
+              <!-- 고른 값을 폼에 담는다 — 저장 본문이 이 값을 그대로 싣는다. -->
+              <select name="password_expiry_policy" class="w-full" value="{{_local.form?.password_expiry_policy ?? 'inherit'}}" error="{{_global.formErrors?.password_expiry_policy?.[0] ?? ''}}" options="{{[{label: '$t:admin.roles.form.password_expiry_inherit', value: 'inherit'}, {label: '$t:admin.roles.form.password_expiry_apply', value: 'apply'}, {label: '$t:admin.roles.form.password_expiry_exempt', value: 'exempt'}]}}">
+                <on type="change">
+                  <set-state target="local" form.password_expiry_policy="{{$event.target.value}}"/>
+                </on>
+              </select>
+              <span class="text-tertiary mt-1">$t:admin.roles.form.password_expiry_hint</span>
+            </div>
+            <div data-ref="is_active_field" class="flex-between">
+              <div>
+                <span class="block text-heading">$t:admin.roles.form.is_active</span>
+                <span class="block text-label-subtle mt-0.5">$t:admin.roles.form.is_active_hint</span>
+                <span data-if="{{!!route?.id &amp;&amp; role?.data?.is_active_locked === true}}" class="block text-warning-soft mt-0.5">$t:admin.roles.form.is_active_locked_hint</span>
+              </div>
+              <!-- 최고관리자 역할은 끌 수 없다 — 끄면 운영자 전원의 권한이 회수된다(서버도 422 로 거부). -->
+              <toggle data-type="composite" name="is_active" disabled="{{!!route?.id &amp;&amp; role?.data?.is_active_locked === true}}"/>
+            </div>
+          </div>
+        </div>
+        <div data-ref="permissions_section" class="admin-card">
+          <h3 class="card-title card-title-aside">
+            <span>$t:admin.roles.form.permissions_section</span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{{(_local.form.permission_values ?? []).length}}$t:admin.roles.form.permissions_selected_suffix</span>
+          </h3>
+          <div class="card-description">$t:admin.roles.form.permissions_hint</div>
+          <tab-navigation data-type="composite" data-ref="permission_tabs" tabs="{{(permissions?.data?.data?.types ?? []).map(type => ({ id: type, label: permissions?.data?.data?.permissions?.[type]?.label ?? type, iconName: permissions?.data?.data?.permissions?.[type]?.icon ?? 'shield' }))}}" activeTabId="{{_global.activePermissionTab || permissions?.data?.data?.default_type || 'admin'}}" variant="underline">
+            <on type="change" event="onTabChange">
+              <!-- 권한 종류 탭 전환. 선택한 권한 값은 종류와 무관하게 한 배열에 모여 있으므로
+                   탭을 옮겨도 고른 것이 풀리지 않는다 — 이 값은 어느 탭을 보고 있는지만 정한다. -->
+              <sequence>
+                <set-state target="global" activePermissionTab="{{$args[0]}}"/>
+              </sequence>
+            </on>
+          </tab-navigation>
+          <div data-ref="permission_tab_contents" class="mt-4">
+            <div data-each="permType, typeIndex in {{permissions?.data?.data?.types ?? []}}">
+              <div data-if="{{(_global.activePermissionTab || permissions?.data?.data?.default_type || 'admin') === permType}}">
+                <permission-tree data-type="composite" data="{{permissions?.data?.data?.permissions?.[permType]?.permissions ?? []}}" value="{{_local.form.permission_values ?? []}}" scopeOptions="{{permissions?.data?.data?.scope_options ?? []}}" class="max-h-[500px] overflow-y-auto" installedModules="{{_global.installedModules}}" installedPlugins="{{_global.installedPlugins}}">
+                  <on type="change">
+                    <!-- 권한 선택. 트리는 탭마다 따로 렌더되지만 **쓰는 값은 한 배열**이라, 어느 탭에서
+                         골랐든 여기 모이고 상단 개수 배지도 그 길이를 센다. 설치된 확장 목록을 넘겨
+                         트리가 죽은 확장의 권한을 구분해 보이게 한다. -->
+                    <set-state target="local">
+                      <field name="form">
+                        <field name="permission_values" value="{{$event.target.value}}"/>
+                      </field>
+                    </set-state>
+                  </on>
+                </permission-tree>
+                <div data-if="{{(permissions?.data?.data?.permissions?.[permType]?.permissions ?? []).length === 0}}" class="text-center py-8 text-gray-500 dark:text-gray-400">$t:admin.roles.form.no_permissions_in_type</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-ref="menus_section" class="admin-card">
+          <h3 class="card-title">$t:admin.roles.form.menus_section</h3>
+          <div class="card-description">$t:admin.roles.form.menus_hint</div>
+          <div data-ref="menus_admin_locked_hint" data-if="{{_local.form?.identifier === 'admin'}}" class="text-tertiary mb-3">$t:admin.roles.form.menus_admin_locked_hint</div>
+          <!-- 읽기 전용 안내는 메뉴 조회 결과가 온 뒤에만 판정한다 — 받기 전(값 없음)에 그리면 최고관리자에게도 잠깐 「권한이 없어」가 비친다. 조회 403 은 대체값이 남아 안내가 보인다. -->
+          <div data-ref="menus_readonly_hint" data-if="{{_local.form?.identifier !== 'admin' &amp;&amp; role_menus_tree != null &amp;&amp; role_menus_tree?.data?.abilities?.can_update !== true}}" class="text-tertiary mb-3">$t:admin.roles.form.menus_readonly_hint</div>
+          <menu-access-tree data-type="composite" data-ref="menus_tree" data="{{role_menus_tree?.data?.data ?? []}}" value="{{_local.form?.menu_ids ?? []}}" disabled="{{role_menus_tree?.data?.abilities?.can_update !== true}}" lockedAll="{{_local.form?.identifier === 'admin'}}" installedModules="{{_global.installedModules}}" installedPlugins="{{_global.installedPlugins}}" class="max-h-[560px] overflow-y-auto">
+            <on type="change">
+              <!-- 메뉴 선택. 트리가 부모·자식을 맞춘 전체 목록을 주므로 그대로 담는다 — 저장 때 트리에 보이는 메뉴로만 걸러 보낸다. -->
+              <set-state target="local">
+                <field name="form">
+                  <field name="menu_ids" value="{{$event.target.value}}"/>
+                </field>
+              </set-state>
+            </on>
+          </menu-access-tree>
+        </div>
+      </form>
+      <div data-ref="footer_buttons" class="sticky-footer-buttons">
+        <responsive on="portable" class="hidden"/>
+        <!-- 취소하고 역할 목록으로. 보던 목록 상태를 이고 간다 -->
+        <button data-ref="footer_cancel_button" type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <on type="click">
+            <navigate path="/admin/roles" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          $t:common.cancel
+        </button>
+        <button data-ref="footer_save_button" type="submit" form="role_form" disabled="{{_global.isSaving}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50">
+          <icon data-if="{{!_global.isSaving}}" name="save" size="sm"/>
+          <icon data-if="{{_global.isSaving}}" name="spinner" size="sm" :spin="true"/>
+          <span>{{_global.isSaving ? $t:common.saving : $t:common.save}}</span>
+        </button>
+      </div>
+      <div data-ref="mobile_bottom_buttons" class="hidden">
+        <responsive on="portable" class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 flex gap-3 z-50"/>
+        <!-- 저장. 폼 밖에 있는 버튼이라 form 속성으로 위쪽 역할 폼에 연결한다 — 그 폼에 같은 id 가 있어야 눌리므로 둘은 짝이다 -->
+        <button type="button" class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg">
+          <on type="click">
+            <navigate path="/admin/roles" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          $t:common.cancel
+        </button>
+        <button type="submit" form="role_form" disabled="{{_global.isSaving}}" class="flex-center flex-1 justify-center gap-2 px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg disabled:opacity-50">
+          <icon data-if="{{_global.isSaving}}" name="spinner" size="sm" :spin="true"/>
+          <span>{{_global.isSaving ? $t:common.saving : $t:common.save}}</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+</layout>

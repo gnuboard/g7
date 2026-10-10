@@ -1,0 +1,290 @@
+<!-- 템플릿 목록의 **사용자용 탭** 본문(카드 목록). `_tab_admin` 과 짝이고 구조가 같다 —
+  둘 다 부모가 함께 심어 두면 자기 종류일 때만(`route.type`) 그려진다.
+  관리자 탭과 다른 점 둘 — ⑴ 코드 편집으로 나가는 버튼이 있다 ⑵ 활성해도 지금 보고 있는 관리자
+  화면은 그대로이므로, 활성 창이 화면을 다시 읽지 않는다(그 분기는 활성 창 안에 있다). -->
+<partial name="tab_user">
+  <div data-ref="tab_user" data-if="{{route.type === 'user'}}">
+    <div data-ref="section_header" class="flex-start justify-between gap-4 mb-6">
+      <responsive on="portable" class="row-stack mb-6"/>
+      <div>
+        <h2 class="section-heading">$t:admin.templates.user_section.title</h2>
+        <p class="mt-1 text-label-subtle">$t:admin.templates.user_section.description</p>
+      </div>
+      <div data-ref="toolbar_group" class="flex-center gap-4 shrink-0">
+        <responsive on="portable" class="flex flex-wrap items-center gap-x-4 gap-y-3 w-full"/>
+        <!-- 갤러리/목록 보기 전환 — 4화면이 같은 저장 키를 공유한다.
+             icon-button 은 aria-pressed·title 을 흘려보내지 않으므로(IconButton.tsx)
+             button 둘로 된 세그먼트로 만든다. 모든 폭에서 보인다(responsive 숨김 없음). -->
+        <div data-ref="tpl_user_view_mode_toggle" role="group" aria-label="$t:extensions.view_mode.toggle_label" class="inline-flex shrink-0 rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
+          <button data-ref="tpl_user_view_mode_gallery" type="button" aria-pressed="{{(_global.extensionViewMode ?? 'gallery') !== 'list'}}" title="$t:extensions.view_mode.gallery" class="px-3 h-10 transition-colors">
+            <class-map key="{{_global.extensionViewMode ?? 'gallery'}}" default="bg-gray-900 text-white dark:bg-white dark:text-gray-900"><variant when="list">bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700</variant></class-map>
+            <on type="click">
+              <!-- 리터럴 값을 저장한 뒤 곧바로 되읽어 성공을 확인한다(AGENTS.md §5).
+                   GDPR 저장 인터셉터는 허용목록 밖 키를 예외 없이 버리므로, 되읽은 값이
+                   비면 이번 세션 동안만 보기가 유지되고 새로고침하면 기본값으로 돌아간다. -->
+              <sequence>
+                <set-state target="global" extensionViewMode="gallery"/>
+                <save-to-local-storage key="g7_view_mode_extensions" value="gallery"/>
+                <load-from-local-storage key="g7_view_mode_extensions" defaultValue="">
+                  <field name="resultTo">
+                    <field name="target" value="_global"/>
+                    <field name="key" value="extensionViewModePersisted"/>
+                  </field>
+                </load-from-local-storage>
+              </sequence>
+            </on>
+            <icon name="th-large" size="sm"/>
+            <span class="sr-only">$t:extensions.view_mode.gallery_aria</span>
+          </button>
+          <button data-ref="tpl_user_view_mode_list" type="button" aria-pressed="{{(_global.extensionViewMode ?? 'gallery') === 'list'}}" title="$t:extensions.view_mode.list" class="px-3 h-10 transition-colors">
+            <class-map key="{{_global.extensionViewMode ?? 'gallery'}}" default="bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"><variant when="list">bg-gray-900 text-white dark:bg-white dark:text-gray-900</variant></class-map>
+            <on type="click">
+              <!-- 갤러리 버튼과 같은 순서 — 리터럴 `list` 를 저장한 뒤 곧바로 되읽어 성공을 확인한다(AGENTS.md §5).
+                   GDPR 저장 인터셉터는 허용목록 밖 키를 예외 없이 버리므로, 되읽은 값이 비면 이번 세션 동안만
+                   목록 보기가 유지되고 새로고침하면 기본값(갤러리)으로 돌아간다. -->
+              <sequence>
+                <set-state target="global" extensionViewMode="list"/>
+                <save-to-local-storage key="g7_view_mode_extensions" value="list"/>
+                <load-from-local-storage key="g7_view_mode_extensions" defaultValue="">
+                  <field name="resultTo">
+                    <field name="target" value="_global"/>
+                    <field name="key" value="extensionViewModePersisted"/>
+                  </field>
+                </load-from-local-storage>
+              </sequence>
+            </on>
+            <icon name="list" size="sm"/>
+            <span class="sr-only">$t:extensions.view_mode.list_aria</span>
+          </button>
+        </div>
+        <!-- 최고관리자 전용 — 관리자 로그인 응답(current_user)의 is_super 를 읽는다. 없는 이름(currentUser)을 읽어 최고관리자에게도 안 보이던 문제(#703 실측).
+             탭 위 별도 줄에 있던 것을 모듈·플러그인 화면처럼 툴바 안(보기 전환과 검색 사이)으로 옮겼다. -->
+        <label data-ref="tpl_user_include_hidden_toggle" data-if="{{current_user?.data?.is_super === true}}" class="flex-center gap-2 text-body cursor-pointer select-none">
+          <input type="checkbox" checked="{{query.include_hidden === '1'}}" class="w-4 h-4 rounded text-blue-600 dark:text-blue-400 dark:focus:ring-blue-400">
+            <on type="change">
+              <!-- 숨김 포함 여부는 다른 필터처럼 주소에 싣는다 — 화면 상태(_local)에 두면 페이지를 넘길 때 풀려, 체크는 켜진 채 숨김을 뺀 목록을 받았다(#703 실측). 주소를 바꾸면 목록을 다시 받으므로 따로 재조회하지 않는다 -->
+              <navigate path="/admin/templates/user" :mergeQuery="true">
+                <query include_hidden="{{$event.target.checked ? '1' : undefined}}" :page="1"/>
+              </navigate>
+            </on>
+          </input>
+          <span>$t:admin.templates.include_hidden</span>
+        </label>
+        <!-- 너비는 이 래퍼가 맡는다 — SearchBar 는 받은 class 를 안쪽 input 에만 걸고 바깥 div 는 내용 폭이라, 한 줄 flex 툴바에서 늘어나지 않는다. 모바일은 전폭으로 다음 줄에 내려간다. -->
+        <div data-ref="search_bar_box" class="w-64">
+          <responsive on="portable" class="w-full"/>
+          <search-bar data-type="composite" data-ref="search_bar" placeholder="$t:admin.templates.search_placeholder" value="{{_local.searchQuery || ''}}" class="w-full">
+            <on type="change">
+              <set-state searchQuery="{{$event.target.value}}"/>
+            </on>
+            <on type="submit">
+              <!-- 검색은 조건을 바꾸는 액션이지 리셋이 아니다 — 검색어와 페이지만 새로 정하고 사용자가 고른 표시 개수는 그대로 둔다 (#75). -->
+              <navigate path="/admin/templates/user" :mergeQuery="true">
+                <query search="{{_local.searchQuery || undefined}}" page=""/>
+              </navigate>
+            </on>
+          </search-bar>
+        </div>
+      </div>
+    </div>
+    <div data-ref="content_area" class="admin-card">
+      <!-- 확장 목록 — 갤러리(카드)와 목록(행)은 서로 다른 DOM 이다.
+           보기 분기는 `viewMode` prop 으로 컴포넌트에 넘긴다: 카드 셀의 렌더 컨텍스트에는
+           `_global` 이 없어 카드 안쪽에서는 보기 상태를 볼 수 없기 때문이다.
+           템플릿은 버튼이 둘이다 — 원문 편집(보조)과 시각 편집(주). 미설치면 그 자리에
+           설치 버튼 하나만 온다. 열 수는 컴포넌트가 컨테이너 실측 폭으로 정한다.
+           코어 요구 버전 미충족(`core_compatible=false`)이면 설치와 켜기를 잠근다 — 서버가 422 로 거절한다. -->
+      <extension-card-grid data-type="composite" data-ref="template_card_grid" :data-blur-until-loaded="true" viewMode="{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}" :minCardWidth="250" :maxColumns="5" resyncKey="{{_global.extensionToggleResync ?? 0}}" loading="{{templates?.loading ?? false}}" :pagination="true" :alwaysShowPagination="true" currentPage="{{templates?.data?.pagination?.current_page ?? 1}}" totalPages="{{templates?.data?.pagination?.last_page ?? null}}" hasMorePages="{{templates?.data?.pagination?.has_more_pages ?? false}}" items="{{(templates?.data?.data ?? []).map(p => ({
+        id: p.identifier,
+        row: p,
+        name: p.name ?? p.identifier,
+        version: p.version,
+        description: p.description ?? '',
+        vendor: p.vendor,
+        iconUrl: p.icon_url,
+        fallbackIcon: 'palette',
+        dependencies: [
+          ...((p.dependencies?.modules ?? []).map(d => ({ type: 'module', name: d.name || d.identifier || d }))),
+          ...((p.dependencies?.plugins ?? []).map(d => ({ type: 'plugin', name: d.name || d.identifier || d })))
+        ],
+        badges: [
+          ...(p.status === 'active' ? [{ label: '$t:admin.templates.status.active', tone: 'success' }] : []),
+          ...(p.status === 'inactive' ? [{ label: '$t:admin.templates.status.inactive', tone: 'neutral' }] : []),
+          ...(p.status === 'uninstalled' ? [{ label: '$t:admin.templates.status.not_installed', tone: 'info' }] : []),
+          ...(p.update_available &amp;&amp; p.status !== 'uninstalled' ? [{ label: '$t:admin.templates.update_available', tone: 'danger' }] : []),
+          ...(p.is_compatible === false || p.core_compatible === false ? [{ label: '$t:extensions.badges.incompatible', tone: 'warning', icon: 'exclamation-triangle' }] : [])
+        ],
+        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.status === 'active' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_activate !== true || p.core_compatible === false, label: p.name ?? p.identifier } : null,
+        secondaryAction: p.update_available &amp;&amp; p.status !== 'uninstalled'
+          ? { label: '$t:admin.templates.actions.update', icon: 'refresh', disabled: ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true }
+          : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_code', icon: 'code', disabled: p.abilities?.can_edit_layouts !== true } : null),
+        primaryAction: p.status === 'uninstalled'
+          ? { label: '$t:admin.templates.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true || p.core_compatible === false }
+          : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_layout_visual', icon: 'edit', variant: 'solid', disabled: p.abilities?.can_edit_layouts !== true } : null),
+        actions: [
+          { id: 'view_detail', label: '$t:admin.templates.actions.view_detail', iconName: 'info-circle' },
+          { id: 'update', label: '$t:admin.templates.actions.update', iconName: 'refresh', disabled: !p.update_available || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true },
+          { id: 'refresh_layouts', label: '$t:admin.templates.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },
+          { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', disabled: p.status !== 'active' || templates?.data?.abilities?.can_view_language_packs !== true },
+          { id: 'uninstall', label: '$t:admin.templates.actions.uninstall', iconName: 'trash', variant: 'danger', disabled: p.status === 'active' || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_uninstall !== true }
+        ]
+      }))}}">
+        <on type="action" event="onItemClick">
+          <!-- 카드 본문 클릭 — 상세 창을 연다. 대상 행을 전역에 먼저 담고 연다(창은 그 전역만 본다). -->
+          <sequence>
+            <set-state target="global" selectedTemplate="{{$args[0]}}"/>
+            <api-call :auth_required="true" target="/api/admin/templates/{{$args[0].identifier}}/changelog" method="GET">
+              <success>
+                <set-state target="global" templateChangelog="{{response.data.changelog ?? []}}"/>
+                <open-modal target="template_detail_modal"/>
+              </success>
+              <fail>
+                <set-state target="global" :templateChangelog="[]"/>
+                <open-modal target="template_detail_modal"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <on type="action" event="onToggle">
+          <!-- 활성/비활성은 곧바로 부르지 않고 확인 창을 연다 — 템플릿을 바꾸면 사이트 전면이
+               한꺼번에 바뀌므로 되물어야 한다(모듈·플러그인과 다른 점이다).
+               스위치는 창이 답을 받을 때까지 서버 값에 둔다 — 창을 닫아도 누른 쪽으로 뒤집힌 채 남지 않게
+               재동기 신호를 올린다(#703 실측). 확인하면 목록을 다시 받아 새 값으로 넘어간다. -->
+          <sequence>
+            <set-state target="global" extensionToggleResync="{{(_global.extensionToggleResync ?? 0) + 1}}"/>
+            <set-state target="global" selectedTemplate="{{$args[1]}}"/>
+            <open-modal target="{{$args[1].status === 'active' ? 'template_deactivate_modal' : 'template_activate_modal'}}"/>
+          </sequence>
+        </on>
+        <on type="action" event="onSecondaryAction">
+          <!-- 보조 버튼은 둘 중 하나로만 생긴다 — 올릴 판이 있으면 업데이트, 아니면 원문 편집.
+               원문 편집은 같은 창에서 연다(지금 보는 관리자 화면과 겹치지 않는다).
+               업데이트는 손으로 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다. -->
+          <switch on="{{$args[0].update_available &amp;&amp; $args[0].status !== 'uninstalled' ? 'update' : 'edit_code'}}">
+            <case when="edit_code">
+              <navigate path="/admin/templates/{{$args[0].identifier}}/edit" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </case>
+            <case when="update">
+              <sequence>
+                <set-state target="global" selectedTemplate="{{$args[0]}}" templateLayoutStrategy="overwrite" :templateForceUpdate="false" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]" :modifiedTemplateLayoutsCheckFailed="false"/>
+                <api-call :auth_required="true" target="/api/admin/templates/{{$args[0].identifier}}/check-modified-layouts" method="GET">
+                  <success>
+                    <set-state target="global" hasModifiedTemplateLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedTemplateLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedTemplateLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedTemplateLayoutsCheckFailed="false"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :modifiedTemplateLayoutsCheckFailed="true"/>
+                  </fail>
+                </api-call>
+                <api-call :auth_required="true" target="/api/admin/templates/{{$args[0].identifier}}/changelog?source={{$args[0].update_source ?? 'bundled'}}&amp;from_version={{$args[0].version}}&amp;to_version={{$args[0].latest_version}}" method="GET">
+                  <success>
+                    <set-state target="global" updateChangelog="{{response.data.changelog ?? []}}" :templateUpdateError="null"/>
+                    <open-modal target="template_update_modal"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :updateChangelog="[]" :templateUpdateError="null"/>
+                    <open-modal target="template_update_modal"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </case>
+          </switch>
+        </on>
+        <on type="action" event="onPrimaryAction">
+          <!-- 미설치면 설치 창, 활성이면 시각 편집기다(버튼 자체가 그 둘로만 생긴다).
+               시각 편집기는 새 창으로 연다 — 편집하며 결과를 보려면 원래 화면이 남아 있어야 한다. -->
+          <switch on="{{$args[0].status === 'uninstalled' ? 'install' : 'edit'}}">
+            <case when="install">
+              <sequence>
+                <set-state target="global" selectedTemplate="{{$args[0]}}"/>
+                <open-modal target="template_install_modal"/>
+              </sequence>
+            </case>
+            <case when="edit">
+              <open-window path="/admin/layout-editor/{{$args[0].identifier}}" target="_blank"/>
+            </case>
+          </switch>
+        </on>
+        <on type="action" event="onAction">
+          <!-- 카드 더보기 메뉴. 업데이트는 손으로 고친 레이아웃 여부와 변경 이력을 미리 물어 두고,
+               삭제는 창을 먼저 열고 안내 정보를 뒤이어 받는다. -->
+          <switch>
+            <case when="view_detail">
+              <set-state target="global" selectedTemplate="{{$args[1]}}"/>
+              <api-call :auth_required="true" target="/api/admin/templates/{{$args[1].identifier}}/changelog" method="GET">
+                <success>
+                  <set-state target="global" templateChangelog="{{response.data.changelog ?? []}}"/>
+                  <open-modal target="template_detail_modal"/>
+                </success>
+                <fail>
+                  <set-state target="global" :templateChangelog="[]"/>
+                  <open-modal target="template_detail_modal"/>
+                </fail>
+              </api-call>
+            </case>
+            <case when="update">
+              <sequence>
+                <set-state target="global" selectedTemplate="{{$args[1]}}" templateLayoutStrategy="overwrite" :templateForceUpdate="false" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]" :modifiedTemplateLayoutsCheckFailed="false"/>
+                <api-call :auth_required="true" target="/api/admin/templates/{{$args[1].identifier}}/check-modified-layouts" method="GET">
+                  <success>
+                    <set-state target="global" hasModifiedTemplateLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedTemplateLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedTemplateLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedTemplateLayoutsCheckFailed="false"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :modifiedTemplateLayoutsCheckFailed="true"/>
+                  </fail>
+                </api-call>
+                <api-call :auth_required="true" target="/api/admin/templates/{{$args[1].identifier}}/changelog?source={{$args[1].update_source ?? 'bundled'}}&amp;from_version={{$args[1].version}}&amp;to_version={{$args[1].latest_version}}" method="GET">
+                  <success>
+                    <set-state target="global" updateChangelog="{{response.data.changelog ?? []}}" :templateUpdateError="null"/>
+                    <open-modal target="template_update_modal"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :updateChangelog="[]" :templateUpdateError="null"/>
+                    <open-modal target="template_update_modal"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </case>
+            <case when="refresh_layouts">
+              <set-state target="global" selectedTemplate="{{$args[1]}}"/>
+              <open-modal target="template_refresh_layouts_modal"/>
+            </case>
+            <case when="manage_language_packs">
+              <navigate path="/admin/templates/{{$args[1].identifier}}/language-packs" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </case>
+            <case when="uninstall">
+              <set-state target="global" selectedTemplate="{{$args[1]}}" :templateUninstallInfo="null" :templateUninstallBackups="null"/>
+              <open-modal target="template_uninstall_modal"/>
+              <api-call :auth_required="true" target="/api/admin/templates/{{$args[1].identifier}}/uninstall-info" method="GET">
+                <success>
+                  <set-state target="global" templateUninstallInfo="{{response.data}}"/>
+                </success>
+              </api-call>
+            </case>
+          </switch>
+        </on>
+        <on type="change" event="onPageChange">
+          <!-- 페이지 이동 — 검색은 유지하고, 목적지에는 자기 탭 경로를 박아 둔다. -->
+          <navigate path="/admin/templates/user" :mergeQuery="true">
+            <query page="{{$args[0]}}"/>
+          </navigate>
+        </on>
+      </extension-card-grid>
+      <div data-ref="pagination_info" class="mt-4 text-label text-center">
+        <span>$t:admin.templates.pagination_info|total={{templates?.data?.pagination?.total ?? 0}}|from={{((templates?.data?.pagination?.current_page ?? 1) - 1) * (templates?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((templates?.data?.pagination?.current_page ?? 1) * (templates?.data?.pagination?.per_page ?? 12), templates?.data?.pagination?.total ?? 0)}}</span>
+      </div>
+    </div>
+    <div data-ref="info_message" class="alert-info">
+      <div class="flex-start gap-3">
+        <icon name="info-circle" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
+        <div>
+          <p class="font-medium text-blue-900 dark:text-blue-100">$t:admin.templates.user_info.title</p>
+          <p class="mt-1 text-info-soft">$t:admin.templates.user_info.description</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

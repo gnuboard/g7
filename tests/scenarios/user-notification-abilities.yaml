@@ -1,0 +1,16 @@
+feature: 사용자 알림 목록 응답의 abilities — 읽음·삭제 버튼 잠금 근거 (7.1.0 abilities 게이트 G27)
+
+description: |
+  알림함·헤더 알림센터의 읽음·삭제 버튼이 잠글 근거가 없어 읽음·삭제 권한을 회수한 회원에게도 열린 채 눌리면 403 이었다.
+  목록 응답(UserNotificationCollection)이 라우트와 같은 권한으로 abilities.can_update·can_delete 를 싣는다.
+
+test_files:
+  - tests/Feature/Api/Auth/UserNotificationAbilitiesTest.php
+
+axes:
+  case:
+    - read_only_member
+    - full_member
+
+effects:
+  - notification_list_reports_abilities

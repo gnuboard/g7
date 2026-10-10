@@ -1,0 +1,14 @@
+feature: 주문 취소 알림 「취소 사유」 (S3-D8)
+
+description: |
+  order_cancelled 메일의 「취소 사유」가 빈 칸이었다 — 사유 카탈로그 이름에 상세 사유를 괄호로 붙인다(실측: Q19).
+
+axes:
+  case:
+    - order_cancelled_notification
+
+effects:
+  - order_cancelled_notification_names_the_reason # 사유 이름(+상세)을 알림에 싣는다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Notifications/OrderCancelledReasonNotificationTest.php

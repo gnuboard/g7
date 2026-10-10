@@ -69,7 +69,26 @@
         "tax_breakdown_title": "세금 상세",
         "supply_amount": "공급가액",
         "vat_amount": "부가세",
-        "tax_free_amount": "면세금액"
+        "tax_free_amount": "면세금액",
+        "receipt_print": "인쇄",
+        "loading": "로딩 중...",
+        "cbt_confirmation_title": "KG 이니시스 CBT 결제확인서",
+        "vbank_title": "가상계좌 입금 안내",
+        "vbank_bank": "은행",
+        "vbank_bank_code": "은행코드",
+        "vbank_account_number": "계좌번호",
+        "vbank_holder": "예금주",
+        "vbank_amount": "입금 금액",
+        "vbank_due": "입금 기한",
+        "vbank_notice": "입금 기한 내에 입금하지 않으시면 주문이 자동 취소됩니다.",
+        "cvs_title": "일본 편의점 입금 안내",
+        "cvs_status": "상태",
+        "cvs_due_amount": "입금예정금액",
+        "cvs_code": "편의점 코드",
+        "cvs_confirmation_no": "편의점 확인번호",
+        "cvs_receipt_no": "편의점 접수번호",
+        "cvs_payment_term": "입금 마감일시",
+        "easy_pay_label": "간편결제"
     },
     "admin": {
         "test_mode_badge": "테스트 결제",
@@ -189,6 +208,7 @@
         "escrow_delivery_invoice_placeholder": "운송장번호를 입력하세요",
         "escrow_delivery_courier_label": "택배사",
         "escrow_delivery_courier_placeholder": "택배사를 선택하세요",
+        "escrow_delivery_courier_etc": "기타",
         "escrow_delivery_register_button": "배송등록",
         "escrow_delivery_change_button": "배송변경",
         "escrow_delivery_registering": "등록 중...",
@@ -208,7 +228,9 @@
         "escrow_deny_confirm_done": "거절확인 완료",
         "escrow_deny_confirm_done_at": "처리일시",
         "escrow_deny_confirm_status_label": "구매거절 상태",
-        "escrow_deny_confirm_buyer_denied": "구매거절"
+        "escrow_deny_confirm_buyer_denied": "구매거절",
+        "escrow_deny_confirm_buyer_denied_at": "일시",
+        "easy_pay_provider": "간편결제: {{provider}}"
     },
     "settings": {
         "title": "KG 이니시스 설정",
@@ -306,7 +328,7 @@
         "redirect_success_url": "결제 성공 리다이렉트 URL",
         "redirect_success_url_hint": "{shopBase}는 상점 주소 설정을 따라 자동으로 채워집니다. 전체 URL(https://...)을 직접 넣어도 됩니다. {orderId}는 주문번호로 자동 치환됩니다.",
         "redirect_fail_url": "결제 실패 리다이렉트 URL",
-        "redirect_fail_url_hint": "상대 경로 또는 전체 URL 모두 가능합니다. 오류 정보는 쿼리 파라미터로 자동 추가됩니다.",
+        "redirect_fail_url_hint": "{shopBase}는 상점 주소 설정을 따라 자동으로 채워집니다. 전체 URL 을 직접 넣어도 됩니다. 오류 정보는 쿼리 파라미터로 자동 추가됩니다.",
         "section_vbank_notify": "가상계좌 입금통보 URL (PC)",
         "vbank_notify_hint": "KG 이니시스 가맹점 어드민에서 이 URL을 PC 가상계좌 입금통보 URL로 등록해야 합니다.",
         "vbank_notify_copied": "URL이 클립보드에 복사되었습니다.",
@@ -316,5 +338,6 @@
         "error": {
             "sdk_url_untrusted": "결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다. 관리자에게 문의해 주세요."
         }
-    }
+    },
+    "plugin_read_only": "이 플러그인 설정을 수정할 권한이 없어 읽기 전용으로 표시됩니다."
 }

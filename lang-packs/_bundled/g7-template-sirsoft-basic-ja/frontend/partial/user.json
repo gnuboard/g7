@@ -1,19 +1,19 @@
 {
-  "base_layout_title": "Gnuboard7",
-  "base_layout_description": "Gnuboard7 コミュニティ",
+  "base_layout_title": "グヌボード7",
+  "base_layout_description": "グヌボード7 コミュニティ",
   "menu": "メニュー",
-  "search_placeholder": "検索ワードを入力してください",
+  "search_placeholder": "検索語を入力してください",
   "profile": {
     "page_title": "ユーザープロフィール",
-    "posts_page_title": "作成投稿",
-    "user_not_found": "ユーザーが見つかりません",
+    "posts_page_title": "作成記事",
+    "user_not_found": "ユーザーが見つかりません。",
     "joined_at": "登録日:",
     "posts_count": "投稿",
     "comments_count": "コメント",
     "recent_posts": "最近の投稿",
-    "posts_suffix": "さんの作成投稿",
+    "posts_suffix": "さんの作成記事",
     "total_posts": "合計 {{count}}件",
-    "no_posts": "作成した投稿がありません",
+    "no_posts": "作成した投稿がありません。",
     "view_all": "すべて表示",
     "back_to_profile": "プロフィール",
     "post_board": "掲示板",
@@ -44,7 +44,7 @@
   "page": {
     "page_title": "ページ",
     "not_found_title": "ページが見つかりません",
-    "not_found_description": "要求されたページが存在しないか、削除されました",
+    "not_found_description": "ご要望されたページは存在しないか、削除されました。",
     "back_to_home": "ホームに戻る",
     "admin_edit": "編集",
     "status_active": "実施中",
@@ -52,43 +52,59 @@
     "create_page": "ページ作成",
     "attachments": "添付ファイル",
     "download": "ダウンロード",
-    "preview_banner": "未公開ページをプレビュー中です"
+    "preview_banner": "未公開ページのプレビュー中です"
   },
   "mypage": {
     "page_title": "マイページ",
-    "profile_title": "自分の情報",
-    "profile_edit_title": "自分の情報を編集",
+    "profile_title": "マイ情報",
+    "profile_edit_title": "マイ情報編集",
     "change_password_title": "パスワード変更",
     "orders_title": "注文履歴",
     "order_detail_title": "注文詳細",
-    "wishlist_title": "お気に入り一覧",
+    "mileage_title": "マイレージ",
+    "wishlist_title": "お気に入りリスト",
     "addresses_title": "配送先管理",
     "notifications_title": "通知",
     "board_title": "掲示板アクティビティ",
+    "scrap_title": "スクラップ",
     "inquiries_title": "商品問い合わせ履歴",
-    "mileage_title": "マイレージ"
+    "claim_apply_title": "交換·返品·キャンセル申請",
+    "claim_apply_description": "注文商品の交換·返品·キャンセル·返金を申請します。",
+    "claims_title": "キャンセル·返品·交換申請履歴",
+    "claims_description": "交換·返品·返金·キャンセル申請履歴を確認し、編集または取り消します。",
+    "claim_detail_title": "申請詳細",
+    "claim_detail_description": "申請書の商品·配送·金額·理由を確認します。",
+    "claim_edit_title": "申請内容編集"
   },
   "identity": {
     "challenge": {
       "title": "本人確認",
       "code_title": "認証コード入力",
-      "code_subtitle": "送信された6桁のコードを入力してください",
+      "code_subtitle": "送付された6桁のコードを入力してください。",
       "code_placeholder": "認証コード",
       "verify": "確認",
       "resend": "コード再送信",
       "resend_cooldown": "再送信 ({{seconds}}秒後)",
-      "resend_success": "認証コードを再送信しました",
+      "resend_success": "認証コードを再送信しました。",
       "remaining_time": "残り時間: {{minutes}}:{{seconds}}",
       "remaining_attempts": "残り試行回数: {{count}}回",
-      "expired": "時間が経過しました。再送信を押してください",
+      "expired": "時間が経過しました。再送信をクリックしてください。",
       "link_title": "メール確認が必要です",
-      "link_subtitle": "メールで送信されたリンクをクリックして本人確認を完了してください",
+      "link_subtitle": "メールで送付されたリンクをクリックして本人確認を完了してください。",
       "resend_link": "メール再送信",
-      "check_spam": "メールが届かない場合はスパムフォルダを確認してください",
+      "check_spam": "メールが到着しない場合はスパムフォルダをご確認ください。",
       "external_title": "外部本人認証に移動中",
-      "external_subtitle": "しばらくしてから本人認証サービスに自動移動します",
+      "external_subtitle": "しばらくして本人認証サービスに自動移動されます。",
       "manual_redirect": "手動で移動する",
-      "error_generic": "認証に失敗しました。もう一度お試しください"
+      "error_generic": "認証に失敗しました。もう一度お試しください。"
+    },
+    "verify_link": {
+      "title": "本人確認",
+      "verifying": "本人確認中です…",
+      "verified_title": "本人確認が完了しました",
+      "verified_body": "認証を始めた画面に戻ると自動的に続行されます。このウィンドウは閉じてもかまいません。",
+      "failed_title": "確認できないリンクです",
+      "failed_body": "リンクの有効期限が切れたか、すでに使用されています。元の画面からメールを再送してください。"
     }
   },
   "home": {
@@ -97,8 +113,8 @@
   "auth": {
     "login_title": "ログイン",
     "register_title": "会員登録",
-    "forgot_password_title": "パスワード忘却",
-    "reset_password_title": "パスワード再設定"
+    "forgot_password_title": "パスワード再発行",
+    "reset_password_title": "パスワードのリセット"
   },
   "board": {
     "boards_title": "掲示板一覧",
@@ -123,7 +139,7 @@
   },
   "errors": {
     "not_found_title": "404 — ページが見つかりません",
-    "forbidden_title": "403 — アクセスが禁止されています",
+    "forbidden_title": "403 — アクセス禁止",
     "server_error_title": "500 — サーバーエラー"
   },
   "modal_label": {
@@ -134,7 +150,7 @@
     "shop_detail": {
       "coupon_download_confirm_modal": "クーポンダウンロード確認",
       "inquiry_delete_modal": "商品問い合わせ削除確認",
-      "login_required_modal": "ログイン必須案内",
+      "login_required_modal": "ログイン必須のお知らせ",
       "qna_reply_modal": "商品問い合わせ回答",
       "qna_write_modal": "商品問い合わせ作成",
       "review_image_modal": "レビュー画像表示",
@@ -153,17 +169,20 @@
       "confirmDeleteAddressModal": "配送先削除確認",
       "confirmOverwriteModal": "配送先上書き確認"
     },
+    "mypage_scrap": {
+      "scrapDeleteModal": "スクラップ解除確認",
+      "scrapBulkDeleteModal": "スクラップ選択解除確認"
+    },
     "shop": {
       "addressManageModal": "配送先管理",
       "cart_delete_confirm_modal": "カート削除確認",
       "cart_option_change_modal": "カートオプション変更",
-      "cart_unavailable_modal": "購入不可商品案内",
+      "cart_unavailable_modal": "購入不可商品のお知らせ",
       "coupon_download_modal": "クーポンダウンロード",
       "exclusiveCouponConfirm": "重複不可クーポン適用確認",
-      "tempOrderNotFoundModal": "注文情報なし案内"
+      "tempOrderNotFoundModal": "注文情報がないお知らせ"
     },
     "mypage_orders": {
-      "modal_cancel_order": "注文キャンセル",
       "changeAddressModal": "配送先変更",
       "modal_confirm_purchase": "購入確定",
       "modal_write_review": "レビュー作成"
@@ -172,6 +191,35 @@
       "withdrawModal": "会員退会確認"
     },
     "identity_challenge_modal": "本人認証",
-    "notification_delete_all_confirm_modal": "通知全削除確認"
+    "notification_delete_all_confirm_modal": "通知全削除確認",
+    "mypage_board": {
+      "reactionDeleteModal": "反応解除確認",
+      "reactionBulkDeleteModal": "反応一括解除確認",
+      "reportCancelModal": "通報キャンセル確認"
+    },
+    "mypage_claims": {
+      "apply_items": "申請商品",
+      "apply_redelivery": "再発送先",
+      "apply_reason": "申請理由",
+      "apply_summary": "申請概要",
+      "apply_comparison": "注文金額の比較",
+      "change_product_modal": "交換商品変更",
+      "apply_refund_account": "返金口座",
+      "withdraw_modal": "申請取消確認",
+      "list": "申請履歴一覧",
+      "detail_items": "申請商品",
+      "detail_shipping": "配送",
+      "detail_claim_info": "クレーム情報",
+      "detail_progress": "進行段階",
+      "detail_reason": "申請理由",
+      "image_viewer_modal": "添付写真を表示"
+    }
+  },
+  "visitor_counter": {
+    "title": "訪問者",
+    "today": "今日",
+    "yesterday": "昨日",
+    "max": "最大",
+    "total": "全体"
   }
 }

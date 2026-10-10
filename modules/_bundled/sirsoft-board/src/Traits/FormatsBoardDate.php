@@ -39,6 +39,8 @@ trait FormatsBoardDate
         $diffInHours = (int) $now->diffInHours($userCarbon, absolute: true);
 
         // 1시간 미만: N분 전 (공통). 라벨은 현재 로케일을 따른다.
+        // 수가 붙는 문구는 trans_choice 로 고른다 — en 은 1 이면 단수(「1 hour ago」), 그 밖에는 복수.
+        // ko·ja 는 문구가 하나라 그대로 쓰인다(7.1.0 실측 O-K2-4: 「1 hours ago」).
         if ($diffInMinutes < 60) {
             if ($diffInMinutes < 1) {
                 return __('sirsoft-board::messages.common.relative_time.just_now');
@@ -49,12 +51,12 @@ trait FormatsBoardDate
                 ? (int) floor($diffInMinutes / 10) * 10
                 : $diffInMinutes;
 
-            return __('sirsoft-board::messages.common.relative_time.minutes_ago', ['count' => $minutes]);
+            return trans_choice('sirsoft-board::messages.common.relative_time.minutes_ago', $minutes);
         }
 
         // 1~23시간: N시간 전 (공통)
         if ($diffInHours < 24) {
-            return __('sirsoft-board::messages.common.relative_time.hours_ago', ['count' => $diffInHours]);
+            return trans_choice('sirsoft-board::messages.common.relative_time.hours_ago', $diffInHours);
         }
 
         if ($format === 'relative') {
@@ -64,14 +66,14 @@ trait FormatsBoardDate
             $diffInYears = (int) $now->diffInYears($userCarbon, absolute: true);
 
             if ($diffInYears >= 1) {
-                return __('sirsoft-board::messages.common.relative_time.years_ago', ['count' => $diffInYears]);
+                return trans_choice('sirsoft-board::messages.common.relative_time.years_ago', $diffInYears);
             }
 
             if ($diffInMonths >= 1) {
-                return __('sirsoft-board::messages.common.relative_time.months_ago', ['count' => $diffInMonths]);
+                return trans_choice('sirsoft-board::messages.common.relative_time.months_ago', $diffInMonths);
             }
 
-            return __('sirsoft-board::messages.common.relative_time.days_ago', ['count' => $diffInDays]);
+            return trans_choice('sirsoft-board::messages.common.relative_time.days_ago', $diffInDays);
         }
 
         // 표준형: MM-DD (올해) → YY-MM-DD (지난해 이전)

@@ -40,6 +40,7 @@ class MileageSeederTest extends ModuleTestCase
      * 회원/관리자 + 실제 주문(적립 가능/취소 포함)을 준비합니다.
      *
      * @param  int  $memberCount  생성할 일반 회원 수
+     * @return void 반환값 없음
      */
     private function bootstrap(int $memberCount = 12): void
     {
@@ -70,6 +71,8 @@ class MileageSeederTest extends ModuleTestCase
 
     /**
      * 마일리지 설정 파일을 작성합니다.
+     *
+     * @return void 반환값 없음
      */
     private function writeMileageSettings(): void
     {
@@ -92,6 +95,11 @@ class MileageSeederTest extends ModuleTestCase
         file_put_contents($path.'/mileage.json', json_encode($settings, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 
+    /**
+     * 테스트가 쓴 설정 파일을 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $file = storage_path('framework/testing/modules/sirsoft-ecommerce/settings/mileage.json');
@@ -115,14 +123,27 @@ class MileageSeederTest extends ModuleTestCase
         // 고유 주문번호 보장 (Factory 랜덤 충돌 회피 — 다량 생성 시 중복 가능)
         $this->orderSequence++;
 
+        // 시더는 시각 사슬(결제·배송완료·구매확정)을 읽어 사용·적립 시점을 정한다 — 실제 주문처럼 채운다
+        $orderedAt = now()->subDays(rand(20, 200));
+        $paidAt = $orderedAt->copy()->addMinutes(5);
+        $deliveredAt = in_array($status, [OrderStatusEnum::DELIVERED, OrderStatusEnum::CONFIRMED], true) ? $orderedAt->copy()->addDays(3) : null;
+        $confirmedAt = $status === OrderStatusEnum::CONFIRMED ? $orderedAt->copy()->addDays(6) : null;
+
         $order = Order::factory()->create([
             'user_id' => $member->id,
             'order_number' => 'ORD-TEST-'.str_pad((string) $this->orderSequence, 6, '0', STR_PAD_LEFT),
             'currency' => 'KRW',
             'order_status' => $status,
+            'subtotal_amount' => $totalAmount,
+            'total_discount_amount' => 0,
+            'total_shipping_amount' => 0,
             'total_amount' => $totalAmount,
+            'total_paid_amount' => $totalAmount,
             'total_points_used_amount' => 0,
-            'ordered_at' => now()->subDays(rand(20, 200)),
+            'ordered_at' => $orderedAt,
+            'paid_at' => $paidAt,
+            'confirmed_at' => $confirmedAt,
+            'cancelled_at' => $status === OrderStatusEnum::CANCELLED ? $orderedAt->copy()->addDays(1) : null,
         ]);
 
         OrderOption::factory()->forOrder($order)->create([
@@ -131,11 +152,22 @@ class MileageSeederTest extends ModuleTestCase
             'subtotal_paid_amount' => $totalAmount,
             'subtotal_points_used_amount' => 0,
             'subtotal_earned_points_amount' => $earnAmount,
+            'delivered_at' => $deliveredAt,
+            'confirmed_at' => $confirmedAt,
         ]);
 
         return $order->fresh('options');
     }
 
+    /**
+     * 시더가 마일리지 거래와 잔액 캐시를 만든다.
+     *
+     * @scenario seeder=mileage
+     *
+     * @effects transactions_and_cache_created
+     *
+     * @return void 반환값 없음
+     */
     public function test_seeder_creates_transactions_and_balance_cache(): void
     {
         $this->bootstrap();
@@ -146,6 +178,15 @@ class MileageSeederTest extends ModuleTestCase
         $this->assertGreaterThan(0, MileageBalance::count(), '잔액 캐시 행이 생성되어야 합니다');
     }
 
+    /**
+     * 구매 적립은 실제 주문과 주문옵션에 연결된다.
+     *
+     * @scenario seeder=mileage
+     *
+     * @effects earn_links_real_order
+     *
+     * @return void 반환값 없음
+     */
     public function test_purchase_earn_links_real_order_and_option(): void
     {
         $this->bootstrap();
@@ -166,6 +207,15 @@ class MileageSeederTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 사용 거래는 실제 주문에 연결되고 주문·옵션의 사용액 컬럼과 정합한다.
+     *
+     * @scenario seeder=mileage
+     *
+     * @effects use_updates_order_columns
+     *
+     * @return void 반환값 없음
+     */
     public function test_order_use_links_real_order_and_updates_order_columns(): void
     {
         $this->bootstrap();
@@ -206,6 +256,15 @@ class MileageSeederTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 결제 후 취소 주문의 복원 거래는 실제 취소신청서에 연결된다.
+     *
+     * @scenario seeder=mileage
+     *
+     * @effects restore_links_cancel_record
+     *
+     * @return void 반환값 없음
+     */
     public function test_cancel_restore_links_real_order_cancel_record(): void
     {
         $this->bootstrap();
@@ -245,6 +304,15 @@ class MileageSeederTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 잔액 캐시는 원장 합과 같다.
+     *
+     * @scenario seeder=mileage
+     *
+     * @effects cache_matches_ledger
+     *
+     * @return void 반환값 없음
+     */
     public function test_balance_cache_matches_ledger_sum(): void
     {
         $this->bootstrap();
@@ -266,6 +334,15 @@ class MileageSeederTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 잔여액·잔액이 음수가 되지 않는다.
+     *
+     * @scenario seeder=mileage
+     *
+     * @effects no_negative_balance
+     *
+     * @return void 반환값 없음
+     */
     public function test_no_negative_remaining_or_balance(): void
     {
         $this->bootstrap();
@@ -284,22 +361,41 @@ class MileageSeederTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 사용액은 사용 전 결제금액을 넘지 않고 남은 결제금액은 음수가 아니다.
+     *
+     * @scenario seeder=mileage
+     *
+     * @effects usage_within_payment
+     *
+     * @return void 반환값 없음
+     */
     public function test_usage_never_exceeds_payment_amount(): void
     {
         $this->bootstrap();
 
         $this->seed(MileageSeeder::class);
 
-        // 사용액은 주문 결제금액(total_amount)을 초과할 수 없다
+        // 사용액은 사용 전 결제금액(픽스처는 할인·배송비 없음 → 상품금액)을 초과할 수 없고, 남은 결제금액은 음수가 아니다
         foreach (Order::query()->where('total_points_used_amount', '>', 0)->get() as $order) {
+            $this->assertGreaterThanOrEqual(0.0, (float) $order->total_amount, "남은 결제금액이 음수면 안 됩니다 (order={$order->id})");
             $this->assertLessThanOrEqual(
-                (float) $order->total_amount,
+                (float) $order->subtotal_amount,
                 (float) $order->total_points_used_amount,
                 "사용액이 결제금액을 초과하면 안 됩니다 (order={$order->id})",
             );
         }
     }
 
+    /**
+     * 재실행해도 고아 거래·취소신청서가 쌓이지 않는다.
+     *
+     * @scenario seeder=mileage
+     *
+     * @effects idempotent_rerun
+     *
+     * @return void 반환값 없음
+     */
     public function test_seeder_is_idempotent_and_resets_order_usage(): void
     {
         $this->bootstrap();
@@ -331,6 +427,12 @@ class MileageSeederTest extends ModuleTestCase
      *
      * 소멸은 확률 기반이라 0건일 수 있으므로, 이 통합 테스트는 "존재하면 인과 보장"만
      * 확인한다. 결정적 인과 검증은 test_expire_oldest_lot_enforces_causal_order 가 담당.
+     *
+     * @scenario seeder=mileage
+     *
+     * @effects expiry_after_earn
+     *
+     * @return void 반환값 없음
      */
     public function test_seeded_expired_transactions_never_predate_their_source_earn(): void
     {
@@ -359,6 +461,12 @@ class MileageSeederTest extends ModuleTestCase
     /**
      * expireOldestLot 결정적 인과 검증 — 만료 예정일이 지난 lot 만 소멸시키고,
      * 소멸 시점이 적립일/만료예정일 이후이며 현재 시각을 넘지 않음.
+     *
+     * @scenario seeder=mileage
+     *
+     * @effects expiry_after_earn
+     *
+     * @return void 반환값 없음
      */
     public function test_expire_oldest_lot_enforces_causal_order(): void
     {
@@ -407,6 +515,12 @@ class MileageSeederTest extends ModuleTestCase
 
     /**
      * expireOldestLot 은 만료 예정일이 아직 미래인 lot 을 소멸시키지 않는다 (시간 역전 차단).
+     *
+     * @scenario seeder=mileage
+     *
+     * @effects expiry_skips_not_due
+     *
+     * @return void 반환값 없음
      */
     public function test_expire_oldest_lot_skips_lot_not_yet_due(): void
     {
@@ -450,6 +564,15 @@ class MileageSeederTest extends ModuleTestCase
         $this->assertNull($lot->fresh()->expired_at, '미만료 lot 의 expired_at 이 채워지면 안 됩니다');
     }
 
+    /**
+     * 관리자 지급에는 지급한 관리자와 메모가 남는다.
+     *
+     * @scenario seeder=mileage
+     *
+     * @effects admin_grant_has_actor
+     *
+     * @return void 반환값 없음
+     */
     public function test_admin_grants_have_granted_by(): void
     {
         $this->bootstrap();
@@ -466,6 +589,15 @@ class MileageSeederTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 잔액 캐시를 다시 계산해도 값이 같다.
+     *
+     * @scenario seeder=mileage
+     *
+     * @effects cache_recalculation_stable
+     *
+     * @return void 반환값 없음
+     */
     public function test_balance_cache_recalculation_is_stable(): void
     {
         $this->bootstrap();
@@ -485,6 +617,15 @@ class MileageSeederTest extends ModuleTestCase
         $this->assertEquals($before, $after, '재계산 후 캐시가 동일해야 합니다 (정합성)');
     }
 
+    /**
+     * 주문이 없으면 거래를 만들지 않는다.
+     *
+     * @scenario seeder=mileage
+     *
+     * @effects no_orders_no_transactions
+     *
+     * @return void 반환값 없음
+     */
     public function test_no_orders_no_transactions(): void
     {
         // 회원은 있으나 주문이 없으면 마일리지를 만들지 않는다
@@ -517,12 +658,40 @@ class MileageSeederTest extends ModuleTestCase
         {
             protected $signature = 'test:mileage-dummy';
 
+            /**
+             * 출력을 버립니다.
+             *
+             * @param  mixed  $string  출력 문구
+             * @param  mixed  $verbosity  출력 상세도
+             * @return void 반환값 없음
+             */
             public function info($string, $verbosity = null): void {}
 
+            /**
+             * 출력을 버립니다.
+             *
+             * @param  mixed  $string  출력 문구
+             * @param  mixed  $verbosity  출력 상세도
+             * @return void 반환값 없음
+             */
             public function warn($string, $verbosity = null): void {}
 
+            /**
+             * 출력을 버립니다.
+             *
+             * @param  mixed  $string  출력 문구
+             * @param  mixed  $style  출력 스타일
+             * @param  mixed  $verbosity  출력 상세도
+             * @return void 반환값 없음
+             */
             public function line($string, $style = null, $verbosity = null): void {}
 
+            /**
+             * 출력을 버립니다.
+             *
+             * @param  mixed  $count  줄 수
+             * @return void 반환값 없음
+             */
             public function newLine($count = 1): void {}
         };
 

@@ -1,0 +1,79 @@
+<!-- 재주문 경유 화면 — 사람이 조작하는 화면이 아니라 «지난 주문을 장바구니에 다시 담는» 한 동작을
+     수행하고 결과만 알려 주는 자리다. 진입과 동시에 API 를 부르고, 품절 등으로 담지 못한 항목이 있으면
+     그 목록을 보여 준 뒤 장바구니로 보낸다. 회원 전용(auth_required). -->
+<layout name="shop/reorder" version="1.0.0" extends="_user_base">
+  <meta _e2e_allow="e2e:allow 다크 모드 대비 클래스(dark:bg-indigo-500/dark:hover:bg-indigo-600) 추가만으로 동작 변화 없음. safelist 등록 후 빌드 CSS 에 셀렉터 생성 확인. 재주문 화면 Playwright spec 부재."/>
+  <init-local>
+    <field name="status" value="pending"/>
+    <field name="message" value=""/>
+    <field name="skipped" :value="[]"/>
+  </init-local>
+  <permissions/>
+  <init>
+    <!-- 재주문 API 호출 — 과거 주문의 상품 옵션을 장바구니에 일괄 추가. user 인증 토큰 필수. -->
+    <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/user/orders/{{route.id}}/reorder" method="POST">
+      <success>
+        <!-- 결과 상태 저장 (skipped 항목 노출용) -->
+        <set-state target="local" status="success" message="{{response.message}}" skipped="{{response.data?.skipped ?? []}}"/>
+        <!-- skipped 없으면 즉시 장바구니로 이동 -->
+        <navigate if="{{(response.data?.skipped?.length ?? 0) === 0}}" path="{{_global.shopBase}}/cart"/>
+      </success>
+      <fail>
+        <set-state target="local" status="error" message="{{error.message ?? ''}}"/>
+        <toast type="error" message="{{error.message ?? '$t:shop.reorder.failed'}}"/>
+      </fail>
+    </api-call>
+  </init>
+  <slot name="content">
+    <container data-type="layout" class="py-12">
+      <!-- 처리 중 — 로딩 스피너 -->
+      <div data-if="{{_local.status === 'pending'}}" class="flex flex-col items-center justify-center py-16 gap-4">
+        <icon name="spinner" class="text-4xl animate-spin text-gray-500 dark:text-gray-400"/>
+        <p class="text-gray-600 dark:text-gray-300">$t:shop.reorder.processing</p>
+      </div>
+      <!-- 성공 + skipped 항목 존재 — 사용자에게 알린 후 장바구니로 이동 -->
+      <div data-if="{{_local.status === 'success' &amp;&amp; (_local.skipped?.length ?? 0) > 0}}" class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-8">
+        <h1 class="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+          <icon name="alert-triangle" class="text-2xl text-amber-500"/>
+          <span>$t:shop.reorder.partial_title</span>
+        </h1>
+        <p class="text-gray-600 dark:text-gray-300 mb-6">$t:shop.reorder.partial_message</p>
+        <!-- skipped 항목 목록 -->
+        <ul data-each="item, idx in {{_local.skipped ?? []}}" class="space-y-2 mb-6 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900">
+          <li class="text-sm text-gray-700 dark:text-gray-300">
+            <span class="font-medium">{{item.product_name ?? ''}}</span>
+            <span class="text-gray-500 dark:text-gray-400 ml-2">— {{item.reason ?? ''}}</span>
+          </li>
+        </ul>
+        <div class="flex gap-3">
+          <button type="button" class="flex-1 px-4 py-2.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-lg font-medium cursor-pointer">
+            <on type="click">
+              <navigate path="{{_global.shopBase}}/cart"/>
+            </on>
+            $t:shop.reorder.go_cart
+          </button>
+          <button type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+            <on type="click">
+              <navigate path="/mypage/orders"/>
+            </on>
+            $t:shop.reorder.back_to_orders
+          </button>
+        </div>
+      </div>
+      <!-- 에러 — 사용자에게 알린 후 마이페이지로 돌아가기 옵션 -->
+      <div data-if="{{_local.status === 'error'}}" class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-8">
+        <h1 class="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+          <icon name="x-circle" class="text-2xl text-red-500"/>
+          <span>$t:shop.reorder.error_title</span>
+        </h1>
+        <p class="text-gray-600 dark:text-gray-300 mb-6">{{_local.message !== '' ? _local.message : '$t:shop.reorder.failed'}}</p>
+        <button type="button" class="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+          <on type="click">
+            <navigate path="/mypage/orders"/>
+          </on>
+          $t:shop.reorder.back_to_orders
+        </button>
+      </div>
+    </container>
+  </slot>
+</layout>

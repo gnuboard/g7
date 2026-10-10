@@ -1,0 +1,1342 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "Claim Detail - Claim Info Section (progress stepper + claim items with bulk transition + completion card + reason/memo) — S9a"
+    },
+    "comment": "클레임 상세의 신청 정보 구획 — 운영자가 신청서를 열면 가장 먼저 보는 자리로, 진행단계·신청서 단위 전이·신청 상품과 상품 단위 일괄 전이·완료 처리·사유와 메모를 위에서부터 차례로 싣는다. 어느 조작이 열리는지는 화면이 판정하지 않고 상세 응답의 능력 값(abilities)을 따른다.",
+    "id": "section_claim_info",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "data-section-id": "claim_info"
+    },
+    "children": [
+        {
+            "comment": "진행단계 스텝퍼. 단계 배열은 서버(`AdminClaimService::progressSteps()`)가 만든다 — 유형별 순서는 상태 Enum 의 지식이고, 결제 두 단계는 청구액이 있는 건에서만 지나간다. 화면이 순서를 다시 적으면 그 사본이 어휘의 두 번째 출처가 된다.",
+            "id": "claim_progress_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H2",
+                    "props": {
+                        "className": "text-lg font-bold text-gray-900 dark:text-gray-100 mb-6"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.progress.title"
+                },
+                {
+                    "comment": "진행단계 칸. 칸 폭은 균일(grid auto-cols-fr)하고 모바일은 4칸/줄로 줄바꿈해 가로 스크롤을 만들지 않는다. 배열은 서버(`ClaimProgressSteps`)가 만든다 — 회원 상세도 같은 배열을 받는다.",
+                    "id": "claim_progress_steps",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "grid grid-cols-4 gap-x-2 gap-y-5"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "{{(claim?.data?.progress_steps ?? []).length > 9 ? 'grid grid-cols-6 gap-x-2 gap-y-6' : 'grid grid-flow-col auto-cols-fr gap-x-2 gap-y-6'}}"
+                    },
+                    "children": [
+                        {
+                            "id": "claim_progress_step_{{stepIdx}}",
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "{{claim?.data?.progress_steps ?? []}}",
+                                "item_var": "step",
+                                "index_var": "stepIdx"
+                            },
+                            "props": {
+                                "className": "relative flex flex-col items-center gap-2 min-w-0",
+                                "data-step-value": "{{step.value ?? ''}}",
+                                "data-step-state": "{{step.state ?? ''}}"
+                            },
+                            "children": [
+                                {
+                                    "comment": "원 크기와 아이콘 크기는 이 래퍼가 정한다 — 아이콘은 글리프라 부모 font-size 를 물려받는다. 모바일은 4칸/줄이라 한 단계 작게.",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "w-14 h-14 text-xl"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "w-16 h-16 text-2xl"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "색은 상태 뱃지와 같은 variant 팔레트 — 지나간 칸은 그 상태 색으로 채우고, 현재 칸은 옅은 바탕에 테두리·그림자, 남은 칸은 회색, 이탈(보류·반려·철회)은 빨강.",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "classMap": {
+                                                "base": "flex items-center justify-center w-full h-full rounded-full border-2",
+                                                "key": "{{step.state + ':' + (step.variant ?? 'secondary')}}",
+                                                "variants": {
+                                                    "done:success": "border-transparent bg-green-600 text-white dark:bg-green-500",
+                                                    "current:success": "border-green-600 bg-green-100 text-green-800 shadow-md dark:bg-green-900/30 dark:text-green-400",
+                                                    "off_path:success": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                                    "done:warning": "border-transparent bg-yellow-600 text-white dark:bg-yellow-500",
+                                                    "current:warning": "border-yellow-600 bg-yellow-100 text-yellow-800 shadow-md dark:bg-yellow-900/30 dark:text-yellow-400",
+                                                    "off_path:warning": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                                    "done:info": "border-transparent bg-blue-600 text-white dark:bg-blue-500",
+                                                    "current:info": "border-blue-600 bg-blue-100 text-blue-800 shadow-md dark:bg-blue-900/30 dark:text-blue-400",
+                                                    "off_path:info": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                                    "done:primary": "border-transparent bg-indigo-600 text-white dark:bg-indigo-500",
+                                                    "current:primary": "border-indigo-600 bg-indigo-100 text-indigo-800 shadow-md dark:bg-indigo-900/30 dark:text-indigo-400",
+                                                    "off_path:primary": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                                    "done:secondary": "border-transparent bg-gray-600 text-white dark:bg-gray-500",
+                                                    "current:secondary": "border-gray-600 bg-gray-100 text-gray-700 shadow-md dark:bg-gray-700 dark:text-gray-300",
+                                                    "off_path:secondary": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                                    "done:danger": "border-transparent bg-red-600 text-white dark:bg-red-500",
+                                                    "current:danger": "border-red-500 bg-red-100 text-red-800 shadow-md dark:bg-red-900/30 dark:text-red-400",
+                                                    "off_path:danger": "border-transparent bg-red-500 text-white dark:bg-red-600",
+                                                    "done:dark": "border-transparent bg-slate-600 text-white dark:bg-slate-500",
+                                                    "current:dark": "border-slate-600 bg-slate-200 text-slate-800 shadow-md dark:bg-slate-800 dark:text-slate-200",
+                                                    "off_path:dark": "border-transparent bg-red-500 text-white dark:bg-red-600"
+                                                },
+                                                "default": "border-gray-300 bg-white text-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-500"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "{{step.icon ?? 'circle'}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "라벨은 칸 폭 안에서 띄어쓰기 기준으로 줄바꿈한다 — nowrap 이면 언어에 따라 칸 폭이 달라진다.",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "classMap": {
+                                        "base": "w-full text-xs text-center break-words leading-tight",
+                                        "key": "{{step.state}}",
+                                        "variants": {
+                                            "done": "text-gray-700 dark:text-gray-300",
+                                            "current": "font-bold text-gray-900 dark:text-gray-100",
+                                            "upcoming": "text-gray-400 dark:text-gray-500",
+                                            "off_path": "font-bold text-red-600 dark:text-red-400"
+                                        },
+                                        "default": "text-gray-400 dark:text-gray-500"
+                                    },
+                                    "text": "{{step.label ?? ''}}"
+                                },
+                                {
+                                    "comment": "칸 사이 꺾쇠 (PC) — 마지막 칸에는 없다. 칸이 10개 이상이면 PC 도 한 줄 6칸으로 줄바꿈하므로(원 64px 가 들어갈 폭이 안 나온다) 그때는 줄 끝(6n번째)에도 세우지 않는다. 칸 오른쪽 경계에서 그리드 간격의 절반(-mr-1 = 4px)만큼 밀고 자기 폭의 절반을 되돌려(translate-x-1/2) 두 원 사이 정중앙에 세운다 — 칸 폭이 몇이든 양쪽 원과의 거리가 같다. 세로는 원 높이(h-16)의 flex 중앙. 숨김은 래퍼 Div 가 맡는다: Icon 에 직접 `hidden` 을 주면 Font Awesome 의 `display` 규칙(레이어 밖)이 Tailwind 유틸리티(레이어 안)를 이겨 숨겨지지 않는다.",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{stepIdx < (claim?.data?.progress_steps ?? []).length - 1 && ((claim?.data?.progress_steps ?? []).length <= 9 || stepIdx % 6 !== 5)}}",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "hidden",
+                                                "data-step-chevron": "pc"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "absolute right-0 top-0 h-16 flex items-center translate-x-1/2 -mr-1 text-sm text-gray-300 dark:text-gray-600",
+                                        "data-step-chevron": "pc"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "chevron-right"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "칸 사이 꺾쇠 (모바일) — 한 줄 4칸이라 줄 끝(4n번째) 칸에는 세우지 않는다.",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{stepIdx < (claim?.data?.progress_steps ?? []).length - 1 && stepIdx % 4 !== 3}}",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "absolute right-0 top-0 h-14 flex items-center translate-x-1/2 -mr-1 text-xs text-gray-300 dark:text-gray-600",
+                                                "data-step-chevron": "mobile"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "hidden",
+                                        "data-step-chevron": "mobile"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "chevron-right"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "승인·반려·철회 **일시** (F16). 리소스는 세 값을 처음부터 내보냈는데 어느 화면도 읽지 않아, 운영자는 이 신청서가 **언제** 승인·반려됐는지 화면 어디에서도 알 수 없었다. 값이 있는 것만 그린다 — 빈 칸을 나란히 세우면 아직 일어나지 않은 일이 '기록 누락'으로 읽힌다. 환불 유형의 반려 일시는 `rejected_at` 컬럼 신설(F4)로 비로소 채워진다.",
+                    "id": "claim_progress_timestamps",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(claim?.data?.claim?.approved_at_formatted ?? '') !== '' || (claim?.data?.claim?.rejected_at_formatted ?? '') !== '' || (claim?.data?.claim?.withdrawn_at_formatted ?? '') !== ''}}",
+                    "props": {
+                        "className": "mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-x-8 gap-y-2"
+                    },
+                    "children": [
+                        {
+                            "id": "cpt_001_approved_at",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(claim?.data?.claim?.approved_at_formatted ?? '') !== ''}}",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-secondary"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.progress.approved_at"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body font-medium"
+                                    },
+                                    "text": "{{claim?.data?.claim?.approved_at_formatted ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "cpt_002_rejected_at",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(claim?.data?.claim?.rejected_at_formatted ?? '') !== ''}}",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-secondary"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.progress.rejected_at"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body font-medium"
+                                    },
+                                    "text": "{{claim?.data?.claim?.rejected_at_formatted ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "cpt_003_withdrawn_at",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(claim?.data?.claim?.withdrawn_at_formatted ?? '') !== ''}}",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-secondary"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.progress.withdrawn_at"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-body font-medium"
+                                    },
+                                    "text": "{{claim?.data?.claim?.withdrawn_at_formatted ?? ''}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "선교환의 「회수」 줄 — 선교환의 상태 줄에는 회수 단계가 없다. 헌 물건이 어디쯤 왔는지를 수량으로 센 값(「회수중 1/3」 — 송장마다 행이 갈려도 개수는 그대로)과 반송 기한·지연을 서버(`collection_lane`)가 준다. 일반 교환·반품은 null 이라 서지 않는다.",
+                    "id": "claim_collection_lane",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!claim?.data?.collection_lane}}",
+                    "props": {
+                        "className": "mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex-center flex-wrap gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm font-semibold text-gray-900 dark:text-gray-100"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.progress.collection_lane"
+                        },
+                        {
+                            "id": "ccl_001_state",
+                            "type": "composite",
+                            "name": "Badge",
+                            "props": {
+                                "variant": "{{claim?.data?.collection_lane?.state_variant ?? 'secondary'}}"
+                            },
+                            "text": "{{claim?.data?.collection_lane?.state_label ?? ''}}"
+                        },
+                        {
+                            "id": "ccl_002_counts",
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-sm text-secondary"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.progress.collection_counts|collected={{claim?.data?.collection_lane?.collected ?? 0}}|in_transit={{claim?.data?.collection_lane?.in_transit ?? 0}}|pending={{claim?.data?.collection_lane?.pending ?? 0}}|unreturned={{claim?.data?.collection_lane?.unreturned ?? 0}}|total={{claim?.data?.collection_lane?.total ?? 0}}"
+                        },
+                        {
+                            "id": "ccl_003_due",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!claim?.data?.collection_lane?.due_date}}",
+                            "props": {
+                                "className": "text-sm text-secondary"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.progress.collection_due|date={{claim?.data?.collection_lane?.due_date ?? ''}}"
+                        },
+                        {
+                            "id": "ccl_004_overdue",
+                            "type": "composite",
+                            "name": "Badge",
+                            "if": "{{claim?.data?.collection_lane?.is_overdue === true}}",
+                            "props": {
+                                "variant": "danger"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.detail.progress.collection_overdue|days={{claim?.data?.collection_lane?.overdue_days ?? 0}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "신청서 단위 전이 바 (F1) — 4유형 공통. 예전에는 상세에 신청서 단위 전이 진입점이 통째로 없어, 승인·반려·보류는 목록 일괄 바에서만 가능했다. 운영자는 상세에서 내용을 확인한 뒤 목록으로 되돌아가 그 줄을 다시 찾아야 했고, 환불 유형은 상세에 어떤 전이 컨트롤도 없어 [환불하기]가 요구하는 `approved` 에 도달할 방법이 그 화면에 없었다. 선택지는 서버가 준다(현재 상태에서 갈 수 있고 운영자가 지정할 수 있는 상태의 교집합) — 화면이 어휘를 다시 적으면 그 사본이 두 번째 출처가 된다.",
+            "id": "claim_status_transition_card",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(claim?.data?.transition_options ?? []).length > 0}}",
+            "props": {
+                "className": "admin-card mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H2",
+                    "props": {
+                        "className": "text-lg font-bold text-gray-900 dark:text-gray-100 mb-4"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.transition.title"
+                },
+                {
+                    "id": "claim_status_transition_bar",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 flex-wrap gap-3"
+                    },
+                    "children": [
+                        {
+                            "comment": "옮길 상태를 고르기만 하는 칸이다 — 서버에는 옆 [일괄 적용] 을 눌러야 가고, 반려를 고르면 그 사이에 사유 입력칸이 열린다.",
+                            "id": "cts_001_status_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "claimBulkStatus": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "claimBulkStatus",
+                                "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                                "value": "{{_local.claimBulkStatus ?? ''}}",
+                                "disabled": "{{claim?.data?.abilities?.can_update_status !== true}}",
+                                "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.bulk.status_placeholder'), disabled: true }].concat(claim?.data?.transition_options ?? [])}}"
+                            }
+                        },
+                        {
+                            "comment": "반려 사유는 반려를 고른 순간에만 요구한다 — 늘 띄워 두면 승인·보류에서도 빈 칸이 서서 필수로 오해된다.",
+                            "id": "cts_002_reject_reason",
+                            "type": "basic",
+                            "name": "Input",
+                            "if": "{{(_local.claimBulkStatus ?? '') === 'rejected'}}",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "claimRejectReason": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "name": "claimRejectReason",
+                                "className": "flex-1 min-w-[16rem] px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.transition.reject_reason_placeholder",
+                                "value": "{{_local.claimRejectReason ?? ''}}"
+                            }
+                        },
+                        {
+                            "comment": "고른 상태로 신청서 전체를 옮긴다(상품 하나하나는 아래 목록의 일괄 바가 맡는다). 선택지는 심사(결제 요청·승인·보류·반려)뿐이고 눌러도 거절될 값은 서버가 애초에 싣지 않는다 — 회수·발송 단계는 상품 칸, 완료는 아래 [완료 처리] 가 입구다. 반려는 사유가 비면 보내지 않는다.",
+                            "id": "cts_003_apply",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sirsoft-ecommerce.executeClaimStatusTransition",
+                                    "params": {
+                                        "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
+                                        "claimType": "{{claim?.data?.claim?.claim_type ?? ''}}",
+                                        "claimId": "{{claim?.data?.claim?.id ?? null}}",
+                                        "status": "{{_local.claimBulkStatus ?? ''}}",
+                                        "rejectReason": "{{_local.claimRejectReason ?? ''}}"
+                                    },
+                                    "onError": {
+                                        "comment": "실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 2026-09-22 #599 3차 실측 T2-D12 에서 승인 실패 「교환할 옵션의 재고가 부족합니다.」가 2개 겹쳐 떴다. 형제 자리(_partial_claim_shipping·_modal_claim_refund_execute)와 같은 규율이다.",
+                                        "handler": "suppress"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{claim?.data?.abilities?.can_update_status !== true || (_local.claimBulkStatus ?? '') === '' || _local.isTransitioningClaim === true}}"
+                            },
+                            "children": [
+                                {
+                                    "comment": "저장 중 표시 — 형제 저장 버튼(금액·메모·송장·상품 일괄)과 같이 핸들러가 켜고 끄는 잠금 키를 그대로 읽는다. 잠그기만 하면 응답을 기다리는 동안 눌렸는지 알 수 없다.",
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.isTransitioningClaim === true}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "spinner-sm mr-1"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.bulk.apply"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "claim_items_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H2",
+                    "props": {
+                        "className": "text-lg font-bold text-gray-900 dark:text-gray-100 mb-6"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.items.title"
+                },
+                {
+                    "comment": "상품 단위 일괄 변경 바 (D24·D25·§4-6). 행마다 셀렉트+[적용] 을 두지 않는다 — 주문상세 `bulk_action_bar` 와 같은 형태다. 취소신청서만 제외한다: 생성이 곧 확정이라 옮길 상태가 없다(환불은 §4 에서 이 축이 열렸다). 조건 문자열을 배송 섹션과 공유하지 않는 이유는 구조 테스트가 그 동일성을 단언하기 때문이다 — 여기에 맞추려고 배송 조건을 바꾸면 **환불 상세에 배송 섹션이 생긴다**. 송장은 **상품 행**마다 있다 — 이 바에서 행을 골라 [송장만 저장] 하거나 회수중·발송중 전이에 실어 적는다. 배송 정보 탭은 운송장별로 묶어 보여 주고 도착 처리만 한다.",
+                    "id": "claim_item_bulk_bar",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(claim?.data?.claim?.claim_type ?? '') !== 'cancel'}}",
+                    "props": {
+                        "className": "flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3"
+                    },
+                    "children": [
+                        {
+                            "id": "ci_001_selected_count",
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-body font-medium whitespace-nowrap"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.claim.bulk.selected_count|count={{(_local.selectedClaimItems ?? []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "comment": "선택지는 **서버가 행마다 실어 준 어휘**(`transition_options`)의 교집합이다 — 핸들러가 계산해 `_local.itemTransitionOptions` 에 깐다. 화면이 상태 목록을 리터럴로 들면 전이표가 바뀔 때 화면과 서버가 갈리고, 그 사이 운영자는 '가끔 안 되는 버튼' 을 본다. 결제대기는 서버가 상품 축에서 이미 뺀다(결제는 신청서 단위 축이다).",
+                                    "id": "ci_002_item_status",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "if": "{{(_local.itemTransitionOptions ?? []).length > 0}}",
+                                    "actions": [
+                                        {
+                                            "comment": "회수중·발송중을 고르면 **고른 행들이 이미 가진 송장**을 미리 채운다 — 모든 행이 같은 송장일 때만이다(P1). 송장은 상품 행마다 있어 행마다 다르면 비워 두고 새로 적게 한다. 판정은 핸들러가 한다(회수중 = 회수 송장, 발송중 = 재발송 송장).",
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.selectClaimItemBulkStatus",
+                                            "params": {
+                                                "status": "{{$event.target.value}}",
+                                                "rows": "{{claim?.data?.claim?.items ?? []}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "itemBulkStatus",
+                                        "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "value": "{{_local.itemBulkStatus ?? ''}}",
+                                        "disabled": "{{claim?.data?.abilities?.can_update_status !== true}}",
+                                        "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.bulk.status_placeholder'), disabled: true }].concat(_local.itemTransitionOptions ?? [])}}"
+                                    }
+                                },
+                                {
+                                    "comment": "교집합이 0건이면 셀렉트를 감추고 이유를 적는다 — 빈 셀렉트만 두면 운영자는 화면이 덜 그려진 줄 안다.",
+                                    "id": "ci_003_no_common_transition",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{(_local.selectedClaimItems ?? []).length > 0 && (_local.itemTransitionOptions ?? []).length === 0}}",
+                                    "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.items.no_common_transition"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "반려 사유 (#599 후속 운영 결정). 상품 칸의 반려도 사유가 정본이다 — 상품을 모두 반려하면 신청서가 따라 반려되는데, 사유 없이 보내면 구매자 화면의 반려 사유가 빈 칸으로 남는다. 반려를 고른 순간에만 연다(위 신청서 칸과 같은 규칙).",
+                            "id": "ci_005_reject_reason",
+                            "type": "basic",
+                            "name": "Input",
+                            "if": "{{(_local.itemBulkStatus ?? '') === 'rejected'}}",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "itemRejectReason": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "name": "itemRejectReason",
+                                "className": "flex-1 min-w-[16rem] px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.transition.reject_reason_placeholder",
+                                "value": "{{_local.itemRejectReason ?? ''}}"
+                            }
+                        },
+                        {
+                            "comment": "회수중·발송중 송장 (#599 후속 운영 결정). 그 두 상태는 택배가 물건을 싣고 가는 중이라는 사실이라 송장 없이 들어가면 고객 알림의 운송장 칸이 비어서 나간다 — 서버도 422 로 막는다. 송장은 고른 상품 행마다 남는다(회수중은 회수 송장, 발송중은 재발송 송장 — 수량을 줄이면 그 행이 쪼개져 고른 수량에만 붙는다). 선택지는 상세 응답이 나른다 — 배송사 엔드포인트는 `settings.read` 게이트다.",
+                            "id": "ci_006_tracking_row",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{['collecting', 'redelivering'].includes(_local.itemBulkStatus ?? '') || _local.itemTrackingMode === true}}",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "comment": "「송장만 저장」 의 방향 — 교환만 회수·재발송 둘이다(반품은 회수뿐). 방향을 바꾸면 그 방향의 공통 송장을 다시 미리 채운다.",
+                                    "id": "ci_010_direction",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "if": "{{_local.itemTrackingMode === true && (claim?.data?.claim?.claim_type ?? '') === 'exchange'}}",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "sirsoft-ecommerce.selectClaimItemTrackingDirection",
+                                            "params": {
+                                                "direction": "{{$event.target.value}}",
+                                                "rows": "{{claim?.data?.claim?.items ?? []}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "itemTrackingDirection",
+                                        "className": "w-32 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                        "value": "{{_local.itemTrackingDirection ?? 'collection'}}",
+                                        "options": "{{[{ value: 'collection', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.collection_title') }, { value: 'redelivery', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.redelivery_title') }]}}"
+                                    }
+                                },
+                                {
+                                    "id": "ci_007_carrier",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "상품별 송장 입력의 택배사 선택을 이 화면 로컬 상태에 둔다 — [송장만 저장] 이 함께 읽는다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "itemCarrierId": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "itemCarrierId",
+                                        "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                        "value": "{{_local.itemCarrierId ?? ''}}",
+                                        "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder') }].concat(claim?.data?.carriers ?? [])}}"
+                                    }
+                                },
+                                {
+                                    "id": "ci_008_tracking_number",
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "상품별 송장번호 입력값을 로컬 상태에 둔다 — 택배사와 한 쌍으로 저장된다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "itemTrackingNumber": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "name": "itemTrackingNumber",
+                                        "maxLength": 50,
+                                        "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder",
+                                        "value": "{{_local.itemTrackingNumber ?? ''}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            }
+                        },
+                        {
+                            "comment": "「송장만 저장」(R7) — 고른 행에 송장만 적고 상태는 옮기지 않는다. 처음 누르면 방향·택배사·운송장 칸을 열고(공통 송장 미리 채움), 칸이 열린 뒤 누르면 수량 확인 모달로 간다 — 수량을 줄이면 그 행이 쪼개져 지정 수량에만 송장이 붙는다(R4). 교환·반품만이다(환불에는 물건이 오가지 않는다).",
+                            "id": "ci_009_tracking_only",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '')}}",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sirsoft-ecommerce.openClaimItemTrackingOnly",
+                                    "params": {
+                                        "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
+                                        "claimType": "{{claim?.data?.claim?.claim_type ?? ''}}",
+                                        "claimId": "{{claim?.data?.claim?.id ?? null}}",
+                                        "itemIds": "{{_local.selectedClaimItems ?? []}}",
+                                        "trackingMode": "{{_local.itemTrackingMode === true}}",
+                                        "direction": "{{(claim?.data?.claim?.claim_type ?? '') === 'exchange' ? (_local.itemTrackingDirection ?? 'collection') : 'collection'}}",
+                                        "carrierId": "{{_local.itemCarrierId ?? ''}}",
+                                        "trackingNumber": "{{_local.itemTrackingNumber ?? ''}}",
+                                        "carriers": "{{claim?.data?.carriers ?? []}}",
+                                        "rows": "{{claim?.data?.claim?.items ?? []}}"
+                                    },
+                                    "onError": {
+                                        "comment": "실패 사유는 핸들러가 이미 띄운다 — 기본 정책까지 돌면 같은 문구가 두 번 뜬다.",
+                                        "handler": "suppress"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-outline disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_local.isUpdatingClaimItems === true || (_local.selectedClaimItems ?? []).length === 0 || claim?.data?.abilities?.can_update_status !== true}}"
+                            },
+                            "children": [
+                                {
+                                    "comment": "두 버튼은 같은 잠금을 쓴다 — 스피너는 처리 종류로 가려 누른 쪽에만 돈다.",
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.claimItemsUpdateKind === 'tracking'}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "spinner-sm mr-1"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.items.tracking_only"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "ci_004_item_bulk_apply",
+                            "type": "basic",
+                            "name": "Button",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "comment": "수량 확인 모달을 연다 (§4-6) — 수량 입력을 이 바에 두면 행이 여럿일 때 수량이 하나뿐이라 '3 중 2, 5 중 1' 을 표현할 수 없다. 완료 전이는 그 모달을 건너뛰고 완료 처리 모달로 간다 (D26) — 분기는 핸들러가 한다. 경로 세그먼트는 서버가 준 값을 그대로 쓴다: 화면이 `claim_type + 's'` 로 조립하면 그 조립이 세그먼트 규칙의 두 번째 출처가 된다.",
+                                    "type": "click",
+                                    "handler": "sirsoft-ecommerce.openClaimItemQuantityConfirm",
+                                    "params": {
+                                        "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
+                                        "claimType": "{{claim?.data?.claim?.claim_type ?? ''}}",
+                                        "claimId": "{{claim?.data?.claim?.id ?? null}}",
+                                        "claimNumber": "{{claim?.data?.claim?.claim_number ?? ''}}",
+                                        "requesterName": "{{claim?.data?.claim?.requester_name ?? ''}}",
+                                        "itemIds": "{{_local.selectedClaimItems ?? []}}",
+                                        "status": "{{_local.itemBulkStatus ?? ''}}",
+                                        "rejectReason": "{{_local.itemRejectReason ?? ''}}",
+                                        "carrierId": "{{_local.itemCarrierId ?? ''}}",
+                                        "trackingNumber": "{{_local.itemTrackingNumber ?? ''}}",
+                                        "carriers": "{{claim?.data?.carriers ?? []}}",
+                                        "rows": "{{claim?.data?.claim?.items ?? []}}",
+                                        "completeDefaults": "{{claim?.data?.complete_defaults ?? {} }}"
+                                    },
+                                    "onError": {
+                                        "comment": "실패 사유는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). onError 를 두지 않으면 기본 에러 정책이 같은 실패를 한 번 더 알려 같은 문구가 두 번 뜬다 — 형제 모달(_modal_claim_refund_execute·_modal_claim_complete)과 같은 규율이다.",
+                                        "handler": "suppress"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_local.isUpdatingClaimItems === true || (_local.selectedClaimItems ?? []).length === 0 || claim?.data?.abilities?.can_update_status !== true}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.isUpdatingClaimItems === true && _local.claimItemsUpdateKind !== 'tracking'}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "spinner-sm mr-1"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "responsive": {
+                                        "portable": {
+                                            "text": "$t:sirsoft-ecommerce.admin.claim.bulk.apply_full"
+                                        }
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.bulk.apply"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "선택은 화면 밖(로컬 상태)에 저장되므로 범위를 명시한다 — 이 표는 일괄 처리 대상이라 `page`(지금 화면에 보이고 체크된 행)다. 페이지네이션이 없어 한 화면이 곧 전체이며, 신청서를 갈아타면 셸의 `init_actions` 가 선택을 비운다.",
+                    "id": "claim_items_datagrid",
+                    "type": "composite",
+                    "name": "DataGrid",
+                    "actions": [
+                        {
+                            "comment": "선택지 교집합·기본 수량·고른 상태의 유효성까지 한 번에 정한다 (§4-4). `setState` 로 선택만 담으면, 선택이 바뀌어 교집합 밖이 된 상태가 화면에 남아 [적용] 이 422 가 된다.",
+                            "event": "onSelectionChange",
+                            "handler": "sirsoft-ecommerce.syncClaimItemSelection",
+                            "params": {
+                                "selectedIds": "{{$args[0]}}",
+                                "rows": "{{claim?.data?.claim?.items ?? []}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "data": "{{claim?.data?.claim?.items ?? []}}",
+                        "idField": "id",
+                        "selectable": "{{(claim?.data?.claim?.claim_type ?? '') !== 'cancel'}}",
+                        "selectionScope": "page",
+                        "selectedIds": "{{_local.selectedClaimItems ?? []}}",
+                        "pagination": false,
+                        "showColumnSelector": false,
+                        "selectedCountText": "",
+                        "emptyMessage": "$t:sirsoft-ecommerce.admin.claim.detail.items.empty",
+                        "columns": [
+                            {
+                                "field": "product_info",
+                                "header": "$t:sirsoft-ecommerce.admin.claim.detail.items.columns.product",
+                                "width": "auto",
+                                "sortable": false,
+                                "required": true,
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-start gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Img",
+                                                "if": "{{!!row.thumbnail_url}}",
+                                                "props": {
+                                                    "src": "{{row.thumbnail_url}}",
+                                                    "alt": "{{row.product_name ?? ''}}",
+                                                    "className": "w-12 h-12 rounded object-cover border border-gray-200 dark:border-gray-700"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!row.thumbnail_url}}",
+                                                "props": {
+                                                    "className": "w-12 h-12 rounded flex-shrink-0 border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700 flex items-center justify-center"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "image",
+                                                            "className": "text-gray-400 dark:text-gray-500"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "min-w-0"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "text-sm font-medium text-gray-900 dark:text-gray-100"
+                                                        },
+                                                        "text": "{{row.product_name ?? '-'}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "text-xs text-secondary mt-0.5"
+                                                        },
+                                                        "text": "{{row.option_name ?? row.product_option_name ?? ''}}"
+                                                    },
+                                                    {
+                                                        "comment": "교환 대상은 `is_option_change` 가 근거다 — 서버는 옵션 변경이 아닌 행에도 `new_*` 를 원 값으로 채워 내려주므로(폴백), 값의 존재로 분기하면 동일 옵션 교환에도 교환 대상이 지정된 것처럼 보인다.",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{row.is_option_change === true && !!row.new_option_label}}",
+                                                        "props": {
+                                                            "className": "text-xs text-blue-600 dark:text-blue-300 mt-0.5"
+                                                        },
+                                                        "text": "→ {{row.new_option_label}}"
+                                                    },
+                                                    {
+                                                        "comment": "이 교환에 얹은 추가옵션 — 신청 시점 동결값이라 운영자가 나중에 선택지를 고쳐도 표기는 바뀌지 않는다. 재발송 담당자가 새겨 보낼 문구(custom_text)를 여기서만 확인할 수 있다. 추가금은 아래 차액 줄에 이미 합산돼 있어 이름만 나열한다 — 구매자 화면(_detail_items.json)과 같은 형태다.",
+                                                        "id": "cli_004_new_additional_options",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "if": "{{(row.new_additional_options ?? []).length > 0}}",
+                                                        "props": {
+                                                            "className": "text-xs text-secondary mt-0.5"
+                                                        },
+                                                        "text": "+ {{(row.new_additional_options ?? []).map(o => o.custom_text ? (o.name + ' (' + o.custom_text + ')') : o.name).join(', ')}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "quantity",
+                                "header": "$t:sirsoft-ecommerce.admin.claim.detail.items.columns.quantity",
+                                "width": "100px",
+                                "sortable": false,
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-sm text-gray-900 dark:text-gray-100"
+                                        },
+                                        "text": "{{row.original_quantity ? (row.quantity ?? 0) + ' / ' + row.original_quantity : (row.quantity ?? 0)}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "amount",
+                                "header": "$t:sirsoft-ecommerce.admin.claim.detail.items.columns.amount",
+                                "width": "180px",
+                                "sortable": false,
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "comment": "금액 표기는 서버가 준 `*_formatted` 를 그대로 쓴다 — 통화 기호와 소수 자릿수는 설정과 거래 시점 스냅샷이 정한다.",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-sm text-gray-900 dark:text-gray-100"
+                                                },
+                                                "text": "{{row.subtotal_amount_formatted ?? row.unit_price_formatted ?? ''}}"
+                                            },
+                                            {
+                                                "comment": "옵션 변경 행에서만 그린다 — `new_unit_price_formatted` 는 서버가 `unit_price` 로 폴백해 언제나 실리므로 값의 존재는 교환 대상의 근거가 아니다(실측: 동일 옵션 교환에 `→ 53,000원` 노출). 왼쪽이 소계이므로 오른쪽도 소계를 쓴다 — 단가를 그리면 수량 1 에서는 같아 보이고 수량 2 이상에서만 값이 어긋난다(S17 B8).",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{row.is_option_change === true && !!row.new_subtotal_amount_formatted}}",
+                                                "props": {
+                                                    "className": "text-xs text-secondary mt-0.5"
+                                                },
+                                                "text": "→ {{row.new_subtotal_amount_formatted}}"
+                                            },
+                                            {
+                                                "comment": "DataGrid `cellChildren` 안의 치환 파라미터는 `$t:defer:` 로 미뤄야 항목 컨텍스트(row)와 함께 해소된다. 일반 `$t:` 는 라벨만 번역되고 `{{amount}}` 가 빈 문자열로 지워져 금액 없는 '차액' 만 남는다(S17 재실측). 같은 표에서 defer 를 쓰는 형제 셀과 같은 규율이다.",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!!row.price_difference_formatted && (row.price_difference ?? 0) !== 0}}",
+                                                "props": {
+                                                    "className": "text-xs text-blue-600 dark:text-blue-300 mt-0.5"
+                                                },
+                                                "text": "$t:defer:sirsoft-ecommerce.admin.claim.detail.items.price_difference|amount={{row.price_difference_formatted}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "tracking",
+                                "comment": "송장 열 — 송장은 상품 행마다 있다(다중 송장). 회수·재발송(교환만) 한 줄씩, 택배사·운송장·조회 링크·도착 시각. 선교환은 회수 진행 뱃지를 함께 그린다.",
+                                "header": "$t:sirsoft-ecommerce.admin.claim.detail.items.columns.tracking",
+                                "width": "220px",
+                                "sortable": false,
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "space-y-1 text-xs"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{row.collection_tracking_number !== undefined}}",
+                                                "props": {
+                                                    "className": "flex-center gap-1 flex-wrap"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-gray-500 dark:text-gray-400"
+                                                        },
+                                                        "text": "$t:defer:sirsoft-ecommerce.admin.claim.detail.items.collection_short"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!!row.collection_tracking_number}}",
+                                                        "props": {
+                                                            "className": "text-gray-900 dark:text-gray-100"
+                                                        },
+                                                        "text": "{{(row.collection_carrier_name ?? '') + ' ' + row.collection_tracking_number}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "A",
+                                                        "if": "{{!!row.collection_tracking_url}}",
+                                                        "props": {
+                                                            "href": "{{row.collection_tracking_url}}",
+                                                            "target": "_blank",
+                                                            "rel": "noopener noreferrer",
+                                                            "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                                                        },
+                                                        "text": "$t:defer:sirsoft-ecommerce.admin.claim.detail.shipping.track"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!row.collection_tracking_number}}",
+                                                        "props": {
+                                                            "className": "text-gray-400 dark:text-gray-500"
+                                                        },
+                                                        "text": "-"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!!row.collected_at_formatted}}",
+                                                        "props": {
+                                                            "className": "text-green-700 dark:text-green-400"
+                                                        },
+                                                        "text": "$t:defer:sirsoft-ecommerce.admin.claim.detail.items.arrived_at|at={{row.collected_at_formatted}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{row.redelivery_tracking_number !== undefined}}",
+                                                "props": {
+                                                    "className": "flex-center gap-1 flex-wrap"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "text-gray-500 dark:text-gray-400"
+                                                        },
+                                                        "text": "$t:defer:sirsoft-ecommerce.admin.claim.detail.items.redelivery_short"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!!row.redelivery_tracking_number}}",
+                                                        "props": {
+                                                            "className": "text-gray-900 dark:text-gray-100"
+                                                        },
+                                                        "text": "{{(row.redelivery_carrier_name ?? '') + ' ' + row.redelivery_tracking_number}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "A",
+                                                        "if": "{{!!row.redelivery_tracking_url}}",
+                                                        "props": {
+                                                            "href": "{{row.redelivery_tracking_url}}",
+                                                            "target": "_blank",
+                                                            "rel": "noopener noreferrer",
+                                                            "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                                                        },
+                                                        "text": "$t:defer:sirsoft-ecommerce.admin.claim.detail.shipping.track"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!row.redelivery_tracking_number}}",
+                                                        "props": {
+                                                            "className": "text-gray-400 dark:text-gray-500"
+                                                        },
+                                                        "text": "-"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!!row.redelivered_at_formatted}}",
+                                                        "props": {
+                                                            "className": "text-green-700 dark:text-green-400"
+                                                        },
+                                                        "text": "$t:defer:sirsoft-ecommerce.admin.claim.detail.items.arrived_at|at={{row.redelivered_at_formatted}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "if": "{{claim?.data?.claim?.is_advance_exchange === true && !!row.collection_state_label}}",
+                                                "props": {
+                                                    "variant": "{{row.collection_state_variant ?? 'secondary'}}",
+                                                    "size": "sm"
+                                                },
+                                                "text": "{{row.collection_state_label}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "status",
+                                "header": "$t:sirsoft-ecommerce.admin.claim.detail.items.columns.status",
+                                "width": "170px",
+                                "sortable": false,
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "space-y-1"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "props": {
+                                                    "variant": "{{row.status_variant ?? 'default'}}"
+                                                },
+                                                "text": "{{row.status_label ?? ''}}"
+                                            },
+                                            {
+                                                "comment": "상품 단위 반려 사유는 그 행에 남는다(S3) — 신청서 사유 칸은 전체가 반려될 때만 채워진다.",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!!row.reject_reason}}",
+                                                "props": {
+                                                    "className": "text-xs text-red-600 dark:text-red-400 break-words"
+                                                },
+                                                "text": "{{row.reject_reason}}"
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "if": "{{row.is_unreturned === true}}",
+                                                "props": {
+                                                    "variant": "warning",
+                                                    "size": "sm"
+                                                },
+                                                "text": "$t:defer:sirsoft-ecommerce.admin.claim.detail.items.unreturned_badge"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!!row.unreturned_reason}}",
+                                                "props": {
+                                                    "className": "text-xs text-secondary break-words"
+                                                },
+                                                "text": "{{row.unreturned_reason}}"
+                                            },
+                                            {
+                                                "comment": "재고 미복구(S6·S13) — 완료됐는데 재고를 돌려놓지 않은 행. 미회수 완료 행은 헌 물건이 없어 대상이 아니다.",
+                                                "type": "composite",
+                                                "name": "Badge",
+                                                "if": "{{row.is_stock_restorable === true}}",
+                                                "props": {
+                                                    "variant": "secondary",
+                                                    "size": "sm"
+                                                },
+                                                "text": "$t:defer:sirsoft-ecommerce.admin.claim.detail.items.stock_not_restored"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "comment": "완료 처리 카드 (D26). 교환·반품만이다 — 환불의 완료는 환불 실행(S9b)이 옮기는 상태라 관리자가 직접 지정하는 축이 아니다. 이미 종결된 신청서에는 그리지 않는다. 버튼·건수는 서버가 센 **지금 완료할 수 있는 상품 수**(`completable_item_count`)를 읽는다 — 예전에는 전체 상품 수를 적고 버튼을 늘 켜 두어, 회수도착 전에 누르면 모달까지 열린 뒤 거절됐다(#599 후속).",
+            "id": "claim_completion_card",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') && (claim?.data?.claim?.is_final !== true || !!claim?.data?.pending_refund || (claim?.data?.claim?.items ?? []).some(i => i.is_stock_restorable === true))}}",
+            "props": {
+                "className": "admin-card mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-between gap-4 flex-wrap"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H2",
+                                    "props": {
+                                        "className": "text-lg font-bold text-gray-900 dark:text-gray-100"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.completion.title"
+                                },
+                                {
+                                    "id": "cmpl_001_description",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(claim?.data?.completable_item_count ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "text-sm text-secondary mt-1"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.completion.description|count={{claim?.data?.completable_item_count ?? 0}}"
+                                },
+                                {
+                                    "comment": "완료할 상품이 없을 때는 언제 완료할 수 있는지를 적는다 — 꺼진 버튼만 두면 운영자는 권한 문제로 읽는다.",
+                                    "id": "cmpl_003_unavailable",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(claim?.data?.completable_item_count ?? 0) === 0 && (claim?.data?.unreturned_eligible_count ?? 0) === 0 && claim?.data?.claim?.is_final !== true}}",
+                                    "props": {
+                                        "className": "text-sm text-secondary mt-1"
+                                    },
+                                    "text": "{{(claim?.data?.claim?.claim_type ?? '') === 'exchange' ? $t('sirsoft-ecommerce.admin.claim.detail.completion.unavailable_exchange') : $t('sirsoft-ecommerce.admin.claim.detail.completion.unavailable_return')}}"
+                                },
+                                {
+                                    "comment": "환불 미접수(D9) — 완료 뒤에도 카드를 남겨 같은 [환불신청서 접수] 를 둔다. 금액·건수는 서버(`pending_refund`)가 정한다.",
+                                    "id": "cmpl_004_pending_refund",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!!claim?.data?.pending_refund}}",
+                                    "props": {
+                                        "className": "text-sm text-orange-700 dark:text-orange-400 mt-1"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.pending_refund.card|amount={{claim?.data?.pending_refund?.amount_formatted ?? ''}}|count={{claim?.data?.pending_refund?.item_count ?? 0}}"
+                                },
+                                {
+                                    "comment": "재고 미복구(S13) — 완료 모달에서 복구를 끄거나 잊은 행의 뒤늦은 입구.",
+                                    "id": "cmpl_005_stock_unrestored",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(claim?.data?.claim?.items ?? []).some(i => i.is_stock_restorable === true)}}",
+                                    "props": {
+                                        "className": "text-sm text-secondary mt-1"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.completion.stock_unrestored|count={{(claim?.data?.claim?.items ?? []).filter(i => i.is_stock_restorable === true).length}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 flex-wrap"
+                            },
+                            "children": [
+                                {
+                                    "id": "cmpl_006_pending_refund_button",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{!!claim?.data?.pending_refund}}",
+                                    "actions": [
+                                        {
+                                            "comment": "기존 수동 접수 경로(`storeClaimRefundRequest`)를 그대로 쓴다 — 입구가 늘어도 접수 규칙은 하나다.",
+                                            "type": "click",
+                                            "handler": "sirsoft-ecommerce.storeClaimRefundRequest",
+                                            "params": {
+                                                "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
+                                                "claimId": "{{claim?.data?.claim?.id ?? null}}"
+                                            },
+                                            "onError": {
+                                                "handler": "suppress"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-outline",
+                                        "disabled": "{{claim?.data?.abilities?.can_update_status !== true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.pending_refund.action"
+                                },
+                                {
+                                    "id": "cmpl_007_restore_stock_button",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{(claim?.data?.claim?.items ?? []).some(i => i.is_stock_restorable === true)}}",
+                                    "actions": [
+                                        {
+                                            "comment": "재고 복원이 가능한 상품만 골라 재고를 되돌린다 — 실패 안내는 핸들러가 띄우므로 기본 오류 정책은 막는다",
+                                            "type": "click",
+                                            "handler": "sirsoft-ecommerce.restoreClaimStock",
+                                            "params": {
+                                                "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
+                                                "claimId": "{{claim?.data?.claim?.id ?? null}}",
+                                                "itemIds": "{{(claim?.data?.claim?.items ?? []).filter(i => i.is_stock_restorable === true).map(i => i.id)}}"
+                                            },
+                                            "onError": {
+                                                "handler": "suppress"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-outline",
+                                        "disabled": "{{claim?.data?.abilities?.can_update_status !== true || _local.isRestoringStock === true}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.completion.restore_stock"
+                                },
+                                {
+                                    "id": "cmpl_002_button",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{claim?.data?.claim?.is_final !== true}}",
+                                    "actions": [
+                                        {
+                                            "comment": "목록·상품 단위와 같은 모달 파일을 연다 (D26). 신청서 단위 진입점이므로 `item_ids` 를 싣지 않는다 — 생략하면 서버가 그 신청서의 완료 가능 상품 전체를 대상으로 본다. 초기 선택값은 상세 응답(`complete_defaults`)이 나른다: 설정 엔드포인트는 `settings.read` 게이트라 클레임 권한만 가진 운영자에게는 403 이 되고, 상점이 꺼 둔 기본값이 조용히 계약 기본값으로 되돌아간다.",
+                                            "type": "click",
+                                            "handler": "sirsoft-ecommerce.openClaimDetailComplete",
+                                            "params": {
+                                                "pathSegment": "{{claim?.data?.claim_path_segment ?? ''}}",
+                                                "claimType": "{{claim?.data?.claim?.claim_type ?? ''}}",
+                                                "claimId": "{{claim?.data?.claim?.id ?? null}}",
+                                                "claimNumber": "{{claim?.data?.claim?.claim_number ?? ''}}",
+                                                "requesterName": "{{claim?.data?.claim?.requester_name ?? ''}}",
+                                                "rows": "{{claim?.data?.claim?.items ?? []}}",
+                                                "completeDefaults": "{{claim?.data?.complete_defaults ?? {} }}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{claim?.data?.abilities?.can_update_status !== true || ((claim?.data?.completable_item_count ?? 0) === 0 && (claim?.data?.unreturned_eligible_count ?? 0) === 0)}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.claim.detail.completion.action"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "partial": "_partial_claim_reason.json"
+        }
+    ]
+}

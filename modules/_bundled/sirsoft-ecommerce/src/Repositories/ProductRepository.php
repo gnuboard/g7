@@ -46,6 +46,11 @@ class ProductRepository implements ProductRepositoryInterface
     /** 상품 통계 캐시 태그 */
     private const STATISTICS_CACHE_TAG = 'ecommerce.products';
 
+    /**
+     * 상품 저장소를 생성합니다.
+     *
+     * @param  Product  $model  상품 모델
+     */
     public function __construct(
         protected Product $model
     ) {}
@@ -467,6 +472,8 @@ class ProductRepository implements ProductRepositoryInterface
      *
      * 상품이 생성·수정·삭제되면 통계도 곧바로 달라져야 합니다. 쓰기 경로가 이 메서드를
      * 부르지 않으면 화면이 TTL 이 끝날 때까지 이전 수치를 보여 줍니다.
+     *
+     * @return void 반환값 없음
      */
     public function forgetStatisticsCache(): void
     {
@@ -556,6 +563,7 @@ class ProductRepository implements ProductRepositoryInterface
      * @param  string  $method  변경 방식
      * @param  float  $value  변경 값
      * @param  string  $unit  단위
+     * @return float 새 가격
      */
     protected function calculateNewPrice(float $currentPrice, string $method, float $value, string $unit): float
     {
@@ -994,6 +1002,7 @@ class ProductRepository implements ProductRepositoryInterface
      * @param  string  $keyword  검색 키워드
      * @param  bool  $includeAuxFields  상품코드·SKU·바코드·ID 보조 매칭 포함 여부
      * @param  string|null  $limitContext  키 집합 상한 해석에 쓸 목록 컨텍스트 이름
+     * @return void 반환값 없음
      */
     private function applyKeywordMatch($query, string $keyword, bool $includeAuxFields = true, ?string $limitContext = null): void
     {
@@ -1042,6 +1051,7 @@ class ProductRepository implements ProductRepositoryInterface
      *
      * @param  Builder  $query  Eloquent 쿼리 빌더
      * @param  array  $filters  필터 배열
+     * @return void 반환값 없음
      */
     private function applyAdminFilters($query, array $filters): void
     {
@@ -1062,8 +1072,9 @@ class ProductRepository implements ProductRepositoryInterface
         if (! empty($filters['date_type']) && (! empty($filters['start_date']) || ! empty($filters['end_date']))) {
             $dateField = $filters['date_type'];
 
-            // whereDate 는 인덱스를 무력화한다 — 범위 조건으로 준다.
-            $this->applyDateRangeFilter(
+            // whereDate 는 인덱스를 무력화한다 — 범위 조건으로 준다. 목록이 등록일·수정일을
+            // 보는 사람의 시간대로 그리므로 그 하루로 자른다.
+            $this->applyViewerDateRangeFilter(
                 $query,
                 $dateField,
                 $filters['start_date'] ?? null,

@@ -1,0 +1,29 @@
+feature: 게시판 마이그레이션 재실행 가드 (#599 validate P4)
+
+description: |
+  첨부 조치 주체(`board_attachments.trigger_type`) 마이그레이션이 컬럼만 만들고 인덱스 단계에서
+  멈춘 설치본을 다시 돌려도 같은 자리에서 매번 실패하지 않아야 한다. MySQL 은 DDL 을 되돌리지
+  않으므로 앞 단계는 남고 마이그레이션 기록은 남지 않는다.
+
+  핵심 동작:
+    - 컬럼이 이미 있으면 컬럼 추가를 건너뛰고 빠진 인덱스만 만든다. 그 다음 실행은 아무것도 내지 않는다.
+    - 되돌리기(down)는 인덱스·컬럼을 각각 확인해, 인덱스가 없는 설치본에서도 막히지 않는다.
+    - 반응 유형 아이콘(`board_reaction_types.icon_attachment_id`) 마이그레이션도 같다 — 외래키를 컬럼
+      가드 밖에서 제약 이름으로 따로 가드해, 컬럼만 만들고 멈춘 설치본이 외래키를 마저 만든다.
+    - 부분 상태는 공유 테스트 DB 에 만들지 않고 가짜 스키마 빌더(`Tests\Support\RecordingSchemaBuilder`)
+      위에서 재현한다 — DDL 이 암묵 커밋되어 테이블이 망가지기 때문이다.
+
+axes:
+  defect: [rerun_guard]
+
+effects:
+  - board_attachment_trigger_type_rerun_completes_the_missing_index
+  - board_attachment_trigger_type_down_survives_a_partial_up
+  - board_reaction_icon_rerun_completes_the_missing_foreign_key
+  - board_reaction_icon_down_survives_a_partial_up
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Validate/ValidateP4MigrationsTest.php
+
+notes: |
+  e2e_browser=not_applicable — 스키마 마이그레이션(화면 무관).

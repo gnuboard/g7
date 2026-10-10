@@ -1,0 +1,165 @@
+<!-- 회원가입 폼의 개인정보 동의 뒤에 마케팅 동의 항목을 덧붙이는 조각.
+  동의 체크박스는 자동바인딩(name)을 끄고 표시값을 가입 폼 상태에서 boolean 으로 직접 읽는다 — 자동바인딩은
+  저장값이 boolean 일 때만 checked 로 붙고(아니면 빈 문자열이 전송된다), 전체 동의가 채널 동의를 함께 켜는 것처럼
+  다른 체크박스가 쓴 값에 표시가 따라와야 하기 때문이다. 값은 각 change 액션이 registerForm 에 쓴다. -->
+<extension target-layout="auth/register" priority="100">
+  <inject target-id="register_privacy_agreement" position="append">
+    <div data-ref="register_marketing_consent_section" class="space-y-2">
+      <div data-if="{{marketing_settings?.data?.marketing_consent_enabled === true}}" class="flex items-center gap-2">
+        <label class="flex items-center gap-2 flex-1 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+          <checkbox name="agree_marketing_consent" checked="{{!!_local.registerForm?.agree_marketing_consent}}" :autoBinding="false" disabled="{{_local?.isRegistering}}">
+            <on type="change">
+              <!-- 전체 마케팅 동의 — 가입 폼 상태에 쌓아 두고 가입 요청과 함께 보낸다 -->
+              <sequence>
+                <set-state target="local" registerForm="{{Object.assign({}, _local.registerForm, { agree_marketing_consent: $event.target.checked }, Object.fromEntries((marketing_settings?.data?.channels ?? []).map(ch => ['agree_' + ch.key, $event.target.checked ? true : false])))}}"/>
+              </sequence>
+            </on>
+          </checkbox>
+          <span>$t:sirsoft-marketing.agree_marketing_consent</span>
+        </label>
+        <button data-if="{{marketing_settings?.data?.marketing_consent_terms_slug_set === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0">
+          <on type="click">
+            <!-- 약관 본문 보기 — 어떤 약관인지 전역에 심고 창을 먼저 띄운 뒤 본문을 받아 채운다(빈 창이라도 즉시 반응하게) -->
+            <sequence>
+              <set-state target="global" marketingTermsModalType="marketing_consent" :marketingTermsPageData="null" :marketingTermsLoading="true"/>
+              <open-modal target="marketing_terms_modal"/>
+              <api-call target="/api/modules/sirsoft-page/pages/{{marketing_settings?.data?.marketing_consent_terms_slug}}" auth_mode="optional" method="GET">
+                <success>
+                  <set-state target="global" marketingTermsPageData="{{response.data}}" :marketingTermsLoading="false"/>
+                </success>
+                <fail>
+                  <set-state target="global" :marketingTermsLoading="false"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <span>$t:sirsoft-marketing.view_terms</span>
+        </button>
+      </div>
+      <div data-if="{{marketing_settings?.data?.marketing_consent_enabled === true}}" data-each="channel in marketing_settings?.data?.channels ?? []" class="flex items-center gap-2 ml-8">
+        <label class="flex items-center gap-2 flex-1 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+          <checkbox name="agree_{{channel.key}}" checked="{{!!_local.registerForm?.['agree_' + channel.key]}}" :autoBinding="false" disabled="{{_local?.isRegistering}}">
+            <on type="change">
+              <!-- 채널별 동의 — 켜면 전체 동의도 함께 켜 준다 -->
+              <set-state target="local" registerForm="{{Object.assign({}, _local.registerForm, $event.target.checked ? { ['agree_' + channel.key]: true, agree_marketing_consent: true } : { ['agree_' + channel.key]: false })}}"/>
+            </on>
+          </checkbox>
+          <span>{{$localized(channel.label_i18n) || channel.label}}</span>
+        </label>
+        <button data-if="{{channel.terms_slug_set === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0">
+          <on type="click">
+            <!-- 약관 본문 보기 — 채널별 수신 동의 약관도 같은 흐름을 탄다 -->
+            <sequence>
+              <set-state target="global" marketingTermsModalType="{{channel.key}}" :marketingTermsPageData="null" :marketingTermsLoading="true"/>
+              <open-modal target="marketing_terms_modal"/>
+              <api-call target="/api/modules/sirsoft-page/pages/{{channel.terms_slug}}" auth_mode="optional" method="GET">
+                <success>
+                  <set-state target="global" marketingTermsPageData="{{response.data}}" :marketingTermsLoading="false"/>
+                </success>
+                <fail>
+                  <set-state target="global" :marketingTermsLoading="false"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <span>$t:sirsoft-marketing.view_terms</span>
+        </button>
+      </div>
+      <div data-if="{{marketing_settings?.data?.third_party_consent_enabled === true}}" class="flex items-center gap-2">
+        <label class="flex items-center gap-2 flex-1 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+          <checkbox name="agree_third_party_consent" checked="{{!!_local.registerForm?.agree_third_party_consent}}" :autoBinding="false" disabled="{{_local?.isRegistering}}">
+            <on type="change">
+              <!-- 제3자 제공 동의 -->
+              <set-state target="local" registerForm="{{Object.assign({}, _local.registerForm, { agree_third_party_consent: $event.target.checked })}}"/>
+            </on>
+          </checkbox>
+          <span>$t:sirsoft-marketing.agree_third_party_consent</span>
+        </label>
+        <button data-if="{{marketing_settings?.data?.third_party_consent_terms_slug_set === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0">
+          <on type="click">
+            <!-- 약관 본문 보기 — 제3자 제공 동의 약관 -->
+            <sequence>
+              <set-state target="global" marketingTermsModalType="third_party_consent" :marketingTermsPageData="null" :marketingTermsLoading="true"/>
+              <open-modal target="marketing_terms_modal"/>
+              <api-call target="/api/modules/sirsoft-page/pages/{{marketing_settings?.data?.third_party_consent_terms_slug}}" auth_mode="optional" method="GET">
+                <success>
+                  <set-state target="global" marketingTermsPageData="{{response.data}}" :marketingTermsLoading="false"/>
+                </success>
+                <fail>
+                  <set-state target="global" :marketingTermsLoading="false"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <span>$t:sirsoft-marketing.view_terms</span>
+        </button>
+      </div>
+      <div data-if="{{marketing_settings?.data?.info_disclosure_enabled === true}}" class="space-y-1">
+        <div class="flex items-center gap-2">
+          <label class="flex items-center gap-2 flex-1 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+            <checkbox name="agree_info_disclosure" checked="{{!!_local.registerForm?.agree_info_disclosure}}" :autoBinding="false" disabled="{{_local?.isRegistering}}">
+              <on type="change">
+                <!-- 정보 공개 동의 -->
+                <set-state target="local" registerForm="{{Object.assign({}, _local.registerForm, { agree_info_disclosure: $event.target.checked })}}"/>
+              </on>
+            </checkbox>
+            <span>$t:sirsoft-marketing.agree_info_disclosure</span>
+          </label>
+          <button data-if="{{marketing_settings?.data?.info_disclosure_terms_slug_set === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0">
+            <on type="click">
+              <!-- 약관 본문 보기 — 정보 공개 동의 약관 -->
+              <sequence>
+                <set-state target="global" marketingTermsModalType="info_disclosure" :marketingTermsPageData="null" :marketingTermsLoading="true"/>
+                <open-modal target="marketing_terms_modal"/>
+                <api-call target="/api/modules/sirsoft-page/pages/{{marketing_settings?.data?.info_disclosure_terms_slug}}" auth_mode="optional" method="GET">
+                  <success>
+                    <set-state target="global" marketingTermsPageData="{{response.data}}" :marketingTermsLoading="false"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :marketingTermsLoading="false"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <span>$t:sirsoft-marketing.view_terms</span>
+          </button>
+        </div>
+        <span class="block text-xs text-gray-400 dark:text-gray-500 ml-8">$t:sirsoft-marketing.info_disclosure_warning</span>
+      </div>
+    </div>
+  </inject>
+  <!-- 마케팅 플러그인 공개 설정 — 가입 화면에 어떤 동의 항목을 노출할지를 정한다 -->
+  <data-source id="marketing_settings" label_key="$t:sirsoft-marketing.editor.data_source.marketing_settings" type="api" endpoint="/api/plugins/sirsoft-marketing/settings" method="GET" :auto_fetch="true" :auth_required="false"/>
+  <modal>
+    <!-- 약관 본문 창 — 어떤 약관을 띄울지는 전역에 심어 둔 값으로 가른다 -->
+    <modal data-type="composite" data-ref="marketing_terms_modal">
+      <switch-value prop="title" on="{{_global.marketingTermsModalType}}">
+        <case when="marketing_consent">$t:sirsoft-marketing.terms_modal_marketing_consent</case>
+        <case when="email_subscription">$t:sirsoft-marketing.terms_modal_email_subscription</case>
+        <case when="third_party_consent">$t:sirsoft-marketing.terms_modal_third_party_consent</case>
+        <case when="info_disclosure">$t:sirsoft-marketing.terms_modal_info_disclosure</case>
+        <default>{{_global.marketingTermsModalType ?? ''}}</default>
+      </switch-value>
+      <div class="flex flex-col">
+        <div data-if="{{_global.marketingTermsLoading}}" class="flex justify-center items-center py-12">
+          <icon name="circle-notch" class="text-blue-600 animate-spin text-3xl"/>
+        </div>
+        <div data-if="{{_global.marketingTermsPageData?.published_at}}" class="flex-shrink-0 flex items-center gap-2 mb-3">
+          <span class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.terms_published_at: {{_global.marketingTermsPageData?.published_at | date}}</span>
+        </div>
+        <div data-if="{{_global.marketingTermsPageData}}" class="flex-1 overflow-y-auto min-h-0 max-h-96">
+          <html-content data-type="composite" content="{{_global.marketingTermsPageData?.content ?? ''}}" isHtml="{{(_global.marketingTermsPageData?.content_mode ?? 'html') === 'html'}}" class="prose dark:prose-invert prose-sm max-w-none text-gray-700 dark:text-gray-300"/>
+        </div>
+        <div data-if="{{!_global.marketingTermsLoading &amp;&amp; !_global.marketingTermsPageData}}" class="py-8 text-center text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.no_terms_content</div>
+        <div class="flex-shrink-0 flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
+            <on type="click">
+              <close-modal/>
+            </on>
+            <span>$t:common.close</span>
+          </button>
+        </div>
+      </div>
+    </modal>
+  </modal>
+</extension>

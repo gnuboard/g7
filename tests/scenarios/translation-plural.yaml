@@ -1,0 +1,42 @@
+feature: 번역 문구 단수·복수 선택 — `count` 로 사전의 복수형 변형을 고른다
+
+description: |
+  영어 화면에서 개수가 1이어도 「1 posts」처럼 복수형이 나오던 문제(7.1.0 P20). 번역 엔진(TranslationEngine)은
+  `$t:키|count=N`·`G7Core.t(키, { count })` 의 `count` 가 숫자 표기이면, 문구를 꺼낸 사전 로케일의 CLDR 복수
+  범주(Intl.PluralRules)로 `키_{zero|one|two|few|many}` 를 먼저 찾고 없거나 범주가 other 면 기본 키를 쓴다
+  (engine-v1.78.7). 봇(SEO) 화면 평가기의 같은 규칙은 seo-expression-evaluator 매니페스트가 잠근다.
+
+  축 count_form 은 `count` 인자 모양이다 — 숫자 표기(numeric), 수가 아닌 값(non_numeric: 글자·`1,000`·빈 바인딩),
+  인자 없음(absent).
+
+axes:
+  count_form: [numeric, non_numeric, absent]
+
+effects:
+  - one_category_selects_one_variant
+  - other_category_uses_base_key
+  - non_numeric_count_uses_base_key
+  - category_follows_dictionary_locale
+  - other_variant_key_is_not_looked_up
+  - dictionary_has_singular_variant
+  - call_site_passes_count
+  - number_free_wording
+
+test_files:
+  - resources/js/core/template-engine/__tests__/TranslationEngine.plural.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/pluralCountUnitTokens.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/i18n/pluralDictionary.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/pluralResidual.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/pluralResidual.test.ts
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/pluralResidual.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/pluralResidual.test.ts
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/pluralResidual.test.ts
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/layouts/pluralResidual.test.ts
+  - plugins/_bundled/sirsoft-koreaexim/resources/js/__tests__/layouts/recipientSelectedCountPlural.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-menu-list-bulk-roles.test.tsx
+
+notes: |
+  ko·ja 는 CLDR 범주가 other 하나라 변형 키를 두지 않는다. en 사전 72곳에 `_one` 을 더했다(숫자+단위로 갈라 그리는 검색 요약·마이페이지 활동 2키 포함 — 처음 74곳 중 쓰이지 않는 2키는 검토에서 제거, 엔진 CHANGELOG engine-v1.78.7 와 같은 수)(이커머스 모듈 사전 제외).
+  R-A 후속(2026-10-08): `(s)` 표기를 기본 키 = 복수형·`_one` = 단수형으로 나누고(dictionary_has_singular_variant), 인자 이름이
+  `count` 가 아닌 수(`{{days}}`·`{updated}`·`{{maxFiles}}`)는 호출부가 같은 값을 `count` 로도 넘기며(call_site_passes_count),
+  수 두 개가 한 문장에 맞물리는 문구는 수와 명사가 엇갈리지 않는 꼴로 바꿨다(number_free_wording). 이커머스 사전 포함.

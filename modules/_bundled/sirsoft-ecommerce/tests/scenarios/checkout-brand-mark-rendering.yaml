@@ -24,6 +24,8 @@ test_files:
   - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Listeners/RegisterEasyPayMethodsListenerTest.php
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/RegisterEasyPayMethodsListenerTest.php
   - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/BrandMark.test.tsx
+  # 관리자 템플릿 사본 — 관리자 결제수단 목록이 같은 데이터로 마크를 그린다 (#639)
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/BrandMark.test.tsx
   - templates/_bundled/sirsoft-basic/src/handlers/__tests__/deviceCorrection.test.ts
   - templates/_bundled/sirsoft-basic/__tests__/layouts/checkout-payment-brand-mark.test.tsx
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/checkout-brand-mark.spec.ts

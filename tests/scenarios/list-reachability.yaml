@@ -1,0 +1,28 @@
+feature: 목록 도달 가능성 — 응답에 있는 행은 화면에서도 닿아야 한다 (#492 7차 브라우저 실측)
+
+description: |
+  세 결함 모두 콘솔 오류가 없고 목록 자체는 정상으로 보인다. 응답 메타(total/last_page)·실제 기록 어휘와
+  화면이 실제로 도달할 수 있는 범위를 대조해야만 드러난다.
+
+  - D-36 정책 버전 이력: last_page > 1 인데 페이저가 없어 1페이지 20건만 보였다(총건수 표시도 없어 잘린 사실조차 안 보임).
+  - D-35 동의 이력 출처 필터: 옵션이 실제 기록 어휘의 부분집합이라 빠진 출처로 기록된 행은 어떤 필터로도 닿지 않았고,
+    라벨 키가 없어 목록 셀에 `sirsoft-gdpr.admin.consent_log.source.*` 원시 키가 보였다.
+  - D-37 상품 상세 「+N」 쿠폰 배지: 배지는 상품 적용 쿠폰 수인데 모달은 전체 쿠폰을 조회해 두 건수가 어긋났다.
+
+  데이터가 판정 조건(2페이지 이상, 다운로드 쿠폰 4건 이상)을 채우지 못하면 조용히 통과시키지 않고 명시적으로 건너뛴다.
+
+# axis 의미:
+#   case — 응답과 화면 도달 범위를 대조하는 목록 화면. 화면마다 테스트 하나가 대응한다.
+axes:
+  case: [policy_version_history, consent_log_source_filter, product_coupon_badge]
+
+effects:
+  # 정책 버전 이력 페이저로 응답의 마지막 페이지까지 이동할 수 있다.
+  - pager_reaches_last_page
+  # 동의 이력 출처 필터 옵션이 실제 기록된 출처 어휘를 모두 덮고, 목록에 원시 번역 키가 보이지 않는다.
+  - filter_vocabulary_covers_written_values
+  # 상품 상세 「+N」 배지 수와 쿠폰 모달 건수가 같다(상품 적용 쿠폰만 센다).
+  - badge_count_matches_modal
+
+test_files:
+  - tests/Playwright/specs/pagination/list-reachability.spec.ts

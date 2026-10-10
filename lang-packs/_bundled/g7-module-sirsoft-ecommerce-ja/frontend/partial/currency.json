@@ -1,3 +1,5 @@
 {
-  "krw": "円"
+  "krw": "ウォン",
+  "krw_prefix": "",
+  "krw_suffix": "ウォン"
 }

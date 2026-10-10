@@ -1,0 +1,45 @@
+feature: 관리자 공통 UI — 사람이 읽는 다국어 접근 가능한 이름
+
+description: |
+  7.1.0 영역 J 실측에서 관리자 화면 공통 부품의 접근 가능한 이름이 비거나(이름 없는 체크박스·스위치·단추),
+  내부 표기(필드 키 「security.force_https」·placeholder 값 「30」)·아이콘 글리프 영어 이름(「ellipsis h」·「trash can」·
+  「refresh 업데이트 확인」)·영어 고정 문구(「Toggle theme」·「Expand row」·「Clear file」)로 읽혔다(D-J4·D-J5·D-J7·D-J8·D-J13,
+  관측 O-CF5·O-F3·O-F11·O-G2·O-G9·O-H2). 꾸밈 아이콘은 숨기고, 아이콘만 있는 단추·체크박스·스위치·선택 상자·입력칸은
+  번역 문구 또는 곁 라벨로 이름을 갖는다. 행 메뉴는 메뉴 단추 패턴(role=menu/menuitem, 키보드)을 따른다.
+  태그 입력의 Tab 은 옵션을 고르지 않고(D-J6), 머리말 버튼은 좁은 화면에서 글자 단위로 꺾이지 않는다(D-J9).
+
+axes:
+  control: [action_menu, icon, page_header, column_checkbox, datagrid_checkbox, datagrid_expand, explicit_name, extension_card_switch, file_input, header_controls, icon_only_button, input_number, select, select_filter_label, select_placeholder, select_search_box, switch, switch_after_button, switch_after_other_field, switch_in_clickable_card, switch_label_after, switch_without_label, tag_input, textarea]
+
+effects:
+  - decorative_icon_hidden_from_a11y_tree
+  - labelled_icon_exposes_given_name
+  - page_header_buttons_wrap_as_units
+  - action_menu_trigger_named_by_locale
+  - action_menu_items_are_keyboard_menuitems
+  - datagrid_checkboxes_named_by_locale
+  - column_selector_checkboxes_named_and_operable
+  - header_controls_named_by_locale
+  - icon_button_named_by_locale
+  - form_controls_named_by_adjacent_label
+  - explicit_name_wins_over_adjacent_label
+  - adjacent_label_never_borrows_previous_field
+  # O-Q2-1 — 확장 카드 스위치가 바로 앞 「업데이트」·「레이아웃 편집」 단추 글자로 읽히던 결함
+  - adjacent_label_never_borrows_button_text
+  - extension_card_switch_named_by_extension
+  - file_input_texts_follow_locale
+  - select_search_box_name_translated
+  - select_search_no_results_translated
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/Icon.a11y.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/PageHeader.wrap.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ActionMenu.a11y.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/DataGrid.a11y.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ColumnSelector.a11y.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/HeaderControls.a11y.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/IconButton.a11y.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/hooks/__tests__/useAdjacentLabel.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ExtensionCardGrid.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/FileInput.i18n.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/Select.searchI18n.test.tsx

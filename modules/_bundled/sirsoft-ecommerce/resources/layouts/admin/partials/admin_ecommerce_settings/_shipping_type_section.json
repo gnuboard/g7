@@ -1,640 +1,650 @@
 {
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "card-header"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-between"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "H3",
-                  "props": {
-                    "className": "card-title"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.section_title"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "if": "{{!_local.isAddingShippingType}}",
-              "props": {
-                "type": "button",
-                "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{_computed.isReadOnly}}"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "isAddingShippingType": true,
-                    "shippingTypeForm": {
-                      "code": "",
-                      "name": {
-                        "ko": "",
-                        "en": ""
-                      },
-                      "category": "domestic",
-                      "is_active": true,
-                      "sort_order": 0
-                    },
-                    "shippingTypeFormErrors": null
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "plus",
-                    "className": "text-xs"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.add_button"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "쇼핑몰 설정 — 배송유형 목록, 넓은 화면용 표 + 추가 폼. 좁은 화면용 카드\n  (`_shipping_type_cards`)와 같은 배열을 편집한다.\n  \n  추가는 임시 폼(`shippingTypeForm`)에 담았다가 확인할 때 배열에 붙이고, 필수값 판정은\n  `<conditions>` 로 갈라 통과하면 반영·아니면 오류 표시만 세운다. 새 줄의 정렬 순서는\n  붙이기 직전 배열 길이를 그대로 준다 — 드래그 재정렬이 매번 0부터 다시 매기므로 그 값이\n  곧 맨 끝자리다.",
+    "meta": {
+        "is_partial": true
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_local.isAddingShippingType}}",
-      "props": {
-        "className": "p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
-      },
-      "children": [
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-secondary block text-xs font-medium mb-1"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.code"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "value": "{{_local.shippingTypeForm?.code ?? ''}}",
-                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.code_placeholder",
-                    "className": "{{_local.shippingTypeFormErrors?.code ? 'input input-error font-mono' : 'input font-mono'}}",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "shippingTypeForm.code": "{{$event.target.value}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.shippingTypeFormErrors?.code}}",
-                  "props": {
-                    "className": "form-error"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.validation.code_required"
-                }
-              ]
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "card-header"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-secondary block text-xs font-medium mb-1"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name"
-                },
-                {
-                  "type": "composite",
-                  "name": "MultilingualInput",
-                  "props": {
-                    "value": "{{_local.shippingTypeForm?.name ?? {}}}",
-                    "layout": "inline",
-                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder",
-                    "error": "{{_local.shippingTypeFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.shipping.types.validation.name_required' : ''}}",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "shippingTypeForm.name": "{{$event.target.value}}"
-                      }
-                    }
-                  ]
+                    "comment": "`card-header` 는 justify 를 걸지 않는 가로 flex 라, 이 줄이 w-full 없이는\n        내용 폭으로 줄어 「추가」 버튼이 제목에 달라붙는다.",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-between w-full"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "card-title"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.section_title"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{!_local.isAddingShippingType}}",
+                            "actions": [
+                                {
+                                    "comment": "신규 행의 name 은 활성 언어팩($locales) 전체에 대한 빈 문자열 맵으로 시드한다. [추가] 확정 게이트가 `name[사이트 기본 언어]` 을 요구하므로, ko/en 을 리터럴로 열거하면 그 밖의 로케일 운영자는 그 언어의 입력칸도 언어 추가 버튼(MultilingualInput 은 activeLocales 를 value 의 키에서 뽑고 버튼을 사이트 기본 언어 필드에만 붙인다)도 없어 폼을 영영 확정할 수 없다 — 그동안 페이지 [저장]은 그 폼을 확정하라고 막는다.",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "isAddingShippingType": true,
+                                        "shippingTypeForm": "{{ { code: '', name: Object.fromEntries(($locales ?? []).map(l => [l, ''])), category: 'domestic', is_active: true, sort_order: 0 } }}",
+                                        "shippingTypeFormErrors": null
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "plus",
+                                        "className": "text-xs"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.add_button"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "text-secondary block text-xs font-medium mb-1"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.category"
-                },
-                {
-                  "type": "basic",
-                  "name": "Select",
-                  "props": {
-                    "value": "{{_local.shippingTypeForm?.category ?? 'domestic'}}",
-                    "className": "w-full",
-                    "options": [
-                      {
-                        "value": "domestic",
-                        "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.domestic"
-                      },
-                      {
-                        "value": "international",
-                        "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.international"
-                      },
-                      {
-                        "value": "other",
-                        "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.other"
-                      }
-                    ],
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "shippingTypeForm.category": "{{$event.target.value}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+            ]
         },
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex justify-end gap-2 mt-3"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{_computed.isReadOnly}}"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "isAddingShippingType": false,
-                    "shippingTypeForm": null,
-                    "shippingTypeFormErrors": null
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.cancel"
-                }
-              ]
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_local.isAddingShippingType}}",
+            "props": {
+                "className": "p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
             },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{_computed.isReadOnly}}"
-              },
-              "actions": [
+            "children": [
                 {
-                  "type": "click",
-                  "handler": "conditions",
-                  "conditions": [
-                    {
-                      "if": "{{(_local.shippingTypeForm?.code ?? '').trim() && (_local.shippingTypeForm?.name?.ko ?? '').trim()}}",
-                      "then": {
-                        "handler": "setState",
-                        "params": {
-                          "target": "local",
-                          "form.shipping.types": "{{[...(_local.form?.shipping?.types ?? []), {..._local.shippingTypeForm, sort_order: (_local.form?.shipping?.types ?? []).length}]}}",
-                          "isAddingShippingType": false,
-                          "shippingTypeForm": null,
-                          "shippingTypeFormErrors": null,
-                          "hasChanges": true
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-secondary block text-xs font-medium mb-1"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.code"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "유형 코드. 상품·주문이 이 코드로 유형을 참조하므로 만든 뒤 바꾸면 이어지지 않는다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "shippingTypeForm.code": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "value": "{{_local.shippingTypeForm?.code ?? ''}}",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.code_placeholder",
+                                        "className": "{{_local.shippingTypeFormErrors?.code ? 'input input-error font-mono' : 'input font-mono'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.shippingTypeFormErrors?.code}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.validation.code_required"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-secondary block text-xs font-medium mb-1"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "MultilingualInput",
+                                    "actions": [
+                                        {
+                                            "comment": "유형 이름(언어별).",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "shippingTypeForm.name": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "value": "{{_local.shippingTypeForm?.name ?? {}}}",
+                                        "layout": "inline",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder",
+                                        "error": "{{_local.shippingTypeFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.shipping.types.validation.name_required' : ''}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "text-secondary block text-xs font-medium mb-1"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.category"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "구분(국내/해외/기타). 새 줄은 국내로 시작한다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "shippingTypeForm.category": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "value": "{{_local.shippingTypeForm?.category ?? 'domestic'}}",
+                                        "className": "w-full",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "options": [
+                                            {
+                                                "value": "domestic",
+                                                "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.domestic"
+                                            },
+                                            {
+                                                "value": "international",
+                                                "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.international"
+                                            },
+                                            {
+                                                "value": "other",
+                                                "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.other"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
                         }
-                      }
-                    },
-                    {
-                      "then": {
-                        "handler": "setState",
-                        "params": {
-                          "target": "local",
-                          "shippingTypeFormErrors": {
-                            "code": "{{!(_local.shippingTypeForm?.code ?? '').trim() ? true : null}}",
-                            "name_ko": "{{!(_local.shippingTypeForm?.name?.ko ?? '').trim() ? true : null}}"
-                          }
-                        }
-                      }
-                    }
-                  ]
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.save"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(_local.form?.shipping?.types ?? []).length === 0 && !_local.isAddingShippingType}}",
-      "props": {
-        "className": "p-8 text-center text-gray-500 dark:text-gray-400"
-      },
-      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.empty"
-    },
-    {
-      "id": "shipping_type_list",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{(_local.form?.shipping?.types ?? []).length > 0}}",
-      "props": {
-        "className": "overflow-x-clip"
-      },
-      "responsive": {
-        "portable": {
-          "props": {
-            "className": ""
-          },
-          "children": [
-            {
-              "partial": "_shipping_type_cards.json"
-            }
-          ]
-        }
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Table",
-          "props": {
-            "className": "w-full"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Thead",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Tr",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Th",
-                      "props": {
-                        "className": "text-tertiary text-center font-medium px-2 py-2 w-10"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Th",
-                      "props": {
-                        "className": "text-tertiary text-left font-medium px-4 py-2 w-32"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.code"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Th",
-                      "props": {
-                        "className": "text-tertiary text-left font-medium px-4 py-2 w-56"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.name"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Th",
-                      "props": {
-                        "className": "text-tertiary text-left font-medium px-4 py-2 w-32"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.category"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Th",
-                      "props": {
-                        "className": "text-tertiary text-center font-medium px-4 py-2 w-16"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.is_active"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Th",
-                      "props": {
-                        "className": "text-tertiary text-center font-medium px-4 py-2 w-16"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.actions"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Tbody",
-              "sortable": {
-                "source": "{{(_local.form?.shipping?.types ?? []).map((t, i) => ({...t, _idx: i}))}}",
-                "itemKey": "code",
-                "strategy": "verticalList",
-                "handle": "[data-drag-handle]",
-                "itemVar": "$type",
-                "indexVar": "$tIdx",
-                "wrapperElement": "tr"
-              },
-              "actions": [
-                {
-                  "event": "onSortEnd",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "form.shipping.types": "{{$sortedItems.map((t, i) => ({...t, sort_order: i}))}}",
-                    "hasChanges": true
-                  }
-                }
-              ],
-              "itemTemplate": {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "border-t border-gray-200 dark:border-gray-700 contents"
+                    ]
                 },
-                "children": [
-                  {
+                {
                     "type": "basic",
-                    "name": "Td",
+                    "name": "Div",
                     "props": {
-                      "className": "px-2 py-2 text-center"
+                        "className": "flex justify-end gap-2 mt-3"
                     },
                     "children": [
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "data-drag-handle": true,
-                          "className": "cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-                        },
-                        "children": [
-                          {
+                        {
                             "type": "basic",
-                            "name": "Icon",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "추가 취소. 임시 폼만 비우면 원본 배열은 그대로다.",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "isAddingShippingType": false,
+                                        "shippingTypeForm": null,
+                                        "shippingTypeFormErrors": null
+                                    }
+                                }
+                            ],
                             "props": {
-                              "name": "fa-solid fa-grip-vertical",
-                              "className": "text-sm"
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Td",
-                    "props": {
-                      "className": "px-4 py-2"
-                    },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Span",
-                        "props": {
-                          "className": "font-mono text-body"
-                        },
-                        "text": "{{$type.code}}"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Td",
-                    "props": {
-                      "className": "px-4 py-2"
-                    },
-                    "children": [
-                      {
-                        "type": "composite",
-                        "name": "MultilingualInput",
-                        "props": {
-                          "value": "{{$type.name ?? {}}}",
-                          "layout": "compact",
-                          "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder",
-                          "error": "{{_local.errors?.['shipping.types.' + $type._idx + '.name.ko']?.[0] ?? _local.errors?.['shipping.types.' + $type._idx + '.name']?.[0] ?? ''}}",
-                          "disabled": "{{_computed.isReadOnly}}"
-                        },
-                        "actions": [
-                          {
-                            "type": "change",
-                            "handler": "setState",
-                            "params": {
-                              "target": "local",
-                              "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).map((t, i) => i === $type._idx ? {...t, name: $event.target.value} : t)}}",
-                              "hasChanges": true
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Td",
-                    "props": {
-                      "className": "px-4 py-2"
-                    },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Select",
-                        "props": {
-                          "value": "{{$type.category ?? 'domestic'}}",
-                          "className": "w-full",
-                          "options": [
-                            {
-                              "value": "domestic",
-                              "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.domestic"
+                                "type": "button",
+                                "className": "px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_computed.isReadOnly}}"
                             },
-                            {
-                              "value": "international",
-                              "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.international"
-                            },
-                            {
-                              "value": "other",
-                              "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.other"
-                            }
-                          ],
-                          "disabled": "{{_computed.isReadOnly}}"
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.cancel"
+                                }
+                            ]
                         },
-                        "actions": [
-                          {
-                            "type": "change",
-                            "handler": "setState",
-                            "params": {
-                              "target": "local",
-                              "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).map((t, i) => i === $type._idx ? {...t, category: $event.target.value} : t)}}",
-                              "hasChanges": true
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Td",
-                    "props": {
-                      "className": "px-4 py-2 text-center"
-                    },
-                    "children": [
-                      {
-                        "type": "composite",
-                        "name": "Toggle",
-                        "props": {
-                          "checked": "{{$type.is_active ?? false}}",
-                          "size": "sm",
-                          "disabled": "{{_computed.isReadOnly}}"
-                        },
-                        "actions": [
-                          {
-                            "type": "change",
-                            "handler": "setState",
-                            "params": {
-                              "target": "local",
-                              "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).map((t, i) => i === $type._idx ? {...t, is_active: !(t.is_active)} : t)}}",
-                              "hasChanges": true
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Td",
-                    "props": {
-                      "className": "px-4 py-2 text-center"
-                    },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Button",
-                        "props": {
-                          "type": "button",
-                          "className": "p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                          "title": "$t:common.delete",
-                          "disabled": "{{_computed.isReadOnly}}"
-                        },
-                        "actions": [
-                          {
-                            "type": "click",
-                            "handler": "setState",
-                            "confirm": "$t:sirsoft-ecommerce.admin.settings.shipping.types.confirm_delete",
-                            "params": {
-                              "target": "local",
-                              "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).filter((_, i) => i !== $type._idx)}}",
-                              "hasChanges": true
-                            }
-                          }
-                        ],
-                        "children": [
-                          {
+                        {
                             "type": "basic",
-                            "name": "Icon",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "추가 확인. 코드와 기본 언어 이름이 있어야 통과하고, 없으면 오류 표시만 세운다.",
+                                    "type": "click",
+                                    "handler": "conditions",
+                                    "conditions": [
+                                        {
+                                            "if": "{{(_local.shippingTypeForm?.code ?? '').trim() && (_local.shippingTypeForm?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')] ?? '').trim()}}",
+                                            "then": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "form.shipping.types": "{{[...(_local.form?.shipping?.types ?? []), {..._local.shippingTypeForm, sort_order: (_local.form?.shipping?.types ?? []).length}]}}",
+                                                    "isAddingShippingType": false,
+                                                    "shippingTypeForm": null,
+                                                    "shippingTypeFormErrors": null,
+                                                    "hasChanges": true
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "then": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "shippingTypeFormErrors": {
+                                                        "code": "{{!(_local.shippingTypeForm?.code ?? '').trim() ? true : null}}",
+                                                        "name_ko": "{{!(_local.shippingTypeForm?.name?.[(_global.appConfig?.siteLocale ?? $locale ?? 'ko')] ?? '').trim() ? true : null}}"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
                             "props": {
-                              "name": "fa-solid fa-trash",
-                              "className": "text-sm"
-                            }
-                          }
-                        ]
-                      }
+                                "type": "button",
+                                "className": "px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.save"
+                                }
+                            ]
+                        }
                     ]
-                  }
-                ]
-              }
-            }
-          ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_local.form?.shipping?.types ?? []).length === 0 && !_local.isAddingShippingType}}",
+            "props": {
+                "className": "p-8 text-center text-gray-500 dark:text-gray-400"
+            },
+            "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.empty"
+        },
+        {
+            "id": "shipping_type_list",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{(_local.form?.shipping?.types ?? []).length > 0}}",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": ""
+                    },
+                    "children": [
+                        {
+                            "partial": "_shipping_type_cards.json"
+                        }
+                    ]
+                }
+            },
+            "props": {
+                "className": "overflow-x-clip"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Table",
+                    "props": {
+                        "className": "w-full"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Thead",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Tr",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "text-tertiary text-center font-medium px-2 py-2 w-10"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "text-tertiary text-left font-medium px-4 py-2 w-32"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.code"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "text-tertiary text-left font-medium px-4 py-2 w-56"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.name"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "text-tertiary text-left font-medium px-4 py-2 w-32"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.category"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "text-tertiary text-center font-medium px-4 py-2 w-16"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.is_active"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Th",
+                                            "props": {
+                                                "className": "text-tertiary text-center font-medium px-4 py-2 w-16"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.actions"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Tbody",
+                            "sortable": {
+                                "source": "{{(_local.form?.shipping?.types ?? []).map((t, i) => ({...t, _idx: i}))}}",
+                                "itemVar": "$type",
+                                "itemKey": "code",
+                                "indexVar": "$tIdx",
+                                "strategy": "verticalList",
+                                "handle": "[data-drag-handle]",
+                                "wrapperElement": "tr"
+                            },
+                            "itemTemplate": {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "border-t border-gray-200 dark:border-gray-700 contents"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Td",
+                                        "props": {
+                                            "className": "px-2 py-2 text-center"
+                                        },
+                                        "children": [
+                                            {
+                                                "comment": "드래그 손잡이 — 읽기 전용(설정 수정 권한 없음)이면 숨긴다. 손잡이가 없으면 순서를 끌어 바꿀 수 없다(엔진 sortable 은 비활성 옵션이 없다).",
+                                                "id": "shipping_type_drag_handle",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!_computed.isReadOnly}}",
+                                                "props": {
+                                                    "data-drag-handle": true,
+                                                    "className": "cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "fa-solid fa-grip-vertical",
+                                                            "className": "text-sm"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Td",
+                                        "props": {
+                                            "className": "px-4 py-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "font-mono text-body"
+                                                },
+                                                "text": "{{$type.code}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Td",
+                                        "props": {
+                                            "className": "px-4 py-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "composite",
+                                                "name": "MultilingualInput",
+                                                "actions": [
+                                                    {
+                                                        "comment": "기존 줄 — 이름(언어별).",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).map((t, i) => i === $type._idx ? {...t, name: $event.target.value} : t)}}",
+                                                            "hasChanges": true
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "value": "{{$type.name ?? {}}}",
+                                                    "layout": "compact",
+                                                    "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder",
+                                                    "error": "{{_local.errors?.['shipping.types.' + $type._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + $type._idx + '.name']?.[0] ?? ''}}",
+                                                    "disabled": "{{_computed.isReadOnly}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Td",
+                                        "props": {
+                                            "className": "px-4 py-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "comment": "기존 줄 — 구분.",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).map((t, i) => i === $type._idx ? {...t, category: $event.target.value} : t)}}",
+                                                            "hasChanges": true
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "value": "{{$type.category ?? 'domestic'}}",
+                                                    "className": "w-full",
+                                                    "disabled": "{{_computed.isReadOnly}}",
+                                                    "options": [
+                                                        {
+                                                            "value": "domestic",
+                                                            "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.domestic"
+                                                        },
+                                                        {
+                                                            "value": "international",
+                                                            "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.international"
+                                                        },
+                                                        {
+                                                            "value": "other",
+                                                            "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.other"
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Td",
+                                        "props": {
+                                            "className": "px-4 py-2 text-center"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "composite",
+                                                "name": "Toggle",
+                                                "actions": [
+                                                    {
+                                                        "comment": "기존 줄 — 사용 여부.",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).map((t, i) => i === $type._idx ? {...t, is_active: !(t.is_active)} : t)}}",
+                                                            "hasChanges": true
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "checked": "{{$type.is_active ?? false}}",
+                                                    "size": "sm",
+                                                    "disabled": "{{_computed.isReadOnly}}"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Td",
+                                        "props": {
+                                            "className": "px-4 py-2 text-center"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "comment": "기존 줄 — 삭제.",
+                                                        "type": "click",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).filter((_, i) => i !== $type._idx)}}",
+                                                            "hasChanges": true
+                                                        },
+                                                        "confirm": "$t:sirsoft-ecommerce.admin.settings.shipping.types.confirm_delete"
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                    "title": "$t:common.delete",
+                                                    "disabled": "{{_computed.isReadOnly}}"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "fa-solid fa-trash",
+                                                            "className": "text-sm"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "actions": [
+                                {
+                                    "comment": "순서 바꾸기. 끌어 놓은 결과를 배열 순서로 반영한다.",
+                                    "event": "onSortEnd",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "form.shipping.types": "{{$sortedItems.map((t, i) => ({...t, sort_order: i}))}}",
+                                        "hasChanges": true
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

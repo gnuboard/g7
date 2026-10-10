@@ -16,8 +16,10 @@ use App\Services\PluginService;
 use App\Services\TemplateService;
 use App\Support\AssetUrl;
 use App\Support\CustomAssets;
+use Illuminate\Routing\Redirector;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\File;
+use Illuminate\Validation\ValidationException;
 use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -39,6 +41,11 @@ class VendoredAssetServingTest extends TestCase
     /** 테스트용 가짜 플러그인 식별자 */
     private const FAKE_PLUGIN = 'g7test-serving-plugin';
 
+    /**
+     * 테스트 준비 — 가짜 템플릿·플러그인의 동봉 자산과 운영자 자산을 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -48,6 +55,9 @@ class VendoredAssetServingTest extends TestCase
         // 템플릿: dist/vendor(동봉) + custom(운영자)
         File::ensureDirectoryExists(base_path('templates/'.self::FAKE_TEMPLATE.'/dist/vendor/lib/1.0.0/css'));
         File::put(base_path('templates/'.self::FAKE_TEMPLATE.'/dist/vendor/lib/1.0.0/css/lib.css'), '/* vendored */');
+        // AMD 모듈 (점이 든 모듈 id — `editor.main` 처럼 확장자 판정으로는 구분할 수 없다)
+        File::ensureDirectoryExists(base_path('templates/'.self::FAKE_TEMPLATE.'/dist/vendor/lib/1.0.0/vs/editor'));
+        File::put(base_path('templates/'.self::FAKE_TEMPLATE.'/dist/vendor/lib/1.0.0/vs/editor/editor.main.js'), '// amd module');
         File::ensureDirectoryExists(base_path('templates/'.self::FAKE_TEMPLATE.'/custom'));
         File::put(base_path('templates/'.self::FAKE_TEMPLATE.'/custom/custom.css'), '/* operator */');
         File::put(base_path('templates/'.self::FAKE_TEMPLATE.'/custom/notes.txt'), 'not an asset');
@@ -57,6 +67,11 @@ class VendoredAssetServingTest extends TestCase
         File::put(base_path('plugins/'.self::FAKE_PLUGIN.'/dist/vendor/lib/1.0.0/lib.js'), '// vendored');
     }
 
+    /**
+     * 테스트 정리 — 가짜 확장 디렉토리와 자산 모드 고정을 되돌립니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory(base_path('templates/'.self::FAKE_TEMPLATE));
@@ -133,9 +148,13 @@ class VendoredAssetServingTest extends TestCase
     }
 
     /**
+     * 템플릿 동봉 자산은 `dist/` 이하에서 찾는다.
+     *
      * @scenario asset_class=vendored, outcome=loaded
      *
      * @effects runtime_asset_served_same_origin
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 템플릿_동봉_자산은_dist_이하로_해석된다(): void
@@ -149,9 +168,57 @@ class VendoredAssetServingTest extends TestCase
     }
 
     /**
+     * AMD 로더는 URL 에 쿼리가 있으면 모듈 id 에 `.js` 를 붙이지 않는다 — 요청 준비 단계가 같은 이름의 `.js` 파일로
+     * 경로를 보완하고, 경로 이탈·확장자 검증은 보완된 경로로 그대로 돈다. 확장자를 가로채는 서버에서 Monaco 가 뜨는
+     * 유일한 경로다(#712 후속). 로컬 E2E 가 서비스만 보완하던 첫 판에서 요청 검증(확장자 `main`)에 막혀 HTML 을 받는
+     * 것을 잡았다 — 그래서 요청 층에서 잰다.
+     *
+     * @scenario asset_class=vendored, outcome=loaded
+     *
+     * @effects amd_module_id_without_js_suffix_resolves_to_js_file
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function 확장자_없는_amd_모듈_id_는_같은_이름의_js_파일로_해석된다(): void
+    {
+        $request = $this->validatedAssetRequest('vendor/lib/1.0.0/vs/editor/editor.main');
+        $this->assertSame('vendor/lib/1.0.0/vs/editor/editor.main.js', $request->validated('path'));
+
+        $result = $this->templateService(ExtensionStatus::Active->value)
+            ->getAssetFilePath(self::FAKE_TEMPLATE, $request->validated('path'));
+        $this->assertTrue($result['success'], (string) ($result['error'] ?? ''));
+        $this->assertSame('application/javascript', $result['mimeType']);
+
+        // 같은 이름의 .js 도 없으면 종전대로 검증에서 막힌다(허용 확장자 아님)
+        $this->expectException(ValidationException::class);
+        $this->validatedAssetRequest('vendor/lib/1.0.0/vs/editor/no_such_module');
+    }
+
+    /**
+     * 상위 디렉토리 표기가 든 경로는 `.js` 보완을 하지 않는다 — 보완 전 존재 확인이 기준 디렉토리 밖을 보지 않게 한다.
+     *
+     * @scenario asset_class=vendored, outcome=loaded
+     *
+     * @effects amd_module_id_without_js_suffix_resolves_to_js_file
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function 상위_디렉토리_표기가_든_경로는_js_보완을_하지_않는다(): void
+    {
+        $this->expectException(ValidationException::class);
+        $this->validatedAssetRequest('vendor/lib/1.0.0/vs/../vs/editor/editor.main');
+    }
+
+    /**
+     * 템플릿 운영자 자산(`custom/`)은 `dist/` 밖 확장 루트에서 찾는다.
+     *
      * @scenario custom_source=convention_scan, custom_asset=css
      *
      * @effects custom_asset_loaded_after_extension_bundles
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 템플릿_운영자_자산은_dist_밖의_custom_으로_해석된다(): void
@@ -168,9 +235,13 @@ class VendoredAssetServingTest extends TestCase
     }
 
     /**
+     * 비활성 템플릿의 자산은 서빙하지 않는다.
+     *
      * @scenario custom_source=convention_scan
      *
      * @effects inactive_extension_custom_not_served
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 비활성_템플릿의_자산은_서빙되지_않는다(): void
@@ -183,9 +254,13 @@ class VendoredAssetServingTest extends TestCase
     }
 
     /**
+     * 허용 목록 밖 확장자 파일은 서빙하지 않는다.
+     *
      * @scenario custom_source=convention_scan, custom_asset=static_file
      *
      * @effects custom_disallowed_extension_blocked
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 허용되지_않은_확장자는_서빙되지_않는다(): void
@@ -198,7 +273,11 @@ class VendoredAssetServingTest extends TestCase
     }
 
     /**
+     * 상위 디렉토리로 벗어나는 경로는 차단한다.
+     *
      * @effects custom_path_traversal_blocked
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 경로_이탈은_차단된다(): void
@@ -209,6 +288,15 @@ class VendoredAssetServingTest extends TestCase
         $this->assertFalse($result['success']);
     }
 
+    /**
+     * 플러그인 동봉 자산은 확장 루트 기준(`dist/` 를 경로에 포함)으로 찾는다.
+     *
+     * @scenario asset_class=vendored, outcome=loaded
+     *
+     * @effects runtime_asset_served_same_origin
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 플러그인_동봉_자산은_확장_루트_기준으로_해석된다(): void
     {
@@ -219,6 +307,15 @@ class VendoredAssetServingTest extends TestCase
         $this->assertSame('application/javascript', $result['mimeType']);
     }
 
+    /**
+     * 비활성 플러그인의 자산은 서빙하지 않는다.
+     *
+     * @scenario custom_source=convention_scan
+     *
+     * @effects inactive_extension_custom_not_served
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 비활성_플러그인의_자산은_서빙되지_않는다(): void
     {
@@ -230,7 +327,11 @@ class VendoredAssetServingTest extends TestCase
     }
 
     /**
+     * 자산 URL 은 확장자 모드·확장자 없는 모드 모두 same-origin 경로다.
+     *
      * @effects runtime_asset_served_same_origin
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 자산_url_은_두_모드_모두_same_origin_이다(): void
@@ -254,6 +355,8 @@ class VendoredAssetServingTest extends TestCase
      *
      *
      * @effects vendored_asset_survives_rebuild
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 빌드_산출물_정리가_동봉_자산을_보존한다(): void
@@ -280,6 +383,7 @@ class VendoredAssetServingTest extends TestCase
              *
              * @param  string  $string  메시지
              * @param  int|string|null  $verbosity  출력 수준
+             * @return void 반환값 없음
              */
             public function warn($string, $verbosity = null): void {}
 
@@ -313,6 +417,8 @@ class VendoredAssetServingTest extends TestCase
      *
      *
      * @effects bot_render_path_uses_same_origin_asset, runtime_asset_served_same_origin
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 봇_렌더_경로의_스타일시트가_same_origin_으로_해석된다(): void
@@ -344,6 +450,8 @@ class VendoredAssetServingTest extends TestCase
      * 룰이 realpath 존재를 필수로 바꾸는 순간 custom 서빙만 조용히 404 가 된다.
      *
      * @effects custom_asset_containment_base_matches_serving_root
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 자산_요청_검증_기준_경로가_서빙_경로와_일치한다(): void
@@ -385,6 +493,8 @@ class VendoredAssetServingTest extends TestCase
      * 되므로 게시가 유일한 성립 조건이다.
      *
      * @effects custom_asset_published_with_extension_assets
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 정적_게시가_운영자_자산을_자기_루트로_싣는다(): void
@@ -416,6 +526,8 @@ class VendoredAssetServingTest extends TestCase
      * 파일이 두 경로에 놓여 어느 쪽이 유효한지가 갈린다.
      *
      * @effects custom_asset_published_with_extension_assets
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function dist_원본에서는_운영자_디렉토리를_건너뛴다(): void
@@ -434,7 +546,25 @@ class VendoredAssetServingTest extends TestCase
     }
 
     /**
+     * 자산 요청을 만들어 검증까지 돌린다 (요청 준비 단계 포함).
+     *
+     * @param  string  $path  템플릿 자산 경로
+     * @return ServeTemplateAssetRequest 검증을 마친 요청
+     */
+    private function validatedAssetRequest(string $path): ServeTemplateAssetRequest
+    {
+        $request = $this->makeAssetRequest($path);
+        $request->setContainer($this->app)->setRedirector($this->app->make(Redirector::class));
+        $request->validateResolved();
+
+        return $request;
+    }
+
+    /**
      * 테스트용 자산 요청을 만든다 (라우트 파라미터 해석까지 재현).
+     *
+     * @param  string  $path  템플릿 자산 경로
+     * @return ServeTemplateAssetRequest 라우트 파라미터를 채운 요청
      */
     private function makeAssetRequest(string $path): ServeTemplateAssetRequest
     {

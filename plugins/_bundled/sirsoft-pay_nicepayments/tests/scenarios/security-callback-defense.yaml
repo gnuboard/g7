@@ -42,6 +42,7 @@ exclusions:
   - { threat: forged_approval_url_host, context: kakaopay_callback, reason: "동일" }
 
 effects:
+  - vbank_issue_clears_ordered_cart_items   # 가상계좌 계좌 발급 시 주문한 장바구니 항목 정리(입금 전)
   # DB 영구 replay defense — PreventsReplayCallback trait
   - replay_detected_on_second_arrival_db
   - replay_response_is_idempotent_ok
@@ -72,9 +73,101 @@ effects:
   - net_cancel_uses_browser_fetch_to_bypass_interceptor
   - net_cancel_passes_approved_tid
   - net_cancel_passes_full_amount
+  # KVE-2026-2434 — 결제창 닫힘 보고·재결제 준비·결제 인증 콜백의 주문 소유자 확인과 승인-주문 결속
+  - auth_callback_does_not_complete_again_when_order_is_paid_with_another_tid_after_authorize
+  - auth_callback_rolls_back_and_net_cancels_when_payment_complete_hook_throws_inside_locked_callback
+  - vbank_notify_success_log_does_not_include_depositor_or_full_account
+  - vbank_notify_rejects_amount_mismatch_without_completing_order
+  - vbank_notify_rejects_mismatched_context_without_completing_order
+  - vbank_notify_is_idempotent_for_same_tid
+  - vbank_notify_returns_fail_on_order_not_found
+  - vbank_notify_returns_ok_on_cancelled_deposit
+  - vbank_notify_stores_only_whitelisted_pg_response_fields
+  - vbank_notify_returns_ok_on_successful_deposit
+  - auth_callback_ignores_non_payable_order_without_authorize_request
+  - auth_callback_detects_mobile_device
+  - auth_callback_redirects_to_custom_success_url
+  - auth_callback_redirects_to_fail_url_on_missing_params
+  - auth_callback_rejects_authorize_response_for_another_order
+  - auth_callback_with_foreign_order_number_and_forged_next_app_url_does_not_cancel_victim
+  - auth_callback_net_cancels_invalid_payment_currency_without_changing_order
+  - auth_callback_keeps_order_pending_on_authorize_exception
+  - auth_callback_redirects_to_fail_and_sends_net_cancel_on_authorize_failure
+  - auth_callback_redirects_to_fail_on_order_not_found
+  - auth_callback_redirects_to_fail_on_signature_mismatch
+  - auth_callback_redirects_to_fail_on_mid_mismatch
+  - auth_callback_keeps_pre_authorize_failure_retryable_when_amount_matches_order
+  - auth_callback_softens_pre_authorize_failures_to_silent_redirect
+  - vbank_issue_stores_only_whitelisted_pg_response_fields
+  - vbank_issue_tolerates_malformed_due_date   # 기한 형식이 깨져도 발급 기록, 기한만 null (KCP·KG 와 같은 예외 처리)
+  - auth_callback_stores_only_whitelisted_pg_response_fields
+  - auth_callback_stores_easy_pay_display_metadata
+  - auth_callback_redirects_to_complete_page_on_valid_payment
+  - sign_data_rejects_unknown_order
+  - sign_data_rejects_non_integer_amt
+  - sign_data_rejects_overlong_moid
+  - sign_data_rejects_missing_payment_record
+  - sign_data_rejects_non_nicepayments_payment_record
+  - sign_data_restores_guest_failed_order_with_order_token
+  - sign_data_does_not_restore_failed_order_for_other_member
+  - sign_data_does_not_restore_failed_order_for_non_owner_with_matching_contact
+  - sign_data_does_not_restore_amount_mismatch_failure
+  - sign_data_restores_retryable_failed_nicepayments_order
+  - sign_data_restores_window_closed_cancelled_nicepayments_order
+  - sign_data_rejects_live_mode_when_live_mid_is_missing
+  - sign_data_rejects_non_payable_order
+  - sign_data_rejects_unchargeable_payment_currency
+  - sign_data_is_rate_limited_by_order_and_ip
+  - sign_data_rejects_buyer_mismatch
+  - sign_data_rejects_amount_mismatch
+  - sign_data_allows_guest_pending_nicepayments_order
+  - close_report_ignores_vbank_order_waiting_for_deposit
+  - close_report_ignores_order_when_payment_already_paid_but_status_still_pending
+  - close_report_rechecks_locked_order_before_marking_failed
+  - close_report_ignores_order_that_is_no_longer_payable
+  - close_report_rejects_matching_buyer_contact_without_ownership
+  - close_report_rejects_unchargeable_payment_currency_without_marking_failed
+  - close_report_rejects_amount_mismatch
+  - close_report_marks_real_payment_cancelled_with_history
+  - close_report_second_report_keeps_single_cancel_history
+  - close_report_marks_pending_order_failed_and_payment_cancelled
+  - forged_guest_token_is_rejected
+  - expired_guest_token_is_rejected
+  - guest_token_of_another_order_is_rejected
+  - guest_with_order_token_can_report_close
+  - member_owner_can_report_close
+  - member_order_cannot_be_reported_without_login
+  - other_member_cannot_report_close_of_member_order
+  - order_without_address_is_rejected_without_ownership
+  - unauthenticated_request_with_matching_buyer_contact_is_rejected
+  # PG 승인 금액 기준 결제 반영 — 브라우저 콜백 금액은 반영 근거가 아니다
+  - auth_callback_net_cancels_when_authorize_response_has_no_approved_amount
+  - auth_callback_hands_pg_approved_amount_to_complete_payment
+  - vbank_issue_net_cancels_when_issued_amount_differs_from_order_charge
+  - vbank_issue_net_cancels_for_order_not_paid_by_virtual_account
+  - vbank_notify_rejects_deposit_not_confirmed_by_transaction_query
+  - vbank_notify_transaction_query_uses_issue_time_mid
+  # API 서비스 기본 계약 — MID 선택·콜백 서명·승인·취소·망취소·거래 조회
+  - nice_api_uses_the_test_mid_in_test_mode
+  - nice_api_live_mid_gets_the_sr_prefix
+  - nice_api_live_mid_is_empty_when_not_configured
+  - nice_callback_signature_accepts_a_valid_signature
+  - nice_callback_signature_rejects_an_invalid_signature
+  - nice_callback_signature_rejects_a_tampered_amount
+  - nice_pg_amount_is_read_only_from_plain_digits
+  - nice_authorize_posts_signed_params_to_the_next_app_url
+  - nice_authorize_throws_on_http_error
+  - nice_cancel_returns_the_pg_response_on_success
+  - nice_cancel_throws_on_a_failure_result_code
+  - nice_net_cancel_swallows_http_errors
+  - nice_transaction_query_posts_signed_params
+  - nice_transaction_query_throws_on_http_error
 
 test_files:
   - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Services/NicePaymentsApiServiceTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/PaymentCallbackControllerTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/PaymentCloseReportControllerTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/PaymentCloseReportOwnershipTest.php
 
 manual_verification:
   - description: "Replay DB 영구 PoC — authorize_card 재전송"

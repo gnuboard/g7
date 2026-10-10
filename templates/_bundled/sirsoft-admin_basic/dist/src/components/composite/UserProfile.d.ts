@@ -27,9 +27,9 @@ export interface UserProfileProps {
     onProfileClick?: () => void;
     onLogoutClick?: () => void;
     className?: string;
-    /** 로그아웃 API 엔드포인트 (기본값: /api/admin/auth/logout) */
+    /** 로그아웃 API 엔드포인트 (기본값: /api/admin/auth/logout). G7Core.api 로 요청 — 토큰은 코어가 동일 출처 대상에만 싣는다 */
     logoutEndpoint?: string;
-    /** 로그아웃 후 리다이렉션 경로 (기본값: /admin/login) */
+    /** 로그아웃 후 리다이렉션 경로 (기본값: /admin/login). 동일 출처가 아니면 기본값으로 이동한다 */
     redirectPath?: string;
     /** Chevron 아이콘 표시 여부 (기본값: true) */
     showChevron?: boolean;

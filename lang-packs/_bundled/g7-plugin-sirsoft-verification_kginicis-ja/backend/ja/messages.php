@@ -17,6 +17,11 @@ return [
         ],
         'live_mid_attribute' => 'ライブ MID',
         'live_api_key_attribute' => 'ライブ API キー',
+        'is_test_mode_attribute' => 'テストモード',
+        'test_mid_attribute' => 'テスト MID',
+        'test_api_key_attribute' => 'テスト API キー',
+        'duplicate_field_attribute' => '重複チェック基準',
+        'duplicate_block_enabled_attribute' => '重複登録ブロック',
     ],
     'card' => [
         'title' => '本人認証情報',

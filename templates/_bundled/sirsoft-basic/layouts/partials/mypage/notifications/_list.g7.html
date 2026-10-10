@@ -1,0 +1,136 @@
+<!-- 알림 탭 본체. 읽음 처리는 이 목록만이 아니라 **헤더의 안 읽음 배지**도 함께 움직여야 해서,
+     응답 뒤 목록·개수 소스를 모두 다시 받고 전역 배지 값도 직접 0 으로 맞춘다. -->
+<partial description="마이페이지 알림 탭 - 시안 기반 반응형 레이아웃">
+  <div class="mt-6">
+    <blur-until-loaded sources="userNotifications"/>
+    <responsive on="portable" class="mt-4"/>
+    <div class="bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
+      <!-- 알림 헤더 바 - 반응형 -->
+      <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <responsive on="portable" class="flex flex-col gap-2 p-3 border-b border-gray-200 dark:border-gray-700"/>
+        <!-- 좌측: 카운트 + 안 읽은 알림만 필터 -->
+        <div class="flex items-center gap-4">
+          <span class="text-sm text-red-500 dark:text-red-400 font-medium">$t:mypage.notifications.unread_count|count={{notification_unread_count.data?.unread_count ?? 0}}</span>
+          <!-- 안 읽은 알림만 필터 토글 -->
+          <label class="flex items-center gap-1.5 cursor-pointer select-none">
+            <input type="checkbox" checked="{{_local.userNotificationsUnreadOnly ?? false}}" class="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer">
+              <on type="change">
+                <!-- «안 읽음만» 토글 — 조건이 전역이 아니라 로컬이라 스스로 다시 받아야 한다 -->
+                <sequence>
+                  <set-state target="local" userNotificationsUnreadOnly="{{$event.target.checked}}" :notificationsPage="1"/>
+                  <refetch-data-source dataSourceId="userNotifications"/>
+                </sequence>
+              </on>
+            </input>
+            <span class="text-xs text-gray-600 dark:text-gray-400">$t:mypage.notifications.unread_only</span>
+          </label>
+        </div>
+        <!-- 액션 버튼 그룹 -->
+        <div class="flex items-center gap-3">
+          <responsive on="portable" class="flex items-center justify-end gap-3"/>
+          <!-- 읽지 않은 알림을 모두 읽음으로 표시한다. 목록이 비어 있으면 버튼 자체가 뜨지 않는다 -->
+          <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{userNotifications?.data?.abilities?.can_update !== true}}" title="{{userNotifications?.data?.abilities?.can_update === true ? '' : '$t:mypage.notifications.no_permission'}}">
+            <on type="click">
+              <api-call :auth_required="true" target="/api/user/notifications/read-all" method="POST">
+                <success>
+                  <refetch-data-source dataSourceId="userNotifications"/>
+                  <refetch-data-source dataSourceId="notification_unread_count"/>
+                  <set-state target="global" :notificationCount="0"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </on>
+            $t:mypage.notifications.mark_all_read
+          </button>
+          <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{userNotifications?.data?.abilities?.can_delete !== true}}" title="{{userNotifications?.data?.abilities?.can_delete === true ? '' : '$t:mypage.notifications.no_permission'}}">
+            <on type="click">
+              <open-modal target="notification_delete_all_confirm_modal"/>
+            </on>
+            $t:mypage.notifications.delete_all
+          </button>
+        </div>
+      </div>
+      <!-- 알림 목록 -->
+      <div data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" data-each="notification in {{userNotifications.data.data ?? []}}" class="divide-y divide-gray-200 dark:divide-gray-700">
+        <!-- 알림 아이템 - 반응형 -->
+        <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}">
+          <responsive on="portable" class="p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}"/>
+          <on type="click">
+            <api-call if="{{!notification.read_at &amp;&amp; userNotifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/{{notification.id}}/read" method="PATCH">
+              <success>
+                <refetch-data-source dataSourceId="notification_unread_count"/>
+                <set-state target="global" notificationCount="{{Math.max(0, (_global.notificationCount ?? 0) - 1)}}"/>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+            <!-- audit:allow layout-list-context-navigate-merge-query 알림 대상으로 이동 — 목적지는 알림이 지정한 임의 화면이므로 알림 목록 클러스터 밖이다. -->
+            <navigate if="{{notification.url}}" path="{{notification.url}}"/>
+          </on>
+          <div class="flex items-start gap-3">
+            <!-- 읽지 않음 표시 + 아이콘 -->
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <!-- 읽지 않음 빨간 점 -->
+              <div data-if="{{!notification.read_at}}" class="w-2 h-2 rounded-full bg-red-500 dark:bg-red-400"/>
+              <!-- 타입 아이콘 -->
+              <div class="w-10 h-10 rounded-full flex items-center justify-center {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/30' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/30' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/30' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/30' : 'bg-gray-100 dark:bg-gray-700'}}">
+                <responsive on="portable" class="w-9 h-9 rounded-full flex items-center justify-center {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/30' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/30' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/30' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/30' : 'bg-gray-100 dark:bg-gray-700'}}"/>
+                <icon name="{{notification.type === 'order' ? 'shopping-cart' : notification.type === 'comment' ? 'message-square' : notification.type === 'shipping' ? 'truck' : notification.type === 'promotion' ? 'gift' : 'bell'}}" class="text-xl {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}">
+                  <responsive on="portable" name="{{notification.type === 'order' ? 'shopping-cart' : notification.type === 'comment' ? 'message-square' : notification.type === 'shipping' ? 'truck' : notification.type === 'promotion' ? 'gift' : 'bell'}}" class="text-base {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"/>
+                </icon>
+              </div>
+            </div>
+            <!-- 알림 내용 -->
+            <div class="flex-1 min-w-0">
+              <!-- 제목 + 태그 + 삭제 버튼 -->
+              <div class="flex items-center justify-between gap-2 mb-1">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="text-sm text-gray-900 dark:text-white truncate {{notification.read_at ? '' : 'font-semibold'}}">{{notification.subject ?? ''}}</span>
+                  <!-- 타입 태그 — type_label은 BE의 NotificationDefinition.name(다국어)에서 해석된 값. 미정의 type은 식별자 fallback -->
+                  <span data-if="{{notification.type_label}}" class="flex-shrink-0 px-2 py-0.5 text-xs rounded {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}}">{{notification.type_label}}</span>
+                </div>
+                <!-- 삭제 버튼 -->
+                <button aria-label="$t:common.delete" title="{{userNotifications?.data?.abilities?.can_delete === true ? '$t:common.delete' : '$t:mypage.notifications.no_permission'}}" class="flex-shrink-0 p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{userNotifications?.data?.abilities?.can_delete !== true}}">
+                  <on type="click">
+                    <api-call :stopPropagation="true" :auth_required="true" target="/api/user/notifications/{{notification.id}}" method="DELETE">
+                      <success>
+                        <refetch-data-source dataSourceId="userNotifications"/>
+                        <refetch-data-source dataSourceId="notification_unread_count"/>
+                        <set-state if="{{!notification.read_at}}" target="global" notificationCount="{{Math.max(0, (_global.notificationCount ?? 0) - 1)}}"/>
+                      </success>
+                      <fail>
+                        <toast type="error" message="{{error.message}}"/>
+                      </fail>
+                    </api-call>
+                  </on>
+                  <icon name="trash-can" class="text-base"/>
+                </button>
+              </div>
+              <!-- 알림 메시지 -->
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">{{notification.body ?? ''}}</p>
+              <!-- 날짜 -->
+              <span class="text-xs text-gray-400 dark:text-gray-500">{{notification.created_at | datetime}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 알림 없음 -->
+      <div data-if="{{!userNotifications.data.data || userNotifications.data.data.length === 0}}" class="p-12 text-center">
+        <responsive on="portable" class="p-8 text-center"/>
+        <icon name="bell-off" class="text-5xl mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+        <p class="text-gray-500 dark:text-gray-400">$t:mypage.notifications.empty</p>
+      </div>
+      <!-- 페이지네이션 -->
+      <pagination data-type="composite" data-if="{{((userNotifications.data.last_page ?? 0) > 1) || (userNotifications.data.has_more_pages === true) || ((userNotifications.data.current_page ?? 1) > 1)}}" currentPage="{{userNotifications.data.current_page}}" totalPages="{{userNotifications.data.last_page ?? null}}" hasMorePages="{{userNotifications.data.has_more_pages ?? false}}" class="p-4 border-t border-gray-200 dark:border-gray-700">
+        <responsive on="portable" currentPage="{{userNotifications.data.current_page}}" totalPages="{{userNotifications.data.last_page ?? null}}" hasMorePages="{{userNotifications.data.has_more_pages ?? false}}" class="p-3 border-t border-gray-200 dark:border-gray-700"/>
+        <on event="onPageChange">
+          <set-state target="local" notificationsPage="{{$args[0]}}"/>
+          <refetch-data-source dataSourceId="userNotifications"/>
+        </on>
+      </pagination>
+    </div>
+  </div>
+</partial>

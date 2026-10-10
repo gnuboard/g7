@@ -64,9 +64,68 @@ Schedule::command('attachments:prune-orphans --scheduled')->dailyAt('04:55')->on
 // 중단된 업데이트·설치가 남긴 임시 산출물 + 오래된 백업본(최신 1개 보존) 정리
 Schedule::command('storage:prune-leftovers')->dailyAt('05:00')->onOneServer();
 
+// 개인정보를 파기하므로 기본 꺼짐 — 각 도메인 핸들러가 `--scheduled` 에서 자기 설정을
+// false 폴백으로 재확인한다.
+Schedule::command('privacy:process-retention --scheduled')->dailyAt('05:05')->onOneServer();
+// 회원 상태를 바꾸고 설정에 따라 탈퇴까지 하므로 기본 꺼짐 — 커맨드가 `--scheduled` 에서
+// `privacy.dormant_enabled` 를 false 폴백으로 재확인한다. 보유기간 처리 뒤에 두는 이유는
+// 같은 날 탈퇴된 회원의 잔여 정보 2차 파기가 보존기간부터 새로 시작되어야 하기 때문이다.
+Schedule::command('privacy:process-dormant --scheduled')->dailyAt('05:10')->onOneServer();
+// 비밀번호 만료 사전 안내·만료일 처리(#736) — 설정에 따라 로그인을 해제하므로 기본 꺼짐. 커맨드가
+// `security.password_expiry_enabled` 를 재확인하고, 1회 실행당 안내 상한을 넘는 인원은 다음 날로 넘긴다.
+Schedule::command('auth:process-password-expiry --scheduled')->dailyAt('05:15')->onOneServer();
+
 // 만료 시각이 지난 본인인증 challenge 상태 전환 (비파괴 — 물리 파기는 identity:prune-logs)
 Schedule::command('identity:expire-challenges')->hourly()->onOneServer();
+
+// 보존 기간이 지난 방문자 통계 원장 정리 (집계 표는 남으므로 과거 숫자는 그대로 보인다)
+Schedule::command('analytics:prune')->dailyAt('05:10')->onOneServer();
 // gc-schedules:end
+
+/*
+| 방문자 통계 집계·점검 예약
+|
+| 집계는 정리가 아니라 「원장을 읽어 숫자를 만드는」 일이라 gc 블록 밖에 둔다.
+|
+| 매시 :05 — 오늘치를 다시 계산한다(확정하지 않는다). 오늘 숫자는 계속 변한다.
+| 매일 00:15 — 어제치를 확정한다. 하루가 끝난 뒤 한 번만 한다.
+| withoutOverlapping 의 분은 mutex 자동 만료 시간이다 — 비정상 종료가 무한 락이 되지 않게 한다.
+*/
+Schedule::command('analytics:archive --period=hour --scheduled')
+    ->hourlyAt(5)
+    ->onOneServer()
+    ->withoutOverlapping(55);
+
+Schedule::command('analytics:archive --period=day --scheduled')
+    ->dailyAt('00:15')
+    ->onOneServer()
+    ->withoutOverlapping(120);
+
+// 원장이 경고 한계를 넘었는지 점검 (정리 배치보다 먼저 돌아 「지우기 전」 크기를 본다)
+Schedule::command('analytics:check-volume')->dailyAt('05:05')->onOneServer();
+
+// 정기 리포트 — 설정이 꺼져 있으면 커맨드가 아무것도 보내지 않는다
+Schedule::command('analytics:report --period=weekly')->weeklyOn(1, '08:00')->onOneServer();
+Schedule::command('analytics:report --period=monthly')->monthlyOn(1, '08:00')->onOneServer();
+
+// 클라우드 IP 대역 목록 갱신 — 그 차단을 켠 사이트에서만 등록한다
+if (file_exists(base_path('.env'))) {
+    if ((bool) g7_core_settings('analytics.block_cloud_ip_ranges', false)) {
+        Schedule::command('analytics:update-cloud-ranges')
+            ->weekly()
+            ->onOneServer()
+            ->withoutOverlapping(60);
+    }
+
+    // 현재 접속자 브로드캐스트 — 브로드캐스트가 설정된 사이트에서만 등록한다.
+    // 설정이 없으면 실시간 화면이 폴링으로 돌므로 등록하지 않아도 기능이 빠지지 않는다.
+    if ((string) config('broadcasting.connections.reverb.key', '') !== '') {
+        Schedule::command('analytics:broadcast-realtime')
+            ->everyThirtySeconds()
+            ->withoutOverlapping(5)
+            ->runInBackground();
+    }
+}
 
 // 언어팩 업데이트 확인 (주 1회, GitHub 기반 언어팩 latest_version 갱신)
 Schedule::command('language-pack:check-updates')

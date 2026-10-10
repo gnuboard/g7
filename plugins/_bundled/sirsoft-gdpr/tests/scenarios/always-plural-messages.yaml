@@ -1,0 +1,14 @@
+feature: GDPR 서버 영어 문구 중 늘 복수로 적혀 있던 것의 단·복수
+
+description: |
+  연간 개인정보 통지 명령 출력 「1 recipients queued」 를 `단수|복수` + `trans_choice` 로 1 이면 단수로 고른다.
+  한국어 출력은 그대로.
+
+axes:
+  surface: [console_output]
+
+effects:
+  - console_output_follows_count
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Lang/AlwaysPluralMessagesTest.php

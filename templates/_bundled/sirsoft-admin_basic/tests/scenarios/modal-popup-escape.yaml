@@ -1,0 +1,21 @@
+feature: admin_basic Modal — 창 안에서 펼친 팝업이 있을 때의 Esc
+
+description: |
+  창과 창 안의 선택 목록·검색 드롭다운이 각자 document keydown 리스너로 Esc 를 받아, 목록을 펼친 채 Esc 를 누르면
+  목록과 창이 함께 닫혀 저장 안 한 입력이 사라졌다(7.1.0 O-K3-16 — 게시판 환경설정 › 알림 템플릿 편집 창 실측,
+  g7 D-J3 와 같은 결함). 창 안에 펼친 팝업(aria-haspopup + aria-expanded="true")이 있으면 그 Esc 는 팝업만 닫는다.
+  자기 onKeyDown 으로 곧바로 닫히는 팝업과 입력칸에 초점이 있어 Esc 를 먼저 받아 닫히는 팝업(focused_input_closes_itself —
+  회원 역할 일괄 변경 창 E2E)도 키를 누른 순간의 펼침 여부로 판정한다. 팝업이 아닌 펼침, 창 밖 팝업,
+  팝업이 없는 경우는 종전처럼 Esc 한 번에 창이 닫힌다.
+
+axes:
+  popup: [select_open, focused_input_closes_itself, searchable_dropdown_open, self_closing_on_keydown, disclosure_expanded, outside_modal, none]
+
+effects:
+  - escape_closes_popup_before_modal
+  - escape_ignores_non_popup_expanded
+  - escape_ignores_popup_outside_modal
+  - escape_closes_modal_without_popup
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Modal.popupEscape.test.tsx

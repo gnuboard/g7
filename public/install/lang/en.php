@@ -146,6 +146,8 @@ return [
     'env_hardening_hint_option_strict' => 'CLI user = web server user (single-user environment)',
     'env_hardening_hint_option_group' => 'CLI user ≠ web server user (self-hosted server, etc. — group-readable compromise)',
     'env_hardening_hint_note' => 'Verify your environment before running. Applying the wrong permission may prevent the web server from reading .env and cause the site to stop responding.',
+    'cron_hint_title' => 'Register scheduled tasks (cron)',
+    'cron_hint_body' => 'Register the command below in cron to run every minute. Without it, visitor statistics are archived only when an administrator opens a statistics screen, and scheduled tasks such as automatic order cancellation, old data cleanup and report mails do not run.',
 
     // Step 5: Complete
     'installation_info' => 'Installation Information',
@@ -290,6 +292,7 @@ return [
     'task_create_settings_json' => 'Creating Settings Files',
     'task_complete_flag' => 'Finalizing Installation',
     'task_config_cache' => 'Building Configuration Cache',
+    'task_route_cache' => 'Building Route Cache',
     'task_static_publish' => 'Publishing Static Bootstrap Resources',
     'task_unknown' => 'Unknown Task',
 
@@ -396,11 +399,13 @@ return [
     // Error Messages - Worker (Cache)
     'error_cache_clear_failed' => 'Cache clearing failed',
     'error_config_cache_failed' => 'Configuration cache build failed',
+    'error_route_cache_failed' => 'Route cache build failed (site still works; it is rebuilt when an extension is installed or changed)',
     'error_static_publish_failed' => 'Static bootstrap resource publishing failed (site still works via API fallback)',
 
     // Log Messages - Worker (Cache)
     'log_cache_clear_success' => 'Cache clearing completed',
     'log_config_cache_success' => 'Configuration cache built',
+    'log_route_cache_success' => 'Route cache built',
     'log_static_publish_success' => 'Static bootstrap resources published',
 
     // Error Messages - Worker (Settings JSON)
@@ -949,5 +954,35 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'required_files_fix_guide_combined' => '.env file creation and permission setup required. Run the following command:',
 
     // Relative path alternative
+    'storage_windows_readonly' => 'The storage folder has the ReadOnly attribute set.',
+    'storage_windows_readonly_message' => 'This is a file attribute, not an ACL, so icacls cannot clear it. Remove the ReadOnly attribute with the attrib command below first.',
+    'permission_readonly_fix_guide' => 'Run the command below to clear the ReadOnly attribute:',
+    'permission_readonly_hint' => '* Extracting archives, restoring backups, or sync tools often leave the ReadOnly attribute behind. If it still fails afterwards, follow up with icacls to grant permissions.',
     'or_relative_path' => 'Or from the G7 root directory:',
+
+    // Installation ownership (block state changes from other browser sessions)
+    'error_ownership_conflict' => 'Another browser session is running this installation. Continue in the browser that started it, or reclaim ownership with the recovery token.',
+    'error_csrf_invalid' => 'Invalid request token. Please refresh the page and try again.',
+    'error_state_conflict' => 'Another request changed the installation state first. Please refresh the page and try again.',
+    'error_db_config_changed' => 'The connection settings changed after the database connection test. Please test the connection again with the current settings.',
+    'error_install_plan_unverified' => 'No verified installation plan was found, so nothing was executed. Please start the installation again from the installation screen.',
+    'error_finalize_not_ready' => 'The installation has not completed yet.',
+    'drop_confirm_rejected' => 'The confirmation for deleting existing tables is not valid, so the installation continues without deleting them. If deletion is required, run the database connection test and the deletion consent again in Step 3.',
+    'log_drop_confirm_rejected' => '[Warning] Existing-table deletion confirmation is not valid; continuing without deletion (reason: :reason)',
+    'recovery_token_notice_title' => 'Keep your recovery token in a safe place',
+    'recovery_token_notice_desc' => 'If you close the browser or the session expires, this installation cannot be continued from another browser unless you enter the recovery token below. The token is shown only in this browser.',
+    'recovery_token_copy' => 'Copy',
+    'ownership_locked_title' => 'Installation in progress in another session',
+    'ownership_locked_desc' => 'Another browser session is running this installation, so its state cannot be changed from here. If you started this installation, enter the recovery token you were given to continue.',
+    'recovery_token_label' => 'Recovery token',
+    'recovery_token_placeholder' => 'xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx',
+    'recovery_submit' => 'Reclaim ownership',
+    'recovery_success' => 'Ownership reclaimed. Returning to the installation. A new recovery token has been issued, so please store it again.',
+    'error_recovery_token_invalid' => 'The recovery token is not valid.',
+    'error_recovery_rate_limited' => 'Too many failed recovery token attempts. Please try again in 15 minutes.',
+    'error_recovery_unavailable' => 'There is no installation in progress to reclaim. Please refresh the page.',
+    'ownership_reset_hint' => 'If you lost the recovery token, delete storage/installer-state.json on the server and start the installation again.',
+    'log_ownership_claimed' => '[Ownership] The installation owner session has been set.',
+    'log_ownership_reclaimed' => '[Ownership] Installation ownership was reclaimed with the recovery token.',
+    'log_ownership_reclaim_failed' => '[Ownership] Reclaim rejected: recovery token mismatch.',
 ];

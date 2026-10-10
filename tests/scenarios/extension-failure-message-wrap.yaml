@@ -1,0 +1,18 @@
+feature: 확장 관리 API 실패 문구 이중 래핑 방지 (Module/Plugin/TemplateController)
+
+description: |
+  서비스가 이미 「…실패했습니다: 원인」으로 번역해 던진 검증 오류를 컨트롤러가 같은 문구로 한 번 더 감싸
+  응답 message 앞말이 두 번 붙던 문제를 막는다(#703 브라우저 실측 — 진행 중 템플릿 활성화 거절 문구).
+  설치 경로는 이미 첫 오류 문구를 그대로 썼고, 활성화·비활성화·삭제·업데이트 확인·수정 레이아웃 확인·
+  레이아웃 갱신 경로도 같게 맞췄다. 문구가 비었을 때만 원래 키에 원인을 넣어 쓴다.
+
+  축 surface 는 대표 API 경로다 — 컨트롤러 셋이 같은 방식이라 템플릿·모듈의 활성화·비활성화로 본다.
+
+axes:
+  surface: [template_activate, template_deactivate, module_activate, module_deactivate]
+
+effects:
+  - failure_message_not_wrapped_twice
+
+test_files:
+  - tests/Feature/Api/Admin/ExtensionFailureMessageWrapTest.php

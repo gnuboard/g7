@@ -1,0 +1,27 @@
+{
+    "identifier": "sirsoft-koreaexim",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "수출입은행 환율",
+        "en": "Korea Eximbank Exchange Rates"
+    },
+    "version": "1.0.0",
+    "description": {
+        "ko": "공식 환율 자동 갱신과 갱신 이력·실패 알림을 제공합니다.",
+        "en": "Automatic official exchange rates, history and failure notifications."
+    },
+    "license": "MIT",
+    "g7_version": ">=7.1.0",
+    "dependencies": {
+        "modules": {
+            "sirsoft-ecommerce": ">=1.3.0"
+        },
+        "plugins": {}
+    },
+    "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-koreaexim",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-koreaexim/blob/main/CHANGELOG.md",
+    "loading": {
+        "strategy": "global",
+        "priority": 100
+    }
+}

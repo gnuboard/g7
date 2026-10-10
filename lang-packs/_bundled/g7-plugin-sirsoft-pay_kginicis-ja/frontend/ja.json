@@ -69,7 +69,26 @@
     "tax_breakdown_title": "税金詳細",
     "supply_amount": "供給価額",
     "vat_amount": "付加価値税",
-    "tax_free_amount": "非課税金額"
+    "tax_free_amount": "非課税金額",
+    "receipt_print": "印刷",
+    "cbt_confirmation_title": "KGイニシス CBT 決済確認書",
+    "vbank_title": "仮想口座入金案内",
+    "vbank_bank": "銀行",
+    "vbank_bank_code": "銀行コード",
+    "vbank_account_number": "口座番号",
+    "vbank_holder": "預金者",
+    "vbank_amount": "入金金額",
+    "vbank_due": "入金期限",
+    "vbank_notice": "入金期限内に入金いただかない場合、注文は自動キャンセルされます。",
+    "cvs_title": "日本コンビニ入金案内",
+    "cvs_status": "ステータス",
+    "cvs_due_amount": "入金予定金額",
+    "cvs_code": "コンビニコード",
+    "cvs_confirmation_no": "コンビニ確認番号",
+    "cvs_receipt_no": "コンビニ受付番号",
+    "cvs_payment_term": "入金締切日時",
+    "loading": "読み込み中...",
+    "easy_pay_label": "簡単決済"
   },
   "admin": {
     "test_mode_badge": "テスト決済",
@@ -162,26 +181,13 @@
       "paypay": "PayPay",
       "cvs": "日本コンビニ決済"
     },
-    "cash_receipt_title": "現金領収書別途発行",
-    "cash_receipt_description": "KGイニシスINIAPIを通じて現金領収書を発行します。",
-    "cash_receipt_already_issued": "既に発行済み",
-    "cash_receipt_issued_at": "発行日時",
-    "cash_receipt_type_label": "発行タイプ",
-    "cash_receipt_type_income": "所得控除（消費者用）",
-    "cash_receipt_type_expenditure": "支出証明（事業者用）",
-    "cash_receipt_number_label": "識別番号",
-    "cash_receipt_number_placeholder_income": "携帯電話番号または住民登録番号",
-    "cash_receipt_number_placeholder_expenditure": "事業者登録番号",
-    "cash_receipt_issue_button": "現金領収書発行",
-    "cash_receipt_issuing": "発行中...",
-    "cash_receipt_success": "現金領収書が発行されました。",
-    "cash_receipt_error": "現金領収書の発行に失敗しました。",
     "escrow_delivery_title": "エスクロー配送登録",
     "escrow_delivery_description": "KGイニシスエスクロー配送登録を行います。",
     "escrow_delivery_invoice_label": "送り状番号",
     "escrow_delivery_invoice_placeholder": "送り状番号を入力してください",
     "escrow_delivery_courier_label": "配送業者",
     "escrow_delivery_courier_placeholder": "配送業者を選択してください",
+    "escrow_delivery_courier_etc": "その他",
     "escrow_delivery_register_button": "配送登録",
     "escrow_delivery_change_button": "配送変更",
     "escrow_delivery_registering": "登録中...",
@@ -202,6 +208,8 @@
     "escrow_deny_confirm_done_at": "処理日時",
     "escrow_deny_confirm_status_label": "購入拒否ステータス",
     "escrow_deny_confirm_buyer_denied": "購入拒否",
+    "escrow_deny_confirm_buyer_denied_at": "日時",
+    "easy_pay_provider": "簡単決済: {{provider}}",
     "cbt_cvs_ops_title": "CBT コンビニ決済入金管理",
     "cbt_cvs_ops_description": "日本コンビニ決済の入金通知(NOTI)受信履歴、入金待機状態、テスト入金処理を確認します。",
     "cbt_cvs_notify_url": "NOTI受信URL",
@@ -330,5 +338,6 @@
     "error": {
       "sdk_url_untrusted": "決済モジュールのアドレスが正しくないため、決済を進めることができません。管理者にお問い合わせください。"
     }
-  }
+  },
+  "plugin_read_only": "このプラグイン設定を変更する権限がないため、読み取り専用で表示されます。"
 }

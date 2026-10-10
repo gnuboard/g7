@@ -62,9 +62,13 @@ class MileageTransactionResource extends BaseApiResource
         }
 
         // 기간 변경 가능: 적립계 + 미소멸 + 잔여 > 0 (소멸/전액사용 lot 은 만료일 변경 불가, memo 만 편집)
+        // 환불 현금분 지급(refund_credit)은 현금을 대신한 돈이라 기간을 붙일 수 없다(Q2).
         $canEditExpiry = $isEarning
+            && $type !== MileageTransactionTypeEnum::REFUND_CREDIT
             && $this->resource->expired_at === null
             && (float) $this->resource->remaining_amount > 0;
+
+        $canExposeAdminNote = $this->canExposeAdminNote($request);
 
         return [
             'id' => $this->resource->id,
@@ -83,14 +87,16 @@ class MileageTransactionResource extends BaseApiResource
             'order_option_id' => $this->resource->order_option_id,
             'order_cancel_id' => $this->resource->order_cancel_id,
             'source_transaction_id' => $this->resource->source_transaction_id,
-            'granted_by' => $this->resource->granted_by,
-            'granted_by_name' => $this->whenLoaded('grantedByUser', fn () => $this->resource->grantedByUser?->name),
-            'granted_by_uuid' => $this->whenLoaded('grantedByUser', fn () => $this->resource->grantedByUser?->uuid),
+            // 처리 관리자·내부 메모는 관리자 응답에만 싣는다(회원 마일리지 내역도 이 Resource 를 쓴다).
+            // whenLoaded 는 로딩 게이트일 뿐이라, 회원 경로에 with() 가 추가되는 순간 새지 않도록 권한 게이트를 함께 건다.
+            'granted_by' => $canExposeAdminNote ? $this->resource->granted_by : null,
+            'granted_by_name' => $this->whenLoaded('grantedByUser', fn () => $canExposeAdminNote ? $this->resource->grantedByUser?->name : null),
+            'granted_by_uuid' => $this->whenLoaded('grantedByUser', fn () => $canExposeAdminNote ? $this->resource->grantedByUser?->uuid : null),
             'user_name' => $this->whenLoaded('user', fn () => $this->resource->user?->name),
             'user_uuid' => $this->whenLoaded('user', fn () => $this->resource->user?->uuid),
             'order_number' => $this->whenLoaded('order', fn () => $this->resource->order?->order_number),
             'description' => $this->resource->description,
-            'memo' => $this->resource->memo,
+            'memo' => $canExposeAdminNote ? $this->resource->memo : null,
             'expires_at' => $this->resource->expires_at?->toIso8601String(), // audit:allow datetime-display-user-timezone reason: paired with *_formatted user-tz field
             'expires_at_formatted' => $this->formatDateTimeStringForUser($this->resource->expires_at),
             'expires_at_date' => $this->formatDateStringForSite($this->resource->expires_at),

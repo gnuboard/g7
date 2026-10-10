@@ -1,0 +1,43 @@
+<!-- 관리자 회원 «상세» 화면에 알림 수신 설정을 읽기 전용으로 덧붙인다 — 탭 목록에 항목 하나를 밀어 넣고(inject_props) 그 탭이 가리킬 본문을 확장 슬롯에 append 하는 두 단짜리 주입이다. 짝인 `user-notification-settings` 가 같은 값을 편집 가능한 폼으로 낸다 -->
+<extension target-layout="admin_user_detail" priority="300">
+  <inject target-id="user_detail_tabs" position="inject_props">
+    <props>
+      <prop name="tabs">
+        <append>
+          <item id="ext_notification" label="$t:sirsoft-board.admin.users.form.sections.notification_settings" iconName="cubes"/>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <inject target-id="extension_tab_content" position="append_child">
+    <div data-ref="ext_notification_content" id="ext_notification" class="scroll-mt-32">
+      <div data-ref="section_notification_settings" class="admin-card">
+        <div class="flex-between mb-4">
+          <div class="flex items-center gap-2">
+            <icon name="bell" class="text-gray-600 dark:text-gray-400 text-xl"/>
+            <h3 class="section-heading">$t:sirsoft-board.admin.users.form.sections.notification_settings</h3>
+          </div>
+          <extension-badge data-type="composite" type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
+        </div>
+        <div class="grid-2col-responsive">
+          <div data-ref="field_notify_post_complete">
+            <label class="text-sm text-gray-500 dark:text-gray-400 block font-medium mb-1">$t:sirsoft-board.admin.users.form.notifications.post_complete</label>
+            <div class="text-gray-900 dark:text-white text-sm">{{user?.data?.notify_post_complete ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}</div>
+          </div>
+          <div data-ref="field_notify_post_reply">
+            <label class="text-sm text-gray-500 dark:text-gray-400 block font-medium mb-1">$t:sirsoft-board.admin.users.form.notifications.post_reply</label>
+            <div class="text-gray-900 dark:text-white text-sm">{{user?.data?.notify_post_reply ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}</div>
+          </div>
+          <div data-ref="field_notify_comment">
+            <label class="text-sm text-gray-500 dark:text-gray-400 block font-medium mb-1">$t:sirsoft-board.admin.users.form.notifications.comment</label>
+            <div class="text-gray-900 dark:text-white text-sm">{{user?.data?.notify_comment ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}</div>
+          </div>
+          <div data-ref="field_notify_reply_comment">
+            <label class="text-sm text-gray-500 dark:text-gray-400 block font-medium mb-1">$t:sirsoft-board.admin.users.form.notifications.reply_comment</label>
+            <div class="text-gray-900 dark:text-white text-sm">{{user?.data?.notify_reply_comment ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </inject>
+</extension>

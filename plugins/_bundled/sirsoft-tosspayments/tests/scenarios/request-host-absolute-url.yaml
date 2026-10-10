@@ -1,0 +1,34 @@
+feature: 토스페이먼츠 결과 이동·PG 전송 주소의 사이트 주소 고정 (요청 Host·Referer 비신뢰)
+
+description: |
+  결제·클레임 결제 결과 이동과 검증 실패 이동이 상대 경로 redirect()·기본 failedValidation(Referer) 으로
+  요청 Host·Referer 를 따랐고, 프런트가 PG 로 보내는 successUrl·failUrl 은 window.location.origin 으로
+  만들어졌다. 모두 사이트 주소(코어 SiteUrl)로 만든다. 관리자 웹훅 주소 안내도 사이트 주소다.
+
+axes:
+  # forged = 위조 Host 변종 4종(외부 도메인·사이트 하위 도메인·포트만 바꾼 Host·신뢰 프록시 X-Forwarded-Host)을
+  #          코어 `Tests\Concerns\ForgesRequestHost::forgedHosts()` 데이터 제공자가 모두 돈다. 같은 제공자에
+  #          사이트 주소(canonical) 행이 함께 있어, 그 행이 사이트 주소 Host 에서도 같은 값을 내는지 본다.
+  host_header: [canonical, forged]
+  sink: [payment_result_redirect, claim_result_redirect, pg_callback_urls, admin_notify_url, pg_server_notify, front_pg_urls]
+
+exclusions:
+  - { sink: front_pg_urls, host_header: canonical, reason: "수신·제출 주소 판정은 요청 Host 를 읽지 않는다 — 입력 값만 본다(위조 Host 변종이 의미 없음)" }
+  - { sink: payment_result_redirect, host_header: canonical, reason: "forged 데이터 제공자가 사이트 주소(canonical) 행을 함께 돈다 — 같은 테스트가 두 축을 덮는다" }
+  - { sink: claim_result_redirect, host_header: canonical, reason: "forged 데이터 제공자가 사이트 주소(canonical) 행을 함께 돈다 — 같은 테스트가 두 축을 덮는다" }
+  - { sink: pg_callback_urls, host_header: canonical, reason: "forged 데이터 제공자가 사이트 주소(canonical) 행을 함께 돈다 — 같은 테스트가 두 축을 덮는다" }
+  - { sink: admin_notify_url, host_header: canonical, reason: "forged 데이터 제공자가 사이트 주소(canonical) 행을 함께 돈다 — 같은 테스트가 두 축을 덮는다" }
+  - { sink: pg_server_notify, host_header: canonical, reason: "forged 데이터 제공자가 사이트 주소(canonical) 행을 함께 돈다 — 같은 테스트가 두 축을 덮는다" }
+
+effects:
+  - payment_result_redirect_uses_site_address
+  - claim_result_redirect_uses_site_address
+  - client_config_callback_urls_are_site_absolute
+  - admin_notify_url_uses_site_address
+  - invalid_server_notify_returns_422_without_redirect
+  - front_pg_urls_require_site_absolute
+  - front_pg_urls_use_server_site_address_unchanged
+
+test_files:
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/TossHostTrustTest.php
+  - plugins/_bundled/sirsoft-tosspayments/resources/js/__tests__/hostTrust.test.ts

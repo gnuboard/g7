@@ -1,0 +1,32 @@
+feature: 레이아웃 서빙 — 원본의 빈 객체 `{}` 를 응답에서 `{}` 로 보존 (7.1.0 실측 O-K3-4)
+
+description: |
+  레이아웃 content 는 연관 배열로 디코드돼 빈 객체 `{}` 가 빈 배열 `[]` 과 구별되지 않았다. 그래서 원본·DB 행이
+  `{}` 인 자리가 `GET /api/layouts/...` 응답에서 `[]` 로 나가 화면이 키-값 상태를 배열로 받았다(게시판 환경설정
+  `_local.expandedNotifications`). 병합 단계에서 저장 원문을 다시 읽어 「값 자리」(initLocal·initGlobal·initIsolated·state
+  의 값, params·fallback 아래)의 빈 객체만 보존하고, 병합 코드가 배열로 다루는 섹션·구조 키(props, params 자체,
+  섹션 자체)는 배열로 둔다. 비어 있는 루트 맵 섹션(meta, initLocal 등)은 응답 직전 `{}` 로 돌려놓는다. SEO 렌더러처럼
+  배열만 다루는 소비자는 진입점에서 배열로 되돌려 종전과 같다.
+
+test_files:
+  - tests/Unit/Support/LayoutEmptyObjectsTest.php
+  - tests/Feature/Api/Public/LayoutServingEmptyObjectTest.php
+
+axes:
+  position:
+    - init_state_value
+    - params_fallback_value
+    - root_section
+
+effects:
+  - init_state_empty_object_preserved
+  - action_params_empty_object_preserved
+  - fallback_empty_object_preserved
+  - empty_list_stays_list
+  - structural_keys_stay_arrays
+  - root_map_section_restored
+  - array_consumer_sees_arrays
+  - unreadable_raw_falls_back_to_cast
+  # base #747 이 같은 테스트 파일에 단 결함 고정 효과 — issue759 → develop-7.1.0 리베이스로 합류(이 트랙의 코어 수정으로 통과).
+  - empty_object_served_as_object
+  - empty_array_served_as_array

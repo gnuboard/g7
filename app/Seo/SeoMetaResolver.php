@@ -11,6 +11,11 @@ class SeoMetaResolver
     use LocalizesSeoValues;
     use SubstitutesSeoVariables;
 
+    /**
+     * SEO 메타 해석기를 생성합니다.
+     *
+     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     */
     public function __construct(
         private readonly ExpressionEvaluator $evaluator,
     ) {}
@@ -23,9 +28,10 @@ class SeoMetaResolver
      * @param  string|null  $moduleIdentifier  모듈 식별자 (이커머스/게시판 등)
      * @param  string|null  $pluginIdentifier  플러그인 식별자
      * @param  array  $routeParams  라우트 파라미터
+     * @param  mixed  $routeTitle  라우트 meta.title(`$t:` 키, 표현식, 다국어 배열) — 다른 제목 단계가 모두 빌 때 쓰는 마지막 대체
      * @return array 해석된 메타 데이터
      */
-    public function resolve(array $seoConfig, array $context, ?string $moduleIdentifier, ?string $pluginIdentifier, array $routeParams): array
+    public function resolve(array $seoConfig, array $context, ?string $moduleIdentifier, ?string $pluginIdentifier, array $routeParams, mixed $routeTitle = null): array
     {
         // Tier 1: 코어 설정 (null 저장값 대비 빈 문자열 보장)
         $coreTitleSuffix = g7_core_settings('seo.meta_title_suffix') ?? '';
@@ -37,9 +43,18 @@ class SeoMetaResolver
         $description = $this->resolveDescription($seoConfig, $context, $moduleIdentifier, $pluginIdentifier, $routeParams);
         $keywords = $this->resolveKeywords($context, $moduleIdentifier);
 
-        // fallback: 레이아웃 meta → 코어 설정
+        // 사이트 이름만 되풀이하는 제목(게시판 목록 기본 틀 `{site_name}` 등)은 화면 정보가 없고
+        // 접미사가 사이트 이름을 이미 붙이므로 「사이트 이름 | 사이트 이름」 이 된다 — 다음 단계로 넘긴다
+        if ($title !== '' && $this->isSiteNameOnlyTitle($title, $coreTitleSuffix)) {
+            $title = '';
+        }
+
+        // fallback: 레이아웃 meta → 라우트 meta.title → 코어 설정
         if ($title === '') {
             $title = $this->resolveLayoutMetaTitle($seoConfig, $context);
+        }
+        if ($title === '' && $routeTitle !== null && $routeTitle !== '' && $routeTitle !== []) {
+            $title = $this->stripHtml($this->safeEval($routeTitle, $context));
         }
         if ($description === '') {
             $description = $this->resolveLayoutMetaDescription($seoConfig, $context);
@@ -462,6 +477,30 @@ class SeoMetaResolver
     }
 
     /**
+     * 제목이 사이트 이름만 되풀이하는지 판정합니다.
+     *
+     * 코어 사이트 이름(`general.site_name`)이나 제목 접미사에서 구분자를 뗀 이름과 같으면
+     * 화면 정보가 없는 제목이다. 이런 제목에 접미사를 붙이면 사이트 이름이 두 번 나간다.
+     *
+     * @param  string  $title  해석된 제목
+     * @param  string  $suffix  코어 설정의 제목 접미사
+     * @return bool 사이트 이름만 되풀이하면 true
+     */
+    private function isSiteNameOnlyTitle(string $title, string $suffix): bool
+    {
+        $normalized = trim($title);
+        if ($normalized === '') {
+            return false;
+        }
+
+        $siteName = trim($this->resolveLocalizedValue(g7_core_settings('general.site_name', '')));
+        $suffixName = self::composeTitleSuffix('', $suffix);
+
+        return ($siteName !== '' && $normalized === $siteName)
+            || ($suffixName !== '' && $normalized === $suffixName);
+    }
+
+    /**
      * 레이아웃 meta의 title을 해석합니다 (fallback용).
      *
      * @param  array  $seoConfig  SEO 설정
@@ -739,8 +778,8 @@ class SeoMetaResolver
 
         // JSON-LD 는 `<script type="application/ld+json">` 안에 임베드된다. 사용자 제어 값
         // (검색어·상품명 등)에 포함된 `</script>` 가 스크립트 컨텍스트를 조기 종료하면 그
-        // 뒤의 페이로드가 실행 가능한 script 요소로 재생성된다(반사형 XSS — 봇 렌더는
-        // _escaped_fragment_ 로 일반 UA 도 강제됨). JSON_HEX_TAG 로 `<`·`>` 를 <·>
+        // 뒤의 페이로드가 실행 가능한 script 요소로 재생성된다(반사형 XSS — 봇 UA 는 누구나
+        // 위장할 수 있다). JSON_HEX_TAG 로 `<`·`>` 를 <·>
         // 로 이스케이프해 브레이크아웃을 차단한다. JSON_HEX_AMP 는 방어 심화.
         return json_encode(
             $resolved,
@@ -757,6 +796,10 @@ class SeoMetaResolver
      *
      * 'Array to string conversion' / TypeError 회귀 방지 — resolveOgData/resolveTwitterData 에서
      * 모든 표현식 평가 지점은 본 헬퍼를 거쳐야 함.
+     *
+     * @param  mixed  $expr  평가할 표현식 또는 값
+     * @param  array  $context  평가 컨텍스트
+     * @return string 평가 결과 문자열
      */
     private function safeEval(mixed $expr, array $context): string
     {
@@ -768,7 +811,10 @@ class SeoMetaResolver
     }
 
     /**
-     * 상대 경로 URL 을 절대 URL 로 변환.
+     * 상대 경로 URL 을 사이트 주소 기준 절대 URL 로 변환 (요청 Host 비의존 — SeoUrl 참고).
+     *
+     * @param  string  $url  URL 또는 상대 경로
+     * @return string 절대 URL (빈 값이면 빈 문자열)
      */
     private function absoluteUrl(string $url): string
     {
@@ -776,7 +822,7 @@ class SeoMetaResolver
             return '';
         }
 
-        return str_starts_with($url, 'http') ? $url : url($url);
+        return str_starts_with($url, 'http') ? $url : SeoUrl::absolute($url);
     }
 
     /**

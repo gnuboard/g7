@@ -110,6 +110,17 @@ export interface CardGridProps {
   id?: string;
   /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
   editorAttrs?: EditorAttrs;
+
+  /**
+   * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트
+   *
+   * `renderEnvRef.current` 는 이 CardGrid 를 그린 렌더러의 렌더 환경(폭·언어·dispatcher·레지스트리·
+   * 편집 모드)이다. 셀을 그릴 때 이 값을 넘겨, 레이아웃 편집기 미리보기에서 셀이 브라우저 창 폭·
+   * 호스트 언어가 아니라 미리보기 값을 따르게 한다(#141).
+   *
+   * @internal 템플릿 엔진 내부 사용
+   */
+  __componentContext?: { renderEnvRef?: { current: Record<string, any> | null } };
 }
 
 /**
@@ -182,13 +193,13 @@ const processActionMenuActions = (
           const actionId = item.onClick;
           const actionDef = actionsMap.get(actionId);
 
-          if (actionDef && G7Core?.ActionDispatcher) {
+          // 실행은 코어 공개 API `G7Core.dispatch` 로 한다. 카드 행 컨텍스트(row·$value·index)를
+          // 바인딩 데이터로 넘겨 `{{row.id}}` 같은 표현식이 그 카드의 행으로 풀리게 한다.
+          if (actionDef && typeof G7Core?.dispatch === 'function') {
             return {
               ...item,
               onClick: () => {
-                // 액션 컨텍스트 생성 (row 데이터 포함)
-                const actionContext = { ...context };
-                G7Core.ActionDispatcher.dispatch(actionDef, actionContext);
+                G7Core.dispatch(actionDef, { componentContext: { data: { ...context } } });
               },
             };
           }
@@ -221,6 +232,10 @@ const processActionMenuActions = (
 /**
  * cellChildren 배열을 React 요소로 렌더링합니다.
  * DataGrid의 renderCellChildren 패턴을 따릅니다.
+ *
+ * `renderEnv` 는 렌더 환경(폭·언어·dispatcher·레지스트리·편집 모드)이다. `componentContext` 를
+ * 넘기지 않는 이유: 넘기면 셀의 `_local` 이 CardGrid 렌더러의 상태로 병합되고 setState 대상도
+ * 바뀐다 — 렌더 환경만 필요하므로 상태를 병합하지 않는 `renderEnv` 통로를 쓴다(#141).
  */
 const renderCellChildren = (
   cellChildren: CardGridCellChild[],
@@ -228,7 +243,8 @@ const renderCellChildren = (
   index: number,
   keyPrefix: string = '',
   rowActions?: ActionMenuItem[],
-  onRowActionHandler?: (actionId: string | number, row: any) => void
+  onRowActionHandler?: (actionId: string | number, row: any) => void,
+  renderEnv?: Record<string, any> | null
 ): React.ReactNode => {
   const G7Core = (window as any).G7Core;
 
@@ -264,7 +280,8 @@ const renderCellChildren = (
         processedChildren,
         context,
         componentMap,
-        keyPrefix
+        keyPrefix,
+        { renderEnv }
       );
     } catch (error) {
       return (
@@ -407,6 +424,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
   skeletonCellChildren,
   id,
   editorAttrs,
+  __componentContext,
 }) => {
   // props로 전달된 값이 없으면 다국어 키 사용
   const resolvedEmptyMessage = emptyMessage ?? t('common.no_data');
@@ -417,11 +435,17 @@ export const CardGrid: React.FC<CardGridProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
 
   // 반응형 상태 구독 - cellChildren 내 responsive 속성 지원을 위해 필요
-  // 화면 크기 변경 시 CardGrid가 리렌더링되어 renderItemChildren이 새로운 너비로 재실행됨
-  // 훅 호출 자체가 리렌더링을 트리거하므로 반환값은 사용하지 않음 (void 처리)
+  // 화면 크기 변경 시 CardGrid가 리렌더링되어 renderItemChildren이 새로운 너비로 재실행됨.
+  // 반환 폭은 Provider 폭(편집기 미리보기에서는 기기 폭)이라 셀의 responsive 분기 폭으로 넘긴다(#141).
   const G7Core = (window as any).G7Core;
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  G7Core?.useResponsive?.();
+  const responsive = G7Core?.useResponsive?.();
+
+  // 셀 렌더 환경 — 이 CardGrid 를 그린 렌더러의 환경에 자기 Provider 폭을 얹는다(#141)
+  const renderEnv = {
+    ...(__componentContext?.renderEnvRef?.current ?? {}),
+    ...(typeof responsive?.width === 'number' ? { responsiveWidth: responsive.width } : {}),
+  };
 
   // 서버/클라이언트 페이지 정보
   const effectiveCurrentPage = serverSidePagination ? (serverCurrentPage ?? 1) : currentPage;
@@ -557,7 +581,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
       <Div className={`grid ${gridClasses} gap-${gap}`}>
         {paginatedData.map((row, index) => (
           <Div key={row[idField] || index} className={cardClassName}>
-            {renderCellChildren(cellChildren, row, index, `card-${index}`, rowActions, handleRowAction)}
+            {renderCellChildren(cellChildren, row, index, `card-${index}`, rowActions, handleRowAction, renderEnv)}
           </Div>
         ))}
       </Div>

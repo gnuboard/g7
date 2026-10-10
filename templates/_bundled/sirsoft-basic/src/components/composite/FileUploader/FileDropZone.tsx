@@ -29,8 +29,8 @@ export interface FileDropZoneProps {
   accept?: string;
   /** 최대 파일 수 */
   maxFiles: number;
-  /** 최대 파일 크기 (MB) */
-  maxSize: number;
+  /** 최대 파일 크기 (MB) — 호출부가 선언하지 않으면 용량 문구를 쓰지 않는다(SA-D5) */
+  maxSize?: number;
   /** 자식 요소 */
   children?: React.ReactNode;
 }
@@ -80,16 +80,28 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
 
       {/* 파일이 없을 때: 빈 드롭존 */}
       {!children && (
+        // 단추 구실 — 안에 문단이 있어 <button> 대신 role 로 두고, Tab 으로 닿아 Enter·Space 로 파일 선택 창을 연다
         <Div
-          className="p-8 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+          role="button"
+          data-uploader-action="pick"
+          tabIndex={0}
+          className="p-8 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
           onClick={() => inputRef.current?.click()}
+          onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            e.preventDefault();
+            inputRef.current?.click();
+          }}
         >
-          <I className="fa-solid fa-cloud-arrow-up text-4xl text-gray-400 dark:text-gray-500 mb-4" />
+          <I className="fa-solid fa-cloud-arrow-up text-4xl text-gray-400 dark:text-gray-500 mb-4" aria-hidden="true" />
           <P className="text-sm text-gray-600 dark:text-gray-400">
             {t('attachment.drop_or_click')}
           </P>
-          <P className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-            {t('attachment.upload_limit', { maxFiles, maxSize })}
+          {/* 허용 형식 목록은 쉼표로만 이어져 끊을 자리가 없다 — 좁은 화면에서 넘치지 않게 어디서든 끊는다 */}
+          <P className="text-xs text-gray-500 dark:text-gray-500 mt-2 wrap-anywhere">
+            {maxSize != null
+              ? t('attachment.upload_limit', { maxFiles, maxSize, count: maxFiles })
+              : t('attachment.upload_limit_count', { maxFiles, count: maxFiles })}
             {accept && ` (${accept})`}
           </P>
         </Div>

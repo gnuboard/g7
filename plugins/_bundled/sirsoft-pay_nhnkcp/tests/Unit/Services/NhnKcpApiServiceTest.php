@@ -9,12 +9,25 @@ use Plugins\Sirsoft\PayNhnkcp\Services\KcpSoapService;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
+/**
+ * NHN KCP API 서비스가 결제사로 보내는 요청(사이트 코드·결제창 URL·거래조회·취소·에스크로 배송등록)과 CLI 실행 안전장치를 검증한다.
+ *
+ * 거래조회 HTTP 는 Http::fake 로, 취소·배송등록 CLI 는 인자를 기록하는 스텁 바이너리로 막고 보낸 값을 단언한다.
+ *
+ * 시나리오 매니페스트: `tests/scenarios/kcp-api-service-requests.yaml`
+ */
 class NhnKcpApiServiceTest extends PluginTestCase
 {
     private const TEST_SITE_CD = 'T0000';
 
     private const TEST_SITE_KEY = 'TEST_SITE_KEY_0000';
 
+    /**
+     * 테스트 상점 설정(덮어쓰기 반영)으로 API 서비스를 만듭니다.
+     *
+     * @param  array<string, mixed>  $settingsOverrides  기본 설정 위에 덮어쓸 값
+     * @return NhnKcpApiService API 서비스
+     */
     private function makeService(array $settingsOverrides = []): NhnKcpApiService
     {
         $defaults = [
@@ -35,7 +48,9 @@ class NhnKcpApiServiceTest extends PluginTestCase
     /**
      * KCP CLI 실행을 외부 의존 없이 검증하기 위한 임시 바이너리 디렉터리 생성.
      *
-     * @return array{service: NhnKcpApiService, dir: string, log: string}
+     * @param  string  $response  스텁 CLI 가 표준출력으로 돌려줄 응답 본문
+     * @param  array<string, mixed>  $settingsOverrides  기본 설정 위에 덮어쓸 값
+     * @return array{service: NhnKcpApiService, dir: string, log: string} 스텁 CLI 를 가리키는 서비스·임시 디렉터리·인자 로그 경로
      */
     private function makeServiceWithStubbedCli(string $response, array $settingsOverrides = []): array
     {
@@ -76,6 +91,12 @@ class NhnKcpApiServiceTest extends PluginTestCase
         ];
     }
 
+    /**
+     * 스텁 CLI 를 담은 임시 디렉터리와 그 안의 파일을 지웁니다.
+     *
+     * @param  string  $dir  지울 임시 디렉터리 경로
+     * @return void 반환값 없음
+     */
     private function removeStubbedCliDirectory(string $dir): void
     {
         foreach (glob($dir.'/*') ?: [] as $path) {
@@ -85,6 +106,12 @@ class NhnKcpApiServiceTest extends PluginTestCase
         @rmdir($dir);
     }
 
+    /**
+     * 스텁 CLI 가 기록한 인자 로그에서 요청 데이터 인자(두 번째 줄)를 읽습니다.
+     *
+     * @param  string  $logPath  스텁 CLI 의 인자 로그 경로
+     * @return string CLI 에 전달된 요청 데이터 인자 문자열
+     */
     private function capturedCliArgs(string $logPath): string
     {
         $lines = file($logPath, FILE_IGNORE_NEW_LINES);
@@ -93,6 +120,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         return $lines[1] ?? '';
     }
 
+    /**
+     * 테스트 모드에서는 설정의 테스트 사이트 코드를 쓴다.
+     *
+     * @scenario call=site_cd
+     *
+     * @effects get_site_cd_returns_test_site_cd_in_test_mode
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_site_cd_returns_test_site_cd_in_test_mode(): void
     {
         $service = $this->makeService();
@@ -100,6 +136,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         $this->assertEquals(self::TEST_SITE_CD, $service->getSiteCd());
     }
 
+    /**
+     * 에스크로 테스트 사이트 코드가 비어 있으면 SOAP 서비스는 일반 테스트 사이트 코드로 대체한다.
+     *
+     * @scenario call=escrow
+     *
+     * @effects kcp_soap_service_falls_back_to_test_site_cd_when_escrow_test_site_cd_is_empty
+     *
+     * @return void 반환값 없음
+     */
     public function test_kcp_soap_service_falls_back_to_test_site_cd_when_escrow_test_site_cd_is_empty(): void
     {
         $settingsMock = $this->createMock(PluginSettingsService::class);
@@ -114,6 +159,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         $this->assertSame(self::TEST_SITE_CD, $service->getEscrowSiteCd());
     }
 
+    /**
+     * 운영 모드에서는 설정의 운영 사이트 코드를 쓴다.
+     *
+     * @scenario call=site_cd
+     *
+     * @effects get_site_cd_returns_live_site_cd_in_live_mode
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_site_cd_returns_live_site_cd_in_live_mode(): void
     {
         $service = $this->makeService([
@@ -125,6 +179,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         $this->assertEquals('SR123456', $service->getSiteCd());
     }
 
+    /**
+     * 결제 당시 저장한 모드·사이트 코드로 자격증명을 되살리면 현재 설정과 무관하게 그 값으로 요청한다.
+     *
+     * @scenario call=stored_credentials
+     *
+     * @effects use_stored_credentials_restores_payment_time_mode_and_site_cd
+     *
+     * @return void 반환값 없음
+     */
     public function test_use_stored_credentials_restores_payment_time_mode_and_site_cd(): void
     {
         $service = $this->makeService([
@@ -141,6 +204,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         $this->assertStringNotContainsString('testpay', $service->getJsUrl());
     }
 
+    /**
+     * 테스트 모드에서는 스테이징 결제창 JS URL 을 돌려준다.
+     *
+     * @scenario call=js_url
+     *
+     * @effects get_js_url_returns_test_url_in_test_mode
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_js_url_returns_test_url_in_test_mode(): void
     {
         $service = $this->makeService();
@@ -148,6 +220,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         $this->assertStringContainsString('testpay.kcp.co.kr', $service->getJsUrl());
     }
 
+    /**
+     * 운영 모드에서는 운영 결제창 JS URL 을 돌려준다.
+     *
+     * @scenario call=js_url
+     *
+     * @effects get_js_url_returns_live_url_in_live_mode
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_js_url_returns_live_url_in_live_mode(): void
     {
         $service = $this->makeService([
@@ -161,6 +242,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         $this->assertStringNotContainsString('testpay', $jsUrl);
     }
 
+    /**
+     * 거래조회는 거래번호를 담은 스테이징 URL 로 인증·서명 헤더와 주문번호를 실어 보낸다.
+     *
+     * @scenario call=transaction
+     *
+     * @effects get_transaction_calls_correct_url_with_auth_headers
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_transaction_calls_correct_url_with_auth_headers(): void
     {
         $service = $this->makeService();
@@ -194,6 +284,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         });
     }
 
+    /**
+     * 거래조회 Authorization 헤더는 사이트 코드·사이트 키로 만든 Basic 인증이다.
+     *
+     * @scenario call=transaction
+     *
+     * @effects get_transaction_uses_basic_auth_with_site_credentials
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_transaction_uses_basic_auth_with_site_credentials(): void
     {
         $service = $this->makeService();
@@ -211,6 +310,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         });
     }
 
+    /**
+     * 거래조회 응답이 HTTP 오류면 상태 코드를 담은 예외를 던진다.
+     *
+     * @scenario call=transaction
+     *
+     * @effects get_transaction_throws_on_http_error
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_transaction_throws_on_http_error(): void
     {
         $service = $this->makeService();
@@ -225,6 +333,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         $service->getTransaction('TNO_ERR', 'ORD-ERR');
     }
 
+    /**
+     * 전액취소는 STSC 로 CLI 를 호출하고 부분취소 금액 인자(mod_mny·rem_mny)를 싣지 않는다.
+     *
+     * @scenario call=cancel
+     *
+     * @effects cancel_payment_calls_cli_with_full_cancel_params
+     *
+     * @return void 반환값 없음
+     */
     public function test_cancel_payment_calls_cli_with_full_cancel_params(): void
     {
         $stub = $this->makeServiceWithStubbedCli(
@@ -256,6 +373,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         }
     }
 
+    /**
+     * 부분취소는 RN07 로 CLI 를 호출하고 취소 금액·남은 금액을 싣는다.
+     *
+     * @scenario call=cancel
+     *
+     * @effects cancel_payment_calls_cli_with_partial_cancel_params
+     *
+     * @return void 반환값 없음
+     */
     public function test_cancel_payment_calls_cli_with_partial_cancel_params(): void
     {
         $stub = $this->makeServiceWithStubbedCli('res_cd=0000'.chr(31).'res_msg=부분취소완료');
@@ -274,6 +400,106 @@ class NhnKcpApiServiceTest extends PluginTestCase
         }
     }
 
+    /**
+     * 복합과세(TG03) 부분취소는 과세 분리 금액을 CLI 인자에 싣고, 전액취소에는 싣지 않는다 (#747 C8 P-D8).
+     *
+     * @scenario call=cancel
+     *
+     * @effects cancel_payment_forwards_tg03_tax_split_only_for_partial_cancel
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cancel_payment_forwards_tg03_tax_split_only_for_partial_cancel(): void
+    {
+        $taxFields = ['tax_flag' => 'TG03', 'mod_tax_mny' => '9091', 'mod_vat_mny' => '909', 'mod_free_mny' => '5000'];
+        $stub = $this->makeServiceWithStubbedCli('res_cd=0000'.chr(31).'res_msg=부분취소완료');
+        /** @var NhnKcpApiService $service */
+        $service = $stub['service'];
+
+        try {
+            $service->cancelPayment('TNO_TG03', 'ORD-TG03', 15000, '부분취소', true, 30000, null, $taxFields);
+            $args = $this->capturedCliArgs($stub['log']);
+            foreach (['tax_flag=TG03', 'mod_tax_mny=9091', 'mod_vat_mny=909', 'mod_free_mny=5000', 'mod_mny=15000'] as $needle) {
+                $this->assertStringContainsString($needle, $args);
+            }
+
+            $service->cancelPayment('TNO_TG03', 'ORD-TG03', 30000, '전액취소', false, 30000, null, $taxFields);
+            $this->assertStringNotContainsString('tax_flag', $this->capturedCliArgs($stub['log']));
+        } finally {
+            $this->removeStubbedCliDirectory($stub['dir']);
+        }
+    }
+
+    /**
+     * P5 — 입금완료 가상계좌는 **환불받을 계좌**가 취소 요청에 실려야 KCP 가 받아 준다.
+     *
+     * 세 값이 취소 payload 밖(예: 거래조회)으로 새면 조회는 멀쩡히 돌고 취소만 조용히
+     * 거절되어, 운영자에게는 원인 없는 실패로만 보인다. 그래서 CLI 인자에서 직접 잰다.
+     *
+     * @scenario call=cancel
+     *
+     * @effects cancel_payment_sends_the_refund_account_for_a_settled_virtual_account
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cancel_payment_sends_the_refund_account_for_a_settled_virtual_account(): void
+    {
+        $stub = $this->makeServiceWithStubbedCli('res_cd=0000'.chr(31).'res_msg=취소완료');
+        /** @var NhnKcpApiService $service */
+        $service = $stub['service'];
+
+        try {
+            $service->cancelPayment('TNO_VB', 'ORD-VB', 9000, '고객 요청', false, 0, [
+                'bank_code' => '004',
+                'account_number' => '12345678901234',
+                'holder' => '홍길동',
+            ]);
+
+            $args = $this->capturedCliArgs($stub['log']);
+            $this->assertStringContainsString('bank_code=004', $args);
+            $this->assertStringContainsString('account=12345678901234', $args);
+            $this->assertStringContainsString('depositor=홍길동', $args);
+        } finally {
+            $this->removeStubbedCliDirectory($stub['dir']);
+        }
+    }
+
+    /**
+     * P5 — 계좌가 없는 수단(카드 등)에는 세 키를 붙이지 않는다.
+     *
+     * @scenario call=cancel
+     *
+     * @effects cancel_payment_omits_the_refund_account_when_none_is_given
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cancel_payment_omits_the_refund_account_when_none_is_given(): void
+    {
+        $stub = $this->makeServiceWithStubbedCli('res_cd=0000'.chr(31).'res_msg=취소완료');
+        /** @var NhnKcpApiService $service */
+        $service = $stub['service'];
+
+        try {
+            $service->cancelPayment('TNO_CARD', 'ORD-CARD', 9000, '고객 요청', false);
+
+            $args = $this->capturedCliArgs($stub['log']);
+            $this->assertStringNotContainsString('bank_code=', $args);
+            $this->assertStringNotContainsString('account=', $args);
+            $this->assertStringNotContainsString('depositor=', $args);
+        } finally {
+            $this->removeStubbedCliDirectory($stub['dir']);
+        }
+    }
+
+    /**
+     * 에스크로 테스트 사이트 코드가 비어 있으면 배송등록 CLI 호출은 일반 테스트 사이트 코드를 쓴다.
+     *
+     * @scenario call=escrow
+     *
+     * @effects register_escrow_delivery_uses_test_site_cd_when_escrow_test_site_cd_is_empty
+     *
+     * @return void 반환값 없음
+     */
     public function test_register_escrow_delivery_uses_test_site_cd_when_escrow_test_site_cd_is_empty(): void
     {
         $stub = $this->makeServiceWithStubbedCli(
@@ -293,6 +519,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         }
     }
 
+    /**
+     * 취소 응답 코드가 0000 이 아니면 응답 메시지를 담은 예외를 던진다.
+     *
+     * @scenario call=cancel
+     *
+     * @effects cancel_payment_throws_on_non_0000_res_cd
+     *
+     * @return void 반환값 없음
+     */
     public function test_cancel_payment_throws_on_non_0000_res_cd(): void
     {
         $stub = $this->makeServiceWithStubbedCli('res_cd=9999'.chr(31).'res_msg=취소 실패');
@@ -309,6 +544,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         }
     }
 
+    /**
+     * CLI 가 빈 응답을 돌려주면 연동 모듈 호출 오류 예외를 던진다.
+     *
+     * @scenario call=cancel
+     *
+     * @effects cancel_payment_throws_on_cli_fallback_error
+     *
+     * @return void 반환값 없음
+     */
     public function test_cancel_payment_throws_on_cli_fallback_error(): void
     {
         $stub = $this->makeServiceWithStubbedCli('');
@@ -325,6 +569,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         }
     }
 
+    /**
+     * CLI 디버그 로그에는 원본 응답·출력 줄·명령줄(사이트 키 포함)을 남기지 않고 응답 코드만 남긴다.
+     *
+     * @scenario call=cli_logging
+     *
+     * @effects cli_debug_logs_do_not_include_raw_response_or_site_key
+     *
+     * @return void 반환값 없음
+     */
     public function test_cli_debug_logs_do_not_include_raw_response_or_site_key(): void
     {
         $source = file_get_contents((new \ReflectionClass(NhnKcpApiService::class))->getFileName());
@@ -336,6 +589,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         $this->assertStringContainsString("'res_cd' => \$result['res_cd'] ?? null", $source);
     }
 
+    /**
+     * 제어문자가 든 취소 사유는 CLI 실행 전에 거절한다(인자 주입 차단).
+     *
+     * @scenario call=cancel
+     *
+     * @effects cancel_payment_rejects_unsafe_cancel_message_before_cli_exec
+     *
+     * @return void 반환값 없음
+     */
     public function test_cancel_payment_rejects_unsafe_cancel_message_before_cli_exec(): void
     {
         $stub = $this->makeServiceWithStubbedCli('res_cd=0000');
@@ -352,6 +614,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         }
     }
 
+    /**
+     * 운영 모드 거래조회는 스테이징이 아닌 운영 API URL 로 보낸다.
+     *
+     * @scenario call=transaction
+     *
+     * @effects get_transaction_uses_live_api_url_in_live_mode
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_transaction_uses_live_api_url_in_live_mode(): void
     {
         $service = $this->makeService([
@@ -382,6 +653,12 @@ class NhnKcpApiServiceTest extends PluginTestCase
      * 단위 테스트는 ensureCliExecutable() 만 reflection 으로 직접 호출하고
      * (실제 KCP CLI 실행은 외부 의존이라 단위 범위 밖) 권한 변경 + 멱등성 + 실패 분기
      * 3가지 동작을 검증한다.
+     *
+     * @scenario call=cli_exec
+     *
+     * @effects ensure_cli_executable_promotes_0664_to_0755
+     *
+     * @return void 반환값 없음
      */
     public function test_ensure_cli_executable_promotes_0664_to_0755(): void
     {
@@ -410,6 +687,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         }
     }
 
+    /**
+     * 이미 실행 가능한(0755) CLI 바이너리는 예외 없이 통과하고 권한을 바꾸지 않는다.
+     *
+     * @scenario call=cli_exec
+     *
+     * @effects ensure_cli_executable_is_idempotent_when_already_executable
+     *
+     * @return void 반환값 없음
+     */
     public function test_ensure_cli_executable_is_idempotent_when_already_executable(): void
     {
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
@@ -436,6 +722,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         }
     }
 
+    /**
+     * CLI 바이너리가 없으면 결제 전에 예외를 던진다.
+     *
+     * @scenario call=cli_exec
+     *
+     * @effects ensure_cli_executable_throws_when_binary_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_ensure_cli_executable_throws_when_binary_missing(): void
     {
         $service = $this->makeService();
@@ -457,6 +752,12 @@ class NhnKcpApiServiceTest extends PluginTestCase
      *   전달하면 CLI 가 디렉토리 생성 실패 → 로그 작성 단계 silent skip.
      *   추가로 log_level=1 (오류만) 로 낮춰 미래에 누가 log_path 를 살려도 카드번호 같은
      *   verbose 페이로드가 자동으로 차단되도록 이중 안전장치.
+     *
+     * @scenario call=cli_logging
+     *
+     * @effects log_path_is_intentionally_nonexistent_to_disable_disk_logging
+     *
+     * @return void 반환값 없음
      */
     public function test_log_path_is_intentionally_nonexistent_to_disable_disk_logging(): void
     {
@@ -483,6 +784,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         }
     }
 
+    /**
+     * CLI 로그 레벨은 오류만(1) 남겨 카드번호 같은 평문 페이로드가 로그에 실리지 않게 한다.
+     *
+     * @scenario call=cli_logging
+     *
+     * @effects log_level_is_minimal_to_prevent_pii_leak
+     *
+     * @return void 반환값 없음
+     */
     public function test_log_level_is_minimal_to_prevent_pii_leak(): void
     {
         $reflection = new \ReflectionClass(NhnKcpApiService::class);
@@ -495,6 +805,15 @@ class NhnKcpApiServiceTest extends PluginTestCase
         );
     }
 
+    /**
+     * 리눅스·윈도우 두 CLI 분기 모두 디스크 로깅을 끄는 LOG_DISABLED_PATH 를 log_path 로 넘긴다.
+     *
+     * @scenario call=cli_logging
+     *
+     * @effects cli_args_include_disabled_log_path_constant
+     *
+     * @return void 반환값 없음
+     */
     public function test_cli_args_include_disabled_log_path_constant(): void
     {
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {

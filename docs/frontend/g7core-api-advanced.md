@@ -14,7 +14,8 @@
 5. [컴포넌트 렌더링 헬퍼](#컴포넌트-렌더링-헬퍼)
 6. [인증 및 API](#인증-및-api)
 7. [반응형 및 전환 상태](#반응형-및-전환-상태)
-8. [타입 정의](#타입-정의)
+8. [엔진 안전 스위치 (G7Core.engineFlags)](#엔진-안전-스위치-g7coreengineflags)
+9. [타입 정의](#타입-정의)
 
 ---
 
@@ -28,7 +29,22 @@
 |--------|------|--------|
 | `current()` | 현재 로케일 반환 | `string` (예: 'ko', 'en') |
 | `supported()` | 지원 로케일 목록 | `string[]` |
-| `change(locale)` | 로케일 변경 | `Promise<void>` |
+| `change(locale, options?)` | 로케일 변경. `options.persist: false` 면 로그인 회원의 언어(`users.language`)를 저장하지 않는다 — 호출자가 이미 저장한 경우 저장 요청이 두 번 나가지 않게 한다 (engine-v1.79.0+). 생략하면 로그인 회원의 언어를 저장한다 | `Promise<void>` |
+| `handoff.isSwitching()` | 언어 전환으로 화면을 다시 마운트하는 중인지 (engine-v1.79.0) | `boolean` |
+| `handoff.stash(key, value)` | 언어 전환 중 언마운트되는 컴포넌트가 저장 전 상태를 맡긴다. 전환 중이 아니면 무시 | `boolean` (맡겼으면 true) |
+| `handoff.take(key)` | 새로 마운트된 컴포넌트가 맡긴 값을 되찾는다. 한 번 꺼내면 지워지고, 다음 화면 이동이 시작되면 남은 값은 버린다 | `unknown \| undefined` |
+
+언어를 바꾸면 엔진이 같은 화면을 새로 마운트한다. `_local` 은 엔진이 그대로 이어 주지만, 컴포넌트 안에만 있는 저장 전 상태(업로더가 고른 대기 파일처럼 직렬화할 수 없는 값)는 `handoff` 로 직접 넘긴다. 키는 같은 화면의 인스턴스를 구분하도록 경로와 컴포넌트 식별값을 섞어 정한다.
+
+```typescript
+// 마운트: 맡긴 값이 있으면 되찾는다
+const key = `MyUploader:${location.pathname}:${collection}`;
+const [pending, setPending] = useState(() => G7Core.locale.handoff?.take(key) ?? []);
+// 언마운트: 언어 전환 중일 때만 맡긴다
+useEffect(() => () => {
+  if (G7Core.locale.handoff?.isSwitching()) G7Core.locale.handoff.stash(key, pendingRef.current);
+}, [key]);
+```
 
 ### G7Core.t() 번역 함수
 
@@ -118,12 +134,12 @@ await G7Core.dispatch({
   params: { path: '/users' }
 });
 
-// API 호출
+// API 호출 — 핸들러명은 `apiCall`, URL 은 액션 top-level `target`
 const result = await G7Core.dispatch({
-  handler: 'api',
+  handler: 'apiCall',
+  target: '/api/users',
   params: {
     method: 'POST',
-    endpoint: '/api/users',
     body: { name: 'John' }
   }
 });
@@ -291,10 +307,10 @@ const handleCustomChange = (newValue: string) => {
 const handleFormSubmit = async () => {
   const submitEvent = G7Core.createSubmitEvent(formData);
   await G7Core.dispatch({
-    handler: 'api',
+    handler: 'apiCall',
+    target: '/api/admin/submit',
     params: {
       method: 'POST',
-      endpoint: '/api/submit',
       body: submitEvent.formData
     }
   });
@@ -327,14 +343,27 @@ G7Core.renderItemChildren(
 | `itemContext` | object | 현재 아이템 컨텍스트 (row, item 등) |
 | `componentMap` | object | 컴포넌트 이름 → 컴포넌트 매핑 |
 | `keyPrefix` | string | React key 접두사 (선택) |
-| `options` | object | 추가 옵션 (선택) |
+| `options` | object | 추가 옵션 (선택) — `componentContext`·`renderEnv`·`responsiveWidth`·`isEditMode`·엔진·`actionDispatcher` |
+
+#### 렌더 환경 (engine-v1.75.2+)
+
+래퍼는 번역 컨텍스트·엔진·액션 처리기·컴포넌트 목록을 **명시 `options` > 렌더 환경 > 호스트 값** 순서로 고른다.
+렌더 환경은 `options.renderEnv` 또는 `options.componentContext.renderEnvRef.current` 다. 엔진이 컴포넌트에
+자동으로 넘기는 `__componentContext.renderEnvRef` 가 그 컴포넌트를 그린 렌더러의 환경(폭·콘텐츠 언어·액션
+처리기·컴포넌트 레지스트리·편집 모드)을 담는다. 렌더 환경에 레지스트리가 있으면 그 컴포넌트가 `componentMap`
+의 같은 이름보다 우선한다.
+
+레이아웃 편집기 미리보기는 같은 문서 안에서 그려지므로, 렌더 환경을 넘기지 않으면 셀이 미리보기 기기 폭 대신
+브라우저 창 폭으로 `responsive` 분기를 고르고 관리자 화면 언어로 번역된다. 일반 화면에서는 결과가 같다.
 
 ### 사용 예시
 
 ```tsx
 // CardGrid 컴포넌트에서 사용
-const CardGrid: React.FC<Props> = ({ items, cellChildren }) => {
+const CardGrid: React.FC<Props> = ({ items, cellChildren, __componentContext }) => {
   const componentMap = G7Core.getComponentMap();
+  // 셀의 _local 을 병합할 필요가 없으므로 상태를 병합하지 않는 renderEnv 만 넘긴다
+  const renderEnv = __componentContext?.renderEnvRef?.current;
 
   return (
     <Div className="grid">
@@ -344,7 +373,8 @@ const CardGrid: React.FC<Props> = ({ items, cellChildren }) => {
             cellChildren,
             { row: item, index },
             componentMap,
-            `card_${index}`
+            `card_${index}`,
+            { renderEnv }
           )}
         </Div>
       ))}
@@ -372,7 +402,14 @@ const componentMap = G7Core.getComponentMap();
 G7Core.renderComponentLayout(
   layoutDefs: ComponentDef[] | undefined,
   itemContext: Record<string, any>,
-  keyPrefix?: string
+  keyPrefix?: string,
+  options?: {
+    renderEnv?: RenderEnvironment | null;
+    componentContext?: { renderEnvRef?: { current: RenderEnvironment | null } };
+    responsiveWidth?: number;
+    translationContext?: TranslationContext;
+    actionDispatcher?: any;
+  }
 ): React.ReactNode
 ```
 
@@ -383,12 +420,14 @@ G7Core.renderComponentLayout(
 | `layoutDefs` | array | component_layout 정의 배열 |
 | `itemContext` | object | 항목별 컨텍스트 (item, index, isSelected 등) |
 | `keyPrefix` | string | React key prefix (선택) |
+| `options` | object | 렌더 환경과 명시값 (선택, engine-v1.75.2+) — 우선순위는 위 「렌더 환경」 절과 같다 |
 
 #### 사용 예시
 
 ```tsx
 // RichSelect 컴포넌트에서 사용
-const RichSelect: React.FC<Props> = ({ options, __componentLayoutDefs }) => {
+const RichSelect: React.FC<Props> = ({ options, __componentLayoutDefs, __componentContext }) => {
+  const renderEnv = __componentContext?.renderEnvRef?.current;
   return (
     <Div>
       {options.map((option, index) => (
@@ -396,7 +435,8 @@ const RichSelect: React.FC<Props> = ({ options, __componentLayoutDefs }) => {
           {G7Core.renderComponentLayout(
             __componentLayoutDefs?.item,
             { item: option, index, isSelected: selectedValue === option.value },
-            `item-${index}`
+            `item-${index}`,
+            { renderEnv }
           )}
         </Div>
       ))}
@@ -416,9 +456,17 @@ G7Core.renderExpandContent(config: {
   children: ComponentDef[];
   row: any;
   expandContext?: Record<string, any>;
-  componentContext?: { state?: Record<string, any>; setState?: Function };
+  componentContext?: {
+    state?: Record<string, any>;
+    setState?: Function;
+    stateRef?: { current: Record<string, any> };
+    computedRef?: { current: Record<string, any> };
+    renderEnvRef?: { current: RenderEnvironment | null };
+  };
   componentMap?: Record<string, React.ComponentType>;
   keyPrefix: string;
+  renderEnv?: RenderEnvironment | null;
+  responsiveWidth?: number;
 }): React.ReactNode
 ```
 
@@ -429,9 +477,11 @@ G7Core.renderExpandContent(config: {
 | `children` | array | 렌더링할 expandChildren 컴포넌트 정의 |
 | `row` | object | 현재 행 데이터 |
 | `expandContext` | object | 확장 컨텍스트 (바인딩 표현식 자동 평가) |
-| `componentContext` | object | 부모 컴포넌트 컨텍스트 (state, setState) |
+| `componentContext` | object | 부모 컴포넌트 컨텍스트 (state, setState). `renderEnvRef` 가 있으면 렌더 환경으로 쓴다 |
 | `componentMap` | object | 컴포넌트 맵 (없으면 자동 조회) |
 | `keyPrefix` | string | React key prefix |
+| `renderEnv` | object | 렌더 환경 명시값 (선택, engine-v1.75.2+) |
+| `responsiveWidth` | number | `responsive` 분기 폭 명시값 (선택, engine-v1.75.2+) |
 
 #### 동작 원리
 
@@ -471,15 +521,29 @@ const renderExpandedContent = useCallback((row: any) => {
 > 상세 내용: [auth-system.md](auth-system.md)
 
 ```typescript
+// G7Core.AuthManager 는 클래스다 — 인스턴스를 얻어 쓴다
+const authManager = G7Core.AuthManager.getInstance();
+
 // 현재 사용자 정보
-const user = G7Core.AuthManager.getUser();
+const user = authManager.getUser();
 
 // 로그인 상태 확인
-const isLoggedIn = G7Core.AuthManager.isAuthenticated();
+const isLoggedIn = authManager.isAuthenticated();
 
-// 토큰 조회
-const token = G7Core.AuthManager.getToken();
+// 현재 인증 상태 사본 ({ isAuthenticated, user, type })
+const state = authManager.getState();
+
+// 인증 상태 변경 구독 — 반환값은 해제 함수
+const off = authManager.on('authStateChange', (next) => {
+  console.log(next.isAuthenticated);
+});
+off();
+
+// 토큰 조회는 API 클라이언트에서
+const token = G7Core.api.getToken();
 ```
+
+`on()` 은 지난 이벤트를 다시 보내지 않으므로 최초 상태는 `getState()` 로 읽습니다. 이벤트 목록은 [auth-system.md](auth-system.md#이벤트-처리)를 참고합니다.
 
 ### G7Core.api
 
@@ -500,7 +564,14 @@ await G7Core.api.put('/api/users/1', { name: 'Jane' });
 
 // DELETE 요청
 await G7Core.api.delete('/api/users/1');
+
+// 확장이 fetch 로 직접 요청하며 토큰을 실을 때 — 같은 출처 대상에만 싣는다
+const token = G7Core.api.isSameOriginUrl(endpoint) ? G7Core.api.getToken() : null;
 ```
+
+`G7Core.api` 자체의 요청(`get`/`post` …)은 교차 출처 대상에 토큰을 싣지 않는다. 교차 출처 응답의 401(토큰 갱신·재시도)과 428(본인인증 요구)도 따르지 않는다.
+
+확장이 `fetch` 로 직접 요청하며 `getToken()` 을 실을 때도 같은 원칙을 따른다. 대상 주소가 레이아웃 prop 이나 응답 본문처럼 바깥에서 정해지는 값이면 먼저 `isSameOriginUrl(url)` 로 확인한다. 이 판정은 `apiCall` 이 토큰을 실을지 정할 때와 같은 기준이다(engine-v1.73.0).
 
 ---
 
@@ -584,19 +655,27 @@ useEffect(() => {
 > 상세 내용: [responsive-layout.md](responsive-layout.md)
 
 ```typescript
-// 현재 브레이크포인트 조회
-const breakpoint = G7Core.ResponsiveManager.getCurrentBreakpoint();
-// 'sm', 'md', 'lg', 'xl', '2xl'
+// 현재 브라우저 창 폭 (전역 싱글톤)
+const width = G7Core.ResponsiveManager.getWidth();
 
-// 모바일 여부
-const isMobile = G7Core.ResponsiveManager.isMobile();
+// responsive 키 중 주어진 폭에 맞는 것 (프리셋·커스텀 범위 키)
+const key = G7Core.ResponsiveManager.getMatchingKey({ mobile: {}, desktop: {} }, width); // 'mobile' | 'desktop' | null
+
+// 창 폭 변화 구독
+const unsubscribe = G7Core.ResponsiveManager.subscribe((w) => { /* ... */ });
 ```
+
+> `ResponsiveManager` 는 **브라우저 창 폭**이다. 컴포넌트가 화면 폭으로 형태를 고를 때는 아래 `useResponsive()`
+> 를 쓴다 — 레이아웃 편집기 미리보기에서는 창 폭과 미리보기 기기 폭이 다르다.
 
 ### G7Core.useResponsive (React Hook)
 
 ```tsx
-const { breakpoint, isMobile, isTablet, isDesktop } = G7Core.useResponsive();
+const { width, isMobile, isTablet, isDesktop, matchedPreset } = G7Core.useResponsive();
+// matchedPreset: 'mobile' | 'tablet' | 'desktop'
 ```
+
+렌더 폭(Provider 폭)을 돌려준다. 일반 화면에서는 창 폭과 같고, 레이아웃 편집기 미리보기에서는 고른 기기 폭이다.
 
 ### G7Core.TransitionManager
 
@@ -625,7 +704,7 @@ const { isPending } = G7Core.useTransitionState();
 ```typescript
 G7Core.updateQueryParams(
   newPath: string,
-  options?: { transitionOverlayTarget?: string }
+  options?: { transitionOverlayTarget?: string; refetchDataSourceIds?: string[] }
 ): Promise<void>
 ```
 
@@ -633,6 +712,7 @@ G7Core.updateQueryParams(
 |---|---|---|
 | `newPath` | `string` | 새 경로 (쿼리스트링 포함). 예: `/admin/products?status=active&page=2` |
 | `options.transitionOverlayTarget` | `string` | `transition_overlay.target` 동적 override (engine-v1.36.0+). 탭 속 서브 탭 등 부분 영역만 spinner 표시 |
+| `options.refetchDataSourceIds` | `string[]` | 이 호출에서 다시 받을 데이터 소스 id (engine-v1.79.0+). 생략하거나 빈 배열이면 종전처럼 auto_fetch 소스 전부. 다시 받지 않은 소스의 데이터와 `_local` 은 그대로 남는다. `navigate` 의 `refetch_data_sources` 가 이 값으로 전달된다 |
 
 **동작**:
 
@@ -867,6 +947,28 @@ const [formData, setFormData] = G7Core.useControllableState<FormData>(
 
 ---
 
+## 엔진 안전 스위치 (G7Core.engineFlags)
+
+engine-v1.74.0 에서 들어간 표현식 성능 개선을 브라우저에서 끄고 켜는 스위치입니다. 화면이 개선 전과 다르게 보이는지 확인할 때만 쓰고, 평소에는 건드리지 않습니다. 서버 설정·관리자 화면은 없으며, 값은 그 브라우저 탭에만 적용되고 새로고침하면 기본값으로 돌아갑니다.
+
+| 키 | 기본값 | 끄면 |
+|----|--------|------|
+| `expressionCompileCache` | `true` | 표현식 전처리 결과를 재사용하지 않고 매번 다시 처리 |
+| `astCache` | `true` | 표현식 구문 해석 결과를 재사용하지 않고 매번 다시 해석 |
+| `computedScopeInheritance` | `true` | computed 를 같은 상태 범위에서 나눠 쓰지 않고 컴포넌트마다 계산(개선 전 동작) |
+| `verifyComputedInheritance` | `false` | (켜면) 나눠 쓴 값과 직접 계산한 값을 비교해 다르면 콘솔에 `[computed-scope-mismatch]` 를 남김 — 진단용 |
+
+```javascript
+G7Core.engineFlags.get();                                   // 현재 값 (읽기 전용 객체)
+G7Core.engineFlags.set({ computedScopeInheritance: false }); // 알려진 키의 boolean 값만 반영
+```
+
+- 캐시는 식의 해석 결과만 담고 값은 담지 않으므로, 스위치를 바꿔도 따로 비울 것이 없습니다.
+- 바꾼 값은 다음 화면 갱신(입력·상태 변경·이동)부터 적용됩니다. 이미 그려진 화면을 곧바로 다시 계산하지는 않습니다.
+- 페이지가 뜨기 전에 값을 정하려면 엔진이 읽기 전에 `window.G7Config.engineFlags` 에 같은 모양의 객체를 넣어 둡니다(테스트·확장 스크립트용). 엔진이 처음 값을 읽을 때 한 번만 합쳐집니다.
+
+---
+
 ## 타입 정의
 
 ### 전역 타입 선언
@@ -957,8 +1059,8 @@ declare global {
 
       // 렌더링 헬퍼
       renderItemChildren: (children: any[], itemContext: Record<string, any>, componentMap: Record<string, any>, keyPrefix?: string, options?: any) => React.ReactNode[];
-      renderComponentLayout: (layoutDefs: any[] | undefined, itemContext: Record<string, any>, keyPrefix?: string) => React.ReactNode;
-      renderExpandContent: (config: { children: any[]; row: any; expandContext?: Record<string, any>; componentContext?: any; componentMap?: Record<string, any>; keyPrefix: string }) => React.ReactNode;
+      renderComponentLayout: (layoutDefs: any[] | undefined, itemContext: Record<string, any>, keyPrefix?: string, options?: { renderEnv?: any; componentContext?: any; responsiveWidth?: number; translationContext?: any; actionDispatcher?: any }) => React.ReactNode;
+      renderExpandContent: (config: { children: any[]; row: any; expandContext?: Record<string, any>; componentContext?: any; componentMap?: Record<string, any>; keyPrefix: string; renderEnv?: any; responsiveWidth?: number }) => React.ReactNode;
       getComponentMap: () => Record<string, React.ComponentType>;
 
       // 스타일 헬퍼
@@ -1001,40 +1103,60 @@ declare global {
       ) => [T, (value: T | ((prev: T) => T)) => void];
       shallowArrayEqual: <T>(a: T[], b: T[]) => boolean;
       shallowObjectEqual: <T extends Record<string, any>>(a: T, b: T) => boolean;
-      useResponsive: () => ResponsiveState;
+      useResponsive: () => { width: number; isMobile: boolean; isTablet: boolean; isDesktop: boolean; matchedPreset: 'mobile' | 'tablet' | 'desktop' };
       useTransitionState: () => TransitionState;
       useTranslation: () => { t: TranslationFunction };
 
-      // 위지윅 편집기
-      wysiwyg: {
-        isEditMode: () => boolean;
-        setEditMode: (layoutName: string, templateId: string) => void;
-        clearEditMode: () => void;
-        getCurrentLayoutName: () => string | null;
-        getCurrentTemplateId: () => string | null;
-        isEditModeFromUrl: () => boolean;
-        getEditModeUrl: (route: string, templateId: string) => string;
-        enterEditMode: (route: string, templateId: string) => void;
-        exitEditMode: () => void;
-        getVersion: () => string;
-        getPhase: () => number;
-      };
+      // 방문자 동의 (engine-v1.78.0+) — 사용자 템플릿에서만 런타임이 있다
+      consent: Readonly<{
+        getSnapshot: () => ConsentSnapshot | null;
+        refresh: () => Promise<ConsentSnapshot | null>;
+        subscribe: (listener: (snapshot: ConsentSnapshot) => void) => () => void;
+      }>;
+
+      // 전역 상태 공개 계약 (engine-v1.78.0+)
+      stateContracts: Readonly<{
+        get: (name: string) => StateContract | null;
+        list: () => Readonly<Record<string, StateContract>>;
+        ownerOf: (name: string) => string | null;
+      }>;
 
       // 기타
       AuthManager: AuthManagerType;
       api: ApiClientType;
       ResponsiveManager: ResponsiveManagerType;
       TransitionManager: TransitionManagerType;
+      engineFlags: {
+        get: () => Readonly<{ expressionCompileCache: boolean; astCache: boolean; computedScopeInheritance: boolean; verifyComputedInheritance: boolean }>;
+        set: (patch: Partial<{ expressionCompileCache: boolean; astCache: boolean; computedScopeInheritance: boolean; verifyComputedInheritance: boolean }>) => void;
+      };
     };
   }
 }
+
+interface ConsentSnapshot {
+  contractVersion: number; // 현재 1
+  status: 'unknown' | 'ready' | 'none';
+  categories: Record<string, boolean>; // necessary 는 항상 true
+  needsRenewal: boolean;
+  policyVersion: string | null;
+}
+
+interface StateContract {
+  owner: string; // 'core' | 'module:{id}' | 'plugin:{id}' | 'template:{id}'
+  description: Record<string, string>;
+  schema: Record<string, any>;
+  writers: string[]; // '@template' = 활성 템플릿
+}
 ```
+
+`G7Core.consent` 와 `G7Core.stateContracts` 의 동작은 [G7Core 기본 API](g7core-api.md#방문자-동의-g7coreconsent)를 참고합니다.
 
 ---
 
 ## 관련 문서
 
-- [G7Core 기본 API](g7core-api.md) - 상태 관리, 토스트, 모달, 네비게이션, 플러그인/모듈 설정, 확장 자산
+- [G7Core 기본 API](g7core-api.md) - 상태 관리, 토스트, 모달, 네비게이션, 플러그인/모듈 설정, 확장 자산, 방문자 동의, 전역 상태 계약
 - [state-management.md](state-management.md) - 전역 상태 관리 상세
 - [components.md](components.md) - 컴포넌트 개발 규칙
 - [data-binding.md](data-binding.md) - 데이터 바인딩 문법

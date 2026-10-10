@@ -7,6 +7,7 @@ use App\Contracts\Seeder\TranslatableSeederInterface;
 use App\Extension\Helpers\GenericEntitySyncHelper;
 use Illuminate\Database\Seeder;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
 
 class ShippingTypeSeeder extends Seeder implements TranslatableSeederInterface
 {
@@ -68,22 +69,46 @@ class ShippingTypeSeeder extends Seeder implements TranslatableSeederInterface
         $definedCodes = [];
 
         foreach ($types as $type) {
+            // 시더가 새로 만드는 행은 created_by 를 명시적으로 비운다(stale 정리 범위가 `created_by IS NULL` 이다).
+            $existing = ShippingType::where('code', $type['code'])->exists();
             $helper->sync(
                 ShippingType::class,
                 ['code' => $type['code']],
-                $type,
+                $existing ? $type : $type + ['created_by' => null],
             );
             $definedCodes[] = $type['code'];
         }
 
+        // stale 정리는 **시드 정의에서 빠진 코드**를 걷어내는 장치다. 그런데 이 표는 운영자가
+        // 설정 배송 탭에서 직접 배송유형을 추가·수정하는 표이기도 하다 — 운영자가 만든 배송유형은
+        // 정의상 이 목록에 없으므로, 보호 없이 돌리면 재설치 한 번이 사용 중인 것까지 지운다.
+        // 설정 화면의 삭제·코드변경 경로는 사용 중이면 400 으로 막는데(`ShippingTypeService`),
+        // 이 경로만 그 판정을 거치지 않으면 같은 표에 **강도가 다른 두 삭제 경로**가 생긴다.
+        // 주문 배송행은 배송유형을 `shipping_type` 코드 문자열로만 기억하므로(FK 없음), 지워지는
+        // 순간 그 유형으로 접수된 전건이 카탈로그를 잃어 목록의 배송방법 라벨이 빈칸이 된다.
+        //
+        // 판정 근거는 `ShippingTypeService::assertSyncDeletable()` 이 쓰는 것과 **같은 조회**다.
+        // 배송사와 달리 사용처 표가 `order_shippings` 하나뿐이라(마이그레이션 전수 확인) 합산할
+        // 것이 없어 저장소를 직접 부른다 — 기록하는 표가 늘면 그 판정을 서비스로 올릴 것.
+        $orderShippingRepository = app(OrderShippingRepositoryInterface::class);
+
+        $inUseCodes = ShippingType::query()
+            ->whereNotIn('code', $definedCodes)
+            ->pluck('code')
+            ->filter(fn (string $code) => $orderShippingRepository->countByShippingType($code) > 0)
+            ->values()
+            ->all();
+
+        // 정리 대상은 시더가 만든 행(created_by IS NULL)뿐이다 — 운영자가 만든 미사용 배송유형은 남긴다(#727 W7).
         $deleted = $helper->cleanupStale(
             ShippingType::class,
-            [],
+            ['created_by' => null],
             'code',
-            $definedCodes,
+            [...$definedCodes, ...$inUseCodes],
         );
 
+        $preserved = count($inUseCodes);
         $count = ShippingType::count();
-        $this->command->info('배송유형 동기화 완료: 정의 '.count($types)."건 / DB {$count}건 / stale 삭제 {$deleted}건");
+        $this->command->info('배송유형 동기화 완료: 정의 '.count($types)."건 / DB {$count}건 / stale 삭제 {$deleted}건 / 사용 중 {$preserved}건 보존");
     }
 }

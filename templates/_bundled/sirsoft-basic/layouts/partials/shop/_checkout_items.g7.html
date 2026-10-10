@@ -1,0 +1,166 @@
+<!-- 주문서에 담긴 상품 줄 목록 — 읽기 전용이다. 수량·옵션을 고치려면 장바구니로 되돌아가야 하고,
+     그래서 이 조각에는 아무 액션도 없다. -->
+<partial description="주문 상품 목록 섹션 (PC/모바일 반응형)">
+  <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+    <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"/>
+    <!-- 섹션 헤더 -->
+    <div class="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <responsive on="portable" class="flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"/>
+      <icon name="shopping-cart" size="md" class="text-gray-700 dark:text-gray-300"/>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+        <responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white"/>
+        $t:shop.checkout.order_items
+      </h2>
+    </div>
+    <!-- 상품 목록 -->
+    <div class="divide-y divide-gray-200 dark:divide-gray-700">
+      <div data-each="item in {{checkoutData.data.items ?? []}}">
+        <div class="flex gap-4 py-4">
+          <responsive on="portable" class="flex gap-3 py-3"/>
+          <!-- 상품 이미지 (새 창으로 열기) -->
+          <a href="{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}" target="_blank" class="flex-shrink-0">
+            <div class="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+              <responsive on="portable" class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700"/>
+              <img data-if="{{item.product.thumbnail_url}}" src="{{item.product.thumbnail_url}}" alt="{{item.product.name}}" class="w-full h-full object-cover"/>
+              <div data-if="{{!item.product.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
+                <icon name="image" size="lg" class="text-gray-400 dark:text-gray-500"/>
+              </div>
+            </div>
+          </a>
+          <!-- 상품 정보 -->
+          <div class="flex-1 min-w-0">
+            <!-- 상품명 (새 창으로 열기) -->
+            <a href="{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}" target="_blank" class="block no-underline">
+              <h3 class="text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 truncate">{{item.product.name}}</h3>
+            </a>
+            <!-- 배송 불가 표시 (선택 배송국가로 배송 불가 — D1 layer 2) -->
+            <p data-if="{{item.is_shippable_to_selected_country === false}}" class="text-sm font-medium text-red-600 dark:text-red-400 mt-1">$t:shop.shippability.not_shippable</p>
+            <!-- 상품 옵션 값 (옵션이 있을 때만 표시) -->
+            <p data-if="{{item.product_option &amp;&amp; Object.keys(item.product_option.option_values_localized ?? {}).length > 0}}" class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              <responsive on="portable" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5"/>
+              {{Object.entries(item.product_option?.option_values_localized ?? {}).map(([k, v]) => k + ': ' + v).join(', ')}}
+            </p>
+            <!-- 선택된 추가옵션 (옵션 라인 바로 아래) -->
+            <div data-if="{{item.additional_options?.length > 0}}" data-each="addOpt in {{item.additional_options ?? []}}" class="mt-1 space-y-0.5">
+              <p data-testid="checkout-item-additional-option" class="text-xs text-gray-500 dark:text-gray-400">{{addOpt.group_name ? addOpt.group_name + ': ' : ''}}{{addOpt.name}}{{(addOpt.custom_text ?? '') !== '' ? ' (' + addOpt.custom_text + ')' : ''}}{{(addOpt.price_adjustment ?? 0) > 0 ? ' (' + (addOpt.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? addOpt.price_adjustment_formatted ?? ('+' + addOpt.price_adjustment.toLocaleString())) + ')' : ''}}</p>
+            </div>
+            <!-- 배송정책 및 배송비 -->
+            <div data-if="{{checkoutData.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy}}" class="flex items-center gap-2 mt-1">
+              <responsive on="portable" class="flex items-center gap-2 mt-0.5"/>
+              <icon name="truck" size="xs" class="text-gray-400 dark:text-gray-500"/>
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{checkoutData.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.policy_name}}</span>
+              <span class="text-xs text-gray-400 dark:text-gray-500">/</span>
+              <!-- 단독 구매 시 배송비 > 0 -->
+              <span data-if="{{(checkoutData.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount ?? 0) > 0}}" class="text-xs text-gray-600 dark:text-gray-300">{{checkoutData.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount_formatted ?? ''}}</span>
+              <!-- 단독 구매 시 무료배송 -->
+              <span data-if="{{(checkoutData.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount ?? 0) === 0}}" class="text-xs text-green-600 dark:text-green-400">$t:shop.checkout.free_shipping</span>
+            </div>
+            <!-- 정가 취소선 + 할인율 (할인 있을 때만, U5) -->
+            <div data-if="{{(item.product_option?.discount_rate ?? 0) > 0}}" class="flex items-center gap-2 mt-1">
+              <!-- 정가 취소선 - 주 통화 -->
+              <span class="text-xs text-gray-400 dark:text-gray-500 line-through">{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.list_price_formatted ?? ''}}</span>
+              <!-- 할인율 칩 -->
+              <span class="text-xs font-bold text-red-500">{{item.product_option?.discount_rate}}%</span>
+            </div>
+            <!-- 정가 취소선 - 보조 통화들 (할인 있을 때, 선택 통화 제외) -->
+            <div data-if="{{(item.product_option?.discount_rate ?? 0) > 0}}" data-each="currency in {{Object.entries(item.product_option?.multi_currency_list_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
+              <span class="text-xs text-gray-400 dark:text-gray-500 line-through">{{currency[1]?.formatted}}</span>
+            </div>
+            <!-- 단가 - 주 통화 -->
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <responsive on="portable" class="text-xs text-gray-600 dark:text-gray-400 mt-0.5"/>
+              <span>{{item.product_option?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.selling_price_formatted ?? ''}} × {{item.quantity}}</span>
+              <span>$t:shop.count_unit</span>
+            </p>
+            <!-- 단가 - 보조 통화들 (선택된 통화 제외) -->
+            <div data-each="currency in {{Object.entries(item.product_option?.multi_currency_selling_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 mt-0.5">
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}}</span>
+            </div>
+            <!-- 상품 상태 표시 영역 -->
+            <div data-if="{{item.product.sales_status !== 'on_sale' || item.quantity > (item.product_option?.stock_quantity ?? 0)}}" class="flex items-center gap-2 mt-1">
+              <!-- 판매중지 표시 -->
+              <span data-if="{{item.product.sales_status !== 'on_sale'}}" class="text-sm font-medium text-red-600 dark:text-red-400">$t:shop.cart.not_on_sale</span>
+              <!-- 재고부족 표시 (판매중이지만 재고 부족) -->
+              <span data-if="{{item.product.sales_status === 'on_sale' &amp;&amp; item.quantity > (item.product_option?.stock_quantity ?? 0)}}" class="text-sm font-medium text-red-600 dark:text-red-400">$t:shop.cart.insufficient_stock</span>
+            </div>
+            <!-- 적용된 상품 쿠폰 상세 목록 -->
+            <div data-if="{{(item.product_coupon_discount_amount ?? 0) > 0}}" class="mt-1 space-y-0.5">
+              <div data-each="appliedCoupon in {{(checkoutData.data.calculation?.promotions?.product_promotions?.coupons ?? []).filter(c => (c.applied_items ?? []).some(ai => ai.product_option_id === item.product_option_id))}}" class="flex items-center gap-1">
+                <icon name="ticket" size="xs" class="text-red-500 dark:text-red-400"/>
+                <span class="text-xs text-red-600 dark:text-red-400">{{appliedCoupon.name}} -{{appliedCoupon.applied_items?.find(ai => ai.product_option_id === item.product_option_id)?.discount_amount_formatted ?? ''}}</span>
+              </div>
+            </div>
+            <!-- 상품별 쿠폰 선택 영역 (회원만) -->
+            <div data-if="{{_global.currentUser?.uuid}}" class="mt-2 flex flex-wrap gap-2">
+              <responsive on="portable" class="mt-1.5 flex flex-col gap-1.5"/>
+              <!-- 상품 쿠폰 1 -->
+              <select name="item_coupon_1" value="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[0] ?? ''}}" class="w-48 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500">
+                <responsive on="portable" class="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500"/>
+                <on type="change">
+                  <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { item_coupons: Object.assign({}, _local.checkout?.item_coupons ?? {}, { [item.product_option_id]: [$event.target.value || null, (_local.checkout?.item_coupons?.[item.product_option_id]?.[1] ?? null)].filter(Boolean) }) })}}"/>
+                  <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{_local.checkout}}">
+                    <success>
+                      <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
+                      <conditions>
+                        <when if="{{(response.data?.validation_errors ?? []).length > 0}}">
+                          <toast type="warning" message="$t:shop.checkout.coupon_not_applied"/>
+                        </when>
+                      </conditions>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
+                  </api-call>
+                </on>
+                <option value="">{{(item.available_coupons ?? []).length > 0 ? '$t:shop.checkout.product_coupon_1' : '$t:shop.checkout.coupon_no_available'}}</option>
+                <option data-each="pcoupon in {{item.available_coupons ?? []}}" value="{{pcoupon.id}}" disabled="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[1] == pcoupon.id || (item.disabled_coupon_ids ?? []).includes(pcoupon.id)}}">{{(item.disabled_coupon_ids ?? []).includes(pcoupon.id) ? '[' + pcoupon.target_type_short_label + '] ' + pcoupon.localized_name + ' (' + '$t:shop.checkout.coupon_already_used' + ')' : '[' + pcoupon.target_type_short_label + '] ' + pcoupon.localized_name + ' (' + pcoupon.benefit_formatted + ')'}}</option>
+              </select>
+              <!-- 상품 쿠폰 2 (첫 번째 쿠폰 선택 시에만 표시) -->
+              <select data-if="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[0]}}" name="item_coupon_2" value="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[1] ?? ''}}" class="w-48 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500">
+                <responsive on="portable" class="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500"/>
+                <on type="change">
+                  <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { item_coupons: Object.assign({}, _local.checkout?.item_coupons ?? {}, { [item.product_option_id]: [(_local.checkout?.item_coupons?.[item.product_option_id]?.[0] ?? null), $event.target.value || null].filter(Boolean) }) })}}"/>
+                  <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{_local.checkout}}">
+                    <success>
+                      <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
+                      <conditions>
+                        <when if="{{(response.data?.validation_errors ?? []).length > 0}}">
+                          <toast type="warning" message="$t:shop.checkout.coupon_not_applied"/>
+                        </when>
+                      </conditions>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
+                  </api-call>
+                </on>
+                <option value="">{{(item.available_coupons ?? []).length > 0 ? '$t:shop.checkout.product_coupon_2' : '$t:shop.checkout.coupon_no_available'}}</option>
+                <option data-each="pcoupon2 in {{item.available_coupons ?? []}}" value="{{pcoupon2.id}}" disabled="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[0] == pcoupon2.id || (item.disabled_coupon_ids ?? []).includes(pcoupon2.id)}}">{{(item.disabled_coupon_ids ?? []).includes(pcoupon2.id) ? '[' + pcoupon2.target_type_short_label + '] ' + pcoupon2.localized_name + ' (' + '$t:shop.checkout.coupon_already_used' + ')' : '[' + pcoupon2.target_type_short_label + '] ' + pcoupon2.localized_name + ' (' + pcoupon2.benefit_formatted + ')'}}</option>
+              </select>
+            </div>
+          </div>
+          <!-- 상품 금액 -->
+          <div class="flex flex-col items-end justify-start flex-shrink-0 ml-4">
+            <responsive on="portable" class="flex flex-col items-end justify-start flex-shrink-0 ml-2"/>
+            <!-- 상품 금액 라벨 -->
+            <span class="text-xs text-gray-500 dark:text-gray-400">$t:shop.cart.subtotal</span>
+            <!-- 원 판매금액 (할인 없을 때) - 주 통화 -->
+            <div data-if="{{(item.product_coupon_discount_amount ?? 0) === 0}}" class="font-bold text-gray-900 dark:text-white">{{item.multi_currency_subtotal?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_formatted}}</div>
+            <!-- 원 판매금액 (할인 있을 때 취소선) - 주 통화 -->
+            <div data-if="{{(item.product_coupon_discount_amount ?? 0) > 0}}" class="text-sm text-gray-400 dark:text-gray-500 line-through">{{item.multi_currency_subtotal?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_formatted}}</div>
+            <!-- 할인 후 금액 - 주 통화 -->
+            <div data-if="{{(item.product_coupon_discount_amount ?? 0) > 0}}" class="font-bold text-red-600 dark:text-red-400">{{item.multi_currency_final_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.final_amount_formatted}}</div>
+            <!-- 원 판매금액 - 보조 통화들 (할인 없을 때) -->
+            <div data-if="{{(item.product_coupon_discount_amount ?? 0) === 0}}" data-each="subtotalCurrency in {{Object.entries(item.multi_currency_subtotal ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{subtotalCurrency[1]?.formatted}}</span>
+            </div>
+            <!-- 할인 후 금액 - 보조 통화들 -->
+            <div data-if="{{(item.product_coupon_discount_amount ?? 0) > 0}}" data-each="finalCurrency in {{Object.entries(item.multi_currency_final_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
+              <span class="text-xs text-red-500 dark:text-red-400">{{finalCurrency[1]?.formatted}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

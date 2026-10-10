@@ -1,0 +1,26 @@
+feature: 데이터·blob·교차 출처 그림 직접 사용
+
+description: |
+  인증 XHR 없이 그대로 써야 하는 자산 URL 판정(isDirectAssetUrl)
+  
+  레이아웃 편집기에서 쇼핑몰 브랜드 관리·상품 폼을 열면 표본 그림이 `data:image/svg+xml,…` 인데,
+  첨부 썸네일·업로더가 이를 인증 XHR 로 가져오려 해 API 기본 주소가 붙은 `/api/data:image/…` 404 가
+  나고 그림이 비어 보였다(이커머스 전수 실측 S5, 2026-10-07). 문서 안에 이미 담긴 `data:`·`blob:` URL 은
+  서버에 요청할 대상이 아니므로 교차 출처 URL 처럼 그대로 써야 한다.
+
+  수정 이력: 이커머스 전수 실측 S5-D19 (2026-10-07). 시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02, c03, c04, c05, c06]
+  # c01: data: URL 은 그대로 쓴다
+  # c02: blob: URL 은 그대로 쓴다
+  # c03: 교차 출처 URL 은 기존 판정 그대로 직접 쓴다
+  # c04: 같은 출처 상대 경로는 인증 XHR 경로를 유지한다
+  # c05: 빈 값은 직접 사용 대상이 아니다
+  # c06: 인증 그림을 가져오는 세 곳이 모두 isDirectAssetUrl 로 판정한다
+
+effects:
+  - direct_asset_urls_not_fetched
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/assetOrigin.directAsset.test.ts

@@ -5,6 +5,8 @@
     "template": "Template"
   },
   "alerts": {
+    "language_pack_install_failed": "Could not install the selected language packs ({{names}}): {{reason}}",
+    "language_pack_awaiting_host": "The selected language packs ({{names}}) were installed turned off because this extension is not active yet. They will be turned on when you activate the extension.",
     "incompatible_deactivated": "{{type}} \"{{name}}\" automatically deactivated",
     "incompatible_message": "Required: {{required}}, Installed: {{installed}}",
     "recovered_title": "{{type}} \"{{name}}\" is compatible again",
@@ -13,7 +15,10 @@
     "dismissed": "Notification dismissed.",
     "auto_deactivated_listed": "List of auto-deactivated extensions.",
     "recover_action": "Re-activate",
-    "dismiss_action": "Dismiss"
+    "dismiss_action": "Dismiss",
+    "open_action": "Open",
+    "layout_include_skipped": "{{count}} missing partial references in layouts were left empty. Check the server log or run php artisan layout:check-installed.",
+    "layout_include_skipped_one": "{{count}} missing partial reference in layouts was left empty. Check the server log or run php artisan layout:check-installed."
   },
   "badges": {
     "incompatible": "Core upgrade required",
@@ -28,11 +33,30 @@
   },
   "update_modal": {
     "compat_warning_title": "Core version compatibility warning",
-    "compat_warning_message": "This {{type}} requires core {{required}} or higher. (current: {{installed}})",
+    "compat_warning_message": "This update requires core version {{required}} (current: {{installed}})",
     "compat_guide_link": "View core upgrade guide",
     "force_label": "Ignore warning and force update (not recommended)",
     "rebuild_search_index_title": "Search index",
     "rebuild_search_index_label": "Rebuild search indexes that hold no indexed content after the update",
     "rebuild_search_index_desc": "Rebuilding locks or re-indexes the target. On a live site, leave this unchecked and run it during a maintenance window."
+  },
+  "view_mode": {
+    "toggle_label": "View mode",
+    "gallery": "Gallery view",
+    "list": "List view",
+    "gallery_aria": "Show as gallery",
+    "list_aria": "Show as list"
+  },
+  "card": {
+    "open_detail": "View details of {{name}}"
+  },
+  "icon": {
+    "alt": "{{name}} icon",
+    "locale_badge_sr": "{{locale}} language pack"
+  },
+  "manifest_preview": {
+    "icon_present": "Icon included: {{path}}",
+    "icon_missing": "No icon; the default icon will be shown.",
+    "icon_invalid": "The icon does not meet the specification; the default icon will be shown."
   }
 }

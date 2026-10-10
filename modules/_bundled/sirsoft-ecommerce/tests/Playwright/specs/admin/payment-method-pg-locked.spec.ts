@@ -22,12 +22,11 @@
  *    태그로 찾지 말고 `data-testid` (`pg-select-{id}` / `pg-locked-badge-{id}` / `pg-not-required-{id}`)
  *    로 분기 결과를 조회한다 — 컴포넌트 내부 구현이 바뀌어도 이 spec 은 유지된다.
  *
- * 축 요약(마커 아님 — 평문): method_kind=extension, capability_declared=declared,
- * capability=pg_locked. 요약을 시나리오 축 마커로 적으면 마커 파서가
- * 쉼표로만 축을 분리하므로 `×` 표기는 첫 축만, 그것도 오염된 형태로 집계된다 — 실재하지 않는
- * 조합이 커버된 것처럼 쌓이는 방향이라 요약은 평문으로 둔다. 실제 커버는 각 test 의 라인 마커가 담당한다.
- *
- * 효과 요약(마커 아님 — 평문): admin_shows_pg_locked_badge, admin_hides_pg_select_for_locked, admin_shows_pg_select_for_unlocked, saved_null_pg_provider_self_healed.
+ * @scenario extension_payment_method, method_kind=extension, capability_declared=declared, capability=pg_locked
+ * @effects admin_shows_pg_locked_badge,
+ *          admin_hides_pg_select_for_locked,
+ *          admin_shows_pg_select_for_unlocked,
+ *          saved_null_pg_provider_self_healed
  */
 import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
 import type { Page } from '@playwright/test';
@@ -85,7 +84,7 @@ async function gotoOrderSettings(page: Page, token: string): Promise<void> {
 }
 
 test.describe('@sirsoft-ecommerce 주문설정 결제수단 — PG 고정 표시', () => {
-  // @scenario extension_payment_method:pg_locked_badge
+  // @scenario extension_payment_method=pg_locked_badge
   // @effects admin_shows_pg_locked_badge, admin_hides_pg_select_for_locked, saved_null_pg_provider_self_healed
   test('PG 고정 수단(간편결제)은 PG 셀렉트 대신 "PG 고정 · {PG명}" 배지로 표시된다', async ({
     page,
@@ -144,7 +143,7 @@ test.describe('@sirsoft-ecommerce 주문설정 결제수단 — PG 고정 표시
     }
   });
 
-  // @scenario extension_payment_method:pg_select_for_unlocked
+  // @scenario extension_payment_method=pg_select_for_unlocked
   // @effects admin_shows_pg_select_for_unlocked
   test('일반 PG 수단(카드 등)은 PG 선택 셀렉트가 그대로 노출된다 (회귀 차단)', async ({
     page,
@@ -174,7 +173,7 @@ test.describe('@sirsoft-ecommerce 주문설정 결제수단 — PG 고정 표시
     }
   });
 
-  // @scenario extension_payment_method:pg_select_for_unlocked
+  // @scenario extension_payment_method=pg_select_for_unlocked
   // @effects admin_shows_pg_select_for_unlocked
   test('PG 셀렉트는 미선택 상태에서도 형제 필드 열과 같은 폭으로 렌더된다', async ({
     page,
@@ -249,7 +248,7 @@ test.describe('@sirsoft-ecommerce 주문설정 결제수단 — PG 고정 표시
     ).toBe(1);
   });
 
-  // @scenario extension_payment_method:no_pg_required
+  // @scenario extension_payment_method=no_pg_required
   // @effects admin_shows_pg_select_for_unlocked
   test('PG 불필요 수단(무통장·포인트 등)은 셀렉트도 배지도 없이 "PG 불필요"로 남는다', async ({
     page,

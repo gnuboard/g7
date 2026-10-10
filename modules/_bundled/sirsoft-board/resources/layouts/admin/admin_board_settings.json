@@ -1,765 +1,985 @@
 {
-  "version": "1.0.0",
-  "layout_name": "admin_board_settings",
-  "permissions": [
-    "sirsoft-board.settings.read"
-  ],
-  "extends": "_admin_base",
-  "meta": {
-    "title": "$t:sirsoft-board.admin.settings.title",
-    "description": "$t:sirsoft-board.admin.settings.description"
-  },
-  "computed": {
-    "isReadOnly": "{{!!settings?.data && settings?.data?.abilities?.can_update !== true}}",
-    "isNotificationReadOnly": "{{boardNotificationDefinitions?.data?.abilities?.can_update !== true}}",
-    "boardOptions": "{{(() => { const boards = boards_list?.data?.data ?? []; return boards.map(b => ({ value: b.id, label: b.name })); })()}}",
-    "adminPermissions": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => key.startsWith('admin.'))}}",
-    "userPermissions": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => !key.startsWith('admin.'))}}",
-    "roleOptions": "{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}",
-    "adminPermKeys": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => key.startsWith('admin.')).map(([key]) => key)}}",
-    "userPermKeys": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => !key.startsWith('admin.')).map(([key]) => key)}}",
-    "allAdminChecked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}",
-    "allUserChecked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}"
-  },
-  "state": {
-    "notificationDefinitionCurrentPage": 1,
-    "notificationDefinitionTotalPages": 1,
-    "notificationDefinitionTotalItems": 0
-  },
-  "transition_overlay": {
-    "wait_for": [
-      "settings",
-      "boards_list",
-      "roles",
-      "board_types",
-      "boardNotificationDefinitions",
-      "notification_channels"
-    ]
-  },
-  "initLocal": {
-    "editingDefinition": null,
-    "editingTemplate": null,
-    "editingRecipients": [],
-    "editLang": "ko",
-    "previewData": null,
-    "notificationDefinitionFilter": {
-      "search": "",
-      "searchType": "all"
+    "comment": "게시판 모듈 전역 설정. 탭이 여덟이고 데이터소스가 열둘인데, 설정 본체(`settings`)와 버튼으로만 여는 명단(`privacyTargets`) 말고는 전부 `if` 로 자기 탭에서만 읽는다 — 한 화면에 다 걸어 두면 열지도 않은 탭 때문에 진입이 느려진다. 어느 탭인지는 URL 의 `tab` 이 먼저이고 없으면 전역 값, 그것도 없으면 `general` 이다",
+    "version": "1.0.0",
+    "layout_name": "admin_board_settings",
+    "extends": "_admin_base",
+    "meta": {
+        "_e2e_allow": "e2e:allow F6 정정 — 죽은 state 키 3개(알림 정의 페이지 번호)를 initLocal 로 옮긴 것뿐(2026-09-17 저작 트랙 게이트), 값·화면 동작 동일",
+        "title": "$t:sirsoft-board.admin.settings.title",
+        "description": "$t:sirsoft-board.admin.settings.description"
     },
-    "expandedNotificationDefinitionIds": [],
-    "expandedNotifications": {},
-    "templateErrors": null,
-    "isSaving": false,
-    "recipientRoleSearchResults": [],
-    "recipientUserSearchResults": []
-  },
-  "data_sources": [
-    {
-      "id": "settings",
-      "label_key": "$t:sirsoft-board.editor.data_source.settings",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-board/admin/settings",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "initLocal": "form",
-      "refetchOnMount": true,
-      "errorHandling": {
-        "403": {
-          "handler": "showErrorPage",
-          "params": {
-            "target": "content"
-          }
-        }
-      }
-    },
-    {
-      "id": "boards_list",
-      "label_key": "$t:sirsoft-board.editor.data_source.boards_list",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-board/admin/boards?per_page=999&fields=id,title",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'basic_defaults'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "fallback": {
-        "data": {
-          "data": []
-        }
-      }
-    },
-    {
-      "id": "roles",
-      "label_key": "$t:sirsoft-board.editor.data_source.roles",
-      "type": "api",
-      "endpoint": "/api/admin/roles/active",
-      "method": "GET",
-      "if": "{{['basic_defaults', 'report_policy'].includes(query.tab || _global.activeBoardSettingsTab || 'general')}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "fallback": {
-        "data": []
-      }
-    },
-    {
-      "id": "board_types",
-      "label_key": "$t:sirsoft-board.editor.data_source.board_types",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-board/admin/board-types",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'basic_defaults'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "fallback": {
-        "data": []
-      }
-    },
-    {
-      "id": "boardNotificationDefinitions",
-      "label_key": "$t:sirsoft-board.editor.data_source.boardNotificationDefinitions",
-      "type": "api",
-      "endpoint": "/api/admin/notification-definitions?extension_type=module&extension_identifier=sirsoft-board",
-      "method": "GET",
-      "if": "{{['notification_definitions', 'report_policy'].includes(query.tab || _global.activeBoardSettingsTab || 'general')}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "params": {
-        "page": "{{query.page || 1}}",
-        "per_page": "{{query.per_page || 20}}",
-        "search": "{{query.search}}",
-        "search_type": "{{query.search_type}}",
-        "template_channel": "{{query.channel ?? 'mail'}}"
-      },
-      "initLocal": {
-        "_merge": "deep",
-        "notificationDefinitionCurrentPage": "pagination.current_page",
-        "notificationDefinitionTotalPages": "pagination.last_page",
-        "notificationDefinitionTotalItems": "pagination.total"
-      },
-      "fallback": {
-        "data": {
-          "data": [],
-          "pagination": []
-        }
-      }
-    },
-    {
-      "id": "availableChannels",
-      "label_key": "$t:sirsoft-board.editor.data_source.availableChannels",
-      "type": "api",
-      "endpoint": "/api/admin/notification-channels",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'notification_definitions'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "fallback": {
-        "data": {
-          "channels": []
-        }
-      }
-    },
-    {
-      "id": "boardIdentityPolicies",
-      "label_key": "$t:sirsoft-board.editor.data_source.boardIdentityPolicies",
-      "type": "api",
-      "endpoint": "/api/admin/identity/policies",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "params": {
-        "source_identifier": "sirsoft-board",
-        "scope": "{{query.scope ?? ''}}",
-        "purpose": "{{query.purpose ?? ''}}",
-        "search": "{{query.search ?? ''}}",
-        "page": "{{query.page || 1}}",
-        "per_page": "{{query.per_page || 10}}"
-      },
-      "fallback": {
-        "data": {
-          "data": [],
-          "meta": {}
-        }
-      }
-    },
-    {
-      "id": "boardIdentityPurposes",
-      "label_key": "$t:sirsoft-board.editor.data_source.boardIdentityPurposes",
-      "type": "api",
-      "endpoint": "/api/identity/purposes",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "fallback": {
-        "data": []
-      }
-    },
-    {
-      "id": "identityProviders",
-      "label_key": "$t:sirsoft-board.editor.data_source.identityProviders",
-      "type": "api",
-      "endpoint": "/api/admin/identity/providers",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "fallback": {
-        "data": []
-      }
-    }
-  ],
-  "init_actions": [
-    {
-      "handler": "setState",
-      "params": {
-        "target": "_local",
-        "notificationDefinitionCurrentPage": "{{+(query.page || 1)}}"
-      }
-    }
-  ],
-  "slots": {
-    "content": [
-      {
-        "id": "settings_content",
-        "type": "basic",
-        "name": "Div",
-        "dataKey": "form",
-        "trackChanges": true,
-        "props": {
-          "className": "admin-page-content-responsive"
-        },
-        "children": [
-          {
-            "id": "page_header_wrapper",
-            "type": "basic",
-            "name": "Div",
-            "children": [
-              {
-                "id": "page_header",
-                "type": "composite",
-                "name": "PageHeader",
-                "props": {
-                  "title": "$t:sirsoft-board.admin.settings.title",
-                  "description": "$t:sirsoft-board.admin.settings.description"
-                }
-              }
-            ]
-          },
-          {
-            "id": "sticky_header",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "sticky-section-header"
-            },
-            "children": [
-              {
-                "id": "header_content",
-                "type": "basic",
-                "name": "Div",
-                "children": [
-                  {
-                    "id": "read_only_banner",
-                    "type": "basic",
-                    "name": "Div",
-                    "if": "{{_computed.isReadOnly}}",
-                    "props": {
-                      "className": "alert-warning"
-                    },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Icon",
-                        "props": {
-                          "name": "lock",
-                          "size": "lg",
-                          "className": "text-amber-600 dark:text-amber-400 flex-shrink-0"
-                        }
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Span",
-                        "props": {
-                          "className": "text-warning-soft"
-                        },
-                        "text": "$t:sirsoft-board.admin.settings.read_only_message"
-                      }
-                    ]
-                  },
-                  {
-                    "id": "tab_navigation",
-                    "type": "composite",
-                    "name": "TabNavigation",
-                    "props": {
-                      "tabs": [
-                        {
-                          "id": "general",
-                          "label": "$t:sirsoft-board.admin.settings.tabs.general"
-                        },
-                        {
-                          "id": "basic_defaults",
-                          "label": "$t:sirsoft-board.admin.settings.tabs.basic_defaults"
-                        },
-                        {
-                          "id": "report_policy",
-                          "label": "$t:sirsoft-board.admin.settings.tabs.report_policy"
-                        },
-                        {
-                          "id": "spam_security",
-                          "label": "$t:sirsoft-board.admin.settings.tabs.spam_security"
-                        },
-                        {
-                          "id": "seo",
-                          "label": "$t:sirsoft-board.admin.settings.tabs.seo"
-                        },
-                        {
-                          "id": "notification_definitions",
-                          "label": "$t:sirsoft-board.admin.settings.tabs.notification_definitions"
-                        },
-                        {
-                          "id": "identity_policies",
-                          "label": "$t:sirsoft-board.admin.settings.tabs.identity_policies"
-                        }
-                      ],
-                      "activeTabId": "{{_global.activeBoardSettingsTab || query.tab || 'general'}}",
-                      "variant": "default"
-                    },
-                    "actions": [
-                      {
-                        "event": "onTabChange",
-                        "type": "change",
-                        "handler": "sequence",
-                        "params": {
-                          "actions": [
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "errors": null
-                              }
-                            },
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "global",
-                                "activeBoardSettingsTab": "{{$args[0]}}"
-                              }
-                            },
-                            {
-                              "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
-                              "handler": "navigate",
-                              "params": {
-                                "path": "/admin/boards/settings",
-                                "query": {
-                                  "tab": "{{$args[0]}}"
-                                },
-                                "replace": true
-                              }
-                            },
-                            {
-                              "handler": "scrollIntoView",
-                              "params": {
-                                "selector": "#tab_content",
-                                "behavior": "instant",
-                                "block": "start",
-                                "waitForElement": true,
-                                "timeout": 1000
-                              }
-                            }
-                          ]
-                        }
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "id": "sub_tab_navigation",
-                "type": "composite",
-                "name": "TabNavigationScroll",
-                "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
-                "props": {
-                  "tabs": [
-                    {
-                      "id": "basic",
-                      "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.basic"
-                    },
-                    {
-                      "id": "permissions",
-                      "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.permissions"
-                    },
-                    {
-                      "id": "list",
-                      "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.list"
-                    },
-                    {
-                      "id": "post",
-                      "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.post"
-                    },
-                    {
-                      "id": "reply",
-                      "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.reply"
-                    },
-                    {
-                      "id": "comment",
-                      "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.comment"
-                    },
-                    {
-                      "id": "attachment",
-                      "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.attachment"
-                    },
-                    {
-                      "id": "notification",
-                      "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.notification"
-                    },
-                    {
-                      "id": "bulk_apply",
-                      "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.bulk_apply"
+    "data_sources": [
+        {
+            "id": "settings",
+            "label_key": "$t:sirsoft-board.editor.data_source.settings",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "blocking",
+            "initLocal": "form",
+            "refetchOnMount": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
                     }
-                  ],
-                  "className": "sub-tab-nav",
-                  "sectionIdPrefix": "",
-                  "enableScrollSpy": true,
-                  "scrollContainerId": "right_content_area",
-                  "scrollSpyOffset": 180,
-                  "scrollOffset": 180
                 }
-              }
-            ]
-          },
-          {
-            "id": "tab_content",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "tab-content"
             },
-            "children": [
-              {
-                "id": "validation_error",
+            "comment": "설정 본체 — 유일하게 탭 조건 없이 항상 읽고 `_local.form` 을 채운다(모든 탭이 이 한 폼을 나눠 쓴다).\n       blocking 이라 설정을 다 받기 전에는 입력칸을 그리지 않는다 — 받기 전에 칸을 고치면 도착한 값(initLocal)이\n       그 입력을 말없이 덮어써 사용자가 고친 값이 사라졌다(7.1.0 실측 K3 O-K3T-5). 게시판 생성·수정 화면과 같은 방식이다"
+        },
+        {
+            "id": "boardPrivacyRetentionPreview",
+            "label_key": "$t:sirsoft-board.editor.data_source.boardPrivacyRetentionPreview",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/settings/privacy-retention-preview",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'privacy_retention'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "ip": null,
+                    "guest": null
+                }
+            },
+            "comment": "개인정보 보유기간 대상 건수 — 「개인정보 보유기간」 탭의 대상 행 뱃지가 읽는다. 저장된 설정 기준이라 저장 성공 뒤 다시 읽는다. 꺼진 축도 서버가 센다(꺼짐은 `ip_enabled`·`guest_enabled` 로 구분) — null 은 응답을 받기 전 fallback 뿐이다"
+        },
+        {
+            "id": "privacyManualRuns",
+            "label_key": "$t:sirsoft-board.editor.data_source.privacyManualRuns",
+            "type": "api",
+            "endpoint": "/api/admin/privacy/manual-runs",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'privacy_retention'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "targets": "retention:sirsoft-board.ip,retention:sirsoft-board.guest",
+                "since": "{{_global.privacyRunWatchSince ?? ''}}"
+            },
+            "fallback": {
+                "data": {
+                    "targets": {},
+                    "has_active": false,
+                    "finished_since": false
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "target": "global",
+                        "privacyRunWatchSince": "{{response?.data?.data?.checked_at}}"
+                    }
+                },
+                {
+                    "handler": "startInterval",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "id": "privacy_manual_run_poll",
+                        "intervalMs": 3000,
+                        "actions": [
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "privacyManualRuns"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "handler": "stopInterval",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "id": "privacy_manual_run_poll"
+                    }
+                },
+                {
+                    "handler": "refetchDataSource",
+                    "if": "{{response?.data?.data?.has_active !== true && response?.data?.data?.finished_since === true}}",
+                    "params": {
+                        "dataSourceId": "boardPrivacyRetentionPreview"
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "target": "global",
+                        "privacyRunWatchSince": null
+                    }
+                }
+            ],
+            "comment": "개인정보 조치 직권 실행 상태 — 「지금 실행」 버튼과 상태 줄(처리 대기/처리 중 · 마지막 결과)이 쓴다(코어 직권 실행 API).\n       진행 중이면 3초마다 다시 받고 끝나면 멈춘다. 진행 중일 때 받은 서버 시각(`checked_at`)을 다음 조회의 `since` 로\n       돌려보내 그 뒤에 끝난 작업이 있으면(`finished_since`) 대상 건수를 다시 받는다 — 판정을 응답값으로만 하는 까닭은\n       직전에 넣은 전역 값이 이 성공 핸들러에서 낡은 값으로 읽히기 때문이다(코어 환경설정 개인정보 탭과 같은 방식)."
+        },
+        {
+            "id": "privacyTargets",
+            "label_key": "$t:sirsoft-board.editor.data_source.privacyTargets",
+            "type": "api",
+            "endpoint": "/api/admin/privacy/{{_global.privacyTargets?.path ?? 'retention-targets/sirsoft-board.ip'}}",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "per_page": 20
+            },
+            "comment": "개인정보 보유기간 대상 창 — 작성 IP·비회원 두 축이 함께 쓴다. 여는 버튼이 목록 경로를 `_global.privacyTargets.path` 에\n       넣고 다시 받은 뒤 연다. 명단은 코어 공통 대상 목록 API 가 두 핸들러를 식별자로 찾아 내려준다."
+        },
+        {
+            "id": "boards_list",
+            "label_key": "$t:sirsoft-board.editor.data_source.boards_list",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/boards?per_page=999&fields=id,title",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'basic_defaults'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "data": []
+                }
+            },
+            "errorHandling": {
+                "comment": "실패의 종류를 남긴다 — fallback 은 abilities 없는 빈 목록이라 이것이 없으면 서버 오류(5xx)도 일괄 지정 카드에\n         「권한 없음」 이유로 보였다(7.1.0 S2 #8). 403 만 권한 없음, 그 밖의 실패는 「불러오지 못함」. 다시 성공하면 computed 가 abilities 를 먼저 본다",
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "bulkMembersBoardsError": "forbidden"
+                    }
+                },
+                "default": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "bulkMembersBoardsError": "failed"
+                    }
+                }
+            },
+            "comment": "「기본값」 탭의 게시판 선택지 — 셀렉트 하나를 채우는 용도라 페이지를 나누지 않고 필요한 두 칸만 받는다"
+        },
+        {
+            "id": "roles",
+            "label_key": "$t:sirsoft-board.editor.data_source.roles",
+            "type": "api",
+            "endpoint": "/api/admin/roles/active",
+            "method": "GET",
+            "if": "{{['basic_defaults', 'report_policy'].includes(query.tab || _global.activeBoardSettingsTab || 'general')}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": []
+            },
+            "comment": "역할 선택지 — 「기본값」과 「신고 정책」 두 탭이 함께 쓴다(새 게시판의 기본 권한 · 신고를 다룰 수 있는 역할). 활성 역할만 받는다"
+        },
+        {
+            "id": "board_types",
+            "label_key": "$t:sirsoft-board.editor.data_source.board_types",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/board-types",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'basic_defaults'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": []
+            },
+            "comment": "게시판 유형 목록 — 「기본값」 탭에서 고르고, 같은 탭의 유형 관리 모달이 이 목록을 고쳐 쓴다"
+        },
+        {
+            "id": "boardNotificationDefinitions",
+            "label_key": "$t:sirsoft-board.editor.data_source.boardNotificationDefinitions",
+            "type": "api",
+            "endpoint": "/api/admin/notification-definitions?extension_type=module&extension_identifier=sirsoft-board",
+            "method": "GET",
+            "if": "{{['notification_definitions', 'report_policy'].includes(query.tab || _global.activeBoardSettingsTab || 'general')}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "search": "{{query.search}}",
+                "search_type": "{{query.search_type}}",
+                "template_channel": "{{query.channel ?? 'mail'}}"
+            },
+            "initLocal": {
+                "_merge": "deep",
+                "notificationDefinitionCurrentPage": "pagination.current_page",
+                "notificationDefinitionTotalPages": "pagination.last_page",
+                "notificationDefinitionTotalItems": "pagination.total"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": []
+                }
+            },
+            "comment": "이 모듈이 발행하는 알림 정의들 — 코어 알림 표에서 게시판 것만 골라 받는다. 목록이 길어 페이지를 나누고, 그 쪽수·총건수를 `_merge: deep` 으로 지역 상태에 얹어 아래 페이저가 읽는다. 「알림 정의」와 「신고 정책」 두 탭이 함께 쓴다"
+        },
+        {
+            "id": "availableChannels",
+            "label_key": "$t:sirsoft-board.editor.data_source.availableChannels",
+            "type": "api",
+            "endpoint": "/api/admin/notification-channels",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'notification_definitions'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "channels": []
+                }
+            },
+            "comment": "알림 정의 편집에서 고를 발송 채널 — 코어가 주는 값이라 게시판 쪽 사정과 무관하게 비어 올 수 있고, 그때는 빈 배열로 떨어진다"
+        },
+        {
+            "id": "boardIdentityPolicies",
+            "label_key": "$t:sirsoft-board.editor.data_source.boardIdentityPolicies",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/admin/identity-policies",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "source_identifier": "sirsoft-board",
+                "scope": "{{query.scope ?? ''}}",
+                "purpose": "{{query.purpose ?? ''}}",
+                "search": "{{query.search ?? ''}}",
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 10}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "meta": {}
+                }
+            },
+            "errorHandling": {
+                "comment": "조회 권한이 없으면(403) 표지를 남긴다 — fallback 은 abilities 없는 빈 목록이라 이것이 없으면 「등록된 정책 없음」으로 보인다.\n         다시 성공하면 computed 가 abilities 를 먼저 본다",
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "identityPoliciesLoadError": "forbidden"
+                    }
+                }
+            },
+            "comment": "본인인증 정책 목록 — 코어 표에서 게시판 몫(`source_identifier`)만 게시판 모듈 경로로 받는다. 이 경로는 게시판 권한\n       (`identity.policies.read`, 쓰기·abilities 는 `.update`)으로 동작한다 — 코어 경로는 코어 권한을 요구해 게시판 권한이 아무 효과가 없었다.\n       서버가 출처를 게시판으로 고정하므로 `source_identifier` 는 표지일 뿐이다. 이 탭의 검색·범위·목적 필터와 쪽수가 전부 URL 에서 온다"
+        },
+        {
+            "id": "boardIdentityPurposes",
+            "label_key": "$t:sirsoft-board.editor.data_source.boardIdentityPurposes",
+            "type": "api",
+            "endpoint": "/api/identity/purposes",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": []
+            },
+            "comment": "본인인증을 요구할 수 있는 «목적» 목록 — 정책 폼의 선택지이자 목록 필터의 선택지다. 이 목록은 게시판 것만이 아니라 코어가 아는 전부다"
+        },
+        {
+            "id": "identityProviders",
+            "label_key": "$t:sirsoft-board.editor.data_source.identityProviders",
+            "type": "api",
+            "endpoint": "/api/identity/providers",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": []
+            },
+            "comment": "설치된 본인인증 제공자 — 정책에 어느 수단을 붙일지 고를 때 쓴다. 하나도 없으면 정책을 만들어도 실제로 인증을 걸 수단이 없다.\n       권한이 필요 없는 공개 목록에서 받는다(폼은 id·이름만 쓴다) — 코어 관리자 목록은 코어 권한을 요구해, 게시판 권한만 가진 운영자의 선택지가 비었다"
+        }
+    ],
+    "initLocal": {
+        "editingDefinition": null,
+        "editingTemplate": null,
+        "editingRecipients": [],
+        "editLang": "ko",
+        "previewData": null,
+        "notificationDefinitionFilter": {
+            "search": "",
+            "searchType": "all"
+        },
+        "expandedNotificationDefinitionIds": [],
+        "expandedNotifications": {},
+        "templateErrors": null,
+        "isSaving": false,
+        "recipientRoleSearchResults": [],
+        "recipientUserSearchResults": [],
+        "isAddingReactionType": false,
+        "reactionTypeForm": null,
+        "reactionTypeFormErrors": null,
+        "notificationDefinitionCurrentPage": 1,
+        "notificationDefinitionTotalPages": 1,
+        "notificationDefinitionTotalItems": 0
+    },
+    "computed": {
+        "isReadOnly": "{{!!settings?.data && settings?.data?.abilities?.can_update !== true}}",
+        "canBulkApply": "{{settings?.data?.abilities?.can_bulk_apply === true}}",
+        "canManageBoardTypes": "{{settings?.data?.abilities?.can_manage_board_types === true}}",
+        "canClearSeoCache": "{{settings?.data?.abilities?.can_clear_seo_cache === true}}",
+        "bulkMembersLocked": "{{boards_list?.data?.abilities?.can_update !== true}}",
+        "bulkMembersNoPermission": "{{boards_list?.data?.abilities ? boards_list.data.abilities.can_update !== true : _local.bulkMembersBoardsError === 'forbidden'}}",
+        "bulkMembersLoadFailed": "{{!boards_list?.data?.abilities && _local.bulkMembersBoardsError === 'failed'}}",
+        "isNotificationReadOnly": "{{boardNotificationDefinitions?.data?.abilities?.can_update !== true}}",
+        "identityPoliciesNoReadPermission": "{{!boardIdentityPolicies?.data?.abilities && _local.identityPoliciesLoadError === 'forbidden'}}",
+        "isIdentityPolicyReadOnly": "{{boardIdentityPolicies?.data?.abilities?.can_update !== true}}",
+        "boardOptions": "{{(() => { const boards = boards_list?.data?.data ?? []; return boards.map(b => ({ value: b.id, label: b.name })); })()}}",
+        "adminPermissions": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => key.startsWith('admin.'))}}",
+        "userPermissions": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => !key.startsWith('admin.'))}}",
+        "roleOptions": "{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}",
+        "adminPermKeys": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => key.startsWith('admin.')).map(([key]) => key)}}",
+        "userPermKeys": "{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => !key.startsWith('admin.')).map(([key]) => key)}}",
+        "allAdminChecked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}",
+        "allUserChecked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}"
+    },
+    "permissions": [
+        "sirsoft-board.settings.read"
+    ],
+    "transition_overlay": {
+        "target": "tab_content",
+        "fallback_target": "right_content_area",
+        "wait_for": [
+            "settings",
+            "boardPrivacyRetentionPreview",
+            "privacyManualRuns",
+            "boards_list",
+            "roles",
+            "board_types",
+            "boardNotificationDefinitions",
+            "notification_channels",
+            "boardIdentityPolicies"
+        ]
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "_local",
+                "notificationDefinitionCurrentPage": "{{+(query.page || 1)}}"
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "settings_content",
                 "type": "basic",
                 "name": "Div",
-                "if": "{{_local.errors}}",
+                "dataKey": "form",
+                "trackChanges": true,
                 "props": {
-                  "className": "alert-danger"
+                    "className": "admin-page-content-responsive"
                 },
                 "children": [
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                      "className": "flex gap-3"
-                    },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Icon",
-                        "props": {
-                          "name": "triangle-exclamation",
-                          "size": "lg",
-                          "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
-                        }
-                      },
-                      {
+                    {
+                        "id": "page_header_wrapper",
                         "type": "basic",
                         "name": "Div",
                         "children": [
-                          {
-                            "type": "basic",
-                            "name": "H3",
-                            "props": {
-                              "className": "text-error-strong"
-                            },
-                            "text": "$t:sirsoft-board.admin.settings.validation_error"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "P",
-                            "if": "{{typeof _local.errors === 'string'}}",
-                            "props": {
-                              "className": "text-error-soft mt-2"
-                            },
-                            "text": "{{_local.errors}}"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Ul",
-                            "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
-                            "props": {
-                              "className": "mt-2 list-disc list-inside space-y-1"
-                            },
-                            "iteration": {
-                              "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
-                              "item_var": "message"
-                            },
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Li",
+                            {
+                                "id": "page_header",
+                                "type": "composite",
+                                "name": "PageHeader",
                                 "props": {
-                                  "className": "text-error-soft"
-                                },
-                                "text": "{{message}}"
-                              }
-                            ]
-                          }
+                                    "title": "$t:sirsoft-board.admin.settings.title",
+                                    "description": "$t:sirsoft-board.admin.settings.description"
+                                }
+                            }
                         ]
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "partial": "partials/admin_board_settings/_tab_general.json"
-              },
-              {
-                "partial": "partials/admin_board_settings/_tab_board_settings_basic.json"
-              },
-              {
-                "partial": "partials/admin_board_settings/_tab_board_settings_permissions.json"
-              },
-              {
-                "partial": "partials/admin_board_settings/_tab_board_settings_list.json"
-              },
-              {
-                "partial": "partials/admin_board_settings/_tab_board_settings_post.json"
-              },
-              {
-                "partial": "partials/admin_board_settings/_tab_board_settings_reply.json"
-              },
-              {
-                "partial": "partials/admin_board_settings/_tab_board_settings_comment.json"
-              },
-              {
-                "partial": "partials/admin_board_settings/_tab_board_settings_attachment.json"
-              },
-              {
-                "partial": "partials/admin_board_settings/_tab_board_settings_notification.json"
-              },
-              {
-                "partial": "partials/admin_board_settings/_tab_board_settings_bulk_apply.json"
-              },
-              {
-                "partial": "partials/admin_board_settings/_tab_report_policy.json"
-              },
-              {
-                "partial": "partials/admin_board_settings/_tab_spam_security.json"
-              },
-              {
-                "partial": "partials/admin_board_settings/_tab_seo.json"
-              },
-              {
-                "partial": "partials/admin_board_settings/_tab_notification_definitions.json"
-              },
-              {
-                "partial": "partials/admin_board_settings/_tab_identity_policies.json"
-              },
-              {
-                "id": "footer_buttons",
-                "type": "basic",
-                "name": "Div",
-                "if": "{{!_computed.isReadOnly}}",
-                "props": {
-                  "className": "sticky-footer-buttons"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "if": "{{_local.hasChanges}}",
-                    "props": {
-                      "className": "flex-center gap-1.5 text-sm text-amber-600 dark:text-amber-400 mr-auto"
                     },
-                    "children": [
-                      {
+                    {
+                        "id": "sticky_header",
                         "type": "basic",
-                        "name": "Icon",
+                        "name": "Div",
                         "props": {
-                          "name": "circle-dot",
-                          "size": "xs"
-                        }
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Span",
-                        "text": "$t:sirsoft-board.admin.settings.unsaved_changes"
-                      }
-                    ]
-                  },
-                  {
-                    "id": "footer_cancel_button",
-                    "type": "basic",
-                    "name": "Button",
-                    "props": {
-                      "type": "button",
-                      "className": "btn btn-secondary text-sm"
-                    },
-                    "actions": [
-                      {
-                        "type": "click",
-                        "handler": "navigate",
-                        "params": {
-                          "path": "/admin"
-                        }
-                      }
-                    ],
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Span",
-                        "text": "$t:common.cancel"
-                      }
-                    ]
-                  },
-                  {
-                    "id": "footer_save_button",
-                    "type": "basic",
-                    "name": "Button",
-                    "props": {
-                      "type": "button",
-                      "disabled": "{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}",
-                      "className": "btn btn-primary flex-center gap-1.5 text-sm"
-                    },
-                    "actions": [
-                      {
-                        "type": "click",
-                        "handler": "sequence",
-                        "params": {
-                          "actions": [
+                            "className": "sticky-section-header"
+                        },
+                        "children": [
                             {
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "isSaving": true,
-                                "errors": null
-                              }
+                                "id": "header_content",
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "id": "read_only_banner",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_computed.isReadOnly}}",
+                                        "props": {
+                                            "className": "alert-warning"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "lock",
+                                                    "size": "lg",
+                                                    "className": "text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-warning-soft"
+                                                },
+                                                "text": "$t:sirsoft-board.admin.settings.read_only_message"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "tab_navigation",
+                                        "type": "composite",
+                                        "name": "TabNavigation",
+                                        "actions": [
+                                            {
+                                                "comment": "저장하지 않은 변경이 있으면 바로 옮기지 않고 확인 창을 연다 — 저장은 지금 탭의 구획만 보내고, 탭을 옮기면 설정을 다시 받아 고친 값이 저장된 값으로 돌아가기 때문이다(말없이 사라지지 않게)",
+                                                "type": "change",
+                                                "event": "onTabChange",
+                                                "handler": "conditions",
+                                                "conditions": [
+                                                    {
+                                                        "if": "{{_local.hasChanges === true && $args[0] !== (_global.activeBoardSettingsTab || query.tab || 'general')}}",
+                                                        "then": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "pendingBoardSettingsTab": "{{$args[0]}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "openModal",
+                                                                "target": "modal_board_settings_unsaved_tab"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "then": {
+                                                            "comment": "탭 갈아타기 — 앞 탭에서 난 검증 오류를 먼저 지우고(다른 탭의 붉은 문구가 따라다니지 않도록), 어느 탭인지를 전역과 URL 양쪽에 남긴다. `replace` 라 탭 전환이 뒤로가기 이력에 쌓이지 않는다. 마지막으로 본문 머리로 스크롤을 되돌린다",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "errors": null
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "activeBoardSettingsTab": "{{$args[0]}}",
+                                                                        "boardBulkMembers": null
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "path": "/admin/boards/settings",
+                                                                        "replace": true,
+                                                                        "query": {
+                                                                            "tab": "{{$args[0]}}"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "scrollIntoView",
+                                                                    "params": {
+                                                                        "selector": "#tab_content",
+                                                                        "behavior": "instant",
+                                                                        "block": "start",
+                                                                        "waitForElement": true,
+                                                                        "timeout": 1000
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "activeTabId": "{{_global.activeBoardSettingsTab || query.tab || 'general'}}",
+                                            "variant": "default",
+                                            "tabs": [
+                                                {
+                                                    "id": "general",
+                                                    "label": "$t:sirsoft-board.admin.settings.tabs.general"
+                                                },
+                                                {
+                                                    "id": "basic_defaults",
+                                                    "label": "$t:sirsoft-board.admin.settings.tabs.basic_defaults"
+                                                },
+                                                {
+                                                    "id": "report_policy",
+                                                    "label": "$t:sirsoft-board.admin.settings.tabs.report_policy"
+                                                },
+                                                {
+                                                    "id": "spam_security",
+                                                    "label": "$t:sirsoft-board.admin.settings.tabs.spam_security"
+                                                },
+                                                {
+                                                    "id": "seo",
+                                                    "label": "$t:sirsoft-board.admin.settings.tabs.seo"
+                                                },
+                                                {
+                                                    "id": "notification_definitions",
+                                                    "label": "$t:sirsoft-board.admin.settings.tabs.notification_definitions"
+                                                },
+                                                {
+                                                    "id": "identity_policies",
+                                                    "label": "$t:sirsoft-board.admin.settings.tabs.identity_policies"
+                                                },
+                                                {
+                                                    "id": "privacy_retention",
+                                                    "label": "$t:sirsoft-board.admin.settings.tabs.privacy_retention"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
                             },
                             {
-                              "handler": "apiCall",
-                              "auth_required": true,
-                              "target": "/api/modules/sirsoft-board/admin/settings",
-                              "params": {
-                                "method": "PUT",
-                                "body": "{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {}, attachment_settings: form.attachment_settings || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } if (tab === 'seo') { return { _tab: 'seo', seo: form.seo || {} }; } if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}"
-                              },
-                              "onSuccess": [
-                                {
-                                  "handler": "setState",
-                                  "params": {
-                                    "target": "local",
-                                    "isSaving": false,
-                                    "hasChanges": false
-                                  }
-                                },
-                                {
-                                  "handler": "refetchDataSource",
-                                  "params": {
-                                    "dataSourceId": "settings"
-                                  }
-                                },
-                                {
-                                  "handler": "refetchDataSource",
-                                  "params": {
-                                    "dataSourceId": "boards_list"
-                                  }
-                                },
-                                {
-                                  "handler": "refetchDataSource",
-                                  "params": {
-                                    "dataSourceId": "roles"
-                                  }
-                                },
-                                {
-                                  "handler": "refetchDataSource",
-                                  "params": {
-                                    "dataSourceId": "board_types"
-                                  }
-                                },
-                                {
-                                  "handler": "toast",
-                                  "params": {
-                                    "type": "success",
-                                    "message": "$t:sirsoft-board.admin.settings.save_success"
-                                  }
+                                "id": "sub_tab_navigation",
+                                "type": "composite",
+                                "name": "TabNavigationScroll",
+                                "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
+                                "props": {
+                                    "className": "sub-tab-nav",
+                                    "sectionIdPrefix": "",
+                                    "enableScrollSpy": true,
+                                    "scrollContainerId": "right_content_area",
+                                    "scrollSpyOffset": 180,
+                                    "scrollOffset": 180,
+                                    "tabs": [
+                                        {
+                                            "id": "basic",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.basic"
+                                        },
+                                        {
+                                            "id": "permissions",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.permissions"
+                                        },
+                                        {
+                                            "id": "list",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.list"
+                                        },
+                                        {
+                                            "id": "post",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.post"
+                                        },
+                                        {
+                                            "id": "reply",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.reply"
+                                        },
+                                        {
+                                            "id": "comment",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.comment"
+                                        },
+                                        {
+                                            "id": "attachment",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.attachment"
+                                        },
+                                        {
+                                            "id": "notification",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.notification"
+                                        },
+                                        {
+                                            "id": "bulk_apply",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.bulk_apply"
+                                        },
+                                        {
+                                            "id": "bulk_members",
+                                            "label": "$t:sirsoft-board.admin.settings.board_settings_tabs.bulk_members"
+                                        }
+                                    ]
                                 }
-                              ],
-                              "onError": [
-                                {
-                                  "handler": "setState",
-                                  "params": {
-                                    "target": "local",
-                                    "isSaving": false,
-                                    "errors": "{{error.errors}}"
-                                  }
-                                },
-                                {
-                                  "handler": "toast",
-                                  "params": {
-                                    "type": "error",
-                                    "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.save_error'}}"
-                                  }
-                                }
-                              ]
                             }
-                          ]
-                        }
-                      }
-                    ],
-                    "children": [
-                      {
+                        ]
+                    },
+                    {
+                        "id": "tab_content",
                         "type": "basic",
-                        "name": "Icon",
-                        "if": "{{_local.isSaving}}",
+                        "name": "Div",
                         "props": {
-                          "name": "spinner",
-                          "size": "sm",
-                          "spin": true
-                        }
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Span",
-                        "if": "{{!_local.isSaving}}",
-                        "text": "$t:common.save"
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Span",
-                        "if": "{{_local.isSaving}}",
-                        "text": "$t:common.saving"
-                      }
-                    ]
-                  }
+                            "className": "tab-content"
+                        },
+                        "children": [
+                            {
+                                "id": "validation_error",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{_local.errors}}",
+                                "props": {
+                                    "className": "alert-danger items-start mb-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex items-start gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "triangle-exclamation",
+                                                    "className": "text-xl leading-5 text-red-600 dark:text-red-400 flex-shrink-0"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "H3",
+                                                        "props": {
+                                                            "className": "text-error-strong"
+                                                        },
+                                                        "text": "$t:sirsoft-board.admin.settings.validation_error"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{typeof _local.errors === 'string'}}",
+                                                        "props": {
+                                                            "className": "text-error-soft mt-2"
+                                                        },
+                                                        "text": "{{_local.errors}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Ul",
+                                                        "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
+                                                        "iteration": {
+                                                            "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
+                                                            "item_var": "message"
+                                                        },
+                                                        "props": {
+                                                            "className": "mt-2 list-disc list-inside space-y-1"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Li",
+                                                                "props": {
+                                                                    "className": "text-error-soft"
+                                                                },
+                                                                "text": "{{message}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_general.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_basic.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_permissions.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_list.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_post.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_reply.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_comment.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_attachment.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_notification.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_board_settings_bulk_apply.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_section_bulk_members.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_report_policy.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_spam_security.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_seo.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_notification_definitions.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_identity_policies.json"
+                            },
+                            {
+                                "partial": "partials/admin_board_settings/_tab_privacy_retention.json"
+                            },
+                            {
+                                "id": "footer_buttons",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!_computed.isReadOnly}}",
+                                "props": {
+                                    "className": "sticky-footer-buttons"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_local.hasChanges}}",
+                                        "props": {
+                                            "className": "flex-center gap-1.5 text-sm text-amber-600 dark:text-amber-400 mr-auto"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "circle-dot",
+                                                    "size": "xs"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-board.admin.settings.unsaved_changes"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "footer_cancel_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-secondary text-sm"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:common.cancel"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "설정 본체(settings)를 받기 전에는 잠근다 — 입력칸이 먼저 그려져 받기 전에 칸 하나를 고치면 그 칸만 실린 본문이 나가고,\n               서버는 그 구획을 통째로 갈아 써 기본 권한·금지어·스위치 기본값이 지워졌다(7.1.0 실측 K3)",
+                                        "id": "footer_save_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "저장 — 폼 전체가 아니라 «지금 탭이 소유한 구획만» 골라 보낸다(`_tab` 이 서버에 어느 구획인지 알린다). 한 폼을 여러 탭이 나눠 쓰므로 통째로 보내면 열어 보지도 않은 탭의 값이 함께 덮어써진다",
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": true,
+                                                            "errors": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "target": "/api/modules/sirsoft-board/admin/settings",
+                                                        "auth_required": true,
+                                                        "params": {
+                                                            "method": "PUT",
+                                                            "body": "{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {}, attachment_settings: form.attachment_settings || {} }; } if (tab === 'privacy_retention') { return { _tab: 'privacy_retention', privacy_retention: form.privacy_retention || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } if (tab === 'seo') { return { _tab: 'seo', seo: form.seo || {} }; } if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}"
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isSaving": false,
+                                                                    "hasChanges": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "settings"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "boards_list"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "roles"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "board_types"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "boardPrivacyRetentionPreview"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "success",
+                                                                    "message": "$t:sirsoft-board.admin.settings.save_success"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isSaving": false,
+                                                                    "errors": "{{error.errors}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message ?? '$t:sirsoft-board.admin.settings.save_error'}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "disabled": "{{_computed.isReadOnly || !settings?.data || !_local.hasChanges || _local.isSaving}}",
+                                            "className": "btn btn-primary flex-center gap-1.5 text-sm"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "if": "{{_local.isSaving}}",
+                                                "props": {
+                                                    "name": "spinner",
+                                                    "size": "sm",
+                                                    "spin": true
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{!_local.isSaving}}",
+                                                "text": "$t:common.save"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{_local.isSaving}}",
+                                                "text": "$t:common.saving"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
                 ]
-              }
-            ]
-          }
+            }
         ]
-      }
+    },
+    "modals": [
+        {
+            "comment": "여기 정한 기본값을 이미 있는 게시판들에 소급 적용하는 창",
+            "partial": "partials/admin_board_settings/_bulk_apply_modal.json"
+        },
+        {
+            "comment": "게시판 관리자·스텝 일괄 지정 확인 창 — 「기본값」 탭 맨 아래 카드의 「적용」 이 연다",
+            "partial": "partials/admin_board_settings/_modal_bulk_members_confirm.json"
+        },
+        {
+            "comment": "게시판 유형을 더하고 고치는 창 — 게시판 생성 폼과 같은 조각을 나눠 쓴다(유형을 다루는 자리가 둘이지만 규칙은 하나여야 한다)",
+            "partial": "partials/admin_board_form/_board_type_manage_modal.json"
+        },
+        {
+            "comment": "알림 문안 편집 — 채널·언어별 제목과 본문을 고친다",
+            "partial": "partials/admin_board_settings/_modal_notification_template_edit.json"
+        },
+        {
+            "comment": "알림 문안 미리보기 — 보내지 않고 치환 결과만 확인한다",
+            "partial": "partials/admin_board_settings/_modal_notification_template_preview.json"
+        },
+        {
+            "comment": "알림 정의를 처음 상태로 되돌리는 확인 창 — 고쳐 둔 문안이 사라지므로 확인을 받는다",
+            "partial": "partials/admin_board_settings/_modal_notification_definition_reset.json"
+        },
+        {
+            "comment": "본인인증 정책을 만들고 고치는 폼",
+            "partial": "partials/admin_board_settings/_modal_identity_policy_form.json"
+        },
+        {
+            "comment": "본인인증 정책 삭제 확인",
+            "partial": "partials/admin_board_settings/_modal_identity_policy_delete.json"
+        },
+        {
+            "comment": "개인정보 보유기간 대상 창(일반 탭 보유기간 카드) — 작성 IP·비회원 두 축이 함께 쓴다.",
+            "partial": "partials/admin_board_settings/_modal_privacy_targets.json"
+        },
+        {
+            "comment": "개인정보 보유기간 직권 실행 확인 창(일반 탭 — 작성 IP·비회원 글 두 대상이 함께 쓴다).",
+            "partial": "partials/admin_board_settings/_modal_privacy_run.json"
+        },
+        {
+            "comment": "저장하지 않은 변경이 있을 때 탭 전환 확인 창 — 탭 전환은 설정을 다시 받아 고친 값을 저장된 값으로 되돌린다",
+            "partial": "partials/admin_board_settings/_modal_unsaved_tab_switch.json"
+        }
     ]
-  },
-  "modals": [
-    {
-      "partial": "partials/admin_board_settings/_bulk_apply_modal.json"
-    },
-    {
-      "partial": "partials/admin_board_form/_board_type_manage_modal.json"
-    },
-    {
-      "partial": "partials/admin_board_settings/_modal_notification_template_edit.json"
-    },
-    {
-      "partial": "partials/admin_board_settings/_modal_notification_template_preview.json"
-    },
-    {
-      "partial": "partials/admin_board_settings/_modal_notification_definition_reset.json"
-    },
-    {
-      "partial": "partials/admin_board_settings/_modal_identity_policy_form.json"
-    },
-    {
-      "partial": "partials/admin_board_settings/_modal_identity_policy_delete.json"
-    }
-  ]
 }

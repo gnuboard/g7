@@ -1,4 +1,5 @@
 {
+    "comment": "상품 폼 — 공통정보 구획. 여러 상품이 함께 쓰는 안내문을 골라 붙인다. 「기본값 따라가기」를 켜면\n  기본으로 지정된 안내문이 자동으로 걸리고 목록 선택은 잠긴다 — 나중에 기본값을 바꾸면 이 상품도\n  따라가게 하려는 것이다. 고른 안내문의 본문은 아래 접이식 카드에서 읽기 전용으로 보여 준다.",
     "meta": {
         "is_partial": true,
         "description": "Product Form - Common Info Section (시안 반영)"
@@ -13,6 +14,17 @@
         {
             "type": "basic",
             "name": "Div",
+            "actions": [
+                {
+                    "comment": "구획 접기/펼치기",
+                    "type": "click",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "ui.commonInfoExpanded": "{{!_local.ui.commonInfoExpanded}}"
+                    }
+                }
+            ],
             "props": {
                 "className": "card-header"
             },
@@ -41,16 +53,6 @@
                         "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.commonInfoExpanded !== false ? 'rotate-180' : ''}}"
                     }
                 }
-            ],
-            "actions": [
-                {
-                    "type": "click",
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ui.commonInfoExpanded": "{{!_local.ui.commonInfoExpanded}}"
-                    }
-                }
             ]
         },
         {
@@ -66,15 +68,15 @@
                     "id": "common_info_template_header",
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "flex-between"
-                    },
                     "responsive": {
                         "portable": {
                             "props": {
                                 "className": "row-stack"
                             }
                         }
+                    },
+                    "props": {
+                        "className": "flex-between"
                     },
                     "children": [
                         {
@@ -100,7 +102,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "arrow-up-right-from-square",
-                                        "className": "w-3 h-3 mr-1.5"
+                                        "className": "text-xs mr-1.5"
                                     }
                                 },
                                 {
@@ -123,16 +125,12 @@
                         {
                             "type": "composite",
                             "name": "Toggle",
-                            "props": {
-                                "name": "use_default_common_info",
-                                "checked": "{{_local.form.use_default_common_info ?? false}}",
-                                "disabled": "{{route.itemCode && product?.data?.abilities?.can_update !== true}}"
-                            },
                             "actions": [
                                 {
+                                    "comment": "켤 때 — 기본으로 지정된 안내문을 찾아 함께 걸어 준다(아래 목록이 잠기므로 여기서 골라 두지 않으면 아무것도 안 붙는다)",
                                     "type": "change",
-                                    "if": "{{$event.target.checked}}",
                                     "handler": "sequence",
+                                    "if": "{{$event.target.checked}}",
                                     "actions": [
                                         {
                                             "handler": "setState",
@@ -152,9 +150,10 @@
                                     ]
                                 },
                                 {
+                                    "comment": "끌 때 — 걸려 있던 안내문은 그대로 두고 목록만 연다(끄자마자 선택이 풀리면 다시 고르는 수고가 는다). 켬/끔을 두 블록으로 나눈 것은 한쪽만 조건이 다르기 때문이다",
                                     "type": "change",
-                                    "if": "{{!$event.target.checked}}",
                                     "handler": "sequence",
+                                    "if": "{{!$event.target.checked}}",
                                     "actions": [
                                         {
                                             "handler": "setState",
@@ -172,7 +171,12 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "name": "use_default_common_info",
+                                "checked": "{{_local.form.use_default_common_info ?? false}}",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
                         },
                         {
                             "type": "basic",
@@ -197,14 +201,9 @@
                             "id": "common_info_none_button",
                             "type": "basic",
                             "name": "Button",
-                            "props": {
-                                "type": "button",
-                                "className": "{{!_local.form.common_info_id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_local.form.use_default_common_info || (route.itemCode && product?.data?.abilities?.can_update !== true)}}"
-                            },
-                            "text": "$t:sirsoft-ecommerce.admin.product.common_info.none",
                             "actions": [
                                 {
+                                    "comment": "「사용 안 함」 — 선택을 비우면서 아래 상세 카드도 함께 접는다(가리킬 안내문이 없어진 카드가 펼쳐진 채 남지 않도록)",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -231,20 +230,22 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "{{!_local.form.common_info_id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_local.form.use_default_common_info || _computed.isReadOnly}}"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.product.common_info.none"
                         },
                         {
                             "id": "common_info_default_button",
                             "type": "basic",
                             "name": "Button",
                             "if": "{{(common_infos?.data?.data ?? []).some(c => c.is_default)}}",
-                            "props": {
-                                "type": "button",
-                                "className": "{{_local.form.common_info_id === (common_infos?.data?.data ?? []).find(c => c.is_default)?.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_local.form.use_default_common_info || (route.itemCode && product?.data?.abilities?.can_update !== true)}}"
-                            },
                             "actions": [
                                 {
+                                    "comment": "기본 안내문 고르기 — 「따라가기」와 달리 지금 값만 붙이므로, 나중에 기본값이 바뀌어도 이 상품은 따라가지 않는다",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -265,6 +266,11 @@
                                     ]
                                 }
                             ],
+                            "props": {
+                                "type": "button",
+                                "className": "{{_local.form.common_info_id === (common_infos?.data?.data ?? []).find(c => c.is_default)?.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_local.form.use_default_common_info || _computed.isReadOnly}}"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -282,30 +288,25 @@
                             ]
                         },
                         {
-                            "id": "common_info_other_buttons_wrapper",
+                            "id": "common_info_other_buttons_wrapper_{{idx}}",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "contents"
-                            },
                             "iteration": {
                                 "source": "{{(common_infos?.data?.data ?? []).filter(c => !c.is_default)}}",
                                 "item_var": "commonInfo",
                                 "index_var": "idx"
+                            },
+                            "props": {
+                                "className": "contents"
                             },
                             "children": [
                                 {
                                     "id": "common_info_btn_{{commonInfo.id}}",
                                     "type": "basic",
                                     "name": "Button",
-                                    "props": {
-                                        "type": "button",
-                                        "className": "{{_local.form.common_info_id === commonInfo.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                        "disabled": "{{_local.form.use_default_common_info || (route.itemCode && product?.data?.abilities?.can_update !== true)}}"
-                                    },
-                                    "text": "{{$localized(commonInfo.name)}}",
                                     "actions": [
                                         {
+                                            "comment": "기본값이 아닌 안내문 고르기",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -325,7 +326,13 @@
                                                 }
                                             ]
                                         }
-                                    ]
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "{{_local.form.common_info_id === commonInfo.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}} px-4 py-2 border rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_local.form.use_default_common_info || _computed.isReadOnly}}"
+                                    },
+                                    "text": "{{$localized(commonInfo.name)}}"
                                 }
                             ]
                         }
@@ -353,11 +360,9 @@
                             "id": "common_info_detail_header",
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "flex-between p-4 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                            },
                             "actions": [
                                 {
+                                    "comment": "고른 안내문의 본문을 접고 편다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {
@@ -366,6 +371,9 @@
                                     }
                                 }
                             ],
+                            "props": {
+                                "className": "flex-between p-4 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            },
                             "children": [
                                 {
                                     "type": "basic",
@@ -380,7 +388,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "chevron-down",
-                                        "className": "w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform duration-200 {{_local.ui.commonInfoDetailExpanded ? 'rotate-180' : ''}}"
+                                        "className": "text-xl text-gray-400 dark:text-gray-500 transition-transform duration-200 {{_local.ui.commonInfoDetailExpanded ? 'rotate-180' : ''}}"
                                     }
                                 }
                             ]
@@ -398,13 +406,9 @@
                                     "id": "common_info_locale_tabs",
                                     "type": "composite",
                                     "name": "MultilingualTabPanel",
-                                    "props": {
-                                        "variant": "underline",
-                                        "className": "px-4 pt-4",
-                                        "locales": "{{Object.keys((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content ?? {}).filter(k => k && (common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[k])}}"
-                                    },
                                     "actions": [
                                         {
+                                            "comment": "어느 언어 본문을 볼지. 탭은 내용이 실제로 채워진 언어만 세운다",
                                             "event": "onLocaleChange",
                                             "handler": "setState",
                                             "params": {
@@ -413,6 +417,11 @@
                                             }
                                         }
                                     ],
+                                    "props": {
+                                        "variant": "underline",
+                                        "className": "px-4 pt-4",
+                                        "locales": "{{Object.keys((common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content ?? {}).filter(k => k && (common_infos?.data?.data ?? []).find(c => c.id === _local.form.common_info_id)?.content?.[k])}}"
+                                    },
                                     "children": [
                                         {
                                             "id": "common_info_content_display",
@@ -449,10 +458,35 @@
                     ]
                 },
                 {
+                    "comment": "공통정보 조회 권한이 없어 선택지가 비었을 때는 「등록된 공통정보 없음」 이 아니라 권한이 없다고 말한다 — 실재하는 안내문을 없다고 읽게 하지 않는다",
+                    "id": "common_info_forbidden_notice",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{common_infos?.data?.unavailable === true}}",
+                    "props": {
+                        "className": "flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-exclamation",
+                                "className": "text-base"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.product.selector_forbidden.common_infos"
+                        }
+                    ]
+                },
+                {
                     "id": "common_info_empty_state",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{!(common_infos?.data?.data ?? []).length}}",
+                    "if": "{{common_infos?.data?.unavailable !== true && !(common_infos?.data?.data ?? []).length}}",
                     "props": {
                         "className": "text-center py-8 text-gray-500 dark:text-gray-400"
                     },

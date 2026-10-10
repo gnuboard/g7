@@ -45,9 +45,12 @@ return [
         'alimtalk_sender_key_missing' => 'アラートトーク発信プロフィールキーを設定してください。',
     ],
     'settings' => [
+        'is_test_mode_attribute' => '検査モード',
         'bizppurio_id_attribute' => 'ビズプリオアイディ',
         'password_attribute' => 'パスワード',
+        'api_key_attribute' => 'API キー',
         'sender_number_attribute' => '発信番号',
+        'sender_key_attribute' => 'アラートトーク 発信プロフィール キー',
     ],
     'webhook' => [
         'received' => 'レポートを受け取りました。',
@@ -88,6 +91,10 @@ return [
         'cancel_approval_not_allowed' => '承認ステータスではないため、承認を取り消せません。(現在: :status)',
         'release_not_allowed' => '休眠ステータスではないため、解除できません。(現在: :status)',
         'code_generation_failed' => 'テンプレートコードを採番できませんでした。しばらくしてからもう一度お試しください。',
+        'loaded' => '通知テンプレートを読み込みました。',
+        'not_found' => '通知テンプレートが見つかりません。',
+        'categories_loaded' => 'アラートトークのカテゴリを読み込みました。',
+        'profiles_loaded' => 'アラートトークの発信プロフィールを読み込みました。',
     ],
     'validation' => [
         'link_mo_required' => 'ウェブリンク(WL)ボタンにはモバイルリンクが必要です。',
@@ -153,8 +160,22 @@ return [
             'per_page' => '1ページあたりの件数',
         ],
     ],
+    'dispatch_result' => [
+        'loaded' => '送信結果を読み込みました。',
+    ],
     'token_check' => [
         'success' => '認証が正常に確認されました。ユーザーIDとパスワードが正しいです。',
         'failed' => '認証の確認に失敗しました。詳細な理由をご確認ください。',
+    ],
+    // 通知テンプレート編集ウィンドウ「使用可能な変数」の説明 — common は変数キーごとの既定、by_type はその通知でのみ意味が異なる変数。キーがない場合は宣言文字列をそのまま使う。
+    'notification_variables' => [
+        'common' => [
+            'name' => '受信者（管理者）名',
+            'app_name' => 'サイト名',
+            'result_code' => '結果コード（9070 SMS / 7436 アリムトーク）',
+            'channel_label' => '送信チャネル（SMS/アリムトーク）',
+            'settings_url' => 'メッセージング設定URL',
+            'site_url' => 'サイトURL',
+        ],
     ],
 ];

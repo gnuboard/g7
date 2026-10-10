@@ -13,6 +13,8 @@
 3. setState: 상태 변경 (_global/_local/_isolated 경로, target 옵션)
 4. openModal/closeModal: 모달 열기/닫기
 5. sequence/parallel: 여러 액션 순차/병렬 실행
+6. navigate 에 replace: true 금지 — URL만 바꿀 때는 replaceUrl 핸들러 사용
+7. onSuccess 콜백은 {{response.xxx}} 로 참조 ($ 접두사 없음 — $response 금지)
 ```
 
 ---
@@ -49,6 +51,7 @@
 8. [refetchDataSource](actions-handlers-state.md#refetchdatasource) - 데이터 소스 재조회
 9. [appendDataSource](actions-handlers-state.md#appenddatasource) - 데이터 소스 병합 (무한스크롤)
 10. [remount](actions-handlers-state.md#remount) - 컴포넌트 리마운트
+    - `refreshConsent` (engine-v1.78.0) - 방문자 동의 스냅샷 다시 읽기 — 설명은 [g7core-api.md](g7core-api.md#방문자-동의-g7coreconsent)
 11. [onSuccess/onError 후속 액션](actions-handlers-state.md#onsuccessonerror-후속-액션)
 12. [API 데이터 바인딩 규칙](actions-handlers-state.md#api-데이터-바인딩-규칙)
 13. [에러 핸들링 시스템](actions-handlers-state.md#에러-핸들링-시스템-errorhandling)
@@ -56,9 +59,11 @@
 ### UI 인터랙션 핸들러 → [상세 문서](actions-handlers-ui.md)
 
 14. [login / logout](actions-handlers-ui.md#login--logout) - 인증
-    - [login 의 반환값 — 2단계 인증이 켜진 사이트](actions-handlers-ui.md#login-의-반환값--2단계-인증이-켜진-사이트)
+    - [login 의 반환값 — 2단계 인증·비밀번호 변경 단계가 있는 사이트](actions-handlers-ui.md#login-의-반환값--2단계-인증비밀번호-변경-단계가-있는-사이트)
     - [loginTwoFactor](actions-handlers-ui.md#logintwofactor) - 인증번호 확인
     - [loginTwoFactorResend](actions-handlers-ui.md#logintwofactorresend) - 인증번호 다시 받기
+    - [loginPasswordChange](actions-handlers-ui.md#loginpasswordchange) - 비밀번호 변경 단계 완료
+    - [loginPasswordChangePostpone](actions-handlers-ui.md#loginpasswordchangepostpone) - 비밀번호 변경 단계 연기
 15. [openModal / closeModal](actions-handlers-ui.md#openmodal--closemodal) - 모달
 16. [showAlert / toast](actions-handlers-ui.md#showalert--toast) - 알림
 17. [confirm (액션 속성)](actions-handlers-ui.md#confirm-액션-속성) - 실행 전 확인 대화상자

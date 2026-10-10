@@ -113,6 +113,18 @@ interface OrderOptionRepositoryInterface
     public function transferChildren(int $fromParentId, int $toParentId): int;
 
     /**
+     * 병합으로 사라지는 옵션을 가리키던 클레임 신청상품 행을 생존 옵션으로 옮깁니다. (S1-D6)
+     *
+     * 환불·취소·반품·교환 신청상품 4종은 모두 `order_option_id` 에 `cascadeOnDelete()` 가 걸려
+     * 있어, 옮기지 않고 피흡수 행을 지우면 접수 때 기록한 신청상품이 함께 지워진다.
+     *
+     * @param  int  $fromOrderOptionId  피흡수 옵션 ID
+     * @param  int  $toOrderOptionId  생존 옵션 ID
+     * @return int 옮긴 신청상품 행 수 (4종 합계)
+     */
+    public function transferClaimOptionReferences(int $fromOrderOptionId, int $toOrderOptionId): int;
+
+    /**
      * 취소(복원)된 옵션의 재고 차감 플래그를 해제합니다.
      *
      * 주문 취소 재고 복원 후, 해당 주문·상품옵션의 CANCELLED 상태 행 중
@@ -128,10 +140,11 @@ interface OrderOptionRepositoryInterface
      * 특정 주문일의 상품 순매출을 합산합니다 (대시보드 집계).
      *
      * 매출 반영 상태(option_status)의 주문상품만 대상으로, 옵션별
-     * unit_price × (quantity − cancelled_quantity) 를 합산합니다.
+     * unit_price × quantity 를 합산합니다(quantity 는 분할 뒤 잔여 수량 — cancelled_quantity 는
+     * 이력이라 빼지 않는다).
      * 날짜는 주문(orders.ordered_at) 기준으로 귀속합니다.
      *
-     * @param  string  $date  집계 기준 날짜 (Y-m-d)
+     * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시의 하루)
      * @return float 상품 순매출 합계
      */
     public function sumNetSalesOnDate(string $date): float;
@@ -139,21 +152,21 @@ interface OrderOptionRepositoryInterface
     /**
      * 특정 주문일의 판매 수량을 합산합니다 (대시보드 집계).
      *
-     * 매출 반영 상태(option_status)의 주문상품만 대상으로,
-     * (quantity − cancelled_quantity) 를 합산합니다.
+     * 매출 반영 상태(option_status)의 주문상품만 대상으로, quantity 합을 냅니다
+     * (cancelled_quantity 는 이력 카운터라 빼지 않는다).
      *
-     * @param  string  $date  집계 기준 날짜 (Y-m-d)
+     * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시의 하루)
      * @return int 판매 수량 합계
      */
     public function sumNetQuantityOnDate(string $date): int;
 
     /**
-     * 특정 주문일의 옵션 상태별 판매 수량을 집계합니다 (대시보드 배지).
+     * 특정 주문일의 옵션 상태별 판매 수량을 집계합니다 (일 집계의 상태별 수량 기록 — 「오늘」 배지는 주문 수를 따로 센다).
      *
      * 당일 주문(orders.ordered_at)의 모든 주문상품을 option_status 로
      * 그룹화하여 상태별 수량(quantity 합)을 반환합니다.
      *
-     * @param  string  $date  집계 기준 날짜 (Y-m-d)
+     * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시의 하루)
      * @return array<string, int> option_status 값 => 수량 합 매핑
      */
     public function countByOptionStatusOnDate(string $date): array;

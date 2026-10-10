@@ -1,0 +1,59 @@
+<!-- 학습용 플러그인 환경설정 화면 — 코어의 플러그인 설정 규약(경로·엔드포인트·저장 흐름)을 그대로 따르는 최소 예다 -->
+<layout name="plugin_settings" version="1.0.0" extends="_admin_base">
+  <meta title="$t:gnuboard7-hello_plugin.settings.title" description="$t:gnuboard7-hello_plugin.settings.description"/>
+  <!-- 현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) — 저장 후 되돌아왔을 때 낡은 값이 남지 않게 -->
+  <data-source id="settings" label_key="$t:gnuboard7-hello_plugin.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+  <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
+  <permissions>
+    <permission>core.plugins.update</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+      <page-header data-type="composite" data-ref="page_header" title="$t:gnuboard7-hello_plugin.settings.title" description="$t:gnuboard7-hello_plugin.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
+        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+        <span class="text-warning-soft">$t:gnuboard7-hello_plugin.plugin_read_only</span>
+      </div>
+      <div data-ref="settings_form" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div data-ref="settings_fields" class="p-6 space-y-6">
+          <div data-ref="field_log_enabled" class="flex-start gap-3">
+            <input type="checkbox" name="log_enabled" class="mt-1 h-4 w-4 rounded text-blue-600" disabled="{{_computed.isPluginReadOnly}}"/>
+            <div>
+              <label class="form-label">$t:gnuboard7-hello_plugin.settings.fields.log_enabled.label</label>
+              <p class="form-hint">$t:gnuboard7-hello_plugin.settings.fields.log_enabled.hint</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="footer_buttons" class="sticky-footer-buttons">
+        <button data-ref="cancel_button" type="button" class="btn btn-secondary">
+          <on type="click">
+            <navigate path="/admin/plugins"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
+          <on type="click">
+            <!-- 설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다 -->
+            <sequence>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
+                <success>
+                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                  <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                  <refetch-data-source dataSourceId="settings"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                  <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+</layout>

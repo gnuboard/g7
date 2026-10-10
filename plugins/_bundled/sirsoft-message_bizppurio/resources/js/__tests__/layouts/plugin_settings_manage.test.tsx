@@ -29,6 +29,9 @@ describe('manage — 목록 데이터소스(URL 쿼리 SSoT)', () => {
     const ds = ((root as { data_sources?: Array<Record<string, unknown>> }).data_sources ?? [])
         .find((d) => d.id === 'bizppurio_templates_list');
 
+    /**
+     * @effects manage_screen_lists_db_rows_with_merge_query_round_trip
+     */
     it('bizppurio_templates_list 가 GET /admin/templates 를 조회한다(auto_fetch:false)', () => {
         expect(ds).toBeTruthy();
         expect(ds?.endpoint).toBe('/api/plugins/sirsoft-message_bizppurio/admin/templates');
@@ -36,6 +39,9 @@ describe('manage — 목록 데이터소스(URL 쿼리 SSoT)', () => {
         expect(ds?.auto_fetch).toBe(false);
     });
 
+    /**
+     * @effects manage_screen_lists_db_rows_with_merge_query_round_trip
+     */
     it('params 가 query.bz_status/bz_search/bz_page 바인딩이다(목록 상태의 SSoT 는 URL)', () => {
         const params = ds?.params as Record<string, unknown>;
         expect(params.status).toBe("{{query.bz_status ?? ''}}");
@@ -44,6 +50,9 @@ describe('manage — 목록 데이터소스(URL 쿼리 SSoT)', () => {
         expect(params.per_page).toBe(20);
     });
 
+    /**
+     * @effects manage_screen_lists_db_rows_with_merge_query_round_trip
+     */
     it('templates 탭 진입 시 init_actions 가 목록을 조회한다(새로고침 복원)', () => {
         const inits = (root as { init_actions?: AnyNode[] }).init_actions ?? [];
         const refetch = inits.find(
@@ -54,6 +63,9 @@ describe('manage — 목록 데이터소스(URL 쿼리 SSoT)', () => {
         expect((refetch as { if?: string }).if).toContain("query.tab ?? 'connection') === 'templates'");
     });
 
+    /**
+     * @effects manage_screen_lists_db_rows_with_merge_query_round_trip
+     */
     it('tab_templates 탭 버튼이 navigate(mergeQuery) 후 목록을 refetch 한다', () => {
         const raw = JSON.stringify(findById(root, 'tab_templates'));
         expect(raw).toContain('"handler":"navigate"');
@@ -64,11 +76,17 @@ describe('manage — 목록 데이터소스(URL 쿼리 SSoT)', () => {
 });
 
 describe('manage — readiness 게이트(배타 전환)', () => {
+    /**
+     * @effects manage_screen_lists_db_rows_with_merge_query_round_trip
+     */
     it('관리 뷰는 readiness 충족 시에만 노출된다', () => {
         expect(manageView).toBeTruthy();
         expect(manageView.if).toBe('{{templates_readiness?.data?.ready}}');
     });
 
+    /**
+     * @effects manage_screen_lists_db_rows_with_merge_query_round_trip
+     */
     it('readiness 미충족 안내는 !ready 조건으로 관리 뷰와 상호배타다', () => {
         const notice = findById(root, 'templates_readiness');
         expect(notice).toBeTruthy();
@@ -77,6 +95,9 @@ describe('manage — readiness 게이트(배타 전환)', () => {
 });
 
 describe('manage — 필터·검색·페이지 (mergeQuery 왕복 규약)', () => {
+    /**
+     * @effects manage_screen_lists_db_rows_with_merge_query_round_trip
+     */
     it('상태 필터 Select: value=query.bz_status, 옵션은 template.status.* 어휘, 변경 시 bz_page 리셋 + refetch', () => {
         const select = findAllByName(manageView, 'Select')
             .find((s) => (s.props as { value?: string })?.value === "{{query.bz_status ?? ''}}");
@@ -91,6 +112,9 @@ describe('manage — 필터·검색·페이지 (mergeQuery 왕복 규약)', () =
         expect(raw).toContain('bizppurio_templates_list');
     });
 
+    /**
+     * @effects manage_screen_lists_db_rows_with_merge_query_round_trip
+     */
     it('검색: 입력은 로컬 초안(bzSearchDraft), 실행 버튼이 bz_search 반영 + bz_page 리셋 + refetch', () => {
         const input = findAllByName(manageView, 'Input')
             .find((i) => String((i.props as { value?: string })?.value ?? '').includes('bzSearchDraft'));
@@ -104,6 +128,9 @@ describe('manage — 필터·검색·페이지 (mergeQuery 왕복 규약)', () =
         expect(raw).toContain('bizppurio_templates_list');
     });
 
+    /**
+     * @effects manage_screen_lists_db_rows_with_merge_query_round_trip
+     */
     it('새로고침 버튼은 URL 을 건드리지 않고 목록만 refetch 한다(보던 목록 유지)', () => {
         const refreshBtn = findAllByName(manageView, 'Button')
             .find((b) => (b.props as Record<string, unknown>)?.['aria-label'] === '$t:sirsoft-message_bizppurio.templates.list.refresh');
@@ -113,6 +140,9 @@ describe('manage — 필터·검색·페이지 (mergeQuery 왕복 규약)', () =
         expect(raw).not.toContain('"handler":"navigate"');
     });
 
+    /**
+     * @effects manage_screen_lists_db_rows_with_merge_query_round_trip
+     */
     it('Pagination 이 last_page 를 사용하고 페이지 이동은 bz_page 를 mergeQuery 로 나른 뒤 refetch 한다', () => {
         const pagination = findAllByName(manageView, 'Pagination')[0];
         expect(pagination).toBeTruthy();
@@ -127,6 +157,9 @@ describe('manage — 필터·검색·페이지 (mergeQuery 왕복 규약)', () =
         expect(raw).toContain('bizppurio_templates_list');
     });
 
+    /**
+     * @effects manage_screen_lists_db_rows_with_merge_query_round_trip
+     */
     it('총 건수와 빈 목록 안내가 존재한다', () => {
         const raw = JSON.stringify(manageView);
         expect(raw).toContain('manage.total_count');
@@ -146,6 +179,9 @@ describe('manage — 행 액션(알림 설정 탭 행 하단과 동일 엔드포
         return new Set(matches.map((m) => m.replace(/\{\{[^}]+\}\}/g, '{id}')));
     };
 
+    /**
+     * @effects manage_row_actions_match_row_footer_visibility
+     */
     it('상태 전이 4종(request/cancel-request/release/sync)이 목록 갱신과 함께 배선된다', () => {
         const raw = JSON.stringify(manageView);
         for (const suffix of ['/request', '/cancel-request', '/release', '/sync']) {
@@ -207,6 +243,9 @@ describe('manage — 행 액션(알림 설정 탭 행 하단과 동일 엔드포
         'template.row.btn_edit_approved',
     ];
 
+    /**
+     * @effects manage_row_actions_match_row_footer_visibility
+     */
     it.each(PAIRS)('%s 의 노출 조건이 관리 화면과 편집 모달 섹션에서 상태별로 같은 결과를 낸다', (key) => {
         const m = byTextKey(manageView, key);
         const f = byTextKey(sectionsRoot, key);
@@ -219,6 +258,9 @@ describe('manage — 행 액션(알림 설정 탭 행 하단과 동일 엔드포
         }
     });
 
+    /**
+     * @effects manage_row_actions_match_row_footer_visibility
+     */
     it('관리 화면 [검수 신청]은 draft + 내용 보유에서만 노출된다(편집 모달은 [저장 후 검수 신청]이 본문 입력으로 판정)', () => {
         const m = byTextKey(manageView, 'template.row.btn_request');
         expect(m?.if).toBeTruthy();
@@ -227,6 +269,9 @@ describe('manage — 행 액션(알림 설정 탭 행 하단과 동일 엔드포
         }
     });
 
+    /**
+     * @effects manage_row_actions_match_row_footer_visibility
+     */
     it('작성/수정 버튼은 편집 모달의 작성 폼이 열리는 상태(draft/rejected)에서만 노출된다', () => {
         const m = findAllByName(manageView, 'Button')
             .find((b) => typeof b.text === 'string' && b.text.includes("sirsoft-message_bizppurio.manage.' + (bzRow.has_content"));
@@ -239,6 +284,9 @@ describe('manage — 행 액션(알림 설정 탭 행 하단과 동일 엔드포
         }
     });
 
+    /**
+     * @effects manage_row_actions_match_row_footer_visibility
+     */
     it('작성/수정 버튼의 라벨이 내용 유무로 갈린다(미작성 행에 "수정" 이 뜨지 않는다)', () => {
         const m = findAllByName(manageView, 'Button')
             .find((b) => typeof b.text === 'string' && b.text.includes("sirsoft-message_bizppurio.manage.' + (bzRow.has_content"));
@@ -250,6 +298,9 @@ describe('manage — 행 액션(알림 설정 탭 행 하단과 동일 엔드포
         expect(en.manage.btn_compose).toBeTruthy();
     });
 
+    /**
+     * @effects manage_row_actions_match_row_footer_visibility
+     */
     it('상태 전이·delivery upsert 엔드포인트 계열이 편집 모달 섹션·푸터 액션과 같다', () => {
         const layoutEndpoints = collectEndpoints(layout);
         const sharedEndpoints = collectEndpoints([sections, footerActions]);
@@ -266,6 +317,9 @@ describe('manage — 행 액션(알림 설정 탭 행 하단과 동일 엔드포
         );
     });
 
+    /**
+     * @effects manage_row_actions_match_row_footer_visibility
+     */
     it('모달 5종(작성/SMS/승인취소/반려/삭제)이 이 레이아웃에 등록된다', () => {
         const ids = ((layout as { modals?: AnyNode[] }).modals ?? []).map((m) => m.id);
         expect(ids).toEqual([
@@ -281,6 +335,9 @@ describe('manage — 행 액션(알림 설정 탭 행 하단과 동일 엔드포
 describe('manage — 삭제 모달(modal_bizppurio_delete)', () => {
     const modal = findById(modalRoot, 'modal_bizppurio_delete');
 
+    /**
+     * @effects delete_removes_kakao_side_only_in_deletable_state
+     */
     it('행 삭제 버튼이 bz_delete_modal seed 후 삭제 확인 모달을 연다', () => {
         const deleteBtn = findAllByName(manageView, 'Button')
             .find((b) => b.text === '$t:sirsoft-message_bizppurio.manage.btn_delete');
@@ -290,6 +347,9 @@ describe('manage — 삭제 모달(modal_bizppurio_delete)', () => {
         expect(raw).toContain('modal_bizppurio_delete');
     });
 
+    /**
+     * @effects delete_removes_kakao_side_only_in_deletable_state
+     */
     it('확정 시 DELETE /admin/templates/{id} 후 목록 갱신 + 모달 닫힘', () => {
         expect(modal).toBeTruthy();
         const raw = JSON.stringify(modal);
@@ -299,6 +359,9 @@ describe('manage — 삭제 모달(modal_bizppurio_delete)', () => {
         expect(raw).toContain('"closeModal"');
     });
 
+    /**
+     * @effects delete_removes_kakao_side_only_in_deletable_state
+     */
     it('카카오측 동반 삭제 여부(kakao_deleted)에 따라 완료 문구를 분기한다', () => {
         const raw = JSON.stringify(modal);
         expect(raw).toContain('kakao_deleted');
@@ -308,6 +371,9 @@ describe('manage — 삭제 모달(modal_bizppurio_delete)', () => {
 });
 
 describe('manage — i18n 정합(manage.* 키 가족)', () => {
+    /**
+     * @effects manage_screen_lists_db_rows_with_merge_query_round_trip
+     */
     it("동적 접두 'manage.owner.' 가족: core/module/plugin 라벨이 ko·en 에 존재한다", () => {
         for (const dict of [ko, en] as Array<Record<string, any>>) {
             for (const owner of ['core', 'module', 'plugin']) {
@@ -316,6 +382,9 @@ describe('manage — i18n 정합(manage.* 키 가족)', () => {
         }
     });
 
+    /**
+     * @effects manage_screen_lists_db_rows_with_merge_query_round_trip
+     */
     it('목록 컬럼 헤더 키 7종이 ko·en 에 존재한다', () => {
         const columns = ['notification', 'owner', 'status', 'sms', 'requested_at', 'synced_at', 'actions'];
         for (const dict of [ko, en] as Array<Record<string, any>>) {
@@ -338,6 +407,9 @@ describe('manage 모달 — 이미지 업로드 배선·SMS 언어 탭 (#597 §1
      */
     const modalRaw = JSON.stringify(modalRoot);
 
+    /**
+     * @effects upload_in_progress_locks_save_buttons_not_cancel
+     */
     it('작성 모달의 저장 계열 4버튼이 업로드 중 잠기고, 취소는 잠기지 않는다', () => {
         const composeModal = findById(modalRoot, 'modal_bizppurio_template') as AnyNode;
         expect(composeModal, '관리 화면에 작성 모달이 없다').toBeTruthy();
@@ -349,9 +421,10 @@ describe('manage 모달 — 이미지 업로드 배선·SMS 언어 탭 (#597 §1
 
         for (const b of saveButtons) {
             const disabled = String((b.props as { disabled?: string } | undefined)?.disabled ?? '');
-            expect(evalBinding(disabled, { _global: { bz_tpl_modal: {}, bz_tpl_upload: { uploading: true } } }),
+            // 저장 계열은 메시징 관리 권한(isMessagingReadOnly)으로도 잠긴다(7.1.0 G19) — 권한 있는 관리자 맥락으로 본다
+            expect(evalBinding(disabled, { _computed: { isMessagingReadOnly: false }, _global: { bz_tpl_modal: {}, bz_tpl_upload: { uploading: true } } }),
                 '업로드 중 저장이 열려 있으면 빈 이미지 URL 로 저장된다').toBe(true);
-            expect(evalBinding(disabled, { _global: { bz_tpl_modal: {}, bz_tpl_upload: { uploading: false } } }),
+            expect(evalBinding(disabled, { _computed: { isMessagingReadOnly: false }, _global: { bz_tpl_modal: {}, bz_tpl_upload: { uploading: false } } }),
                 '업로드가 끝났는데 저장이 잠겨 있으면 저장할 방법이 없다').toBe(false);
         }
 
@@ -361,10 +434,16 @@ describe('manage 모달 — 이미지 업로드 배선·SMS 언어 탭 (#597 §1
             '취소까지 잠그면 업로드가 매달렸을 때 모달을 빠져나갈 수 없다').toBe(false);
     });
 
+    /**
+     * @effects image_upload_failure_clears_image_value
+     */
     it('업로드 실패 배너는 상태에서만 읽고 fallback 을 가진다', () => {
         expect(modalRaw).toContain("_global.bz_tpl_upload?.error ?? ''");
     });
 
+    /**
+     * @effects sms_modal_edits_body_per_locale_tab
+     */
     it('SMS 모달이 로케일 탭을 제공하고 본문을 로케일 맵으로 읽고 쓴다', () => {
         const tabs = findById(modalRoot, 'bz_sms_lang_tabs');
         expect(tabs, '관리 화면 SMS 모달에 언어 탭이 없으면 ko 한 벌만 입력된다').toBeTruthy();
@@ -388,6 +467,9 @@ describe('manage 모달 — 검수자 전달 의견 (#597 §18.7, 제품 결정 
         return acc;
     };
 
+    /**
+     * @effects inspection_request_carries_reviewer_comment
+     */
     it('작성 모달에 bz_manage_request_comment 입력란(≤500)이 있고 편집 모달 섹션과 같은 상태 키·바인딩을 쓴다', () => {
         const block = findById(composeModal, 'bz_manage_request_comment') as AnyNode;
         expect(block).toBeTruthy();
@@ -399,6 +481,9 @@ describe('manage 모달 — 검수자 전달 의견 (#597 §18.7, 제품 결정 
         expect(JSON.stringify(ta.actions)).toBe(JSON.stringify(sectionsTa.actions));
     });
 
+    /**
+     * @effects inspection_request_carries_reviewer_comment
+     */
     it('작성 모달의 request 2노드는 comment 를 싣고, 행 단위 [검수 신청](입력란 없음)은 싣지 않는다', () => {
         const all = collectHandlers(root).filter((a) => a.handler === 'apiCall' && String(a.target).endsWith('/request'));
         const modalReqs = all.filter((a) => !String(a.target).includes('{{bzRow.id}}'));
@@ -411,6 +496,9 @@ describe('manage 모달 — 검수자 전달 의견 (#597 §18.7, 제품 결정 
         for (const r of rowReqs) expect((r.params as { body?: unknown }).body).toBeUndefined();
     });
 
+    /**
+     * @effects inspection_request_carries_reviewer_comment
+     */
     it('바로연결 블록(헤더+목록) 바로 뒤 형제로 놓이고, 라벨+[바로연결 추가] flex 행 안에 끼지 않는다 (회귀: 화면 검수 지적 2026-08-23)', () => {
         const ancestorsOf = (root: AnyNode, id: string, anc: AnyNode[] = []): AnyNode[] | null => {
             for (const c of (root.children as AnyNode[] | undefined) ?? []) {
@@ -433,6 +521,9 @@ describe('manage 모달 — 검수자 전달 의견 (#597 §18.7, 제품 결정 
         }
     });
 
+    /**
+     * @effects inspection_request_carries_reviewer_comment
+     */
     it('행에서 작성 모달을 열 때 request_comment 를 빈 문자열로 시딩한다(다른 행의 의견 이월 금지)', () => {
         const seeds = collectHandlers(root)
             .filter((a) => a.handler === 'setState' && (a.params as Record<string, unknown>)?.bz_tpl_modal);
@@ -442,6 +533,9 @@ describe('manage 모달 — 검수자 전달 의견 (#597 §18.7, 제품 결정 
         }
     });
 
+    /**
+     * @effects inspection_request_carries_reviewer_comment
+     */
     it('라벨·placeholder·안내 키가 ko/en 에 존재한다', () => {
         const pick = (json: unknown, key: string): unknown => key.split('.')
             .reduce<unknown>((acc, seg) => (acc as Record<string, unknown>)?.[seg], json);
@@ -461,6 +555,9 @@ describe('manage — 목록 SMS 열은 상태 배지 (행 하단과 같은 규�
         return new Function('$t', 'bzRow', `return (${body});`)((k: string) => k, row);
     };
 
+    /**
+     * @effects manage_screen_lists_db_rows_with_merge_query_round_trip
+     */
     it('단독/대체는 초록, 미사용은 회색 배지이며 평문 "-" 는 남지 않는다', () => {
         expect(badge).toBeTruthy();
         const cls = String((badge.props as { className: string }).className);
@@ -491,6 +588,9 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
         ((n?.responsive as Record<string, { props?: { className?: string } }> | undefined)?.portable?.props?.className) ?? '',
     );
 
+    /**
+     * @effects manage_list_mobile_card_view_and_unified_toolbar
+     */
     it('Table 마크업이 사라지고 grid 목록으로 렌더된다(헤더 7컬럼 키 유지, portable 에서 숨김)', () => {
         expect(findAllByName(manageView, 'Table').length).toBe(0);
         expect(header).toBeTruthy();
@@ -502,6 +602,9 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
         }
     });
 
+    /**
+     * @effects manage_list_mobile_card_view_and_unified_toolbar
+     */
     it('행은 데스크톱 grid, portable 에서 카드(flex-wrap)로 전환된다 — responsive 는 반복 노드가 아니라 내부 래퍼에 둔다', () => {
         const row = findIterationRow(rowsWrap);
         expect(row).toBeTruthy();
@@ -511,6 +614,9 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
         expect(portableClass(inner)).toContain('flex flex-wrap');
     });
 
+    /**
+     * @effects manage_list_mobile_card_view_and_unified_toolbar
+     */
     it('소속·신청일·동기화일 셀은 portable 에서 숨고, 카드 메타 줄이 대신 노출된다', () => {
         const row = findIterationRow(rowsWrap) as AnyNode;
         const rowInner = (row.children ?? [])[0] as AnyNode;
@@ -529,12 +635,18 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
         expect(portableClass(meta).length).toBeGreaterThan(0);
     });
 
+    /**
+     * @effects manage_list_mobile_card_view_and_unified_toolbar
+     */
     it('행 액션 묶음은 카드 전환 후에도 단일 인스턴스다(삭제 버튼 1개)', () => {
         const delBtns = findAllByName(manageView, 'Button')
             .filter((b) => b.text === '$t:sirsoft-message_bizppurio.manage.btn_delete');
         expect(delBtns.length).toBe(1);
     });
 
+    /**
+     * @effects manage_list_mobile_card_view_and_unified_toolbar
+     */
     it('검색 버튼이 btn btn-primary 계열로 통일된다(구 미니 버튼 조합 제거)', () => {
         const searchBtn = findAllByName(manageView, 'Button')
             .find((b) => b.text === '$t:sirsoft-message_bizppurio.manage.btn_search') as AnyNode;
@@ -544,6 +656,9 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
         expect(cls).not.toContain('text-xs');
     });
 
+    /**
+     * @effects manage_list_mobile_card_view_and_unified_toolbar
+     */
     it('새로고침이 btn-icon 아이콘 버튼으로 통일된다(fa-arrows-rotate + aria-label, refetch 전용 유지)', () => {
         const refreshBtn = findAllByName(manageView, 'Button')
             .find((b) => (b.props as Record<string, unknown>)?.['aria-label'] === '$t:sirsoft-message_bizppurio.templates.list.refresh') as AnyNode;
@@ -555,6 +670,9 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
         expect(raw).not.toContain('"handler":"navigate"');
     });
 
+    /**
+     * @effects manage_list_mobile_card_view_and_unified_toolbar
+     */
     it('검색 입력·상태 필터가 portable 에서 전폭 계열로 전환된다', () => {
         const input = findAllByName(manageView, 'Input')
             .find((i) => String((i.props as { value?: string })?.value ?? '').includes('bzSearchDraft')) as AnyNode;

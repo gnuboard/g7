@@ -21,8 +21,8 @@ use Tests\TestCase;
  *
  * `{item_var}_index` 자동 변수도 같은 이유로 양쪽에 있어야 한다.
  *
- * @see \App\Seo\ComponentHtmlMapper::renderComponent()
- * @see \App\Seo\ComponentHtmlMapper::renderIteration()
+ * @see ComponentHtmlMapper::renderComponent()
+ * @see ComponentHtmlMapper::renderIteration()
  */
 class SeoIterationConditionParityTest extends TestCase
 {

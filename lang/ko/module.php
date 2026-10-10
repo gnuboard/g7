@@ -2,9 +2,9 @@
 
 return [
     // 모듈 관리 메시지
-    'not_found' => '모듈 :module을(를) 찾을 수 없습니다.',
-    'dependency_not_active' => '의존성 모듈 :dependency이(가) 설치되지 않았거나 활성화되지 않았습니다.',
-    
+    'not_found' => ':module 모듈을 찾을 수 없습니다.',
+    'dependency_not_active' => '의존하는 :dependency 모듈이 설치되지 않았거나 활성화되지 않았습니다.',
+
     // 모듈 작업 메시지
     'fetch_success' => '모듈을 성공적으로 가져왔습니다.',
     'fetch_failed' => '모듈을 가져오는데 실패했습니다: :error',
@@ -33,16 +33,16 @@ return [
         'active' => '활성',
         'inactive' => '비활성',
         'installing' => '설치 중',
-        'uninstalling' => '제거 중'
+        'uninstalling' => '제거 중',
     ],
-    
+
     // 오류 메시지
     'errors' => [
         'module_class_not_found' => '모듈 클래스를 찾을 수 없습니다.',
         'migration_failed' => '마이그레이션 실행에 실패했습니다: :error',
         'dependency_check_failed' => '의존성 확인에 실패했습니다: :error',
         'database_error' => '데이터베이스 오류가 발생했습니다.',
-        'module_not_found' => '모듈 :name을(를) 찾을 수 없습니다.',
-        'module_not_active' => '모듈 :name이(가) 활성화되어 있지 않습니다.',
-    ]
+        'module_not_found' => ':name 모듈을 찾을 수 없습니다.',
+        'module_not_active' => ':name 모듈이 활성화되어 있지 않습니다.',
+    ],
 ];

@@ -1,0 +1,56 @@
+<!-- 게시판 모아보기 — 사이트에 있는 게시판을 카드로 늘어놓는 안내 화면이다(글 목록이 아니다). 헤더 메뉴가 게시판 다섯 개까지만 보여 주므로 나머지는 여기서 찾는다. -->
+<layout name="board/boards" version="1.0.0" extends="_user_base">
+  <meta>
+    <seo :enabled="true" page_type="boards" toggle_setting="$module_settings:sirsoft-board:seo.seo_boards" :priority="0.5" changefreq="weekly">
+      <extensions>
+        <item type="module" id="sirsoft-board"/>
+      </extensions>
+      <data-sources>
+        <item>boardList</item>
+      </data-sources>
+      <vars site_name="$core_settings:general.site_name"/>
+      <og type="website"/>
+      <structured-data @type="ItemList"/>
+    </seo>
+  </meta>
+  <!-- 게시판 카드 목록 — 헤더 메뉴가 쓰는 boards 와 다른 엔드포인트다(그쪽은 메뉴용 요약, 이쪽은 설명·글 수까지 담은 전체). 볼 권한이 없으면 403 으로 권한 없음 화면을 슬롯에 세운다. -->
+  <data-source id="boardList" label_key="$t:editor.data_source.boardList" type="api" endpoint="/api/modules/sirsoft-board/boards" method="GET" :auto_fetch="true" auth_mode="optional" :refetchOnMount="true">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <permissions/>
+  <slot name="content">
+    <container data-type="layout" class="py-8">
+      <responsive on="portable" class="py-4"/>
+      <!-- 페이지 헤더 -->
+      <div class="mb-6">
+        <responsive on="portable" class="mb-4"/>
+        <div class="flex items-center gap-2 mb-2">
+          <icon name="table-cells-large" size="xl" class="text-gray-900 dark:text-white">
+            <responsive on="portable" name="table-cells-large" size="lg" class="text-gray-900 dark:text-white"/>
+          </icon>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+            <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white"/>
+            $t:board.all_boards.title
+          </h1>
+        </div>
+        <p class="text-gray-600 dark:text-gray-400">$t:board.all_boards.description</p>
+      </div>
+      <!-- 게시판 그리드 -->
+      <div class="grid grid-cols-2 gap-4">
+        <responsive on="portable" class="grid grid-cols-1 gap-3"/>
+        <div data-each="board, index in {{boardList.data ?? []}}">
+          <include src="partials/board/boards/_board_card.g7.html"/>
+        </div>
+      </div>
+      <!-- 게시판이 없을 때 -->
+      <div data-if="{{!boardList.data || boardList.data.length === 0}}" class="text-center py-12">
+        <icon name="inbox" size="3x" class="text-gray-400 dark:text-gray-500 mx-auto mb-4"/>
+        <p class="text-gray-500 dark:text-gray-400">$t:board.all_boards.empty</p>
+      </div>
+    </container>
+  </slot>
+</layout>

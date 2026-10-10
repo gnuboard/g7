@@ -1,33 +1,82 @@
 {
+    "comment": "쿠폰 목록 (운영자) — 조회·발급이력·직접발급·상태변경을 한 화면에서 처리한다. 검색 항목이 많아\n  운영자마다 쓰는 필터가 달라서, 어떤 필터를 펼쳐 둘지는 사용자별 설정으로 따로 불러온다.\n  조회 조건은 전부 URL 쿼리에 실리고 진입 시 `<init>` 이 그것을 필터 입력값으로 되돌려 담는다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_promotion_coupon_list",
-    "permissions": [
-        "sirsoft-ecommerce.promotion-coupon.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-ecommerce.admin.promotion_coupon.title"
     },
-    "computed": {
-        "filterSearchField": "{{_local.filter.searchField ?? query.search_field ?? 'all'}}",
-        "filterSearchKeyword": "{{_local.filter.searchKeyword ?? query.search_keyword ?? ''}}",
-        "filterTargetType": "{{_local.filter.targetType ?? query.target_type ?? 'all'}}",
-        "filterDiscountType": "{{_local.filter.discountType ?? query.discount_type ?? 'all'}}",
-        "filterIssueStatus": "{{_local.filter.issueStatus ?? query.issue_status ?? 'all'}}",
-        "filterIssueMethod": "{{_local.filter.issueMethod ?? query.issue_method ?? 'all'}}",
-        "filterIssueCondition": "{{_local.filter.issueCondition ?? query.issue_condition ?? 'all'}}",
-        "filterMinBenefitAmount": "{{_local.filter.minBenefitAmount ?? query.min_benefit_amount ?? ''}}",
-        "filterMaxBenefitAmount": "{{_local.filter.maxBenefitAmount ?? query.max_benefit_amount ?? ''}}",
-        "filterMinOrderAmount": "{{_local.filter.minOrderAmount ?? query.min_order_amount ?? ''}}",
-        "filterCreatedStartDate": "{{_local.filter.createdStartDate ?? query.created_start_date ?? ''}}",
-        "filterCreatedEndDate": "{{_local.filter.createdEndDate ?? query.created_end_date ?? ''}}",
-        "filterValidStartDate": "{{_local.filter.validStartDate ?? query.valid_start_date ?? ''}}",
-        "filterValidEndDate": "{{_local.filter.validEndDate ?? query.valid_end_date ?? ''}}",
-        "filterIssueStartDate": "{{_local.filter.issueStartDate ?? query.issue_start_date ?? ''}}",
-        "filterIssueEndDate": "{{_local.filter.issueEndDate ?? query.issue_end_date ?? ''}}",
-        "filterCreatedBy": "{{_local.filter.createdBy ?? query.created_by ?? ''}}"
-    },
-    "state": {
+    "data_sources": [
+        {
+            "id": "coupons",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.coupons",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/promotion-coupons",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 10}}",
+                "sort_by": "{{query.sort_by || 'created_at'}}",
+                "sort_order": "{{query.sort_order || 'desc'}}",
+                "search_field": "{{query.search_field}}",
+                "search_keyword": "{{query.search_keyword}}",
+                "target_type": "{{query.target_type}}",
+                "discount_type": "{{query.discount_type}}",
+                "issue_status": "{{query.issue_status}}",
+                "issue_method": "{{query.issue_method}}",
+                "issue_condition": "{{query.issue_condition}}",
+                "min_benefit_amount": "{{query.min_benefit_amount}}",
+                "max_benefit_amount": "{{query.max_benefit_amount}}",
+                "min_order_amount": "{{query.min_order_amount}}",
+                "created_start_date": "{{query.created_start_date}}",
+                "created_end_date": "{{query.created_end_date}}",
+                "valid_start_date": "{{query.valid_start_date}}",
+                "valid_end_date": "{{query.valid_end_date}}",
+                "issue_start_date": "{{query.issue_start_date}}",
+                "issue_end_date": "{{query.issue_end_date}}",
+                "created_by": "{{query.created_by}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다"
+        },
+        {
+            "id": "couponIssues",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.couponIssues",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{{_global.issueHistoryCoupon?.id}}/issues",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "fetch_condition": "{{!!_global.issueHistoryCoupon?.id}}",
+            "depends_on": [
+                "_global.issueHistoryCoupon"
+            ],
+            "params": {
+                "page": "{{_global.issueHistoryPage || 1}}",
+                "per_page": "{{_global.issueHistoryPerPage || 10}}",
+                "user_id": "{{_global.issueHistoryFilterUser?.uuid}}"
+            },
+            "comment": "발급이력 창 전용. 어느 쿠폰을 열었는지가 정해져야 부를 수 있어 자동 조회를 끄고, 그 값이 전역에서 바뀔 때마다(창 열기·쪽 넘김·회원 필터) 다시 받는다"
+        }
+    ],
+    "initLocal": {
         "visibleFilters": [
             "searchField",
             "searchKeyword",
@@ -76,80 +125,85 @@
         "sortBy": "created_at_desc",
         "perPage": "10"
     },
+    "initGlobal": {
+        "bulkSelectedItems": [],
+        "bulkIssueStatus": "",
+        "isChangingStatus": false,
+        "deleteTarget": null,
+        "isDeleting": false,
+        "issueHistoryCoupon": null,
+        "issueHistoryPage": 1,
+        "issueHistoryPerPage": 10,
+        "issueHistoryFilterUser": null,
+        "directIssueCoupon": null,
+        "directIssueSelectedUsers": [],
+        "directIssueSearchKeyword": "",
+        "directIssueSearchResults": [],
+        "directIssueSearchResultsKeyword": null,
+        "directIssueSubmitting": false,
+        "cancelIssueTarget": null,
+        "cancelIssueSubmitting": false
+    },
+    "computed": {
+        "filterSearchField": "{{_local.filter.searchField ?? query.search_field ?? 'all'}}",
+        "filterSearchKeyword": "{{_local.filter.searchKeyword ?? query.search_keyword ?? ''}}",
+        "filterTargetType": "{{_local.filter.targetType ?? query.target_type ?? 'all'}}",
+        "filterDiscountType": "{{_local.filter.discountType ?? query.discount_type ?? 'all'}}",
+        "filterIssueStatus": "{{_local.filter.issueStatus ?? query.issue_status ?? 'all'}}",
+        "filterIssueMethod": "{{_local.filter.issueMethod ?? query.issue_method ?? 'all'}}",
+        "filterIssueCondition": "{{_local.filter.issueCondition ?? query.issue_condition ?? 'all'}}",
+        "filterMinBenefitAmount": "{{_local.filter.minBenefitAmount ?? query.min_benefit_amount ?? ''}}",
+        "filterMaxBenefitAmount": "{{_local.filter.maxBenefitAmount ?? query.max_benefit_amount ?? ''}}",
+        "filterMinOrderAmount": "{{_local.filter.minOrderAmount ?? query.min_order_amount ?? ''}}",
+        "filterCreatedStartDate": "{{_local.filter.createdStartDate ?? query.created_start_date ?? ''}}",
+        "filterCreatedEndDate": "{{_local.filter.createdEndDate ?? query.created_end_date ?? ''}}",
+        "filterValidStartDate": "{{_local.filter.validStartDate ?? query.valid_start_date ?? ''}}",
+        "filterValidEndDate": "{{_local.filter.validEndDate ?? query.valid_end_date ?? ''}}",
+        "filterIssueStartDate": "{{_local.filter.issueStartDate ?? query.issue_start_date ?? ''}}",
+        "filterIssueEndDate": "{{_local.filter.issueEndDate ?? query.issue_end_date ?? ''}}",
+        "filterCreatedBy": "{{_local.filter.createdBy ?? query.created_by ?? ''}}"
+    },
+    "permissions": [
+        "sirsoft-ecommerce.promotion-coupon.read"
+    ],
     "transition_overlay": {
         "wait_for": [
             "coupons",
             "couponIssues"
         ]
     },
-    "data_sources": [
-        {
-            "id": "coupons",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.coupons",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/promotion-coupons",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "progressive",
+    "named_actions": {
+        "searchCoupons": {
+            "comment": "필터 적용 — 입력칸이 열일곱이라 필터 조각·초기화 버튼이 이 액션 하나를 공유한다. 「전체」는 조건이 아니므로 빈 값으로 떨어뜨리고, 조건이 바뀌었으니 쪽수는 1로 되돌린다",
+            "handler": "navigate",
             "params": {
-                "page": "{{query.page || 1}}",
-                "per_page": "{{query.per_page || 10}}",
-                "sort_by": "{{query.sort_by || 'created_at'}}",
-                "sort_order": "{{query.sort_order || 'desc'}}",
-                "search_field": "{{query.search_field}}",
-                "search_keyword": "{{query.search_keyword}}",
-                "target_type": "{{query.target_type}}",
-                "discount_type": "{{query.discount_type}}",
-                "issue_status": "{{query.issue_status}}",
-                "issue_method": "{{query.issue_method}}",
-                "issue_condition": "{{query.issue_condition}}",
-                "min_benefit_amount": "{{query.min_benefit_amount}}",
-                "max_benefit_amount": "{{query.max_benefit_amount}}",
-                "min_order_amount": "{{query.min_order_amount}}",
-                "created_start_date": "{{query.created_start_date}}",
-                "created_end_date": "{{query.created_end_date}}",
-                "valid_start_date": "{{query.valid_start_date}}",
-                "valid_end_date": "{{query.valid_end_date}}",
-                "issue_start_date": "{{query.issue_start_date}}",
-                "issue_end_date": "{{query.issue_end_date}}",
-                "created_by": "{{query.created_by}}"
-            },
-            "errorHandling": {
-                "403": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
-                },
-                "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                "path": "/admin/ecommerce/promotion-coupons",
+                "mergeQuery": true,
+                "replace": true,
+                "transition_overlay_target": "pc_data_table__body",
+                "query": {
+                    "search_field": "{{_local.filter.searchField !== 'all' ? _local.filter.searchField : ''}}",
+                    "search_keyword": "{{_local.filter.searchKeyword}}",
+                    "target_type": "{{_local.filter.targetType !== 'all' ? _local.filter.targetType : ''}}",
+                    "discount_type": "{{_local.filter.discountType !== 'all' ? _local.filter.discountType : ''}}",
+                    "issue_status": "{{_local.filter.issueStatus !== 'all' ? _local.filter.issueStatus : ''}}",
+                    "issue_method": "{{_local.filter.issueMethod !== 'all' ? _local.filter.issueMethod : ''}}",
+                    "issue_condition": "{{_local.filter.issueCondition !== 'all' ? _local.filter.issueCondition : ''}}",
+                    "min_benefit_amount": "{{_local.filter.minBenefitAmount}}",
+                    "max_benefit_amount": "{{_local.filter.maxBenefitAmount}}",
+                    "min_order_amount": "{{_local.filter.minOrderAmount}}",
+                    "created_start_date": "{{_local.filter.createdStartDate}}",
+                    "created_end_date": "{{_local.filter.createdEndDate}}",
+                    "valid_start_date": "{{_local.filter.validStartDate}}",
+                    "valid_end_date": "{{_local.filter.validEndDate}}",
+                    "issue_start_date": "{{_local.filter.issueStartDate}}",
+                    "issue_end_date": "{{_local.filter.issueEndDate}}",
+                    "created_by": "{{_local.filter.createdBy}}",
+                    "page": 1
                 }
             }
-        },
-        {
-            "id": "couponIssues",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.couponIssues",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/promotion-coupons/{{_global.issueHistoryCoupon?.id}}/issues",
-            "method": "GET",
-            "auto_fetch": false,
-            "auth_required": true,
-            "loading_strategy": "progressive",
-            "depends_on": [
-                "_global.issueHistoryCoupon"
-            ],
-            "fetch_condition": "{{!!_global.issueHistoryCoupon?.id}}",
-            "params": {
-                "page": "{{_global.issueHistoryPage || 1}}",
-                "per_page": "{{_global.issueHistoryPerPage || 10}}",
-                "user_id": "{{_global.issueHistoryFilterUser?.uuid}}"
-            }
         }
-    ],
+    },
     "init_actions": [
         {
             "handler": "sirsoft-ecommerce.loadVisibleFilters",
@@ -198,57 +252,24 @@
         },
         {
             "handler": "apiCall",
+            "target": "/api/admin/users/search",
             "if": "{{!!query.created_by}}",
             "auth_required": true,
-            "target": "/api/admin/users/search",
             "params": {
                 "method": "GET",
                 "query": {
                     "uuid": "{{query.created_by}}"
                 }
             },
-            "onSuccess": [
-                {
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "creatorSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
-                    }
+            "onSuccess": {
+                "handler": "setState",
+                "params": {
+                    "target": "local",
+                    "creatorSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
                 }
-            ]
-        }
-    ],
-    "named_actions": {
-        "searchCoupons": {
-            "handler": "navigate",
-            "params": {
-                "path": "/admin/ecommerce/promotion-coupons",
-                "mergeQuery": true,
-                "query": {
-                    "search_field": "{{_local.filter.searchField !== 'all' ? _local.filter.searchField : ''}}",
-                    "search_keyword": "{{_local.filter.searchKeyword}}",
-                    "target_type": "{{_local.filter.targetType !== 'all' ? _local.filter.targetType : ''}}",
-                    "discount_type": "{{_local.filter.discountType !== 'all' ? _local.filter.discountType : ''}}",
-                    "issue_status": "{{_local.filter.issueStatus !== 'all' ? _local.filter.issueStatus : ''}}",
-                    "issue_method": "{{_local.filter.issueMethod !== 'all' ? _local.filter.issueMethod : ''}}",
-                    "issue_condition": "{{_local.filter.issueCondition !== 'all' ? _local.filter.issueCondition : ''}}",
-                    "min_benefit_amount": "{{_local.filter.minBenefitAmount}}",
-                    "max_benefit_amount": "{{_local.filter.maxBenefitAmount}}",
-                    "min_order_amount": "{{_local.filter.minOrderAmount}}",
-                    "created_start_date": "{{_local.filter.createdStartDate}}",
-                    "created_end_date": "{{_local.filter.createdEndDate}}",
-                    "valid_start_date": "{{_local.filter.validStartDate}}",
-                    "valid_end_date": "{{_local.filter.validEndDate}}",
-                    "issue_start_date": "{{_local.filter.issueStartDate}}",
-                    "issue_end_date": "{{_local.filter.issueEndDate}}",
-                    "created_by": "{{_local.filter.createdBy}}",
-                    "page": 1
-                },
-                "replace": true,
-                "transition_overlay_target": "pc_data_table__body"
             }
         }
-    },
+    ],
     "slots": {
         "content": [
             {
@@ -263,6 +284,18 @@
                         "id": "filter_visibility_selector",
                         "type": "composite",
                         "name": "FilterVisibilitySelector",
+                        "actions": [
+                            {
+                                "comment": "화면에 세울 필터 목록만 바꾼다 — 저장은 컴포넌트가 사용자별 설정으로 직접 처리하므로 여기서 다시 보내지 않는다",
+                                "type": "change",
+                                "event": "onFilterVisibilityChange",
+                                "handler": "setState",
+                                "params": {
+                                    "target": "_local",
+                                    "visibleFilters": "{{$args[0]}}"
+                                }
+                            }
+                        ],
                         "props": {
                             "id": "admin_ecommerce_promotion_coupon_filters",
                             "visibleFilters": "{{_local.visibleFilters}}",
@@ -273,18 +306,7 @@
                                 "issueStatus",
                                 "createdAt"
                             ]
-                        },
-                        "actions": [
-                            {
-                                "event": "onFilterVisibilityChange",
-                                "type": "change",
-                                "handler": "setState",
-                                "params": {
-                                    "target": "_local",
-                                    "visibleFilters": "{{$args[0]}}"
-                                }
-                            }
-                        ]
+                        }
                     },
                     {
                         "id": "page_header",
@@ -319,6 +341,18 @@
                             {
                                 "type": "basic",
                                 "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "쿠폰 등록 폼 진입 — 폼에서 취소하고 돌아왔을 때 보던 목록으로 복귀하려면 진입 시점에 목록 상태를 넘겨야 한다 (#75).",
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/ecommerce/promotion-coupon-create",
+                                            "mergeQuery": true,
+                                            "query": {}
+                                        }
+                                    }
+                                ],
                                 "props": {
                                     "type": "button",
                                     "className": "btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed",
@@ -330,25 +364,13 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "plus",
-                                            "className": "w-4 h-4 mr-2"
+                                            "className": "text-base mr-2"
                                         }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.actions.create"
-                                    }
-                                ],
-                                "actions": [
-                                    {
-                                        "comment": "쿠폰 등록 폼 진입 — 폼에서 취소하고 돌아왔을 때 보던 목록으로 복귀하려면 진입 시점에 목록 상태를 넘겨야 한다 (#75).",
-                                        "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/ecommerce/promotion-coupon-create",
-                                            "mergeQuery": true,
-                                            "query": {}
-                                        }
                                     }
                                 ]
                             }
@@ -366,37 +388,24 @@
     },
     "modals": [
         {
+            "comment": "선택한 쿠폰들의 발급 상태(발급중/중지)를 한꺼번에 바꾸기 전 확인",
             "partial": "partials/admin_ecommerce_promotion_coupon_list/_modal_status_change_confirm.json"
         },
         {
+            "comment": "발급이력 — 누구에게 언제 나갔는지 보고, 회원으로 좁혀 볼 수 있다",
             "partial": "partials/admin_ecommerce_promotion_coupon_list/_modal_issue_history.json"
         },
         {
+            "comment": "직접 발급 — 회원을 찾아 골라 이 쿠폰을 바로 지급한다",
             "partial": "partials/admin_ecommerce_promotion_coupon_list/_modal_direct_issue.json"
         },
         {
+            "comment": "쿠폰 삭제 확인",
             "partial": "partials/admin_ecommerce_promotion_coupon_list/_modal_delete_confirm.json"
         },
         {
+            "comment": "발급 취소 확인 — 발급이력에서 이미 나간 한 건을 되돌린다",
             "partial": "partials/admin_ecommerce_promotion_coupon_list/_modal_cancel_issue_confirm.json"
         }
-    ],
-    "initGlobal": {
-        "bulkSelectedItems": [],
-        "bulkIssueStatus": "",
-        "isChangingStatus": false,
-        "deleteTarget": null,
-        "isDeleting": false,
-        "issueHistoryCoupon": null,
-        "issueHistoryPage": 1,
-        "issueHistoryPerPage": 10,
-        "issueHistoryFilterUser": null,
-        "directIssueCoupon": null,
-        "directIssueSelectedUsers": [],
-        "directIssueSearchKeyword": "",
-        "directIssueSearchResults": [],
-        "directIssueSubmitting": false,
-        "cancelIssueTarget": null,
-        "cancelIssueSubmitting": false
-    }
+    ]
 }

@@ -1,194 +1,194 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Shipping Policy Bulk Delete Confirmation Modal"
-  },
-  "id": "bulk_delete_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_delete.title",
-    "size": "medium"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-gray-700 dark:text-gray-300"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_delete.message|count={{(_global.bulkSelectedItems || []).length}}"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "alert-warning"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "triangle-exclamation",
-                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "text-warning-soft"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_delete.warning"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "mt-1"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_delete.product_warning"
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
-          "props": {
-          }
-        }
-      ]
+    "comment": "배송정책 여러 건을 한꺼번에 지우는 확인 창. 대상은 목록에서 체크한 것(`_global.bulkSelectedItems`)\n  이고 이 창은 그 건수만 읽는다.\n  경고가 두 줄인 이유가 이 창의 요점이다 — 정책이 사라지면 그 정책을 쓰던 **상품들이 배송비 기준을\n  잃는다**. 되돌릴 수 없다는 것과 상품에 미치는 영향을 따로 알린다.\n  성공하면 체크 목록까지 비운다 — 지워진 id 가 남으면 다음 일괄 작업의 건수가 어긋난다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Shipping Policy Bulk Delete Confirmation Modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
+    "id": "bulk_delete_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_delete.title",
+        "size": "medium"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isBulkDeleting}}"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.shipping_policy.common.cancel",
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ]
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_delete.message|count={{(_global.bulkSelectedItems || []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "alert-warning"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "triangle-exclamation",
+                                        "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-warning-soft"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_delete.warning"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "mt-1"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.shipping_policy.modal.bulk_delete.product_warning"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isBulkDeleting}}"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isBulkDeleting}}",
-              "props": {
-                "name": "spinner",
-                "className": "spinner-sm"
-              }
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isBulkDeleting ? '$t:sirsoft-ecommerce.admin.shipping_policy.common.deleting' : '$t:sirsoft-ecommerce.admin.shipping_policy.common.delete'}}"
-            }
-          ],
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isBulkDeleting": true
-                  }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isBulkDeleting}}"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.shipping_policy.common.cancel"
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/modules/sirsoft-ecommerce/admin/shipping-policies/bulk",
-                  "params": {
-                    "method": "DELETE",
-                    "body": {
-                      "ids": "{{_global.bulkSelectedItems}}"
-                    }
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isBulkDeleting": false,
-                        "bulkSelectedItems": []
-                      }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "일괄 삭제 실행. 성공 갈래가 체크 목록을 비운 뒤 목록을 다시 부른다. 진행 깃발은 성공·실패 양쪽에서 풀어야 버튼이 잠긴 채 남지 않는다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isBulkDeleting": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/shipping-policies/bulk",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "DELETE",
+                                        "body": {
+                                            "ids": "{{_global.bulkSelectedItems}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isBulkDeleting": false,
+                                                "bulkSelectedItems": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "shipping_policies"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-ecommerce.admin.shipping_policy.messages.bulk_deleted"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isBulkDeleting": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isBulkDeleting}}"
                     },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "shipping_policies"
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:sirsoft-ecommerce.admin.shipping_policy.messages.bulk_deleted"
-                      }
-                    },
-                    {
-                      "handler": "closeModal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isBulkDeleting": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message}}"
-                      }
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isBulkDeleting}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isBulkDeleting ? '$t:sirsoft-ecommerce.admin.shipping_policy.common.deleting' : '$t:sirsoft-ecommerce.admin.shipping_policy.common.delete'}}"
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

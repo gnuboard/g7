@@ -68,24 +68,22 @@ describe('A21 — 전시중지 상품 404', () => {
   });
 });
 
-describe('A5 — 취소 모달 기타 사유', () => {
-  const text = serialize(loadJson('layouts/partials/mypage/orders/_modal_cancel.json'));
+describe('A5 — 클레임 신청서 주문금액 비교 (옛 취소 모달 대체)', () => {
+  const text = serialize(loadJson('layouts/partials/mypage/claims/_apply_comparison.json'));
 
-  it('onClose 리셋에 cancelReasonDetail 포함', () => {
-    expect(text).toContain('"cancelReasonDetail":""');
+  it('환불 불가 사유(cancel_blocked_reason)와 안내를 인라인으로 남긴다', () => {
+    expect(text).toContain('cancel_blocked_reason');
+    expect(text).toContain('claim.apply.comparison.blocked_hint');
   });
 
-  it("기타(etc) 선택 시 상세 사유 Textarea (if cancelReason === 'etc')", () => {
-    expect(text).toContain("_local.cancelReason === 'etc'");
-    expect(text).toContain('cancel_reason_detail_placeholder');
+  it('토글은 aria-expanded / aria-controls 를 바인딩한다', () => {
+    expect(text).toContain('"aria-expanded":"{{_local.claimComparisonOpen === true}}"');
+    expect(text).toContain('"aria-controls":"claim-comparison-body"');
   });
 
-  it('상세 사유 에러 Span (cancelValidationErrors.reason_detail)', () => {
-    expect(text).toContain('cancelValidationErrors?.reason_detail');
-  });
-
-  it('submit param 에 cancelReasonDetail 전송', () => {
-    expect(text).toContain('"cancelReasonDetail":"{{_local.cancelReasonDetail ?? \'\'}}"');
+  it('금액은 서버 formatted 직독이며 클라이언트 통화 단위를 붙이지 않는다', () => {
+    expect(text).toContain('original_snapshot?.formatted?.total_paid_amount');
+    expect(text).not.toContain('common.currency_unit');
   });
 });
 
@@ -143,8 +141,13 @@ describe('i18n 키 동반', () => {
     expect(en.order_detail.track_shipment).toBeTruthy();
     expect(ko.order_detail.cancelled_at).toBeTruthy();
     expect(en.order_detail.cancelled_at).toBeTruthy();
-    expect(ko.order_detail.cancel_modal.cancel_reason_detail_placeholder).toBeTruthy();
-    expect(en.order_detail.cancel_modal.cancel_reason_detail_placeholder).toBeTruthy();
+    // 옛 취소 모달 키(order_detail.cancel_modal.*)는 삭제됐다 — 상세 사유 입력은 클레임 신청서(claim.apply.*)가 맡는다.
+    expect(ko.order_detail.cancel_modal).toBeUndefined();
+    expect(en.order_detail.cancel_modal).toBeUndefined();
+    const koClaim = loadJson('lang/partial/ko/claim.json');
+    const enClaim = loadJson('lang/partial/en/claim.json');
+    expect(koClaim.apply.reason_detail_placeholder).toBeTruthy();
+    expect(enClaim.apply.reason_detail_placeholder).toBeTruthy();
   });
 
   it('취소 사유 표시용 키(cancel_reason_title / cancel_reason / cancel_reason_detail)', () => {

@@ -1,0 +1,110 @@
+feature: 관리자 반응 관리 (전 회원 반응 조회·삭제)
+
+description: |
+  이슈 #525 제보 ④ — 반응 내역을 권한 있는 운영자가 관리자에서 관리할 수단이 없었다.
+  게시판 관리 › 「반응 관리」 메뉴를 신설하고 회원 상세에 요약 탭을 붙인다 (결정 R6).
+  스크랩 관리(admin-post-scrap-management.yaml)와 1:1 동형이다.
+
+  핵심 동작 (확정):
+    - 반응은 회원 소유 데이터라 게시판 경계를 넘어 조회된다 → 게시판별 권한이 아니라
+      **모듈 레벨 권한**(sirsoft-board.reactions.view|manage)을 쓴다
+    - 권한 5중 게이트: 라우트 미들웨어 · 컨트롤러 · 리소스(abilities) · 레이아웃 · 메뉴
+    - view 만 가진 매니저는 삭제가 403이고, 목록 응답의 abilities.can_manage 가 false 라
+      화면이 체크박스·일괄 버튼을 아예 내지 않는다
+    - 관리자 목록은 **삭제된 대상도 보여준다** — 정리할 대상을 찾는 화면이기 때문
+    - 없는 회원 uuid 필터는 빈 결과다 — 필터를 무시하고 전체를 보여주면 "이 회원의 반응"을
+      요청한 화면에 남의 반응이 뜬다
+    - 유형 필터 옵션은 **목록 응답 메타**로 준다 — reactions.view 만 가진 매니저는
+      settings.read 가 없어 유형 API 를 부를 수 없다. 비활성 유형도 포함한다
+    - 삭제는 소유자 무관이며 대상의 reaction_counts 를 재집계한다
+    - 일괄 삭제는 회원용과 달리 exists 를 건다 — 관리자는 전 회원 반응을 다루므로 탐색
+      통로가 되지 않고, 잘못된 ID 를 조용히 넘기면 실제 삭제 건수와 어긋난다
+    - 회원 상세 요약은 filter 훅으로 **관리자 응답에만** 주입한다(프로필 제외)
+    - 이메일은 관리자 응답에만, 탈퇴 회원 이름은 익명화한다
+
+axes:
+  case:
+    - list_forbidden_without_view_permission
+    - list_all_users_recent_first
+    - filters_user_board_type_target_and_date_range
+    - unknown_user_uuid_returns_empty
+    - search_six_fields_like_branches
+    - row_marks_deleted_target_and_withdrawn_member
+    - response_carries_inactive_types_meta
+    # K1 실측(2026-10-06) — 반응 조회만 가진 매니저는 게시판 목록 API 가 403 이라 게시판 셀렉트가 비었다
+    - response_carries_board_options_meta
+    # K1 실측(2026-10-06) — 반응 조회 권한 없는 관리자에게 회원 상세 요약이 실려 탭 링크가 403 으로 끝났다
+    - user_detail_summary_requires_view_permission
+    # K1 실측(2026-10-06) — 게시판이 삭제된 행의 「게시글 보기」가 /admin/board//post/N 404 로 갔다
+    - row_go_to_post_disabled_when_board_deleted
+    - per_page_over_limit_rejected
+    - destroy_forbidden_with_view_only
+    - destroy_removes_and_recalculates
+    - destroy_missing_returns_404
+    - bulk_destroy_count_and_unknown_ids_rejected
+    - user_detail_includes_summary_profile_omits
+    - module_declares_permissions_and_menu
+    - screen_binds_all_filters_from_query
+    - screen_gates_bulk_on_manage_ability
+    - member_detail_tab_links_with_uuid
+    - admin_reaction_pagination_covers_all_rows
+
+effects:
+  # 권한 게이트
+  - index_forbidden_without_view_permission
+  - destroy_forbidden_with_view_only
+  - module_declares_reactions_permissions_and_menu
+  # 목록·필터·검색
+  - index_lists_all_users_recent_first
+  - index_filters_by_user_board_type_target_and_date_range
+  - index_unknown_user_uuid_returns_empty
+  - index_search_fields_like_branches
+  - index_marks_deleted_target_board_off_withdrawn_and_inactive_type
+  - index_response_carries_reaction_types_meta_incl_inactive
+  - index_response_carries_board_options_meta
+  - index_rejects_per_page_over_100
+  # 삭제
+  - destroy_removes_other_users_reaction_and_recalculates
+  - destroy_returns_404_for_missing
+  - bulk_destroy_returns_count_and_rejects_unknown_ids
+  # 회원 상세 요약
+  - admin_user_detail_includes_board_reactions_summary
+  - profile_omits_board_reactions
+  - admin_user_detail_omits_reactions_summary_without_view_permission
+
+  # 화면(레이아웃 계약)
+  - admin_screen_datasource_reads_every_filter_from_query
+  - admin_screen_type_select_iterates_response_meta
+  - admin_screen_named_action_carries_type_and_target
+  - admin_screen_selectable_follows_can_manage
+  - admin_screen_sort_and_page_clear_selection
+  - admin_screen_row_actions_split_three_ways
+  - admin_screen_board_select_iterates_response_meta
+  - admin_screen_go_to_post_disabled_without_board
+  - admin_screen_modals_call_single_and_bulk_delete
+  - admin_route_declares_reactions_view_permission
+  - admin_user_tab_navigates_with_user_uuid_not_href
+  # deferred join 페이지네이션 기계 (4차 검증 신설)
+  - admin_reaction_pages_have_no_duplicate_or_missing_rows
+  - admin_reaction_total_matches_row_count
+  - admin_reaction_rows_carry_user_board_type_and_target
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/AdminReactionTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/Admin/AdminReactionPaginationTest.php
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-reactions-index.test.tsx
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-user-reactions-tab.test.tsx
+  - tests/Playwright/specs/admin/board-reactions-index.spec.ts
+  - tests/Playwright/specs/admin/board-user-reactions-tab.spec.ts
+
+validation:
+  audit_rule: test-scenario-coverage
+  note: |
+    "view 만 가진 운영자" 는 createAdminUser() 로 만들 수 없다 — 그 헬퍼는 공용 admin 역할에
+    권한을 붙이므로 admin 이 전 권한을 갖는다. 전용 역할(createReactionViewer)로 재현한다
+    (AdminPostScrapTest::createScrapViewer 관례).
+
+    프론트(vitest) 커버리지는 레이아웃 JSON 계약 테스트로 잠근다 — 저작본(.g7.html)의 기계
+    산출물인 .json 을 직접 읽으므로, 화면을 고치고 다시 굽지 않으면 red 가 된다.
+    E2E(Playwright) 는 `playwright:seed-board-reaction` 시드로 세 상태의 행·비활성 유형·
+    탈퇴 회원을 고정해 두고 실브라우저로 잰다(되돌리기는 같은 커맨드 `--teardown`).

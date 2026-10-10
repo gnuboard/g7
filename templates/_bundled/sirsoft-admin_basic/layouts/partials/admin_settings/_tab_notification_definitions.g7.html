@@ -1,0 +1,249 @@
+<!-- 알림 정의 탭 — 두 층으로 되어 있다.
+  ⑴ **채널 켜기/끄기**: 화면 위쪽. 이것만 설정값이라 저장 버튼을 거친다(아래 것들은 즉시 적용된다).
+  ⑵ **정의 목록**: 채널 탭으로 가른 뒤 정의마다 그 채널 템플릿을 켜거나 고친다.
+  채널을 끄면 아래 채널 탭에서도 사라진다 — 탭 목록이 켜진 채널만 걸러 만들기 때문이다.
+  정의 카드가 다루는 것은 **지금 채널의 템플릿 하나**다(한 정의가 채널마다 템플릿을 갖는다). -->
+<partial description="환경설정 알림 설정 탭 — 채널 토글 + 2단 탭 + 채널별 템플릿 목록">
+  <div data-ref="tab_content_notification_definitions" data-if="{{(_global.activeSettingsTab || query.tab || 'general') === 'notification_definitions'}}">
+    <div data-ref="notif_header" class="section-header">
+      <h3>$t:admin.settings.notification_definitions.title</h3>
+      <p>$t:admin.settings.notification_definitions.description</p>
+    </div>
+    <div data-ref="channel_toggles" class="admin-card">
+      <h4 class="text-body font-medium mb-3">$t:admin.settings.notification_definitions.channel_management</h4>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div data-each="ch, chIdx in {{availableChannels?.data?.channels ?? []}}" class="flex-between p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div class="flex-center gap-2">
+            <icon name="{{ch.icon ?? 'fas fa-bell'}}" class="text-gray-500 dark:text-gray-400"/>
+            <div>
+              <span class="text-heading">{{ch.name ?? ch.id}}</span>
+              <span class="text-hint block">{{ch.source_label ?? ch.source}}</span>
+            </div>
+          </div>
+          <toggle data-type="composite" checked="{{(_local.form?.notifications?.channels ?? []).find(c => c.id === ch.id)?.is_active ?? false}}" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <!-- 채널 사용 여부 — **저장 버튼을 눌러야 반영되는 유일한 값**이라 여기서는 폼만 고치고
+                   "고친 것이 있다" 표시를 켠다. 배열을 제자리에서 바꾸지 않고 새 배열로 갈아 끼운다. -->
+              <set-state target="local" form.notifications.channels="{{(_local.form?.notifications?.channels ?? []).some(c => c.id === ch.id) ? (_local.form?.notifications?.channels ?? []).map(c => c.id === ch.id ? {...c, is_active: !c.is_active} : c) : [...(_local.form?.notifications?.channels ?? []), {id: ch.id, is_active: true, sort_order: (_local.form?.notifications?.channels ?? []).length + 1}]}}" :hasChanges="true"/>
+            </on>
+          </toggle>
+        </div>
+      </div>
+    </div>
+    <div data-ref="channel_sub_tabs" class="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+      <button data-each="ch, chIdx in {{(availableChannels?.data?.channels ?? []).filter(c => c.hidden_tab !== true &amp;&amp; (c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false : (c.tab_channels ?? [c.id]).filter(tc => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === tc)?.is_active === true).length > 0))}}" type="button" class="{{(query.channel ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2">
+        <on type="click">
+          <!-- 채널 탭 전환 — 화면 상태와 URL 둘 다에 남긴다(화면 상태는 즉시 반영용, URL 은 새로고침용).
+               페이지를 1로 되돌리는 것은 채널마다 정의 수가 다르기 때문이다. -->
+          <sequence>
+            <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="notif_channel_content">
+              <query channel="{{ch.id}}" :page="1"/>
+            </navigate>
+          </sequence>
+        </on>
+        <icon name="{{ch.icon ?? 'fas fa-bell'}}" class="text-sm"/>
+        <span>{{ch.tab_label_key ? $t(ch.tab_label_key) : (ch.name ?? ch.id)}}</span>
+      </button>
+    </div>
+    <div data-ref="notif_channel_content">
+      <!-- 분류 칩 — 일반 알림과 본인인증 알림(인증번호·검증 링크 메일)을 가른다. 값은 URL(query.category)에
+           남겨 새로고침·「본인인증」 탭의 안내 링크로 들어와도 같은 분류가 선택된다. 채널 하위탭과 독립이다
+           (채널을 바꿔도 분류는 그대로, 분류를 바꿔도 채널은 그대로). 칩이 많아지는 좁은 화면에서는 한 줄로
+           가로 스크롤한다. [정책별 문구 추가]는 분류가 본인인증일 때만 보인다 — 운영자가 추가한 본인인증 정책에
+           전용 문구를 붙이는 기능이라 일반 알림에는 해당하지 않는다. -->
+      <div data-ref="notif_category_bar" class="flex flex-col gap-2 pt-3 sm:flex-row sm:items-center sm:justify-between">
+        <div data-ref="notif_category_chips" class="flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+          <span class="text-label-subtle flex-shrink-0">$t:admin.settings.notification_definitions.category.label</span>
+          <button data-each='cat in [{"value":"","key":"all"},{"value":"general","key":"general"},{"value":"identity","key":"identity"}]' type="button" aria-pressed="{{(query.category ?? '') === cat.value}}" class="{{(query.category ?? '') === cat.value ? 'bg-indigo-600 text-white border-indigo-600 dark:bg-indigo-500 dark:border-indigo-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700'}} flex-shrink-0 text-sm px-3 py-1 rounded-full border transition-colors">
+            <on type="click">
+              <!-- 분류 전환 — 채널·항목 수 등 나머지 쿼리는 유지하고 페이지만 1로 되돌린다(분류마다 건수가 다르다). -->
+              <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="notif_channel_content">
+                <query category="{{cat.value}}" :page="1"/>
+              </navigate>
+            </on>
+            {{$t('admin.settings.notification_definitions.category.' + cat.key)}}
+          </button>
+        </div>
+        <button data-ref="notif_identity_add_button" data-if="{{(query.category ?? '') === 'identity' &amp;&amp; notificationDefinitions?.data?.abilities?.can_create === true}}" type="button" disabled="{{_computed.isReadOnly}}" class="w-full sm:w-auto text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 정책별 문구 추가 창 — 창은 이 화면 상태를 못 읽으므로 빈 폼을 전역에 마련한 뒤 연다.
+                 「문구가 이미 있는 정책」 목록은 열 때마다 다시 받는다 — 다른 창·다른 관리자가 그사이 추가했으면
+                 옛 목록으로는 그 정책이 선택지에 남아 저장이 중복(422)으로 거절된다. -->
+            <sequence>
+              <refetch-data-source dataSourceId="identityPolicyDefinitions"/>
+              <set-state target="global">
+                <field name="identity_notification_add_modal">
+                  <field name="form">
+                    <field name="policy_key" value=""/>
+                    <field name="name" :value="null"/>
+                    <field name="subject" :value="null"/>
+                    <field name="body" :value="null"/>
+                  </field>
+                  <field name="editLang" value="{{$locale}}"/>
+                  <field name="errors" :value="null"/>
+                  <field name="isSaving" :value="false"/>
+                </field>
+              </set-state>
+              <open-modal target="modal_notification_identity_definition_add"/>
+            </sequence>
+          </on>
+          $t:admin.settings.notification_definitions.btn_add_identity
+        </button>
+      </div>
+      <div data-ref="notif_list_info" class="flex-between py-3">
+        <span class="text-label-subtle">$t:admin.settings.notification_definitions.total_count|count={{notificationDefinitions?.data?.pagination?.total ?? 0}}</span>
+        <div class="flex-center gap-2">
+          <span class="text-label-subtle">$t:admin.settings.notification_definitions.per_page_label</span>
+          <select name="notifPerPage" class="w-20 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{String(query.per_page || 20)}}">
+            <options>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+            </options>
+            <on type="change">
+              <!-- 페이지당 항목 수 — 채널 등 나머지 쿼리는 유지하고 페이지만 1로 되돌린다. -->
+              <navigate path="/admin/settings" :replace="true" :mergeQuery="true">
+                <query per_page="{{$event.target.value}}" :page="1"/>
+              </navigate>
+            </on>
+          </select>
+        </div>
+      </div>
+      <div data-ref="notif_definitions_list">
+        <div data-each="def, defIdx in {{notificationDefinitions?.data?.data ?? []}}" class="admin-card mb-3">
+          <div class="flex-start gap-3">
+            <div class="flex-shrink-0 pt-0.5">
+              <button type="button" aria-label="{{(_local.expandedNotifications ?? {})[def.id] ? '$t:common.collapse' : '$t:common.expand'}}" aria-expanded="{{!!(_local.expandedNotifications ?? {})[def.id]}}" class="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <on type="click">
+                  <!-- 카드 펼치기/접기 — 펼친 카드를 id 를 키로 한 객체에 모아 여러 개를 동시에 펼 수 있다. -->
+                  <set-state target="local" expandedNotifications="{{Object.assign({}, _local.expandedNotifications ?? {}, {[def.id]: !(_local.expandedNotifications ?? {})[def.id]})}}"/>
+                </on>
+                <icon name="{{(_local.expandedNotifications ?? {})[def.id] ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" size="sm"/>
+              </button>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex-1 min-w-0">
+                  <div class="flex-center flex-wrap gap-2 mb-1">
+                    <!-- 제목은 서버가 내려준 로케일 객체(이름)를 쓴다 — 운영자가 추가한 본인인증 정책 문구는 화면 번역
+                         키가 없어서, 키 조회(types.{type})로는 원문 키가 그대로 노출된다. -->
+                    <h4 class="text-primary text-base font-medium">{{$localized(def.name) || def.type}}</h4>
+                    <span class="text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{def.type}}</span>
+                    <span data-if="{{def.category === 'identity'}}" class="max-w-full break-all bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 text-xs font-medium px-2 py-0.5 rounded-full">{{def.type === 'identity.default' ? $t('admin.settings.notification_definitions.identity_scope.default') : (def.type ?? '').startsWith('identity.purpose.') ? $t('admin.settings.notification_definitions.identity_scope.purpose') + ': ' + ((identityPurposes?.data ?? []).find(p =&gt; p.id === (def.type ?? '').slice(17))?.label ?? (def.type ?? '').slice(17)) : $t('admin.settings.notification_definitions.identity_scope.policy') + ': ' + (def.policy_key ?? (def.type ?? '').slice(16))}}</span>
+                    <span data-if="{{def.category === 'identity'}}" class="bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 text-xs font-medium px-2 py-0.5 rounded-full">$t:admin.settings.notification_definitions.category.identity</span>
+                    <span class="{{def.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}} text-xs font-medium px-2 py-0.5 rounded-full">{{def.is_active ? '$t:admin.settings.notification_definitions.active' : '$t:admin.settings.notification_definitions.inactive'}}</span>
+                    <span data-if="{{def.is_default}}" class="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs font-medium px-2 py-0.5 rounded-full">$t:admin.settings.notification_definitions.default_badge</span>
+                  </div>
+                  <p data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="text-label-subtle truncate">{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.subject?.[$locale] ?? ''}}</p>
+                  <p data-if="{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="text-sm text-gray-400 dark:text-gray-500 italic">$t:admin.settings.notification_definitions.no_template_for_channel</p>
+                  <!-- 본인인증 알림은 수신자가 「인증을 요청한 대상」으로 고정이다(수신자 규칙이 없다) — 편집 대신 고정 문구. -->
+                  <p data-if="{{def.category === 'identity'}}" class="text-tertiary mt-2">$t:admin.settings.notification_definitions.identity_recipient_fixed</p>
+                  <div data-ref="recipients_badge_{{defIdx}}" data-if="{{def.category !== 'identity' &amp;&amp; ((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []).length > 0}}" class="flex-center flex-wrap gap-1.5 mt-2">
+                    <span class="text-tertiary font-medium">$t:admin.settings.notification_definitions.recipients_label</span>
+                    <span data-each="rcpt in {{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []}}" class="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 rounded-full">
+                      <span>{{rcpt.type === 'trigger_user' ? '$t:admin.settings.notification_definitions.recipients.types.trigger_user' : rcpt.type === 'related_user' ? '$t:admin.settings.notification_definitions.recipients.types.related_user' + (rcpt.relation ? ' (' + (def.relation_labels?.[rcpt.relation] ?? rcpt.relation) + ')' : '') : rcpt.type === 'role' ? '$t:admin.settings.notification_definitions.recipients.types.role' + ': ' + ((rcpt.display_names ?? []).join(', ') || rcpt.display_name || '') : rcpt.type === 'specific_users' ? '$t:admin.settings.notification_definitions.recipients.types.specific_users' + ': ' + ((rcpt.display_names ?? []).join(', ') || '') : rcpt.type}}</span>
+                      <span data-if="{{rcpt.exclude_trigger_user}}" class="text-purple-500 dark:text-purple-400">$t:admin.settings.notification_definitions.recipients.badge.exclude_self</span>
+                    </span>
+                  </div>
+                  <div data-if="{{(def.variables ?? []).length > 0}}" class="flex flex-wrap gap-1 mt-2">
+                    <span data-each="v in {{def.variables ?? []}}" class="text-tertiary px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded font-mono">
+                      <span>{</span>
+                      <span>{{v.key}}</span>
+                      <span>}</span>
+                    </span>
+                  </div>
+                  <!-- 알림 정의 행 하단 확장 슬롯(범용). 각 소유 확장이 알림별 부가 UI(예: 채널 연동)를 이 자리에 주입한다. 특정 확장을 알지 못하며, 확장 미설치 시 빈 자리로 남는다. def·현재 채널을 extensionPointProps 로 전달한다. -->
+                  <extension-point name="notification_definition_row_footer" definition="{{def}}" activeChannel="{{query.channel ?? 'mail'}}"/>
+                </div>
+                <div class="flex-center gap-3 flex-shrink-0">
+                  <toggle data-type="composite" data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" ariaLabel="{{$localized(def.name) || def.type}}" checked="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}" disabled="{{_computed.isReadOnly}}">
+                    <on type="change">
+                      <!-- 이 정의의 **지금 채널 템플릿** 하나를 켜거나 끈다(위쪽 채널 토글과 다른 층이다).
+                           그 채널 템플릿이 없는 정의에서는 스위치 자체가 렌더되지 않는다.
+                           실패 갈래가 없어 실패하면 스위치가 눌린 채로 남는다. -->
+                      <api-call :auth_required="true" target="{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.id + '/toggle-active'}}" method="PATCH">
+                        <success>
+                          <refetch-data-source dataSourceId="notificationDefinitions"/>
+                          <toast message="$t:admin.settings.notification_definitions.toggle_success" type="success"/>
+                        </success>
+                        <fail>
+                          <toast type="error" message="{{error.message}}"/>
+                        </fail>
+                      </api-call>
+                    </on>
+                  </toggle>
+                  <!-- 알림 문안 편집. 편집기는 모달이라 이 화면의 상태를 읽지 못하므로 대상 정의를 전역으로 옮겨 담은 뒤 연다 -->
+                  <button type="button" disabled="{{_computed.isReadOnly}}" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <on type="click">
+                      <sequence>
+                        <set-state target="global">
+                          <field name="notification_template_form_modal">
+                            <field name="template" value="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}"/>
+                            <field name="definition" value="{{def}}"/>
+                            <field name="recipients" value="{{JSON.parse(JSON.stringify((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []))}}"/>
+                            <field name="editLang" value="{{$locale}}"/>
+                            <field name="errors" :value="null"/>
+                            <field name="isSaving" :value="false"/>
+                            <field name="roleSearchResults" :value="[]"/>
+                            <field name="userSearchResults" :value="[]"/>
+                          </field>
+                        </set-state>
+                        <open-modal target="modal_notification_template_form"/>
+                      </sequence>
+                    </on>
+                    $t:admin.settings.notification_definitions.btn_edit
+                  </button>
+                  <!-- 기본 문안으로 되돌리기. 기본 정의가 아니거나 손댄 문안이 있을 때만 보인다.
+                       운영자가 추가한 본인인증 정책 문구는 되돌릴 선언 기본값이 없어 보이지 않는다(대신 [삭제]). -->
+                  <button data-if="{{(!def.is_default || def.has_customized_templates === true) &amp;&amp; !(def.category === 'identity' &amp;&amp; def.extension_identifier === 'admin')}}" type="button" disabled="{{_computed.isReadOnly}}" class="text-sm px-3 py-1.5 rounded-md border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <on type="click">
+                      <set-state target="global" resetTargetId="{{def.id}}" resetTargetName="{{$localized(def.name) || def.type}}"/>
+                      <open-modal target="modal_notification_definition_reset"/>
+                    </on>
+                    $t:admin.settings.notification_definitions.btn_reset
+                  </button>
+                  <!-- 운영자가 추가한 본인인증 정책 문구만 지울 수 있다(서버 판정을 abilities 로 받는다). -->
+                  <button data-if="{{def.abilities?.can_delete === true}}" type="button" disabled="{{_computed.isReadOnly}}" class="text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <on type="click">
+                      <sequence>
+                        <set-state target="global">
+                          <field name="identity_notification_delete_modal">
+                            <field name="id" value="{{def.id}}"/>
+                            <field name="name" value="{{$localized(def.name) || def.type}}"/>
+                            <field name="isDeleting" :value="false"/>
+                          </field>
+                        </set-state>
+                        <open-modal target="modal_notification_identity_definition_delete"/>
+                      </sequence>
+                    </on>
+                    $t:admin.settings.notification_definitions.btn_delete
+                  </button>
+                </div>
+              </div>
+              <div data-if="{{(_local.expandedNotifications ?? {})[def.id]}}" class="mt-3 pt-3">
+                <span class="text-tertiary font-medium mb-2 block">$t:admin.settings.notification_definitions.body_preview</span>
+                <html-content data-type="composite" content="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.body?.[$locale] ?? ''}}" isHtml="{{((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel ?? 'mail'))?.template_editor ?? 'plain') === 'rich'}}" class="prose dark:prose-invert prose-sm max-w-none bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 max-h-48 overflow-y-auto">
+                  <prop name="comment">"미리보기의 HTML 해석 여부는 **그 채널의 편집기 종류**를 따른다. 사이트내 알림은 알림센터가 평문으로 그리는데 여기서만 HTML 로 해석하면, 관리자가 본 문구와 사용자가 받는 문구가 다르다 — 태그가 글자 그대로 보이는 쪽은 사용자다."</prop>
+                </html-content>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="notif_empty" data-if="{{(notificationDefinitions?.data?.data ?? []).length === 0}}" class="admin-card">
+        <icon name="fa-solid fa-envelope" class="text-4xl text-gray-300 dark:text-gray-600 mb-3"/>
+        <p class="text-label-subtle">{{(query.category ?? '') === 'identity' ? '$t:admin.settings.notification_definitions.identity_empty' : '$t:admin.settings.notification_definitions.empty_message'}}</p>
+      </div>
+      <div data-ref="notif_pagination" class="flex justify-center mt-4">
+        <pagination data-type="composite" currentPage="{{notificationDefinitions?.data?.pagination?.current_page ?? 1}}" totalPages="{{notificationDefinitions?.data?.pagination?.last_page ?? null}}" hasMorePages="{{notificationDefinitions?.data?.pagination?.has_more_pages ?? false}}">
+          <on type="action" event="onPageChange">
+            <!-- 페이지 이동 — 채널 탭과 항목수를 유지한다. -->
+            <navigate path="/admin/settings" :replace="true" :mergeQuery="true">
+              <query page="{{$args[0]}}"/>
+            </navigate>
+          </on>
+        </pagination>
+      </div>
+    </div>
+  </div>
+</partial>

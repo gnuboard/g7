@@ -1,0 +1,65 @@
+feature: 관리자 베이스 레이아웃·공용 영역 시맨틱 클래스 스모크 (#399 Phase 1.2 ~ 1.21)
+
+description: |
+  `_admin_base` 와 관리자 공용 영역(사이드바·페이지 콘텐츠·헤더·필터·푸터·설정 폼·메뉴 패널)의
+  인라인 Tailwind 토큰을 시맨틱 클래스 자산으로 흡수한 뒤에도 화면이 정상 마운트되고, 각 영역이
+  그 시맨틱 클래스를 달고 렌더되는지 실브라우저로 확인한다. 베이스가 모든 관리자 화면의 진입
+  경로라 이 spec 은 사실상 관리자 화면 전체의 시각 회귀 가드다.
+
+  권한 있는 토큰으로 들어갔는데 로그인 화면으로 튕기지 않는지도 함께 본다.
+
+# axis 의미:
+#   surface — 시맨틱 클래스가 적용된 관리자 영역. 영역마다 테스트 하나가 대응한다.
+axes:
+  surface:
+    - admin_base
+    - admin_settings_tabs
+    - admin_board_settings_header
+    - admin_sidebar
+    - admin_page_content
+    - admin_settings_content
+    - admin_page_header
+    - admin_user_list_content
+    - activity_log_filter
+    - identity_log_filter
+    - admin_user_list_options
+    - admin_footer
+    - admin_settings_form
+    - admin_menu_panel
+
+effects:
+  # 베이스 레이아웃 핵심 영역이 마운트되고 id 와 같은 캡슐화 클래스를 단다 (Phase 1.2).
+  - admin_base_mounts_with_encapsulated_id_classes
+  # 환경설정 sticky 탭 영역과 TabNavigation 탭 버튼이 시맨틱 클래스로 렌더된다 (Phase 1.3).
+  - settings_sticky_tab_nav_and_tab_buttons_use_semantic_classes
+  # 게시판 환경설정의 sticky_header 가 .sticky-section-header 로 마운트된다 (Phase 1.4).
+  - board_settings_sticky_header_uses_sticky_section_header
+  # 사이드바 메뉴 항목이 admin-sidebar-* 클래스로 렌더되고 인라인 padding-left 를 갖지 않는다 (Phase 1.6).
+  - admin_sidebar_items_use_semantic_classes_without_inline_padding
+  # 관리자 페이지 콘텐츠 영역이 .admin-page-content 로 마운트된다 (Phase 1.7).
+  - admin_page_content_uses_semantic_class
+  # 환경설정 페이지 콘텐츠 영역이 .admin-page-content-responsive 로 마운트된다 (Phase 1.7 후속).
+  - settings_page_content_uses_responsive_semantic_class
+  # 페이지 헤더의 새로고침 버튼이 .btn-icon 으로 마운트된다 (Phase 1.8).
+  - page_header_refresh_button_uses_btn_icon
+  # 회원 목록 콘텐츠 영역·일괄 작업 바·버튼이 시맨틱 클래스로 마운트된다 (Phase 1.10).
+  - user_list_content_and_bulk_actions_use_semantic_classes
+  # 활동 로그 필터 그리드가 .filter-grid 로 행 간격을 처리한다 (Phase 1.12).
+  - activity_log_filter_grid_uses_filter_grid_class
+  # 본인인증 로그의 필터 영역·상세 필터가 .filter-grid 로 마운트된다 (Phase 1.13).
+  - identity_log_filter_sections_use_filter_grid_class
+  # 회원 목록 옵션 영역이 .flex-center 로 마운트된다 (Phase 1.14).
+  - user_list_options_use_flex_center_class
+  # AdminFooter 가 .admin-footer / .admin-footer-row 로 마운트된다 (Phase 1.15).
+  - admin_footer_uses_semantic_classes
+  # 환경설정 하단 취소/저장 버튼이 .btn-secondary / .btn-primary 로 마운트된다 (Phase 1.16).
+  - settings_footer_buttons_use_btn_semantic_classes
+  # 환경설정 폼 라벨·행·필드에 인라인 여백 토큰(mb-*·py-3·border-b·py/pt/pb-*)이 남지 않는다 (Phase 1.17 ~ 1.21).
+  - settings_form_rows_have_no_inline_spacing_tokens
+  # .stack 은 인라인 flex flex-col 을 들고 있지 않고 직계 자식이 모두 Div 래퍼다 (Phase 1.21).
+  - settings_stack_children_are_div_wrappers
+  # 메뉴 관리 화면 패널 헤더가 .panel-header 로 분리선을 갖는다 (Phase 1.21 후속).
+  - menu_panel_header_uses_panel_header_class
+
+test_files:
+  - tests/Playwright/specs/smoke/admin-base.spec.ts

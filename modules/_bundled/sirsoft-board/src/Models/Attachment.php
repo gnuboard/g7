@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Models;
 
+use App\Helpers\InlineMediaPolicy;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -84,6 +85,8 @@ class Attachment extends Model
 
     /**
      * 속성 캐스팅
+     *
+     * @return array
      */
     protected function casts(): array
     {
@@ -100,6 +103,8 @@ class Attachment extends Model
 
     /**
      * 모델 부트 메서드
+     *
+     * @return void
      */
     protected static function boot(): void
     {
@@ -230,13 +235,15 @@ class Attachment extends Model
     public const SIGNED_PREVIEW_TTL_MINUTES = 30;
 
     /**
-     * 이미지 여부 확인
+     * 인라인 표시 가능한 이미지 여부 확인
      *
-     * @return bool 이미지 여부
+     * 스크립트를 품을 수 있는 SVG 는 이미지가 아닌 파일로 취급한다 (InlineMediaPolicy — KVE-2026-2366).
+     *
+     * @return bool 래스터 이미지 여부
      */
     public function getIsImageAttribute(): bool
     {
-        return str_starts_with($this->mime_type, 'image/');
+        return InlineMediaPolicy::isInlineImage($this->mime_type);
     }
 
     /**

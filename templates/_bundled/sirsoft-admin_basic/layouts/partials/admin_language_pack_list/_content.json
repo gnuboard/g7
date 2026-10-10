@@ -1,1383 +1,1183 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "언어팩 관리 본문 SSoT — 카드형 UI (모듈/플러그인/템플릿 관리와 일관 수준). PageHeader + 모바일 액션 영역 + 검색/필터 + CardGrid + 페이지네이션. 확장 컨텍스트 wrapper(partials/admin_extension_language_packs/_content.json) 가 back 버튼/배너만 추가하여 재사용."
-  },
-  "id": "lang_pack_content",
-  "type": "basic",
-  "name": "Div",
-  "children": [
-    {
-      "id": "lp_page_header",
-      "type": "composite",
-      "name": "PageHeader",
-      "props": {
-        "title": "$t:admin.language_packs.title",
-        "description": "$t:admin.language_packs.description"
-      },
-      "children": [
-        {
-          "id": "lp_btn_check_updates",
-          "type": "basic",
-          "name": "Button",
-          "if": "{{language_packs?.data?.abilities?.can_check_updates}}",
-          "props": {
-            "type": "button",
-            "disabled": "{{_global.isLanguagePackCheckingUpdates}}",
-            "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "hidden"
-              }
-            }
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isLanguagePackCheckingUpdates": true
-                  }
-                },
-                {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/admin/language-packs/check-updates",
-                  "params": {
-                    "method": "POST"
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isLanguagePackCheckingUpdates": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "language_packs"
-                      }
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isLanguagePackCheckingUpdates": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message ?? '$t:admin.language_packs.messages.check_updates_failed'}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{!_global.isLanguagePackCheckingUpdates}}",
-              "props": {
-                "name": "fas fa-sync-alt",
-                "size": "sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isLanguagePackCheckingUpdates}}",
-              "props": {
-                "name": "fas fa-spinner",
-                "size": "sm",
-                "className": "animate-spin"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:admin.language_packs.actions.check_updates"
-            }
-          ]
-        },
-        {
-          "id": "lp_btn_refresh_cache",
-          "type": "basic",
-          "name": "Button",
-          "if": "{{language_packs?.data?.abilities?.can_refresh_cache}}",
-          "props": {
-            "type": "button",
-            "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "hidden"
-              }
-            }
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "openModal",
-              "target": "language_pack_refresh_cache_modal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "fas fa-broom",
-                "size": "sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:admin.language_packs.actions.refresh_cache"
-            }
-          ]
-        },
-        {
-          "id": "lp_btn_install",
-          "type": "basic",
-          "name": "Button",
-          "if": "{{language_packs?.data?.abilities?.can_install}}",
-          "props": {
-            "type": "button",
-            "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "hidden"
-              }
-            }
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "openModal",
-              "target": "language_pack_install_modal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "fas fa-plus",
-                "size": "sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:admin.language_packs.actions.install"
-            }
-          ]
-        }
-      ]
+    "comment": "언어팩 관리 화면의 본문이자 **정본 하나**다. 확장 상세에서 들어오는 화면은 이 조각을 그대로\n  두르고 되돌아가기 버튼과 안내 띠만 얹으므로, 목록·필터·카드를 고칠 자리는 여기 한 곳이다.\n\n  세 가지가 다른 목록 화면과 다르다.\n  · 조건이 로컬에 쌓이지 않고 **고르는 즉시 주소로 나간다** — 그래서 뒤로 가기로 이전 조건에 돌아간다.\n  · 「보호됨」으로 표시되는 팩은 코어·번들이 늘 켜 둔 것이라 끄지도 지우지도 못하고, 기본적으로\n    목록에서 빠져 있다(체크를 풀면 함께 보인다).\n  · 아직 안 깔린 번들 팩도 한 목록에 섞여 나온다 — 그쪽은 상태가 「미설치」이고 설치 버튼이 붙는다.\n    설치가 막힌 팩은 왜 막혔는지(대상 미설치·비활성·버전 낮음 등)를 카드 안에 적어 준다.",
+    "meta": {
+        "is_partial": true,
+        "description": "언어팩 관리 본문 SSoT — 카드형 UI (모듈/플러그인/템플릿 관리와 일관 수준). PageHeader + 모바일 액션 영역 + 검색/필터 + CardGrid + 페이지네이션. 확장 컨텍스트 wrapper(partials/admin_extension_language_packs/_content.json) 가 back 버튼/배너만 추가하여 재사용."
     },
-    {
-      "id": "lp_mobile_actions",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "hidden"
-      },
-      "responsive": {
-        "portable": {
-          "props": {
-            "className": "flex-center gap-2 -mt-4 mb-4 flex-wrap"
-          }
-        }
-      },
-      "children": [
+    "id": "lang_pack_content",
+    "type": "basic",
+    "name": "Div",
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "if": "{{language_packs?.data?.abilities?.can_check_updates}}",
-          "props": {
-            "type": "button",
-            "disabled": "{{_global.isLanguagePackCheckingUpdates}}",
-            "className": "flex-center flex-1 justify-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "id": "lp_page_header",
+            "type": "composite",
+            "name": "PageHeader",
+            "props": {
+                "title": "$t:admin.language_packs.title",
+                "description": "$t:admin.language_packs.description"
+            },
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isLanguagePackCheckingUpdates": true
-                  }
-                },
-                {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/admin/language-packs/check-updates",
-                  "params": {
-                    "method": "POST"
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isLanguagePackCheckingUpdates": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "language_packs"
-                      }
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isLanguagePackCheckingUpdates": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message ?? '$t:admin.language_packs.messages.check_updates_failed'}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{!_global.isLanguagePackCheckingUpdates}}",
-              "props": {
-                "name": "fas fa-sync-alt",
-                "size": "sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isLanguagePackCheckingUpdates}}",
-              "props": {
-                "name": "fas fa-spinner",
-                "size": "sm",
-                "className": "animate-spin"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:admin.language_packs.actions.check_updates"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Button",
-          "if": "{{language_packs?.data?.abilities?.can_refresh_cache}}",
-          "props": {
-            "type": "button",
-            "className": "flex-center flex-1 justify-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "openModal",
-              "target": "language_pack_refresh_cache_modal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "fas fa-broom",
-                "size": "sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:admin.language_packs.actions.refresh_cache"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Button",
-          "if": "{{language_packs?.data?.abilities?.can_install}}",
-          "props": {
-            "type": "button",
-            "className": "flex-center flex-1 justify-center gap-2 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors text-sm"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "openModal",
-              "target": "language_pack_install_modal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "fas fa-plus",
-                "size": "sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:admin.language_packs.actions.install"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "lp_filter_bar",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex-center justify-end gap-3 mb-6 flex-wrap"
-      },
-      "responsive": {
-        "portable": {
-          "props": {
-            "className": "mb-6 row-stack"
-          }
-        }
-      },
-      "children": [
-        {
-          "id": "lp_filter_scope",
-          "type": "basic",
-          "name": "Select",
-          "if": "{{!_local.scopeLocked}}",
-          "props": {
-            "value": "{{query.scope ?? ''}}",
-            "className": "w-full sm:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100",
-            "options": [
-              {
-                "value": "",
-                "label": "$t:admin.language_packs.filter.all_scopes"
-              },
-              {
-                "value": "core",
-                "label": "$t:admin.language_packs.scope.core"
-              },
-              {
-                "value": "module",
-                "label": "$t:admin.language_packs.scope.module"
-              },
-              {
-                "value": "plugin",
-                "label": "$t:admin.language_packs.scope.plugin"
-              },
-              {
-                "value": "template",
-                "label": "$t:admin.language_packs.scope.template"
-              }
-            ]
-          },
-          "actions": [
-            {
-              "event": "onChange",
-              "handler": "setState",
-              "params": {
-                "target": "local",
-                "filterScope": "{{$event.target.value}}"
-              }
-            },
-            {
-              "event": "onChange",
-              "handler": "navigate",
-              "params": {
-                "path": "{{route.path}}",
-                "mergeQuery": true,
-                "query": {
-                  "scope": "{{$event.target.value || undefined}}",
-                  "page": 1
-                }
-              }
-            }
-          ]
-        },
-        {
-          "id": "lp_filter_status",
-          "type": "basic",
-          "name": "Select",
-          "props": {
-            "value": "{{query.status ?? ''}}",
-            "className": "w-full sm:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100",
-            "options": [
-              {
-                "value": "",
-                "label": "$t:admin.language_packs.filter.all_statuses"
-              },
-              {
-                "value": "active",
-                "label": "$t:admin.language_packs.status.active"
-              },
-              {
-                "value": "installed",
-                "label": "$t:admin.language_packs.status.installed"
-              },
-              {
-                "value": "inactive",
-                "label": "$t:admin.language_packs.status.inactive"
-              },
-              {
-                "value": "uninstalled",
-                "label": "$t:admin.language_packs.status.uninstalled"
-              },
-              {
-                "value": "error",
-                "label": "$t:admin.language_packs.status.error"
-              }
-            ]
-          },
-          "actions": [
-            {
-              "event": "onChange",
-              "handler": "setState",
-              "params": {
-                "target": "local",
-                "filterStatus": "{{$event.target.value}}"
-              }
-            },
-            {
-              "event": "onChange",
-              "handler": "navigate",
-              "params": {
-                "path": "{{route.path}}",
-                "mergeQuery": true,
-                "query": {
-                  "status": "{{$event.target.value || undefined}}",
-                  "page": 1
-                }
-              }
-            }
-          ]
-        },
-        {
-          "id": "lp_filter_reset",
-          "type": "basic",
-          "name": "Button",
-          "if": "{{(query.search ?? '') !== '' || (query.scope ?? '') !== '' || (query.status ?? '') !== '' || (query.locale ?? '') !== '' || query.exclude_protected === '0' || query.exclude_protected === 0 || query.exclude_protected === false}}",
-          "props": {
-            "type": "button",
-            "title": "$t:admin.language_packs.filter.reset",
-            "className": "inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200"
-          },
-          "actions": [
-            {
-              "event": "onClick",
-              "handler": "setState",
-              "params": {
-                "target": "local",
-                "filterScope": "{{_local.scopeLocked ? _local.filterScope : ''}}",
-                "filterStatus": "",
-                "filterLocale": "",
-                "filterSearch": ""
-              }
-            },
-            {
-              "event": "onClick",
-              "handler": "navigate",
-              "params": {
-                "path": "{{route.path}}",
-                "mergeQuery": true,
-                "query": {
-                  "search": null,
-                  "scope": null,
-                  "status": null,
-                  "locale": null,
-                  "exclude_protected": null,
-                  "page": 1
-                }
-              }
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "fas fa-rotate-left",
-                "size": "sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:admin.language_packs.filter.reset"
-            }
-          ]
-        },
-        {
-          "id": "lp_filter_exclude_protected",
-          "type": "basic",
-          "name": "Label",
-          "props": {
-            "className": "inline-clickable px-3 py-2 text-body select-none"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "checkbox",
-                "checked": "{{query.exclude_protected === undefined || query.exclude_protected === null || query.exclude_protected === '1' || query.exclude_protected === 1 || query.exclude_protected === true}}",
-                "className": "h-4 w-4 text-indigo-600 rounded"
-              },
-              "actions": [
-                {
-                  "event": "onChange",
-                  "handler": "navigate",
-                  "params": {
-                    "path": "{{route.path}}",
-                    "mergeQuery": true,
-                    "query": {
-                      "exclude_protected": "{{$event.target.checked ? undefined : '0'}}",
-                      "page": 1
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:admin.language_packs.filter.exclude_protected"
-            }
-          ]
-        },
-        {
-          "id": "lp_search",
-          "type": "composite",
-          "name": "SearchBar",
-          "props": {
-            "name": "search",
-            "placeholder": "$t:admin.language_packs.search_placeholder",
-            "value": "{{_local.filterSearch ?? query.search ?? ''}}",
-            "showButton": true,
-            "className": "w-72"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "w-full"
-              }
-            }
-          },
-          "actions": [
-            {
-              "type": "change",
-              "handler": "setState",
-              "params": {
-                "target": "local",
-                "filterSearch": "{{$event.target.value}}"
-              }
-            },
-            {
-              "type": "submit",
-              "handler": "navigate",
-              "params": {
-                "path": "{{route.path}}",
-                "mergeQuery": true,
-                "query": {
-                  "search": "{{_local.filterSearch || undefined}}",
-                  "page": 1
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "lp_content_area",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "id": "lp_empty",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(language_packs?.data?.data?.length ?? 0) === 0}}",
-          "props": {
-            "className": "p-8 text-center text-gray-500 dark:text-gray-400"
-          },
-          "text": "$t:admin.language_packs.messages.empty"
-        },
-        {
-          "id": "lp_card_grid",
-          "type": "composite",
-          "name": "CardGrid",
-          "if": "{{(language_packs?.data?.data?.length ?? 0) > 0}}",
-          "props": {
-            "data": "{{language_packs?.data?.data ?? []}}",
-            "gridColumns": 1,
-            "gap": 4,
-            "idField": "identifier",
-            "pagination": true,
-            "alwaysShowPagination": true,
-            "serverSidePagination": true,
-            "serverCurrentPage": "{{language_packs?.data?.meta?.current_page ?? 1}}",
-            "serverTotalPages": "{{language_packs?.data?.meta?.last_page ?? null}}",
-            "serverHasMorePages": "{{language_packs?.data?.meta?.has_more_pages ?? false}}",
-            "cardClassName": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative",
-            "cardColumns": [
-              {
-                "id": "lp_card_body",
-                "cellChildren": [
-                  {
+                    "id": "lp_btn_check_updates",
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Button",
+                    "if": "{{language_packs?.data?.abilities?.can_check_updates}}",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "hidden"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "comment": "등록된 팩들의 새 판본을 원격에서 확인해 표시만 갱신한다 — 받거나 깔지는 않는다.\n            누르는 동안 잠그는 값이 전역인 이유는 아래 좁은 화면용 버튼과 **같은 버튼 하나**로\n            보여야 하기 때문이다(두 버튼이 같은 값을 보고 함께 잠긴다).",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isLanguagePackCheckingUpdates": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/language-packs/check-updates",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isLanguagePackCheckingUpdates": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "language_packs"
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isLanguagePackCheckingUpdates": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message ?? '$t:admin.language_packs.messages.check_updates_failed'}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
                     "props": {
-                      "className": "flex items-start gap-4"
+                        "type": "button",
+                        "disabled": "{{_global.isLanguagePackCheckingUpdates}}",
+                        "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     },
                     "children": [
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "flex-shrink-0 w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center"
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{!_global.isLanguagePackCheckingUpdates}}",
+                            "props": {
+                                "name": "fas fa-sync-alt",
+                                "size": "sm"
+                            }
                         },
-                        "children": [
-                          {
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isLanguagePackCheckingUpdates}}",
+                            "props": {
+                                "name": "fas fa-spinner",
+                                "size": "sm",
+                                "className": "animate-spin"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.language_packs.actions.check_updates"
+                        }
+                    ]
+                },
+                {
+                    "id": "lp_btn_refresh_cache",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{language_packs?.data?.abilities?.can_refresh_cache}}",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "hidden"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "openModal",
+                            "target": "language_pack_refresh_cache_modal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    },
+                    "children": [
+                        {
                             "type": "basic",
                             "name": "Icon",
                             "props": {
-                              "name": "fas fa-language",
-                              "className": "text-2xl text-gray-600 dark:text-gray-400"
+                                "name": "fas fa-broom",
+                                "size": "sm"
                             }
-                          }
-                        ]
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "flex-1 min-w-0 flex items-start justify-between gap-4"
                         },
-                        "responsive": {
-                          "portable": {
-                            "props": {
-                              "className": "flex-1 min-w-0 row-stack"
-                            }
-                          }
-                        },
-                        "children": [
-                          {
+                        {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
+                            "text": "$t:admin.language_packs.actions.refresh_cache"
+                        }
+                    ]
+                },
+                {
+                    "id": "lp_btn_install",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{language_packs?.data?.abilities?.can_install}}",
+                    "responsive": {
+                        "portable": {
                             "props": {
-                              "className": "flex-1 min-w-0"
-                            },
-                            "children": [
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": "flex-center gap-2 flex-wrap"
-                                },
-                                "children": [
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                      "className": "font-semibold text-gray-900 dark:text-white"
-                                    },
-                                    "text": "{{row.name ?? (row.locale_native_name ?? row.locale)}}"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                      "className": "px-2 py-0.5 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded"
-                                    },
-                                    "text": "{{row.locale_native_name ?? row.locale}} · {{row.locale}}"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                      "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
-                                    },
-                                    "text": "v{{row.version}}"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.status === 'active'}}",
-                                    "props": {
-                                      "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded"
-                                    },
-                                    "text": "$t:admin.language_packs.status.active"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.status === 'installed'}}",
-                                    "props": {
-                                      "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
-                                    },
-                                    "text": "$t:admin.language_packs.status.installed"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.status === 'inactive'}}",
-                                    "props": {
-                                      "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded"
-                                    },
-                                    "text": "$t:admin.language_packs.status.inactive"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.status === 'uninstalled'}}",
-                                    "props": {
-                                      "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded"
-                                    },
-                                    "text": "$t:admin.language_packs.status.uninstalled"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.status === 'error'}}",
-                                    "props": {
-                                      "className": "px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded"
-                                    },
-                                    "text": "$t:admin.language_packs.status.error"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.files_missing === true}}",
-                                    "props": {
-                                      "className": "px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded",
-                                      "data-testid": "lp-drift-badge"
-                                    },
-                                    "text": "$t:admin.language_packs.badge.files_missing"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.has_update === true && row.status !== 'uninstalled'}}",
-                                    "props": {
-                                      "className": "px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded"
-                                    },
-                                    "text": "$t:admin.language_packs.badge.update_available"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.has_update === true && row.latest_version && row.status !== 'uninstalled'}}",
-                                    "props": {
-                                      "className": "text-tertiary"
-                                    },
-                                    "text": "v{{row.latest_version}}"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.is_protected === true}}",
-                                    "props": {
-                                      "className": "px-2 py-0.5 text-xs bg-yellow-50 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 rounded"
-                                    },
-                                    "text": "$t:admin.language_packs.messages.protected_badge"
-                                  }
-                                ]
-                              },
-                              {
-                                "type": "basic",
-                                "name": "P",
-                                "if": "{{row.description}}",
-                                "props": {
-                                  "className": "mt-1 text-label"
-                                },
-                                "text": "{{row.description}}"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "if": "{{row.install_blocked_reason}}",
-                                "props": {
-                                  "className": "mt-2 inline-flex items-start gap-2 px-2 py-1 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200"
-                                },
-                                "children": [
-                                  {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "props": {
-                                      "name": "fas fa-triangle-exclamation",
-                                      "size": "sm",
-                                      "className": "mt-0.5"
+                                "className": "hidden"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "openModal",
+                            "target": "language_pack_install_modal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "fas fa-plus",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.language_packs.actions.install"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "lp_mobile_actions",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex-center gap-2 -mt-4 mb-4 flex-wrap"
+                    }
+                }
+            },
+            "props": {
+                "className": "hidden"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{language_packs?.data?.abilities?.can_check_updates}}",
+                    "actions": [
+                        {
+                            "comment": "좁은 화면용 같은 버튼 — 위 것과 한 벌이라 동작이 같아야 한다. 한쪽만 고치면 화면 폭에 따라 다르게 동작한다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isLanguagePackCheckingUpdates": true
                                     }
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.install_blocked_reason === 'core_locale_missing'}}",
-                                    "text": "$t:defer:admin.language_packs.modals.install_bundled_core_required|locale={{row.locale}}"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.install_blocked_reason === 'target_not_installed'}}",
-                                    "text": "$t:defer:admin.language_packs.modals.install_blocked_target_not_installed|scope={{row.scope}}|target={{row.target_identifier ?? ''}}"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.install_blocked_reason === 'target_inactive'}}",
-                                    "text": "$t:defer:admin.language_packs.modals.install_blocked_target_inactive|scope={{row.scope}}|target={{row.target_identifier ?? ''}}"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.install_blocked_reason === 'target_version_too_old'}}",
-                                    "text": "$t:defer:admin.language_packs.modals.install_blocked_target_version_too_old|scope={{row.scope}}|target={{row.target_identifier ?? ''}}"
-                                  }
-                                ]
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": "mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500 flex-wrap"
                                 },
-                                "responsive": {
-                                  "portable": {
-                                    "props": {
-                                      "className": "mt-2 flex flex-col items-start gap-1 text-xs text-gray-500 dark:text-gray-500"
-                                    }
-                                  }
-                                },
-                                "children": [
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:defer:admin.language_packs.vendor_label|vendor={{row.vendor ?? '—'}}"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.source_type}}",
-                                    "text": "$t:defer:admin.language_packs.source_label|source={{row.source_type}}"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.scope && row.scope !== 'core' && row.target_identifier}}",
-                                    "props": {
-                                      "className": "inline-flex items-center gap-1"
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/language-packs/check-updates",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST"
                                     },
-                                    "children": [
-                                      {
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "text": "$t:admin.language_packs.dependency_label"
-                                      },
-                                      {
-                                        "type": "basic",
-                                        "name": "Icon",
-                                        "if": "{{row.scope === 'module'}}",
-                                        "props": {
-                                          "name": "cube",
-                                          "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isLanguagePackCheckingUpdates": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "language_packs"
+                                            }
                                         }
-                                      },
-                                      {
-                                        "type": "basic",
-                                        "name": "Icon",
-                                        "if": "{{row.scope === 'plugin'}}",
-                                        "props": {
-                                          "name": "puzzle-piece",
-                                          "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isLanguagePackCheckingUpdates": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message ?? '$t:admin.language_packs.messages.check_updates_failed'}}"
+                                            }
                                         }
-                                      },
-                                      {
-                                        "type": "basic",
-                                        "name": "Icon",
-                                        "if": "{{row.scope === 'template'}}",
-                                        "props": {
-                                          "name": "palette",
-                                          "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"
-                                        }
-                                      },
-                                      {
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "text": "{{row.target_name ?? row.target_identifier}}"
-                                      }
                                     ]
-                                  }
-                                ]
-                              }
+                                }
                             ]
-                          },
-                          {
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "disabled": "{{_global.isLanguagePackCheckingUpdates}}",
+                        "className": "flex-center flex-1 justify-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    },
+                    "children": [
+                        {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Icon",
+                            "if": "{{!_global.isLanguagePackCheckingUpdates}}",
                             "props": {
-                              "className": "flex items-center gap-3 shrink-0"
+                                "name": "fas fa-sync-alt",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isLanguagePackCheckingUpdates}}",
+                            "props": {
+                                "name": "fas fa-spinner",
+                                "size": "sm",
+                                "className": "animate-spin"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.language_packs.actions.check_updates"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{language_packs?.data?.abilities?.can_refresh_cache}}",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "openModal",
+                            "target": "language_pack_refresh_cache_modal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center flex-1 justify-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "fas fa-broom",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.language_packs.actions.refresh_cache"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{language_packs?.data?.abilities?.can_install}}",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "openModal",
+                            "target": "language_pack_install_modal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center flex-1 justify-center gap-2 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors text-sm"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "fas fa-plus",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.language_packs.actions.install"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "lp_filter_bar",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex flex-col gap-3 mb-6"
+                    }
+                }
+            },
+            "props": {
+                "className": "flex-center justify-between gap-3 mb-6 flex-wrap"
+            },
+            "children": [
+                {
+                    "comment": "갤러리/목록 보기 전환 — 4화면이 같은 저장 키를 공유한다.\n           icon-button 은 aria-pressed·title 을 흘려보내지 않으므로(IconButton.tsx)\n           button 둘로 된 세그먼트로 만든다. 모든 폭에서 보인다(responsive 숨김 없음).",
+                    "id": "lp_view_mode_toggle",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "role": "group",
+                        "aria-label": "$t:extensions.view_mode.toggle_label",
+                        "className": "inline-flex self-start shrink-0 w-auto rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden"
+                    },
+                    "children": [
+                        {
+                            "id": "lp_view_mode_gallery",
+                            "type": "basic",
+                            "name": "Button",
+                            "classMap": {
+                                "key": "{{_global.extensionViewMode ?? 'gallery'}}",
+                                "variants": {
+                                    "list": "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                },
+                                "default": "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                            },
+                            "actions": [
+                                {
+                                    "comment": "리터럴 값을 저장한 뒤 곧바로 되읽어 성공을 확인한다(AGENTS.md §5).\n                 GDPR 저장 인터셉터는 허용목록 밖 키를 예외 없이 버리므로, 되읽은 값이\n                 비면 이번 세션 동안만 보기가 유지되고 새로고침하면 기본값으로 돌아간다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "extensionViewMode": "gallery"
+                                            }
+                                        },
+                                        {
+                                            "handler": "saveToLocalStorage",
+                                            "params": {
+                                                "key": "g7_view_mode_extensions",
+                                                "value": "gallery"
+                                            }
+                                        },
+                                        {
+                                            "handler": "loadFromLocalStorage",
+                                            "params": {
+                                                "key": "g7_view_mode_extensions",
+                                                "defaultValue": ""
+                                            },
+                                            "resultTo": {
+                                                "target": "_global",
+                                                "key": "extensionViewModePersisted"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "aria-pressed": "{{(_global.extensionViewMode ?? 'gallery') !== 'list'}}",
+                                "title": "$t:extensions.view_mode.gallery",
+                                "className": "px-3 h-10 transition-colors"
                             },
                             "children": [
-                              {
-                                "type": "basic",
-                                "name": "Button",
-                                "if": "{{row.status === 'uninstalled'}}",
-                                "props": {
-                                  "type": "button",
-                                  "disabled": "{{row.abilities?.can_install !== true}}",
-                                  "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                },
-                                "responsive": {
-                                  "portable": {
-                                    "props": {
-                                      "className": "flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors w-full"
-                                    }
-                                  }
-                                },
-                                "actions": [
-                                  {
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                      {
-                                        "handler": "setState",
-                                        "params": {
-                                          "target": "global",
-                                          "selectedBundledLanguagePack": "{{row}}",
-                                          "languagePackReinstallMode": false
-                                        }
-                                      },
-                                      {
-                                        "handler": "openModal",
-                                        "target": "language_pack_install_bundled_modal"
-                                      }
-                                    ]
-                                  }
-                                ],
-                                "children": [
-                                  {
+                                {
                                     "type": "basic",
                                     "name": "Icon",
                                     "props": {
-                                      "name": "fas fa-download",
-                                      "size": "sm"
+                                        "name": "th-large",
+                                        "size": "sm"
                                     }
-                                  },
-                                  {
+                                },
+                                {
                                     "type": "basic",
                                     "name": "Span",
-                                    "text": "$t:admin.language_packs.actions.install"
-                                  }
-                                ]
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Button",
-                                "if": "{{row.files_missing === true && row.bundled_source_available === true && row.abilities?.can_install === true}}",
-                                "props": {
-                                  "type": "button",
-                                  "title": "$t:admin.language_packs.actions.reinstall",
-                                  "data-testid": "lp-reinstall-button",
-                                  "className": "flex-center gap-2 px-4 py-2 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                                    "props": {
+                                        "className": "sr-only"
+                                    },
+                                    "text": "$t:extensions.view_mode.gallery_aria"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "lp_view_mode_list",
+                            "type": "basic",
+                            "name": "Button",
+                            "classMap": {
+                                "key": "{{_global.extensionViewMode ?? 'gallery'}}",
+                                "variants": {
+                                    "list": "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
                                 },
-                                "actions": [
-                                  {
+                                "default": "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                            },
+                            "actions": [
+                                {
+                                    "comment": "갤러리 버튼과 같은 순서 — 리터럴 `list` 를 저장한 뒤 곧바로 되읽어 성공을 확인한다(AGENTS.md §5).\n                 GDPR 저장 인터셉터는 허용목록 밖 키를 예외 없이 버리므로, 되읽은 값이 비면 이번 세션 동안만\n                 목록 보기가 유지되고 새로고침하면 기본값(갤러리)으로 돌아간다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
-                                      {
-                                        "handler": "setState",
-                                        "params": {
-                                          "target": "global",
-                                          "selectedBundledLanguagePack": "{{row}}",
-                                          "languagePackReinstallMode": true
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "extensionViewMode": "list"
+                                            }
+                                        },
+                                        {
+                                            "handler": "saveToLocalStorage",
+                                            "params": {
+                                                "key": "g7_view_mode_extensions",
+                                                "value": "list"
+                                            }
+                                        },
+                                        {
+                                            "handler": "loadFromLocalStorage",
+                                            "params": {
+                                                "key": "g7_view_mode_extensions",
+                                                "defaultValue": ""
+                                            },
+                                            "resultTo": {
+                                                "target": "_global",
+                                                "key": "extensionViewModePersisted"
+                                            }
                                         }
-                                      },
-                                      {
-                                        "handler": "openModal",
-                                        "target": "language_pack_install_bundled_modal"
-                                      }
                                     ]
-                                  }
-                                ],
-                                "children": [
-                                  {
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "aria-pressed": "{{(_global.extensionViewMode ?? 'gallery') === 'list'}}",
+                                "title": "$t:extensions.view_mode.list",
+                                "className": "px-3 h-10 transition-colors"
+                            },
+                            "children": [
+                                {
                                     "type": "basic",
                                     "name": "Icon",
                                     "props": {
-                                      "name": "fas fa-rotate",
-                                      "size": "sm"
+                                        "name": "list",
+                                        "size": "sm"
                                     }
-                                  },
-                                  {
+                                },
+                                {
                                     "type": "basic",
                                     "name": "Span",
-                                    "text": "$t:admin.language_packs.actions.reinstall"
-                                  }
-                                ]
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Button",
-                                "if": "{{row.has_update === true && row.status !== 'uninstalled' && language_packs?.data?.abilities?.can_update}}",
-                                "props": {
-                                  "type": "button",
-                                  "title": "$t:admin.language_packs.actions.update",
-                                  "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "props": {
+                                        "className": "sr-only"
+                                    },
+                                    "text": "$t:extensions.view_mode.list_aria"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "lp_filter_group",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3 flex-wrap"
+                    },
+                    "children": [
+                        {
+                            "id": "lp_filter_scope",
+                            "type": "basic",
+                            "name": "Select",
+                            "if": "{{!_local.scopeLocked}}",
+                            "actions": [
+                                {
+                                    "comment": "이 칸은 확장 상세에서 들어왔을 때 통째로 감춰진다 — 그때는 범위가 그 확장으로 이미 정해져 있어 고를 여지가 없다.",
+                                    "event": "onChange",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filterScope": "{{$event.target.value}}"
+                                    }
                                 },
-                                "actions": [
-                                  {
+                                {
+                                    "comment": "화면 값과 주소를 **따로 두 번** 바꾼다 — 앞은 화면이 즉시 반응하도록, 뒤는 주소가 곧 조건이 되도록. 범위를 바꾸면 첫 쪽으로 돌아간다(이전 쪽이 새 조건에서는 없을 수 있다).",
+                                    "event": "onChange",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{route.path}}",
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "scope": "{{$event.target.value || undefined}}",
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "value": "{{query.scope ?? ''}}",
+                                "className": "w-full sm:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100",
+                                "options": [
+                                    {
+                                        "value": "",
+                                        "label": "$t:admin.language_packs.filter.all_scopes"
+                                    },
+                                    {
+                                        "value": "core",
+                                        "label": "$t:admin.language_packs.scope.core"
+                                    },
+                                    {
+                                        "value": "module",
+                                        "label": "$t:admin.language_packs.scope.module"
+                                    },
+                                    {
+                                        "value": "plugin",
+                                        "label": "$t:admin.language_packs.scope.plugin"
+                                    },
+                                    {
+                                        "value": "template",
+                                        "label": "$t:admin.language_packs.scope.template"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "id": "lp_filter_status",
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "상태 다섯 중 「미설치」는 아직 깔지 않은 번들 팩이고, 「오류」는 파일이나 매니페스트가 깨져 읽히지 않는 팩이다.",
+                                    "event": "onChange",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filterStatus": "{{$event.target.value}}"
+                                    }
+                                },
+                                {
+                                    "comment": "범위 칸과 같은 두 걸음. 조건 둘은 서로 합쳐져 주소에 함께 실린다.",
+                                    "event": "onChange",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{route.path}}",
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "status": "{{$event.target.value || undefined}}",
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "value": "{{query.status ?? ''}}",
+                                "className": "w-full sm:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100",
+                                "options": [
+                                    {
+                                        "value": "",
+                                        "label": "$t:admin.language_packs.filter.all_statuses"
+                                    },
+                                    {
+                                        "value": "active",
+                                        "label": "$t:admin.language_packs.status.active"
+                                    },
+                                    {
+                                        "value": "installed",
+                                        "label": "$t:admin.language_packs.status.installed"
+                                    },
+                                    {
+                                        "value": "inactive",
+                                        "label": "$t:admin.language_packs.status.inactive"
+                                    },
+                                    {
+                                        "value": "uninstalled",
+                                        "label": "$t:admin.language_packs.status.uninstalled"
+                                    },
+                                    {
+                                        "value": "error",
+                                        "label": "$t:admin.language_packs.status.error"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "id": "lp_filter_reset",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{(query.search ?? '') !== '' || (query.scope ?? '') !== '' || (query.status ?? '') !== '' || (query.locale ?? '') !== '' || query.exclude_protected === '0' || query.exclude_protected === 0 || query.exclude_protected === false}}",
+                            "actions": [
+                                {
+                                    "comment": "초기화가 범위만은 건드리지 않을 수 있다 — 확장 상세에서 들어온 화면에서 범위를 지우면 남의 확장 팩까지 보이게 되므로 그 자리는 그대로 둔다.",
                                     "event": "onClick",
                                     "handler": "setState",
                                     "params": {
-                                      "target": "local",
-                                      "updateId": "{{row.id}}",
-                                      "updateCurrent": "{{row.version}}",
-                                      "updateLatest": "{{row.latest_version}}"
+                                        "target": "local",
+                                        "filterScope": "{{_local.scopeLocked ? _local.filterScope : ''}}",
+                                        "filterStatus": "",
+                                        "filterLocale": "",
+                                        "filterSearch": ""
                                     }
-                                  },
-                                  {
+                                },
+                                {
+                                    "comment": "주소에서도 조건을 걷어낸다. 보호된 팩 감추기까지 함께 풀리므로 이 버튼 한 번이면 기본 화면으로 돌아온다.",
                                     "event": "onClick",
-                                    "handler": "openModal",
-                                    "target": "language_pack_update_modal"
-                                  }
-                                ],
-                                "children": [
-                                  {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{route.path}}",
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "search": null,
+                                            "scope": null,
+                                            "status": null,
+                                            "locale": null,
+                                            "exclude_protected": null,
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "title": "$t:admin.language_packs.filter.reset",
+                                "className": "inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200"
+                            },
+                            "children": [
+                                {
                                     "type": "basic",
                                     "name": "Icon",
                                     "props": {
-                                      "name": "fas fa-arrow-up",
-                                      "size": "sm"
+                                        "name": "fas fa-rotate-left",
+                                        "size": "sm"
                                     }
-                                  },
-                                  {
+                                },
+                                {
                                     "type": "basic",
                                     "name": "Span",
-                                    "text": "$t:admin.language_packs.actions.update"
-                                  }
-                                ]
-                              },
-                              {
-                                "type": "composite",
-                                "name": "Toggle",
-                                "if": "{{row.status !== 'uninstalled'}}",
-                                "props": {
-                                  "checked": "{{row.status === 'active'}}",
-                                  "disabled": "{{row.is_protected === true || (row.abilities?.can_activate !== true && row.abilities?.can_deactivate !== true)}}",
-                                  "title": "{{row.is_protected === true ? '$t:admin.language_packs.messages.protected_badge' : ''}}",
-                                  "size": "sm"
-                                },
-                                "responsive": {
-                                  "portable": {
-                                    "props": {
-                                      "className": "absolute right-4 top-4"
-                                    }
-                                  }
-                                },
-                                "actions": [
-                                  {
-                                    "event": "onChange",
-                                    "handler": "apiCall",
-                                    "auth_required": true,
-                                    "target": "{{$event.target.checked ? '/api/admin/language-packs/' + row.id + '/activate' : '/api/admin/language-packs/' + row.id + '/deactivate'}}",
-                                    "params": {
-                                      "method": "POST"
-                                    },
-                                    "onSuccess": [
-                                      {
-                                        "handler": "toast",
-                                        "params": {
-                                          "type": "success",
-                                          "message": "{{$event.target.checked ? '$t:admin.language_packs.messages.activate_success' : '$t:admin.language_packs.messages.deactivate_success'}}"
-                                        }
-                                      },
-                                      {
-                                        "handler": "refetchDataSource",
-                                        "params": {
-                                          "dataSourceId": "language_packs"
-                                        }
-                                      },
-                                      {
-                                        "handler": "reloadExtensions"
-                                      }
-                                    ],
-                                    "errorHandling": {
-                                      "409": {
-                                        "handler": "sequence",
-                                        "actions": [
-                                          {
-                                            "handler": "setState",
-                                            "params": {
-                                              "target": "global",
-                                              "slotConflictCurrent": "{{error.errors?.current ?? null}}",
-                                              "slotConflictTarget": "{{error.errors?.target ?? null}}",
-                                              "slotConflictTargetId": "{{row.id}}"
-                                            }
-                                          },
-                                          {
-                                            "handler": "openModal",
-                                            "target": "language_pack_slot_conflict_modal"
-                                          }
-                                        ]
-                                      }
-                                    },
-                                    "onError": [
-                                      {
-                                        "handler": "toast",
-                                        "params": {
-                                          "type": "error",
-                                          "message": "{{error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}"
-                                        }
-                                      }
-                                    ]
-                                  }
-                                ]
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "responsive": {
-                                  "portable": {
-                                    "props": {
-                                      "className": "absolute right-1 top-1"
-                                    }
-                                  }
-                                },
-                                "children": [
-                                  {
-                                    "type": "composite",
-                                    "name": "ActionMenu",
-                                    "props": {
-                                      "triggerLabel": "",
-                                      "items": [
-                                        {
-                                          "id": "view_detail",
-                                          "label": "$t:admin.language_packs.actions.detail",
-                                          "iconName": "info-circle"
-                                        },
-                                        {
-                                          "id": "uninstall",
-                                          "label": "$t:admin.language_packs.actions.uninstall",
-                                          "iconName": "trash",
-                                          "variant": "danger",
-                                          "disabled": "{{row.is_protected === true || row.status === 'uninstalled' || row.abilities?.can_uninstall !== true}}"
-                                        }
-                                      ]
-                                    },
-                                    "actions": [
-                                      {
-                                        "event": "onItemClick",
-                                        "type": "action",
-                                        "handler": "switch",
-                                        "cases": {
-                                          "view_detail": {
-                                            "handler": "sequence",
-                                            "actions": [
-                                              {
-                                                "handler": "setState",
-                                                "params": {
-                                                  "target": "local",
-                                                  "detailId": "{{row.id ?? row.bundled_identifier ?? row.identifier}}"
-                                                }
-                                              },
-                                              {
-                                                "handler": "refetchDataSource",
-                                                "params": {
-                                                  "dataSourceId": "language_pack_detail"
-                                                }
-                                              },
-                                              {
-                                                "handler": "openModal",
-                                                "target": "language_pack_detail_modal"
-                                              }
-                                            ]
-                                          },
-                                          "uninstall": {
-                                            "handler": "sequence",
-                                            "actions": [
-                                              {
-                                                "handler": "setState",
-                                                "params": {
-                                                  "target": "local",
-                                                  "uninstallId": "{{row.id}}",
-                                                  "uninstallScope": "{{row.scope}}",
-                                                  "uninstallTarget": "{{row.target_identifier}}",
-                                                  "uninstallLocale": "{{row.locale}}"
-                                                }
-                                              },
-                                              {
-                                                "handler": "openModal",
-                                                "target": "language_pack_uninstall_modal"
-                                              }
-                                            ]
-                                          }
-                                        }
-                                      }
-                                    ]
-                                  }
-                                ]
-                              }
+                                    "text": "$t:admin.language_packs.filter.reset"
+                                }
                             ]
-                          }
-                        ]
-                      }
+                        },
+                        {
+                            "id": "lp_filter_exclude_protected",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "inline-clickable px-3 py-2 text-body select-none"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "켜 두는 것이 기본이라 **끌 때만** 주소에 값을 남긴다 — 기본 상태의 주소를 깨끗하게 두려는 것이다(그래서 주소에 이 값이 없으면 켜진 것으로 읽는다).",
+                                            "event": "onChange",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{route.path}}",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "exclude_protected": "{{$event.target.checked ? undefined : '0'}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "checkbox",
+                                        "checked": "{{query.exclude_protected === undefined || query.exclude_protected === null || query.exclude_protected === '1' || query.exclude_protected === 1 || query.exclude_protected === true}}",
+                                        "className": "h-4 w-4 text-indigo-600 rounded"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.language_packs.filter.exclude_protected"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "lp_search",
+                            "type": "composite",
+                            "name": "SearchBar",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "w-full"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "comment": "검색어만은 즉시 조회하지 않고 담아 둔다 — 글자를 칠 때마다 주소가 바뀌면 뒤로 가기 이력이 글자 수만큼 쌓인다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filterSearch": "{{$event.target.value}}"
+                                    }
+                                },
+                                {
+                                    "comment": "검색 버튼이나 Enter 에서 비로소 주소로 옮긴다. 빈 검색어는 조건에서 아예 빼 주소를 지저분하게 두지 않는다.",
+                                    "type": "submit",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{route.path}}",
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "search": "{{_local.filterSearch || undefined}}",
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "search",
+                                "placeholder": "$t:admin.language_packs.search_placeholder",
+                                "value": "{{_local.filterSearch ?? query.search ?? ''}}",
+                                "showButton": true,
+                                "className": "w-72"
+                            }
+                        }
                     ]
-                  }
-                ]
-              }
-            ]
-          },
-          "actions": [
-            {
-              "event": "onPageChange",
-              "type": "change",
-              "handler": "navigate",
-              "params": {
-                "path": "{{route.path}}",
-                "replace": true,
-                "mergeQuery": true,
-                "query": {
-                  "page": "{{$args[0]}}"
                 }
-              }
-            }
-          ]
+            ]
         },
         {
-          "id": "lp_pagination_info",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(language_packs?.data?.data?.length ?? 0) > 0}}",
-          "props": {
-            "className": "mt-4 flex-between gap-4 text-label"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "mt-4 flex flex-col items-stretch gap-3 text-label"
-              }
-            }
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2"
-              },
-              "children": [
+            "id": "lp_content_area",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:admin.language_packs.pagination.per_page_label"
+                    "id": "lp_empty",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(language_packs?.data?.data?.length ?? 0) === 0}}",
+                    "props": {
+                        "className": "p-8 text-center text-gray-500 dark:text-gray-400"
+                    },
+                    "text": "$t:admin.language_packs.messages.empty"
                 },
                 {
-                  "type": "basic",
-                  "name": "Select",
-                  "props": {
-                    "value": "{{query.per_page || 10}}",
-                    "className": "border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded px-2 py-1 text-sm",
-                    "options": [
-                      {
-                        "value": "10",
-                        "label": "10"
-                      },
-                      {
-                        "value": "20",
-                        "label": "20"
-                      },
-                      {
-                        "value": "50",
-                        "label": "50"
-                      },
-                      {
-                        "value": "100",
-                        "label": "100"
-                      }
-                    ]
-                  },
-                  "actions": [
-                    {
-                      "event": "onChange",
-                      "handler": "navigate",
-                      "params": {
-                        "path": "{{route.path}}",
-                        "replace": true,
-                        "mergeQuery": true,
-                        "query": {
-                          "per_page": "{{$event.target.value}}",
-                          "page": "1"
+                    "comment": "언어팩 목록 — 갤러리(카드)와 목록(행)은 서로 다른 DOM 이다.\n           보기 분기는 `viewMode` prop 으로 넘긴다: 카드 셀의 렌더 컨텍스트에는 `_global` 이\n           없어 카드 안쪽에서는 보기 상태를 볼 수 없기 때문이다.\n           언어팩은 대개 자기 그림이 없어 대상 확장·코어의 아이콘을 빌려 쓰므로, 무엇의 어떤\n           언어인지 아이콘 위 로케일 표식으로 구분한다(국기는 쓰지 않는다 — 언어는 나라가\n           아니다). 대상 식별자는 `identifier` 가 아니라 설치 행의 `id` 다.",
+                    "id": "lp_card_grid",
+                    "type": "composite",
+                    "name": "ExtensionCardGrid",
+                    "if": "{{(language_packs?.data?.data?.length ?? 0) > 0}}",
+                    "actions": [
+                        {
+                            "comment": "카드 본문 클릭 — 상세 창을 연다. 대상 id 를 지역에 담고 데이터소스를 다시 받는다\n               (다른 화면과 달리 창이 전역이 아니라 자기 데이터소스를 본다).",
+                            "type": "action",
+                            "event": "onItemClick",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "detailId": "{{$args[0].id ?? $args[0].bundled_identifier ?? $args[0].identifier}}"
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "language_pack_detail"
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "language_pack_detail_modal"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "활성/비활성 토글 — 주소를 스위치 방향으로 가른다. 409(칸 충돌)는 같은 자리에\n               다른 언어팩이 이미 들어 있다는 뜻이라 어느 것을 둘지 고르는 창으로 넘긴다.",
+                            "type": "action",
+                            "event": "onToggle",
+                            "handler": "apiCall",
+                            "target": "{{$args[0] ? '/api/admin/language-packs/' + $args[1].id + '/activate' : '/api/admin/language-packs/' + $args[1].id + '/deactivate'}}",
+                            "auth_required": true,
+                            "params": {
+                                "method": "POST"
+                            },
+                            "onSuccess": {
+                                "handler": "parallel",
+                                "actions": [
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "{{$args[0] ? '$t:admin.language_packs.messages.activate_success' : '$t:admin.language_packs.messages.deactivate_success'}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "language_packs"
+                                        }
+                                    }
+                                ]
+                            },
+                            "onError": {
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message ?? '$t:admin.language_packs.messages.toggle_failed'}}"
+                                        }
+                                    },
+                                    {
+                                        "comment": "서버가 거절하면 값이 그대로 돌아와 스위치가 스스로 되돌아가지 못한다 — 재동기 신호를 올린다(#703).",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "extensionToggleResync": "{{(_global.extensionToggleResync ?? 0) + 1}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "language_packs"
+                                        }
+                                    }
+                                ]
+                            },
+                            "errorHandling": {
+                                "409": {
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "comment": "창에서 고르기 전까지 스위치는 서버 값에 둔다 — 창을 닫아도 뒤집힌 채 남지 않는다(#703).",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "extensionToggleResync": "{{(_global.extensionToggleResync ?? 0) + 1}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "slotConflictCurrent": "{{error.errors?.current ?? null}}",
+                                                "slotConflictTarget": "{{error.errors?.target ?? null}}",
+                                                "slotConflictTargetId": "{{$args[1].id}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "language_pack_slot_conflict_modal"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "comment": "보조 버튼은 둘 중 하나로만 생긴다 — 파일이 비었으면 다시 심기, 아니면 업데이트.\n               다시 심기는 설치 창을 재설치 모드로 연다(같은 창을 쓴다).",
+                            "type": "action",
+                            "event": "onSecondaryAction",
+                            "handler": "switch",
+                            "params": {
+                                "value": "{{$args[0].files_missing === true ? 'reinstall' : 'update'}}"
+                            },
+                            "cases": {
+                                "reinstall": {
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedBundledLanguagePack": "{{$args[0]}}",
+                                                "languagePackReinstallMode": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "language_pack_install_bundled_modal"
+                                        }
+                                    ]
+                                },
+                                "update": {
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "comment": "창은 행을 다시 찾지 못하므로 아이콘 재료(주소·출처·로케일)도 여기서 함께 담는다.",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "updateId": "{{$args[0].id}}",
+                                                "updateCurrent": "{{$args[0].version}}",
+                                                "updateLatest": "{{$args[0].latest_version}}",
+                                                "updateIconUrl": "{{$args[0].icon_url}}",
+                                                "updateIconSource": "{{$args[0].icon_source}}",
+                                                "updateLocale": "{{$args[0].locale}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "language_pack_update_modal"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "comment": "설치 — 동봉본을 심는 창을 연다(재설치가 아니므로 모드를 꺼 둔다).",
+                            "type": "action",
+                            "event": "onPrimaryAction",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "selectedBundledLanguagePack": "{{$args[0]}}",
+                                        "languagePackReinstallMode": false
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "language_pack_install_bundled_modal"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "카드 더보기 메뉴. 삭제는 무엇을 지우는지 창이 되보여 줄 수 있도록 범위·대상·언어를\n               함께 담아 둔다.",
+                            "type": "action",
+                            "event": "onAction",
+                            "handler": "switch",
+                            "cases": {
+                                "view_detail": {
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "detailId": "{{$args[1].id ?? $args[1].bundled_identifier ?? $args[1].identifier}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "language_pack_detail"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "language_pack_detail_modal"
+                                        }
+                                    ]
+                                },
+                                "uninstall": {
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "comment": "위 update 와 같은 이유로 아이콘 재료를 함께 담는다.",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "uninstallId": "{{$args[1].id}}",
+                                                "uninstallScope": "{{$args[1].scope}}",
+                                                "uninstallTarget": "{{$args[1].target_identifier}}",
+                                                "uninstallLocale": "{{$args[1].locale}}",
+                                                "uninstallIconUrl": "{{$args[1].icon_url}}",
+                                                "uninstallIconSource": "{{$args[1].icon_source}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "language_pack_uninstall_modal"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "comment": "페이지 이동 — 이 조각은 세 호스트가 감싸므로 목적지를 박지 않고 지금 경로를 쓴다.",
+                            "type": "change",
+                            "event": "onPageChange",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "{{route.path}}",
+                                "replace": true,
+                                "mergeQuery": true,
+                                "query": {
+                                    "page": "{{$args[0]}}"
+                                }
+                            }
                         }
-                      }
+                    ],
+                    "props": {
+                        "viewMode": "{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}",
+                        "minCardWidth": 250,
+                        "maxColumns": 5,
+                        "resyncKey": "{{_global.extensionToggleResync ?? 0}}",
+                        "loading": "{{language_packs?.loading ?? false}}",
+                        "pagination": true,
+                        "alwaysShowPagination": true,
+                        "currentPage": "{{language_packs?.data?.pagination?.current_page ?? 1}}",
+                        "totalPages": "{{language_packs?.data?.pagination?.last_page ?? null}}",
+                        "hasMorePages": "{{language_packs?.data?.pagination?.has_more_pages ?? false}}",
+                        "items": "{{(language_packs?.data?.data ?? []).map(p => ({\n        id: String(p.id ?? p.bundled_identifier ?? p.identifier),\n        row: p,\n        name: p.name ?? p.identifier,\n        version: p.version,\n        description: p.description ?? '',\n        vendor: p.vendor,\n        iconUrl: p.icon_url,\n        fallbackIcon: 'language',\n        iconBadge: p.icon_source !== 'manifest' ? { text: p.locale, srLabel: p.locale_native_name ?? p.locale ?? '' } : null,\n        dependencies: [],\n        badges: [\n          ...(p.status === 'active' ? [{ label: '$t:admin.language_packs.status.active', tone: 'success' }] : []),\n          ...(p.status === 'inactive' ? [{ label: '$t:admin.language_packs.status.inactive', tone: 'neutral' }] : []),\n          ...(p.status === 'uninstalled' ? [{ label: '$t:admin.language_packs.status.uninstalled', tone: 'info' }] : []),\n          ...(p.is_protected === true ? [{ label: '$t:admin.language_packs.messages.protected_badge', tone: 'accent' }] : []),\n          ...(p.files_missing === true ? [{ label: '$t:admin.language_packs.badge.files_missing', tone: 'danger' }] : []),\n          ...(p.has_update === true && p.status !== 'uninstalled' ? [{ label: '$t:admin.language_packs.badge.update_available', tone: 'danger' }] : [])\n        ],\n        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.is_protected === true || (p.abilities?.can_activate !== true && p.abilities?.can_deactivate !== true), label: p.name ?? p.identifier } : null,\n        secondaryAction: p.files_missing === true && p.bundled_source_available === true && p.abilities?.can_install === true\n          ? { label: '$t:admin.language_packs.actions.reinstall', icon: 'refresh' }\n          : (p.has_update === true && p.status !== 'uninstalled' && language_packs?.data?.abilities?.can_update ? { label: '$t:admin.language_packs.actions.update', icon: 'refresh' } : null),\n        primaryAction: p.status === 'uninstalled'\n          ? { label: '$t:admin.language_packs.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true }\n          : null,\n        actions: [\n          { id: 'view_detail', label: '$t:admin.language_packs.actions.detail', iconName: 'info-circle' },\n          { id: 'uninstall', label: '$t:admin.language_packs.actions.uninstall', iconName: 'trash', variant: 'danger', disabled: p.is_protected === true || p.status === 'uninstalled' || p.abilities?.can_uninstall !== true }\n        ]\n      }))}}"
                     }
-                  ]
+                },
+                {
+                    "id": "lp_pagination_info",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(language_packs?.data?.data?.length ?? 0) > 0}}",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "mt-4 flex flex-col items-stretch gap-3 text-label"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "mt-4 flex-between gap-4 text-label"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.language_packs.pagination.per_page_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "한 쪽에 몇 개를 볼지. 개수가 바뀌면 지금 쪽 번호가 뜻을 잃으므로 첫 쪽으로 돌아간다.",
+                                            "event": "onChange",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{route.path}}",
+                                                "replace": true,
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "per_page": "{{$event.target.value}}",
+                                                    "page": "1"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "value": "{{query.per_page || 10}}",
+                                        "className": "border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded px-2 py-1 text-sm",
+                                        "options": [
+                                            {
+                                                "value": "10",
+                                                "label": "10"
+                                            },
+                                            {
+                                                "value": "20",
+                                                "label": "20"
+                                            },
+                                            {
+                                                "value": "50",
+                                                "label": "50"
+                                            },
+                                            {
+                                                "value": "100",
+                                                "label": "100"
+                                            }
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.language_packs.pagination.summary|total={{language_packs?.data?.pagination?.total ?? 0}}|from={{language_packs?.data?.pagination?.from ?? 0}}|to={{language_packs?.data?.pagination?.to ?? 0}}"
+                        }
+                    ]
                 }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:admin.language_packs.pagination.summary|total={{language_packs?.data?.meta?.total ?? 0}}|from={{((language_packs?.data?.meta?.current_page ?? 1) - 1) * (language_packs?.data?.meta?.per_page ?? 10) + 1}}|to={{Math.min((language_packs?.data?.meta?.current_page ?? 1) * (language_packs?.data?.meta?.per_page ?? 10), language_packs?.data?.meta?.total ?? 0)}}"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

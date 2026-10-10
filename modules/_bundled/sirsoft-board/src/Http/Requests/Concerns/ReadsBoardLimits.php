@@ -70,6 +70,11 @@ trait ReadsBoardLimits
 
         'attachment_purge_retention_days_min' => 1,
         'attachment_purge_retention_days_max' => 3650,
+
+        'privacy_ip_retention_days_min' => 1,
+        'privacy_ip_retention_days_max' => 3650,
+        'privacy_guest_retention_days_min' => 0,
+        'privacy_guest_retention_days_max' => 3650,
     ];
 
     /**

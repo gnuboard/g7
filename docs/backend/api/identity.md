@@ -16,6 +16,25 @@
 
 ---
 
+## 공개 본인인증 엔드포인트의 요청 제한
+
+`/api/identity/*` 의 공개 엔드포인트는 분당 요청 횟수를 제한하며, **엔드포인트마다 자기 횟수만 셉니다**.
+
+| 엔드포인트 | 상한 (분당) | 비고 |
+| --- | --- | --- |
+| `POST /api/identity/challenges` (요청) | 30 | 회원가입 흐름의 재전송·같은 NAT 아래 다수 게스트를 막지 않도록 확인보다 넉넉히 둔다 |
+| `POST /api/identity/challenges/{challenge}/verify` (확인) | 10 | 인증번호 대입 방어 |
+| `POST /api/identity/challenges/{challenge}/cancel` (취소) | 30 | |
+| `GET /api/identity/challenges/{challenge}` (상태 조회) | 30 | 비동기 제공자 폴링 |
+| `POST /api/identity/callback/{providerId}` (콜백) | 30 | |
+
+비로그인 요청의 제한 키는 라우트별 접두사 + IP 이고, 로그인 요청은 접두사 + 회원 식별자입니다. 접두사가 없으면
+Laravel 의 기본 키가 경로와 무관하게 `sha1(domain|ip)` 하나로 만들어져 다른 공개 API(`/api/user/*` 등)의 호출과
+횟수를 공유하고, 화면 로드 몇 번 뒤 확인 요청이 429 로 막힙니다(7.1.0 에서 분리). 상한을 넘기면 `429` 와
+`X-RateLimit-Limit` 헤더로 응답합니다.
+
+---
+
 
 ### GET /api/admin/identity/logs
 <!-- @generated:start:api.admin.identity.logs.index -->
@@ -242,1281 +261,20 @@ HTTP/1.1 200
 **설명** 지정한 보관주기(`older_than_days`, 기본 180일) 를 경과한 본인인증 이력을 일괄 삭제하고 삭제된 행 수를 반환합니다. `auth:sanctum` + `core.admin.identity.logs.purge` 관리자 권한이 필요합니다. `IdentityLogService::purge` 가 실제 삭제를 수행하며 되돌릴 수 없으므로, 개인정보 보관기간 정책 준수를 위해 오래된 인증 시도 로그를 정리할 때 사용합니다.
 
 
-### GET /api/admin/identity/messages/definitions
-<!-- @generated:start:api.admin.identity.messages.definitions.index -->
-- **라우트명**: `api.admin.identity.messages.definitions.index`
-- **컨트롤러**: `App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController@index`
-- **인증/권한**: `auth:sanctum` + `permission:core.admin.identity.messages.read`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| search | query | string | 아니오 | max 255 | 검색어 (지정한 검색 대상 필드에서 부분 일치) |
-| provider_id | query | string | 아니오 | max 64 | provider 식별자 |
-| scope_type | query | string | 아니오 | — | 메시지 정의 스코프 필터 (provider_default/purpose/policy — 어느 계층 템플릿인지, IdentityMessageScopeType) |
-| scope_value | query | string | 아니오 | max 120 | 스코프 값 필터 (provider_default 빈값 / purpose 키 / policy 키) |
-| extension_type | query | string | 아니오 | — | 확장 유형 (core/module/plugin/template) |
-| extension_identifier | query | string | 아니오 | max 100 | 확장 식별자 |
-| channel | query | string | 아니오 | max 20 | 메시지 채널 필터 (mail 등 — 해당 채널 템플릿을 가진 정의만) |
-| is_active | query | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
-| per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
-| sort_by | query | string | 아니오 | — | 정렬 기준 필드명 |
-| sort_order | query | string | 아니오 | — | 정렬 방향 (asc 오름차순 / desc 내림차순) |
-
-> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.identity.message_definition.index_validation_rules`).
-
-**요청 예시**
-
-```http
-GET /api/admin/identity/messages/definitions?search=%EC%98%88%EC%8B%9C%EA%B0%92&provider_id=%EC%98%88%EC%8B%9C%EA%B0%92&scope_type=%EC%98%88%EC%8B%9C%EA%B0%92&scope_value=%EC%98%88%EC%8B%9C%EA%B0%92&extension_type=%EC%98%88%EC%8B%9C%EA%B0%92&extension_identifier=example-key&channel=%EC%98%88%EC%8B%9C%EA%B0%92&is_active=1&per_page=1&sort_by=%EC%98%88%EC%8B%9C%EA%B0%92&sort_order=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
-Host: api.example.com
-Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}
-```
-
-**응답 필드** (`data` 내부)
-
-_목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| number | integer | `1` | 목록에서의 순번 (페이지네이션 반영 행 번호 — HasRowNumber 파생) |
-| id | integer | `1` | 기본 키 (내부 식별자) |
-| provider_id | string | `g7:core.mail` | provider 식별자 (연관 리소스 참조) |
-| scope_type | string | `purpose` | 메시지 정의 스코프 (provider_default: 프로바이더 기본 / purpose: 목적별 / policy: 정책별 — IdentityMessageScopeType) |
-| scope_value | string | `checkout_verification` | 스코프 값 (provider_default 빈 문자열 / purpose 목적 키 / policy 정책 키) |
-| name | object | `{"ko":"결제 시 본인 확인","en":"Checkout Verification"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
-| description | object | `{"ko":"결제 진행 전 본인\/성인 확인 인증 코드 메일","en":"Identity\/adult …` | 설명 (다국어 필드는 로케일별 값 객체) |
-| channels | array | `["mail"]` | 이 정의가 지원하는 활성 채널 목록 (현재 mail, 향후 sms 등 확장) |
-| variables | array | `[{"key":"code","description":"인증 코드 (text_code 흐름)"},{"ke…` | 템플릿에서 치환 가능한 변수 메타데이터 목록 (원소 key/description) |
-| extension_type | string | `module` | 이 리소스를 소유한 확장의 타입 (core/module/plugin/template) |
-| extension_identifier | string | `sirsoft-ecommerce` | 이 리소스를 소유한 확장의 식별자 |
-| is_active | boolean | `true` | active 여부 |
-| is_default | boolean | `true` | default 여부 |
-| user_overrides | array | `["name.ja"]` | 운영자가 시드 기본값에서 수정한 필드 경로 목록 (예: name.ja — 시더 재실행 시 보존 대상) |
-| templates | array | `[{"id":1,"definition_id":1,"channel":"mail","subject":{"k…` | 이 정의에 속한 채널별 하위 메시지 템플릿 목록 (원소 id/channel/subject/body 등). **목록 조회에서는 대표 1건만 실린다** — 전체 채널이 필요하면 단건 조회를 사용한다 |
-| templates_count | integer | `1` | templates 개수 (집계) |
-| created_at | string | `2026-07-30 18:47:09` | 생성 일시 |
-| updated_at | string | `2026-07-30 18:47:09` | 최종 수정 일시 |
-| abilities | object | `{"can_update":true,"can_delete":false}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
-
-**응답 예시**
-
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "IDV 메시지 정의 목록을 조회했습니다.",
-    "data": {
-        "data": [
-            {
-                "number": 1,
-                "id": 1,
-                "provider_id": "g7:core.mail",
-                "scope_type": "purpose",
-                "scope_value": "checkout_verification",
-                "...": "(14개 키 생략, 총 19개)"
-            },
-            {
-                "number": 2,
-                "id": 2,
-                "provider_id": "g7:core.mail",
-                "scope_type": "provider_default",
-                "scope_value": "",
-                "...": "(14개 키 생략, 총 19개)"
-            },
-            "... (총 6건 중 2건 표시)"
-        ],
-        "pagination": {
-            "current_page": 1,
-            "last_page": 1,
-            "per_page": 25,
-            "total": 6,
-            "from": 1,
-            "...": "(2개 키 생략, 총 7개)"
-        },
-        "abilities": {
-            "can_create": true,
-            "can_update": true
-        }
-    }
-}
-```
-
-**에러 응답**
-
-| 상태코드 | 의미 | 발생 조건 |
-| --- | --- | --- |
-| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-
-<!-- @generated:end -->
-
-**설명** 본인인증 알림 메시지 정의(프로바이더별·목적별·정책별 메일/SMS 템플릿 묶음) 목록을 필터·검색하여 페이지네이션 조회합니다. `auth:sanctum` + `core.admin.identity.messages.read` 관리자 권한이 필요합니다. 확장이 `core.identity.message_definition.index_validation_rules` 필터 훅으로 추가 검색 파라미터를 등록할 수 있습니다. 응답 각 항목의 `user_overrides` 로 운영자가 시드 기본값에서 수정한 필드를 함께 내려 관리자 메시지 설정 화면을 구성할 때 사용합니다. 목록의 `templates` 에는 **대표 템플릿 1건만** 실리고, 전체 채널 수는 `templates_count` 로 제공합니다 — 정의마다 채널×로케일 템플릿 본문을 전부 실으면 목록을 여는 것만으로 전 행의 메일 본문이 전송되기 때문입니다. 채널별 템플릿 전체가 필요하면 단건 조회(`GET /api/admin/identity/messages/definitions/{definition}`)를 사용합니다.
-
-
-### POST /api/admin/identity/messages/definitions
-<!-- @generated:start:api.admin.identity.messages.definitions.store -->
-- **라우트명**: `api.admin.identity.messages.definitions.store`
-- **컨트롤러**: `App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController@store`
-- **인증/권한**: `auth:sanctum` + `permission:core.admin.identity.messages.update`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| provider_id | body | string | 예 | max 64 | provider 식별자 |
-| scope_type | body | string | 예 | — | 메시지 정의 스코프 (관리자 생성은 policy 만 허용 — provider_default/purpose 는 시드 영역) |
-| scope_value | body | string | 예 | max 120 | 스코프 값 (source_type='admin' 인 IdentityPolicy.key 와 일치해야 함) |
-| name | body | array | 예 | — | 대상의 이름/명칭 |
-| description | body | array | 아니오 | — | 설명 |
-| channels | body | array | 예 | min 1 | 지원 채널 목록 (최소 1개, 현재 mail 만 허용) |
-| variables | body | array | 아니오 | — | 템플릿 치환 변수 메타데이터 목록 (원소 key/description, key 는 영문 식별자) |
-| templates | body | array | 예 | min 1 | 채널별 하위 템플릿 배열 (최소 1개, 원소 channel/subject/body 다국어 배열) |
-
-> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.identity.message_definition.store_validation_rules`).
-
-**요청 예시**
-
-```http
-POST /api/admin/identity/messages/definitions HTTP/1.1
-Host: api.example.com
-Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}
-Content-Type: application/json
-
-{
-    "provider_id": "예시값",
-    "scope_type": "예시값",
-    "scope_value": "예시값",
-    "name": [
-        "예시 이름"
-    ],
-    "description": [
-        "예시 내용입니다."
-    ],
-    "channels": [
-        "예시값"
-    ],
-    "variables": [
-        "예시값"
-    ],
-    "templates": [
-        "예시값"
-    ]
-}
-```
-
-**응답 필드** (`data` 내부)
-
-_단건 응답: `data` 객체의 필드 (생성된 정의를 `IdentityMessageDefinitionResource` 로 직렬화, `templates` eager load 포함). 성공 시 HTTP 201._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `13` | 기본 키 (내부 식별자) |
-| provider_id | string | `g7:core.mail` | 이 정의가 속한 IDV 프로바이더 ID |
-| scope_type | string | `policy` | 메시지 정의 스코프 (관리자 생성은 항상 `policy`) |
-| scope_value | string | `admin.custom_action` | 스코프 값 (source_type='admin' 인 IdentityPolicy.key) |
-| name | object | `{"ko":"...","en":"..."}` | 다국어 표시명 |
-| description | object | `{"ko":"...","en":"..."}` | 다국어 설명 (미전달 시 null) |
-| channels | array | `["mail"]` | 이 정의가 지원하는 활성 채널 목록 |
-| variables | array | `[{"key":"code","description":"인증 코드"}]` | 템플릿 치환 가능 변수 메타데이터 목록 (미전달 시 null) |
-| extension_type | string | `core` | 이 리소스를 소유한 확장의 타입 (관리자 생성은 core) |
-| extension_identifier | string | `core` | 이 리소스를 소유한 확장의 식별자 |
-| is_active | boolean | `true` | 활성 여부 |
-| is_default | boolean | `false` | 시드 기본 정의 여부 (관리자 생성 정의는 false → 삭제 가능) |
-| user_overrides | array | `null` | 운영자가 시드 기본값에서 수정한 필드 경로 목록 (신규 생성 직후 null) |
-| templates | array | `[{"id":13,"definition_id":13,"channel":"mail","subject":{…},"body":{…}}]` | 함께 생성된 채널별 하위 템플릿 목록 |
-| created_at | string | `2026-07-08 10:43:32` | 생성 일시 |
-| updated_at | string | `2026-07-08 10:43:32` | 최종 수정 일시 |
-| abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |
-
-**응답 예시**
-
-```http
-HTTP/1.1 201
-```
-
-```json
-{
-    "success": true,
-    "message": "IDV 메시지 정의가 생성되었습니다.",
-    "data": {
-        "id": 13,
-        "provider_id": "g7:core.mail",
-        "scope_type": "policy",
-        "scope_value": "admin.custom_action",
-        "name": {
-            "ko": "커스텀 민감작업 인증",
-            "en": "Custom Sensitive Action"
-        },
-        "description": {
-            "ko": "운영자가 등록한 정책 전용 인증 메일",
-            "en": "Policy-specific verification mail added by admin"
-        },
-        "channels": [
-            "mail"
-        ],
-        "variables": [
-            {
-                "key": "code",
-                "description": "인증 코드 (text_code 흐름)"
-            }
-        ],
-        "extension_type": "core",
-        "extension_identifier": "core",
-        "is_active": true,
-        "is_default": false,
-        "user_overrides": null,
-        "templates": [
-            {
-                "id": 13,
-                "definition_id": 13,
-                "channel": "mail",
-                "subject": {
-                    "ko": "[{app_name}] 인증 코드",
-                    "en": "[{app_name}] Verification Code"
-                },
-                "body": {
-                    "ko": "<p>인증 코드: {code}</p>",
-                    "en": "<p>Your code: {code}</p>"
-                },
-                "is_active": true,
-                "is_default": false,
-                "user_overrides": null,
-                "updated_by": null,
-                "created_at": "2026-07-08 10:43:32",
-                "updated_at": "2026-07-08 10:43:32",
-                "abilities": {
-                    "can_update": true,
-                    "can_delete": true
-                }
-            }
-        ],
-        "created_at": "2026-07-08 10:43:32",
-        "updated_at": "2026-07-08 10:43:32",
-        "abilities": {
-            "can_update": true,
-            "can_delete": true
-        }
-    }
-}
-```
-
-**에러 응답**
-
-| 상태코드 | 의미 | 발생 조건 |
-| --- | --- | --- |
-| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 500 | Internal Server Error | 정의 생성 중 예외 발생 (`IDV 메시지 정의 생성에 실패했습니다.`) |
-
-<!-- @generated:end -->
-
-**설명** 운영자가 정책(policy) 매핑용 메시지 정의를 신규 생성합니다. `auth:sanctum` + `core.admin.identity.messages.update` 관리자 권한이 필요합니다. `IdentityMessageDefinitionService::createAdminDefinition` 이 처리하며 `scope_type='policy'` + `scope_value` 가 admin policy.key 와 매칭되는 경우만 허용됩니다(FormRequest 검증). `channels`·`templates` 를 최소 1개 이상 포함해야 하며, 확장은 `core.identity.message_definition.store_validation_rules` 필터 훅으로 검증 규칙을 확장할 수 있습니다. 특정 인증 정책에 전용 메일/SMS 문구를 붙이고자 할 때 사용하며 성공 시 201 로 응답합니다.
-
-
-### DELETE /api/admin/identity/messages/definitions/{definition}
-<!-- @generated:start:api.admin.identity.messages.definitions.destroy -->
-- **라우트명**: `api.admin.identity.messages.definitions.destroy`
-- **컨트롤러**: `App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController@destroy`
-- **인증/권한**: `auth:sanctum` + `permission:core.admin.identity.messages.update`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| definition | path | string | 예 | — | 대상 definition의 식별자 |
-
-**요청 예시**
-
-```http
-DELETE /api/admin/identity/messages/definitions/{definition} HTTP/1.1
-Host: api.example.com
-Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}
-```
-
-**응답 필드** (`data` 내부)
-
-_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만 — 컨트롤러가 `$this->success(__('identity_message.definition_deleted'))` 를 인자 1개로 호출)._
-
-**응답 예시**
-
-```json
-{
-    "success": true,
-    "message": "IDV 메시지 정의가 삭제되었습니다."
-}
-```
-
-**에러 응답**
-
-| 상태코드 | 의미 | 발생 조건 |
-| --- | --- | --- |
-| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.update`)이 없는 경우, 또는 대상 정의가 시드 기본 정의(`is_default=true`)인 경우 (`시드된 기본 메시지 정의는 삭제할 수 없습니다.`) |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 500 | Internal Server Error | 삭제 중 예외 발생 (`IDV 메시지 정의 삭제에 실패했습니다.`) |
-
-<!-- @generated:end -->
-
-**설명** 운영자가 추가한 메시지 정의를 삭제합니다. `auth:sanctum` + `core.admin.identity.messages.update` 관리자 권한이 필요합니다. 시드로 제공되는 `is_default=true` 정의는 삭제가 거부되어 403 을 반환하며(선언형 보호), 삭제 시 FK cascade 로 자식 템플릿이 함께 제거됩니다. 잘못 만들었거나 더 이상 쓰지 않는 정책 전용 메시지 정의를 정리할 때 사용합니다.
-
-
-### GET /api/admin/identity/messages/definitions/{definition}
-<!-- @generated:start:api.admin.identity.messages.definitions.show -->
-- **라우트명**: `api.admin.identity.messages.definitions.show`
-- **컨트롤러**: `App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController@show`
-- **인증/권한**: `auth:sanctum` + `permission:core.admin.identity.messages.read`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| definition | path | string | 예 | — | 대상 definition의 식별자 |
-
-**요청 예시**
-
-```http
-GET /api/admin/identity/messages/definitions/{definition} HTTP/1.1
-Host: api.example.com
-Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}
-```
-
-**응답 필드** (`data` 내부)
-
-_단건 응답: `data` 객체의 필드._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `1` | 기본 키 (내부 식별자) |
-| provider_id | string | `g7:core.mail` | IDV 프로바이더 ID (예: g7:core.mail, kcp, portone) |
-| scope_type | string | `purpose` | 메시지 정의 스코프 (provider_default\|purpose\|policy) — App\Enums\IdentityMessageScopeType enum |
-| scope_value | string | `checkout_verification` | 범위 값: provider_default 빈 문자열 / purpose 키 / policy 키 |
-| name | object | `{"ko":"결제 시 본인 확인","en":"Checkout Verification"}` | 다국어 표시명 ({"ko":"...", "en":"..."}) |
-| description | object | `{"ko":"결제 진행 전 본인\/성인 확인 인증 코드 메일","en":"Identity\/adult …` | 다국어 설명 |
-| channels | array | `["mail"]` | 활성 채널 (현재 ["mail"], 향후 sms 등 확장) |
-| variables | array | `[{"key":"code","description":"인증 코드 (text_code 흐름)"},{"ke…` | 사용 가능 변수 메타데이터 ([{key, description}]) |
-| extension_type | string | `module` | 확장 타입: core, module, plugin |
-| extension_identifier | string | `sirsoft-ecommerce` | 확장 식별자 |
-| is_active | boolean | `true` | active 여부 |
-| is_default | boolean | `true` | default 여부 |
-| user_overrides | null | `null` | 운영자가 수정한 필드명 목록 (예: ["name","is_active"]) |
-| templates | array | `[{"id":1,"definition_id":1,"channel":"mail","subject":{"k…` | 이 정의에 속한 채널별 하위 메시지 템플릿 목록 (원소 id/channel/subject/body 등) |
-| created_at | string | `2026-07-30 18:47:09` | 생성 일시 |
-| updated_at | string | `2026-07-30 18:47:09` | 최종 수정 일시 |
-| abilities | object | `{"can_update":true,"can_delete":false}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
-
-**응답 예시**
-
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "IDV 메시지 정의 상세를 조회했습니다.",
-    "data": {
-        "id": 1,
-        "provider_id": "g7:core.mail",
-        "scope_type": "purpose",
-        "scope_value": "checkout_verification",
-        "name": {
-            "ko": "결제 시 본인 확인",
-            "en": "Checkout Verification"
-        },
-        "description": {
-            "ko": "결제 진행 전 본인/성인 확인 인증 코드 메일",
-            "en": "Identity/adult verification code mail before checkout"
-        },
-        "channels": [
-            "mail"
-        ],
-        "variables": [
-            {
-                "key": "code",
-                "description": "인증 코드 (text_code 흐름)"
-            },
-            {
-                "key": "expire_minutes",
-                "description": "만료까지 남은 분"
-            },
-            {
-                "key": "purpose_label",
-                "description": "인증 목적 라벨"
-            },
-            {
-                "key": "app_name",
-                "description": "사이트명"
-            },
-            {
-                "key": "site_url",
-                "description": "사이트 URL"
-            },
-            {
-                "key": "recipient_email",
-                "description": "수신자 이메일"
-            }
-        ],
-        "extension_type": "module",
-        "extension_identifier": "sirsoft-ecommerce",
-        "is_active": true,
-        "is_default": true,
-        "user_overrides": null,
-        "templates": [
-            {
-                "id": 1,
-                "definition_id": 1,
-                "channel": "mail",
-                "subject": {
-                    "ko": "[{app_name}] 결제 본인 확인 인증 코드",
-                    "en": "[{app_name}] Checkout Verification Code"
-                },
-                "body": {
-                    "ko": "<h1>결제 본인 확인</h1><p>결제를 진행하기 위해 본인 확인이 필요합니다. 아래 인증 코드를 입력해 주세요.</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>이 코드는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p><p><strong>본인이 결제를 진행하지 않았다면 이 메일을 무시하고 즉시 비밀번호를 변경해 주세요.</strong></p><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
-                    "en": "<h1>Checkout Verification</h1><p>Please enter the code below to proceed with payment.</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>This code will expire in <strong>{expire_minutes} minutes</strong>.</p><p><strong>If you did not initiate this payment, please ignore this email and change your password immediately.</strong></p><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
-                },
-                "is_active": true,
-                "is_default": true,
-                "user_overrides": null,
-                "updated_by": null,
-                "created_at": "2026-07-30 18:47:09",
-                "updated_at": "2026-07-30 18:47:09",
-                "abilities": {
-                    "can_update": true,
-                    "can_delete": true
-                }
-            }
-        ],
-        "created_at": "2026-07-30 18:47:09",
-        "updated_at": "2026-07-30 18:47:09",
-        "abilities": {
-            "can_update": true,
-            "can_delete": false
-        }
-    }
-}
-```
-
-**에러 응답**
-
-| 상태코드 | 의미 | 발생 조건 |
-| --- | --- | --- |
-| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.read`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-
-<!-- @generated:end -->
-
-**설명** 단일 메시지 정의의 상세 정보를 조회합니다(하위 채널 템플릿 eager load 포함). `auth:sanctum` + `core.admin.identity.messages.read` 관리자 권한이 필요합니다. 관리자 편집 모달을 열 때 해당 정의의 다국어 이름/설명·활성 채널·사용 가능 변수·`user_overrides`·`templates` 전체를 로드하기 위해 사용합니다.
-
-
-### PATCH /api/admin/identity/messages/definitions/{definition}
-<!-- @generated:start:api.admin.identity.messages.definitions.update -->
-- **라우트명**: `api.admin.identity.messages.definitions.update`
-- **컨트롤러**: `App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController@update`
-- **인증/권한**: `auth:sanctum` + `permission:core.admin.identity.messages.update`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| definition | path | string | 예 | — | 대상 definition의 식별자 |
-| name | body | array | 아니오 | — | 대상의 이름/명칭 |
-| description | body | array | 아니오 | — | 설명 |
-| channels | body | array | 아니오 | min 1 | 지원 채널 목록 (최소 1개 — 이 정의가 발송할 채널 조정) |
-| is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
-
-> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.identity.message_definition.update_validation_rules`).
-
-**요청 예시**
-
-```http
-PATCH /api/admin/identity/messages/definitions/{definition} HTTP/1.1
-Host: api.example.com
-Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}
-Content-Type: application/json
-
-{
-    "name": [
-        "예시 이름"
-    ],
-    "description": [
-        "예시 내용입니다."
-    ],
-    "channels": [
-        "예시값"
-    ],
-    "is_active": true
-}
-```
-
-**응답 필드** (`data` 내부)
-
-_단건 응답: `data` 객체의 필드 (수정된 정의를 `IdentityMessageDefinitionResource` 로 직렬화, `templates` eager load 포함 — GET 상세 응답과 동일 구조)._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `1` | 기본 키 (내부 식별자) |
-| provider_id | string | `g7:core.mail` | IDV 프로바이더 ID |
-| scope_type | string | `purpose` | 메시지 정의 스코프 (provider_default\|purpose\|policy) |
-| scope_value | string | `checkout_verification` | 범위 값 (provider_default 빈 문자열 / purpose 키 / policy 키) |
-| name | object | `{"ko":"결제 시 본인 확인","en":"Checkout Verification"}` | 다국어 표시명 (수정 반영) |
-| description | object | `{"ko":"...","en":"..."}` | 다국어 설명 (수정 반영) |
-| channels | array | `["mail"]` | 활성 채널 목록 (수정 반영) |
-| variables | array | `[{"key":"code","description":"인증 코드 (text_code 흐름)"}]` | 템플릿 치환 변수 메타데이터 목록 |
-| extension_type | string | `module` | 이 리소스를 소유한 확장의 타입 |
-| extension_identifier | string | `sirsoft-ecommerce` | 이 리소스를 소유한 확장의 식별자 |
-| is_active | boolean | `true` | 활성 여부 (수정 반영) |
-| is_default | boolean | `true` | 시드 기본 정의 여부 |
-| user_overrides | array | `["name","channels"]` | 이번 수정으로 append 된 운영자 재정의 필드 목록 (시더 재실행 시 보존 대상) |
-| templates | array | `[{"id":1,"definition_id":1,"channel":"mail",…}]` | 채널별 하위 템플릿 목록 |
-| created_at | string | `2026-07-08 10:43:32` | 생성 일시 |
-| updated_at | string | `2026-07-08 12:14:36` | 최종 수정 일시 |
-| abilities | object | `{"can_update":true,"can_delete":false}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |
-
-**응답 예시**
-
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "IDV 메시지 정의가 수정되었습니다.",
-    "data": {
-        "id": 1,
-        "provider_id": "g7:core.mail",
-        "scope_type": "purpose",
-        "scope_value": "checkout_verification",
-        "name": {
-            "ko": "결제 시 본인 확인",
-            "en": "Checkout Verification"
-        },
-        "description": {
-            "ko": "결제 진행 전 본인/성인 확인 인증 코드 메일",
-            "en": "Identity/adult verification code mail before checkout"
-        },
-        "channels": [
-            "mail"
-        ],
-        "variables": [
-            {
-                "key": "code",
-                "description": "인증 코드 (text_code 흐름)"
-            }
-        ],
-        "extension_type": "module",
-        "extension_identifier": "sirsoft-ecommerce",
-        "is_active": true,
-        "is_default": true,
-        "user_overrides": [
-            "name"
-        ],
-        "templates": [
-            {
-                "id": 1,
-                "definition_id": 1,
-                "channel": "mail",
-                "subject": {
-                    "ko": "[{app_name}] 결제 본인 확인 인증 코드",
-                    "en": "[{app_name}] Checkout Verification Code"
-                },
-                "body": {
-                    "ko": "<h1>결제 본인 확인</h1>…",
-                    "en": "<h1>Checkout Verification</h1>…"
-                },
-                "is_active": true,
-                "is_default": true,
-                "user_overrides": null,
-                "updated_by": null,
-                "created_at": "2026-07-08 10:43:32",
-                "updated_at": "2026-07-08 10:43:32",
-                "abilities": {
-                    "can_update": true,
-                    "can_delete": true
-                }
-            }
-        ],
-        "created_at": "2026-07-08 10:43:32",
-        "updated_at": "2026-07-08 12:14:36",
-        "abilities": {
-            "can_update": true,
-            "can_delete": false
-        }
-    }
-}
-```
-
-**에러 응답**
-
-| 상태코드 | 의미 | 발생 조건 |
-| --- | --- | --- |
-| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.update`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 500 | Internal Server Error | 수정 중 예외 발생 (`IDV 메시지 정의 수정에 실패했습니다.`) |
-
-<!-- @generated:end -->
-
-**설명** 메시지 정의의 편집 가능 속성(`name`, `description`, `channels`, `is_active`) 을 수정합니다. `auth:sanctum` + `core.admin.identity.messages.update` 관리자 권한이 필요합니다. `IdentityMessageDefinitionService::updateDefinition` 이 처리하며 수정된 필드는 `user_overrides` 에 기록되어 시더 재실행 시에도 보존됩니다. 확장은 `core.identity.message_definition.update_validation_rules` 필터 훅으로 검증 규칙을 확장할 수 있습니다. 시드 정의의 표시명이나 활성 채널을 운영 상황에 맞게 조정할 때 사용합니다.
-
-
-### POST /api/admin/identity/messages/definitions/{definition}/reset
-<!-- @generated:start:api.admin.identity.messages.definitions.reset -->
-- **라우트명**: `api.admin.identity.messages.definitions.reset`
-- **컨트롤러**: `App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController@reset`
-- **인증/권한**: `auth:sanctum` + `permission:core.admin.identity.messages.update`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| definition | path | string | 예 | — | 대상 definition의 식별자 |
-
-**요청 예시**
-
-```http
-POST /api/admin/identity/messages/definitions/{definition}/reset HTTP/1.1
-Host: api.example.com
-Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}
-```
-
-**응답 필드** (`data` 내부)
-
-_단건 응답: `data` 객체의 필드._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `1` | 기본 키 (내부 식별자) |
-| provider_id | string | `g7:core.mail` | provider 식별자 (연관 리소스 참조) |
-| scope_type | string | `purpose` | 메시지 정의 스코프 (provider_default\|purpose\|policy) — App\Enums\IdentityMessageScopeType enum |
-| scope_value | string | `checkout_verification` | 범위 값: provider_default 빈 문자열 / purpose 키 / policy 키 |
-| name | object | `{"ko":"결제 시 본인 확인","en":"Checkout Verification"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
-| description | object | `{"ko":"결제 진행 전 본인\/성인 확인 인증 코드 메일","en":"Identity\/adult …` | 설명 (다국어 필드는 로케일별 값 객체) |
-| channels | array | `["mail"]` | 활성 채널 (현재 ["mail"], 향후 sms 등 확장) |
-| variables | array | `[{"key":"code","description":"인증 코드 (text_code 흐름)"},{"ke…` | 사용 가능 변수 메타데이터 ([{key, description}]) |
-| extension_type | string | `module` | 이 리소스를 소유한 확장의 타입 (core/module/plugin/template) |
-| extension_identifier | string | `sirsoft-ecommerce` | 이 리소스를 소유한 확장의 식별자 |
-| is_active | boolean | `true` | active 여부 |
-| is_default | boolean | `true` | default 여부 |
-| user_overrides | array | `["name.ja"]` | 운영자가 수정한 필드명 목록 (예: ["name","is_active"]) |
-| templates | array | `[{"id":1,"definition_id":1,"channel":"mail","subject":{"k…` | 템플릿 목록 (각 원소 identifier/name 등 — 템플릿 관계 파생) |
-| created_at | string | `2026-07-30 18:47:09` | 생성 일시 |
-| updated_at | string | `2026-07-30 18:47:09` | 최종 수정 일시 |
-| abilities | object | `{"can_update":true,"can_delete":false}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
-
-**응답 예시**
-
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "IDV 메시지 정의가 기본값으로 복원되었습니다.",
-    "data": {
-        "id": 1,
-        "provider_id": "g7:core.mail",
-        "scope_type": "purpose",
-        "scope_value": "checkout_verification",
-        "name": {
-            "ko": "결제 시 본인 확인",
-            "en": "Checkout Verification"
-        },
-        "description": {
-            "ko": "결제 진행 전 본인/성인 확인 인증 코드 메일",
-            "en": "Identity/adult verification code mail before checkout"
-        },
-        "channels": [
-            "mail"
-        ],
-        "variables": [
-            {
-                "key": "code",
-                "description": "인증 코드 (text_code 흐름)"
-            },
-            {
-                "key": "expire_minutes",
-                "description": "만료까지 남은 분"
-            },
-            {
-                "key": "purpose_label",
-                "description": "인증 목적 라벨"
-            },
-            {
-                "key": "app_name",
-                "description": "사이트명"
-            },
-            {
-                "key": "site_url",
-                "description": "사이트 URL"
-            },
-            {
-                "key": "recipient_email",
-                "description": "수신자 이메일"
-            }
-        ],
-        "extension_type": "module",
-        "extension_identifier": "sirsoft-ecommerce",
-        "is_active": true,
-        "is_default": true,
-        "user_overrides": null,
-        "templates": [
-            {
-                "id": 1,
-                "definition_id": 1,
-                "channel": "mail",
-                "subject": {
-                    "ko": "[{app_name}] 결제 본인 확인 인증 코드",
-                    "en": "[{app_name}] Checkout Verification Code"
-                },
-                "body": {
-                    "ko": "<h1>결제 본인 확인</h1><p>결제를 진행하기 위해 본인 확인이 필요합니다. 아래 인증 코드를 입력해 주세요.</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>이 코드는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p><p><strong>본인이 결제를 진행하지 않았다면 이 메일을 무시하고 즉시 비밀번호를 변경해 주세요.</strong></p><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
-                    "en": "<h1>Checkout Verification</h1><p>Please enter the code below to proceed with payment.</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>This code will expire in <strong>{expire_minutes} minutes</strong>.</p><p><strong>If you did not initiate this payment, please ignore this email and change your password immediately.</strong></p><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
-                },
-                "is_active": true,
-                "is_default": true,
-                "user_overrides": null,
-                "updated_by": null,
-                "created_at": "2026-07-30 18:47:09",
-                "updated_at": "2026-07-30 18:47:09",
-                "abilities": {
-                    "can_update": true,
-                    "can_delete": true
-                }
-            }
-        ],
-        "created_at": "2026-07-30 18:47:09",
-        "updated_at": "2026-07-30 18:47:09",
-        "abilities": {
-            "can_update": true,
-            "can_delete": false
-        }
-    }
-}
-```
-
-**에러 응답**
-
-| 상태코드 | 의미 | 발생 조건 |
-| --- | --- | --- |
-| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.update`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-
-<!-- @generated:end -->
-
-**설명** 메시지 정의에 속한 모든 채널 템플릿을 시더 기본값으로 일괄 복원하고 정의를 default 상태로 되돌립니다. `auth:sanctum` + `core.admin.identity.messages.update` 관리자 권한이 필요합니다. 각 하위 템플릿에 대해 `IdentityMessageTemplateService::resetToDefault` 를 호출한 뒤 `markAsDefault` 로 정의를 표시하므로, 운영자가 수정한 문구를 한 번에 원상복구할 때 사용합니다.
-
-
-### PATCH /api/admin/identity/messages/definitions/{definition}/toggle-active
-<!-- @generated:start:api.admin.identity.messages.definitions.toggle-active -->
-- **라우트명**: `api.admin.identity.messages.definitions.toggle-active`
-- **컨트롤러**: `App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageDefinitionController@toggleActive`
-- **인증/권한**: `auth:sanctum` + `permission:core.admin.identity.messages.update`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| definition | path | string | 예 | — | 대상 definition의 식별자 |
-
-**요청 예시**
-
-```http
-PATCH /api/admin/identity/messages/definitions/{definition}/toggle-active HTTP/1.1
-Host: api.example.com
-Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}
-```
-
-**응답 필드** (`data` 내부)
-
-_단건 응답: `data` 객체의 필드._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `1` | 기본 키 (내부 식별자) |
-| provider_id | string | `g7:core.mail` | provider 식별자 (연관 리소스 참조) |
-| scope_type | string | `purpose` | 메시지 정의 스코프 (provider_default\|purpose\|policy) — App\Enums\IdentityMessageScopeType enum |
-| scope_value | string | `checkout_verification` | 범위 값: provider_default 빈 문자열 / purpose 키 / policy 키 |
-| name | object | `{"ko":"결제 시 본인 확인","en":"Checkout Verification"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
-| description | object | `{"ko":"결제 진행 전 본인\/성인 확인 인증 코드 메일","en":"Identity\/adult …` | 설명 (다국어 필드는 로케일별 값 객체) |
-| channels | array | `["mail"]` | 활성 채널 (현재 ["mail"], 향후 sms 등 확장) |
-| variables | array | `[{"key":"code","description":"인증 코드 (text_code 흐름)"},{"ke…` | 사용 가능 변수 메타데이터 ([{key, description}]) |
-| extension_type | string | `module` | 이 리소스를 소유한 확장의 타입 (core/module/plugin/template) |
-| extension_identifier | string | `sirsoft-ecommerce` | 이 리소스를 소유한 확장의 식별자 |
-| is_active | boolean | `false` | active 여부 |
-| is_default | boolean | `true` | default 여부 |
-| user_overrides | array | `["is_active"]` | 운영자가 수정한 필드명 목록 (예: ["name","is_active"]) |
-| created_at | string | `2026-07-30 18:47:09` | 생성 일시 |
-| updated_at | string | `2026-08-04 21:53:38` | 최종 수정 일시 |
-| abilities | object | `{"can_update":true,"can_delete":false}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
-
-**응답 예시**
-
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "IDV 메시지 정의 활성 상태가 변경되었습니다.",
-    "data": {
-        "id": 1,
-        "provider_id": "g7:core.mail",
-        "scope_type": "purpose",
-        "scope_value": "checkout_verification",
-        "name": {
-            "ko": "결제 시 본인 확인",
-            "en": "Checkout Verification"
-        },
-        "description": {
-            "ko": "결제 진행 전 본인/성인 확인 인증 코드 메일",
-            "en": "Identity/adult verification code mail before checkout"
-        },
-        "channels": [
-            "mail"
-        ],
-        "variables": [
-            {
-                "key": "code",
-                "description": "인증 코드 (text_code 흐름)"
-            },
-            {
-                "key": "expire_minutes",
-                "description": "만료까지 남은 분"
-            },
-            {
-                "key": "purpose_label",
-                "description": "인증 목적 라벨"
-            },
-            {
-                "key": "app_name",
-                "description": "사이트명"
-            },
-            {
-                "key": "site_url",
-                "description": "사이트 URL"
-            },
-            {
-                "key": "recipient_email",
-                "description": "수신자 이메일"
-            }
-        ],
-        "extension_type": "module",
-        "extension_identifier": "sirsoft-ecommerce",
-        "is_active": false,
-        "is_default": true,
-        "user_overrides": [
-            "is_active"
-        ],
-        "created_at": "2026-07-30 18:47:09",
-        "updated_at": "2026-08-04 21:53:38",
-        "abilities": {
-            "can_update": true,
-            "can_delete": false
-        }
-    }
-}
-```
-
-**에러 응답**
-
-| 상태코드 | 의미 | 발생 조건 |
-| --- | --- | --- |
-| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.update`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-
-<!-- @generated:end -->
-
-**설명** 메시지 정의의 활성/비활성 상태를 토글합니다. `auth:sanctum` + `core.admin.identity.messages.update` 관리자 권한이 필요합니다. `IdentityMessageDefinitionService::toggleActive` 가 현재 `is_active` 값을 반전시키며, 특정 목적/정책용 인증 메시지 발송을 임시로 끄거나 다시 켤 때 사용합니다.
-
-
-### POST /api/admin/identity/messages/templates/preview
-<!-- @generated:start:api.admin.identity.messages.templates.preview -->
-- **라우트명**: `api.admin.identity.messages.templates.preview`
-- **컨트롤러**: `App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController@preview`
-- **인증/권한**: `auth:sanctum` + `permission:core.admin.identity.messages.read`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| template_id | body | integer | 예 | — | template 식별자 |
-| data | body | array | 아니오 | — | 데이터 페이로드 |
-| locale | body | string | 아니오 | max 10 | 로케일 코드 (표시 언어/지역) |
-
-**요청 예시**
-
-```http
-POST /api/admin/identity/messages/templates/preview HTTP/1.1
-Host: api.example.com
-Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}
-Content-Type: application/json
-
-{
-    "template_id": 1,
-    "data": [
-        "예시값"
-    ],
-    "locale": "ko"
-}
-```
-
-**응답 필드** (`data` 내부)
-
-_단건 응답: `data` 객체의 필드 (`IdentityMessageTemplate::replaceVariables()` 의 반환값 — 저장 없이 렌더 결과만 반환)._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| subject | string | `[G7] 결제 본인 확인 인증 코드` | 지정 로케일 제목에 `{key}` 변수를 `data` 값으로 치환한 결과 문자열 |
-| body | string | `<h1>결제 본인 확인</h1><p>… 123456 …</p>` | 지정 로케일 본문(HTML)에 `{key}` 변수를 치환한 결과 문자열 |
-
-**응답 예시**
-
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "IDV 메시지 템플릿 미리보기를 생성했습니다.",
-    "data": {
-        "subject": "[G7] 결제 본인 확인 인증 코드",
-        "body": "<h1>결제 본인 확인</h1><p>결제를 진행하기 위해 본인 확인이 필요합니다. 아래 인증 코드를 입력해 주세요.</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">123456</p><p>이 코드는 <strong>5분</strong> 후 만료됩니다.</p>"
-    }
-}
-```
-
-**에러 응답**
-
-| 상태코드 | 의미 | 발생 조건 |
-| --- | --- | --- |
-| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 500 | Internal Server Error | `template_id` 에 해당하는 템플릿이 없거나(`findOrFail`) 렌더 중 예외 발생 (`IDV 메시지 템플릿 미리보기 생성에 실패했습니다.`) |
-
-<!-- @generated:end -->
-
-**설명** 지정한 템플릿(`template_id`) 의 제목/본문에 변수(`data`) 를 치환한 결과를 지정 로케일(`locale`) 로 렌더링해 미리보기를 반환합니다. `auth:sanctum` + `core.admin.identity.messages.read` 관리자 권한이 필요합니다. `IdentityMessageTemplateService::getPreview` 가 실제 발송 없이 렌더 결과만 생성하므로, 운영자가 편집한 문구가 실제 메일/SMS 에서 어떻게 보일지 저장 전에 확인할 때 사용합니다.
-
-
-### PATCH /api/admin/identity/messages/templates/{template}
-<!-- @generated:start:api.admin.identity.messages.templates.update -->
-- **라우트명**: `api.admin.identity.messages.templates.update`
-- **컨트롤러**: `App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController@update`
-- **인증/권한**: `auth:sanctum` + `permission:core.admin.identity.messages.update`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| template | path | string | 예 | — | 대상 template의 식별자 |
-| subject | body | array | 아니오 | — | 제목 |
-| body | body | array | 예 | — | 본문 |
-| is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
-
-> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.identity.message_template.update_validation_rules`).
-
-**요청 예시**
-
-```http
-PATCH /api/admin/identity/messages/templates/{template} HTTP/1.1
-Host: api.example.com
-Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}
-Content-Type: application/json
-
-{
-    "subject": [
-        "예시값"
-    ],
-    "body": [
-        "예시값"
-    ],
-    "is_active": true
-}
-```
-
-**응답 필드** (`data` 내부)
-
-_단건 응답: `data` 객체의 필드 (수정된 템플릿을 `IdentityMessageTemplateResource` 로 직렬화 — templates reset 응답과 동일 구조)._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `1` | 기본 키 (내부 식별자) |
-| definition_id | integer | `1` | 이 템플릿이 속한 메시지 정의 ID |
-| channel | string | `mail` | 메시지 템플릿 채널 (mail 현재 / sms 등 향후) |
-| subject | object | `{"ko":"[{app_name}] 결제 본인 확인 인증 코드","en":"…"}` | 다국어 제목 (수정 반영, mail 채널에서만 의미) |
-| body | object | `{"ko":"<h1>결제 본인 확인</h1>…","en":"…"}` | 다국어 본문 (수정 반영) |
-| is_active | boolean | `true` | 활성 여부 (수정 반영) |
-| is_default | boolean | `false` | 시더 기본값 유지 여부 (운영자 수정 시 false) |
-| user_overrides | array | `["subject","body"]` | 이번 수정으로 append 된 운영자 재정의 필드 목록 |
-| updated_by | null | `null` | 최종 수정한 사용자 정보 (uuid/name — 없으면 null) |
-| created_at | string | `2026-07-08 10:43:32` | 생성 일시 |
-| updated_at | string | `2026-07-08 12:14:36` | 최종 수정 일시 |
-| abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 |
-
-**응답 예시**
-
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "IDV 메시지 템플릿이 수정되었습니다.",
-    "data": {
-        "id": 1,
-        "definition_id": 1,
-        "channel": "mail",
-        "subject": {
-            "ko": "[{app_name}] 결제 본인 확인 인증 코드",
-            "en": "[{app_name}] Checkout Verification Code"
-        },
-        "body": {
-            "ko": "<h1>결제 본인 확인</h1><p>아래 인증 코드를 입력해 주세요.</p><p>{code}</p>",
-            "en": "<h1>Checkout Verification</h1><p>Please enter the code below.</p><p>{code}</p>"
-        },
-        "is_active": true,
-        "is_default": false,
-        "user_overrides": [
-            "subject",
-            "body"
-        ],
-        "updated_by": null,
-        "created_at": "2026-07-08 10:43:32",
-        "updated_at": "2026-07-08 12:14:36",
-        "abilities": {
-            "can_update": true,
-            "can_delete": true
-        }
-    }
-}
-```
-
-**에러 응답**
-
-| 상태코드 | 의미 | 발생 조건 |
-| --- | --- | --- |
-| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.update`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-| 500 | Internal Server Error | 수정 중 예외 발생 (`IDV 메시지 템플릿 수정에 실패했습니다.`) |
-
-<!-- @generated:end -->
-
-**설명** 개별 채널 메시지 템플릿의 제목(`subject`)·본문(`body`)·활성 여부(`is_active`) 를 수정합니다. `auth:sanctum` + `core.admin.identity.messages.update` 관리자 권한이 필요합니다. `body` 는 필수이며 다국어 배열로 전달합니다. `IdentityMessageTemplateService::updateTemplate` 이 처리하고 확장은 `core.identity.message_template.update_validation_rules` 필터 훅으로 검증을 확장할 수 있습니다. 인증 메일/SMS 의 실제 발송 문구를 편집할 때 사용합니다.
-
-
-### POST /api/admin/identity/messages/templates/{template}/reset
-<!-- @generated:start:api.admin.identity.messages.templates.reset -->
-- **라우트명**: `api.admin.identity.messages.templates.reset`
-- **컨트롤러**: `App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController@reset`
-- **인증/권한**: `auth:sanctum` + `permission:core.admin.identity.messages.update`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| template | path | string | 예 | — | 대상 template의 식별자 |
-
-**요청 예시**
-
-```http
-POST /api/admin/identity/messages/templates/{template}/reset HTTP/1.1
-Host: api.example.com
-Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}
-```
-
-**응답 필드** (`data` 내부)
-
-_단건 응답: `data` 객체의 필드._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `1` | 기본 키 (내부 식별자) |
-| definition_id | integer | `1` | definition 식별자 (연관 리소스 참조) |
-| channel | string | `mail` | 메시지 템플릿 채널 (mail 현재 / sms 등 향후) — IdentityVerificationChannel 과는 별개의 도메인 분류 |
-| subject | object | `{"ko":"[{app_name}] 결제 본인 확인 인증 코드","en":"[{app_name}] Ch…` | 다국어 제목 ({"ko":"...", "en":"..."}) — mail 채널에서만 의미 |
-| body | object | `{"ko":"<h1>결제 본인 확인<\/h1><p>결제를 진행하기 위해 본인 확인이 필요합니다. 아래 …` | 다국어 본문 ({"ko":"...", "en":"..."}) |
-| is_active | boolean | `true` | active 여부 |
-| is_default | boolean | `true` | default 여부 |
-| user_overrides | array | `[]` | 운영자가 수정한 필드명 목록 (예: ["subject","body","is_active"]) |
-| updated_by | null | `null` | 최종 수정한 사용자 정보 (uuid/name — updated_by 관계 파생, 없으면 null) |
-| created_at | string | `2026-07-30 18:47:09` | 생성 일시 |
-| updated_at | string | `2026-07-30 18:47:09` | 최종 수정 일시 |
-| abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
-
-**응답 예시**
-
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "IDV 메시지 템플릿이 기본값으로 복원되었습니다.",
-    "data": {
-        "id": 1,
-        "definition_id": 1,
-        "channel": "mail",
-        "subject": {
-            "ko": "[{app_name}] 결제 본인 확인 인증 코드",
-            "en": "[{app_name}] Checkout Verification Code"
-        },
-        "body": {
-            "ko": "<h1>결제 본인 확인</h1><p>결제를 진행하기 위해 본인 확인이 필요합니다. 아래 인증 코드를 입력해 주세요.</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>이 코드는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p><p><strong>본인이 결제를 진행하지 않았다면 이 메일을 무시하고 즉시 비밀번호를 변경해 주세요.</strong></p><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
-            "en": "<h1>Checkout Verification</h1><p>Please enter the code below to proceed with payment.</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>This code will expire in <strong>{expire_minutes} minutes</strong>.</p><p><strong>If you did not initiate this payment, please ignore this email and change your password immediately.</strong></p><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
-        },
-        "is_active": true,
-        "is_default": true,
-        "user_overrides": null,
-        "updated_by": null,
-        "created_at": "2026-07-30 18:47:09",
-        "updated_at": "2026-07-30 18:47:09",
-        "abilities": {
-            "can_update": true,
-            "can_delete": true
-        }
-    }
-}
-```
-
-**에러 응답**
-
-| 상태코드 | 의미 | 발생 조건 |
-| --- | --- | --- |
-| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.update`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-
-<!-- @generated:end -->
-
-**설명** 개별 메시지 템플릿을 시더 기본값으로 복원합니다. `auth:sanctum` + `core.admin.identity.messages.update` 관리자 권한이 필요합니다. `IdentityMessageTemplateService::resetToDefault` 가 운영자 수정 내용을 폐기하고 최초 제공 문구로 되돌리므로, 특정 채널 템플릿 하나만 원상복구할 때 사용합니다(정의 전체 복원은 definition reset 사용).
-
-
-### PATCH /api/admin/identity/messages/templates/{template}/toggle-active
-<!-- @generated:start:api.admin.identity.messages.templates.toggle-active -->
-- **라우트명**: `api.admin.identity.messages.templates.toggle-active`
-- **컨트롤러**: `App\Http\Controllers\Api\Admin\Identity\AdminIdentityMessageTemplateController@toggleActive`
-- **인증/권한**: `auth:sanctum` + `permission:core.admin.identity.messages.update`
-
-**요청 파라미터**
-
-| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
-| --- | --- | --- | --- | --- | --- |
-| template | path | string | 예 | — | 대상 template의 식별자 |
-
-**요청 예시**
-
-```http
-PATCH /api/admin/identity/messages/templates/{template}/toggle-active HTTP/1.1
-Host: api.example.com
-Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}
-```
-
-**응답 필드** (`data` 내부)
-
-_단건 응답: `data` 객체의 필드._
-
-| 필드 | 타입 | 실측 예시값 | 용도/설명 |
-| --- | --- | --- | --- |
-| id | integer | `1` | 기본 키 (내부 식별자) |
-| definition_id | integer | `1` | definition 식별자 (연관 리소스 참조) |
-| channel | string | `mail` | 메시지 템플릿 채널 (mail 현재 / sms 등 향후) — IdentityVerificationChannel 과는 별개의 도메인 분류 |
-| subject | object | `{"ko":"[{app_name}] 결제 본인 확인 인증 코드","en":"[{app_name}] Ch…` | 다국어 제목 ({"ko":"...", "en":"..."}) — mail 채널에서만 의미 |
-| body | object | `{"ko":"<h1>결제 본인 확인<\/h1><p>결제를 진행하기 위해 본인 확인이 필요합니다. 아래 …` | 다국어 본문 ({"ko":"...", "en":"..."}) |
-| is_active | boolean | `false` | active 여부 |
-| is_default | boolean | `true` | default 여부 |
-| user_overrides | array | `["is_active"]` | 운영자가 수정한 필드명 목록 (예: ["subject","body","is_active"]) |
-| updated_by | null | `null` | 최종 수정한 사용자 정보 (uuid/name — updated_by 관계 파생, 없으면 null) |
-| created_at | string | `2026-07-30 18:47:09` | 생성 일시 |
-| updated_at | string | `2026-08-04 21:53:39` | 최종 수정 일시 |
-| abilities | object | `{"can_update":true,"can_delete":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
-
-**응답 예시**
-
-```http
-HTTP/1.1 200
-```
-
-```json
-{
-    "success": true,
-    "message": "IDV 메시지 템플릿 활성 상태가 변경되었습니다.",
-    "data": {
-        "id": 1,
-        "definition_id": 1,
-        "channel": "mail",
-        "subject": {
-            "ko": "[{app_name}] 결제 본인 확인 인증 코드",
-            "en": "[{app_name}] Checkout Verification Code"
-        },
-        "body": {
-            "ko": "<h1>결제 본인 확인</h1><p>결제를 진행하기 위해 본인 확인이 필요합니다. 아래 인증 코드를 입력해 주세요.</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>이 코드는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p><p><strong>본인이 결제를 진행하지 않았다면 이 메일을 무시하고 즉시 비밀번호를 변경해 주세요.</strong></p><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
-            "en": "<h1>Checkout Verification</h1><p>Please enter the code below to proceed with payment.</p><p style=\"font-size:28px; font-weight:bold; letter-spacing:4px; text-align:center; padding:16px; background:#f4f6f8; border-radius:6px;\">{code}</p><p>This code will expire in <strong>{expire_minutes} minutes</strong>.</p><p><strong>If you did not initiate this payment, please ignore this email and change your password immediately.</strong></p><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
-        },
-        "is_active": false,
-        "is_default": true,
-        "user_overrides": [
-            "is_active"
-        ],
-        "updated_by": null,
-        "created_at": "2026-07-30 18:47:09",
-        "updated_at": "2026-08-04 21:53:39",
-        "abilities": {
-            "can_update": true,
-            "can_delete": true
-        }
-    }
-}
-```
-
-**에러 응답**
-
-| 상태코드 | 의미 | 발생 조건 |
-| --- | --- | --- |
-| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.admin.identity.messages.update`)이 없는 경우 |
-| 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
-
-<!-- @generated:end -->
-
-**설명** 개별 메시지 템플릿의 활성/비활성 상태를 토글합니다. `auth:sanctum` + `core.admin.identity.messages.update` 관리자 권한이 필요합니다. `IdentityMessageTemplateService::toggleActive` 가 현재 `is_active` 값을 반전시키며, 특정 채널(예: 메일) 발송만 임시로 중단하거나 재개할 때 사용합니다.
-
+### 본인인증 메시지 API — 7.1.0 에서 제거
+
+`/api/admin/identity/messages/*` 11개 엔드포인트와 권한 `core.admin.identity.messages.read`·`core.admin.identity.messages.update` 는
+7.1.0 에서 제거되었습니다. 본인인증 메일 문구는 알림 정의(`category=identity`)가 되어 알림 API 로 다룹니다.
+
+| 하던 일 | 7.1.0 이후 |
+|---|---|
+| 정의 목록 `GET …/messages/definitions` | `GET /api/admin/notification-definitions?category=identity` ([notification-definitions.md](notification-definitions.md)) |
+| 정의 단건·수정·활성 토글·기본값 복원 | `GET·PUT /api/admin/notification-definitions/{definition}`, `…/toggle-active`, `…/reset` |
+| 정책별 정의 추가 `POST …/messages/definitions` | `POST /api/admin/notification-definitions` (`category=identity` + `policy_key`) |
+| 정의 삭제 `DELETE …/messages/definitions/{definition}` | `DELETE /api/admin/notification-definitions/{definition}` (운영자가 추가한 본인인증 정의만) |
+| 템플릿 수정·복원·토글·미리보기 `…/messages/templates/*` | `…/notification-templates/*` ([notification-templates.md](notification-templates.md)) |
+
+권한은 알림 설정과 같은 `core.settings.read`(조회)·`core.settings.update`(변경)입니다.
 
 ### GET /api/admin/identity/policies
 <!-- @generated:start:api.admin.identity.policies.index -->
@@ -2222,6 +980,7 @@ HTTP/1.1 200
 
 **설명** 등록된 IDV 프로바이더 목록을 각 프로바이더의 설정 스키마(`settings_schema`) 와 함께 반환합니다. `auth:sanctum` + `core.admin.identity.providers.read` 관리자 권한이 필요합니다. 각 프로바이더의 `getSettingsSchema()` 결과를 `core.identity.settings_schema` 필터 훅으로 확장 가능하게 통과시키므로, 관리자 프로바이더 설정 카드(코드 길이·만료 시간 등)를 스키마 기반으로 반복 렌더링할 때 사용합니다. 설정 스키마가 없는 공개용 목록은 `GET /api/identity/providers` 를 사용합니다.
 
+**권한 값(7.1.0)** 행 `abilities.can_update` 는 프로바이더 설정을 실제로 저장하는 환경설정 저장 권한(`core.settings.update`)으로 판정한다.
 
 ### POST /api/identity/callback/{providerId}
 <!-- @generated:start:api.identity.callback -->
@@ -2288,25 +1047,25 @@ HTTP/1.1 200
 }
 ```
 
-`return` 쿼리(same-origin) 가 있으면 JSON 대신 302 redirect 입니다.
+`return` 쿼리(사이트 주소와 같은 출처) 가 있으면 JSON 대신 302 redirect 입니다. `Location` 은 상대 경로로 받은 `return` 도 사이트 주소(`APP_URL`) 기준 절대 URL 로 바꿔 싣습니다.
 
 ```http
 HTTP/1.1 302
-Location: /checkout?verification_token=eyJ0eXAiOiJKV1Qi...&challenge_id=00484973-8cd3-4a1d-85f2-78361feb6f0d
+Location: https://example.com/checkout?verification_token=eyJ0eXAiOiJKV1Qi...&challenge_id=00484973-8cd3-4a1d-85f2-78361feb6f0d
 ```
 
 **에러 응답**
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 302 | Found (실패 redirect) | 검증 실패 + `return` 쿼리(same-origin) 존재 시 `{return}?identity_error={failure_code}` 로 리다이렉트 |
+| 302 | Found (실패 redirect) | 검증 실패 + `return` 쿼리(사이트 주소와 같은 출처) 존재 시 사이트 주소 기준 절대 URL `{return}?identity_error={failure_code}` 로 리다이렉트 |
 | 401 | Unauthenticated | Bearer 토큰을 보냈으나 만료/무효인 경우 (비회원은 헤더 생략 가능) |
 | 404 | Not Found | `providerId` 에 해당하는 프로바이더가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 검증 실패 + `return` 쿼리 없음 — 본문의 `error.failure_code` 에 실패 사유 코드 (`CHALLENGE_NOT_FOUND`/`EXPIRED`/`INVALID_CODE` 등, `identity.errors.*` 메시지 동반) |
 
 <!-- @generated:end -->
 
-**설명** 외부 IDV 프로바이더(외부 인증 SDK/OAuth-style provider) 가 사용자 브라우저를 앱으로 되돌려 보내는 redirect 콜백 진입점입니다. `auth:sanctum` 인증이 필요합니다. body/query 의 `challenge_id` 를 추출해 `IdentityVerificationService::handleProviderCallback` 에 위임하며, 클라이언트가 stash 한 `return` 쿼리 유무와 성공 여부에 따라 응답이 갈립니다 — 성공+return: 302 로 `{return}?verification_token=...&challenge_id=...`, 성공+return 없음: 200 JSON `{ verification_token }`, 실패+return: 302 로 `{return}?identity_error={failure_code}`, 실패+return 없음: 422 JSON. `return` URL 은 open redirect 방지를 위해 same-origin(또는 `/` 상대경로) 만 허용하고 protocol-relative(`//`) 는 차단합니다.
+**설명** 외부 IDV 프로바이더(외부 인증 SDK/OAuth-style provider) 가 사용자 브라우저를 앱으로 되돌려 보내는 redirect 콜백 진입점입니다. `auth:sanctum` 인증이 필요합니다. body/query 의 `challenge_id` 를 추출해 `IdentityVerificationService::handleProviderCallback` 에 위임하며, 클라이언트가 stash 한 `return` 쿼리 유무와 성공 여부에 따라 응답이 갈립니다 — 성공+return: 302 로 `{return}?verification_token=...&challenge_id=...`, 성공+return 없음: 200 JSON `{ verification_token }`, 실패+return: 302 로 `{return}?identity_error={failure_code}`, 실패+return 없음: 422 JSON. `return` URL 은 open redirect 방지를 위해 사이트 주소(`APP_URL`)와 scheme·host·port 가 모두 같은 절대 URL 이나 `/` 로 시작하는 상대 경로만 허용합니다(`SiteUrl::isSameOrigin()`). protocol-relative(`//`)·`/\` 로 시작하는 경로·제어 문자·userinfo 가 섞인 주소처럼 브라우저와 서버가 다르게 해석할 수 있는 입력은 거부합니다(이때는 `return` 이 없는 것처럼 JSON 으로 응답). 허용된 상대 경로는 요청 Host 가 아니라 사이트 주소 기준 절대 URL 로 바꿔 리다이렉트하므로, 위조 Host 로 시작한 콜백이라도 검증 토큰이 다른 도메인으로 가지 않습니다.
 
 
 ### POST /api/identity/challenges
@@ -2324,6 +1083,7 @@ Location: /checkout?verification_token=eyJ0eXAiOiJKV1Qi...&challenge_id=00484973
 | target.email | body | email | 아니오 | max 255 | 이메일 주소 |
 | target.phone | body | string | 아니오 | max 32 | 전화번호 |
 | provider_id | body | string | 아니오 | max 64 | provider 식별자 |
+| policy_key | body | string | 아니오 | max 120 | 428 응답(`verification.policy_key`)이 알려 준 정책 키. 그 정책이 있고 켜져 있으며 `purpose` 와 목적이 같을 때만 출처 정책으로 쓰여 정책별 문구로 발송되고 이력의 `origin_policy_key` 에 남는다. 그 밖의 값은 무시(목적 문구) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.identity.request_validation_rules`).
 
@@ -2343,7 +1103,8 @@ Content-Type: application/json
     ],
     "target.email": "user@example.com",
     "target.phone": "010-1234-5678",
-    "provider_id": "예시값"
+    "provider_id": "예시값",
+    "policy_key": "admin.board_write"
 }
 ```
 
@@ -2362,6 +1123,7 @@ _단건 응답: `data` 객체의 필드 (`ChallengeResource` 로 직렬화한 Ve
 | expires_at | string | `2026-05-12T18:14:19+00:00` | 만료 일시 (ISO 8601) |
 | public_payload | array | `[]` | 프론트 렌더에 필요한 공개 안전 페이로드 (프로바이더별 UI 힌트, 없으면 빈 배열) |
 | max_attempts | integer | `5` | 허용되는 최대 검증 시도 횟수 |
+| claim_secret | string | `Gq3nY0…` | 링크 방식(`render_hint = link`)에서만 오는 일회용 값 — 시작한 화면이 `POST …/{challenge}/claim` 으로 확인 결과를 받아 갈 때 쓴다. 인증번호 방식에는 없다 |
 
 **응답 예시**
 
@@ -2394,10 +1156,13 @@ HTTP/1.1 201
 | 401 | Unauthenticated | Bearer 토큰을 보냈으나 만료/무효인 경우 (비회원은 헤더 생략 가능) |
 | 403 | Forbidden | 요구 권한(`core.identity.request`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 비로그인 상태에서 `target.email`·`target.phone` 이 모두 비어 있는 경우 (`인증 대상(이메일·전화번호)이 필요합니다.`), 선택한 프로바이더가 해당 목적을 지원하지 않는 경우(`선택된 프로바이더는 이 목적을 지원하지 않습니다.`), 프로바이더 사용 불가(`본인인증 프로바이더를 사용할 수 없습니다.`) |
+| 502 | Bad Gateway | challenge 는 만들어졌으나 **코드 전달이 실패**한 경우 (`인증 코드를 보내지 못했습니다. 잠시 후 다시 시도하시거나 다른 인증 수단을 이용해주세요.`) |
 
 <!-- @generated:end -->
 
 **설명** 본인인증 challenge(인증 시도) 를 시작합니다. `auth:sanctum` + `core.identity.request` 권한이 필요합니다. 로그인 사용자는 인증 대상이 자동으로 본인이 되며, 비로그인 게스트(Mode B 가입 흐름) 는 `target.email` 또는 `target.phone` 을 반드시 제공해야 하고 없으면 422(missing_target) 를 반환합니다. `provider_id` 미지정 시 목적에 매핑된 기본 프로바이더가 선택됩니다. `IdentityVerificationService::start` 가 IP·User-Agent 등 컨텍스트와 함께 challenge 를 생성하고 성공 시 201 로 challenge 리소스(render_hint 등 포함) 를 반환합니다. 확장은 `core.identity.request_validation_rules` 필터 훅으로 파라미터를 추가할 수 있습니다.
+
+**발송 실패는 성공으로 포장하지 않습니다(#599 세션A).** challenge 생성과 코드 전달은 다른 일이라, 전달이 실패해도 challenge 행은 남습니다. 그대로 201 을 주면 화면이 「전송된 코드를 입력하세요」와 카운트다운을 띄워 사용자가 오지 않을 코드를 기다리게 됩니다. 그래서 생성 직후 `IdentityVerificationService::getStatus()`(공개 폴링과 같은 판정)로 상태를 확인하고, `failed` 이면 **502** 와 `identity.errors.challenge_dispatch_failed` 를 반환합니다. 요청 자체는 올바르고 권한도 있으므로 4xx 가 아니라 바깥 전달 경로의 실패를 뜻하는 5xx 를 씁니다.
 
 
 ### GET /api/identity/challenges/{challenge}
@@ -2525,6 +1290,73 @@ HTTP/1.1 200
 <!-- @generated:end -->
 
 **설명** 진행 중인 challenge 를 취소합니다. **로그인 2단계 인증 challenge(`purpose = login`)는 이 경로로 취소할 수 없습니다** — 취소되면 그 challenge 로는 더 이상 로그인을 마칠 수 없게 되어, 사용자가 자기 로그인을 스스로 막는 상태가 됩니다(자기 DoS). 로그인 흐름은 `POST /api/auth/login/two-factor` · `.../resend` 만 사용합니다. `auth:sanctum` + `core.identity.cancel` 권한이 필요합니다. 라우트 모델 바인딩 + PermissionMiddleware 의 scope=self 가드로 로그인 사용자는 본인 challenge 만 취소할 수 있으며, 비로그인 게스트는 guest 역할 권한으로 진입합니다(모달 취소 시 audit trail 정합용). `IdentityVerificationService::cancel` 이 처리하고 대상 challenge 가 없으면 404 를 반환합니다. 사용자가 인증 모달을 닫을 때 서버 상태를 cancelled 로 남겨 이력 정합성을 맞추는 데 사용합니다.
+
+
+### POST /api/identity/challenges/{challenge}/claim
+<!-- @generated:start:api.identity.challenges.claim -->
+- **라우트명**: `api.identity.challenges.claim`
+- **컨트롤러**: `\App\Http\Controllers\Api\Identity\IdentityVerificationController@claim`
+- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:core.identity.verify`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| challenge | path | string | 예 | — | 대상 challenge의 식별자 |
+| claim_secret | body | string | 예 | max 128 | challenge 시작 응답(`POST /api/identity/challenges`)의 `claim_secret` — 링크 방식에서만 발급되는 일회용 값 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.identity.claim_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/identity/challenges/006209fd-1b6c-40aa-a38f-9b907f1a4bca/claim HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+
+{
+    "claim_secret": "Gq3nY0…(48자)"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| status | string | `verified` | `verified`(토큰 포함) 또는 `pending`(202, 아직 링크를 열지 않음) |
+| verification_token | string | `8636271c…` | 원래 요청(428 을 받은 요청)을 다시 보낼 때 실을 본인인증 토큰. `verified` 일 때만, 한 번만 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "본인 확인이 완료되었습니다.",
+    "data": {
+        "status": "verified",
+        "verification_token": "8636271c15d7320a9b37625baca5337a38c9f8ef3db11275901edce2f33d49d4"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 202 | Accepted | 아직 링크로 확인하지 않음 — `data.status = pending` (`메일의 링크로 본인 확인을 기다리고 있습니다.`) |
+| 403 | Forbidden | `claim_secret` 이 맞지 않거나 이 challenge 에 발급된 값이 없음(인증번호 방식) — `identity.errors.claim_denied` |
+| 404 | Not Found | path 파라미터에 해당하는 challenge 가 없는 경우 |
+| 409 | Conflict | 이미 받아 간 결과 — `identity.errors.claim_already_used` |
+| 422 | Unprocessable Entity | 만료·실패·취소로 끝난 challenge — `identity.errors.claim_unavailable`, `errors.status` 에 종료 상태 |
+
+<!-- @generated:end -->
+
+**설명** 링크 방식(비밀번호 재설정 목적 등) 본인인증의 확인 결과를, 인증을 시작한 화면이 받아 갑니다. 링크는 메일을 연 기기에서 확인되므로(`POST …/verify` 의 `token`) 시작 화면은 토큰을 받을 길이 없습니다. 그래서 challenge 시작 응답에만 일회용 `claim_secret` 을 주고(서버는 해시만 저장), 시작 화면이 그 값으로 이 엔드포인트를 몇 초 간격으로 물어 확인이 끝나면 `verification_token` 을 한 번 받아 원래 요청을 이어 갑니다. 누구나 부를 수 있는 상태 조회(`GET …/{challenge}`)에는 `claim_secret` 도 `verification_token` 도 싣지 않습니다. 번들 템플릿의 본인인증 처리기가 이 흐름을 씁니다.
 
 
 ### POST /api/identity/challenges/{challenge}/verify

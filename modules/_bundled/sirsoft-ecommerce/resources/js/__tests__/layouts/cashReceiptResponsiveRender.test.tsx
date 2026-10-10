@@ -106,7 +106,7 @@ const PAYMENT_SETTINGS = {
  *
  * 두 개의 gate 를 모두 열어야 검사 대상 노드가 마운트된다:
  *  - 루트: paymentSettings.data.order_settings.cash_receipt_provider 가 truthy
- *  - 입력 영역: _local.cashReceiptRequested 가 truthy
+ *  - 입력 영역: _local.checkoutExtraPayload.cash_receipt_requested 가 truthy
  *
  * @param  width  주입할 화면 너비 (px)
  */
@@ -119,9 +119,13 @@ async function renderAtWidth(width: number) {
     initialState: {
       _local: {
         paymentMethod: 'dbank',
+        checkoutExtraPayload: { cash_receipt_requested: true },
         cashReceiptRequested: true,
         cashReceiptType: 'income',
         cashReceiptIdentifierType: 'phone',
+        // 신청 표시는 조각 미러와 확장 병합 칸이 **둘 다** 살아 있을 때만 열린다 —
+        // 결제수단을 바꾸면 템플릿이 이 칸을 비워 표시도 함께 닫히게 하기 위해서다.
+        checkoutExtraPayload: { cash_receipt_requested: true },
       },
     },
   });

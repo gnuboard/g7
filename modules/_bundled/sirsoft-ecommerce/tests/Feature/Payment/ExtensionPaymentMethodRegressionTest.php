@@ -17,8 +17,8 @@ use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\TempOrder;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\OrderCalculationService;
-use Modules\Sirsoft\Ecommerce\Services\OrderCancellationService;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Modules\Sirsoft\Ecommerce\Services\RefundExecutionService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -50,6 +50,11 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
      */
     private const EXT_PG = 'nhnkcp';
 
+    /**
+     * 테스트 전제(통화·사유·서비스 등)를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -57,6 +62,11 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
         $this->registerExtensionPaymentMethod();
     }
 
+    /**
+     * 테스트가 바꾼 설정·훅을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         HookManager::resetAll();
@@ -69,6 +79,8 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
      * `RegisterEasyPayMethodsListener::buildEntry()` 가 내려주는 형태를 그대로 재현하되,
      * 수정 후 선언될 능력 키(`pg_provider` / `needs_pg` / `refund_method` / `pg_locked`)를
      * 포함한다 — 이 선언을 코어가 존중하는지가 본 회귀 테스트의 검증 대상이다.
+     *
+     * @return void 반환값 없음
      */
     private function registerExtensionPaymentMethod(): void
     {
@@ -108,6 +120,9 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
      *
      * `payment_method` 컬럼에 확장 ID 를 1급 시민으로 저장한다 — 캐스트가 살아있는
      * 현재는 Eloquent 의 enum 캐스트(`from()`) 가 ValueError 를 던진다.
+     *
+     * @param  array  $paymentOverrides  결제 레코드 덮어쓰기
+     * @return OrderPayment 확장 결제수단으로 만든 결제 레코드
      */
     private function createExtensionPaymentOrder(array $paymentOverrides = []): OrderPayment
     {
@@ -219,9 +234,13 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
     // ─────────────────────────────────────────────────────────────
 
     /**
+     * 확장 결제수단 ID 가 결제 레코드에 그대로 저장되고 읽히는지 검증합니다.
+     *
      * @scenario method_kind=extension, capability_declared=declared, capability=needs_pg
      *
      * @effects extension_id_persisted_as_is
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function extension_payment_method_id_can_be_persisted_and_read_back(): void
@@ -244,9 +263,13 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
     // ─────────────────────────────────────────────────────────────
 
     /**
+     * 확장 결제수단 주문이 PG 결제가 필요한 주문으로 인식되는지 검증합니다.
+     *
      * @scenario method_kind=extension, capability_declared=declared, capability=needs_pg
      *
      * @effects requires_pg_payment_true, temp_order_preserved, admin_new_order_notification_deferred
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function extension_payment_order_does_not_require_pg_is_false(): void
@@ -280,6 +303,8 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
      * @scenario method_kind=extension, capability_declared=declared, capability=needs_pg
      *
      * @effects admin_new_order_notification_deferred, temp_order_preserved, requires_pg_payment_true
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function extension_payment_order_creation_does_not_fire_admin_notification(): void
@@ -319,6 +344,8 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
      * @scenario method_kind=builtin, capability_declared=declared, capability=needs_pg
      *
      * @effects builtin_capability_unchanged
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function builtin_bank_transfer_order_creation_fires_admin_notification(): void
@@ -351,9 +378,13 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
     // ─────────────────────────────────────────────────────────────
 
     /**
+     * 확장 결제수단이 자기 PG 제공자로 해석되는지 검증합니다.
+     *
      * @scenario method_kind=extension, capability_declared=declared, capability=needs_pg
      *
      * @effects pg_provider_resolved_not_none, temp_order_preserved
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function extension_payment_method_resolves_to_its_own_pg_provider(): void
@@ -375,9 +406,13 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
     // ─────────────────────────────────────────────────────────────
 
     /**
+     * 확장 결제수단 주문의 환불 수단이 PG 인지 검증합니다.
+     *
      * @scenario method_kind=extension, capability_declared=declared, capability=refund_method
      *
      * @effects refund_method_is_pg, pg_refund_hook_invoked
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function extension_payment_order_refund_method_is_pg(): void
@@ -387,22 +422,34 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
         $payment = $this->createExtensionPaymentOrder();
         $order = $payment->order->load('payment');
 
-        $service = app(OrderCancellationService::class);
+        // PG 환불에 응답할 구독자를 세운다.
+        //
+        // `determineRefundMethod()` 는 `payment.refund` 훅에 구독자가 하나도 없으면 결제수단과
+        // 무관하게 계좌 환불로 떨어뜨린다(P14 — 결제 플러그인을 지운 뒤에도 취소는 가능해야
+        // 하므로). 이 테스트가 붙드는 계약은 **확장 결제수단의 수단 매핑**이지 플러그인 설치
+        // 여부가 아니므로, 그 폴백이 판정을 가리지 않도록 구독자를 등록하고 본다.
+        HookManager::addFilter(
+            'sirsoft-ecommerce.payment.refund',
+            static fn (array $result): array => $result,
+        );
 
-        $method = new \ReflectionMethod($service, 'determineRefundMethod');
-        $method->setAccessible(true);
-
+        // 판정의 단일 출처는 `RefundExecutionService::determineRefundMethod()` 다 — 취소 서비스에
+        // 남아 있던 위임 메서드는 호출부가 없어 제거됐다(#599 validate P2 minor).
         $this->assertSame(
             RefundMethodEnum::PG,
-            $method->invoke($service, $order),
+            app(RefundExecutionService::class)->determineRefundMethod($order),
             '확장 결제수단(PG 결제) 의 환불수단은 PG 여야 한다 (BANK 면 카드 취소가 누락된다)'
         );
     }
 
     /**
+     * 확장 결제수단 결제 레코드가 PG 환불 훅 진입 대상인지 검증합니다.
+     *
      * @scenario method_kind=extension, capability_declared=declared, capability=refund_method
      *
      * @effects pg_refund_hook_invoked
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function extension_payment_needs_pg_provider_for_refund_hook(): void
@@ -422,9 +469,13 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
     // ─────────────────────────────────────────────────────────────
 
     /**
+     * 확장 결제수단 ID 가 주문 생성 검증을 통과하는지 검증합니다.
+     *
      * @scenario method_kind=extension, capability_declared=declared, capability=needs_pg
      *
      * @effects extension_id_passes_validation, pg_payment_handler_present
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function extension_payment_method_id_passes_create_order_validation(): void
@@ -446,9 +497,13 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
     }
 
     /**
+     * 등록되지 않은 결제수단 ID 는 여전히 거절되는지 검증합니다.
+     *
      * @scenario method_kind=extension, capability_declared=undeclared, capability=needs_pg
      *
      * @effects unregistered_id_still_rejected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function unregistered_payment_method_id_is_still_rejected(): void
@@ -472,9 +527,13 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
     // ─────────────────────────────────────────────────────────────
 
     /**
+     * 결제수단 카탈로그가 확장 수단의 PG 선언을 보존하는지 검증합니다.
+     *
      * @scenario method_kind=extension, capability_declared=declared, capability=pg_locked
      *
      * @effects saved_null_pg_provider_self_healed, admin_shows_pg_locked_badge
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function catalog_preserves_extension_method_pg_declaration(): void
@@ -495,9 +554,13 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
     // ─────────────────────────────────────────────────────────────
 
     /**
+     * 내장 카드 결제는 여전히 PG 가 필요한지 검증합니다.
+     *
      * @scenario method_kind=builtin, capability_declared=declared, capability=needs_pg
      *
      * @effects builtin_capability_unchanged
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function builtin_card_payment_still_requires_pg(): void
@@ -513,9 +576,13 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
     }
 
     /**
+     * 내장 무통장입금은 여전히 PG 가 필요 없는지 검증합니다.
+     *
      * @scenario method_kind=builtin, capability_declared=declared, capability=needs_pg
      *
      * @effects builtin_capability_unchanged
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function builtin_dbank_payment_still_does_not_require_pg(): void
@@ -533,9 +600,13 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
     }
 
     /**
+     * 내장 가상계좌는 여전히 가상계좌로 인식되는지 검증합니다.
+     *
      * @scenario method_kind=builtin, capability_declared=declared, capability=needs_pg
      *
      * @effects builtin_capability_unchanged
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function builtin_vbank_payment_is_still_recognized_as_virtual_account(): void
@@ -567,6 +638,8 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
      * @scenario method_kind=extension, pg_provider_state=live
      *
      * @effects live_pg_method_remains_visible, extension_method_survives_dead_pg_guard
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function live_extension_payment_method_is_not_flagged_as_dead_pg(): void
@@ -601,6 +674,8 @@ class ExtensionPaymentMethodRegressionTest extends ModuleTestCase
      * @scenario method_kind=extension, pg_provider_state=dead_own
      *
      * @effects dead_pg_method_flagged_for_admin, dead_pg_method_hidden_from_checkout, pg_locked_method_has_no_dead_pg_exemption
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function pg_locked_extension_method_has_no_dead_pg_exemption(): void

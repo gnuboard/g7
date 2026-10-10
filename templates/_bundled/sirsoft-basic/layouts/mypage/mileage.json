@@ -1,128 +1,131 @@
 {
-  "version": "1.0.0",
-  "layout_name": "mypage/mileage",
-  "extends": "_user_base",
-  "permissions": [],
-  "transition_overlay": {
-    "enabled": true,
-    "style": "spinner",
-    "target": "mypage_tab_content",
-    "fallback_target": "main_content_area",
-    "spinner": {
-      "component": "PageLoading"
-    }
-  },
-  "computed": {
-    "currentTab": "mileage"
-  },
-  "data_sources": [
-    {
-      "id": "mileage_balance",
-      "label_key": "$t:editor.data_source.mileage_balance",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-ecommerce/user/mileage",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "loading_strategy": "progressive"
-    },
-    {
-      "id": "mileage_history",
-      "label_key": "$t:editor.data_source.mileage_history",
-      "type": "api",
-      "endpoint": "/api/modules/sirsoft-ecommerce/user/mileage/history",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "loading_strategy": "progressive",
-      "blur_until_loaded": true,
-      "params": {
-        "page": "{{query.page ?? 1}}",
-        "category": "{{query.category}}",
-        "per_page": "{{query.per_page ?? 20}}"
-      }
-    }
-  ],
-  "init_actions": [
-    {
-      "handler": "setState",
-      "params": {
-        "target": "local",
-        "mileagePage": "{{query.page ?? 1}}",
-        "mileageCategory": "{{query.category ?? ''}}"
-      }
-    }
-  ],
-  "slots": {
-    "content": [
-      {
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
+    "comment": "마이페이지 «적립금» 탭 — 남은 잔액과 쌓이고 쓰인 내역. 둘을 따로 받는 이유는 잔액은 늘 한 줄이고\n     내역만 쪽이 나뉘기 때문이다.",
+    "version": "1.0.0",
+    "layout_name": "mypage/mileage",
+    "extends": "_user_base",
+    "data_sources": [
+        {
+            "id": "mileage_balance",
+            "label_key": "$t:editor.data_source.mileage_balance",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/mileage",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "comment": "지금 잔액과 소멸 예정분"
         },
-        "children": [
-          {
-            "type": "layout",
-            "name": "Container",
-            "props": {
-              "className": "py-8"
+        {
+            "id": "mileage_history",
+            "label_key": "$t:editor.data_source.mileage_history",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/user/mileage/history",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "blur_until_loaded": true,
+            "params": {
+                "page": "{{query.page ?? 1}}",
+                "category": "{{query.category}}",
+                "per_page": "{{query.per_page ?? 20}}"
             },
-            "responsive": {
-              "portable": {
-                "props": {
-                  "className": "py-4"
-                }
-              }
-            },
-            "children": [
-              {
-                "comment": "페이지 제목",
+            "comment": "적립·사용 내역. 조건이 URL 쿼리에 있어 쪽을 넘기면 주소가 바뀌고 그에 따라 다시 받는다"
+        }
+    ],
+    "computed": {
+        "currentTab": "mileage"
+    },
+    "permissions": [],
+    "transition_overlay": {
+        "enabled": true,
+        "style": "spinner",
+        "target": "mypage_tab_content",
+        "fallback_target": "main_content_area",
+        "spinner": {
+            "component": "PageLoading"
+        }
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "mileagePage": "{{query.page ?? 1}}",
+                "mileageCategory": "{{query.category ?? ''}}"
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                  "className": "flex items-center gap-2 mb-6"
+                    "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
                 },
                 "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "user",
-                      "size": "xl",
-                      "className": "text-gray-900 dark:text-white"
+                    {
+                        "type": "layout",
+                        "name": "Container",
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "py-4"
+                                }
+                            }
+                        },
+                        "props": {
+                            "className": "py-8"
+                        },
+                        "children": [
+                            {
+                                "comment": "페이지 제목",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "user",
+                                            "size": "xl",
+                                            "className": "text-gray-900 dark:text-white"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:mypage.title"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "탭 네비게이션",
+                                "partial": "partials/mypage/_tab_navigation.json"
+                            },
+                            {
+                                "comment": "탭 컨텐츠 영역 (스켈레톤 타겟)",
+                                "id": "mypage_tab_content",
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "comment": "마일리지 내역",
+                                        "partial": "partials/mypage/mileage/_list.json"
+                                    }
+                                ]
+                            }
+                        ]
                     }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "H1",
-                    "props": {
-                      "className": "text-2xl font-bold text-gray-900 dark:text-white"
-                    },
-                    "text": "$t:mypage.title"
-                  }
                 ]
-              },
-              {
-                "comment": "탭 네비게이션",
-                "partial": "partials/mypage/_tab_navigation.json"
-              },
-              {
-                "comment": "탭 컨텐츠 영역 (스켈레톤 타겟)",
-                "type": "basic",
-                "name": "Div",
-                "id": "mypage_tab_content",
-                "children": [
-                  {
-                    "comment": "마일리지 내역",
-                    "partial": "partials/mypage/mileage/_list.json"
-                  }
-                ]
-              }
-            ]
-          }
+            }
         ]
-      }
-    ]
-  }
+    }
 }

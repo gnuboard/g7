@@ -1,13 +1,15 @@
 /**
  * _admin_base 레이아웃 전용 컴포넌트 클래스
  *
- * `templates/_bundled/sirsoft-admin_basic/layouts/_admin_base.json` 의
+ * `templates/_bundled/sirsoft-admin_basic/layouts/_admin_base.g7.html` 의
  * 1회 등장 컴포넌트(공통 선언)의 인라인 Tailwind 토큰을 id 와 동일한
- * 시맨틱 클래스로 캡슐화한다.
+ * 시맨틱 클래스로 캡슐화한다. 소스 SSoT 는 `.g7.html` 이고 짝 `.json` 은
+ * 런타임 계약이다(D38/D39) — 형제 `main.css` 가 두 표기를 모두 `@source`
+ * 앵커하는 것과 같은 규약이다.
  *
  * 원칙:
  * - 컴포넌트 id 와 클래스명 1:1 매칭 (underscore_case)
- * - responsive variant 는 .{id}_portable 별도 클래스 (JSON responsive.portable 와 짝)
+ * - responsive variant 는 .{id}_portable 별도 클래스 (작성 responsive.portable 와 짝)
  * - 상태 토글(_global.sidebarOpen 등) 은 .{id}_open 변형 클래스
  *
  * 주의 (Tailwind v4 제약):

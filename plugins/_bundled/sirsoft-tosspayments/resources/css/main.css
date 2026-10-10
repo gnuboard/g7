@@ -1,0 +1,68 @@
+/**
+ * sirsoft-tosspayments 화면 스타일 — 토스페이먼츠 결제 환경설정의 상태 유틸리티와 주문 상세 가상계좌 입금 안내의 색
+ *
+ * 관리자 템플릿은 자기 layouts/ 만 훑어 CSS 를 만들므로, 이 플러그인 레이아웃에만 있는 호버·다크 모드 짝은 규칙이
+ * 생성되지 않는다. 그런 짝을 이 플러그인이 접두 클래스로 직접 제공한다(다른 확장·템플릿 클래스를 정의하거나 덮지 않는다).
+ * 다크 모드: 관리자 템플릿은 `<html class="dark">` 로 전환하므로 `.dark` 조상 선택자로 짝을 둔다.
+ */
+
+/* 경고 상자 안의 링크 — 호버 글자색 */
+@media (hover: hover) {
+    .pay-tosspayments-link-warning:hover {
+        color: oklch(41.4% 0.112 45.904); /* amber-900 */
+    }
+
+    .dark .pay-tosspayments-link-warning:hover {
+        color: oklch(96.2% 0.059 95.617); /* amber-100 */
+    }
+}
+
+/*
+ * 주문 상세 결제 정보 카드의 가상계좌 입금 안내 — 회원·비회원 주문 상세와 신청서 상세(사용자 템플릿)에 붙는다.
+ * 사용자 템플릿도 `<html class="dark">` 로 다크 모드를 켜므로 같은 `.dark` 조상 선택자로 짝을 둔다.
+ */
+
+/* 위쪽 구분선 */
+.pay-tosspayments-divider {
+    border-color: oklch(92.8% 0.006 264.531); /* gray-200 */
+}
+
+.dark .pay-tosspayments-divider {
+    border-color: oklch(37.3% 0.034 259.733); /* gray-700 */
+}
+
+/* 안내 제목 */
+.pay-tosspayments-text-strong {
+    color: oklch(27.8% 0.033 256.848); /* gray-800 */
+}
+
+.dark .pay-tosspayments-text-strong {
+    color: oklch(92.8% 0.006 264.531); /* gray-200 */
+}
+
+/* 항목 이름 */
+.pay-tosspayments-text-muted {
+    color: oklch(55.1% 0.027 264.364); /* gray-500 */
+}
+
+.dark .pay-tosspayments-text-muted {
+    color: oklch(70.7% 0.022 261.325); /* gray-400 */
+}
+
+/* 항목 값 */
+.pay-tosspayments-text-value {
+    color: oklch(21% 0.034 264.665); /* gray-900 */
+}
+
+.dark .pay-tosspayments-text-value {
+    color: #fff; /* white */
+}
+
+/* 경고 — 입금 기한 안내 */
+.pay-tosspayments-tone-warning {
+    color: oklch(66.6% 0.179 58.318); /* amber-600 */
+}
+
+.dark .pay-tosspayments-tone-warning {
+    color: oklch(82.8% 0.189 84.429); /* amber-400 */
+}

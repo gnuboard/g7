@@ -1,0 +1,68 @@
+# audit:allow test-scenario-coverage[cross_product] reason: path 와 check 는 서로 독립이 아니다 — 승인 전 대조
+#   (callback_amount·order_state)는 성공 리다이렉트에만, 저장 금액·결제 조회(stored_amount·legacy_lookup)는
+#   입금통보에만 존재한다. 성립하지 않는 조합을 docblock @scenario 로 나열하면 거짓 매핑이 된다.
+#   effects 는 전부 실제 검증 메서드에 @effects 로 매핑되어 있으며 그것이 실질 커버리지다.
+# 시나리오 매니페스트 — 결제완료·가상계좌 발급·입금 반영의 금액 근거
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: payment_amount_verification
+
+description: >-
+  결제 성립의 금액 근거는 토스가 실제로 승인·발급한 금액(`totalAmount`)과 주문에 저장된 청구액
+  두 가지뿐이다. 성공 리다이렉트의 `amount` 쿼리는 브라우저가 보낸 값이라 누구나 바꿀 수 있다.
+
+  수정 전에는 그 쿼리 금액을 그대로 승인 요청과 결제완료 대조에 썼고 승인 응답 금액은 읽지
+  않았다. 가상계좌 발급 분기는 금액을 전혀 보지 않았고, 입금통보는 결제행에 저장해 둔 예정액끼리
+  대조했다. 결제 불가 상태의 주문에도 승인이 먼저 성립해 토스 승인만 남는 경로가 있었다.
+
+  불변조건: 금액이 어긋나거나 확인할 수 없으면 거절하고, 이미 성립한 토스 승인(발급)은 취소하며,
+  결제완료로 전이하지 않는다. 클레임 추가결제 경로는 이미 같은 원칙이라 이 매니페스트의 대상이 아니다.
+
+test_files:
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/PaymentAmountVerificationTest.php
+  - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/Kve20262135VirtualAccountUnderpaymentTest.php
+
+axes:
+  path:
+    - card_confirm      # 즉시 결제완료 (카드·계좌이체·휴대폰·간편결제)
+    - vbank_issue       # 가상계좌 발급 (입금 전)
+    - deposit_webhook   # 가상계좌 입금통보
+
+  check:
+    - callback_amount   # 브라우저가 보낸 금액과 청구액 (승인 전)
+    - approved_amount   # 토스 승인·발급 금액과 청구액 (승인 후)
+    - order_state       # 결제 가능 상태 (승인 전·후)
+    - stored_amount     # 발급 때 대조해 둔 금액과 현재 청구액 (입금통보)
+    - legacy_lookup     # 발급 금액 기록이 없는 결제행의 토스 결제 조회 (입금통보)
+
+exclusions:
+  - { path: deposit_webhook, check: callback_amount, reason: "입금통보에는 브라우저 금액이 없다" }
+  - { path: deposit_webhook, check: approved_amount, reason: "입금통보에는 승인 응답이 없다 — 발급 때 대조한 금액(stored_amount)이 그 자리다" }
+  - { path: card_confirm, check: stored_amount, reason: "저장 금액 대조는 입금통보 전용" }
+  - { path: card_confirm, check: legacy_lookup, reason: "결제 조회는 입금통보 전용" }
+  - { path: vbank_issue, check: stored_amount, reason: "저장 금액 대조는 입금통보 전용" }
+  - { path: vbank_issue, check: legacy_lookup, reason: "결제 조회는 입금통보 전용" }
+
+effects:
+  # 승인 전 — 승인도 상태 변경도 일어나지 않는다
+  - tampered_callback_amount_is_rejected_before_confirm
+  - not_payable_order_is_not_confirmed
+  - already_recorded_payment_key_skips_confirm
+  # 승인 후 — 어긋나면 토스 승인을 취소하고 결제완료로 가지 않는다
+  - confirm_is_requested_with_the_order_charge
+  - approved_amount_mismatch_cancels_and_does_not_mark_paid
+  - missing_approved_amount_cancels_and_does_not_mark_paid
+  - module_amount_rejection_after_confirm_cancels_the_approval
+  # 가상계좌 발급
+  - vbank_issue_amount_mismatch_cancels_and_writes_no_row
+  - vbank_issue_stores_the_verified_amount
+  # 입금통보
+  - deposit_webhook_completes_with_the_issuance_verified_amount
+  - deposit_webhook_rejects_a_stored_amount_that_differs_from_the_charge
+  - deposit_webhook_rejects_a_zero_stored_amount_without_lookup
+  - legacy_deposit_is_verified_by_payment_lookup
+  - legacy_deposit_is_rejected_when_lookup_is_not_done
+  - legacy_deposit_lookup_failure_asks_for_a_retry
+
+validation:
+  audit_rule: test-scenario-coverage

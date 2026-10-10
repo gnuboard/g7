@@ -1,0 +1,31 @@
+feature: 검증 문구의 필드 라벨 (환경설정)
+
+description: |
+  저장 실패 문구가 운영자에게 "어느 칸이 잘못됐는지" 를 알려주게 한다(이슈 #636 PO 실측).
+  Laravel 은 라벨이 없으면 필드 키를 풀어쓴 영문을 :attribute 에 넣으므로, 화면 라벨은
+  한국어인데 문구만 "seo.bot_user_agents.0 필드는 …" 으로 나온다.
+
+  라벨 해소 순서는 Laravel 과 같다:
+    1. FormRequest::attributes() 의 정확한 키
+    2. attributes() 의 와일드카드 패턴 — 세그먼트 단위로 맞으면 모든 인덱스를 덮는다
+    3. 코어 lang validation.attributes 의 평탄 키 — 단일 세그먼트만 해소된다
+
+  그 셋 중 하나도 없으면 문구에 원시 키가 실린다. 배열 항목(인덱스가 붙는 키)과 탭 묶음이
+  특히 그랬고, 이 시나리오가 그 자리를 잠근다. 잔량 증가는 감사 룰
+  formrequest-attribute-label-coverage 가 파일별 기준선과 대조해 막는다.
+
+axes:
+  field_shape: [tab_container, nested_scalar, wildcard_item]
+
+effects:
+  - tab_container_message_uses_operator_label
+  - nested_scalar_message_uses_operator_label
+  - wildcard_label_covers_every_array_index
+  - message_never_contains_raw_field_key
+
+test_files:
+  - tests/Feature/Settings/ValidationAttributeLabelTest.php
+
+notes: |
+  감사 룰 쪽 반례(발화·비발화·면제·기준선 초과)는 하네스 자체 테스트가 덮는다 — 이 매니페스트의
+  test_files 에는 제품 경로를 검증하는 PHPUnit 만 둔다.

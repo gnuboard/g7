@@ -26,6 +26,8 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 테스트 게시판 slug
+     *
+     * @return string 테스트 게시판 slug
      */
     protected function getTestBoardSlug(): string
     {
@@ -34,6 +36,9 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 기본 게시판 속성
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array<string, mixed> 게시판 생성 속성
      */
     protected function getDefaultBoardAttributes(string $slug): array
     {
@@ -46,6 +51,11 @@ class PostResourcePermissionTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 관리자·일반 사용자·작성자를 만들고 게시판 권한을 설정합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -59,6 +69,8 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 테스트 사용자 생성
+     *
+     * @return void 반환값 없음
      */
     private function createTestUsers(): void
     {
@@ -69,6 +81,8 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 권한 설정
+     *
+     * @return void 반환값 없음
      */
     private function setupPermissions(): void
     {
@@ -93,6 +107,12 @@ class PostResourcePermissionTest extends BoardTestCase
             );
             $adminPermissions[] = $permission->id;
         }
+
+        // 관리자 진입 링크(can_access_admin)는 관리자 게시판 화면의 레이아웃 권한(boards.read)도 요구한다(7.1.0 abilities 게이트)
+        $adminPermissions[] = Permission::firstOrCreate(
+            ['identifier' => 'sirsoft-board.boards.read'],
+            ['name' => ['ko' => '게시판 조회', 'en' => 'Boards Read'], 'type' => 'admin']
+        )->id;
 
         $adminRole = Role::firstOrCreate(
             ['identifier' => "{$slug}-admin"],
@@ -145,6 +165,12 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * Admin 페이지에서는 admin_* 권한만 반환
+     *
+     * @scenario context=admin_detail
+     *
+     * @effects admin_post_detail_reports_unified_can_abilities
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function admin_page_returns_admin_permissions_only(): void
@@ -177,6 +203,12 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * Admin 페이지에서 User 권한 미반환
+     *
+     * @scenario context=admin_detail
+     *
+     * @effects admin_post_detail_omits_legacy_user_permission_keys
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function admin_page_excludes_user_permissions(): void
@@ -209,6 +241,12 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * User 페이지에서는 posts_*, comments_* 권한만 반환
+     *
+     * @scenario context=user_detail
+     *
+     * @effects user_post_detail_reports_unified_can_abilities
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function user_page_returns_user_permissions_only(): void
@@ -243,6 +281,12 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * User 페이지에서 Admin 권한 미반환
+     *
+     * @scenario context=user_detail
+     *
+     * @effects user_post_detail_omits_legacy_admin_permission_keys
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function user_page_excludes_admin_permissions(): void
@@ -279,6 +323,8 @@ class PostResourcePermissionTest extends BoardTestCase
      * @scenario link=user_board_to_admin, permitted=true
      *
      * @effects board_admin_gate_true_shows_link
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function user_detail_returns_can_access_admin_true_for_admin_permission_holder(): void
@@ -308,6 +354,8 @@ class PostResourcePermissionTest extends BoardTestCase
      * @scenario link=user_board_to_admin, permitted=false
      *
      * @effects board_admin_gate_false_hides_link
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function user_detail_returns_can_access_admin_false_for_regular_user(): void
@@ -333,6 +381,12 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * User 목록: 컬렉션 abilities 에도 can_access_admin 노출
+     *
+     * @scenario context=user_list
+     *
+     * @effects user_post_list_collection_reports_can_access_admin
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function user_list_collection_exposes_can_access_admin(): void
@@ -360,6 +414,12 @@ class PostResourcePermissionTest extends BoardTestCase
      * User 목록/상세 응답의 board 정보에 id 가 포함된다 (#450)
      *
      * "게시판 관리" 크로스링크가 /admin/boards/:id/edit 로 이동하려면 board id 필요.
+     *
+     * @scenario context=user_list
+     *
+     * @effects user_post_list_and_detail_board_info_include_id
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function user_response_board_info_includes_id(): void
@@ -392,6 +452,12 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 본인 글: is_author = true
+     *
+     * @scenario context=ownership_flags
+     *
+     * @effects post_is_author_true_for_own_post
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function is_author_true_for_own_post(): void
@@ -415,6 +481,12 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 타인 글: is_author = false
+     *
+     * @scenario context=ownership_flags
+     *
+     * @effects post_is_author_false_for_others_post
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function is_author_false_for_others_post(): void
@@ -438,6 +510,12 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 비회원 글: is_guest_post = true
+     *
+     * @scenario context=ownership_flags
+     *
+     * @effects post_is_guest_post_true_for_guest_post
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function is_guest_post_true_for_guest_post(): void
@@ -462,6 +540,12 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 회원 글: is_guest_post = false
+     *
+     * @scenario context=ownership_flags
+     *
+     * @effects post_is_guest_post_false_for_member_post
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function is_guest_post_false_for_member_post(): void
@@ -488,6 +572,12 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 비회원: guest_permissions에 따라 권한 체크
+     *
+     * @scenario context=permission_source
+     *
+     * @effects guest_abilities_follow_guest_role_permissions
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function guest_permissions_respected_for_non_authenticated_user(): void
@@ -515,6 +605,12 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 로그인 사용자: Gate로 권한 체크
+     *
+     * @scenario context=permission_source
+     *
+     * @effects member_abilities_follow_gate_permissions
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function authenticated_user_permissions_check_via_gate(): void
@@ -547,6 +643,12 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 일반 사용자는 답글 섹션에서 삭제된 답글을 볼 수 없다
+     *
+     * @scenario context=deleted_reply_visibility
+     *
+     * @effects regular_user_post_detail_hides_deleted_reply
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function regular_user_cannot_see_deleted_reply_in_post_detail(): void
@@ -590,6 +692,12 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 관리자는 답글 섹션에서 삭제된 답글을 볼 수 있다
+     *
+     * @scenario context=deleted_reply_visibility
+     *
+     * @effects admin_post_detail_shows_deleted_reply
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function admin_user_can_see_deleted_reply_in_post_detail(): void
@@ -636,6 +744,9 @@ class PostResourcePermissionTest extends BoardTestCase
 
     /**
      * 게시글 생성 헬퍼
+     *
+     * @param  array<string, mixed>  $attributes  게시글 속성 (기본값을 덮어쓴다)
+     * @return int 생성된 게시글 ID
      */
     private function createPost(array $attributes): int
     {

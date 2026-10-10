@@ -20,7 +20,7 @@ return [
         'delete_failed' => 'Failed to delete page.',
         'publish_success' => 'Page publish status has been changed.',
         'publish_failed' => 'Failed to change page publish status.',
-        'bulk_publish_success' => ':count page(s) publish status has been changed.',
+        'bulk_publish_success' => 'Changed the publish status of :count page.|Changed the publish status of :count pages.',
         'bulk_publish_failed' => 'Failed to bulk change publish status.',
         'restore_success' => 'Page has been restored to the previous version.',
         'restore_failed' => 'Failed to restore page version.',
@@ -31,11 +31,13 @@ return [
     'attachment' => [
         'not_found' => 'Attachment not found.',
         'file_not_found' => 'Attachment file does not exist in storage.',
+        'preview_not_supported' => 'Preview is not available for this file type.',
         'upload_success' => 'Attachment has been uploaded.',
         'upload_failed' => 'Failed to upload attachment.',
         'delete_success' => 'Attachment has been deleted.',
         'delete_failed' => 'Failed to delete attachment.',
         'reorder_success' => 'Attachment order has been changed.',
+        'settings_success' => 'Attachment settings loaded.',
         'reorder_failed' => 'Failed to change attachment order.',
     ],
 
@@ -46,6 +48,6 @@ return [
         'version_belongs_to_different_page' => 'The specified version does not belong to this page.',
         'permission_denied' => 'Permission denied.',
         'validation_failed' => 'Validation failed.',
-        'attachment_limit_exceeded' => 'You can attach up to :limit file(s). (requested: :attempted)',
+        'attachment_limit_exceeded' => 'You can attach up to :limit file. (requested: :attempted)|You can attach up to :limit files. (requested: :attempted)',
     ],
 ];

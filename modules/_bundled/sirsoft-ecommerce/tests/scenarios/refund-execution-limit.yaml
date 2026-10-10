@@ -1,0 +1,62 @@
+feature: refund_execution_limit
+
+description: |
+  환불 실행이 **실결제액을 넘지 못한다**. (S3-D9 원인 추적)
+
+  주문 753 실측(2026-09-15)에서 현금 환불 누계가 실결제액을 **5,000원 초과**했다. 그때 나는
+  원인을 「가드가 현금·마일리지를 합계 하나로만 비교해 마일리지 잔여가 현금 한도를 부풀린다」로
+  단정했으나, **새 데이터 재현(2026-09-16 · 주문 965 카드 73,000 + 마일리지 20,000)에서 초과가
+  나지 않았고 그 단정이 틀렸음이 드러났다.**
+
+  이 스위트가 고정하는 것은 **실행 가드가 실제로 막는다**는 사실이다:
+    - 한도를 넘긴 두 번째 실행은 거절된다 — 순차 실행에서 확인
+    - 한도 안의 분할 환불은 모두 집행된다 — 과잉 차단 대조군
+
+  **2026-09-16 3차 라운드에서 753 의 원인이 확정됐다 (S3-D21).** 위 「단정이 틀렸다」는 기록은
+  절반만 맞았다 — 합계 비교는 **실제로 원인의 한 겹**이었고, 965 에서 재현되지 않은 이유는
+  **결제수단이 달랐기 때문**이다. 965 는 카드라 `pg_first` 배분에서 현금 잔여가 먼저 마르는
+  구간이 생기지 않았다.
+
+  753 의 실제 경로:
+    - 신청 시점 배분은 **그 시점의 잔여**로 계산돼 얼어붙는다. RF36·RF37 은 4초 차로 신청돼
+      **둘 다 현금 잔여 23,000 을 보고** 각각 현금 14,000 을 배정받았다(각자는 정당하다).
+    - 실행 직전 가드는 **현금 9,000 + 마일리지 20,000 = 29,000** 을 한 덩어리로 비교해
+      현금 14,000 을 통과시켰다 → 현금 5,000 초과 · 마일리지 10,000 미환급.
+
+  **고친 것은 가드 한 겹뿐이다(운영 결정 2026-09-16 — 「가드 수단별만」).** 신청 시점 배분이
+  다른 미실행 신청서를 못 보는 축은 **운영으로 푼다** — 코드가 「누구를 거절할지」 정하면
+  항상 자의적이고(먼저 온 쪽? 금액 작은 쪽?), 선점액을 한도에서 빼면 승인도 되지 않은 남의
+  신청서가 정당한 환불을 0 원으로 막는다(`CancellableAmount` 독블록 · S17 B5). 대신 가드가
+  **실행 순간 수단별로 거절**하고 사유에 그 수단의 숫자를 실어, 운영자가 화면에서 고친다.
+
+  판정 주의:
+    - `total_paid_amount` 에는 **마일리지가 이미 빠져 있다**(`final_amount = paymentAmount −
+      actualPoints`). 「결제액 + 마일리지」로 기대값을 잡으면 엉뚱한 곳에서 red 가 난다
+      (세션1 S1-D23 오진의 원인 — 그쪽도 같은 전제로 잘못 읽었다 철회했다).
+    - `refund_method` 는 `bank` 로 둔다. `pg` 면 테스트가 실제 PG 를 호출해 죽는다 —
+      이 축은 **한도 판정**이지 PG 연동이 아니다.
+
+axes:
+  claim_type: [refund]
+  concurrency: [back_to_back, sequential]
+
+effects:
+  # ── 상한 (P0) ──
+  # 한도를 넘긴 실행은 거절된다. 통과하면 실결제액보다 많은 돈이 나간다.
+  - second_execution_over_limit_is_rejected
+  # ── 과잉 차단 방지 (P0) ──
+  # 「두 번째를 막는다」를 과하게 구현해 정상 분할 환불까지 막으면 안 된다.
+  - within_limit_executions_all_succeed
+  # ── 수단별 한도 (S3-D21 · P0) ──
+  # 한도를 현금·마일리지로 나눠 본다. 합계만 보면 한쪽이 마른 채 다른 쪽 여유로 통과한다.
+  - cancellable_amount_splits_remaining_by_method
+  - method_guard_rejects_cash_beyond_cash_remaining
+  - method_guard_rejects_mileage_beyond_mileage_remaining
+  # 과잉 차단 방지 — 같은 총액이라도 수단을 나누면 통과해야 한다(고객은 전액을 받는다).
+  - method_guard_allows_split_across_methods
+
+test_files:
+  # 환불 실행의 한도 경쟁 (연속 호출)
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/RefundExecutionConcurrencyTest.php
+  # 수단별 잔여 가드 (S3-D21) — 753 의 RF37 시점을 숫자 그대로 세운다
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/DTO/CancellableAmountMethodGuardTest.php

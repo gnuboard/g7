@@ -1,0 +1,84 @@
+<!-- 주문 목록 — 지금 걸린 검색조건을 프리셋으로 저장하는 창. 저장 대상은 화면에 보이는 결과가 아니라
+  **조건 20여 개 묶음**이고, 그 값은 필터 영역이 창을 열기 전에 `_global.savingPresetConditions` 로
+  옮겨 담아 둔다. 조건마다 `|| ''`/`|| []` 를 붙이는 이유는 비어 있는 조건도 키를 남기기 위해서다 —
+  키가 빠지면 나중에 이 프리셋을 불러올 때 그 자리가 직전 검색값으로 남는다.
+  `target_screen` 이 "orders" 로 고정돼 있어 상품·쿠폰 목록의 프리셋과 한 저장소를 나눠 쓴다. -->
+<partial description="Order List - Preset Save Modal">
+  <modal data-type="composite" data-ref="modal_preset_save" title="$t:sirsoft-ecommerce.admin.order.modal.preset_save.title" size="sm">
+    <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.modal.preset_save.placeholder" class="input" value="{{_local.presetName}}">
+      <on type="input">
+        <!-- 이름만 이 창의 `_local` 에 둔다 — 저장할 조건은 이미 `_global` 에 담겨 왔고, 이름은 저장이 끝나면 비워 다음 저장에 남지 않게 한다. -->
+        <set-state target="local" presetName="{{$event.target.value}}"/>
+      </on>
+    </input>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSaving}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.presetName || _local.presetName.trim() === '' || _global.isSaving}}">
+        <on type="click">
+          <!-- 저장. 조건을 통째로 넘기지 않고 `<field>` 트리로 하나씩 펴는 이유는 두 가지다 — 화면이
+            쓰지 않는 키가 섞여 들어가지 않고, 조건이 하나 늘 때 고칠 자리가 여기 한 곳으로 보인다.
+            성공 사슬에서 이름 비우기가 창 닫기보다 앞이다(같은 창을 다시 열면 이전 이름이 남는다). -->
+          <sequence>
+            <set-state target="global" :isSaving="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/presets" method="POST">
+              <success>
+                <set-state target="global" :isSaving="false"/>
+                <set-state target="local" presetName=""/>
+                <refetch-data-source dataSourceId="presets"/>
+                <toast type="success" message="$t:sirsoft-ecommerce.messages.presets.created"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isSaving="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <field name="body">
+                <field name="target_screen" value="orders"/>
+                <field name="name" value="{{_local.presetName}}"/>
+                <field name="conditions">
+                  <field name="searchField" value="{{_global.savingPresetConditions.searchField || 'all'}}"/>
+                  <field name="searchKeyword" value="{{_global.savingPresetConditions.searchKeyword || ''}}"/>
+                  <field name="dateType" value="{{_global.savingPresetConditions.dateType || 'ordered_at'}}"/>
+                  <field name="startDate" value="{{_global.savingPresetConditions.startDate || ''}}"/>
+                  <field name="endDate" value="{{_global.savingPresetConditions.endDate || ''}}"/>
+                  <field name="dateQuick" value="{{_global.savingPresetConditions.dateQuick || ''}}"/>
+                  <field name="orderStatus" value="{{_global.savingPresetConditions.orderStatus || []}}"/>
+                  <field name="claimPresence" value="{{_global.savingPresetConditions.claimPresence || ''}}"/>
+                  <field name="claimExchangeStatuses" value="{{_global.savingPresetConditions.claimExchangeStatuses || []}}"/>
+                  <field name="claimReturnStatuses" value="{{_global.savingPresetConditions.claimReturnStatuses || []}}"/>
+                  <field name="claimRefundStatuses" value="{{_global.savingPresetConditions.claimRefundStatuses || []}}"/>
+                  <field name="claimCancelTypes" value="{{_global.savingPresetConditions.claimCancelTypes || []}}"/>
+                  <field name="claimFaultTypes" value="{{_global.savingPresetConditions.claimFaultTypes || []}}"/>
+                  <field name="claimRequestedFrom" value="{{_global.savingPresetConditions.claimRequestedFrom || ''}}"/>
+                  <field name="claimRequestedTo" value="{{_global.savingPresetConditions.claimRequestedTo || ''}}"/>
+                  <field name="deliveryMethods" value="{{_global.savingPresetConditions.deliveryMethods || []}}"/>
+                  <field name="paymentMethods" value="{{_global.savingPresetConditions.paymentMethods || []}}"/>
+                  <field name="category1" value="{{_global.savingPresetConditions.category1 || ''}}"/>
+                  <field name="category2" value="{{_global.savingPresetConditions.category2 || ''}}"/>
+                  <field name="category3" value="{{_global.savingPresetConditions.category3 || ''}}"/>
+                  <field name="category4" value="{{_global.savingPresetConditions.category4 || ''}}"/>
+                  <field name="minPrice" value="{{_global.savingPresetConditions.minPrice || ''}}"/>
+                  <field name="maxPrice" value="{{_global.savingPresetConditions.maxPrice || ''}}"/>
+                  <field name="countries" value="{{_global.savingPresetConditions.countries || []}}"/>
+                  <field name="devices" value="{{_global.savingPresetConditions.devices || []}}"/>
+                  <field name="shippingPolicy" value="{{_global.savingPresetConditions.shippingPolicy || ''}}"/>
+                  <field name="minShippingFee" value="{{_global.savingPresetConditions.minShippingFee || ''}}"/>
+                  <field name="maxShippingFee" value="{{_global.savingPresetConditions.maxShippingFee || ''}}"/>
+                  <field name="ordererUuid" value="{{_global.savingPresetConditions.ordererUuid || ''}}"/>
+                  <field name="memberType" value="{{_global.savingPresetConditions.memberType || ''}}"/>
+                </field>
+              </field>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isSaving}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isSaving ? '$t:common.saving' : '$t:sirsoft-ecommerce.admin.order.modal.preset_save.save'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

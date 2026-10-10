@@ -1,390 +1,399 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "게시판 설정 > 첨부파일 탭"
-  },
-  "id": "attachment",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
-  "classMap": {
-    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-    "variants": {
-      "readonly": "opacity-60",
-      "normal": ""
-    }
-  },
-  "children": [
-    {
-      "id": "section_attachment",
-      "type": "layout",
-      "name": "SectionLayout",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-board.admin.settings.sections.attachment"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "id": "field_use_file_upload",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-4"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "flex-start gap-2 text-heading flex-1 cursor-pointer"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Input",
-                          "props": {
-                            "type": "checkbox",
-                            "className": "checkbox-aligned",
-                            "checked": "{{(_local.bulkApplyFields ?? []).includes('use_file_upload')}}"
-                          },
-                          "actions": [
-                            {
-                              "type": "change",
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('use_file_upload') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_file_upload') : [...(_local.bulkApplyFields ?? []), 'use_file_upload']}}"
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "$t:sirsoft-board.admin.settings.fields.use_file_upload"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "P",
-                              "props": {
-                                "className": "text-field-hint"
-                              },
-                              "text": "$t:sirsoft-board.admin.settings.fields.descriptions.use_file_upload"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "composite",
-                      "name": "Toggle",
-                      "props": {
-                        "name": "basic_defaults.use_file_upload",
-                        "className": "flex-shrink-0",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "field_max_file_size",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-4"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "flex-start gap-2 text-body font-medium flex-1 cursor-pointer"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Input",
-                          "props": {
-                            "type": "checkbox",
-                            "className": "checkbox-aligned",
-                            "checked": "{{(_local.bulkApplyFields ?? []).includes('max_file_size')}}"
-                          },
-                          "actions": [
-                            {
-                              "type": "change",
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('max_file_size') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_file_size') : [...(_local.bulkApplyFields ?? []), 'max_file_size']}}"
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "$t:sirsoft-board.admin.settings.fields.max_file_size"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "P",
-                              "props": {
-                                "className": "text-field-hint"
-                              },
-                              "text": "$t:sirsoft-board.admin.settings.fields.descriptions.max_file_size|min={{_local?.form?._meta?.limits?.max_file_size_min ?? 1}}|max={{_local?.form?._meta?.limits?.max_file_size_max ?? 200}}"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-shrink-0"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Input",
-                          "props": {
-                            "type": "number",
-                            "name": "basic_defaults.max_file_size",
-                            "min": "{{_local?.form?._meta?.limits?.max_file_size_min ?? 1}}",
-                            "max": "{{_local?.form?._meta?.limits?.max_file_size_max ?? 200}}",
-                            "className": "{{(_local.errors?.['basic_defaults.max_file_size']) ? 'w-32 input-error' : 'w-32'}}",
-                            "disabled": "{{_computed.isReadOnly}}"
-                          }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{_local.errors?.['basic_defaults.max_file_size']}}",
-                          "props": {
-                            "className": "text-xs text-red-600 dark:text-red-400 block mt-1"
-                          },
-                          "text": "{{(Array.isArray(_local.errors?.['basic_defaults.max_file_size']) ? _local.errors['basic_defaults.max_file_size'][0] : _local.errors?.['basic_defaults.max_file_size']) ?? ''}}"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "field_max_file_count",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-4"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "flex-start gap-2 text-body font-medium flex-1 cursor-pointer"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Input",
-                          "props": {
-                            "type": "checkbox",
-                            "className": "checkbox-aligned",
-                            "checked": "{{(_local.bulkApplyFields ?? []).includes('max_file_count')}}"
-                          },
-                          "actions": [
-                            {
-                              "type": "change",
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('max_file_count') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_file_count') : [...(_local.bulkApplyFields ?? []), 'max_file_count']}}"
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "$t:sirsoft-board.admin.settings.fields.max_file_count"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "P",
-                              "props": {
-                                "className": "text-field-hint"
-                              },
-                              "text": "$t:sirsoft-board.admin.settings.fields.descriptions.max_file_count|min={{_local?.form?._meta?.limits?.max_file_count_min ?? 1}}|max={{_local?.form?._meta?.limits?.max_file_count_max ?? 20}}"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-shrink-0"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Input",
-                          "props": {
-                            "type": "number",
-                            "name": "basic_defaults.max_file_count",
-                            "min": "{{_local?.form?._meta?.limits?.max_file_count_min ?? 1}}", 
-                            "max": "{{_local?.form?._meta?.limits?.max_file_count_max ?? 20}}",
-                            "className": "{{(_local.errors?.['basic_defaults.max_file_count']) ? 'w-32 input-error' : 'w-32'}}",
-                            "disabled": "{{_computed.isReadOnly}}"
-                          }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{_local.errors?.['basic_defaults.max_file_count']}}",
-                          "props": {
-                            "className": "text-xs text-red-600 dark:text-red-400 block mt-1"
-                          },
-                          "text": "{{(Array.isArray(_local.errors?.['basic_defaults.max_file_count']) ? _local.errors['basic_defaults.max_file_count'][0] : _local.errors?.['basic_defaults.max_file_count']) ?? ''}}"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "field_allowed_extensions",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "px-3 py-2"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "flex-start gap-2 text-body font-medium cursor-pointer mb-2"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Input",
-                          "props": {
-                            "type": "checkbox",
-                            "className": "checkbox-aligned",
-                            "checked": "{{(_local.bulkApplyFields ?? []).includes('allowed_extensions')}}"
-                          },
-                          "actions": [
-                            {
-                              "type": "change",
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('allowed_extensions') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'allowed_extensions') : [...(_local.bulkApplyFields ?? []), 'allowed_extensions']}}"
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "$t:sirsoft-board.admin.settings.fields.allowed_extensions"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "P",
-                              "props": {
-                                "className": "text-field-hint"
-                              },
-                              "text": "$t:sirsoft-board.admin.settings.fields.descriptions.allowed_extensions"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "composite",
-                      "name": "TagInput",
-                      "props": {
-                        "name": "basic_defaults.allowed_extensions",
-                        "placeholder": "$t:sirsoft-board.admin.settings.fields.allowed_extensions_placeholder",
-                        "creatable": true,
-                        "className": "w-full",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+    "comment": "「기본값」 탭의 첨부 구획. 줄마다 값 하나와 그 왼쪽의 체크박스가 짝인데, 체크박스는 값을 끄는 것이 아니라 «이 항목을 일괄 적용에 실을지»를 고르는 자리다(`bulkApplyFields`). 값 자체는 폼 자동 바인딩이 `basic_defaults.*` 로 담는다",
+    "meta": {
+        "is_partial": true,
+        "description": "게시판 설정 > 첨부파일 탭"
+    },
+    "id": "attachment",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
+    "classMap": {
+        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+        "variants": {
+            "readonly": "opacity-60",
+            "normal": ""
         }
-      ]
-    }
-  ]
+    },
+    "children": [
+        {
+            "id": "section_attachment",
+            "type": "layout",
+            "name": "SectionLayout",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-board.admin.settings.sections.attachment"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "field_use_file_upload",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "flex-start gap-2 text-heading flex-1 cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "「첨부 사용 여부」를 일괄 적용 대상에 넣었다 뺐다 한다. 이 구획의 네 체크박스가 모두 같은 짜임이다 — 이미 들어 있으면 빼고 없으면 더한다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('use_file_upload') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'use_file_upload') : [...(_local.bulkApplyFields ?? []), 'use_file_upload']}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "checkbox",
+                                                        "className": "checkbox-aligned",
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('use_file_upload')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-board.admin.settings.fields.use_file_upload"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-field-hint"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.settings.fields.descriptions.use_file_upload"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "basic_defaults.use_file_upload",
+                                                "className": "flex-shrink-0",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_max_file_size",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "flex-start gap-2 text-body font-medium flex-1 cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "「파일 한 개의 최대 크기」를 일괄 적용 대상에 넣었다 뺐다 한다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('max_file_size') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_file_size') : [...(_local.bulkApplyFields ?? []), 'max_file_size']}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "checkbox",
+                                                        "className": "checkbox-aligned",
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('max_file_size')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-board.admin.settings.fields.max_file_size"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-field-hint"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.settings.fields.descriptions.max_file_size|min={{_local?.form?._meta?.limits?.max_file_size_min ?? 1}}|max={{_local?.form?._meta?.limits?.max_file_size_max ?? 200}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-shrink-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "props": {
+                                                        "type": "number",
+                                                        "name": "basic_defaults.max_file_size",
+                                                        "min": "{{_local?.form?._meta?.limits?.max_file_size_min ?? 1}}",
+                                                        "max": "{{_local?.form?._meta?.limits?.max_file_size_max ?? 200}}",
+                                                        "className": "{{(_local.errors?.['basic_defaults.max_file_size']) ? 'w-32 input-error' : 'w-32'}}",
+                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_local.errors?.['basic_defaults.max_file_size']}}",
+                                                    "props": {
+                                                        "className": "text-xs text-red-600 dark:text-red-400 block mt-1"
+                                                    },
+                                                    "text": "{{(Array.isArray(_local.errors?.['basic_defaults.max_file_size']) ? _local.errors['basic_defaults.max_file_size'][0] : _local.errors?.['basic_defaults.max_file_size']) ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_max_file_count",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "flex-start gap-2 text-body font-medium flex-1 cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "「한 글에 붙일 수 있는 파일 개수」를 일괄 적용 대상에 넣었다 뺐다 한다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('max_file_count') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_file_count') : [...(_local.bulkApplyFields ?? []), 'max_file_count']}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "checkbox",
+                                                        "className": "checkbox-aligned",
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('max_file_count')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-board.admin.settings.fields.max_file_count"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-field-hint"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.settings.fields.descriptions.max_file_count|min={{_local?.form?._meta?.limits?.max_file_count_min ?? 1}}|max={{_local?.form?._meta?.limits?.max_file_count_max ?? 20}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-shrink-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "props": {
+                                                        "type": "number",
+                                                        "name": "basic_defaults.max_file_count",
+                                                        "min": "{{_local?.form?._meta?.limits?.max_file_count_min ?? 1}}",
+                                                        "max": "{{_local?.form?._meta?.limits?.max_file_count_max ?? 20}}",
+                                                        "className": "{{(_local.errors?.['basic_defaults.max_file_count']) ? 'w-32 input-error' : 'w-32'}}",
+                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_local.errors?.['basic_defaults.max_file_count']}}",
+                                                    "props": {
+                                                        "className": "text-xs text-red-600 dark:text-red-400 block mt-1"
+                                                    },
+                                                    "text": "{{(Array.isArray(_local.errors?.['basic_defaults.max_file_count']) ? _local.errors['basic_defaults.max_file_count'][0] : _local.errors?.['basic_defaults.max_file_count']) ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_allowed_extensions",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "px-3 py-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "flex-start gap-2 text-body font-medium cursor-pointer mb-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "「올릴 수 있는 확장자 목록」을 일괄 적용 대상에 넣었다 뺐다 한다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('allowed_extensions') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'allowed_extensions') : [...(_local.bulkApplyFields ?? []), 'allowed_extensions']}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "checkbox",
+                                                        "className": "checkbox-aligned",
+                                                        "checked": "{{(_local.bulkApplyFields ?? []).includes('allowed_extensions')}}",
+                                                        "disabled": "{{!_computed.canBulkApply}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:sirsoft-board.admin.settings.fields.allowed_extensions"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-field-hint"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.settings.fields.descriptions.allowed_extensions"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "TagInput",
+                                            "props": {
+                                                "name": "basic_defaults.allowed_extensions",
+                                                "placeholder": "$t:sirsoft-board.admin.settings.fields.allowed_extensions_placeholder",
+                                                "creatable": true,
+                                                "className": "w-full",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
 }

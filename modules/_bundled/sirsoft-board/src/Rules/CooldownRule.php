@@ -34,7 +34,7 @@ class CooldownRule implements ValidationRule
      * @param  string  $attribute  검증할 속성명
      * @param  mixed  $value  검증할 값
      * @param  Closure  $fail  실패 콜백
-     * @return void
+     * @return void 반환값 없음
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
@@ -68,6 +68,10 @@ class CooldownRule implements ValidationRule
     /**
      * 초를 사람이 읽기 쉬운 시간 형식으로 변환합니다.
      *
+     * 시간·분·초를 단위마다 따로 읽어 공백으로 잇는다(「1시간 30분」, 「1 hour 30 minutes」).
+     * en 은 단위 수가 1 이면 단수를 써야 하므로 trans_choice 로 고른다 — 종전에는 복수형 고정이라
+     * 기본 쿨다운 60초가 「1 minutes」로 나왔다(7.1.0 실측 O-K2-4).
+     *
      * @param  int  $seconds  초 단위 시간
      * @return string 변환된 시간 문자열
      */
@@ -75,39 +79,36 @@ class CooldownRule implements ValidationRule
     {
         if ($seconds >= 3600) {
             $hours = intdiv($seconds, 3600);
-            $remaining = $seconds % 3600;
-            $minutes = intdiv($remaining, 60);
+            $minutes = intdiv($seconds % 3600, 60);
 
-            if ($minutes > 0) {
-                return __('sirsoft-board::validation.cooldown_duration.hours_minutes', [
-                    'hours' => $hours,
-                    'minutes' => $minutes,
-                ]);
-            }
-
-            return __('sirsoft-board::validation.cooldown_duration.hours', [
-                'hours' => $hours,
-            ]);
+            return $this->joinUnits(['hours' => $hours, 'minutes' => $minutes]);
         }
 
         if ($seconds >= 60) {
-            $minutes = intdiv($seconds, 60);
-            $remainingSeconds = $seconds % 60;
-
-            if ($remainingSeconds > 0) {
-                return __('sirsoft-board::validation.cooldown_duration.minutes_seconds', [
-                    'minutes' => $minutes,
-                    'seconds' => $remainingSeconds,
-                ]);
-            }
-
-            return __('sirsoft-board::validation.cooldown_duration.minutes', [
-                'minutes' => $minutes,
-            ]);
+            return $this->joinUnits(['minutes' => intdiv($seconds, 60), 'seconds' => $seconds % 60]);
         }
 
-        return __('sirsoft-board::validation.cooldown_duration.seconds', [
-            'seconds' => $seconds,
-        ]);
+        return $this->joinUnits(['seconds' => $seconds]);
+    }
+
+    /**
+     * 단위별 수를 문구로 읽어 공백으로 잇습니다. 첫 단위가 아닌 0 은 건너뜁니다.
+     *
+     * @param  array<string, int>  $units  단위 키(hours|minutes|seconds) => 수, 큰 단위부터
+     * @return string 이은 문구
+     */
+    private function joinUnits(array $units): string
+    {
+        $parts = [];
+        $first = true;
+
+        foreach ($units as $unit => $count) {
+            if ($first || $count > 0) {
+                $parts[] = trans_choice("sirsoft-board::validation.cooldown_duration.{$unit}", $count, [$unit => $count]);
+            }
+            $first = false;
+        }
+
+        return implode(' ', $parts);
     }
 }

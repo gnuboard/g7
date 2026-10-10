@@ -1,0 +1,100 @@
+<!-- 쿠폰 폼의 발급 설정 구역 — 발급 수량·발급 기간·재발급 제한 셋을 정한다.
+  셋이 같은 형태다: '무제한 / 제한' 라디오가 **화면에만 쓰는 구분값**(`_local.issue_quantity_type` 등)을
+  쥐고, 그 아래 입력칸이 조건부로 나타난다. 실제로 저장되는 것은 입력칸의 값뿐이므로 구분값은
+  서버로 가지 않는다.
+  그래서 라디오마다 두 단계가 붙는다 — 구분값을 바꾸고, **무제한을 고르면 딸린 값을 지운다**.
+  지우지 않으면 화면에서는 무제한인데 저장 본문에 옛 제한값이 남아 나간다.
+  재발급만 지우는 값이 다르다 — `null` 이 아니라 `0`(무제한을 뜻하는 수)이고, 제한으로 돌아올 때는
+  최소 1 을 세운다. -->
+<partial>
+  <div data-ref="issue_settings_section" class="admin-card">
+    <h2 class="card-title">$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.issue_settings</h2>
+    <div class="space-y-5">
+      <!-- 발급수량 -->
+      <form-field data-type="composite" data-ref="field_issue_quantity" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_quantity" error="{{_local.errors?.total_quantity?.[0] ?? ''}}">
+        <div>
+          <div>
+            <radio-group data-type="composite" value="{{_local.issue_quantity_type}}" :inline="true">
+              <responsive on="mobile" :inline="false"/>
+              <prop name="options">
+                <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited" value="unlimited"/>
+                <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_quantity_limited" value="limited"/>
+              </prop>
+              <on type="change">
+                <!-- 발급 수량 제한 여부 — 화면용 구분값을 바꾸고, 무제한이면 입력해 둔 수량을 지운다(남기면 저장 본문에 옛 값이 실려 나간다). -->
+                <sequence>
+                  <set-state target="_local" issue_quantity_type="{{$event.target.value}}"/>
+                  <set-state target="_local" form.total_quantity="{{$event.target.value === 'unlimited' ? null : _local.form?.total_quantity}}"/>
+                </sequence>
+              </on>
+            </radio-group>
+            <!-- 수량제한 시: 수량 입력 -->
+            <div data-ref="issue_quantity_input" data-if="{{_local.issue_quantity_type === 'limited'}}" class="flex-center gap-2">
+              <input aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_quantity" type="number" name="total_quantity" class="input w-32" :min="1"/>
+              <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.unit_quantity</span>
+            </div>
+          </div>
+        </div>
+      </form-field>
+      <!-- 발급기간 -->
+      <form-field data-type="composite" data-ref="field_issue_period" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period" error="{{_local.errors?.issue_from?.[0] ?? _local.errors?.issue_to?.[0] ?? ''}}">
+        <div>
+          <div>
+            <radio-group data-type="composite" value="{{_local.issue_period_type}}" :inline="true">
+              <responsive on="mobile" :inline="false"/>
+              <prop name="options">
+                <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited" value="unlimited"/>
+                <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_period_limited" value="limited"/>
+              </prop>
+              <on type="change">
+                <!-- 발급 기간 제한 여부 — 위 수량과 같은 두 단계이고, 무제한이면 시작·종료일을 **둘 다** 지운다(한쪽만 남아도 서버는 기간이 걸린 것으로 읽는다). -->
+                <sequence>
+                  <set-state target="_local" issue_period_type="{{$event.target.value}}"/>
+                  <set-state target="_local" form.issue_from="{{$event.target.value === 'unlimited' ? null : _local.form?.issue_from}}" form.issue_to="{{$event.target.value === 'unlimited' ? null : _local.form?.issue_to}}"/>
+                </sequence>
+              </on>
+            </radio-group>
+            <!-- 기간설정 시: 시작일 ~ 종료일. flex-center 는 nowrap 이고 datetime-local 입력이 각 208px(w-52) 이라 좁은 뷰포트에서 행이 콘텐츠 영역을 넘친다 → portable 에서 줄바꿈 + 입력 전폭. -->
+            <div data-ref="issue_period_range" data-if="{{_local.issue_period_type === 'limited'}}" class="flex-center gap-2">
+              <responsive on="portable" class="flex-center flex-wrap gap-2"/>
+              <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}" type="datetime-local" name="issue_from" class="input w-52">
+                <responsive on="portable" aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}" type="datetime-local" name="issue_from" class="input w-full"/>
+              </input>
+              <span class="text-label-subtle">~</span>
+              <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}" type="datetime-local" name="issue_to" class="input w-52">
+                <responsive on="portable" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}" type="datetime-local" name="issue_to" class="input w-full"/>
+              </input>
+            </div>
+          </div>
+        </div>
+      </form-field>
+      <!-- 재발급 (중복 다운로드) -->
+      <form-field data-type="composite" data-ref="field_reissue" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.reissue" error="{{_local.errors?.per_user_limit?.[0] ?? ''}}">
+        <div>
+          <div>
+            <radio-group data-type="composite" value="{{_local.reissue_type}}" :inline="true">
+              <responsive on="mobile" :inline="false"/>
+              <prop name="options">
+                <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited" value="unlimited"/>
+                <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.reissue_limited" value="limited"/>
+              </prop>
+              <on type="change">
+                <!-- 1인당 재발급 제한 — 앞의 둘과 달리 무제한을 `null` 이 아니라 **`0`** 으로 적는다(이 필드에서는 0 이 '제한 없음' 이다). 제한으로 되돌아올 때는 비어 있으면 1 을 세워 0 인 채로 저장되는 것을 막는다. -->
+                <sequence>
+                  <set-state target="_local" reissue_type="{{$event.target.value}}"/>
+                  <set-state target="_local" form.per_user_limit="{{$event.target.value === 'unlimited' ? 0 : (_local.form?.per_user_limit || 1)}}"/>
+                </sequence>
+              </on>
+            </radio-group>
+            <!-- 제한 시: 횟수 입력 -->
+            <div data-ref="reissue_limit_input" data-if="{{_local.reissue_type === 'limited'}}" class="flex-center gap-2">
+              <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.per_user</span>
+              <input type="number" name="per_user_limit" class="input w-24" :min="1"/>
+              <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.unit_times</span>
+            </div>
+          </div>
+        </div>
+      </form-field>
+    </div>
+  </div>
+</partial>

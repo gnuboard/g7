@@ -20,6 +20,7 @@ import path from 'path';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createLayoutTest, screen, fireEvent, waitFor } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
+import { callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const PARTIAL_PATH = path.resolve(
   __dirname,
@@ -227,7 +228,9 @@ describe('메뉴 관리 — 하위 메뉴 선택 시 역할 보강 (#76)', () =>
     expect(detailCall).toBeDefined();
     expect(detailCall.onSuccess).toBeDefined();
 
-    const write = detailCall.onSuccess.find((action: any) => action.handler === 'setState');
+    // 액션이 하나뿐인 콜백은 굽기가 객체로 접으므로 첨자·배열 메서드로 읽지 않는다 —
+    // `callbacksOf` 가 두 모양을 같은 목록으로 돌려준다(엔진도 같게 받는다).
+    const write = callbacksOf(detailCall, 'onSuccess').find((action: any) => action.handler === 'setState');
     expect(write).toBeDefined();
     expect(write.params.target).toBe('global');
     expect(write.params.selectedMenu).toBe('{{response.data}}');

@@ -1,129 +1,134 @@
 {
-  "layout_name": "modal_extension_preview_layout",
-  "meta": { "editor_label": "$t:admin.modal_label.admin_template_layout_edit.extension_preview_layout_modal" },
-  "id": "extension_preview_layout_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "size": "small",
-    "title": "$t:admin.templates.layout_edit.preview_layout_select_title"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "P",
-      "props": {
-        "className": "text-sm text-gray-600 dark:text-gray-400 mb-4"
-      },
-      "text": "$t:admin.templates.layout_edit.preview_layout_select_description"
+    "comment": "확장 조각을 미리 볼 때 **어느 화면에 얹어 볼지**를 고르는 창. 조각은 혼자서 화면이 되지 못해\n  붙일 자리를 정해 줘야 하고, 그래서 미리보기 전에 이 창이 한 번 낀다.\n  넘기는 것은 저장된 내용이 아니라 **편집기에 지금 적혀 있는 글**이라, 저장하지 않고도 확인할 수\n  있다. 서버가 돌려준 열쇠로 새 창을 열어 보여 준다.",
+    "meta": {
+        "is_partial": true,
+        "editor_label": "$t:admin.modal_label.admin_template_layout_edit.extension_preview_layout_modal"
     },
-    {
-      "type": "composite",
-      "name": "Select",
-      "props": {
-        "value": "{{_global.previewLayoutSelection ?? ''}}",
-        "options": "{{(layout_files?.data ?? []).map(f => ({ value: f.name, label: f.name }))}}",
-        "placeholder": "$t:admin.templates.layout_edit.preview_layout_select_placeholder"
-      },
-      "actions": [
-        {
-          "type": "change",
-          "handler": "setState",
-          "params": {
-            "target": "global",
-            "previewLayoutSelection": "{{$event.target.value}}"
-          }
-        }
-      ]
+    "layout_name": "modal_extension_preview_layout",
+    "id": "extension_preview_layout_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "size": "small",
+        "title": "$t:admin.templates.layout_edit.preview_layout_select_title"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "mt-6 flex items-center justify-end gap-2"
-      },
-      "children": [
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:common.cancel"
-            }
-          ]
+            "type": "basic",
+            "name": "P",
+            "props": {
+                "className": "text-sm text-gray-600 dark:text-gray-400 mb-4"
+            },
+            "text": "$t:admin.templates.layout_edit.preview_layout_select_description"
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm font-medium transition-colors disabled:opacity-50",
-            "disabled": "{{!_global.previewLayoutSelection}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "apiCall",
-              "auth_required": true,
-              "target": "/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/preview",
-              "params": {
-                "method": "POST",
-                "body": {
-                  "content": "{{_global.editorContent}}",
-                  "preview_layout": "{{_global.previewLayoutSelection}}"
-                }
-              },
-              "onSuccess": [
+            "type": "basic",
+            "name": "Select",
+            "actions": [
                 {
-                  "handler": "closeModal"
+                    "comment": "고를 화면 목록은 이 템플릿이 가진 화면 정의 파일에서 온다. 고르기 전에는 아래 확인 버튼이 잠겨 있다.",
+                    "type": "change",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "previewLayoutSelection": "{{$event.target.value}}"
+                    }
+                }
+            ],
+            "props": {
+                "value": "{{_global.previewLayoutSelection ?? ''}}",
+                "options": "{{(layout_files?.data ?? []).map(f => ({ value: f.name, label: f.name }))}}",
+                "placeholder": "$t:admin.templates.layout_edit.preview_layout_select_placeholder"
+            }
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mt-6 flex items-center justify-end gap-2"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
                 },
                 {
-                  "handler": "openWindow",
-                  "params": {
-                    "path": "/preview/{{response.data.token}}"
-                  }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "창을 먼저 닫고 새 창을 연다 — 미리보기가 뜨는 동안 이 창이 뒤에 남아 있지 않게 한다. 실패 문구는 서버 사유가 아니라 정해진 안내 하나다.",
+                            "type": "click",
+                            "handler": "apiCall",
+                            "target": "/api/admin/templates/{{route.identifier}}/layout-extensions/{{_global.selectedExtensionId}}/preview",
+                            "auth_required": true,
+                            "params": {
+                                "method": "POST",
+                                "body": {
+                                    "content": "{{_global.editorContent}}",
+                                    "preview_layout": "{{_global.previewLayoutSelection}}"
+                                }
+                            },
+                            "onSuccess": [
+                                {
+                                    "handler": "closeModal"
+                                },
+                                {
+                                    "comment": "서버가 템플릿 종류에 맞춰 내준 주소를 연다 — 관리자 템플릿은 관리자 셸(/admin/preview)이어야 그 템플릿 자원으로 그려진다(7.1.0 O-G3-6).",
+                                    "handler": "openWindow",
+                                    "params": {
+                                        "path": "{{response.data?.preview_url ?? '/preview/' + response.data.token}}"
+                                    }
+                                }
+                            ],
+                            "onError": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "{{error.message ?? '$t:admin.templates.layout_edit.preview_error'}}"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm font-medium transition-colors disabled:opacity-50",
+                        "disabled": "{{!_global.previewLayoutSelection}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "fa-regular fa-eye",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.templates.layout_edit.preview_layout_confirm"
+                        }
+                    ]
                 }
-              ],
-              "onError": [
-                {
-                  "handler": "toast",
-                  "params": {
-                    "type": "error",
-                    "message": "{{error.message ?? '$t:admin.templates.layout_edit.preview_error'}}"
-                  }
-                }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "fa-regular fa-eye",
-                "size": "sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:admin.templates.layout_edit.preview_layout_confirm"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

@@ -51,3 +51,24 @@ export function stripDollarGlobals(
   }
   return out;
 }
+
+/**
+ * 미리보기 렌더 맥락 최상위에 올릴 `$` 전역 — 표본 시드의 `$` 키에 **콘텐츠 언어**를 `$locale` 로 덮어 반환한다.
+ *
+ * 표본(`sampleGlobal`)의 `$locale` 은 편집 대상 사전의 기본 언어일 뿐이다. 이 값이 그대로 올라가면 DynamicRenderer 의
+ * 편집 모드 `$locale` 자동 주입(콘텐츠 언어 — 컨텍스트에 값이 없을 때만)이 막혀, 식 안의 `$t()`·`$localized()` 가
+ * 콘텐츠 언어를 바꿔도 표본 언어(ko)로 풀렸다(7.1.0 실측 — 창 아래 버튼·상태 배지 문구만 한국어로 남음).
+ *
+ * @param seed 병합된 표본 전역
+ * @param contentLocale 편집기 「콘텐츠 언어」(없으면 표본 값을 유지)
+ * @return 렌더 맥락 최상위용 `$` 전역
+ * @since engine-v1.78.3
+ */
+export function previewDollarGlobals(
+  seed: Record<string, unknown> | null | undefined,
+  contentLocale: string | null | undefined,
+): Record<string, unknown> {
+  const out = extractDollarGlobals(seed);
+  if (typeof contentLocale === 'string' && contentLocale.length > 0) out.$locale = contentLocale;
+  return out;
+}

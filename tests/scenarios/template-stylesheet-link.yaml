@@ -1,0 +1,36 @@
+feature: 화면 HTML 의 템플릿 CSS 링크와 관리자 화면 번들 로드
+
+description: |
+  사용자·관리자 화면 HTML(app.blade.php·admin.blade.php)이 활성 템플릿의 자산을 싣는 방식을 고정한다.
+
+  템플릿 CSS 링크는 템플릿 매니페스트(template.json)의 `assets.css` 에 선언했고 설치본에 파일이 있는
+  경로만 싣는다 — 봇 화면(SeoRenderer)과 같은 기준이다. 종전에는 두 화면이 템플릿과 무관하게
+  `{템플릿}?file=css/components.css` 를 늘 링크해, CSS 를 선언하지 않은 템플릿에서 모든 화면이
+  `GET /api/templates/assets/{id}?file=css/components.css → 422` 를 남겼다(2026-10-07 g7_2 실측).
+  관리자 화면 번들·코어 엔진·자체 제공 Font Awesome·캐시 버전 계약도 함께 둔다.
+
+axes:
+  template_type: [user, admin]
+  css_declaration: [none, declared_without_build, declared_and_built]
+
+effects:
+  - template_stylesheet_link_omitted_without_declaration
+  - template_stylesheet_link_omitted_without_build_output
+  - template_stylesheet_link_follows_declaration
+  - admin_blade_loads_active_template_bundle
+  - admin_blade_loads_default_template
+  - admin_blade_renders_fallback_without_template
+  - admin_blade_loads_core_engine
+  - admin_blade_loads_self_hosted_font_awesome
+  - admin_blade_initializes_engine_config
+  - admin_blade_versions_asset_urls
+
+test_files:
+  - tests/Feature/View/TemplateStylesheetLinkTest.php
+  - tests/Feature/View/AdminBladeTemplateLoadingTest.php
+
+validation:
+  automated: "php artisan test --filter='TemplateStylesheetLinkTest|AdminBladeTemplateLoadingTest'"
+  manual: |
+    활성 사용자·관리자 템플릿 화면에서 템플릿 CSS 링크가 하나이고 200 으로 적용되는지,
+    CSS 를 선언하지 않은 템플릿을 켠 화면에 css/components.css 요청이 없는지 확인한다.

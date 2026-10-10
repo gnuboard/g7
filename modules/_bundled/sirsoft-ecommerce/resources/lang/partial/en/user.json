@@ -31,5 +31,38 @@
     "image_upload_partial_fail": "Some images failed to upload.",
     "submit_success": "Review has been submitted.",
     "submit_failed": "Failed to submit review."
+  },
+  "claim": {
+    "image": {
+      "size_exceeded": "Each photo must be {{size}}KB or smaller.",
+      "limit_exceeded": "You can attach up to {{max}} photos.",
+      "limit_exceeded_one": "You can attach up to {{max}} photo.",
+      "upload_partial_failed": "{{failed}} of {{total}} photos could not be uploaded. Please attach any missing photos again on the request form.",
+      "upload_partial_failed_one": "{{failed}} of {{total}} photo could not be uploaded. Please attach it again on the request form.",
+      "remove_failed": "The attachment could not be removed."
+    },
+    "withdraw": {
+      "success": "Your request has been withdrawn.",
+      "failed": "Could not withdraw the request."
+    },
+    "pay": {
+      "success": "Payment completed.",
+      "failed": "Could not start the payment."
+    }
+  },
+  "claim_apply": {
+    "edit_not_editable": "A request cannot be changed after it has been approved. Please contact customer support if you need a change.",
+    "refund_branch_mixed_blocked": "Items handled automatically and items that need the seller's review must be submitted separately.",
+    "change_product_load_failed": "Exchangeable options could not be loaded.",
+    "change_product_select_option_required": "Select the option you want to receive.",
+    "estimate_failed": "The estimate could not be calculated.",
+    "select_items_first": "Select the items to request.",
+    "reason_required": "Select a reason for the request.",
+    "cancel_blocked": "This combination would push the refund below zero and cannot be requested. Please review the items and quantities.",
+    "submit_success": "Your request has been received.",
+    "submit_failed": "The request could not be submitted.",
+    "edit_save_success": "The request has been updated.",
+    "edit_save_failed": "Could not update the request.",
+    "refund_account_masked_mixed": "Hidden account details cannot be changed in part. Please enter the bank, account number and holder all anew."
   }
 }

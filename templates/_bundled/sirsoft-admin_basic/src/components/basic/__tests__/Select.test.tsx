@@ -485,13 +485,58 @@ describe('Select 컴포넌트', () => {
           options={options}
           value="1"
           onChange={() => {}}
-          className="bg-blue-100 custom-class"
+          className="bg-blue-100 dark:bg-blue-900 custom-class"
         />
       );
 
       const button = screen.getByRole('button');
       expect(button.className).toContain('bg-blue-100');
       expect(button.className).toContain('custom-class');
+    });
+
+    it('드롭다운 패널은 트리거 폭을 하한으로 내용 폭(max-content)만큼 넓어지고 상한은 320px 이다', () => {
+      // 트리거가 글자폭(120px)으로 수축한 상황 — 종전엔 패널도 120px 에 고정돼 라벨이 두 줄로 꺾였다.
+      const rect = { top: 100, bottom: 130, left: 40, right: 160, width: 120, height: 30, x: 40, y: 100, toJSON: () => ({}) } as DOMRect;
+      const spy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(rect);
+      try {
+        render(<Select options={options} value="1" onChange={() => {}} />);
+        fireEvent.click(screen.getByRole('button'));
+
+        const listbox = screen.getByRole('listbox');
+        expect(listbox.style.width).toBe('max-content');
+        expect(listbox.style.minWidth).toBe('120px');
+        expect(listbox.style.maxWidth).toBe('320px');
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it('트리거가 상한보다 넓으면 패널 상한은 트리거 폭이고, 뷰포트 오른쪽 여유가 더 작으면 그 여유가 상한이다', () => {
+      const wide = { top: 100, bottom: 130, left: 40, right: 440, width: 400, height: 30, x: 40, y: 100, toJSON: () => ({}) } as DOMRect;
+      const spy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(wide);
+      try {
+        render(<Select options={options} value="1" onChange={() => {}} />);
+        fireEvent.click(screen.getByRole('button'));
+        const listbox = screen.getByRole('listbox');
+        expect(listbox.style.minWidth).toBe('400px');
+        expect(listbox.style.maxWidth).toBe('400px');
+      } finally {
+        spy.mockRestore();
+      }
+
+      // 뷰포트 오른쪽 끝에 붙은 트리거: innerWidth(1024) - left(900) - 8 = 116 < 320 → 116 이 상한, 하한은 트리거 폭
+      const edge = { top: 100, bottom: 130, left: 900, right: 1000, width: 100, height: 30, x: 900, y: 100, toJSON: () => ({}) } as DOMRect;
+      const spy2 = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(edge);
+      try {
+        render(<Select options={options} value="2" onChange={() => {}} />);
+        const buttons = screen.getAllByRole('button');
+        fireEvent.click(buttons[buttons.length - 1]);
+        const listbox = screen.getAllByRole('listbox').pop()!;
+        expect(listbox.style.minWidth).toBe('100px');
+        expect(listbox.style.maxWidth).toBe('116px');
+      } finally {
+        spy2.mockRestore();
+      }
     });
 
     it('드롭다운 메뉴가 둥근 모서리를 가진다', () => {
@@ -887,7 +932,7 @@ describe('Select 컴포넌트', () => {
     it('실제 커스텀 베이스 bg-(접두사 없음)는 기존대로 기본 크기 미적용', () => {
       const options = [{ value: '1', label: '옵션 1' }];
       const { container } = render(
-        <Select options={options} value="1" onChange={() => {}} className="bg-indigo-600 px-2" />
+        <Select options={options} value="1" onChange={() => {}} className="bg-indigo-600 dark:bg-indigo-500 px-2" />
       );
       const btn = getTriggerBtn(container);
       // 베이스 bg- 가 있으면 호출처 className 을 그대로 존중(w-full 자동 주입 안 함)

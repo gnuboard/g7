@@ -1,0 +1,44 @@
+<!-- 인기 상품 가로 줄 — 신상품·최근 본 줄과 같은 짜임이다. 좌우 위치를 `_isolated` 에 두는 이유도 같다
+     (한 화면에 세 줄이 함께 실려 공용 상태를 쓰면 서로를 밀어낸다). -->
+<partial description="인기 상품 섹션">
+  <div data-if="{{popularProducts.data &amp;&amp; popularProducts.data.length > 0}}" class="mb-12">
+    <isolated-state scope-id="popular-products-scroll">
+      <field name="scrollIdx" :value="0"/>
+    </isolated-state>
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <icon name="flame" class="text-xl text-orange-500"/>
+        <span>$t:shop.popular_products</span>
+      </h2>
+      <div class="flex gap-2">
+        <button type="button" aria-label="$t:common.prev" class="{{_isolated.scrollIdx <= 0 ? 'p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}" disabled="{{_isolated.scrollIdx <= 0}}">
+          <on type="click">
+            <!-- 이전 — 자리를 옮긴 뒤 그 카드로 굴린다 -->
+            <sequence>
+              <set-state target="isolated" scrollIdx="{{_isolated.scrollIdx - 1}}"/>
+              <scroll-into-view selector="#popular-product-{{_isolated.scrollIdx}}" behavior="smooth" inline="start" :waitForElement="true" :timeout="1000"/>
+            </sequence>
+          </on>
+          <icon name="chevron-left" class="text-base"/>
+        </button>
+        <button type="button" aria-label="$t:common.next" class="{{(_isolated.scrollIdx + 4) >= (popularProducts.data.length) ? 'p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}" disabled="{{(_isolated.scrollIdx + 4) >= (popularProducts.data.length)}}">
+          <responsive on="0-639" class="{{(_isolated.scrollIdx + 2) >= (popularProducts.data.length) ? 'p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}" disabled="{{(_isolated.scrollIdx + 2) >= (popularProducts.data.length)}}"/>
+          <responsive on="640-1023" class="{{(_isolated.scrollIdx + 3) >= (popularProducts.data.length) ? 'p-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}" disabled="{{(_isolated.scrollIdx + 3) >= (popularProducts.data.length)}}"/>
+          <on type="click">
+            <!-- 다음 — 한 번에 몇 칸이 보이는지가 화면 폭마다 달라 버튼이 꺼지는 조건을 `responsive` 로 따로 잡는다 -->
+            <sequence>
+              <set-state target="isolated" scrollIdx="{{_isolated.scrollIdx + 1}}"/>
+              <scroll-into-view selector="#popular-product-{{_isolated.scrollIdx}}" behavior="smooth" inline="start" :waitForElement="true" :timeout="1000"/>
+            </sequence>
+          </on>
+          <icon name="chevron-right" class="text-base"/>
+        </button>
+      </div>
+    </div>
+    <div class="grid grid-flow-col auto-cols-[calc(50%_-_8px)] sm:auto-cols-[calc(33.333%_-_11px)] lg:auto-cols-[calc(25%_-_12px)] gap-4 overflow-x-hidden">
+      <div data-each="product, idx in {{popularProducts.data ?? []}}" id="popular-product-{{idx}}">
+        <product-card data-type="composite" product="{{product}}" shopBase="{{_global.shopBase ?? '/shop'}}"/>
+      </div>
+    </div>
+  </div>
+</partial>

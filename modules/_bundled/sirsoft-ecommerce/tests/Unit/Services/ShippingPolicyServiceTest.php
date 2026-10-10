@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Queue;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyClaimAddressRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\ShippingPolicyService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -21,6 +22,11 @@ class ShippingPolicyServiceTest extends ModuleTestCase
 
     protected $mockRepository;
 
+    /**
+     * 리포지토리 목을 주입한 배송정책 서비스를 준비하고, 삭제 경로의 자식 행(국가별 설정·회수지) 정리 호출은 기본 허용으로 둔다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -29,9 +35,22 @@ class ShippingPolicyServiceTest extends ModuleTestCase
         Queue::fake();
 
         $this->mockRepository = Mockery::mock(ShippingPolicyRepositoryInterface::class);
-        $this->service = new ShippingPolicyService($this->mockRepository);
+        // 삭제 경로는 자식 행(국가별 설정·회수지)을 명시적으로 지운다 — 각 테스트가 따로 단언하지
+        // 않는 한 그 호출은 허용만 한다.
+        $this->mockRepository->shouldReceive('deleteCountrySettingsByPolicyIds')->andReturn(0)->byDefault();
+        $claimAddressRepository = Mockery::mock(ShippingPolicyClaimAddressRepositoryInterface::class);
+        $claimAddressRepository->shouldReceive('deleteByPolicyIds')->andReturn(0)->byDefault();
+        $this->service = new ShippingPolicyService(
+            $this->mockRepository,
+            $claimAddressRepository,
+        );
     }
 
+    /**
+     * Mockery 기대값을 검증·정리한 뒤 부모 정리를 수행한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -42,6 +61,15 @@ class ShippingPolicyServiceTest extends ModuleTestCase
     // getList() 테스트
     // ========================================
 
+    /**
+     * 목록 조회가 필터와 요청한 per_page 를 리포지토리에 그대로 넘기고, 받은 페이지네이터를 가공 없이 돌려주는지 확인한다.
+     *
+     * @scenario area=read
+     *
+     * @effects shipping_policy_list_passes_filters_and_per_page
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_list_returns_paginated_shipping_policies(): void
     {
         // Given: Repository가 페이지네이션 결과 반환
@@ -61,6 +89,15 @@ class ShippingPolicyServiceTest extends ModuleTestCase
         $this->assertSame($mockPaginator, $result);
     }
 
+    /**
+     * per_page 를 주지 않으면 기본값 20 으로 리포지토리를 조회하는지 확인한다.
+     *
+     * @scenario area=read
+     *
+     * @effects shipping_policy_list_defaults_per_page_to_20
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_list_uses_default_per_page(): void
     {
         // Given: per_page 미지정
@@ -84,6 +121,15 @@ class ShippingPolicyServiceTest extends ModuleTestCase
     // getStatistics() 테스트
     // ========================================
 
+    /**
+     * 통계 조회가 리포지토리 집계(총계·활성·비활성·배송방법별·부과정책별)를 키 손실 없이 그대로 돌려주는지 확인한다.
+     *
+     * @scenario area=read
+     *
+     * @effects shipping_policy_statistics_passthrough
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_statistics_returns_statistics_array(): void
     {
         // Given: Repository가 통계 반환
@@ -116,6 +162,15 @@ class ShippingPolicyServiceTest extends ModuleTestCase
     // getDetail() 테스트
     // ========================================
 
+    /**
+     * 상세 조회가 ID 로 리포지토리에서 찾은 배송정책을 그대로 돌려주는지 확인한다.
+     *
+     * @scenario area=read
+     *
+     * @effects shipping_policy_detail_returns_found_policy
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_detail_returns_shipping_policy(): void
     {
         // Given: Repository가 배송정책 반환
@@ -139,6 +194,15 @@ class ShippingPolicyServiceTest extends ModuleTestCase
         $this->assertEquals($shippingPolicy, $result);
     }
 
+    /**
+     * 없는 ID 를 조회하면 예외 없이 null 을 돌려주는지 확인한다.
+     *
+     * @scenario area=read
+     *
+     * @effects shipping_policy_detail_returns_null_when_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_detail_returns_null_for_nonexistent_policy(): void
     {
         // Given: Repository가 null 반환
@@ -159,6 +223,15 @@ class ShippingPolicyServiceTest extends ModuleTestCase
     // create() 테스트
     // ========================================
 
+    /**
+     * 관리자 인증 상태의 생성 요청이 리포지토리 create 를 한 번 호출하고 그 결과를 돌려주는지 확인한다.
+     *
+     * @scenario area=create
+     *
+     * @effects shipping_policy_create_returns_created_policy
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_creates_shipping_policy(): void
     {
         // Given: 사용자 인증 상태
@@ -189,6 +262,15 @@ class ShippingPolicyServiceTest extends ModuleTestCase
         $this->assertEquals($createdPolicy, $result);
     }
 
+    /**
+     * 기본 배송정책으로 생성하면 새 정책 ID 로 clearDefault 를 호출해 다른 정책의 기본 지정을 해제하고, 새 정책은 기본으로 저장되는지 확인한다.
+     *
+     * @scenario area=create
+     *
+     * @effects create_as_default_clears_other_defaults
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_with_is_default_true_clears_existing_default(): void
     {
         // Given: 사용자 인증 및 실제 DB에 정책 생성
@@ -224,6 +306,15 @@ class ShippingPolicyServiceTest extends ModuleTestCase
         $this->assertTrue($result->is_default);
     }
 
+    /**
+     * 기본이 아닌 정책을 생성하면 clearDefault 를 호출하지 않아 기존 기본 정책이 그대로 유지되는지 확인한다.
+     *
+     * @scenario area=create
+     *
+     * @effects create_non_default_keeps_existing_default
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_with_is_default_false_does_not_clear_default(): void
     {
         // Given: 사용자 인증 및 실제 DB에 정책 생성
@@ -260,6 +351,15 @@ class ShippingPolicyServiceTest extends ModuleTestCase
     // update() 테스트
     // ========================================
 
+    /**
+     * 수정 시 정렬순서가 바뀌고 국가별 설정이 요청값으로 교체(행 1개 유지, 기본 배송비 3000 → 5000)되는지 실제 DB 로 확인한다.
+     *
+     * @scenario area=update
+     *
+     * @effects shipping_policy_update_replaces_country_settings
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_modifies_shipping_policy(): void
     {
         // Given: 사용자 인증 및 실제 DB에 정책 생성 (countrySettings 아키텍처)
@@ -315,6 +415,15 @@ class ShippingPolicyServiceTest extends ModuleTestCase
         $this->assertEquals('5000.00', $result->countrySettings->first()->base_fee);
     }
 
+    /**
+     * 비기본 정책을 기본으로 수정하면 그 정책 ID 로 clearDefault 를 호출하고 is_default 가 true 로 저장되는지 확인한다.
+     *
+     * @scenario area=update
+     *
+     * @effects update_to_default_clears_other_defaults
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_with_is_default_true_clears_existing_default(): void
     {
         // Given: 사용자 인증 및 실제 DB에 정책 생성
@@ -359,6 +468,15 @@ class ShippingPolicyServiceTest extends ModuleTestCase
     // delete() 테스트
     // ========================================
 
+    /**
+     * 단건 삭제가 리포지토리 delete 에 위임되고 성공 여부(true)를 돌려주는지 확인한다.
+     *
+     * @scenario area=delete
+     *
+     * @effects shipping_policy_delete_delegates_to_repository
+     *
+     * @return void 반환값 없음
+     */
     public function test_delete_removes_shipping_policy(): void
     {
         // Given: 배송정책 존재 (id는 fillable이 아니므로 직접 설정)
@@ -382,6 +500,15 @@ class ShippingPolicyServiceTest extends ModuleTestCase
     // toggleActive() 테스트
     // ========================================
 
+    /**
+     * 활성 토글이 리포지토리 결과를 돌려줘 활성 정책이 비활성으로 바뀌는지 확인한다.
+     *
+     * @scenario area=toggle
+     *
+     * @effects toggle_active_returns_flipped_policy
+     *
+     * @return void 반환값 없음
+     */
     public function test_toggle_active_changes_status(): void
     {
         // Given: 배송정책 존재
@@ -412,6 +539,15 @@ class ShippingPolicyServiceTest extends ModuleTestCase
     // bulkDelete() 테스트
     // ========================================
 
+    /**
+     * 일괄 삭제가 훅 전달용 스냅샷을 먼저 잡고, 국가별 설정을 명시적으로 지운 뒤 정책을 삭제해 삭제 건수를 돌려주는지 확인한다.
+     *
+     * @scenario area=delete
+     *
+     * @effects bulk_delete_removes_country_settings_then_policies
+     *
+     * @return void 반환값 없음
+     */
     public function test_bulk_delete_removes_multiple_policies(): void
     {
         // Given: ID 배열
@@ -445,6 +581,15 @@ class ShippingPolicyServiceTest extends ModuleTestCase
     // bulkToggleActive() 테스트
     // ========================================
 
+    /**
+     * 일괄 활성 변경이 훅 전달용 스냅샷을 잡은 뒤 ID 목록과 목표 상태를 리포지토리에 넘기고 변경 건수를 돌려주는지 확인한다.
+     *
+     * @scenario area=toggle
+     *
+     * @effects bulk_toggle_active_returns_changed_count
+     *
+     * @return void 반환값 없음
+     */
     public function test_bulk_toggle_active_changes_multiple_statuses(): void
     {
         // Given: ID 배열과 활성화 상태
@@ -474,6 +619,15 @@ class ShippingPolicyServiceTest extends ModuleTestCase
     // getActiveList() 테스트
     // ========================================
 
+    /**
+     * 활성 정책 목록 조회가 리포지토리 컬렉션을 그대로 돌려주는지 확인한다.
+     *
+     * @scenario area=read
+     *
+     * @effects active_list_returns_repository_collection
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_active_list_returns_collection(): void
     {
         // Given: Repository가 컬렉션 반환
@@ -499,6 +653,15 @@ class ShippingPolicyServiceTest extends ModuleTestCase
     // 통화 강제 (forceDefaultCurrency) 테스트
     // ========================================
 
+    /**
+     * 생성 시 관리자가 국가별 설정 통화를 USD 로 보내도 무시되고 상점 기본 통화(미설정 환경 폴백 KRW)로 저장되는지 확인한다.
+     *
+     * @scenario area=currency
+     *
+     * @effects currency_forced_to_default_on_create, submitted_currency_ignored
+     *
+     * @return void 반환값 없음
+     */
     public function test_create_forces_country_setting_currency_to_default(): void
     {
         // Given: 관리자 인증 + 비-기본통화(USD)로 country_settings 입력
@@ -533,6 +696,15 @@ class ShippingPolicyServiceTest extends ModuleTestCase
         $this->assertSame('KRW', $result->countrySettings->first()->currency_code);
     }
 
+    /**
+     * 수정 시 EUR 를 보내도 무시되고, USD 로 저장돼 있던 국가별 설정 통화가 상점 기본 통화(폴백 KRW)로 바로잡히는지 확인한다.
+     *
+     * @scenario area=currency
+     *
+     * @effects currency_forced_to_default_on_update, submitted_currency_ignored
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_forces_country_setting_currency_to_default(): void
     {
         // Given: 관리자 인증 + 기존 정책(USD 저장 상태)

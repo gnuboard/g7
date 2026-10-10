@@ -30,6 +30,16 @@
 
 상세: [docs/backend/middleware.md "확장 미들웨어 선언 (self-gate)"](../../../../../docs/backend/middleware.md).
 
+**형식이 틀린 통보**: 필수 값이 없거나 형식이 다른 요청은 `422` JSON(`{success: false, message, errors}`)으로 끝난다 — 직전 페이지(Referer)·요청 Host 로 이동(302)하지 않는다. PG 에는 302 와 같은 실패라 재전송 동작은 바뀌지 않는다.
+
+**입금 확인**
+
+나이스페이먼츠 입금통보 규격에는 위변조를 확인할 서명이 없다. 그래서 입금완료 통보(`ResultCode=4110`)는 다음을 모두 통과해야 주문을 결제완료로 바꾼다. 하나라도 어긋나면 주문은 그대로 두고 `FAIL` 을 응답한다(나이스페이먼츠가 통보를 다시 보낸다).
+
+1. 통보의 거래번호·MID·가상계좌 번호가 발급 때 기록한 값과 같고, 통보 금액이 주문 청구액과 같다.
+2. 가맹점 키로 서명한 거래 조회(`trans_status.jsp`)를 계좌 발급 당시의 MID·모드로 보내, 그 거래번호가 승인(입금 완료, `Status=0`)으로 조회된다. 조회 실패·거래 없음·취소·다른 거래번호는 거절한다. 조회 응답이 금액을 실어 오면 그 금액도 통보 금액과 같아야 한다.
+3. 같은 거래번호로 이미 반영된 재통보는 거래 조회 없이 `OK` 로 응답한다(멱등).
+
 ---
 
 ## 입금 완료 건 환불 (관리자 JSON API)
@@ -38,7 +48,7 @@
 
 - **라우트명**: `api.plugins.sirsoft-pay_nicepayments.vbank.refund`
 - **컨트롤러**: `Plugins\Sirsoft\PayNicepayments\Controllers\AdminVbankRefundController@refund`
-- **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-ecommerce.orders.update`
+- **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-ecommerce.claims.execute-refund`
 
 입금이 완료된 가상계좌는 일반 환불 훅으로 처리할 수 없다 — 나이스페이먼츠가 환불받을 계좌 정보(계좌번호·은행코드·예금주)를 요구하기 때문이다. 이 경로가 해당 정보를 수집해 취소 API 를 호출하고 주문 취소·결제 상태 반영까지 수행한다.
 
@@ -65,7 +75,7 @@ Content-Type: application/json
 
 {
     "tid": "nictest00m02012104191651325596",
-    "moid": "ORD-20260817-000001",
+    "moid": "20260817-1043226571",
     "cancel_amt": 30000,
     "cancel_msg": "구매자 요청 환불",
     "refund_acct_no": "1234567890123",
@@ -85,3 +95,5 @@ Content-Type: application/json
 | 404 | 주문번호에 해당하는 주문 없음 |
 | 409 | 동일 건 환불이 이미 처리 중 |
 | 502 | PG 취소 API 실패 또는 취소 후 주문 반영 실패 (서버 로그에 원문 기록) |
+
+**설명** 7.1.0 부터 PG 취소와 주문 취소까지 하므로 「환불 실행」 권한(`sirsoft-ecommerce.claims.execute-refund`)이 필요합니다.

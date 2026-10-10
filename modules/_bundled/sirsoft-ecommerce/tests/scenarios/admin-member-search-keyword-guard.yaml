@@ -1,0 +1,53 @@
+# 시나리오 매니페스트 — 회원 자동완성이 지금 친 검색어의 목록만 그린다 (T2-D1 · #599 3차 실측)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: admin_member_search_keyword_guard
+
+description: >-
+  관리자 화면의 회원 자동완성은 글자마다 요청을 내고 응답의 도착 순서는 보장되지 않는다.
+  목록에 「이건 어느 검색어의 결과인가」를 도장해 두고 지금 입력값과 견주는 가드가 이미
+  있었는데, **그 도장을 `$event.target.value` 로 찍은 것이 결함이었다** — `<success>` 안의
+  그 식은 요청을 만든 값이 아니라 응답이 도착한 순간의 입력칸을 읽는다.
+
+  그래서 한 글자가 부른 가장 큰 응답(전체 회원)이 가장 늦게 와서 현재 검색어의 것으로 둔갑하고,
+  가드가 그대로 통과해 엉뚱한 목록이 그려졌다 — 2026-09-22 실측에서 마일리지 「수동 지급/차감」
+  창에 `MEAS599T-S2` 를 쳤는데 요청은 200·1건을 받았고 드롭다운에는 전체 회원 83행이 떴다
+  (1행 `관리자`). 그 목록에서 고르면 **엉뚱한 회원에게 돈이 지급된다.**
+
+  고침은 응답이 자기 검색어를 싣고 오게 한 것이다(`meta.keyword`). 서버측 계약은 코어의
+  `tests/scenarios/admin-user-search-keyword-echo.yaml` 이 소유하고, 이 매니페스트는 **화면이
+  그 값을 쓰는가**를 소유한다.
+
+  쿠폰 「직접 발급」 창은 같은 코드였다(전수 검사로 찾았다) — 그쪽은 쿠폰이 잘못 나간다.
+  한쪽만 고치면 다른 쪽이 조용히 남으므로 두 창을 한 축으로 묶는다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminMemberSearchKeywordGuard.test.ts
+
+coverage_strategy: pairwise
+
+axes:
+  surface:
+    - mileage_manual_transaction   # 마일리지 수동 지급/차감 (실측으로 드러난 자리)
+    - coupon_direct_issue          # 쿠폰 직접 발급 (전수 검사로 찾은 쌍둥이)
+
+exclusions:
+  - { surface: coupon_direct_issue, reason: "제외 없음 — 두 화면이 같은 계약을 지는지가 축의 전부다(단일 축)" }
+
+effects:
+  - member_search_stamps_the_keyword_the_response_carried  # 도장은 응답이 실어 온 값으로 찍는다
+  - member_search_list_renders_only_for_the_current_keyword # 그 값과 지금 입력값이 같을 때만 그린다
+  - member_search_request_still_sends_the_typed_keyword     # 요청은 방금 친 값을 그대로 보낸다
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: Playwright MCP   # #599 3차 실측 세션2 — 실제 관리자 화면에서 재실측
+  note: |
+    브라우저 축은 Playwright MCP 재실측이 덮는다. spec 을 새로 두지 않는 이유는 이 결함이
+    **응답 도착 순서**에서만 드러나기 때문이다 — 시드 회원이 적은 환경에서는 한 글자 검색의
+    응답이 작아 늦게 도착하지 않고, 그러면 게이트를 지워도 통과하는 가짜 초록이 된다.
+    실측은 회원이 83명 있는 개발 환경에서 `pressSequentially` 로 재현했다.
+
+    대신 두 겹으로 받친다. ① 이 레이아웃 테스트가 도장 식과 가드 식을 정적으로 잠근다
+    (되돌리면 red 임을 실측 확인). ② 서버가 `meta.keyword` 를 싣는 계약을 코어 Feature 테스트가
+    잠근다. 화면이 서버가 준 값만 쓰므로 둘이 갈릴 자리가 없다.

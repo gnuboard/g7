@@ -51,6 +51,8 @@ function rootNodes(layout: any): LayoutNode | LayoutNode[] {
 }
 
 describe('어드민 베이스 transition_overlay (이슈 #245)', () => {
+    // @scenario subject=base, contract=overlay_declared
+    // @effects admin_base_declares_spinner_overlay
     it('_admin_base.json 에 spinner 오버레이가 활성화되어 있어야 한다', () => {
         const overlay = (adminBase as any).transition_overlay;
         expect(overlay).toBeDefined();
@@ -60,6 +62,8 @@ describe('어드민 베이스 transition_overlay (이슈 #245)', () => {
         expect(overlay.spinner?.component).toBe('PageLoading');
     });
 
+    // @scenario subject=base, contract=overlay_target_scope
+    // @effects admin_base_overlay_targets_the_content_wrapper
     it('베이스의 target 으로 지정된 right_content_area 가 main_content 의 부모 wrapper 여야 한다', () => {
         // spinner target 은 slot 컨테이너(main_content) 자체가 아닌 부모 wrapper 여야 함
         // 사용자 베이스의 main_content_area 와 동일 패턴 — 외부 DOM mount 가 React reconcile 에 영향 없음
@@ -77,6 +81,8 @@ describe('어드민 베이스 사이드바 프로필 영역 (이슈 #384)', () =
      * 재도입했으므로, 컨테이너 id 부재로 단언하면 그 정상 기능에 걸린다.
      * 의도대로 계정 UI 부재를 단언한다.
      */
+    // @scenario subject=base, contract=sidebar_composition
+    // @effects admin_sidebar_has_no_profile_ui
     it('좌측 사이드바에 프로필/계정 UI 를 렌더링하지 않는다', () => {
         const sidebarProfile = findById((adminBase as any).components, 'user_profile');
         expect(sidebarProfile).toBeUndefined();
@@ -101,6 +107,7 @@ describe('어드민 베이스 사이드바 프로필 영역 (이슈 #384)', () =
     /**
      * #450 크로스 이동 링크는 사이드바 하단에 유지되어야 한다 (제거 회귀 차단).
      */
+    // @scenario subject=base, contract=sidebar_composition
     it('사이드바 하단 "사이트 보기" 크로스 이동 링크는 유지한다', () => {
         const viewSiteLink = findById((adminBase as any).components, 'sidebar_view_site_link');
 
@@ -109,6 +116,21 @@ describe('어드민 베이스 사이드바 프로필 영역 (이슈 #384)', () =
         expect(viewSiteLink?.props).toMatchObject({ href: '/', target: '_blank' });
     });
 
+    /**
+     * #384/#399 가 지운 것은 **프로필 영역**이지 사이드바 푸터 자체가 아니다.
+     *
+     * #450 이 같은 자리에 "사이트 보기" 크로스 이동 링크를 다시 넣었고, 종전 단언은 `sidebar_footer`
+     * 노드의 부재까지 요구하고 있어 그 시점부터 stale 이었다(레이아웃이 정본, 단언이 과잉).
+     */
+    // @scenario subject=base, contract=sidebar_composition
+    it('사이드바 푸터에는 사이트 보기 링크만 둔다', () => {
+        const sidebarFooter = findById((adminBase as any).components, 'sidebar_footer');
+
+        expect(sidebarFooter).toBeDefined();
+        expect(findById([sidebarFooter], 'sidebar_view_site_link')).toBeDefined();
+    });
+
+    // @scenario subject=base, contract=sidebar_composition
     it('계정 기능은 상단 헤더 드롭다운으로 유지한다', () => {
         const headerDropdown = findById((adminBase as any).components, 'user_dropdown');
 
@@ -193,11 +215,15 @@ describe('목록 페이지 페이지네이션 transition_overlay_target 가드 (
         })
         .filter((c) => c.gridIds.length > 0 && c.navigates.length > 0);
 
+    // @scenario subject=child_layout, contract=scan_population
+    // @effects overlay_guards_scan_at_least_one_admin_page
     it('스캔 대상 어드민 페이지가 1개 이상이어야 한다 (회귀 방지)', () => {
         expect(cases.length).toBeGreaterThan(0);
     });
 
     for (const c of cases) {
+        // @scenario subject=child_layout, contract=overlay_target_scope
+        // @effects pagination_navigate_targets_the_grid_body
         it(`${c.name}: 모든 페이지네이션 navigate 에 transition_overlay_target 이 DataGrid body id(\${gridId}__body) 로 명시되어야 한다`, () => {
             // DataGrid root id 는 React tree + 외부 참조용으로 유지되고,
             // spinner mount 대상(pagination 제외 영역)은 DataGrid 내부 body wrapper 의 `${id}__body` 이다.
@@ -244,6 +270,8 @@ describe('transition_overlay_target 은 replace:true 와 함께여야 한다 (�
         const navigates = findOverlayNavigates(layout);
         if (navigates.length === 0) continue;
 
+        // @scenario subject=child_layout, contract=navigate_replace
+        // @effects overlay_target_navigate_uses_replace_true
         it(`${file}: transition_overlay_target 을 쓰는 navigate 는 replace:true 여야 한다`, () => {
             for (let i = 0; i < navigates.length; i++) {
                 const p = navigates[i].params;
@@ -290,11 +318,14 @@ describe('채널 서브 탭 transition_overlay_target 가드 (이슈 #245, engin
     }
 
     for (const { name, partial, wrapperId } of channelTabCases) {
+        // @scenario subject=child_layout, contract=overlay_target_scope
+        // @effects channel_tabs_target_their_own_wrapper
         it(`${name}: 채널 wrapper (${wrapperId}) 가 존재해야 한다`, () => {
             const found = findById(partial, wrapperId);
             expect(found, `${wrapperId} 미존재`).toBeDefined();
         });
 
+        // @scenario subject=child_layout, contract=overlay_target_scope
         it(`${name}: 채널 탭 navigate 에 transition_overlay_target=${wrapperId} 가 명시되어야 한다`, () => {
             const navs = collectNavigateHandlers(partial);
             const channelNavs = navs.filter((n) =>
@@ -314,16 +345,20 @@ describe('admin_settings 탭 콘텐츠 영역 spinner (이슈 #245)', () => {
      * 사용자 마이페이지(target: mypage_tab_content)와 동일 패턴.
      * 베이스의 target=right_content_area 를 admin_settings 가 settings_tab_content 로 override.
      */
+    // @scenario subject=child_layout, contract=overlay_target_scope
+    // @effects settings_tabs_target_the_tab_content_pane
     it('admin_settings.transition_overlay.target 이 settings_tab_content 여야 한다', () => {
         const overlay = (adminSettings as any).transition_overlay;
         expect(overlay?.target).toBe('settings_tab_content');
     });
 
+    // @scenario subject=child_layout, contract=overlay_target_scope
     it('admin_settings.transition_overlay.fallback_target 이 right_content_area 여야 한다', () => {
         const overlay = (adminSettings as any).transition_overlay;
         expect(overlay?.fallback_target).toBe('right_content_area');
     });
 
+    // @scenario subject=child_layout, contract=overlay_target_scope
     it('admin_settings 의 settings_content 안에 settings_tab_content wrapper 가 존재해야 한다', () => {
         const settingsContent = findById((adminSettings as any).slots?.content ?? [], 'settings_content');
         expect(settingsContent, 'settings_content 미존재').toBeDefined();
@@ -331,6 +366,7 @@ describe('admin_settings 탭 콘텐츠 영역 spinner (이슈 #245)', () => {
         expect(tabContent, 'settings_tab_content wrapper 미존재').toBeDefined();
     });
 
+    // @scenario subject=child_layout, contract=overlay_target_scope
     it('settings_tab_content 안에 탭 partial 이 모두 들어 있어야 한다', () => {
         const settingsContent = findById((adminSettings as any).slots?.content ?? [], 'settings_content');
         const tabContent = findById(settingsContent!.children, 'settings_tab_content');
@@ -381,11 +417,14 @@ describe('어드민 자식 레이아웃 wait_for 일괄 가드 (이슈 #245, eng
         })
         .filter((p) => p.layout.extends === '_admin_base' && p.progressiveIds.length > 0);
 
+    // @scenario subject=child_layout, contract=scan_population
     it('스캔 대상 페이지가 1개 이상이어야 한다 (회귀 방지)', () => {
         expect(pages.length).toBeGreaterThan(0);
     });
 
     for (const page of pages) {
+        // @scenario subject=child_layout, contract=wait_for_complete
+        // @effects child_layouts_declare_wait_for_for_progressive_sources
         it(`${page.name}: transition_overlay.wait_for 가 명시되어야 한다`, () => {
             const waitFor = page.layout.transition_overlay?.wait_for;
             expect(waitFor, `${page.name}: wait_for 미명시`).toBeDefined();
@@ -393,6 +432,7 @@ describe('어드민 자식 레이아웃 wait_for 일괄 가드 (이슈 #245, eng
             expect((waitFor as string[]).length).toBeGreaterThan(0);
         });
 
+        // @scenario subject=child_layout, contract=wait_for_complete
         it(`${page.name}: wait_for 가 모든 progressive 데이터소스를 포함해야 한다`, () => {
             const waitFor: string[] = page.layout.transition_overlay?.wait_for ?? [];
             for (const id of page.progressiveIds) {
@@ -403,6 +443,7 @@ describe('어드민 자식 레이아웃 wait_for 일괄 가드 (이슈 #245, eng
             }
         });
 
+        // @scenario subject=child_layout, contract=wait_for_complete
         it(`${page.name}: wait_for ID 는 모두 data_sources 에 존재하고 background/websocket 이 아니어야 한다`, () => {
             const waitFor: string[] = page.layout.transition_overlay?.wait_for ?? [];
             const byId = new Map<string, any>((page.layout.data_sources ?? []).map((s: any) => [s.id, s]));
@@ -431,6 +472,8 @@ describe('어드민 자식 레이아웃 베이스 상속 (이슈 #245)', () => {
     ];
 
     for (const { name, layout } of inheritanceCases) {
+        // @scenario subject=child_layout, contract=extends_base
+        // @effects admin_child_layouts_extend_the_base
         it(`${name} 은 _admin_base 를 extends 해야 한다`, () => {
             expect(layout.extends).toBe('_admin_base');
         });
@@ -444,11 +487,14 @@ describe('어드민 폼 컨테이너 전체 페이지 blur 제거 (이슈 #245)'
         { name: 'admin_user_detail#user_detail_content', layout: adminUserDetail, containerId: 'user_detail_content' },
         { name: 'admin_role_form#role_form', layout: adminRoleForm, containerId: 'role_form' },
         { name: 'admin_template_layout_edit#main_grid', layout: adminTemplateLayoutEdit, containerId: 'main_grid' },
-        { name: 'admin_template_layout_edit#mobile_file_selector', layout: adminTemplateLayoutEdit, containerId: 'mobile_file_selector' },
+        // 옛 `mobile_file_selector` 는 `<file-tree-picker>` 로 합쳐졌다(#476) — 같은 표면의 새 이름이다.
+        { name: 'admin_template_layout_edit#file_tree_picker', layout: adminTemplateLayoutEdit, containerId: 'file_tree_picker' },
         { name: 'admin_menu_list/_panel_form#menu_form', layout: adminMenuPanelForm, containerId: 'menu_form' },
     ];
 
     for (const { name, layout, containerId } of cases) {
+        // @scenario subject=child_layout, contract=no_full_page_blur
+        // @effects admin_form_containers_do_not_blur_the_whole_page
         it(`${name} 컨테이너에 blur_until_loaded 가 정의되어 있지 않아야 한다`, () => {
             const node = findById(layout.components ?? layout, containerId);
             expect(node, `${containerId} 컨테이너를 찾지 못함`).toBeDefined();

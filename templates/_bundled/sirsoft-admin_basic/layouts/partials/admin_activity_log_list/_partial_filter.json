@@ -1,785 +1,793 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Activity Log List Filter Section"
-  },
-  "id": "filter_section",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card"
-  },
-  "children": [
-    {
-      "id": "search_row",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "mb-4"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-2"
-          },
-          "children": [
-            {
-              "type": "composite",
-              "name": "Select",
-              "props": {
-                "name": "searchType",
-                "className": "w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500",
-                "value": "{{_local.filter.searchType || 'all'}}",
-                "options": [
-                  {
-                    "value": "all",
-                    "label": "$t:admin.activity_log.filter.search_type_all"
-                  },
-                  {
-                    "value": "action",
-                    "label": "$t:admin.activity_log.filter.search_type_action"
-                  },
-                  {
-                    "value": "description",
-                    "label": "$t:admin.activity_log.filter.search_type_description"
-                  },
-                  {
-                    "value": "ip_address",
-                    "label": "$t:admin.activity_log.filter.search_type_ip_address"
-                  }
-                ]
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "filter.searchType": "{{$event.target.value}}"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "relative flex-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "fa-solid fa-search",
-                    "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "name": "search",
-                    "type": "text",
-                    "placeholder": "$t:admin.activity_log.filter.search_placeholder",
-                    "className": "input pl-10",
-                    "value": "{{_local.filter.search || ''}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "filter.search": "{{$event.target.value}}"
-                      }
-                    },
-                    {
-                      "type": "keydown",
-                      "key": "Enter",
-                      "actionRef": "searchActivityLogs"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "활동 로그 목록의 검색 조건 영역. 여기서 고른 값은 **로컬 상태 `filter` 에만 쌓이고 바로\n  조회되지 않는다** — 검색 버튼이나 입력창 Enter 가 명명 액션을 불러 URL 질의로 옮길 때\n  비로소 서버에 나간다. 그래서 조건을 여러 개 고쳐도 목록이 그때마다 깜박이지 않는다.\n  초기화 버튼만 예외로, 값을 비우고 질의 없는 주소로 곧장 이동한다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Activity Log List Filter Section"
     },
-    {
-      "id": "filter_grid",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "filter-grid"
-      },
-      "children": [
-        {
-          "id": "log_type_filter",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "filter-row"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "filter-label w-32"
-              },
-              "text": "$t:admin.activity_log.filter.log_type_label"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center flex-wrap gap-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "inline-clickable"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "className": "checkbox",
-                        "checked": "{{!_local.filter.logTypes || _local.filter.logTypes.length === 0}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "filter.logTypes": "{{[]}}"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.activity_log.filter.log_type_all"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "inline-clickable"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "className": "checkbox",
-                        "checked": "{{(_local.filter.logTypes || []).includes('admin')}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "filter.logTypes": "{{$event.target.checked ? [...(_local.filter.logTypes || []).filter(t => t !== 'admin'), 'admin'] : (_local.filter.logTypes || []).filter(t => t !== 'admin')}}"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.activity_log.filter.log_type_admin"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "inline-clickable"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "className": "checkbox",
-                        "checked": "{{(_local.filter.logTypes || []).includes('user')}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "filter.logTypes": "{{$event.target.checked ? [...(_local.filter.logTypes || []).filter(t => t !== 'user'), 'user'] : (_local.filter.logTypes || []).filter(t => t !== 'user')}}"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.activity_log.filter.log_type_user"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "inline-clickable"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "className": "checkbox",
-                        "checked": "{{(_local.filter.logTypes || []).includes('system')}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "filter.logTypes": "{{$event.target.checked ? [...(_local.filter.logTypes || []).filter(t => t !== 'system'), 'system'] : (_local.filter.logTypes || []).filter(t => t !== 'system')}}"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label"
-                      },
-                      "text": "$t:admin.activity_log.filter.log_type_system"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "actor_filter",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "filter-row"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "filter-label w-32"
-              },
-              "text": "$t:admin.activity_log.filter.actor_label"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "SearchableDropdown",
-                  "props": {
-                    "options": "{{_local.actorSearchResults ?? []}}",
-                    "value": "{{_local.filter.createdBy || ''}}",
-                    "triggerLabel": "$t:admin.activity_log.filter.actor_select",
-                    "searchPlaceholder": "$t:admin.activity_log.filter.actor_search_placeholder",
-                    "noResultsText": "$t:common.no_results",
-                    "initialText": "$t:admin.activity_log.filter.actor_search_initial",
-                    "className": "w-64"
-                  },
-                  "actions": [
-                    {
-                      "event": "onSearch",
-                      "handler": "apiCall",
-                      "debounce": 300,
-                      "auth_required": true,
-                      "target": "/api/admin/users/search",
-                      "params": {
-                        "method": "GET",
-                        "query": {
-                          "keyword": "{{$args[0]}}"
-                        }
-                      },
-                      "onSuccess": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "actorSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
-                          }
-                        }
-                      ],
-                      "onError": [
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "actorSearchResults": []
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "event": "onChange",
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "filter.createdBy": "{{$args[0]}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "if": "{{!!_local.filter.createdBy}}",
-                  "props": {
-                    "type": "button",
-                    "className": "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "xmark",
-                        "className": "w-4 h-4"
-                      }
-                    }
-                  ],
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "filter.createdBy": "",
-                        "actorSearchResults": []
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "date_range_filter",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "filter-row"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "filter-label w-32"
-              },
-              "text": "$t:admin.activity_log.filter.date_range_label"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 flex-wrap"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "name": "dateFrom",
-                    "type": "datetime-local",
-                    "step": "1",
-                    "className": "input w-56",
-                    "value": "{{_local.filter.dateFrom || ''}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "filter.dateFrom": "{{$event.target.value}}",
-                        "filter.dateQuick": ""
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-400"
-                  },
-                  "text": "~"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "name": "dateTo",
-                    "type": "datetime-local",
-                    "step": "1",
-                    "className": "input w-56",
-                    "value": "{{_local.filter.dateTo || ''}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "filter.dateTo": "{{$event.target.value}}",
-                        "filter.dateQuick": ""
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-1"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "type": "button",
-                        "className": "{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
-                      },
-                      "text": "$t:admin.activity_log.filter.date_quick.today",
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "sequence",
-                          "params": {
-                            "actions": [
-                              {
-                                "handler": "setDateRange",
-                                "params": {
-                                  "preset": "today"
-                                }
-                              },
-                              {
-                                "handler": "setState",
-                                "params": {
-                                  "target": "local",
-                                  "filter.dateQuick": "{{$prev.preset}}",
-                                  "filter.dateFrom": "{{$prev.startDate}}",
-                                  "filter.dateTo": "{{$prev.endDate}}"
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "type": "button",
-                        "className": "{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
-                      },
-                      "text": "$t:admin.activity_log.filter.date_quick.week",
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "sequence",
-                          "params": {
-                            "actions": [
-                              {
-                                "handler": "setDateRange",
-                                "params": {
-                                  "preset": "week"
-                                }
-                              },
-                              {
-                                "handler": "setState",
-                                "params": {
-                                  "target": "local",
-                                  "filter.dateQuick": "{{$prev.preset}}",
-                                  "filter.dateFrom": "{{$prev.startDate}}",
-                                  "filter.dateTo": "{{$prev.endDate}}"
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "type": "button",
-                        "className": "{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
-                      },
-                      "text": "$t:admin.activity_log.filter.date_quick.month",
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "sequence",
-                          "params": {
-                            "actions": [
-                              {
-                                "handler": "setDateRange",
-                                "params": {
-                                  "preset": "month"
-                                }
-                              },
-                              {
-                                "handler": "setState",
-                                "params": {
-                                  "target": "local",
-                                  "filter.dateQuick": "{{$prev.preset}}",
-                                  "filter.dateFrom": "{{$prev.startDate}}",
-                                  "filter.dateTo": "{{$prev.endDate}}"
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "type": "button",
-                        "className": "{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
-                      },
-                      "text": "$t:admin.activity_log.filter.date_quick.three_months",
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "sequence",
-                          "params": {
-                            "actions": [
-                              {
-                                "handler": "setDateRange",
-                                "params": {
-                                  "preset": "3months"
-                                }
-                              },
-                              {
-                                "handler": "setState",
-                                "params": {
-                                  "target": "local",
-                                  "filter.dateQuick": "{{$prev.preset}}",
-                                  "filter.dateFrom": "{{$prev.startDate}}",
-                                  "filter.dateTo": "{{$prev.endDate}}"
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "type": "button",
-                        "className": "{{_local.filter.dateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
-                      },
-                      "text": "$t:admin.activity_log.filter.date_quick.six_months",
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "sequence",
-                          "params": {
-                            "actions": [
-                              {
-                                "handler": "setDateRange",
-                                "params": {
-                                  "preset": "6months"
-                                }
-                              },
-                              {
-                                "handler": "setState",
-                                "params": {
-                                  "target": "local",
-                                  "filter.dateQuick": "{{$prev.preset}}",
-                                  "filter.dateFrom": "{{$prev.startDate}}",
-                                  "filter.dateTo": "{{$prev.endDate}}"
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "type": "button",
-                        "className": "{{_local.filter.dateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
-                      },
-                      "text": "$t:admin.activity_log.filter.date_quick.one_year",
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "sequence",
-                          "params": {
-                            "actions": [
-                              {
-                                "handler": "setDateRange",
-                                "params": {
-                                  "preset": "1year"
-                                }
-                              },
-                              {
-                                "handler": "setState",
-                                "params": {
-                                  "target": "local",
-                                  "filter.dateQuick": "{{$prev.preset}}",
-                                  "filter.dateFrom": "{{$prev.startDate}}",
-                                  "filter.dateTo": "{{$prev.endDate}}"
-                                }
-                              }
-                            ]
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "id": "filter_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card"
     },
-    {
-      "id": "filter_actions",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex justify-center gap-3 mt-6"
-      },
-      "responsive": {
-        "portable": {
-          "props": {
-            "className": "flex gap-3 mt-6"
-          }
-        }
-      },
-      "children": [
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "btn btn-primary px-6"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "btn btn-primary flex-1"
-              }
-            }
-          },
-          "text": "$t:admin.activity_log.filter.search_button",
-          "actions": [
-            {
-              "type": "click",
-              "actionRef": "searchActivityLogs"
-            }
-          ]
+            "id": "search_row",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "검색어를 어느 칸에 대고 찾을지만 정해 둔다 — 「전체」일 때는 질의에서 아예 빠져 서버 기본값을 쓴다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.searchType": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "searchType",
+                                "className": "w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500",
+                                "value": "{{_local.filter.searchType || 'all'}}",
+                                "options": [
+                                    {
+                                        "value": "all",
+                                        "label": "$t:admin.activity_log.filter.search_type_all"
+                                    },
+                                    {
+                                        "value": "action",
+                                        "label": "$t:admin.activity_log.filter.search_type_action"
+                                    },
+                                    {
+                                        "value": "description",
+                                        "label": "$t:admin.activity_log.filter.search_type_description"
+                                    },
+                                    {
+                                        "value": "ip_address",
+                                        "label": "$t:admin.activity_log.filter.search_type_ip_address"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "relative flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "fa-solid fa-search",
+                                        "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "타이핑은 담아만 둔다. 실제 조회는 Enter 또는 아래 검색 버튼이 한다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.search": "{{$event.target.value}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "keydown",
+                                            "key": "Enter",
+                                            "actionRef": "searchActivityLogs"
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "search",
+                                        "type": "text",
+                                        "placeholder": "$t:admin.activity_log.filter.search_placeholder",
+                                        "className": "input pl-10",
+                                        "value": "{{_local.filter.search || ''}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "btn btn-secondary px-6"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "btn btn-secondary flex-1"
-              }
-            }
-          },
-          "text": "$t:admin.activity_log.filter.reset_button",
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "id": "filter_grid",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "filter-grid"
+            },
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "filter": {
-                      "searchType": "all",
-                      "search": "",
-                      "logTypes": [],
-                      "createdBy": "",
-                      "dateQuick": "",
-                      "dateFrom": "",
-                      "dateTo": ""
+                    "id": "log_type_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
                     },
-                    "actorSearchResults": []
-                  }
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.activity_log.filter.log_type_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "「전체」는 별도 값이 아니라 **고른 것이 하나도 없는 상태**다 — 목록을 비우면 아래 셋의 체크도 함께 풀린다(체크 표시가 길이 0 을 보고 있다).",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.logTypes": "{{[]}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{!_local.filter.logTypes || _local.filter.logTypes.length === 0}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.log_type_all"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "관리자 API 경로로 들어온 요청이 남긴 기록. 「누가 했는가」가 아니라 **어느 경로로\n                  들어왔는가**로 갈리므로, 관리자가 앞단 화면에서 한 일은 여기 잡히지 않는다.\n                  켤 때 같은 값을 걷어내고 다시 넣는 것은 두 번 눌러도 목록에 중복이 쌓이지 않게 하는 관용구다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.logTypes": "{{$event.target.checked ? [...(_local.filter.logTypes || []).filter(t => t !== 'admin'), 'admin'] : (_local.filter.logTypes || []).filter(t => t !== 'admin')}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.logTypes || []).includes('admin')}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.log_type_admin"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "관리자 경로가 아닌 나머지 HTTP 요청이 남긴 기록 — 앞단 화면에서 일어난 일이 여기 모인다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.logTypes": "{{$event.target.checked ? [...(_local.filter.logTypes || []).filter(t => t !== 'user'), 'user'] : (_local.filter.logTypes || []).filter(t => t !== 'user')}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.logTypes || []).includes('user')}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.log_type_user"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "inline-clickable"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "요청 없이 돌아간 일 — 명령줄과 스케줄러가 남긴 기록이라 행위자 칸이 비어 있는 것이 정상이다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "filter.logTypes": "{{$event.target.checked ? [...(_local.filter.logTypes || []).filter(t => t !== 'system'), 'system'] : (_local.filter.logTypes || []).filter(t => t !== 'system')}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "checkbox",
+                                                "checked": "{{(_local.filter.logTypes || []).includes('system')}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.log_type_system"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
-                  "handler": "navigate",
-                  "params": {
-                    "path": "/admin/activity-logs",
-                    "mergeQuery": false
-                  }
+                    "id": "actor_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.activity_log.filter.actor_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "SearchableDropdown",
+                                    "actions": [
+                                        {
+                                            "comment": "행위자는 목록이 아니라 **검색해서 고른다** — 회원 수가 많아 전건을 미리 받아 둘 수 없다.\n                타이핑이 멎기를 잠깐 기다렸다 찾고, 받은 회원을 드롭다운이 읽는 모양(값·이름·부가설명)으로\n                바꿔 담는다. 실패하면 결과를 비워 「없음」 문구가 뜨게 둔다.",
+                                            "event": "onSearch",
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/users/search",
+                                            "if": "{{String($args[0] ?? '').trim() !== ''}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "GET",
+                                                "query": {
+                                                    "keyword": "{{$args[0]}}"
+                                                }
+                                            },
+                                            "debounce": 300,
+                                            "onSuccess": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "actorSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
+                                                }
+                                            },
+                                            "onError": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "actorSearchResults": []
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "comment": "고른 회원의 uuid 만 남긴다 — 목록 조회는 이 값으로 하고, 화면에 보이는 이름은 위 검색 결과가 들고 있다.",
+                                            "type": "change",
+                                            "event": "onChange",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.createdBy": "{{$args[0]}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "options": "{{_local.actorSearchResults ?? []}}",
+                                        "value": "{{_local.filter.createdBy || ''}}",
+                                        "triggerLabel": "$t:admin.activity_log.filter.actor_select",
+                                        "searchPlaceholder": "$t:admin.activity_log.filter.actor_search_placeholder",
+                                        "noResultsText": "$t:common.no_results",
+                                        "initialText": "$t:admin.activity_log.filter.actor_search_initial",
+                                        "className": "w-64"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{!!_local.filter.createdBy}}",
+                                    "actions": [
+                                        {
+                                            "comment": "고른 사람을 물릴 때 검색 결과까지 비운다 — 남겨 두면 지운 이름이 드롭다운에 계속 떠 있다.",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.createdBy": "",
+                                                "actorSearchResults": []
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "aria-label": "$t:common.clear_selection",
+                                        "title": "$t:common.clear_selection",
+                                        "className": "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "xmark",
+                                                "className": "text-base"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "date_range_filter",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "filter-row"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "filter-label w-32"
+                            },
+                            "text": "$t:admin.activity_log.filter.date_range_label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 flex-wrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "시작 시각을 직접 고르면 아래 기간 버튼의 선택 표시를 지운다 — 버튼이 만든 범위를 손으로 고친 순간 그 버튼은 더 이상 지금 조건이 아니다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.dateFrom": "{{$event.target.value}}",
+                                                "filter.dateQuick": ""
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "dateFrom",
+                                        "type": "datetime-local",
+                                        "aria-label": "$t:common.range_start|label={{$t('admin.activity_log.filter.date_range_label')}}",
+                                        "step": "1",
+                                        "className": "input w-56",
+                                        "value": "{{_local.filter.dateFrom || ''}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-400 dark:text-gray-500"
+                                    },
+                                    "text": "~"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "끝 시각도 마찬가지다. 초 단위까지 받으므로 같은 날 안에서 시간대를 좁혀 볼 수 있다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.dateTo": "{{$event.target.value}}",
+                                                "filter.dateQuick": ""
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "dateTo",
+                                        "type": "datetime-local",
+                                        "aria-label": "$t:common.range_end|label={{$t('admin.activity_log.filter.date_range_label')}}",
+                                        "step": "1",
+                                        "className": "input w-56",
+                                        "value": "{{_local.filter.dateTo || ''}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "오늘 00:00:00 ~ 23:59:59. 여섯 버튼 모두 끝은 오늘 자정 직전으로 고정이고 시작만 달라지며, 계산 결과를 위 두 입력칸에 그대로 옮겨 담는다(직접 고른 날짜와 같은 자리다).",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "today"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "filter.dateQuick": "{{$prev.preset}}",
+                                                                "filter.dateFrom": "{{$prev.startDate}}",
+                                                                "filter.dateTo": "{{$prev.endDate}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.date_quick.today"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "오늘을 **포함한** 7일 — 지난 일요일부터가 아니라 6일 전 0시부터다.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "week"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "filter.dateQuick": "{{$prev.preset}}",
+                                                                "filter.dateFrom": "{{$prev.startDate}}",
+                                                                "filter.dateTo": "{{$prev.endDate}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.date_quick.week"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "한 달 전 같은 날 0시부터 — 이번 달 1일부터가 아니다.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "month"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "filter.dateQuick": "{{$prev.preset}}",
+                                                                "filter.dateFrom": "{{$prev.startDate}}",
+                                                                "filter.dateTo": "{{$prev.endDate}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.date_quick.month"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "석 달 전 같은 날 0시부터.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "3months"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "filter.dateQuick": "{{$prev.preset}}",
+                                                                "filter.dateFrom": "{{$prev.startDate}}",
+                                                                "filter.dateTo": "{{$prev.endDate}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.date_quick.three_months"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "여섯 달 전 같은 날 0시부터. 로그 보관 기간을 넘겨 잡으면 앞쪽이 비어 보인다.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "6months"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "filter.dateQuick": "{{$prev.preset}}",
+                                                                "filter.dateFrom": "{{$prev.startDate}}",
+                                                                "filter.dateTo": "{{$prev.endDate}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.date_quick.six_months"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "한 해 전 같은 날 0시부터 — 이 화면이 한 번에 잡을 수 있는 가장 넓은 범위다.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setDateRange",
+                                                            "params": {
+                                                                "preset": "1year"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "filter.dateQuick": "{{$prev.preset}}",
+                                                                "filter.dateFrom": "{{$prev.startDate}}",
+                                                                "filter.dateTo": "{{$prev.endDate}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                            },
+                                            "text": "$t:admin.activity_log.filter.date_quick.one_year"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
+        },
+        {
+            "id": "filter_actions",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex gap-3 mt-6"
+                    }
+                }
+            },
+            "props": {
+                "className": "flex justify-center gap-3 mt-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-primary flex-1"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "actionRef": "searchActivityLogs"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-primary px-6"
+                    },
+                    "text": "$t:admin.activity_log.filter.search_button"
+                },
+                {
+                    "comment": "검색 조건 초기화. 폼 상태와 주소를 함께 비운다 — 초기화는 걸린 조건을 없애는 것이라 지금 조건과 병합하지 않는다",
+                    "type": "basic",
+                    "name": "Button",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "btn btn-secondary flex-1"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "actorSearchResults": [],
+                                        "filter": {
+                                            "searchType": "all",
+                                            "search": "",
+                                            "logTypes": [],
+                                            "createdBy": "",
+                                            "dateQuick": "",
+                                            "dateFrom": "",
+                                            "dateTo": ""
+                                        }
+                                    }
+                                },
+                                {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/activity-logs",
+                                        "mergeQuery": false
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary px-6"
+                    },
+                    "text": "$t:admin.activity_log.filter.reset_button"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

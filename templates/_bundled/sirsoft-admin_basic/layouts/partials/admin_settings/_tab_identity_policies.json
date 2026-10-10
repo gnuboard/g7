@@ -1,1233 +1,1243 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "환경설정 > 인증 탭 내 S1d 정책 관리 서브섹션 (DataGrid + 편집 모달 포함 X — 모달은 별도 partial)"
-  },
-  "id": "tab_content_identity_policies",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{(_global.activeSettingsTab || query.tab) === 'identity'}}",
-  "children": [
-    {
-      "id": "page_root",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
+    "comment": "본인인증 탭의 **정책** 하위 구획 — 목록·필터·페이지가 모두 여기 있고, 등록·수정·삭제 창은 별도 조각이다.\n  목록을 **두 벌로 그린다** — 넓은 화면은 표, 좁은 화면은 카드. 같은 배선이 두 번 나오므로\n  한쪽을 고치면 다른 쪽도 같이 본다(토글·수정·삭제 세 자리씩).\n  이 구획의 이동은 하나같이 `tab=\"identity\"` 를 함께 실어 나른다 — 설정 화면 안의 한 구획이라\n  탭을 잃으면 다른 탭으로 튄다. 그리고 이동마다 **스크롤을 이 구획 머리로 되돌린다**(위쪽 고정 탭\n  높이만큼 비켜서) — 안 그러면 페이지를 넘겨도 화면이 표 중간에 머문다.\n  확장이 선언한 정책은 삭제 버튼이 나오지 않는다(운영자 정책만 지울 수 있다).",
+    "meta": {
+        "is_partial": true,
+        "description": "환경설정 > 인증 탭 내 S1d 정책 관리 서브섹션 (DataGrid + 편집 모달 포함 X — 모달은 별도 partial)"
+    },
+    "id": "tab_content_identity_policies",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeSettingsTab || query.tab) === 'identity'}}",
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:admin.identity.policies.purposes_section_description"
-        },
-        {
-          "id": "page_header",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-6"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
+            "id": "page_root",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "H3",
-                  "props": {
-                    "className": "section-title"
-                  },
-                  "text": "$t:admin.identity.policies.page_title"
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.identity.policies.purposes_section_description"
                 },
                 {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-label-subtle"
-                  },
-                  "text": "$t:admin.identity.policies.page_description"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 dark:disabled:hover:bg-indigo-500",
-                "disabled": "{{policies?.data?.abilities?.can_create !== true}}"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "params": {
-                    "actions": [
-                      {
-                        "handler": "setState",
-                        "params": {
-                          "target": "global",
-                          "identity_policy_form_modal": {
-                            "form": {
-                              "id": null,
-                              "key": "",
-                              "scope": "route",
-                              "target": "",
-                              "purpose": "sensitive_action",
-                              "provider_id": "",
-                              "grace_minutes": 0,
-                              "applies_to": "both",
-                              "fail_mode": "block",
-                              "enabled": true,
-                              "priority": 100,
-                              "conditions": {},
-                              "source_type": "admin"
-                            },
-                            "isNew": true,
-                            "errors": null,
-                            "isSaving": false
-                          }
-                        }
-                      },
-                      {
-                        "handler": "openModal",
-                        "target": "identity_policy_form_modal"
-                      }
-                    ]
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:admin.identity.policies.add_button"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "identity_purposes_card",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "mb-6 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "H4",
-              "props": {
-                "className": "text-primary text-sm font-semibold mb-2"
-              },
-              "text": "$t:admin.identity.policies.purposes_section_title"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex flex-wrap gap-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "iteration": {
-                    "source": "(identityPurposes?.data ?? []).filter(p => p.source_type === 'core')",
-                    "item_var": "purpose"
-                  },
-                  "props": {
-                    "className": "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300",
-                    "title": "{{(purpose.description ?? '') + ((purpose.allowed_channels ?? []).length > 0 ? ' [' + (purpose.allowed_channels ?? []).join(', ') + ']' : '')}}"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "font-mono text-[10px] text-indigo-600 dark:text-indigo-400"
-                      },
-                      "text": "{{purpose.id}}"
+                    "id": "page_header",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-6"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "{{purpose.label ?? purpose.id}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{(identityPurposes?.data ?? []).filter(p => p.source_type === 'core').length === 0}}",
-                  "props": {
-                    "className": "text-tertiary italic"
-                  },
-                  "text": "$t:admin.identity.policies.purposes_empty"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "filter_card",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex flex-col gap-2 md:flex-row md:items-center"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Select",
-              "props": {
-                "name": "filter.scope",
-                "value": "{{query.scope ?? ''}}",
-                "className": "text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
-                "options": [
-                  {
-                    "value": "",
-                    "label": "$t:admin.identity.policies.all_scopes"
-                  },
-                  {
-                    "value": "route",
-                    "label": "$t:admin.identity.policies.scope.route"
-                  },
-                  {
-                    "value": "hook",
-                    "label": "$t:admin.identity.policies.scope.hook"
-                  },
-                  {
-                    "value": "custom",
-                    "label": "$t:admin.identity.policies.scope.custom"
-                  }
-                ]
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "navigate",
-                  "params": {
-                    "path": "/admin/settings",
-                    "replace": true,
-                    "mergeQuery": true,
-                    "query": {
-                      "tab": "identity",
-                      "scope": "{{$event.target.value || undefined}}",
-                      "page": 1
-                    },
-                    "transition_overlay_target": "policy_table_card",
-                    "scroll": {
-                      "container": "#right_content_area",
-                      "to": "#identity_section_policies",
-                      "offset": 180,
-                      "block": "start"
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Select",
-              "props": {
-                "name": "filter.source_type",
-                "value": "{{query.source_type ?? ''}}",
-                "className": "text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
-                "options": [
-                  {
-                    "value": "",
-                    "label": "$t:admin.identity.policies.all_sources"
-                  },
-                  {
-                    "value": "core",
-                    "label": "$t:admin.identity.policies.source.core"
-                  },
-                  {
-                    "value": "module",
-                    "label": "$t:admin.identity.policies.source.module"
-                  },
-                  {
-                    "value": "plugin",
-                    "label": "$t:admin.identity.policies.source.plugin"
-                  },
-                  {
-                    "value": "admin",
-                    "label": "$t:admin.identity.policies.source.admin"
-                  }
-                ]
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "navigate",
-                  "params": {
-                    "path": "/admin/settings",
-                    "replace": true,
-                    "mergeQuery": true,
-                    "query": {
-                      "tab": "identity",
-                      "source_type": "{{$event.target.value || undefined}}",
-                      "page": 1
-                    },
-                    "transition_overlay_target": "policy_table_card",
-                    "scroll": {
-                      "container": "#right_content_area",
-                      "to": "#identity_section_policies",
-                      "offset": 180,
-                      "block": "start"
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Input",
-              "comment": "검색 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 검색어가 설정 폼 상태(filter.search)에 남아 초기화 후에도 입력창에 되살아나고, 설정 dirty 판정까지 오염시킨다.",
-              "props": {
-                "type": "text",
-                "name": "filter.search",
-                "autoBinding": false,
-                "value": "{{_local.identityPolicySearch ?? query.search ?? ''}}",
-                "placeholder": "$t:admin.identity.policies.search_placeholder",
-                "className": "md:flex-1"
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "identityPolicySearch": "{{$event.target.value}}"
-                  }
-                },
-                {
-                  "type": "keypress",
-                  "key": "Enter",
-                  "handler": "navigate",
-                  "params": {
-                    "path": "/admin/settings",
-                    "replace": true,
-                    "mergeQuery": true,
-                    "query": {
-                      "tab": "identity",
-                      "search": "{{$event.target.value || undefined}}",
-                      "page": 1
-                    },
-                    "transition_overlay_target": "policy_table_card",
-                    "scroll": {
-                      "container": "#right_content_area",
-                      "to": "#identity_section_policies",
-                      "offset": 180,
-                      "block": "start"
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
-              },
-              "actions": [
-                {
-                  "comment": "Enter 키와 동일하게 입력값을 쿼리로 실어 이동한다 — refetch 만 하면 입력 중인 검색어가 반영되지 않는다.",
-                  "type": "click",
-                  "handler": "navigate",
-                  "params": {
-                    "path": "/admin/settings",
-                    "replace": true,
-                    "mergeQuery": true,
-                    "query": {
-                      "tab": "identity",
-                      "search": "{{(_local.identityPolicySearch ?? query.search) || undefined}}",
-                      "page": 1
-                    },
-                    "transition_overlay_target": "policy_table_card",
-                    "scroll": {
-                      "container": "#right_content_area",
-                      "to": "#identity_section_policies",
-                      "offset": 180,
-                      "block": "start"
-                    }
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:common.search"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "if": "{{(query.scope ?? '') !== '' || (query.source_type ?? '') !== '' || (query.search ?? '') !== ''}}",
-              "props": {
-                "type": "button",
-                "className": "px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-              },
-              "actions": [
-                {
-                  "comment": "입력창의 미제출 검색어도 함께 비운다 — 상태만 남으면 초기화가 안 된 것으로 보인다.",
-                  "type": "click",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "identityPolicySearch": ""
-                  }
-                },
-                {
-                  "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
-                  "type": "click",
-                  "handler": "navigate",
-                  "params": {
-                    "path": "/admin/settings",
-                    "replace": true,
-                    "query": {
-                      "tab": "identity",
-                      "sub_tab": "policies"
-                    },
-                    "transition_overlay_target": "policy_table_card",
-                    "scroll": {
-                      "container": "#right_content_area",
-                      "to": "#identity_section_policies",
-                      "offset": 180,
-                      "block": "start"
-                    }
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:admin.identity.policies.reset_filters"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "policy_table_card",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "admin-card"
-          },
-          "children": [
-            {
-              "id": "policy_table_desktop",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "overflow-x-auto"
-              },
-              "responsive": {
-                "mobile": {
-                  "if": "{{false}}"
-                }
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Table",
-                  "props": {
-                    "className": "w-full text-sm"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Thead",
-                      "props": {
-                        "className": "bg-gray-50 dark:bg-gray-700/50"
-                      },
-                      "children": [
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Tr",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Th",
-                              "props": {
-                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
-                              },
-                              "text": "$t:admin.identity.policies.col.key"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Th",
-                              "props": {
-                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
-                              },
-                              "text": "$t:admin.identity.policies.col.scope"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Th",
-                              "props": {
-                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
-                              },
-                              "text": "$t:admin.identity.policies.col.target"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Th",
-                              "props": {
-                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
-                              },
-                              "text": "$t:admin.identity.policies.col.purpose"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Th",
-                              "props": {
-                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
-                              },
-                              "text": "$t:admin.identity.policies.col.grace_minutes"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Th",
-                              "props": {
-                                "className": "px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300"
-                              },
-                              "text": "$t:admin.identity.policies.col.priority"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Th",
-                              "props": {
-                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
-                              },
-                              "text": "$t:admin.identity.policies.col.enabled"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Th",
-                              "props": {
-                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
-                              },
-                              "text": "$t:admin.identity.policies.col.source_type"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Th",
-                              "props": {
-                                "className": "px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300"
-                              },
-                              "text": "$t:common.actions"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Tbody",
-                      "children": [
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "section-title"
+                                    },
+                                    "text": "$t:admin.identity.policies.page_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.identity.policies.page_description"
+                                }
+                            ]
+                        },
                         {
-                          "type": "basic",
-                          "name": "Tr",
-                          "iteration": {
-                            "source": "policies?.data?.data ?? []",
-                            "item_var": "policy"
-                          },
-                          "props": {
-                            "className": "border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Td",
-                              "props": {
-                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs"
-                              },
-                              "text": "{{policy.key ?? ''}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Td",
-                              "props": {
-                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300"
-                              },
-                              "text": "$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Td",
-                              "props": {
-                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs truncate max-w-xs"
-                              },
-                              "text": "{{policy.target ?? ''}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Td",
-                              "props": {
-                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300"
-                              },
-                              "text": "{{(identityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Td",
-                              "props": {
-                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300 text-right"
-                              },
-                              "text": "{{policy.grace_minutes ?? 0}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Td",
-                              "props": {
-                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300 text-right tabular-nums"
-                              },
-                              "text": "{{policy.priority ?? 100}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Td",
-                              "props": {
-                                "className": "px-3 py-2"
-                              },
-                              "children": [
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
                                 {
-                                  "type": "composite",
-                                  "name": "Toggle",
-                                  "props": {
-                                    "checked": "{{Boolean(policy.enabled)}}",
-                                    "size": "sm",
-                                    "disabled": "{{policy.abilities?.can_update !== true}}"
-                                  },
-                                  "actions": [
-                                    {
-                                      "type": "change",
-                                      "handler": "apiCall",
-                                      "auth_required": true,
-                                      "target": "/api/admin/identity/policies/{{policy.id}}",
-                                      "params": {
-                                        "method": "PUT",
-                                        "body": {
-                                          "enabled": "{{$event.target.checked}}"
-                                        }
-                                      },
-                                      "onSuccess": [
+                                    "comment": "정책 등록 창 열기 — **창 상태를 여기서 통째로 만들어 넣는다**(창은 자기 초기값이 없다).\n                 기본값도 이 자리에 있고, `isNew` 로 창이 등록 모드임을 안다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
                                         {
-                                          "handler": "parallel",
-                                          "actions": [
-                                            {
-                                              "handler": "toast",
-                                              "params": {
-                                                "type": "success",
-                                                "message": "{{$event.target.checked ? '$t:admin.identity.policies.enable_success' : '$t:admin.identity.policies.disable_success'}}"
-                                              }
-                                            },
-                                            {
-                                              "handler": "refetchDataSource",
-                                              "params": {
-                                                "dataSourceId": "policies"
-                                              }
-                                            }
-                                          ]
-                                        }
-                                      ],
-                                      "onError": [
-                                        {
-                                          "handler": "parallel",
-                                          "actions": [
-                                            {
-                                              "handler": "toast",
-                                              "params": {
-                                                "type": "error",
-                                                "message": "{{error.message ?? '$t:admin.identity.policies.toggle_failed'}}"
-                                              }
-                                            },
-                                            {
-                                              "handler": "refetchDataSource",
-                                              "params": {
-                                                "dataSourceId": "policies"
-                                              }
-                                            }
-                                          ]
-                                        }
-                                      ]
-                                    }
-                                  ]
-                                }
-                              ]
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Td",
-                              "props": {
-                                "className": "px-3 py-2"
-                              },
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Span",
-                                  "props": {
-                                    "className": "{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft'}}"
-                                  },
-                                  "text": "$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}"
-                                }
-                              ]
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Td",
-                              "props": {
-                                "className": "px-3 py-2 text-right whitespace-nowrap"
-                              },
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Button",
-                                  "props": {
-                                    "type": "button",
-                                    "className": "text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600",
-                                    "disabled": "{{policy.abilities?.can_update !== true}}"
-                                  },
-                                  "text": "$t:common.edit",
-                                  "actions": [
-                                    {
-                                      "type": "click",
-                                      "handler": "sequence",
-                                      "params": {
-                                        "actions": [
-                                          {
                                             "handler": "setState",
                                             "params": {
-                                              "target": "global",
-                                              "identity_policy_form_modal": {
-                                                "form": {
-                                                  "id": "{{policy.id}}",
-                                                  "key": "{{policy.key ?? ''}}",
-                                                  "scope": "{{policy.scope ?? 'route'}}",
-                                                  "target": "{{policy.target ?? ''}}",
-                                                  "purpose": "{{policy.purpose ?? 'sensitive_action'}}",
-                                                  "provider_id": "{{policy.provider_id ?? ''}}",
-                                                  "grace_minutes": "{{policy.grace_minutes ?? 0}}",
-                                                  "applies_to": "{{policy.applies_to ?? 'both'}}",
-                                                  "fail_mode": "{{policy.fail_mode ?? 'block'}}",
-                                                  "enabled": "{{Boolean(policy.enabled)}}",
-                                                  "priority": "{{policy.priority ?? 100}}",
-                                                  "conditions": "{{(policy.conditions ?? {})}}",
-                                                  "source_type": "{{policy.source_type ?? 'admin'}}",
-                                                  "user_overrides": "{{policy.user_overrides ?? []}}"
-                                                },
-                                                "isNew": false,
-                                                "errors": null,
-                                                "isSaving": false
-                                              }
+                                                "target": "global",
+                                                "identity_policy_form_modal": {
+                                                    "form": {
+                                                        "id": null,
+                                                        "key": "",
+                                                        "scope": "route",
+                                                        "target": "",
+                                                        "purpose": "sensitive_action",
+                                                        "provider_id": "",
+                                                        "grace_minutes": 0,
+                                                        "applies_to": "both",
+                                                        "fail_mode": "block",
+                                                        "enabled": true,
+                                                        "priority": 100,
+                                                        "conditions": {},
+                                                        "source_type": "admin"
+                                                    },
+                                                    "isNew": true,
+                                                    "errors": null,
+                                                    "isSaving": false
+                                                }
                                             }
-                                          },
-                                          {
+                                        },
+                                        {
                                             "handler": "openModal",
                                             "target": "identity_policy_form_modal"
-                                          }
-                                        ]
-                                      }
-                                    }
-                                  ]
-                                },
-                                {
-                                  "type": "basic",
-                                  "name": "Button",
-                                  "if": "{{policy.source_type === 'admin' && policy.abilities?.can_delete === true}}",
-                                  "props": {
-                                    "type": "button",
-                                    "className": "ml-2 text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                                  },
-                                  "actions": [
-                                    {
-                                      "type": "click",
-                                      "handler": "sequence",
-                                      "actions": [
-                                        {
-                                          "handler": "setState",
-                                          "params": {
-                                            "target": "global",
-                                            "identityPolicyDeleteId": "{{policy.id}}"
-                                          }
-                                        },
-                                        {
-                                          "handler": "openModal",
-                                          "target": "identity_policy_delete_modal"
                                         }
-                                      ]
-                                    }
-                                  ],
-                                  "children": [
-                                    {
-                                      "type": "basic",
-                                      "name": "Span",
-                                      "text": "$t:common.delete"
-                                    }
-                                  ]
+                                    ]
                                 }
-                              ]
-                            }
-                          ]
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 dark:disabled:hover:bg-indigo-500",
+                                "disabled": "{{policies?.data?.abilities?.can_create !== true}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.identity.policies.add_button"
+                                }
+                            ]
                         }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "policy_cards_mobile",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{false}}",
-              "responsive": {
-                "mobile": {
-                  "if": "{{true}}"
-                }
-              },
-              "props": {
-                "className": "divider-list"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "iteration": {
-                    "source": "policies?.data?.data ?? []",
-                    "item_var": "policy"
-                  },
-                  "props": {
-                    "className": "p-4 row-stack"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-start justify-between gap-3"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-1 min-w-0"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "props": {
-                                "className": "text-primary font-mono text-xs break-all"
-                              },
-                              "text": "{{policy.key ?? ''}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "props": {
-                                "className": "form-hint"
-                              },
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Span",
-                                  "text": "$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}"
-                                },
-                                {
-                                  "type": "basic",
-                                  "name": "Span",
-                                  "props": {
-                                    "className": "mx-1.5 text-gray-300 dark:text-gray-600"
-                                  },
-                                  "text": "·"
-                                },
-                                {
-                                  "type": "basic",
-                                  "name": "Span",
-                                  "props": {
-                                    "className": "font-mono break-all"
-                                  },
-                                  "text": "{{policy.target ?? ''}}"
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft flex-shrink-0' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft flex-shrink-0'}}"
-                          },
-                          "text": "$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-between gap-3"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "text-tertiary"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "{{(identityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "mx-1.5 text-gray-300 dark:text-gray-600"
-                              },
-                              "text": "·"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "$t:admin.identity.policies.col.grace_minutes"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "ml-1 font-medium text-gray-700 dark:text-gray-300"
-                              },
-                              "text": "{{policy.grace_minutes ?? 0}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "mx-1.5 text-gray-300 dark:text-gray-600"
-                              },
-                              "text": "·"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "$t:admin.identity.policies.col.priority"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "ml-1 font-medium text-gray-700 dark:text-gray-300 tabular-nums"
-                              },
-                              "text": "{{policy.priority ?? 100}}"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "composite",
-                          "name": "Toggle",
-                          "props": {
-                            "checked": "{{Boolean(policy.enabled)}}",
-                            "size": "sm",
-                            "disabled": "{{policy.abilities?.can_update !== true}}"
-                          },
-                          "actions": [
-                            {
-                              "type": "change",
-                              "handler": "apiCall",
-                              "auth_required": true,
-                              "target": "/api/admin/identity/policies/{{policy.id}}",
-                              "params": {
-                                "method": "PUT",
-                                "body": {
-                                  "enabled": "{{$event.target.checked}}"
-                                }
-                              },
-                              "onSuccess": [
-                                {
-                                  "handler": "parallel",
-                                  "actions": [
-                                    {
-                                      "handler": "toast",
-                                      "params": {
-                                        "type": "success",
-                                        "message": "{{$event.target.checked ? '$t:admin.identity.policies.enable_success' : '$t:admin.identity.policies.disable_success'}}"
-                                      }
-                                    },
-                                    {
-                                      "handler": "refetchDataSource",
-                                      "params": {
-                                        "dataSourceId": "policies"
-                                      }
-                                    }
-                                  ]
-                                }
-                              ],
-                              "onError": [
-                                {
-                                  "handler": "parallel",
-                                  "actions": [
-                                    {
-                                      "handler": "toast",
-                                      "params": {
-                                        "type": "error",
-                                        "message": "{{error.message ?? '$t:admin.identity.policies.toggle_failed'}}"
-                                      }
-                                    },
-                                    {
-                                      "handler": "refetchDataSource",
-                                      "params": {
-                                        "dataSourceId": "policies"
-                                      }
-                                    }
-                                  ]
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center justify-end gap-2"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Button",
-                          "props": {
-                            "type": "button",
-                            "className": "text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600",
-                            "disabled": "{{policy.abilities?.can_update !== true}}"
-                          },
-                          "text": "$t:common.edit",
-                          "actions": [
-                            {
-                              "type": "click",
-                              "handler": "sequence",
-                              "params": {
-                                "actions": [
-                                  {
-                                    "handler": "setState",
-                                    "params": {
-                                      "target": "global",
-                                      "identity_policy_form_modal": {
-                                        "form": {
-                                          "id": "{{policy.id}}",
-                                          "key": "{{policy.key ?? ''}}",
-                                          "scope": "{{policy.scope ?? 'route'}}",
-                                          "target": "{{policy.target ?? ''}}",
-                                          "purpose": "{{policy.purpose ?? 'sensitive_action'}}",
-                                          "provider_id": "{{policy.provider_id ?? ''}}",
-                                          "grace_minutes": "{{policy.grace_minutes ?? 0}}",
-                                          "applies_to": "{{policy.applies_to ?? 'both'}}",
-                                          "fail_mode": "{{policy.fail_mode ?? 'block'}}",
-                                          "enabled": "{{Boolean(policy.enabled)}}",
-                                          "priority": "{{policy.priority ?? 100}}",
-                                          "source_type": "{{policy.source_type ?? 'admin'}}",
-                                          "user_overrides": "{{policy.user_overrides ?? []}}"
-                                        },
-                                        "isNew": false,
-                                        "errors": null,
-                                        "isSaving": false
-                                      }
-                                    }
-                                  },
-                                  {
-                                    "handler": "openModal",
-                                    "target": "identity_policy_form_modal"
-                                  }
-                                ]
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Button",
-                          "if": "{{policy.source_type === 'admin' && policy.abilities?.can_delete === true}}",
-                          "props": {
-                            "type": "button",
-                            "className": "text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                          },
-                          "actions": [
-                            {
-                              "type": "click",
-                              "handler": "sequence",
-                              "actions": [
-                                {
-                                  "handler": "setState",
-                                  "params": {
-                                    "target": "global",
-                                    "identityPolicyDeleteId": "{{policy.id}}"
-                                  }
-                                },
-                                {
-                                  "handler": "openModal",
-                                  "target": "identity_policy_delete_modal"
-                                }
-                              ]
-                            }
-                          ],
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "$t:common.delete"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{(policies?.data?.data ?? []).length === 0}}",
-              "props": {
-                "className": "py-10 text-center text-label-subtle"
-              },
-              "text": "$t:admin.identity.policies.empty"
-            },
-            {
-              "id": "policy_pagination",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "footer-buttons-between"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-tertiary"
-                  },
-                  "text": "$t:admin.identity.policies.pagination_summary|total={{policies?.data?.meta?.total ?? 0}}|page={{policies?.data?.meta?.current_page ?? 1}}|last={{policies?.data?.meta?.last_page ?? '?'}}"
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-1"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "type": "button",
-                        "disabled": "{{(policies?.data?.meta?.current_page ?? 1) <= 1}}",
-                        "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      },
-                      "actions": [
-                        {
-                          "type": "click",
-                          "handler": "navigate",
-                          "params": {
-                            "path": "/admin/settings",
-                            "replace": true,
-                            "mergeQuery": true,
-                            "query": {
-                              "tab": "identity",
-                              "page": "{{Math.max(1, (policies?.data?.meta?.current_page ?? 1) - 1)}}"
-                            },
-                            "transition_overlay_target": "policy_table_card",
-                            "scroll": {
-                              "container": "#right_content_area",
-                              "to": "#identity_section_policies",
-                              "offset": 180,
-                              "block": "start"
-                            }
-                          }
-                        }
-                      ],
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:common.prev"
-                        }
-                      ]
+                    "id": "identity_purposes_card",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "mb-6 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200"
-                      },
-                      "text": "$t:admin.identity.policies.page_indicator|page={{policies?.data?.meta?.current_page ?? 1}}|last={{policies?.data?.meta?.last_page ?? '?'}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Button",
-                      "props": {
-                        "type": "button",
-                        "disabled": "{{!((policies?.data?.meta?.has_more_pages === true) || ((policies?.data?.meta?.current_page ?? 1) < (policies?.data?.meta?.last_page ?? 0)))}}",
-                        "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      },
-                      "actions": [
+                    "children": [
                         {
-                          "type": "click",
-                          "handler": "navigate",
-                          "params": {
-                            "path": "/admin/settings",
-                            "replace": true,
-                            "mergeQuery": true,
-                            "query": {
-                              "tab": "identity",
-                              "page": "{{policies?.data?.meta?.last_page ? Math.min(policies.data.meta.last_page, (policies?.data?.meta?.current_page ?? 1) + 1) : ((policies?.data?.meta?.current_page ?? 1) + 1)}}"
+                            "type": "basic",
+                            "name": "H4",
+                            "props": {
+                                "className": "text-primary text-sm font-semibold mb-2"
                             },
-                            "transition_overlay_target": "policy_table_card",
-                            "scroll": {
-                              "container": "#right_content_area",
-                              "to": "#identity_section_policies",
-                              "offset": 180,
-                              "block": "start"
-                            }
-                          }
-                        }
-                      ],
-                      "children": [
+                            "text": "$t:admin.identity.policies.purposes_section_title"
+                        },
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:common.next"
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "iteration": {
+                                        "source": "(identityPurposes?.data ?? []).filter(p => p.source_type === 'core')",
+                                        "item_var": "purpose"
+                                    },
+                                    "props": {
+                                        "className": "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300",
+                                        "title": "{{(purpose.description ?? '') + ((purpose.allowed_channels ?? []).length > 0 ? ' [' + (purpose.allowed_channels ?? []).join(', ') + ']' : '')}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "font-mono text-[10px] text-indigo-600 dark:text-indigo-400"
+                                            },
+                                            "text": "{{purpose.id}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "{{purpose.label ?? purpose.id}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{(identityPurposes?.data ?? []).filter(p => p.source_type === 'core').length === 0}}",
+                                    "props": {
+                                        "className": "text-tertiary italic"
+                                    },
+                                    "text": "$t:admin.identity.policies.purposes_empty"
+                                }
+                            ]
                         }
-                      ]
-                    }
-                  ]
+                    ]
+                },
+                {
+                    "id": "filter_card",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex flex-col gap-2 md:flex-row md:items-center"
+                    },
+                    "children": [
+                        {
+                            "comment": "필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 G2 실측). 값은 쿼리로만 다룬다.",
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "범위 필터 — 빈 값은 쿼리에서 빼고 페이지를 1로 되돌린다.\n                 대기 표시는 표 카드에만 걸고, 이동 뒤 이 구획 머리로 스크롤을 되돌린다.",
+                                    "type": "change",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/settings",
+                                        "replace": true,
+                                        "mergeQuery": true,
+                                        "transition_overlay_target": "policy_table_card",
+                                        "refetch_data_sources": "policies",
+                                        "query": {
+                                            "tab": "identity",
+                                            "scope": "{{$event.target.value || undefined}}",
+                                            "page": 1
+                                        },
+                                        "scroll": {
+                                            "container": "#right_content_area",
+                                            "to": "#identity_section_policies",
+                                            "offset": 180,
+                                            "block": "start"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "filter.scope",
+                                "autoBinding": false,
+                                "value": "{{query.scope ?? ''}}",
+                                "className": "text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
+                                "options": [
+                                    {
+                                        "value": "",
+                                        "label": "$t:admin.identity.policies.all_scopes"
+                                    },
+                                    {
+                                        "value": "route",
+                                        "label": "$t:admin.identity.policies.scope.route"
+                                    },
+                                    {
+                                        "value": "hook",
+                                        "label": "$t:admin.identity.policies.scope.hook"
+                                    },
+                                    {
+                                        "value": "custom",
+                                        "label": "$t:admin.identity.policies.scope.custom"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "출처 필터(코어/모듈/플러그인/운영자) — 범위 필터와 같은 형태다.",
+                                    "type": "change",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/settings",
+                                        "replace": true,
+                                        "mergeQuery": true,
+                                        "transition_overlay_target": "policy_table_card",
+                                        "refetch_data_sources": "policies",
+                                        "query": {
+                                            "tab": "identity",
+                                            "source_type": "{{$event.target.value || undefined}}",
+                                            "page": 1
+                                        },
+                                        "scroll": {
+                                            "container": "#right_content_area",
+                                            "to": "#identity_section_policies",
+                                            "offset": 180,
+                                            "block": "start"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "filter.source_type",
+                                "autoBinding": false,
+                                "value": "{{query.source_type ?? ''}}",
+                                "className": "text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
+                                "options": [
+                                    {
+                                        "value": "",
+                                        "label": "$t:admin.identity.policies.all_sources"
+                                    },
+                                    {
+                                        "value": "core",
+                                        "label": "$t:admin.identity.policies.source.core"
+                                    },
+                                    {
+                                        "value": "module",
+                                        "label": "$t:admin.identity.policies.source.module"
+                                    },
+                                    {
+                                        "value": "plugin",
+                                        "label": "$t:admin.identity.policies.source.plugin"
+                                    },
+                                    {
+                                        "value": "admin",
+                                        "label": "$t:admin.identity.policies.source.admin"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "comment": "검색 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 검색어가 설정 폼 상태(filter.search)에 남아 초기화 후에도 입력창에 되살아나고, 설정 dirty 판정까지 오염시킨다.",
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "검색어는 로컬 상태에만 담아 둔다(자동바인딩을 끈 대신 직접 받는다) — 실제 조회는 아래 Enter 블록이 이 값을 쿼리로 실을 때 일어난다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "identityPolicySearch": "{{$event.target.value}}"
+                                    }
+                                },
+                                {
+                                    "comment": "Enter 로 검색 — 입력값을 쿼리로 실어 옮긴다. 옆 검색 버튼도 입력 중인 검색어(identityPolicySearch)를 같은 방식으로 싣는다.",
+                                    "type": "keypress",
+                                    "key": "Enter",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/settings",
+                                        "replace": true,
+                                        "mergeQuery": true,
+                                        "transition_overlay_target": "policy_table_card",
+                                        "refetch_data_sources": "policies",
+                                        "query": {
+                                            "tab": "identity",
+                                            "search": "{{$event.target.value || undefined}}",
+                                            "page": 1
+                                        },
+                                        "scroll": {
+                                            "container": "#right_content_area",
+                                            "to": "#identity_section_policies",
+                                            "offset": 180,
+                                            "block": "start"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "name": "filter.search",
+                                "autoBinding": false,
+                                "value": "{{_local.identityPolicySearch ?? query.search ?? ''}}",
+                                "placeholder": "$t:admin.identity.policies.search_placeholder",
+                                "className": "input md:flex-1 md:min-w-[200px]"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "Enter 키와 동일하게 입력값을 쿼리로 실어 이동한다 — refetch 만 하면 입력 중인 검색어가 반영되지 않는다.",
+                                    "type": "click",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/settings",
+                                        "replace": true,
+                                        "mergeQuery": true,
+                                        "transition_overlay_target": "policy_table_card",
+                                        "refetch_data_sources": "policies",
+                                        "query": {
+                                            "tab": "identity",
+                                            "search": "{{(_local.identityPolicySearch ?? query.search) || undefined}}",
+                                            "page": 1
+                                        },
+                                        "scroll": {
+                                            "container": "#right_content_area",
+                                            "to": "#identity_section_policies",
+                                            "offset": 180,
+                                            "block": "start"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.search"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{(query.scope ?? '') !== '' || (query.source_type ?? '') !== '' || (query.search ?? '') !== ''}}",
+                            "actions": [
+                                {
+                                    "comment": "입력창의 미제출 검색어도 함께 비운다 — 상태만 남으면 초기화가 안 된 것으로 보인다.",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "identityPolicySearch": ""
+                                    }
+                                },
+                                {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
+                                    "type": "click",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/settings",
+                                        "replace": true,
+                                        "transition_overlay_target": "policy_table_card",
+                                        "refetch_data_sources": "policies",
+                                        "query": {
+                                            "tab": "identity",
+                                            "sub_tab": "policies"
+                                        },
+                                        "scroll": {
+                                            "container": "#right_content_area",
+                                            "to": "#identity_section_policies",
+                                            "offset": 180,
+                                            "block": "start"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.identity.policies.reset_filters"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "policy_table_card",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "admin-card"
+                    },
+                    "children": [
+                        {
+                            "id": "policy_table_desktop",
+                            "type": "basic",
+                            "name": "Div",
+                            "responsive": {
+                                "mobile": {
+                                    "if": "{{false}}"
+                                }
+                            },
+                            "props": {
+                                "className": "overflow-x-auto"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Table",
+                                    "props": {
+                                        "className": "w-full text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Thead",
+                                            "props": {
+                                                "className": "bg-gray-50 dark:bg-gray-700/50"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tr",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.identity.policies.col.key"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.identity.policies.col.scope"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.identity.policies.col.target"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.identity.policies.col.purpose"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.identity.policies.col.grace_minutes"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.identity.policies.col.priority"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.identity.policies.col.enabled"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.identity.policies.col.source_type"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:common.actions"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Tbody",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tr",
+                                                    "iteration": {
+                                                        "source": "policies?.data?.data ?? []",
+                                                        "item_var": "policy"
+                                                    },
+                                                    "props": {
+                                                        "className": "border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs"
+                                                            },
+                                                            "text": "{{policy.key ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs truncate max-w-xs"
+                                                            },
+                                                            "text": "{{policy.target ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "{{(identityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300 text-right"
+                                                            },
+                                                            "text": "{{policy.grace_minutes ?? 0}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300 text-right tabular-nums"
+                                                            },
+                                                            "text": "{{policy.priority ?? 100}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Toggle",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "사용 여부 토글(표 판). **성공이든 실패든 목록을 다시 받는다** — 실패 쪽에서도\n                           받아야 스위치가 눌린 모양으로 남지 않는다. 좁은 화면 카드 판에 같은 배선이 있다.",
+                                                                            "type": "change",
+                                                                            "handler": "apiCall",
+                                                                            "target": "/api/admin/identity/policies/{{policy.id}}",
+                                                                            "auth_required": true,
+                                                                            "params": {
+                                                                                "method": "PUT",
+                                                                                "body": {
+                                                                                    "enabled": "{{$event.target.checked}}"
+                                                                                }
+                                                                            },
+                                                                            "onSuccess": {
+                                                                                "handler": "parallel",
+                                                                                "actions": [
+                                                                                    {
+                                                                                        "handler": "toast",
+                                                                                        "params": {
+                                                                                            "type": "success",
+                                                                                            "message": "{{$event.target.checked ? '$t:admin.identity.policies.enable_success' : '$t:admin.identity.policies.disable_success'}}"
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "handler": "refetchDataSource",
+                                                                                        "params": {
+                                                                                            "dataSourceId": "policies"
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            "onError": {
+                                                                                "handler": "parallel",
+                                                                                "actions": [
+                                                                                    {
+                                                                                        "handler": "toast",
+                                                                                        "params": {
+                                                                                            "type": "error",
+                                                                                            "message": "{{error.message ?? '$t:admin.identity.policies.toggle_failed'}}"
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "handler": "refetchDataSource",
+                                                                                        "params": {
+                                                                                            "dataSourceId": "policies"
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "checked": "{{Boolean(policy.enabled)}}",
+                                                                        "size": "sm",
+                                                                        "disabled": "{{policy.abilities?.can_update !== true}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft'}}"
+                                                                    },
+                                                                    "text": "$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-3 py-2 text-right whitespace-nowrap"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "수정 창 열기 — 등록과 같은 창을 쓰되 `isNew=false` 로 넣고 행의 값을 그대로 채운다.\n     `source_type` 을 함께 담는 것이 중요하다 — 창이 그 값으로 키·범위·대상을 잠글지 정한다.",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "identity_policy_form_modal": {
+                                                                                            "form": {
+                                                                                                "id": "{{policy.id}}",
+                                                                                                "key": "{{policy.key ?? ''}}",
+                                                                                                "scope": "{{policy.scope ?? 'route'}}",
+                                                                                                "target": "{{policy.target ?? ''}}",
+                                                                                                "purpose": "{{policy.purpose ?? 'sensitive_action'}}",
+                                                                                                "provider_id": "{{policy.provider_id ?? ''}}",
+                                                                                                "grace_minutes": "{{policy.grace_minutes ?? 0}}",
+                                                                                                "applies_to": "{{policy.applies_to ?? 'both'}}",
+                                                                                                "fail_mode": "{{policy.fail_mode ?? 'block'}}",
+                                                                                                "enabled": "{{Boolean(policy.enabled)}}",
+                                                                                                "priority": "{{policy.priority ?? 100}}",
+                                                                                                "conditions": "{{(policy.conditions ?? {})}}",
+                                                                                                "source_type": "{{policy.source_type ?? 'admin'}}",
+                                                                                                "user_overrides": "{{policy.user_overrides ?? []}}"
+                                                                                            },
+                                                                                            "isNew": false,
+                                                                                            "errors": null,
+                                                                                            "isSaving": false
+                                                                                        }
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "identity_policy_form_modal"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600",
+                                                                        "disabled": "{{policy.abilities?.can_update !== true}}"
+                                                                    },
+                                                                    "text": "$t:common.edit"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{policy.source_type === 'admin' && policy.abilities?.can_delete === true}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "삭제 창 열기 — 운영자 정책에서만 이 버튼이 나온다(확장 선언 정책은 지울 수 없다).",
+                                                                            "type": "click",
+                                                                            "handler": "sequence",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "identityPolicyDeleteId": "{{policy.id}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "identity_policy_delete_modal"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "ml-2 text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "text": "$t:common.delete"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "policy_cards_mobile",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{false}}",
+                            "responsive": {
+                                "mobile": {
+                                    "if": "{{true}}"
+                                }
+                            },
+                            "props": {
+                                "className": "divider-list"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "policies?.data?.data ?? []",
+                                        "item_var": "policy"
+                                    },
+                                    "props": {
+                                        "className": "p-4 row-stack"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-start justify-between gap-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-1 min-w-0"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "text-primary font-mono text-xs break-all"
+                                                            },
+                                                            "text": "{{policy.key ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "form-hint"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "mx-1.5 text-gray-300 dark:text-gray-600"
+                                                                    },
+                                                                    "text": "·"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "font-mono break-all"
+                                                                    },
+                                                                    "text": "{{policy.target ?? ''}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft flex-shrink-0' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft flex-shrink-0'}}"
+                                                    },
+                                                    "text": "$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-between gap-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "text-tertiary"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{(identityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "mx-1.5 text-gray-300 dark:text-gray-600"
+                                                            },
+                                                            "text": "·"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.identity.policies.col.grace_minutes"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "ml-1 font-medium text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "{{policy.grace_minutes ?? 0}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "mx-1.5 text-gray-300 dark:text-gray-600"
+                                                            },
+                                                            "text": "·"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.identity.policies.col.priority"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "ml-1 font-medium text-gray-700 dark:text-gray-300 tabular-nums"
+                                                            },
+                                                            "text": "{{policy.priority ?? 100}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Toggle",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "사용 여부 토글(좁은 화면 카드 판) — 표 판과 같은 배선이다.",
+                                                            "type": "change",
+                                                            "handler": "apiCall",
+                                                            "target": "/api/admin/identity/policies/{{policy.id}}",
+                                                            "auth_required": true,
+                                                            "params": {
+                                                                "method": "PUT",
+                                                                "body": {
+                                                                    "enabled": "{{$event.target.checked}}"
+                                                                }
+                                                            },
+                                                            "onSuccess": {
+                                                                "handler": "parallel",
+                                                                "actions": [
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "success",
+                                                                            "message": "{{$event.target.checked ? '$t:admin.identity.policies.enable_success' : '$t:admin.identity.policies.disable_success'}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "refetchDataSource",
+                                                                        "params": {
+                                                                            "dataSourceId": "policies"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            "onError": {
+                                                                "handler": "parallel",
+                                                                "actions": [
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{error.message ?? '$t:admin.identity.policies.toggle_failed'}}"
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "refetchDataSource",
+                                                                        "params": {
+                                                                            "dataSourceId": "policies"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "checked": "{{Boolean(policy.enabled)}}",
+                                                        "size": "sm",
+                                                        "disabled": "{{policy.abilities?.can_update !== true}}"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center justify-end gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "수정 창 열기 — 등록과 같은 창을 쓰되 `isNew=false` 로 넣고 행의 값을 그대로 채운다.\n     `source_type` 을 함께 담는 것이 중요하다 — 창이 그 값으로 키·범위·대상을 잠글지 정한다.",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "identity_policy_form_modal": {
+                                                                            "form": {
+                                                                                "id": "{{policy.id}}",
+                                                                                "key": "{{policy.key ?? ''}}",
+                                                                                "scope": "{{policy.scope ?? 'route'}}",
+                                                                                "target": "{{policy.target ?? ''}}",
+                                                                                "purpose": "{{policy.purpose ?? 'sensitive_action'}}",
+                                                                                "provider_id": "{{policy.provider_id ?? ''}}",
+                                                                                "grace_minutes": "{{policy.grace_minutes ?? 0}}",
+                                                                                "applies_to": "{{policy.applies_to ?? 'both'}}",
+                                                                                "fail_mode": "{{policy.fail_mode ?? 'block'}}",
+                                                                                "enabled": "{{Boolean(policy.enabled)}}",
+                                                                                "priority": "{{policy.priority ?? 100}}",
+                                                                                "source_type": "{{policy.source_type ?? 'admin'}}",
+                                                                                "user_overrides": "{{policy.user_overrides ?? []}}"
+                                                                            },
+                                                                            "isNew": false,
+                                                                            "errors": null,
+                                                                            "isSaving": false
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "identity_policy_form_modal"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600",
+                                                        "disabled": "{{policy.abilities?.can_update !== true}}"
+                                                    },
+                                                    "text": "$t:common.edit"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "if": "{{policy.source_type === 'admin' && policy.abilities?.can_delete === true}}",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "삭제 창 열기(좁은 화면 카드 판) — 표 판과 같은 배선이다.",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "identityPolicyDeleteId": "{{policy.id}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "openModal",
+                                                                    "target": "identity_policy_delete_modal"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:common.delete"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(policies?.data?.data ?? []).length === 0}}",
+                            "props": {
+                                "className": "py-10 text-center text-label-subtle"
+                            },
+                            "text": "$t:admin.identity.policies.empty"
+                        },
+                        {
+                            "id": "policy_pagination",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "footer-buttons-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-tertiary"
+                                    },
+                                    "text": "$t:admin.identity.policies.pagination_summary|total={{policies?.data?.meta?.total ?? 0}}|page={{policies?.data?.meta?.current_page ?? 1}}|last={{policies?.data?.meta?.last_page ?? '?'}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center gap-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "이전 페이지 — 페이지네이션 컴포넌트가 아니라 손으로 만든 버튼이라 **여기서 하한을\n                     지킨다**(1 아래로 내려가지 않게). 버튼 자체도 첫 페이지에서 잠긴다.",
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/settings",
+                                                        "replace": true,
+                                                        "mergeQuery": true,
+                                                        "transition_overlay_target": "policy_table_card",
+                                                        "refetch_data_sources": "policies",
+                                                        "query": {
+                                                            "tab": "identity",
+                                                            "page": "{{Math.max(1, (policies?.data?.meta?.current_page ?? 1) - 1)}}"
+                                                        },
+                                                        "scroll": {
+                                                            "container": "#right_content_area",
+                                                            "to": "#identity_section_policies",
+                                                            "offset": 180,
+                                                            "block": "start"
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "disabled": "{{(policies?.data?.meta?.current_page ?? 1) <= 1}}",
+                                                "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:common.prev"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200"
+                                            },
+                                            "text": "$t:admin.identity.policies.page_indicator|page={{policies?.data?.meta?.current_page ?? 1}}|last={{policies?.data?.meta?.last_page ?? '?'}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "다음 페이지 — 이전 버튼과 대칭으로 마지막 페이지를 상한으로 지킨다.",
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/admin/settings",
+                                                        "replace": true,
+                                                        "mergeQuery": true,
+                                                        "transition_overlay_target": "policy_table_card",
+                                                        "refetch_data_sources": "policies",
+                                                        "query": {
+                                                            "tab": "identity",
+                                                            "page": "{{policies?.data?.meta?.last_page ? Math.min(policies.data.meta.last_page, (policies?.data?.meta?.current_page ?? 1) + 1) : ((policies?.data?.meta?.current_page ?? 1) + 1)}}"
+                                                        },
+                                                        "scroll": {
+                                                            "container": "#right_content_area",
+                                                            "to": "#identity_section_policies",
+                                                            "offset": 180,
+                                                            "block": "start"
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "disabled": "{{!((policies?.data?.meta?.has_more_pages === true) || ((policies?.data?.meta?.current_page ?? 1) < (policies?.data?.meta?.last_page ?? 0)))}}",
+                                                "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:common.next"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

@@ -56,13 +56,14 @@
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
 | `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
-| `resources/layouts/` | 레이아웃 JSON | `php artisan plugin:update sirsoft-marketing --force` (빌드 불필요) |
+| `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-marketing --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-marketing --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-marketing --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-marketing --force` |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-marketing --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
@@ -70,9 +71,9 @@
 ## 3. 핵심 흐름
 
 <!-- @intent START -->
-**회원가입 시 동의 수집**: 템플릿의 가입 폼이 `user-marketing-register.json` 조각을 그 자리에
+**회원가입 시 동의 수집**: 템플릿의 가입 폼이 `user-marketing-register.g7.html` 조각을 그 자리에
 받아 동의 체크박스를 그림 → 제출 → 코어 가입 흐름에서 `core.auth.register_validation_rules`
-필터가 동의 항목의 검증 규칙을 더함 → 가입 완료 후 `core.auth.register` 액션에서
+필터가 동의 항목의 검증 규칙을 더함 → 가입 완료 후 `core.auth.after_register` 액션에서(동의 값은 훅 인자 `registration_data` 에서 읽음)
 `MarketingConsentListener::afterRegister()` 가 동의 값을 `user_marketing_consents` 에 기록하고
 이력을 남깁니다. **코어 가입 코드는 이 플러그인을 알지 못합니다.**
 
@@ -136,7 +137,7 @@
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-marketing` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃 JSON 변경 시 빌드 없이 update 만 — 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 동의 상태를 바꾸는 경로를 추가했다면 이력 적재(`user_marketing_consent_histories`)가 같은 트랜잭션에 있는지 확인
 - [ ] 코어 회원·가입 훅 11종 중 하나라도 이름·페이로드가 바뀌면 이 플러그인이 조용히 끊기므로, 코어 회원 흐름 변경 시 함께 확인
@@ -164,10 +165,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 5개 | `plugins/_bundled/sirsoft-marketing/tests` |
-| Vitest | 2개 | `vitest.config.ts` |
-| Playwright | 0개 | — |
-| 시나리오 매니페스트 | 0개 | — |
+| PHPUnit | 8개 | `plugins/_bundled/sirsoft-marketing/tests` |
+| Vitest | 9개 | `vitest.config.ts` |
+| Playwright | 1개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 11개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -177,6 +178,9 @@ php vendor/bin/phpunit plugins/_bundled/sirsoft-marketing/tests --filter='<대�
 
 # Vitest (확장 디렉토리에서) (PowerShell)
 cd plugins/_bundled/sirsoft-marketing && powershell -Command "npm run test:run -- <대상>"
+
+# Playwright E2E (확장 디렉토리에서) (Bash)
+cd plugins/_bundled/sirsoft-marketing && npm run test:e2e -- specs/<대상>.spec.ts
 
 ```
 
@@ -198,3 +202,27 @@ cd plugins/_bundled/sirsoft-marketing && powershell -Command "npm run test:run -
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
+
+## 확장 조각의 CSS 클래스 규약
+
+resources/extensions/ 아래 의 조각은 **다른 패키지의 화면 안에서** 그려진다. 그래서 여기 쓰는
+클래스는 그 화면을 소유한 **템플릿의 CSS 에 실재해야** 한다.
+
+두 가지를 지킨다.
+
+1. **템플릿의 의미 클래스를 쓰지 않는다.** `flex-start` · `text-heading` · `section-heading-md`
+   같은 이름의 규칙은 `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `@layer components` 에만
+   있다. 사용자 템플릿(`sirsoft-basic`)에는 그 규칙이 없어 `display:flex` 같은 기본 배치까지
+   통째로 사라진다. 평범한 Tailwind 유틸로 쓴다(`flex items-start`).
+   슬롯 확장(`extension-point=`)은 한 조각이 관리자·사용자 양쪽에 들어가므로, 어느 한쪽의
+   어휘를 쓰면 **반드시** 다른 쪽이 깨진다.
+
+2. **새 유틸은 safelist 에 실린다.** 두 템플릿 모두 Tailwind 가 레이아웃을 스캔하지 않는다 —
+   `sirsoft-admin_basic` 은 `templates/_bundled/sirsoft-admin_basic/scripts/extract-safelist.cjs` 가(확장 조각 포함) 자동 생성하고,
+   `sirsoft-basic` 은 `templates/_bundled/sirsoft-basic/src/styles/safelist.txt` 를 손으로 단다. 새 클래스를 쓴 뒤에는
+   `php artisan template:build <템플릿>` 로 CSS 를 다시 만든다.
+
+이 규약을 어겨도 **빌드는 성공하고 경고도 없으며 테스트도 전부 초록이다** — 사람이 브라우저를
+열어야만 드러난다(2026-09-21, 마이페이지 「내 정보 수정」의 확장 카드에서 체크박스가 설명 위로
+떨어져 있었다). 그래서 확장 조각이 쓰는 클래스가 대상 템플릿의 CSS 에 실제로 만들어졌는지를
+정적 검사가 대조한다.

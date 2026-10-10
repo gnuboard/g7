@@ -1,1008 +1,1025 @@
 {
-  "layout_name": "panel_form",
-  "id": "form_panel",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{_global.panelMode === 'create' || _global.panelMode === 'edit'}}",
-  "children": [
-    {
-      "id": "form_header",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "px-4 panel-header flex-between"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "if": "{{_global.panelMode === 'create'}}",
-          "props": {
-            "className": "text-heading"
-          },
-          "text": "$t:admin.menus.new_menu_title"
-        },
-        {
-          "type": "basic",
-          "name": "H3",
-          "if": "{{_global.panelMode === 'edit'}}",
-          "props": {
-            "className": "text-heading"
-          },
-          "text": "$t:admin.menus.edit_menu_title"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-center gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "px-3 py-1.5 text-label hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "panelMode": "view",
-                    "selectedMenuId": null,
-                    "selectedMenu": null,
-                    "formErrors": null
-                  }
-                }
-              ],
-              "text": "$t:common.cancel"
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "submit",
-                "form": "menu_form",
-                "disabled": "{{_global.isSaving}}",
-                "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "if": "{{!_global.isSaving}}",
-                  "props": {
-                    "name": "save",
-                    "size": "sm"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "if": "{{_global.isSaving}}",
-                  "props": {
-                    "name": "spinner",
-                    "size": "sm",
-                    "spin": true
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{!_global.isSaving}}",
-                  "text": "$t:common.save"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_global.isSaving}}",
-                  "text": "$t:common.saving"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "메뉴를 새로 만들거나 고치는 패널. 만들기와 고치기가 **같은 조각**이고 패널 모드 하나로 갈린다\n  — 제목·보낼 곳·방식·성공 문구가 모두 그 값을 본다.\n  값을 담는 자리(`formData`)가 전역인 것은 보기 패널이 편집으로 넘길 때 그 자리를 미리 채워 주기\n  때문이다. 그래서 이 조각은 열릴 때 서버를 부르지 않는다.",
+    "meta": {
+        "is_partial": true
     },
-    {
-      "id": "validation_error",
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_global.formErrors}}",
-      "props": {
-        "className": "alert-danger"
-      },
-      "children": [
+    "layout_name": "panel_form",
+    "id": "form_panel",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_global.panelMode === 'create' || _global.panelMode === 'edit'}}",
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex gap-3"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "triangle-exclamation",
-                "size": "lg",
-                "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
-              }
+            "id": "form_header",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "px-4 panel-header flex-between"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "H3",
-                  "props": {
-                    "className": "text-error-strong"
-                  },
-                  "text": "$t:admin.menus.form.validation_error"
+                    "type": "basic",
+                    "name": "H3",
+                    "if": "{{_global.panelMode === 'create'}}",
+                    "props": {
+                        "className": "text-heading"
+                    },
+                    "text": "$t:admin.menus.new_menu_title"
                 },
                 {
-                  "type": "basic",
-                  "name": "P",
-                  "if": "{{typeof _global.formErrors === 'string'}}",
-                  "props": {
-                    "className": "text-error-soft mt-2"
-                  },
-                  "text": "{{_global.formErrors}}"
+                    "type": "basic",
+                    "name": "H3",
+                    "if": "{{_global.panelMode === 'edit'}}",
+                    "props": {
+                        "className": "text-heading"
+                    },
+                    "text": "$t:admin.menus.edit_menu_title"
                 },
                 {
-                  "type": "basic",
-                  "name": "Ul",
-                  "if": "{{typeof _global.formErrors === 'object' && Object.keys(_global.formErrors).length > 0}}",
-                  "props": {
-                    "className": "mt-2 list-disc list-inside space-y-1"
-                  },
-                  "iteration": {
-                    "source": "Object.entries(_global.formErrors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
-                    "item_var": "message"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Li",
-                      "props": {
-                        "className": "text-error-soft"
-                      },
-                      "text": "{{message}}"
-                    }
-                  ]
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "편집 취소 — 판 상태를 먼저 「고른 것 없음」으로 되돌린 뒤 주소를 그 상태에 맞춘다. 상태와 주소가 함께 풀려야\n                 새로고침이 취소한 편집 폼을 되살리지 않는다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "comment": "취소는 고른 항목까지 비워 보기 패널이 아니라 「고른 것 없음」 안내로 돌아간다 — 고치던 것이 왼쪽 목록에서도 풀린다.",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "panelMode": "view",
+                                                "selectedMenuId": null,
+                                                "selectedMenu": null,
+                                                "formErrors": null
+                                            }
+                                        },
+                                        {
+                                            "comment": "고른 메뉴가 풀렸으니 주소의 menu·mode 도 지운다 — 남겨 두면 새로고침이 편집 폼을 다시 연다. 왼쪽 목록 조건은 그대로 둔다.",
+                                            "handler": "replaceUrl",
+                                            "params": {
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "menu": "",
+                                                    "mode": ""
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-3 py-1.5 text-label hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            },
+                            "text": "$t:common.cancel"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "props": {
+                                "type": "submit",
+                                "form": "menu_form",
+                                "disabled": "{{_global.isSaving}}",
+                                "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{!_global.isSaving}}",
+                                    "props": {
+                                        "name": "save",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.isSaving}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "size": "sm",
+                                        "spin": true
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!_global.isSaving}}",
+                                    "text": "$t:common.save"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_global.isSaving}}",
+                                    "text": "$t:common.saving"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ],
-              "props": {
-              }
-            }
-          ]
+            ]
+        },
+        {
+            "id": "validation_error",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.formErrors}}",
+            "props": {
+                "className": "alert-danger"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "size": "lg",
+                                "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "text-error-strong"
+                                    },
+                                    "text": "$t:admin.menus.form.validation_error"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{typeof _global.formErrors === 'string'}}",
+                                    "props": {
+                                        "className": "text-error-soft mt-2"
+                                    },
+                                    "text": "{{_global.formErrors}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ul",
+                                    "if": "{{typeof _global.formErrors === 'object' && Object.keys(_global.formErrors).length > 0}}",
+                                    "iteration": {
+                                        "source": "Object.entries(_global.formErrors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
+                                        "item_var": "message"
+                                    },
+                                    "props": {
+                                        "className": "mt-2 list-disc list-inside space-y-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "props": {
+                                                "className": "text-error-soft"
+                                            },
+                                            "text": "{{message}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "menu_form",
+            "type": "basic",
+            "name": "Form",
+            "dataKey": "_global.formData",
+            "trackChanges": true,
+            "actions": [
+                {
+                    "comment": "저장한 뒤 목록과 사이드바를 다시 받고, 응답으로 온 항목을 그대로 고른 상태로 삼아 보기 패널로 넘어간다 — 새로 만든 메뉴도 곧바로 그 자리에서 이어 볼 수 있다.",
+                    "type": "submit",
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "isSaving": true,
+                                "formErrors": null
+                            }
+                        },
+                        {
+                            "handler": "apiCall",
+                            "target": "{{_global.panelMode === 'create' ? '/api/admin/menus' : '/api/admin/menus/' + _global.selectedMenuId}}",
+                            "auth_required": true,
+                            "params": {
+                                "method": "{{_global.panelMode === 'create' ? 'POST' : 'PUT'}}",
+                                "body": {
+                                    "name": "{{_global.formData.name}}",
+                                    "slug": "{{_global.formData.slug}}",
+                                    "url": "{{_global.formData.url}}",
+                                    "icon": "{{_global.formData.icon}}",
+                                    "parent_id": "{{_global.formData.parent_id}}",
+                                    "extension_type": "{{_global.formData.extension_type}}",
+                                    "extension_identifier": "{{_global.formData.extension_identifier}}",
+                                    "is_active": "{{_global.formData.is_active}}",
+                                    "roles": "{{_global.formData.roles}}"
+                                }
+                            },
+                            "onSuccess": {
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "{{_global.panelMode === 'create' ? $t:admin.menus.messages.created : $t:admin.menus.messages.updated}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "menus"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "admin_menu",
+                                            "sync": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isSaving": false,
+                                            "panelMode": "view",
+                                            "selectedMenuId": "{{result.data.id}}",
+                                            "selectedMenu": "{{result.data}}",
+                                            "formErrors": null
+                                        }
+                                    },
+                                    {
+                                        "comment": "판이 보기 모드로 넘어갔으니 주소도 mode=view 로 맞춘다(슬러그를 바꿨거나 새로 만든 메뉴도 그 메뉴를 가리키게). 남은 mode=edit 는 새로고침 때 저장한 메뉴의 편집 폼을 다시 연다.",
+                                        "handler": "replaceUrl",
+                                        "params": {
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "menu": "{{result.data.slug}}",
+                                                "mode": "view"
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            "onError": {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isSaving": false,
+                                    "formErrors": "{{error.errors}}"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ],
+            "props": {
+                "id": "menu_form",
+                "className": "p-4 space-y-6"
+            },
+            "children": [
+                {
+                    "id": "form_basic_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "id": "form_basic_title",
+                            "type": "basic",
+                            "name": "H4",
+                            "props": {
+                                "className": "text-table-header"
+                            },
+                            "text": "$t:admin.menus.info.basic"
+                        },
+                        {
+                            "id": "form_name_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "id": "form_name_label",
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.menus.form.name"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-red-500 ml-1"
+                                                    },
+                                                    "text": "*"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "form_name_input",
+                                            "type": "composite",
+                                            "name": "MultilingualInput",
+                                            "props": {
+                                                "name": "name",
+                                                "placeholder": "$t:admin.menus.form.name_placeholder",
+                                                "maxLength": 100,
+                                                "required": true,
+                                                "layout": "tabs"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_global.formErrors?.name}}",
+                                            "props": {
+                                                "className": "text-red-500 text-xs"
+                                            },
+                                            "text": "{{_global.formErrors?.name?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "form_slug_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "id": "form_slug_label",
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.menus.form.slug"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-red-500 ml-1"
+                                                    },
+                                                    "text": "*"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "form_slug_input",
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "text",
+                                                "name": "slug",
+                                                "className": "input font-mono"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_global.formErrors?.slug}}",
+                                            "props": {
+                                                "className": "text-red-500 text-xs"
+                                            },
+                                            "text": "{{_global.formErrors?.slug?.[0] ?? ''}}"
+                                        },
+                                        {
+                                            "id": "form_slug_hint",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!_global.formErrors?.slug}}",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "$t:admin.menus.form.slug_hint"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "form_url_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "id": "form_url_label",
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.menus.form.url"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "form_url_input",
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "text",
+                                                "name": "url",
+                                                "placeholder": "$t:admin.menus.form.url_placeholder",
+                                                "className": "input font-mono"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_global.formErrors?.url}}",
+                                            "props": {
+                                                "className": "text-red-500 text-xs"
+                                            },
+                                            "text": "{{_global.formErrors?.url?.[0] ?? ''}}"
+                                        },
+                                        {
+                                            "id": "form_url_hint",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!_global.formErrors?.url}}",
+                                            "props": {
+                                                "className": "text-tertiary"
+                                            },
+                                            "text": "$t:admin.menus.form.url_hint"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "form_icon_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "id": "form_icon_label",
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:admin.menus.form.icon"
+                                        },
+                                        {
+                                            "id": "form_icon_select",
+                                            "type": "composite",
+                                            "name": "IconSelect",
+                                            "props": {
+                                                "name": "icon",
+                                                "placeholder": "$t:admin.menus.form.icon_placeholder",
+                                                "searchPlaceholder": "$t:admin.menus.form.icon_search_placeholder",
+                                                "noResultsText": "$t:admin.menus.form.icon_no_results"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "form_hierarchy_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "id": "form_hierarchy_title",
+                                    "type": "basic",
+                                    "name": "H4",
+                                    "props": {
+                                        "className": "text-table-header"
+                                    },
+                                    "text": "$t:admin.menus.info.hierarchy"
+                                },
+                                {
+                                    "id": "form_parent_field",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "id": "form_parent_label",
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "form-label"
+                                                    },
+                                                    "text": "$t:admin.menus.form.parent"
+                                                },
+                                                {
+                                                    "id": "form_parent_select",
+                                                    "type": "basic",
+                                                    "name": "Select",
+                                                    "props": {
+                                                        "name": "parent_id",
+                                                        "className": "select"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "form_parent_option_top",
+                                                            "type": "basic",
+                                                            "name": "Option",
+                                                            "props": {
+                                                                "value": ""
+                                                            },
+                                                            "text": "$t:admin.menus.form.parent_top_level"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Option",
+                                                            "iteration": {
+                                                                "source": "(menus?.data?.data ?? []).filter(m => _global.panelMode === 'create' || m.id !== _global.selectedMenuId)",
+                                                                "item_var": "parentMenu"
+                                                            },
+                                                            "props": {
+                                                                "value": "{{parentMenu.id}}"
+                                                            },
+                                                            "text": "{{$localized(parentMenu.name)}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_global.formErrors?.parent_id}}",
+                                                    "props": {
+                                                        "className": "text-red-500 text-xs"
+                                                    },
+                                                    "text": "{{_global.formErrors?.parent_id?.[0] ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "form_custom_menu_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.panelMode === 'create'}}",
+                    "children": [
+                        {
+                            "id": "form_custom_menu_field",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "id": "form_custom_menu_label",
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:admin.menus.form.custom_menu"
+                                        },
+                                        {
+                                            "id": "form_custom_menu_select",
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "actions": [
+                                                {
+                                                    "comment": "확장이 내건 화면을 고르면 **주소 칸도 함께 채워 준다** — 고른 항목에 붙어 온 주소를 쓰고, 없으면 적어 둔 것을 그대로 둔다. 새 메뉴를 만들 때만 나오는 칸이다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "formData": "{{Object.assign({}, _global.formData, {custom_menu_key: $event.target.value || null, url: $event.target.selectedOptions[0]?.dataset?.url || _global.formData.url})}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "name": "custom_menu_key",
+                                                "className": "select"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "form_custom_menu_option_none",
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": ""
+                                                    },
+                                                    "text": "$t:admin.menus.form.custom_menu_none"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Optgroup",
+                                                    "iteration": {
+                                                        "source": "Object.entries(modules?.data?.custom_menus ?? {}).map(([id, val]) => ({ id, name: val.module_name, custom_menus: val.menus ?? [] })).filter(m => m.custom_menus.length > 0)",
+                                                        "item_var": "moduleItem"
+                                                    },
+                                                    "props": {
+                                                        "label": "{{moduleItem.name}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Option",
+                                                            "iteration": {
+                                                                "source": "{{moduleItem.custom_menus ?? []}}",
+                                                                "item_var": "customMenu"
+                                                            },
+                                                            "props": {
+                                                                "value": "{{customMenu.key}}",
+                                                                "data-module-id": "{{moduleItem.id}}",
+                                                                "data-url": "{{customMenu.url}}"
+                                                            },
+                                                            "text": "{{customMenu.name}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "form_affiliation_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.panelMode === 'edit' && _global.selectedMenu?.extension_type != null && _global.selectedMenu?.extension_type !== 'core'}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "id": "form_affiliation_title",
+                                    "type": "basic",
+                                    "name": "H4",
+                                    "props": {
+                                        "className": "text-table-header"
+                                    },
+                                    "text": "$t:admin.menus.info.affiliation"
+                                },
+                                {
+                                    "id": "form_module_field",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "id": "form_module_label",
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "form-label"
+                                                    },
+                                                    "text": "$t:admin.menus.info.module"
+                                                },
+                                                {
+                                                    "id": "form_module_input",
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "props": {
+                                                        "type": "text",
+                                                        "value": "{{_global.selectedMenu?.module?.name}}",
+                                                        "disabled": true,
+                                                        "className": "input"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "form_module_hint",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-tertiary"
+                                    },
+                                    "text": "$t:admin.menus.form.module_readonly_hint"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "form_roles_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "id": "form_roles_title",
+                                    "type": "basic",
+                                    "name": "H4",
+                                    "props": {
+                                        "className": "text-table-header"
+                                    },
+                                    "text": "$t:admin.menus.info.access_permission"
+                                },
+                                {
+                                    "id": "form_roles_field",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "id": "form_roles_label",
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "form-label"
+                                                    },
+                                                    "text": "$t:admin.menus.form.roles"
+                                                },
+                                                {
+                                                    "id": "form_roles_input",
+                                                    "type": "composite",
+                                                    "name": "TagInput",
+                                                    "props": {
+                                                        "name": "roles",
+                                                        "placeholder": "$t:admin.menus.form.roles_placeholder",
+                                                        "noOptionsMessage": "$t:admin.menus.form.roles_no_options",
+                                                        "options": "{{(roles?.data?.data ?? []).map(r => ({ value: r.id, label: $localized(r.name) }))}}"
+                                                    }
+                                                },
+                                                {
+                                                    "id": "form_roles_hint",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-tertiary"
+                                                    },
+                                                    "text": "$t:admin.menus.form.roles_hint"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "form_status_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "id": "form_status_title",
+                                    "type": "basic",
+                                    "name": "H4",
+                                    "props": {
+                                        "className": "text-table-header"
+                                    },
+                                    "text": "$t:admin.menus.info.status"
+                                },
+                                {
+                                    "id": "form_toggle",
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "label": "$t:admin.menus.form.is_active",
+                                        "name": "is_active"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "form_meta_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.panelMode === 'edit'}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "id": "form_meta_title",
+                                    "type": "basic",
+                                    "name": "H4",
+                                    "props": {
+                                        "className": "text-table-header"
+                                    },
+                                    "text": "$t:admin.menus.info.meta"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "space-y-2 text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400 w-20"
+                                                    },
+                                                    "text": "$t:admin.menus.info.creator"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-primary font-medium"
+                                                            },
+                                                            "text": "{{_global.selectedMenu?.creator?.name ?? 'System'}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{_global.selectedMenu?.creator?.email}}",
+                                                            "props": {
+                                                                "className": "block text-tertiary"
+                                                            },
+                                                            "text": "{{_global.selectedMenu?.creator?.email}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400 w-20"
+                                                    },
+                                                    "text": "$t:admin.menus.info.created_at"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center text-primary gap-1.5"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "calendar",
+                                                                "size": "sm",
+                                                                "className": "text-gray-400 dark:text-gray-500"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{_global.selectedMenu?.created_at}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400 w-20"
+                                                    },
+                                                    "text": "$t:admin.menus.info.updated_at"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center text-primary gap-1.5"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "clock",
+                                                                "size": "sm",
+                                                                "className": "text-gray-400 dark:text-gray-500"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{_global.selectedMenu?.updated_at}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    },
-    {
-      "id": "menu_form",
-      "type": "basic",
-      "name": "Form",
-      "dataKey": "_global.formData",
-      "trackChanges": true,
-      "props": {
-        "id": "menu_form",
-        "className": "p-4 space-y-6"
-      },
-      "actions": [
-        {
-          "type": "submit",
-          "handler": "sequence",
-          "actions": [
-            {
-              "handler": "setState",
-              "params": {
-                "target": "global",
-                "isSaving": true,
-                "formErrors": null
-              }
-            },
-            {
-              "handler": "apiCall",
-              "auth_required": true,
-              "target": "{{_global.panelMode === 'create' ? '/api/admin/menus' : '/api/admin/menus/' + _global.selectedMenuId}}",
-              "params": {
-                "method": "{{_global.panelMode === 'create' ? 'POST' : 'PUT'}}",
-                "body": {
-                  "name": "{{_global.formData.name}}",
-                  "slug": "{{_global.formData.slug}}",
-                  "url": "{{_global.formData.url}}",
-                  "icon": "{{_global.formData.icon}}",
-                  "parent_id": "{{_global.formData.parent_id}}",
-                  "extension_type": "{{_global.formData.extension_type}}",
-                  "extension_identifier": "{{_global.formData.extension_identifier}}",
-                  "is_active": "{{_global.formData.is_active}}",
-                  "roles": "{{_global.formData.roles}}"
-                }
-              },
-              "onSuccess": [
-                {
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "{{_global.panelMode === 'create' ? $t:admin.menus.messages.created : $t:admin.menus.messages.updated}}"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "menus"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "admin_menu",
-                        "sync": true
-                      }
-                    },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isSaving": false,
-                        "panelMode": "view",
-                        "selectedMenuId": "{{result.data.id}}",
-                        "selectedMenu": "{{result.data}}",
-                        "formErrors": null
-                      }
-                    }
-                  ]
-                }
-              ],
-              "onError": [
-                {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isSaving": false,
-                    "formErrors": "{{error.errors}}"
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ],
-      "children": [
-        {
-          "id": "form_basic_section",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "id": "form_basic_title",
-              "type": "basic",
-              "name": "H4",
-              "props": {
-                "className": "text-table-header"
-              },
-              "text": "$t:admin.menus.info.basic"
-            },
-            {
-              "id": "form_name_field",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "id": "form_name_label",
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "form-label"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:admin.menus.form.name"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-red-500 ml-1"
-                          },
-                          "text": "*"
-                        }
-                      ]
-                    },
-                    {
-                      "id": "form_name_input",
-                      "type": "composite",
-                      "name": "MultilingualInput",
-                      "props": {
-                        "name": "name",
-                        "placeholder": "$t:admin.menus.form.name_placeholder",
-                        "maxLength": 100,
-                        "required": true,
-                        "layout": "tabs"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{_global.formErrors?.name}}",
-                      "props": {
-                        "className": "text-red-500 text-xs"
-                      },
-                      "text": "{{_global.formErrors?.name?.[0] ?? ''}}"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "form_slug_field",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "id": "form_slug_label",
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "form-label"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:admin.menus.form.slug"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-red-500 ml-1"
-                          },
-                          "text": "*"
-                        }
-                      ]
-                    },
-                    {
-                      "id": "form_slug_input",
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "text",
-                        "name": "slug",
-                        "className": "input font-mono"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{_global.formErrors?.slug}}",
-                      "props": {
-                        "className": "text-red-500 text-xs"
-                      },
-                      "text": "{{_global.formErrors?.slug?.[0] ?? ''}}"
-                    },
-                    {
-                      "id": "form_slug_hint",
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{!_global.formErrors?.slug}}",
-                      "props": {
-                        "className": "text-tertiary"
-                      },
-                      "text": "$t:admin.menus.form.slug_hint"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "form_url_field",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "id": "form_url_label",
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "form-label"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:admin.menus.form.url"
-                        }
-                      ]
-                    },
-                    {
-                      "id": "form_url_input",
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "text",
-                        "name": "url",
-                        "placeholder": "$t:admin.menus.form.url_placeholder",
-                        "className": "input font-mono"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{_global.formErrors?.url}}",
-                      "props": {
-                        "className": "text-red-500 text-xs"
-                      },
-                      "text": "{{_global.formErrors?.url?.[0] ?? ''}}"
-                    },
-                    {
-                      "id": "form_url_hint",
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{!_global.formErrors?.url}}",
-                      "props": {
-                        "className": "text-tertiary"
-                      },
-                      "text": "$t:admin.menus.form.url_hint"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "form_icon_field",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "id": "form_icon_label",
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "form-label"
-                      },
-                      "text": "$t:admin.menus.form.icon"
-                    },
-                    {
-                      "id": "form_icon_select",
-                      "type": "composite",
-                      "name": "IconSelect",
-                      "props": {
-                        "name": "icon",
-                        "placeholder": "$t:admin.menus.form.icon_placeholder",
-                        "searchPlaceholder": "$t:admin.menus.form.icon_search_placeholder",
-                        "noResultsText": "$t:admin.menus.form.icon_no_results"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ],
-          "props": {
-          }
-        },
-        {
-          "id": "form_hierarchy_section",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "id": "form_hierarchy_title",
-                  "type": "basic",
-                  "name": "H4",
-                  "props": {
-                    "className": "text-table-header"
-                  },
-                  "text": "$t:admin.menus.info.hierarchy"
-                },
-                {
-                  "id": "form_parent_field",
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        {
-                          "id": "form_parent_label",
-                          "type": "basic",
-                          "name": "Label",
-                          "props": {
-                            "className": "form-label"
-                          },
-                          "text": "$t:admin.menus.form.parent"
-                        },
-                        {
-                          "id": "form_parent_select",
-                          "type": "basic",
-                          "name": "Select",
-                          "props": {
-                            "name": "parent_id",
-                            "className": "select"
-                          },
-                          "children": [
-                            {
-                              "id": "form_parent_option_top",
-                              "type": "basic",
-                              "name": "Option",
-                              "props": {
-                                "value": ""
-                              },
-                              "text": "$t:admin.menus.form.parent_top_level"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Option",
-                              "iteration": {
-                                "source": "(menus?.data?.data ?? []).filter(m => _global.panelMode === 'create' || m.id !== _global.selectedMenuId)",
-                                "item_var": "parentMenu"
-                              },
-                              "props": {
-                                "value": "{{parentMenu.id}}"
-                              },
-                              "text": "{{$localized(parentMenu.name)}}"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{_global.formErrors?.parent_id}}",
-                          "props": {
-                            "className": "text-red-500 text-xs"
-                          },
-                          "text": "{{_global.formErrors?.parent_id?.[0] ?? ''}}"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ],
-              "props": {
-              }
-            }
-          ]
-        },
-        {
-          "id": "form_custom_menu_section",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.panelMode === 'create'}}",
-          "children": [
-            {
-              "id": "form_custom_menu_field",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "id": "form_custom_menu_label",
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "form-label"
-                      },
-                      "text": "$t:admin.menus.form.custom_menu"
-                    },
-                    {
-                      "id": "form_custom_menu_select",
-                      "type": "basic",
-                      "name": "Select",
-                      "props": {
-                        "name": "custom_menu_key",
-                        "className": "select"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "formData": "{{Object.assign({}, _global.formData, {custom_menu_key: $event.target.value || null, url: $event.target.selectedOptions[0]?.dataset?.url || _global.formData.url})}}"
-                          }
-                        }
-                      ],
-                      "children": [
-                        {
-                          "id": "form_custom_menu_option_none",
-                          "type": "basic",
-                          "name": "Option",
-                          "props": {
-                            "value": ""
-                          },
-                          "text": "$t:admin.menus.form.custom_menu_none"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Optgroup",
-                          "iteration": {
-                            "source": "Object.entries(modules?.data?.custom_menus ?? {}).map(([id, val]) => ({ id, name: val.module_name, custom_menus: val.menus ?? [] })).filter(m => m.custom_menus.length > 0)",
-                            "item_var": "moduleItem"
-                          },
-                          "props": {
-                            "label": "{{moduleItem.name}}"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Option",
-                              "iteration": {
-                                "source": "{{moduleItem.custom_menus ?? []}}",
-                                "item_var": "customMenu"
-                              },
-                              "props": {
-                                "value": "{{customMenu.key}}",
-                                "data-module-id": "{{moduleItem.id}}",
-                                "data-url": "{{customMenu.url}}"
-                              },
-                              "text": "{{customMenu.name}}"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "form_affiliation_section",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.panelMode === 'edit' && _global.selectedMenu?.extension_type != null && _global.selectedMenu?.extension_type !== 'core'}}",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "id": "form_affiliation_title",
-                  "type": "basic",
-                  "name": "H4",
-                  "props": {
-                    "className": "text-table-header"
-                  },
-                  "text": "$t:admin.menus.info.affiliation"
-                },
-                {
-                  "id": "form_module_field",
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        {
-                          "id": "form_module_label",
-                          "type": "basic",
-                          "name": "Label",
-                          "props": {
-                            "className": "form-label"
-                          },
-                          "text": "$t:admin.menus.info.module"
-                        },
-                        {
-                          "id": "form_module_input",
-                          "type": "basic",
-                          "name": "Input",
-                          "props": {
-                            "type": "text",
-                            "value": "{{_global.selectedMenu?.module?.name}}",
-                            "disabled": true,
-                            "className": "input"
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "id": "form_module_hint",
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-tertiary"
-                  },
-                  "text": "$t:admin.menus.form.module_readonly_hint"
-                }
-              ],
-              "props": {
-              }
-            }
-          ]
-        },
-        {
-          "id": "form_roles_section",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "id": "form_roles_title",
-                  "type": "basic",
-                  "name": "H4",
-                  "props": {
-                    "className": "text-table-header"
-                  },
-                  "text": "$t:admin.menus.info.access_permission"
-                },
-                {
-                  "id": "form_roles_field",
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        {
-                          "id": "form_roles_label",
-                          "type": "basic",
-                          "name": "Label",
-                          "props": {
-                            "className": "form-label"
-                          },
-                          "text": "$t:admin.menus.form.roles"
-                        },
-                        {
-                          "id": "form_roles_input",
-                          "type": "composite",
-                          "name": "TagInput",
-                          "props": {
-                            "name": "roles",
-                            "placeholder": "$t:admin.menus.form.roles_placeholder",
-                            "noOptionsMessage": "$t:admin.menus.form.roles_no_options",
-                            "options": "{{(roles?.data?.data ?? []).map(r => ({ value: r.id, label: $localized(r.name) }))}}"
-                          }
-                        },
-                        {
-                          "id": "form_roles_hint",
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-tertiary"
-                          },
-                          "text": "$t:admin.menus.form.roles_hint"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ],
-              "props": {
-              }
-            }
-          ]
-        },
-        {
-          "id": "form_status_section",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "id": "form_status_title",
-                  "type": "basic",
-                  "name": "H4",
-                  "props": {
-                    "className": "text-table-header"
-                  },
-                  "text": "$t:admin.menus.info.status"
-                },
-                {
-                  "id": "form_toggle",
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "label": "$t:admin.menus.form.is_active",
-                    "name": "is_active"
-                  }
-                }
-              ],
-              "props": {
-              }
-            }
-          ]
-        },
-        {
-          "id": "form_meta_section",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.panelMode === 'edit'}}",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "id": "form_meta_title",
-                  "type": "basic",
-                  "name": "H4",
-                  "props": {
-                    "className": "text-table-header"
-                  },
-                  "text": "$t:admin.menus.info.meta"
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "space-y-2 text-sm"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center gap-3"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-gray-500 dark:text-gray-400 w-20"
-                          },
-                          "text": "$t:admin.menus.info.creator"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-primary font-medium"
-                              },
-                              "text": "{{_global.selectedMenu?.creator?.name ?? 'System'}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "if": "{{_global.selectedMenu?.creator?.email}}",
-                              "props": {
-                                "className": "block text-tertiary"
-                              },
-                              "text": "{{_global.selectedMenu?.creator?.email}}"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center gap-3"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-gray-500 dark:text-gray-400 w-20"
-                          },
-                          "text": "$t:admin.menus.info.created_at"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-center text-primary gap-1.5"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "props": {
-                                "name": "calendar",
-                                "size": "sm",
-                                "className": "text-gray-400"
-                              }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "{{_global.selectedMenu?.created_at}}"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center gap-3"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-gray-500 dark:text-gray-400 w-20"
-                          },
-                          "text": "$t:admin.menus.info.updated_at"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-center text-primary gap-1.5"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Icon",
-                              "props": {
-                                "name": "clock",
-                                "size": "sm",
-                                "className": "text-gray-400"
-                              }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "{{_global.selectedMenu?.updated_at}}"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ],
-              "props": {
-              }
-            }
-          ]
-        }
-      ]
-    }
-  ]
+    ]
 }

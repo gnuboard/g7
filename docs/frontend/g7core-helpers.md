@@ -49,7 +49,8 @@ function renderItemChildren(
   children: ComponentDefinition[],
   itemContext: Record<string, any>,
   componentMap: Record<string, React.ComponentType<any>>,
-  keyPrefix?: string
+  keyPrefix?: string,
+  options?: RenderItemChildrenOptions
 ): React.ReactNode[]
 ```
 
@@ -61,6 +62,23 @@ function renderItemChildren(
 | `itemContext` | `Record<string, any>` | ✅ | 반복 아이템 컨텍스트 (row, value, index 등) |
 | `componentMap` | `Record<string, React.ComponentType>` | ✅ | 컴포넌트 맵 |
 | `keyPrefix` | `string` | ❌ | React key 접두사 |
+| `options` | `RenderItemChildrenOptions` | ❌ | 엔진·번역·액션 처리기·상태·렌더 환경 (아래 표) |
+
+### 옵션 (`RenderItemChildrenOptions`)
+
+| 옵션 | 설명 |
+|------|------|
+| `componentContext` | 부모 컴포넌트 컨텍스트(`__componentContext`). `state` 를 셀의 `_local` 에 병합하고, `renderEnvRef.current` 가 있으면 렌더 환경으로도 쓴다 |
+| `renderEnv` | 렌더 환경 — 폭·번역 컨텍스트·엔진·액션 처리기·컴포넌트 레지스트리·편집 모드. **상태는 병합하지 않는다** (engine-v1.75.2) |
+| `responsiveWidth` | `responsive` 분기를 고를 폭 (명시값) (engine-v1.75.2) |
+| `isEditMode` | 편집 모드 — `true` 면 액션을 바인딩하지 않는다 (engine-v1.75.2) |
+| `translationContext` · `translationEngine` · `bindingEngine` · `actionDispatcher` | 명시값 |
+
+값은 **명시 옵션 > `renderEnv` > `componentContext.renderEnvRef.current` > 호스트 값** 순서로 고른다.
+레이아웃 편집기 미리보기에서는 렌더 환경이 미리보기 기기 폭·콘텐츠 언어·미리보기 전용 액션 처리기를 담는다.
+일반 화면에서는 렌더 환경이 곧 호스트 값이라 결과가 같다. 컴포넌트가 자식을 직접 그린다면 받은
+`__componentContext` 를 그대로 넘기거나(상태 병합이 필요할 때), `{ renderEnv: __componentContext?.renderEnvRef?.current }`
+만 넘긴다(상태 병합이 필요 없을 때).
 
 ### 반환값
 
@@ -144,12 +162,24 @@ const renderListItems = (items: any[], itemTemplate: ComponentDefinition[]) => {
 
 `renderItemChildren`이 처리하는 레이아웃 JSON 구조:
 
+```html
+<data-grid>
+  <column field="status" header="$t:user.status">
+    <cell>
+      <span data-ref="status_badge" class="{{row.status_variant === 'success' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}} px-2.5 py-0.5 rounded-full text-xs font-medium">{{row.status_label}}</span>
+    </cell>
+  </column>
+</data-grid>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
 ```json
 {
   "columns": [
     {
-      "key": "status",
-      "label": "$t:user.status",
+      "field": "status",
+      "header": "$t:user.status",
       "cellChildren": [
         {
           "id": "status_badge",
@@ -338,6 +368,18 @@ const finalProps = bindComponentActions(resolvedProps, childDef.actions, itemCon
 ```
 
 ### 레이아웃 JSON 예시
+
+```html
+<button variant="primary">
+  <on type="click">
+    <set-state target="global" selectedModule="{{row}}"/>
+    <open-modal target="install_modal"/>
+  </on>
+  설치
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```json
 {

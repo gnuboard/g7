@@ -138,22 +138,6 @@
       "actions": "操作"
     }
   },
-  "mobile": {
-    "benefit_label": "特典金額",
-    "target_type_label": "適用対象",
-    "issue_label": "発行",
-    "validity_period_label": "有効期限",
-    "issue_period_label": "発行期間",
-    "issue_count_label": "発行数量",
-    "status_label": "ステータス",
-    "creator_label": "登録者",
-    "target_type:": "適用対象:",
-    "issue:": "発行:",
-    "valid_period: ": "有効期限: ",
-    "issue_period: ": "発行期間: ",
-    "issue_count: ": "発行数量: ",
-    "status:": "ステータス:"
-  },
   "modal": {
     "status_change": {
       "title": "発行ステータスを変更しますか?",
@@ -161,7 +145,7 @@
     },
     "delete": {
       "title": "クーポンを削除しますか?",
-      "message": "この操作は元に戻すことができません。クーポンとすべての投稿が永久に削除されます。",
+      "message": "この操作は元に戻すことができません。クーポンとこのクーポンの対象商品・カテゴリ指定が一緒に削除されます。",
       "warning": "削除されたクーポンは復元できません。",
       "delete": "削除"
     },
@@ -304,6 +288,7 @@
       "coupon_name": "クーポン名",
       "coupon_description": "クーポン説明",
       "benefit_amount": "特典金額",
+      "discount_unit": "割引単位",
       "max_discount": "最大割引金額",
       "min_order_amount": "最小注文金額",
       "validity_period": "有効期間",

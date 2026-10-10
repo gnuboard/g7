@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayKginicis\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Extension\Helpers\LayoutFragmentSourceHelper;
 
 class EnsureAdminOrderDetailTestModeLayoutListener implements HookListenerInterface
 {
@@ -55,13 +56,13 @@ class EnsureAdminOrderDetailTestModeLayoutListener implements HookListenerInterf
     /**
      * 기본 핸들러 (미사용).
      *
-     * @param mixed ...$args
+     * @param  mixed  ...$args
      */
     public function handle(...$args): void {}
 
     /**
-     * @param array<string, mixed> $layout
-     * @param int $templateId
+     * @param  array<string, mixed>  $layout
+     * @param  int  $templateId  대상 템플릿 ID
      * @return array<string, mixed>
      */
     public function ensureTestModeLayout(array $layout, int $templateId): array
@@ -82,8 +83,8 @@ class EnsureAdminOrderDetailTestModeLayoutListener implements HookListenerInterf
     }
 
     /**
-     * @param array<string, mixed> $layout
-     * @param array<int, mixed> $extensionDataSources
+     * @param  array<string, mixed>  $layout
+     * @param  array<int, mixed>  $extensionDataSources
      * @return array<string, mixed>
      */
     private function ensureDataSources(array $layout, array $extensionDataSources): array
@@ -118,8 +119,8 @@ class EnsureAdminOrderDetailTestModeLayoutListener implements HookListenerInterf
     }
 
     /**
-     * @param array<string, mixed> $layout
-     * @param array<int, mixed> $injections
+     * @param  array<string, mixed>  $layout
+     * @param  array<int, mixed>  $injections
      */
     private function ensureInjections(array &$layout, array $injections): void
     {
@@ -147,9 +148,9 @@ class EnsureAdminOrderDetailTestModeLayoutListener implements HookListenerInterf
     }
 
     /**
-     * @param array<int, string> $targetIds
-     * @param array<int, mixed> $components
-     * @param array<string, mixed> $node
+     * @param  array<int, string>  $targetIds
+     * @param  array<int, mixed>  $components
+     * @param  array<string, mixed>  $node
      */
     private function appendComponentsToFirstAvailableTarget(array &$node, array $targetIds, array $components): bool
     {
@@ -163,8 +164,8 @@ class EnsureAdminOrderDetailTestModeLayoutListener implements HookListenerInterf
     }
 
     /**
-     * @param array<int, mixed> $components
-     * @param array<string, mixed> $node
+     * @param  array<int, mixed>  $components
+     * @param  array<string, mixed>  $node
      */
     private function appendComponentsToTargetId(array &$node, string $targetId, array $components): bool
     {
@@ -189,8 +190,8 @@ class EnsureAdminOrderDetailTestModeLayoutListener implements HookListenerInterf
     }
 
     /**
-     * @param array<int, mixed> $target
-     * @param array<int, mixed> $components
+     * @param  array<int, mixed>  $target
+     * @param  array<int, mixed>  $components
      */
     private function appendMissingComponents(array &$target, array $components): void
     {
@@ -204,7 +205,7 @@ class EnsureAdminOrderDetailTestModeLayoutListener implements HookListenerInterf
     }
 
     /**
-     * @param array<int, mixed> $components
+     * @param  array<int, mixed>  $components
      * @return array<int, mixed>
      */
     private function normalizeComponents(array $components): array
@@ -223,8 +224,8 @@ class EnsureAdminOrderDetailTestModeLayoutListener implements HookListenerInterf
     }
 
     /**
-     * @param array<string|int, mixed> $node
-     * @param array<string, mixed> $component
+     * @param  array<string|int, mixed>  $node
+     * @param  array<string, mixed>  $component
      */
     private function containsComponent(array $node, array $component): bool
     {
@@ -242,7 +243,7 @@ class EnsureAdminOrderDetailTestModeLayoutListener implements HookListenerInterf
     }
 
     /**
-     * @param array<string, mixed> $component
+     * @param  array<string, mixed>  $component
      * @return array<int, string>
      */
     private function componentSignatures(array $component): array
@@ -272,7 +273,7 @@ class EnsureAdminOrderDetailTestModeLayoutListener implements HookListenerInterf
     }
 
     /**
-     * @param array<string|int, mixed> $node
+     * @param  array<string|int, mixed>  $node
      */
     private function containsNodeId(array $node, string $id): bool
     {
@@ -290,7 +291,7 @@ class EnsureAdminOrderDetailTestModeLayoutListener implements HookListenerInterf
     }
 
     /**
-     * @param array<string|int, mixed> $node
+     * @param  array<string|int, mixed>  $node
      */
     private function containsString(array $node, string $needle): bool
     {
@@ -308,28 +309,17 @@ class EnsureAdminOrderDetailTestModeLayoutListener implements HookListenerInterf
     }
 
     /**
+     * 확장점 정의를 코어 규약(소스 SSoT `.g7.html` 우선)으로 읽습니다.
+     *
+     * 종전에는 `.json` 을 직접 파싱해 소스만 고치면 조용히 반영되지 않았다.
+     * 여기 있던 `static $extension` 메모이제이션은 헬퍼의 실행 단위 캐시가 대신한다.
+     *
      * @return array<string, mixed>
      */
     private function orderPaymentQueryExtension(): array
     {
-        static $extension = null;
-
-        if (is_array($extension)) {
-            return $extension;
-        }
-
-        $path = dirname(__DIR__, 2).'/resources/extensions/admin_order_payment_query.json';
-        $contents = is_file($path) ? file_get_contents($path) : false;
-
-        if (! is_string($contents)) {
-            $extension = [];
-
-            return $extension;
-        }
-
-        $decoded = json_decode($contents, true);
-        $extension = is_array($decoded) ? $decoded : [];
-
-        return $extension;
+        return LayoutFragmentSourceHelper::read(
+            dirname(__DIR__, 2).'/resources/extensions/admin_order_payment_query.json'
+        );
     }
 }

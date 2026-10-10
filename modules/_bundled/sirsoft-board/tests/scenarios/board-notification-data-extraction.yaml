@@ -1,0 +1,64 @@
+feature: 게시판 알림 데이터 추출 — 알림 유형별 데이터·수신자 컨텍스트 (BoardNotificationDataListener)
+
+description: |
+  `sirsoft-board.notification.extract_data` 필터가 7종 알림(new_comment · reply_comment ·
+  post_reply · post_action · report_action · new_post_admin · report_received_admin)마다
+  본문 데이터와 수신자 컨텍스트(trigger_user · related_users)를 만든다. 보내지 않아야 하는
+  경우(게시판·회원 알림 설정 OFF, 답변글·대댓글, 신고 처리·자동 블라인드 등)는 빈 결과에
+  `context.skip=true` 를 실어 템플릿 수신자 규칙이 정책을 우회하지 못하게 한다.
+
+  관리자 대상 알림의 게시판 관리자(`board_managers`)와 신고 로그는 Repository 로만 읽는다
+  (#599 validate — validate-p4-board.yaml 참조).
+
+axes:
+  notification_type:
+    - dispatch
+    - new_comment
+    - reply_comment
+    - post_reply
+    - post_action
+    - report_action
+    - new_post_admin
+    - report_received_admin
+
+effects:
+  - subscribes_extract_data_filter
+  - unknown_type_returns_default
+  - new_comment_extracts_data_and_context
+  - new_comment_skips_reply_comment
+  - new_comment_skips_when_board_notice_off
+  - new_comment_skips_without_user_setting
+  - new_comment_skips_when_user_setting_off
+  - reply_comment_extracts_data_and_context
+  - reply_comment_skips_without_parent
+  - reply_comment_skips_when_user_setting_off
+  - post_reply_extracts_data_and_context
+  - post_reply_skips_non_reply_post
+  - post_reply_skips_when_user_setting_off
+  - post_action_extracts_data_and_context
+  - post_action_skips_report_triggered
+  - post_action_skips_auto_blind
+  - post_action_skips_comment_auto_blind
+  - post_action_extracts_comment_admin_action
+  - post_action_skips_comment_report_triggered
+  - post_action_skips_when_post_author_setting_off
+  - post_action_skips_when_comment_author_setting_off
+  - post_action_skips_without_user_setting
+  - report_action_extracts_data_and_context
+  - report_action_extracts_comment_data
+  - report_action_extracts_auto_blind
+  - report_action_extracts_comment_auto_blind
+  - report_action_skips_comment_admin_action
+  - report_action_skips_when_setting_off
+  - new_post_admin_extracts_board_managers
+  - new_post_admin_skips_when_board_notice_off
+  - new_post_admin_honours_skip_notification
+  - new_post_admin_skips_reply_post
+  - report_received_admin_extracts_data_and_context
+  - report_received_admin_skips_when_setting_off
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/Listeners/BoardNotificationDataListenerTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

@@ -34,5 +34,50 @@
   },
   "admin-schedules": {
     "name": "スケジュール管理"
+  },
+  "admin-member-notifications": {
+    "name": "会員通知ボックス"
+  },
+  "admin-analytics": {
+    "name": "訪問者統計"
+  },
+  "admin-analytics-overview": {
+    "name": "概要"
+  },
+  "admin-analytics-pages": {
+    "name": "ページ"
+  },
+  "admin-analytics-referrers": {
+    "name": "流入経路"
+  },
+  "admin-analytics-environment": {
+    "name": "環境"
+  },
+  "admin-analytics-regions": {
+    "name": "地域"
+  },
+  "admin-analytics-patterns": {
+    "name": "曜日·時間帯"
+  },
+  "admin-analytics-actions": {
+    "name": "検索語·ダウンロード·コンバージョン"
+  },
+  "admin-analytics-realtime": {
+    "name": "リアルタイム"
+  },
+  "admin-analytics-visitors": {
+    "name": "訪問者"
+  },
+  "admin-analytics-bots": {
+    "name": "ボット·クローラー"
+  },
+  "admin-analytics-diagnostics": {
+    "name": "収集診断"
+  },
+  "admin-analytics-privacy": {
+    "name": "情報主体要求"
+  },
+  "admin-analytics-settings": {
+    "name": "設定"
   }
 }

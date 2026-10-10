@@ -3,9 +3,11 @@
 namespace App\Http\Requests\User;
 
 use App\Extension\HookManager;
+use App\Http\Requests\Concerns\ChecksPasswordReuse;
 use App\Models\User;
 use App\Rules\PasswordPolicy;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -19,6 +21,8 @@ use Illuminate\Validation\Rules\Password;
  */
 class UpdateProfileRequest extends FormRequest
 {
+    use ChecksPasswordReuse;
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -44,7 +48,7 @@ class UpdateProfileRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'nickname' => ['nullable', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255', Rule::unique(User::class, 'email')->ignore($userId)],
-            'password' => ['nullable', 'confirmed', PasswordPolicy::rule()],
+            'password' => ['nullable', 'confirmed', ...PasswordPolicy::rules($this->user()?->email)],
             'current_password' => ['required_with:password', 'current_password'],
             'language' => ['nullable', 'string', Rule::in($supportedLocales)],
             'country' => ['nullable', 'string', 'size:2', 'alpha'],
@@ -116,7 +120,24 @@ class UpdateProfileRequest extends FormRequest
     }
 
     /**
+     * 비밀번호를 함께 바꾸면 재사용 금지 검사를 현재 비밀번호 확인 **뒤에만** 붙입니다 (추측 오라클 차단).
+     *
+     * @param  Validator  $validator  검증기
+     * @return void
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $this->appendPasswordReuseCheck(
+            $validator,
+            fn () => $this->user() instanceof User ? $this->user() : null,
+            ['current_password'],
+        );
+    }
+
+    /**
      * Prepare the data for validation.
+     *
+     * @return void 입력을 제자리에서 고친다
      */
     protected function prepareForValidation(): void
     {

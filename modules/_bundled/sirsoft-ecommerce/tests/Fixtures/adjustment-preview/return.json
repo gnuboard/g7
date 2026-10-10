@@ -1,0 +1,233 @@
+{
+    "refund_amount": 24000.0,
+    "refund_points_amount": 0.0,
+    "original_paid_amount": 70000.0,
+    "recalculated_paid_amount": 43000.0,
+    "shipping_difference": -3000.0,
+    "discount_difference": 0.0,
+    "additional_payment_amount": 0.0,
+    "cancelled_items": [
+        {
+            "order_option_id": 2,
+            "cancel_quantity": 3,
+            "cancel_amount": 30000.0
+        }
+    ],
+    "refund_priority": "pg_first",
+    "remaining_pg_balance": 46000.0,
+    "remaining_points_balance": 0.0,
+    "refund_total": 24000.0,
+    "refund_formatted": {
+        "base_currency": "KRW",
+        "base": {
+            "refund_total": "24,000원",
+            "refund_amount": "24,000원",
+            "remaining_pg_balance": "46,000원",
+            "remaining_points_balance": "0원"
+        },
+        "mc": {
+            "refund_total": {
+                "USD": "$20.40",
+                "JPY": "¥2,760",
+                "CNY": "元139.20",
+                "EUR": "€18.72"
+            },
+            "refund_amount": {
+                "USD": "$20.40",
+                "JPY": "¥2,760",
+                "CNY": "元139.20",
+                "EUR": "€18.72"
+            },
+            "remaining_pg_balance": {
+                "USD": "$39.10",
+                "JPY": "¥5,290",
+                "CNY": "元266.80",
+                "EUR": "€35.88"
+            },
+            "remaining_points_balance": {
+                "USD": "$0.00",
+                "JPY": "¥0",
+                "CNY": "元0.00",
+                "EUR": "€0.00"
+            }
+        }
+    },
+    "restored_coupons": [],
+    "shipping_details": [],
+    "mc_refund_amount": {
+        "KRW": 24000.0,
+        "USD": 20.4,
+        "JPY": 2760.0,
+        "CNY": 139.2,
+        "EUR": 18.72
+    },
+    "mc_refund_points_amount": {
+        "KRW": 0.0,
+        "USD": 0.0,
+        "JPY": 0.0,
+        "CNY": 0.0,
+        "EUR": 0.0
+    },
+    "mc_refund_shipping_amount": null,
+    "original_snapshot": {
+        "total_amount": 70000.0,
+        "subtotal_amount": 70000.0,
+        "total_list_price_amount": 86000.0,
+        "total_discount_amount": 0.0,
+        "total_coupon_discount_amount": 0.0,
+        "total_product_coupon_discount_amount": 0.0,
+        "total_order_coupon_discount_amount": 0.0,
+        "total_code_discount_amount": 0.0,
+        "total_shipping_amount": 0.0,
+        "base_shipping_amount": 0.0,
+        "extra_shipping_amount": 0.0,
+        "shipping_discount_amount": 0.0,
+        "total_paid_amount": 70000.0,
+        "total_points_used_amount": 0.0,
+        "total_deposit_used_amount": 0.0,
+        "has_actual_payment": true,
+        "total_tax_amount": 70000.0,
+        "total_tax_free_amount": 0.0,
+        "total_vat_amount": 0.0,
+        "total_earned_points_amount": 700.0,
+        "item_count": 5,
+        "base_currency": "KRW",
+        "formatted": {
+            "total_amount": "70,000원",
+            "subtotal_amount": "70,000원",
+            "total_list_price_amount": "86,000원",
+            "total_discount_amount": "0원",
+            "total_coupon_discount_amount": "0원",
+            "total_product_coupon_discount_amount": "0원",
+            "total_order_coupon_discount_amount": "0원",
+            "total_code_discount_amount": "0원",
+            "total_shipping_amount": "0원",
+            "base_shipping_amount": "0원",
+            "extra_shipping_amount": "0원",
+            "shipping_discount_amount": "0원",
+            "total_paid_amount": "70,000원",
+            "total_points_used_amount": "0원",
+            "total_deposit_used_amount": "0원",
+            "total_tax_amount": "70,000원",
+            "total_tax_free_amount": "0원",
+            "total_vat_amount": "0원",
+            "total_earned_points_amount": "700원",
+            "item_count": "5원"
+        },
+        "total_earned_points_amount_formatted": "700P"
+    },
+    "recalculated_snapshot": {
+        "total_amount": 43000.0,
+        "subtotal_amount": 40000.0,
+        "total_discount_amount": 0.0,
+        "total_coupon_discount_amount": 0.0,
+        "total_product_coupon_discount_amount": 0.0,
+        "total_order_coupon_discount_amount": 0.0,
+        "total_code_discount_amount": 0.0,
+        "total_shipping_amount": 3000.0,
+        "base_shipping_amount": 3000.0,
+        "extra_shipping_amount": 0.0,
+        "shipping_discount_amount": 0.0,
+        "total_paid_amount": 43000.0,
+        "total_points_used_amount": 0.0,
+        "total_deposit_used_amount": 0,
+        "total_tax_amount": 43000.0,
+        "total_tax_free_amount": 0.0,
+        "total_vat_amount": 3909.0,
+        "total_earned_points_amount": 0.0,
+        "item_count": 2,
+        "total_list_price_amount": 50000.0,
+        "base_currency": "KRW",
+        "formatted": {
+            "total_amount": "43,000원",
+            "subtotal_amount": "40,000원",
+            "total_discount_amount": "0원",
+            "total_coupon_discount_amount": "0원",
+            "total_product_coupon_discount_amount": "0원",
+            "total_order_coupon_discount_amount": "0원",
+            "total_code_discount_amount": "0원",
+            "total_shipping_amount": "3,000원",
+            "base_shipping_amount": "3,000원",
+            "extra_shipping_amount": "0원",
+            "shipping_discount_amount": "0원",
+            "total_paid_amount": "43,000원",
+            "total_points_used_amount": "0원",
+            "total_deposit_used_amount": "0원",
+            "total_tax_amount": "43,000원",
+            "total_tax_free_amount": "0원",
+            "total_vat_amount": "3,909원",
+            "total_earned_points_amount": "0원",
+            "item_count": "2원",
+            "total_list_price_amount": "50,000원"
+        },
+        "total_earned_points_amount_formatted": "0P"
+    },
+    "mc_original_snapshot": {
+        "mc_subtotal_amount": null,
+        "mc_total_paid_amount": null,
+        "mc_total_list_price_amount": {
+            "KRW": 86000.0,
+            "USD": 73.1,
+            "JPY": 9890.0,
+            "CNY": 498.8,
+            "EUR": 67.08
+        },
+        "mc_subtotal_amount_formatted": [],
+        "mc_total_paid_amount_formatted": [],
+        "mc_total_list_price_amount_formatted": {
+            "KRW": "86,000원",
+            "USD": "$73.10",
+            "JPY": "¥9,890",
+            "CNY": "元498.80",
+            "EUR": "€67.08"
+        }
+    },
+    "mc_recalculated_snapshot": {
+        "mc_subtotal_amount": {
+            "KRW": 40000.0,
+            "USD": 34.0,
+            "JPY": 4600.0,
+            "CNY": 232.0,
+            "EUR": 31.2
+        },
+        "mc_total_paid_amount": {
+            "KRW": 43000.0,
+            "USD": 36.55,
+            "JPY": 4945.0,
+            "CNY": 249.4,
+            "EUR": 33.54
+        },
+        "mc_total_list_price_amount": {
+            "KRW": 50000.0,
+            "USD": 42.5,
+            "JPY": 5750.0,
+            "CNY": 290.0,
+            "EUR": 39.0
+        },
+        "mc_subtotal_amount_formatted": {
+            "KRW": "40,000원",
+            "USD": "$34.00",
+            "JPY": "¥4,600",
+            "CNY": "元232.00",
+            "EUR": "€31.20"
+        },
+        "mc_total_paid_amount_formatted": {
+            "KRW": "43,000원",
+            "USD": "$36.55",
+            "JPY": "¥4,945",
+            "CNY": "元249.40",
+            "EUR": "€33.54"
+        },
+        "mc_total_list_price_amount_formatted": {
+            "KRW": "50,000원",
+            "USD": "$42.50",
+            "JPY": "¥5,750",
+            "CNY": "元290.00",
+            "EUR": "€39.00"
+        }
+    },
+    "original_coupons": [],
+    "recalculated_coupons": [],
+    "cancel_blocked": false,
+    "cancel_blocked_reason": null
+}

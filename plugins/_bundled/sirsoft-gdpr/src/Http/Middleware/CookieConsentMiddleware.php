@@ -113,33 +113,6 @@ class CookieConsentMiddleware
     }
 
     /**
-     * 게스트 세션 식별자를 추출합니다 (gdpr_session cookie 또는 Laravel session ID).
-     *
-     * 쿠키 값은 서명을 검증한 뒤 신뢰합니다 — 위조된 값은 미식별 게스트로
-     * 취급하고 Laravel session ID로 폴백합니다.
-     *
-     * @param  Request  $request  HTTP 요청
-     * @return string|null 세션 식별자 (회원이거나 식별 불가 시 null)
-     */
-    private function resolveGuestSessionId(Request $request): ?string
-    {
-        if ($request->user()) {
-            return null;
-        }
-
-        $verified = $this->verifyGuestSessionId($request->cookie('gdpr_session'));
-        if ($verified !== null) {
-            return $verified;
-        }
-
-        try {
-            return $request->hasSession() ? substr($request->session()->getId(), 0, 100) : null;
-        } catch (\Throwable) {
-            return null;
-        }
-    }
-
-    /**
      * Strictly Necessary cookie 인지 판정합니다.
      *
      * ePrivacy Art.5(3) 면제 항목 — 운영자가 관리자 화면에서 관리하는 목록과, 지울 수 없는

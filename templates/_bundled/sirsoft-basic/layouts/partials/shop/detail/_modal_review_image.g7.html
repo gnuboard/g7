@@ -1,0 +1,59 @@
+<!-- 리뷰 사진을 크게 보는 창. 사진만 띄우지 않고 그 리뷰의 별점·본문을 함께 보여 준다 — 사진만 보면
+     어떤 평가에 딸린 사진인지 알 수 없기 때문이다. -->
+<partial description="리뷰 이미지 미리보기 모달 (슬라이더 + 리뷰 정보)" editor_label="$t:user.modal_label.shop_detail.review_image_modal">
+  <modal data-type="composite" data-ref="review_image_modal" title="$t:shop.product.review_image_preview" width="90vw" :closeOnBackdropClick="true">
+    <div class="p-4 flex flex-col gap-4">
+      <!-- 리뷰 정보 영역 -->
+      <div class="flex flex-col gap-2 pb-3 border-b border-gray-200 dark:border-gray-700">
+        <!-- 작성자 + 별점 + 날짜 -->
+        <div class="flex items-center justify-between">
+          <!-- 아바타 + 이름 -->
+          <div class="flex items-center gap-2">
+            <avatar data-type="composite" name="{{_global.reviewForModal?.userName ?? '?'}}" avatar="{{_global.reviewForModal?.userAvatar ?? null}}" size="sm"/>
+            <span class="font-medium text-sm text-gray-900 dark:text-white">{{_global.reviewForModal?.userName ?? ''}}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <!-- 별점 아이콘 -->
+            <div class="flex items-center gap-0.5">
+              <span data-each="star in {{[1,2,3,4,5]}}">
+                <icon name="star" size="sm" class="{{star <= (_global.reviewForModal?.rating ?? 0) ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"/>
+              </span>
+            </div>
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{_global.reviewForModal?.createdAt ?? ''}}</span>
+          </div>
+        </div>
+        <!-- 옵션 배지 (있을 때만) -->
+        <div data-if="{{(_global.reviewForModal?.optionValues ?? []).length > 0}}" class="flex flex-wrap gap-1">
+          <span data-each="opt in {{_global.reviewForModal?.optionValues ?? []}}">
+            <span data-if="{{!(opt.key?.ko === '기본' &amp;&amp; opt.value?.ko === '기본')}}" class="inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded">{{opt.key?.ko ?? ''}}: {{opt.value?.ko ?? ''}}</span>
+          </span>
+        </div>
+        <!-- 리뷰 내용 (2줄 말줄임) -->
+        <p class="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{{_global.reviewForModal?.content ?? ''}}</p>
+      </div>
+      <!-- 이미지 슬라이더 영역 -->
+      <div class="flex flex-col items-center gap-3">
+        <!-- 이미지 + 좌우 버튼 -->
+        <div class="relative flex items-center justify-center w-full px-16">
+          <img src="{{(_global.reviewForModal?.images ?? [])[Number(_global.reviewImageIndex)]?.download_url ?? ''}}" alt="" class="w-full max-w-full max-h-[55vh] object-contain rounded-lg"/>
+          <button type="button" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 leading-none disabled:opacity-20 disabled:cursor-not-allowed" disabled="{{Number(_global.reviewImageIndex) <= 0}}">
+            <on type="click">
+              <!-- 이전 사진. 보고 있는 자리를 `_global` 에 두는 이유는 창을 여는 쪽(리뷰 목록)이 그 값을 세워 주기 때문이다 -->
+              <set-state target="global" reviewImageIndex="{{Number(_global.reviewImageIndex) - 1}}"/>
+            </on>
+            ❮
+          </button>
+          <button type="button" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 leading-none disabled:opacity-20 disabled:cursor-not-allowed" disabled="{{Number(_global.reviewImageIndex) >= (_global.reviewForModal?.images?.length ?? 1) - 1}}">
+            <on type="click">
+              <!-- 다음 사진 — 끝에 닿으면 버튼이 꺼진다(순환하지 않는다) -->
+              <set-state target="global" reviewImageIndex="{{Number(_global.reviewImageIndex) + 1}}"/>
+            </on>
+            ❯
+          </button>
+        </div>
+        <!-- 이미지 카운터 (이미지 2장 이상일 때만) -->
+        <div data-if="{{(_global.reviewForModal?.images?.length ?? 0) > 1}}" class="text-sm text-gray-500 dark:text-gray-400">{{(Number(_global.reviewImageIndex) + 1) + ' / ' + (_global.reviewForModal?.images?.length ?? 1)}}</div>
+      </div>
+    </div>
+  </modal>
+</partial>

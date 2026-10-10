@@ -99,7 +99,7 @@ test('...', async ({ page }) => {
 });
 ```
 
-권한 식별자는 임의 string — 코어/모듈/플러그인 공통 API. `Permission::firstOrCreate` 가 자동 생성.
+권한 식별자는 코어/모듈/플러그인 공통 API 지만 **DB 에 있는 식별자만** 받는다 — 하나라도 없으면 아무것도 만들지 않고 실패 코드로 끝난다(권한 행을 지어내지 않는다). 게시판별 권한은 게시판을 만든 뒤에야 생긴다(`docs/testing/e2e-testing.md` §4 「없는 권한 식별자」).
 
 ## 데이터 생성 위치 — 책임 분리 매트릭스
 
@@ -109,7 +109,7 @@ E2E spec 이 "특정 유저 + 특정 역할 + 특정 도메인 상황" 에서 �
 | 데이터 종류 | 책임 영역 | 위치 |
 |---|---|---|
 | 코어 권한 (`core.*`), 역할, 유저, Sanctum 토큰 | 코어 | `app/Console/Commands/PlaywrightIssueToken.php` |
-| 모듈 권한 (`sirsoft-ecommerce.*`) | 모듈 (코어 커맨드의 `--permissions=` 임의 식별자) | — |
+| 모듈 권한 (`sirsoft-ecommerce.*`) | 모듈 (설치 때 생성 — 코어 커맨드의 `--permissions=` 로 부여, 없는 식별자는 거절) | — |
 | 모듈 도메인 데이터 (상품/카테고리/주문) | 모듈 | `modules/_bundled/{id}/src/Console/Commands/PlaywrightSeed{id}.php` |
 | 플러그인 도메인 데이터 (결제 키 등) | 플러그인 | `plugins/_bundled/{id}/src/Console/Commands/PlaywrightSeed{id}.php` |
 | 외부 의존 (토스 결제창 응답 등) | spec 안 mock | `page.route('https://api.tosspayments.com/**', ...)` |

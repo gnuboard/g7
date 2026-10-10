@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
 
+use App\Helpers\PermissionHelper;
+use App\Helpers\ResponseHelper;
+use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -19,7 +23,7 @@ use Illuminate\Support\Facades\Http;
  * 자동 복구 불가능한 항목(php-soap 미설치, exec() disabled 등)은
  * "사용자 조치 안내" 메시지(remediation)를 함께 반환한다.
  */
-class HealthCheckController
+class HealthCheckController extends AdminBaseController
 {
     private const STATUS_OK = 'ok';        // 정상
 
@@ -31,15 +35,22 @@ class HealthCheckController
 
     private string $binDir;
 
+    /**
+     * 플러그인 루트의 bin 디렉토리 경로를 점검 대상으로 정합니다.
+     *
+     * CLI 바이너리·pub.key·WSDL 파일이 모두 이 디렉토리 아래에 있어야 한다.
+     */
     public function __construct()
     {
-        $this->binDir = dirname(__DIR__, 2) . '/bin';
+        parent::__construct();
+
+        $this->binDir = dirname(__DIR__, 2).'/bin';
     }
 
     /**
      * GET /api/plugins/sirsoft-pay_nhnkcp/admin/health
      *
-     * @return JsonResponse{success: true, data: {summary: array, checks: array}}
+     * @return JsonResponse{success: true, message: string, data: {summary: array, checks: array}}
      */
     public function check(): JsonResponse
     {
@@ -60,19 +71,16 @@ class HealthCheckController
             ['cancel_server_ip' => $this->resolveCancelServerIp()]
         );
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'summary' => $summary,
-                'checks' => $checks,
-            ],
+        return ResponseHelper::success('sirsoft-pay_nhnkcp::messages.health.checked', [
+            'summary' => $summary,
+            'checks' => $checks,
         ]);
     }
 
     /**
      * 현재 PHP 런타임의 OS/아키텍처에 맞는 CLI 바이너리 정보 반환
      *
-     * @return array{0: string, 1: string, 2: bool}  [filename, arch label, requireExec]
+     * @return array{0: string, 1: string, 2: bool} [filename, arch label, requireExec]
      */
     private function resolveCliForCurrentOs(): array
     {
@@ -94,8 +102,9 @@ class HealthCheckController
     /**
      * 상태 통계: 카테고리별로 PC/모바일 결제 가능 여부 판단
      *
-     * @param  array<int, array<string, mixed>>  $checks
+     * @param  array<int, array<string, mixed>>  $checks  개별 점검 항목 결과 목록
      * @param  string  $cliFilename  현재 OS 의 CLI 바이너리 파일명 (cli_id 계산용)
+     * @return array<string, bool|int> PC/모바일 결제 가능 여부와 상태별 건수(error·warning·fixed)
      */
     private function summarize(array $checks, string $cliFilename): array
     {
@@ -107,7 +116,7 @@ class HealthCheckController
         $execOk = ! $this->isErroneous($byId['exec_function'] ?? null);
 
         // 현재 OS 의 CLI 바이너리 ID 동적 계산 (checkCliBinary 와 동일 규칙)
-        $cliId = 'cli_' . preg_replace('/[^a-z0-9_]/i', '_', strtolower(pathinfo($cliFilename, PATHINFO_FILENAME)));
+        $cliId = 'cli_'.preg_replace('/[^a-z0-9_]/i', '_', strtolower(pathinfo($cliFilename, PATHINFO_FILENAME)));
         $cliOk = ! $this->isErroneous($byId[$cliId] ?? null);
 
         $pubKeyOk = ! $this->isErroneous($byId['pub_key'] ?? null);
@@ -148,6 +157,14 @@ class HealthCheckController
         ];
     }
 
+    /**
+     * 점검 항목이 사용자 조치가 필요한 오류 상태인지 판정합니다.
+     *
+     * 항목이 없거나 상태가 비어 있으면 오류로 간주한다.
+     *
+     * @param  array<string, mixed>|null  $check  개별 점검 항목 결과 (없으면 null)
+     * @return bool 오류 상태이면 true
+     */
     private function isErroneous(?array $check): bool
     {
         return ($check['status'] ?? self::STATUS_ERROR) === self::STATUS_ERROR;
@@ -168,7 +185,7 @@ class HealthCheckController
             return [
                 'address' => $publicIp,
                 'source' => 'public_outbound',
-                'source_label' => '공인 송신 IP',
+                'source_label' => $this->t('source.public_outbound'),
             ];
         }
 
@@ -177,17 +194,24 @@ class HealthCheckController
             return [
                 'address' => $serverIp,
                 'source' => 'server_variable',
-                'source_label' => '서버 IP 후보',
+                'source_label' => $this->t('source.server_variable'),
             ];
         }
 
         return [
             'address' => null,
             'source' => 'unavailable',
-            'source_label' => '확인 필요',
+            'source_label' => $this->t('source.unavailable'),
         ];
     }
 
+    /**
+     * 외부 IP 조회 서비스(ipify)로 서버의 공인 outbound IP 를 조회합니다.
+     *
+     * 2초 안에 응답이 없거나 실패·형식 오류이면 null 을 돌려준다.
+     *
+     * @return string|null 공인 outbound IP (조회 실패 시 null)
+     */
     private function detectPublicOutboundIp(): ?string
     {
         try {
@@ -207,6 +231,11 @@ class HealthCheckController
         }
     }
 
+    /**
+     * PHP 서버 변수(SERVER_ADDR·LOCAL_ADDR)와 호스트명에서 첫 번째 유효 IP 를 찾습니다.
+     *
+     * @return string|null 유효한 서버 IP (찾지 못하면 null)
+     */
     private function detectServerVariableIp(): ?string
     {
         $candidates = [
@@ -227,6 +256,12 @@ class HealthCheckController
         return null;
     }
 
+    /**
+     * 앞뒤 공백을 제거한 값이 유효한 IP 주소일 때만 돌려줍니다.
+     *
+     * @param  string|null  $ip  검사할 IP 후보 문자열
+     * @return string|null 유효한 IP 주소 (비었거나 형식 오류이면 null)
+     */
     private function normalizeIp(?string $ip): ?string
     {
         $ip = trim((string) $ip);
@@ -239,6 +274,8 @@ class HealthCheckController
 
     /**
      * PHP `exec()` 함수 활성화 여부 — disable_functions 에서 차단되면 CLI 호출 불가
+     *
+     * @return array<string, string> 점검 항목 결과 (id·category·label·status·detail, 오류 시 remediation)
      */
     private function checkExecFunction(): array
     {
@@ -249,24 +286,26 @@ class HealthCheckController
             return [
                 'id' => 'exec_function',
                 'category' => 'pc',
-                'label' => 'PHP exec() 함수',
+                'label' => $this->t('exec.label'),
                 'status' => self::STATUS_ERROR,
-                'detail' => 'php.ini 의 disable_functions 에서 exec 가 차단되어 있습니다.',
-                'remediation' => "php.ini 에서 disable_functions 목록에서 'exec' 를 제거한 뒤 PHP-FPM(또는 Apache) 을 재시작하세요.\n예: sudo sed -i 's/disable_functions = .*exec.*/disable_functions =/' /etc/php/8.x/fpm/php.ini && sudo systemctl restart php8.x-fpm",
+                'detail' => $this->t('exec.disabled'),
+                'remediation' => $this->t('exec.disabled_remediation'),
             ];
         }
 
         return [
             'id' => 'exec_function',
             'category' => 'pc',
-            'label' => 'PHP exec() 함수',
+            'label' => $this->t('exec.label'),
             'status' => self::STATUS_OK,
-            'detail' => 'CLI 호출 가능',
+            'detail' => $this->t('exec.ok'),
         ];
     }
 
     /**
      * bin 디렉토리 존재 여부만 검사 — 쓰기 권한은 CLI 바이너리 단위로 처리
+     *
+     * @return array<string, string> 점검 항목 결과 (id·category·label·status·detail, 오류 시 remediation)
      */
     private function checkBinDirectory(): array
     {
@@ -274,30 +313,35 @@ class HealthCheckController
             return [
                 'id' => 'bin_directory',
                 'category' => 'pc',
-                'label' => 'CLI 바이너리 디렉토리',
+                'label' => $this->t('bin_dir.label'),
                 'status' => self::STATUS_ERROR,
-                'detail' => "bin 디렉토리가 없습니다: {$this->binDir}",
-                'remediation' => '플러그인을 재설치하거나, KCP 에서 제공한 CLI 바이너리를 bin/ 에 복사하세요.',
+                'detail' => $this->t('bin_dir.missing', ['path' => $this->binDir]),
+                'remediation' => $this->t('bin_dir.missing_remediation'),
             ];
         }
 
         return [
             'id' => 'bin_directory',
             'category' => 'pc',
-            'label' => 'CLI 바이너리 디렉토리',
+            'label' => $this->t('bin_dir.label'),
             'status' => self::STATUS_OK,
-            'detail' => '디렉토리 존재',
+            'detail' => $this->t('bin_dir.ok'),
         ];
     }
 
     /**
      * CLI 바이너리: 존재 + (Linux는) 실행 권한 — 권한 없으면 자동 chmod +x 시도
+     *
+     * @param  string  $filename  bin 디렉토리 안의 CLI 바이너리 파일명
+     * @param  string  $arch  화면에 표시할 OS/아키텍처 이름
+     * @param  bool  $requireExec  실행 권한(+x) 검사 여부 (Windows 는 false)
+     * @return array<string, string> 점검 항목 결과 (id·category·label·status·detail, 오류 시 remediation)
      */
     private function checkCliBinary(string $filename, string $arch, bool $requireExec = true): array
     {
-        $path = $this->binDir . '/' . $filename;
-        $id = 'cli_' . preg_replace('/[^a-z0-9_]/i', '_', strtolower(pathinfo($filename, PATHINFO_FILENAME)));
-        $label = "CLI 바이너리 ({$arch}) — {$filename}";
+        $path = $this->binDir.'/'.$filename;
+        $id = 'cli_'.preg_replace('/[^a-z0-9_]/i', '_', strtolower(pathinfo($filename, PATHINFO_FILENAME)));
+        $label = $this->t('cli.label', ['arch' => $arch, 'filename' => $filename]);
 
         if (! file_exists($path)) {
             return [
@@ -305,8 +349,8 @@ class HealthCheckController
                 'category' => 'pc',
                 'label' => $label,
                 'status' => self::STATUS_ERROR,
-                'detail' => "파일이 없습니다: {$path}",
-                'remediation' => "현재 OS({$arch})에 해당하는 KCP CLI 바이너리를 bin/ 에 복사하세요. (테스트 환경은 플러그인 기본 제공)",
+                'detail' => $this->t('cli.missing', ['path' => $path]),
+                'remediation' => $this->t('cli.missing_remediation', ['arch' => $arch]),
             ];
         }
 
@@ -316,7 +360,7 @@ class HealthCheckController
                 'category' => 'pc',
                 'label' => $label,
                 'status' => self::STATUS_OK,
-                'detail' => 'Windows 바이너리 — 실행 권한 검사 생략',
+                'detail' => $this->t('cli.windows'),
             ];
         }
 
@@ -326,12 +370,25 @@ class HealthCheckController
                 'category' => 'pc',
                 'label' => $label,
                 'status' => self::STATUS_OK,
-                'detail' => '실행 권한 OK (' . substr(sprintf('%o', fileperms($path)), -4) . ')',
+                'detail' => $this->t('cli.executable', ['mode' => substr(sprintf('%o', fileperms($path)), -4)]),
+            ];
+        }
+
+        $beforeMode = substr(sprintf('%o', fileperms($path)), -4);
+
+        // 조회 요청이 서버 파일 권한을 바꾸므로 자동 복구는 플러그인 설정 수정 권한자만 — 그 밖에는 진단만 하고 조치를 안내한다
+        if (! PermissionHelper::check('core.plugins.update', Auth::user())) {
+            return [
+                'id' => $id,
+                'category' => 'pc',
+                'label' => $label,
+                'status' => self::STATUS_ERROR,
+                'detail' => $this->t('cli.not_executable_no_permission', ['before' => $beforeMode]),
+                'remediation' => $this->t('cli.not_executable_remediation', ['path' => $path]),
             ];
         }
 
         // 자동 복구: chmod +x 시도
-        $beforeMode = substr(sprintf('%o', fileperms($path)), -4);
         $chmodOk = @chmod($path, 0755);
 
         if ($chmodOk && is_executable($path)) {
@@ -340,7 +397,7 @@ class HealthCheckController
                 'category' => 'pc',
                 'label' => $label,
                 'status' => self::STATUS_FIXED,
-                'detail' => "실행 권한 자동 복구됨: {$beforeMode} → 0755",
+                'detail' => $this->t('cli.fixed', ['before' => $beforeMode]),
             ];
         }
 
@@ -349,40 +406,44 @@ class HealthCheckController
             'category' => 'pc',
             'label' => $label,
             'status' => self::STATUS_ERROR,
-            'detail' => "실행 권한 없음 ({$beforeMode}) — 자동 복구 실패",
-            'remediation' => "이 파일에 실행 권한을 부여하세요:\n  chmod 755 {$path}\n파일 소유자가 아니면 앞에 sudo 를 붙이세요.",
+            'detail' => $this->t('cli.not_executable', ['before' => $beforeMode]),
+            'remediation' => $this->t('cli.not_executable_remediation', ['path' => $path]),
         ];
     }
 
     /**
      * pub.key 파일 존재 — KCP CLI 가 결제 응답 복호화에 사용
+     *
+     * @return array<string, string> 점검 항목 결과 (id·category·label·status·detail, 오류 시 remediation)
      */
     private function checkPubKey(): array
     {
-        $path = $this->binDir . '/pub.key';
+        $path = $this->binDir.'/pub.key';
 
         if (! file_exists($path)) {
             return [
                 'id' => 'pub_key',
                 'category' => 'pc',
-                'label' => 'KCP 공개키 (pub.key)',
+                'label' => $this->t('pub_key.label'),
                 'status' => self::STATUS_ERROR,
-                'detail' => "pub.key 파일이 없습니다: {$path}",
-                'remediation' => 'KCP 에서 제공받은 pub.key 파일을 bin/ 에 복사하세요. (테스트 환경은 플러그인 기본 제공)',
+                'detail' => $this->t('pub_key.missing', ['path' => $path]),
+                'remediation' => $this->t('pub_key.missing_remediation'),
             ];
         }
 
         return [
             'id' => 'pub_key',
             'category' => 'pc',
-            'label' => 'KCP 공개키 (pub.key)',
+            'label' => $this->t('pub_key.label'),
             'status' => self::STATUS_OK,
-            'detail' => '파일 존재',
+            'detail' => $this->t('pub_key.ok'),
         ];
     }
 
     /**
      * PHP SOAP 확장 — 모바일 SmartPhone Pay 의 approval_key 획득에 필수
+     *
+     * @return array<string, string> 점검 항목 결과 (id·category·label·status·detail, 오류 시 remediation)
      */
     private function checkSoapExtension(): array
     {
@@ -390,34 +451,33 @@ class HealthCheckController
             return [
                 'id' => 'soap_extension',
                 'category' => 'mobile',
-                'label' => 'PHP SOAP 확장',
+                'label' => $this->t('soap.label'),
                 'status' => self::STATUS_OK,
-                'detail' => 'SoapClient 사용 가능',
+                'detail' => $this->t('soap.ok'),
             ];
         }
 
         return [
             'id' => 'soap_extension',
             'category' => 'mobile',
-            'label' => 'PHP SOAP 확장',
+            'label' => $this->t('soap.label'),
             'status' => self::STATUS_ERROR,
-            'detail' => '모바일 결제 (SmartPhone Pay) 가 동작하지 않습니다.',
-            'remediation' => "PHP SOAP 확장을 설치하고 PHP-FPM 을 재시작하세요:\n"
-                . "Ubuntu/Debian: sudo apt install php8.x-soap && sudo systemctl restart php8.x-fpm\n"
-                . "RHEL/CentOS:   sudo yum install php-soap && sudo systemctl restart php-fpm\n"
-                . "확인: php -m | grep soap",
+            'detail' => $this->t('soap.missing'),
+            'remediation' => $this->t('soap.missing_remediation'),
         ];
     }
 
     /**
      * WSDL 파일 — bin/ 에 KCPPaymentService.wsdl, real_KCPPaymentService.wsdl 필요
+     *
+     * @return array<string, string> 점검 항목 결과 (id·category·label·status·detail, 오류 시 remediation)
      */
     private function checkWsdlFile(): array
     {
         $wsdlFiles = ['KCPPaymentService.wsdl', 'real_KCPPaymentService.wsdl'];
         $missing = [];
         foreach ($wsdlFiles as $f) {
-            if (! file_exists($this->binDir . '/' . $f)) {
+            if (! file_exists($this->binDir.'/'.$f)) {
                 $missing[] = $f;
             }
         }
@@ -426,19 +486,34 @@ class HealthCheckController
             return [
                 'id' => 'wsdl_file',
                 'category' => 'mobile',
-                'label' => 'WSDL 파일',
+                'label' => $this->t('wsdl.label'),
                 'status' => self::STATUS_ERROR,
-                'detail' => '누락: ' . implode(', ', $missing),
-                'remediation' => 'KCP 에서 제공받은 WSDL 파일을 bin/ 에 복사하세요. (테스트/라이브 별로 두 개)',
+                'detail' => $this->t('wsdl.missing', ['files' => implode(', ', $missing)]),
+                'remediation' => $this->t('wsdl.missing_remediation'),
             ];
         }
 
         return [
             'id' => 'wsdl_file',
             'category' => 'mobile',
-            'label' => 'WSDL 파일',
+            'label' => $this->t('wsdl.label'),
             'status' => self::STATUS_OK,
-            'detail' => '테스트/라이브 WSDL 모두 존재',
+            'detail' => $this->t('wsdl.ok'),
         ];
+    }
+
+    /**
+     * 시스템 점검 문구를 요청 언어로 옮깁니다(`messages.health.*`).
+     *
+     * 카드 제목·건수·결제 경로 줄은 화면 번역 키로 바뀌지만 항목 줄은 서버가 문구를 만들어 보내므로,
+     * 여기서 번역을 거치지 않으면 다른 언어 화면에 한국어 줄이 섞인다.
+     *
+     * @param  string  $key  `messages.health.` 아래 키
+     * @param  array<string, string>  $replace  치환 값
+     * @return string 번역된 문구
+     */
+    private function t(string $key, array $replace = []): string
+    {
+        return (string) __('sirsoft-pay_nhnkcp::messages.health.'.$key, $replace);
     }
 }

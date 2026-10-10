@@ -1,0 +1,34 @@
+<!-- 쇼핑몰 설정 — 배송 국가 목록, 좁은 화면용 카드. 넓은 화면용 표(`_shipping_country_table`)와
+  같은 배열을 편집한다.
+  국가는 해외배송을 켰을 때만 의미가 있다 — 끄면 이 목록은 남되 쓰이지 않는다. -->
+<partial description="배송설정 - 배송가능국가 모바일 카드 뷰">
+  <div data-ref="country_cards_container">
+    <div data-ref="country_card_{{countryIndex}}" data-each="country, countryIndex in (_local.form?.shipping?.available_countries ?? []).map((c, i) => ({...c, _idx: i}))" class="excel-card mb-3">
+      <div class="excel-card-header">
+        <div class="flex-center gap-2 min-w-0">
+          <span class="{{'fi fi-' + (country.code?.toLowerCase() ?? '') + ' fis rounded text-lg'}}"/>
+          <div class="min-w-0">
+            <div class="excel-card-title font-mono">{{country.code}}</div>
+            <div class="text-tertiary truncate">{{$localized(country.name, 'sirsoft-ecommerce::settings.countries.' + (country.code ?? '') + '.name')}}</div>
+          </div>
+        </div>
+        <div class="flex-center gap-2 shrink-0">
+          <toggle data-type="composite" checked="{{country.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false) &amp;&amp; country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}">
+            <on type="change">
+              <!-- 사용 여부. 끄면 주문 시 그 나라를 고를 수 없게 되고, 이미 받은 주문에는 영향이 없다. -->
+              <set-state target="local" form.shipping.available_countries="{{(_local.form?.shipping?.available_countries ?? []).map((c, i) => i === country._idx ? {...c, is_active: !(c.is_active ?? false)} : c)}}" :hasChanges="true"/>
+            </on>
+          </toggle>
+          <button data-if="{{country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}" type="button" class="btn-icon text-error disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false)}}" aria-label="$t:common.delete">
+            <on type="click">
+              <!-- 국가 삭제. -->
+              <set-state target="local" form.shipping.available_countries="{{(_local.form?.shipping?.available_countries ?? []).filter((_, i) => i !== country._idx)}}" :hasChanges="true"/>
+            </on>
+            <icon name="fa-solid fa-trash" class="text-sm"/>
+          </button>
+          <span data-if="{{country.code === (_local.form?.shipping?.default_country ?? 'KR')}}" class="text-info-soft inline-flex items-center px-2 py-0.5 font-medium bg-blue-100 dark:bg-blue-900/30 rounded-full">$t:sirsoft-ecommerce.admin.settings.shipping.countries.default_badge</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

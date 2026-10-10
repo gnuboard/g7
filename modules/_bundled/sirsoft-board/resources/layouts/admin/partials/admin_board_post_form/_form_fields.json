@@ -1,450 +1,454 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Post Form - All Form Fields in One Card"
-  },
-  "id": "post_form_fields",
-  "type": "basic",
-  "name": "Div",
-  "classMap": {
-    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-    "variants": {
-      "readonly": "opacity-60",
-      "normal": ""
-    }
-  },
-  "children": [
-    {
-      "id": "main_form_card",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "id": "author_section",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{route?.id && form_meta?.data?.author}}",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "grid-2col-responsive"
-                  },
-                  "children": [
-                    {
-                      "id": "field_author_name",
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Label",
-                          "props": {
-                            "className": "text-label-subtle block font-medium mb-1"
-                          },
-                          "text": "$t:sirsoft-board.admin.posts.form.author_info"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-center gap-2"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-heading"
-                              },
-                              "text": "{{form_meta?.data?.author?.email ? form_meta.data.author.name + ' (' + form_meta.data.author.email + ')' : form_meta?.data?.author?.name}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "if": "{{form_meta?.data?.author?.is_guest}}",
-                              "props": {
-                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                              },
-                              "text": "$t:sirsoft-board.admin.posts.guest"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "id": "field_created_at",
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Label",
-                          "props": {
-                            "className": "text-label-subtle block font-medium mb-1"
-                          },
-                          "text": "$t:sirsoft-board.admin.posts.form.created_at"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-center gap-2 text-heading"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "text": "{{form_meta?.data?.created_at}}"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "id": "post_options_section",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.secret_mode !== 'disabled'}}",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "H3",
-                  "props": {
-                    "className": "text-label-subtle font-medium mb-3"
-                  },
-                  "text": "$t:sirsoft-board.admin.posts.form.post_options"
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "grid-2col-responsive"
-                  },
-                  "children": [
-                    {
-                      "id": "notice_card",
-                      "type": "basic",
-                      "name": "Label",
-                      "if": "{{!_local.form?.parent_id}}",
-                      "props": {
-                        "disabled": "{{_computed.isReadOnly || !form_meta?.data?.board?.user_abilities?.can_manage}}",
-                        "className": "bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-blue-400 dark:hover:border-blue-600 transition-colors"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-start gap-3"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Input",
-                              "props": {
-                                "type": "checkbox",
-                                "name": "is_notice",
-                                "disabled": "{{_computed.isReadOnly || !form_meta?.data?.board?.user_abilities?.can_manage}}",
-                                "className": "mt-0.5 w-4 h-4 text-blue-600 dark:text-blue-400 rounded dark:focus:ring-blue-600 dark:ring-offset-gray-800"
-                              }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "props": {
-                                "className": "flex-1"
-                              },
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Div",
-                                  "props": {
-                                    "className": "flex-center gap-2 mb-1"
-                                  },
-                                  "children": [
-                                    {
-                                      "type": "basic",
-                                      "name": "Icon",
-                                      "props": {
-                                        "name": "bullhorn",
-                                        "className": "w-4 h-4 text-blue-600 dark:text-blue-400"
-                                      }
-                                    },
-                                    {
-                                      "type": "basic",
-                                      "name": "Span",
-                                      "props": {
-                                        "className": "text-primary text-sm font-semibold"
-                                      },
-                                      "text": "$t:sirsoft-board.admin.posts.form.is_notice"
-                                    }
-                                  ]
-                                },
-                                {
-                                  "type": "basic",
-                                  "name": "P",
-                                  "props": {
-                                    "className": "text-tertiary"
-                                  },
-                                  "text": "$t:sirsoft-board.admin.posts.form.notice_description"
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "id": "secret_card",
-                      "type": "basic",
-                      "name": "Label",
-                      "if": "{{form_meta?.data?.board?.secret_mode !== 'disabled'}}",
-                      "props": {
-                        "className": "bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-amber-400 dark:hover:border-amber-600 transition-colors"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "flex-start gap-3"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Input",
-                              "props": {
-                                "type": "checkbox",
-                                "name": "is_secret",
-                                "disabled": "{{_computed.isReadOnly || form_meta?.data?.board?.secret_mode === 'always'}}",
-                                "className": "mt-0.5 w-4 h-4 text-amber-600 rounded focus:ring-amber-500 dark:focus:ring-amber-600 dark:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                              }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "props": {
-                                "className": "flex-1"
-                              },
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Div",
-                                  "props": {
-                                    "className": "flex-center gap-2 mb-1"
-                                  },
-                                  "children": [
-                                    {
-                                      "type": "basic",
-                                      "name": "Icon",
-                                      "props": {
-                                        "name": "lock",
-                                        "className": "w-4 h-4 text-amber-600 dark:text-amber-400"
-                                      }
-                                    },
-                                    {
-                                      "type": "basic",
-                                      "name": "Span",
-                                      "props": {
-                                        "className": "text-primary text-sm font-semibold"
-                                      },
-                                      "text": "$t:sirsoft-board.admin.posts.form.is_secret"
-                                    }
-                                  ]
-                                },
-                                {
-                                  "type": "basic",
-                                  "name": "P",
-                                  "props": {
-                                    "className": "text-tertiary"
-                                  },
-                                  "text": "$t:sirsoft-board.admin.posts.form.secret_description"
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "category_section",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{form_meta?.data?.board?.categories && form_meta.data.board.categories.length > 0}}",
-          "props": {
-            "className": "pb-6"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "text": "$t:sirsoft-board.admin.posts.form.category"
-            },
-            {
-              "type": "basic",
-              "name": "Select",
-              "props": {
-                "name": "category",
-                "value": "{{_local.form?.category ?? ''}}",
-                "disabled": "{{_computed.isReadOnly || !!_local.form?.parent_id}}",
-                "className": "text-primary block w-full sm:w-64 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Option",
-                  "props": {
-                    "value": ""
-                  },
-                  "text": "$t:sirsoft-board.admin.posts.form.select_category"
-                },
-                {
-                  "type": "basic",
-                  "name": "Option",
-                  "iteration": {
-                    "source": "form_meta?.data?.board?.categories ?? []",
-                    "item_var": "category"
-                  },
-                  "props": {
-                    "value": "{{category}}"
-                  },
-                  "text": "{{category}}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "id": "title_section",
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Label",
-                      "props": {
-                        "className": "text-label-subtle block font-medium"
-                      },
-                      "text": "$t:sirsoft-board.admin.posts.form.title"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "text",
-                        "name": "title",
-                        "value": "{{_local.form?.title ?? ''}}",
-                        "disabled": "{{_computed.isReadOnly}}",
-                        "placeholder": "$t:sirsoft-board.admin.posts.form.title_placeholder",
-                        "className": "block focus:ring-1 dark:focus:ring-blue-400"
-                      }
-                    }
-                  ]
-                }
-              ],
-              "props": {
-                "className": ""
-              }
-            },
-            {
-              "id": "content_section",
-              "type": "extension_point",
-              "name": "html_editor",
-              "props": {
-                "name": "content",
-                "placeholder": "$t:sirsoft-board.admin.posts.form.content_placeholder",
-                "label": "$t:sirsoft-board.admin.posts.form.content",
-                "rows": 15,
-                "showHtmlModeToggle": true
-              },
-              "default": [
-                {
-                  "type": "composite",
-                  "name": "HtmlEditor",
-                  "props": {
-                    "name": "content",
-                    "content": "{{_local.form?.content ?? ''}}",
-                    "isHtml": "{{(_local.form?.content_mode ?? 'text') === 'html'}}",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "rows": 15,
-                    "placeholder": "$t:sirsoft-board.admin.posts.form.content_placeholder",
-                    "label": "$t:sirsoft-board.admin.posts.form.content",
-                    "showHtmlModeToggle": true
-                  },
-                  "actions": [
-                    {
-                      "event": "onChange",
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form": {
-                          "content": "{{$args[0].target.value}}"
-                        },
-                        "hasChanges": true
-                      }
-                    },
-                    {
-                      "event": "onIsHtmlChange",
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form": {
-                          "content_mode": "{{$args[0].target.checked ? 'html' : 'text'}}"
-                        },
-                        "hasChanges": true
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+    "comment": "글 작성 폼의 입력 칸 전부(글쓴이·분류·제목·본문과 공지·비밀 같은 스위치)를 한 카드에 담는다. 본문 편집기는 확장점이라 위지윅 플러그인이 깔려 있으면 그것으로 갈리고, 없으면 기본 편집기가 선다",
+    "meta": {
+        "is_partial": true,
+        "description": "Post Form - All Form Fields in One Card"
+    },
+    "id": "post_form_fields",
+    "type": "basic",
+    "name": "Div",
+    "classMap": {
+        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+        "variants": {
+            "readonly": "opacity-60",
+            "normal": ""
         }
-      ]
-    }
-  ]
+    },
+    "children": [
+        {
+            "id": "main_form_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "author_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{route?.id && form_meta?.data?.author}}",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "grid-2col-responsive"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "field_author_name",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "text-label-subtle block font-medium mb-1"
+                                                    },
+                                                    "text": "$t:sirsoft-board.admin.posts.form.author_info"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-heading"
+                                                            },
+                                                            "text": "{{form_meta?.data?.author?.email ? form_meta.data.author.name + ' (' + form_meta.data.author.email + ')' : form_meta?.data?.author?.name}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{form_meta?.data?.author?.is_guest}}",
+                                                            "props": {
+                                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.posts.guest"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "field_created_at",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "text-label-subtle block font-medium mb-1"
+                                                    },
+                                                    "text": "$t:sirsoft-board.admin.posts.form.created_at"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2 text-heading"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{form_meta?.data?.created_at}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "post_options_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{form_meta?.data?.board?.user_abilities?.can_write_notice || form_meta?.data?.board?.secret_mode !== 'disabled'}}",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "text-label-subtle font-medium mb-3"
+                                    },
+                                    "text": "$t:sirsoft-board.admin.posts.form.post_options"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "grid-2col-responsive"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "notice_card",
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "if": "{{!_local.form?.parent_id}}",
+                                            "props": {
+                                                "disabled": "{{_computed.isReadOnly || !form_meta?.data?.board?.user_abilities?.can_write_notice}}",
+                                                "className": "bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-blue-400 dark:hover:border-blue-600 transition-colors"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-start gap-3"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "props": {
+                                                                "type": "checkbox",
+                                                                "name": "is_notice",
+                                                                "disabled": "{{_computed.isReadOnly || !form_meta?.data?.board?.user_abilities?.can_write_notice}}",
+                                                                "className": "mt-0.5 w-4 h-4 text-blue-600 dark:text-blue-400 rounded dark:focus:ring-blue-600 dark:ring-offset-gray-800"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-1"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "flex-center gap-2 mb-1"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Icon",
+                                                                            "props": {
+                                                                                "name": "bullhorn",
+                                                                                "className": "text-base text-blue-600 dark:text-blue-400"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "text-primary text-sm font-semibold"
+                                                                            },
+                                                                            "text": "$t:sirsoft-board.admin.posts.form.is_notice"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "props": {
+                                                                        "className": "text-tertiary"
+                                                                    },
+                                                                    "text": "$t:sirsoft-board.admin.posts.form.notice_description"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "secret_card",
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "if": "{{form_meta?.data?.board?.secret_mode !== 'disabled'}}",
+                                            "props": {
+                                                "className": "bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer board-secret-card transition-colors"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-start gap-3"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "props": {
+                                                                "type": "checkbox",
+                                                                "name": "is_secret",
+                                                                "disabled": "{{_computed.isReadOnly || form_meta?.data?.board?.secret_mode === 'always'}}",
+                                                                "className": "mt-0.5 w-4 h-4 text-amber-600 rounded focus:ring-amber-500 dark:focus:ring-amber-600 dark:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-1"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "flex-center gap-2 mb-1"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Icon",
+                                                                            "props": {
+                                                                                "name": "lock",
+                                                                                "className": "text-base text-amber-600 dark:text-amber-400"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "text-primary text-sm font-semibold"
+                                                                            },
+                                                                            "text": "$t:sirsoft-board.admin.posts.form.is_secret"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "props": {
+                                                                        "className": "text-tertiary"
+                                                                    },
+                                                                    "text": "$t:sirsoft-board.admin.posts.form.secret_description"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "category_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{form_meta?.data?.board?.categories && form_meta.data.board.categories.length > 0}}",
+                    "props": {
+                        "className": "pb-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-board.admin.posts.form.category"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "props": {
+                                "name": "category",
+                                "value": "{{_local.form?.category ?? ''}}",
+                                "disabled": "{{_computed.isReadOnly || !!_local.form?.parent_id}}",
+                                "className": "text-primary block w-full board-category-select rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Option",
+                                    "props": {
+                                        "value": ""
+                                    },
+                                    "text": "$t:sirsoft-board.admin.posts.form.select_category"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Option",
+                                    "iteration": {
+                                        "source": "form_meta?.data?.board?.categories ?? []",
+                                        "item_var": "category"
+                                    },
+                                    "props": {
+                                        "value": "{{category}}"
+                                    },
+                                    "text": "{{category}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "title_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "text-label-subtle block font-medium"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.posts.form.title"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "text",
+                                                "name": "title",
+                                                "value": "{{_local.form?.title ?? ''}}",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "placeholder": "$t:sirsoft-board.admin.posts.form.title_placeholder",
+                                                "className": "block focus:ring-1 dark:focus:ring-blue-400"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "content_section",
+                            "type": "extension_point",
+                            "name": "html_editor",
+                            "props": {
+                                "placeholder": "$t:sirsoft-board.admin.posts.form.content_placeholder",
+                                "label": "$t:sirsoft-board.admin.posts.form.content",
+                                "rows": 15,
+                                "showHtmlModeToggle": true,
+                                "name": "content"
+                            },
+                            "default": [
+                                {
+                                    "type": "composite",
+                                    "name": "HtmlEditor",
+                                    "actions": [
+                                        {
+                                            "comment": "본문 글자를 담는다 — 편집기는 폼 자동 바인딩을 타지 않아 여기서 직접 넣고, 「변경 있음」도 함께 켠다",
+                                            "type": "change",
+                                            "event": "onChange",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "hasChanges": true,
+                                                "form": {
+                                                    "content": "{{$args[0].target.value}}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "comment": "HTML 모드 토글 — 글자와 따로 저장되는 값이라 이벤트도 따로 받는다. 켜짐/꺼짐(boolean)을 그대로 두지 않고 `html`·`text` 문자열로 바꿔 담는 것은 서버가 그 두 값으로 본문 해석을 가르기 때문이다",
+                                            "type": "change",
+                                            "event": "onIsHtmlChange",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "hasChanges": true,
+                                                "form": {
+                                                    "content_mode": "{{$args[0].target.checked ? 'html' : 'text'}}"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "content",
+                                        "content": "{{_local.form?.content ?? ''}}",
+                                        "isHtml": "{{(_local.form?.content_mode ?? 'text') === 'html'}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "readOnly": "{{_computed.isReadOnly}}",
+                                        "rows": 15,
+                                        "placeholder": "$t:sirsoft-board.admin.posts.form.content_placeholder",
+                                        "label": "$t:sirsoft-board.admin.posts.form.content",
+                                        "showHtmlModeToggle": true
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
 }

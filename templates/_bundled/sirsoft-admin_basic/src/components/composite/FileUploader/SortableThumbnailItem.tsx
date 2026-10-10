@@ -6,7 +6,7 @@
  * @module composite/FileUploader/SortableThumbnailItem
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -19,7 +19,8 @@ import { Img } from '../../basic/Img';
 
 import type { Attachment, PendingFile } from './types';
 import { getFileIcon, t } from './utils';
-import { isCrossOriginAssetUrl } from '../assetOrigin';
+import { isDirectAssetUrl } from '../assetOrigin';
+import FileUploaderContext from './FileUploaderContext';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const G7Core = (window as any).G7Core;
@@ -82,6 +83,14 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
   // 인증된 이미지 로딩을 위한 상태
   const [authenticatedImageUrl, setAuthenticatedImageUrl] = useState<string | undefined>(undefined);
   const downloadUrl = !isPending && isImage ? (file as Attachment).download_url : undefined;
+  // 업로더가 이미 가진 그림 주소(방금 올린 그림의 로컬 파일 등). 있으면 서버에 다시 요청하지 않는다 —
+  // 저장 중 임시 첨부가 본경로로 옮겨지는 사이에 내려받기가 404 로 실패하는 것을 막는다.
+  // 업로더 밖에서 단독으로 쓰일 때는 Context 가 없으므로 종전대로 받는다.
+  const uploaderContext = useContext(FileUploaderContext);
+  const cachedImageUrl = !isPending && isImage
+    ? uploaderContext?.authenticatedImageUrls?.get((file as Attachment).id)
+    : undefined;
+  const hasCachedImage = Boolean(cachedImageUrl);
 
   // 기존 첨부파일의 경우 인증된 요청으로 이미지 로드
   useEffect(() => {
@@ -90,9 +99,15 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
       return;
     }
 
+    // 업로더가 가진 주소는 업로더가 해제한다 — 여기서 받지도, 해제하지도 않는다
+    if (hasCachedImage) {
+      return;
+    }
+
     // 공개 자산 디스크(S3/CDN)가 준 교차 출처 URL 은 인증이 필요 없는 공개 자산이다.
     // XHR 로 가져오면 CORS 미설정 CDN 에서 실패하므로 URL 을 그대로 사용한다.
-    if (isCrossOriginAssetUrl(downloadUrl)) {
+    // 문서 안에 담긴 data:·blob: URL(편집기 표본 그림 등)도 요청 대상이 아니라 그대로 쓴다.
+    if (isDirectAssetUrl(downloadUrl)) {
       setAuthenticatedImageUrl(downloadUrl);
       return;
     }
@@ -122,15 +137,16 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
         URL.revokeObjectURL(objectUrl);
       }
     };
-  }, [downloadUrl]);
+  }, [downloadUrl, hasCachedImage]);
 
-  // 기존 첨부파일의 경우 인증된 URL 사용
-  const existingImageUrl = authenticatedImageUrl;
+  // 기존 첨부파일의 경우 인증된 URL 사용 (업로더가 가진 주소가 있으면 그것을 먼저)
+  const existingImageUrl = cachedImageUrl ?? authenticatedImageUrl;
 
   return (
     <Div
       ref={setNodeRef}
       style={style}
+      data-uploader-item=""
       className="relative group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
     >
       {/* 썸네일 영역 */}
@@ -187,47 +203,59 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
         {onPrimaryClick && (
           <Button
             type="button"
+            data-uploader-action="primary"
+            // 비활성(읽기 전용)이면 대표 표시는 남기되 바꿀 수 없다 — 대표가 아닌 칸의 ★ 는 감춘다
+            disabled={disabled}
             onClick={(e) => {
               e.stopPropagation();
+              if (disabled) return;
               onPrimaryClick();
             }}
-            className={`absolute top-1.5 left-1.5 z-10 p-1 rounded-full transition-colors ${
+            className={`absolute top-1.5 left-1.5 z-10 p-1 rounded-full transition-colors disabled:cursor-not-allowed ${
               isPrimary
                 ? 'bg-yellow-500 text-white'
-                : 'bg-gray-800/50 text-gray-300 hover:bg-yellow-500 hover:text-white opacity-0 group-hover:opacity-100'
+                : disabled
+                  ? 'hidden'
+                  : 'bg-gray-800/50 text-gray-300 hover:bg-yellow-500 hover:text-white opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
             }`}
             title={isPrimary ? t('attachment.primary_image') : t('attachment.set_as_primary')}
+            aria-label={isPrimary ? t('attachment.primary_image') : t('attachment.set_as_primary')}
           >
-            <I className="fa-solid fa-star text-xs" />
+            <I className="fa-solid fa-star text-xs" aria-hidden="true" />
           </Button>
         )}
 
-        {/* 호버 시 액션 버튼들 (disabled 시 숨김) */}
-        <Div className={`absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-start justify-end p-1 gap-1 opacity-0 group-hover:opacity-100 ${disabled ? 'hidden' : ''}`}>
+        {/* 호버 시 액션 버튼들 (disabled 시 숨김) — 키보드 초점이 썸네일 안에 있을 때도 보여야 어느 단추에 초점이 있는지 보인다 */}
+        <Div className={`absolute inset-0 bg-black/0 group-hover:bg-black/40 group-focus-within:bg-black/40 transition-colors flex items-start justify-end p-1 gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 ${disabled ? 'hidden' : ''}`}>
           {/* 드래그 핸들 */}
           <Button
             type="button"
+            data-uploader-action="drag"
             {...attributes}
             {...listeners}
             className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-gray-600 dark:text-gray-300 hover:bg-white cursor-grab active:cursor-grabbing"
             title={t('attachment.drag_to_reorder')}
+            aria-label={t('attachment.drag_to_reorder')}
             onClick={(e) => e.stopPropagation()}
           >
-            <I className="fa-solid fa-grip-vertical text-sm" />
+            {/* 아이콘만 있는 단추 — 글꼴 아이콘의 CSS 글리프가 title 보다 먼저 이름으로 잡히므로 이름은 aria-label 로 달고 아이콘은 숨긴다 */}
+            <I className="fa-solid fa-grip-vertical text-sm" aria-hidden="true" />
           </Button>
 
           {/* 다운로드 버튼 (기존 첨부파일만) */}
           {!isPending && onDownload && (
             <Button
               type="button"
+              data-uploader-action="download"
               onClick={(e) => {
                 e.stopPropagation();
                 onDownload();
               }}
               className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-blue-500 hover:bg-white"
               title={t('common.download')}
+              aria-label={t('common.download')}
             >
-              <I className="fa-solid fa-download text-sm" />
+              <I className="fa-solid fa-download text-sm" aria-hidden="true" />
             </Button>
           )}
 
@@ -235,20 +263,23 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
           {hasError && onRetry && (
             <Button
               type="button"
+              data-uploader-action="retry"
               onClick={(e) => {
                 e.stopPropagation();
                 onRetry();
               }}
               className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-orange-500 hover:bg-white"
               title={t('common.retry')}
+              aria-label={t('common.retry')}
             >
-              <I className="fa-solid fa-arrow-rotate-right text-sm" />
+              <I className="fa-solid fa-arrow-rotate-right text-sm" aria-hidden="true" />
             </Button>
           )}
 
           {/* 삭제 버튼 */}
           <Button
             type="button"
+            data-uploader-action="remove"
             onClick={(e) => {
               e.stopPropagation();
               onRemove();
@@ -256,8 +287,9 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
             disabled={isUploading || isCompressing}
             className="p-1.5 bg-white/90 dark:bg-gray-800/90 rounded text-red-500 hover:bg-white disabled:opacity-50"
             title={t('common.delete')}
+            aria-label={t('common.delete')}
           >
-            <I className="fa-solid fa-times text-sm" />
+            <I className="fa-solid fa-times text-sm" aria-hidden="true" />
           </Button>
         </Div>
       </Div>

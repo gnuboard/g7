@@ -71031,5 +71031,37 @@
       "type": "propValue",
       "propKey": "description"
     }
+  },
+  "ecgViewMode": {
+    "label": "$t:editor.control.ecg_view_mode.label",
+    "widget": "text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "viewMode"
+    }
+  },
+  "ecgMinCardWidth": {
+    "label": "$t:editor.control.ecg_min_card_width.label",
+    "widget": "text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "minCardWidth"
+    }
+  },
+  "ecgMaxColumns": {
+    "label": "$t:editor.control.ecg_max_columns.label",
+    "widget": "text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "maxColumns"
+    }
+  },
+  "ecgPagination": {
+    "label": "$t:editor.control.ecg_pagination.label",
+    "widget": "toggle",
+    "apply": {
+      "type": "propValue",
+      "propKey": "pagination"
+    }
   }
 }

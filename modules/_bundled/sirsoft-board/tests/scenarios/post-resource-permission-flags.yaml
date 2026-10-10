@@ -1,0 +1,44 @@
+feature: 게시글 응답의 권한(abilities)·소유권 플래그·삭제 답글 노출
+
+description: |
+  게시글 목록·상세 응답이 싣는 data.abilities(can_*)와 소유권 플래그(is_author·is_guest_post),
+  유저 화면의 관리자 진입 판정(can_access_admin)과 게시판 id, 삭제된 답글의 노출 범위를 고정한다.
+  관리자·유저 화면 모두 통합 can_* 키만 싣고 옛 posts_*·admin_* 키는 싣지 않는다.
+  비회원은 비회원 역할 권한으로, 로그인 사용자는 Gate 로 판정한다.
+
+  기존 회귀 테스트(PostResourcePermissionTest)의 소유권을 7.1.0 abilities 게이트 작업 중 시험 파일을 고치며 사후 등재했다.
+  유저 상세의 관리자 진입 링크 조합(link=user_board_to_admin)은 tests/scenarios/admin-user-cross-navigation.yaml 이 소유한다.
+
+axes:
+  context:
+    - admin_detail
+    - user_detail
+    - user_list
+    - ownership_flags
+    - permission_source
+    - deleted_reply_visibility
+
+effects:
+  # 관리자 상세
+  - admin_post_detail_reports_unified_can_abilities
+  - admin_post_detail_omits_legacy_user_permission_keys
+  # 유저 상세
+  - user_post_detail_reports_unified_can_abilities
+  - user_post_detail_omits_legacy_admin_permission_keys
+  # 유저 목록
+  - user_post_list_collection_reports_can_access_admin
+  - user_post_list_and_detail_board_info_include_id
+  # 소유권 플래그
+  - post_is_author_true_for_own_post
+  - post_is_author_false_for_others_post
+  - post_is_guest_post_true_for_guest_post
+  - post_is_guest_post_false_for_member_post
+  # 권한 판정 출처
+  - guest_abilities_follow_guest_role_permissions
+  - member_abilities_follow_gate_permissions
+  # 삭제 답글 노출
+  - regular_user_post_detail_hides_deleted_reply
+  - admin_post_detail_shows_deleted_reply
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/PostResourcePermissionTest.php

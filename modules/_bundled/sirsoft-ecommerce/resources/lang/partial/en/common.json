@@ -8,6 +8,7 @@
   "save": "Save",
   "saving": "Saving",
   "refresh": "Refresh",
+  "remove": "Remove",
   "created_at": "Created At",
   "updated_at": "Updated At",
   "active": "Active",
@@ -50,5 +51,6 @@
   "currency_label": "Currency",
   "shipping_country_label": "Shipping Country",
   "read_only_notice": "You have read-only access. Contact an administrator if you need to make changes.",
-  "validation_error_notice": "Please check your input. Some fields are invalid."
+  "validation_error_notice": "Please check your input. Some fields are invalid.",
+  "module_name": "Ecommerce"
 }

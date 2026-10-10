@@ -1,0 +1,35 @@
+<!-- 마이페이지 «주문 내역» 탭. 상태 필터와 쪽수를 URL 쿼리에 두어 뒤로가기와 링크 공유가 성립한다
+     (다른 탭들이 `_local` 을 쓰는 것과 갈리는 자리다 — 주문 목록은 밖에서 링크로 들어오는 일이 있다). -->
+<layout name="mypage/orders" version="1.0.0" extends="_user_base">
+  <!-- with_items=1 — 이 화면은 주문마다 아이템을 전부 나열한다(partials/mypage/orders/_list.json 의 order.items 순회). 서버 기본은 대표 1건 + 개수이므로 전량을 명시적으로 요청한다 (#76). 주석은 params 밖에 둔다 — params 의 키는 전부 쿼리스트링으로 전송된다. -->
+  <data-source id="orders" label_key="$t:editor.data_source.orders" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/orders" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" :blur_until_loaded="true">
+    <params page="{{query.page ?? 1}}" status="{{query.status}}" :with_items="1"/>
+  </data-source>
+  <computed name="currentTab">orders</computed>
+  <permissions/>
+  <transition-overlay enabled style="spinner" target="mypage_tab_content" fallback-target="main_content_area">
+    <spinner component="PageLoading"/>
+  </transition-overlay>
+  <init>
+    <set-state target="local" ordersPage="{{query.page ?? 1}}" ordersStatus="{{query.status ?? ''}}"/>
+  </init>
+  <slot name="content">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <container data-type="layout" class="py-8">
+        <responsive on="portable" class="py-4"/>
+        <!-- 페이지 제목 -->
+        <div class="flex items-center gap-2 mb-6">
+          <icon name="user" size="xl" class="text-gray-900 dark:text-white"/>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">$t:mypage.title</h1>
+        </div>
+        <!-- 탭 네비게이션 -->
+        <include src="partials/mypage/_tab_navigation.g7.html"/>
+        <!-- 탭 컨텐츠 영역 (스켈레톤 타겟) -->
+        <div data-ref="mypage_tab_content">
+          <!-- 주문내역 -->
+          <include src="partials/mypage/orders/_list.g7.html"/>
+        </div>
+      </container>
+    </div>
+  </slot>
+</layout>

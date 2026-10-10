@@ -1,3 +1,4 @@
+// e2e:allow 레이아웃 JSON 판독을 모양(actions 배열 첨자)에서 뜻(layoutShapeUtils.actionsOf)으로 옮긴 테스트 전용 리팩토링 — 대상 레이아웃·핸들러·런타임 동작은 바뀌지 않았고, 단언이 보는 명제도 동일하다 (U-SHAPEASSERT 판정 ⒜ · D67 ⓐ 미전환 잔여분 해소).
 /**
  * 리뷰설정 탭 레이아웃 구조 검증 테스트
  *
@@ -14,6 +15,7 @@ import { describe, it, expect } from 'vitest';
 
 // 레이아웃 JSON 임포트
 import tabReviewSettings from '../../../layouts/admin/partials/admin_ecommerce_settings/_tab_review_settings.json';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 /**
  * 재귀적으로 컴포넌트 트리에서 id로 검색
@@ -94,24 +96,44 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
     const tab = tabReviewSettings as any;
 
     describe('탭 메인 구조', () => {
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_tab_structure_and_card_locked
+         */
         it('is_partial 메타데이터가 설정되어야 한다', () => {
             expect(tab.meta.is_partial).toBe(true);
         });
 
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_tab_structure_and_card_locked
+         */
         it('tab_content_review_settings ID를 가져야 한다', () => {
             expect(tab.id).toBe('tab_content_review_settings');
         });
 
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_tab_structure_and_card_locked
+         */
         it('review_settings 탭 활성화 조건이 있어야 한다', () => {
             expect(tab.if).toContain('review_settings');
         });
 
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_tab_structure_and_card_locked
+         */
         it('1개 카드 섹션을 포함해야 한다', () => {
             expect(tab.children).toHaveLength(1);
         });
     });
 
     describe('카드 ID 검증', () => {
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_tab_structure_and_card_locked
+         */
         it('review_settings_card가 존재해야 한다', () => {
             expect(tab.children[0].id).toBe('review_settings_card');
         });
@@ -120,10 +142,18 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
     describe('리뷰설정 카드 구조', () => {
         const card = tab.children[0];
 
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_tab_structure_and_card_locked
+         */
         it('admin-card 클래스를 가져야 한다', () => {
             expect(card.props.className).toBe('admin-card');
         });
 
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_tab_structure_and_card_locked
+         */
         it('카드 제목이 직계 자식이어야 한다 (admin-card > card-title 평탄화)', () => {
             const titleEl = card.children.find(
                 (c: any) => c.name === 'H3' && typeof c?.props?.className === 'string' &&
@@ -135,6 +165,10 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
             );
         });
 
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_tab_structure_and_card_locked
+         */
         it('카드 설명이 직계 자식 .card-description Div 여야 한다', () => {
             const descEl = card.children.find(
                 (c: any) => c.name === 'Div' && typeof c?.props?.className === 'string' &&
@@ -154,6 +188,10 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
         const settingsArea = card.children[2];
         const writeDeadlineSection = settingsArea.children[0];
 
+        /**
+         * @scenario setting=write_deadline_days
+         * @effects review_setting_texts_use_review_namespace_keys
+         */
         it('레이블 텍스트가 다국어 키를 사용해야 한다', () => {
             const labelEl = writeDeadlineSection.children.find(
                 (c: any) => c.name === 'Span' && typeof c.text === 'string',
@@ -164,6 +202,10 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
             );
         });
 
+        /**
+         * @scenario setting=write_deadline_days
+         * @effects review_setting_input_binds_server_limits
+         */
         it('Input이 type=number 이고 허용 범위가 서버 한계값을 바인딩해야 한다', () => {
             const input = writeDeadlineSection.children.find((c: any) => c.name === 'Input');
             expect(input).toBeDefined();
@@ -174,33 +216,53 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
             expect(String(input.props.max)).toContain('?? 365');
         });
 
+        /**
+         * @scenario setting=write_deadline_days
+         * @effects review_setting_default_value_bound
+         */
         it('Input 기본값이 30을 참조해야 한다', () => {
             const input = writeDeadlineSection.children.find((c: any) => c.name === 'Input');
             expect(input.props.value).toContain('write_deadline_days');
             expect(input.props.value).toContain('30');
         });
 
+        /**
+         * @scenario setting=write_deadline_days
+         * @effects review_setting_change_writes_form_and_marks_dirty
+         */
         it('Input onChange가 setState 핸들러를 사용해야 한다', () => {
             const input = writeDeadlineSection.children.find((c: any) => c.name === 'Input');
-            const action = input.actions[0];
+            const action = actionsOf(input)[0];
             expect(action.handler).toBe('setState');
             expect(action.params.target).toBe('local');
         });
 
+        /**
+         * @scenario setting=write_deadline_days
+         * @effects review_setting_change_writes_form_and_marks_dirty
+         */
         it('Input onChange가 write_deadline_days를 설정해야 한다', () => {
             const input = writeDeadlineSection.children.find((c: any) => c.name === 'Input');
-            const action = input.actions[0];
+            const action = actionsOf(input)[0];
             const paramKeys = Object.keys(action.params);
             const deadlineKey = paramKeys.find((k) => k.includes('write_deadline_days'));
             expect(deadlineKey).toBeDefined();
         });
 
+        /**
+         * @scenario setting=write_deadline_days
+         * @effects review_setting_change_writes_form_and_marks_dirty
+         */
         it('Input onChange에 hasChanges=true가 포함되어야 한다', () => {
             const input = writeDeadlineSection.children.find((c: any) => c.name === 'Input');
-            const action = input.actions[0];
+            const action = actionsOf(input)[0];
             expect(action.params.hasChanges).toBe(true);
         });
 
+        /**
+         * @scenario setting=write_deadline_days
+         * @effects review_tab_structure_and_card_locked
+         */
         it('단위 텍스트 Span이 있어야 한다', () => {
             const spans = writeDeadlineSection.children.filter((c: any) => c.name === 'Span');
             // 레이블 Span + 단위 Span 2개 이상
@@ -211,6 +273,10 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
             expect(unitSpan).toBeDefined();
         });
 
+        /**
+         * @scenario setting=write_deadline_days
+         * @effects review_tab_structure_and_card_locked
+         */
         it('힌트 텍스트 P가 있어야 한다', () => {
             const hint = writeDeadlineSection.children.find(
                 (c: any) => c.name === 'P' && typeof c.text === 'string',
@@ -223,11 +289,16 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
     describe('max_images 설정 항목', () => {
         const card = tab.children[0];
         const settingsArea = card.children[2];
-        // 구분선(Div, index 1) 다음 max_images 항목(index 2)
-        const maxImagesSection = settingsArea.children[2];
+        // 두 번째 항목(max_images). 항목 사이 구분선은 row-stack 이 그린다 — 따로 둔 구분선 div 는 선을 이중으로
+        // 그려 걷어냈다(7.1.0 출시 전 점검).
+        const maxImagesSection = settingsArea.children[1];
 
         // 경계값은 서버 검증(StoreEcommerceSettingsRequest)이 SSoT — 화면이 더 좁으면
         // 사용자가 저장 가능한 값을 입력조차 못 하고, 더 넓으면 저장 단계에서만 실패한다.
+        /**
+         * @scenario setting=max_images
+         * @effects review_setting_input_binds_server_limits
+         */
         it('Input이 type=number 이고 허용 범위가 서버 한계값을 바인딩해야 한다 (max_images)', () => {
             const input = maxImagesSection.children.find((c: any) => c.name === 'Input');
             expect(input).toBeDefined();
@@ -238,21 +309,33 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
             expect(String(input.props.max)).toContain('?? 20');
         });
 
+        /**
+         * @scenario setting=max_images
+         * @effects review_setting_default_value_bound
+         */
         it('Input 기본값이 5를 참조해야 한다', () => {
             const input = maxImagesSection.children.find((c: any) => c.name === 'Input');
             expect(input.props.value).toContain('max_images');
             expect(input.props.value).toContain('5');
         });
 
+        /**
+         * @scenario setting=max_images
+         * @effects review_setting_change_writes_form_and_marks_dirty
+         */
         it('Input onChange가 max_images를 설정해야 한다', () => {
             const input = maxImagesSection.children.find((c: any) => c.name === 'Input');
-            const action = input.actions[0];
+            const action = actionsOf(input)[0];
             expect(action.handler).toBe('setState');
             const paramKeys = Object.keys(action.params);
             const maxImagesKey = paramKeys.find((k) => k.includes('max_images'));
             expect(maxImagesKey).toBeDefined();
         });
 
+        /**
+         * @scenario setting=max_images
+         * @effects review_setting_texts_use_review_namespace_keys
+         */
         it('레이블 텍스트가 다국어 키를 사용해야 한다', () => {
             const labelEl = maxImagesSection.children.find(
                 (c: any) =>
@@ -267,11 +350,15 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
     describe('max_image_size_mb 설정 항목', () => {
         const card = tab.children[0];
         const settingsArea = card.children[2];
-        // 구분선(index 3) 다음 max_image_size_mb 항목(index 4)
-        const maxSizeSection = settingsArea.children[4];
+        // 세 번째 항목(max_image_size_mb)
+        const maxSizeSection = settingsArea.children[2];
 
         // 서버 규칙이 integer 이므로 step 은 1 이어야 한다 — 0.5 는 화면에서만 허용되고
         // 저장 단계에서 422 가 되는 값이다.
+        /**
+         * @scenario setting=max_image_size_mb
+         * @effects review_setting_input_binds_server_limits
+         */
         it('Input이 type=number, step=1 이고 허용 범위가 서버 한계값을 바인딩해야 한다', () => {
             const input = maxSizeSection.children.find((c: any) => c.name === 'Input');
             expect(input).toBeDefined();
@@ -283,21 +370,33 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
             expect(String(input.props.step)).toBe('1');
         });
 
+        /**
+         * @scenario setting=max_image_size_mb
+         * @effects review_setting_default_value_bound
+         */
         it('Input 기본값이 5를 참조해야 한다', () => {
             const input = maxSizeSection.children.find((c: any) => c.name === 'Input');
             expect(input.props.value).toContain('max_image_size_mb');
             expect(input.props.value).toContain('5');
         });
 
+        /**
+         * @scenario setting=max_image_size_mb
+         * @effects review_setting_change_writes_form_and_marks_dirty
+         */
         it('Input onChange가 max_image_size_mb를 설정해야 한다', () => {
             const input = maxSizeSection.children.find((c: any) => c.name === 'Input');
-            const action = input.actions[0];
+            const action = actionsOf(input)[0];
             expect(action.handler).toBe('setState');
             const paramKeys = Object.keys(action.params);
             const sizeKey = paramKeys.find((k) => k.includes('max_image_size_mb'));
             expect(sizeKey).toBeDefined();
         });
 
+        /**
+         * @scenario setting=max_image_size_mb
+         * @effects review_setting_texts_use_review_namespace_keys
+         */
         it('레이블 텍스트가 다국어 키를 사용해야 한다', () => {
             const labelEl = maxSizeSection.children.find(
                 (c: any) =>
@@ -308,6 +407,10 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
             expect(labelEl).toBeDefined();
         });
 
+        /**
+         * @scenario setting=max_image_size_mb
+         * @effects review_tab_structure_and_card_locked
+         */
         it('MB 단위 텍스트가 있어야 한다', () => {
             const mbSpan = maxSizeSection.children.find(
                 (c: any) => c.name === 'Span' && c.text === 'MB',
@@ -317,22 +420,34 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
     });
 
     describe('설정 항목 전체 Input 검증', () => {
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_tab_structure_and_card_locked
+         */
         it('총 3개의 Input이 존재해야 한다', () => {
             const inputs = findAllByName(tab, 'Input');
             expect(inputs).toHaveLength(3);
         });
 
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_setting_change_writes_form_and_marks_dirty
+         */
         it('모든 Input onChange가 hasChanges=true를 포함해야 한다', () => {
             const inputs = findAllByName(tab, 'Input');
             for (const input of inputs) {
-                expect(input.actions[0].params.hasChanges).toBe(true);
+                expect(actionsOf(input)[0].params.hasChanges).toBe(true);
             }
         });
 
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_setting_change_writes_form_and_marks_dirty
+         */
         it('모든 Input onChange가 target=local을 사용해야 한다', () => {
             const inputs = findAllByName(tab, 'Input');
             for (const input of inputs) {
-                expect(input.actions[0].params.target).toBe('local');
+                expect(actionsOf(input)[0].params.target).toBe('local');
             }
         });
     });
@@ -340,6 +455,10 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
     describe('다국어 키 종합 검증', () => {
         const prefix = 'sirsoft-ecommerce.admin.settings.review_settings';
 
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_setting_texts_use_review_namespace_keys
+         */
         it('모든 다국어 키가 review_settings 네임스페이스를 사용해야 한다', () => {
             const keys = collectI18nKeys(tab);
             expect(keys.length).toBeGreaterThan(0);
@@ -348,24 +467,40 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
             }
         });
 
+        /**
+         * @scenario setting=tab_structure
+         * @effects review_setting_texts_use_review_namespace_keys
+         */
         it('title, description 다국어 키가 존재해야 한다', () => {
             const keys = collectI18nKeys(tab);
             expect(keys).toContain(`${prefix}.title`);
             expect(keys).toContain(`${prefix}.description`);
         });
 
+        /**
+         * @scenario setting=write_deadline_days
+         * @effects review_setting_texts_use_review_namespace_keys
+         */
         it('write_deadline_days 관련 다국어 키가 존재해야 한다', () => {
             const keys = collectI18nKeys(tab);
             const deadlineKeys = keys.filter((k) => k.includes('write_deadline_days'));
             expect(deadlineKeys.length).toBeGreaterThan(0);
         });
 
+        /**
+         * @scenario setting=max_images
+         * @effects review_setting_texts_use_review_namespace_keys
+         */
         it('max_images 관련 다국어 키가 존재해야 한다', () => {
             const keys = collectI18nKeys(tab);
             const maxImagesKeys = keys.filter((k) => k.includes('max_images'));
             expect(maxImagesKeys.length).toBeGreaterThan(0);
         });
 
+        /**
+         * @scenario setting=max_image_size_mb
+         * @effects review_setting_texts_use_review_namespace_keys
+         */
         it('max_image_size_mb 관련 다국어 키가 존재해야 한다', () => {
             const keys = collectI18nKeys(tab);
             const maxSizeKeys = keys.filter((k) => k.includes('max_image_size_mb'));

@@ -8,7 +8,9 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\PluginSettingsService;
 use App\Support\SensitiveSettingMask;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Testing\TestResponse;
+use Plugins\Sirsoft\VerificationNhnkcp\Identity\KcpIdentityProvider;
 use Plugins\Sirsoft\VerificationNhnkcp\Tests\PluginTestCase;
 
 /**
@@ -26,6 +28,11 @@ class KcpLiveModeSettingsValidationTest extends PluginTestCase
 
     private string $token;
 
+    /**
+     * 설정 수정·조회 권한을 가진 관리자와 그 토큰을 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,9 +42,13 @@ class KcpLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
+     * 운영 모드에서 사이트코드·암호화 키를 비우면 두 항목 모두 422 로 거절된다.
+     *
      * @scenario mode=live,live_credentials=missing_site_cd
      *
      * @effects live_mode_requires_site_cd_and_enc_key
+     *
+     * @return void 반환값 없음
      */
     public function test_live_mode_without_credentials_is_rejected(): void
     {
@@ -52,9 +63,13 @@ class KcpLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
+     * 운영 자격증명 오류 문구가 영문 키 대신 한국어 항목 이름을 쓴다.
+     *
      * @scenario mode=live,live_credentials=missing_enc_key
      *
      * @effects live_mode_requires_site_cd_and_enc_key
+     *
+     * @return void 반환값 없음
      */
     public function test_validation_messages_use_korean_field_labels(): void
     {
@@ -73,9 +88,13 @@ class KcpLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
+     * 운영 모드에서 자격증명을 모두 채우면 저장된다.
+     *
      * @scenario mode=live,live_credentials=complete
      *
      * @effects live_mode_requires_site_cd_and_enc_key
+     *
+     * @return void 반환값 없음
      */
     public function test_live_mode_with_credentials_is_accepted(): void
     {
@@ -89,9 +108,13 @@ class KcpLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
+     * 테스트 모드에서는 운영 자격증명이 비어도 저장된다.
+     *
      * @scenario mode=test,live_credentials=complete
      *
      * @effects test_mode_saves_without_live_credentials
+     *
+     * @return void 반환값 없음
      */
     public function test_test_mode_without_live_credentials_is_accepted(): void
     {
@@ -105,9 +128,13 @@ class KcpLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
+     * 운영 암호화 키는 설정 파일에 암호문으로 저장되고 서비스 조회로만 원문이 돌아온다.
+     *
      * @scenario mode=live,live_credentials=complete
      *
      * @effects sensitive_key_is_not_returned_in_plain_text
+     *
+     * @return void 반환값 없음
      */
     public function test_saved_encryption_key_is_not_stored_in_plain_text(): void
     {
@@ -142,6 +169,8 @@ class KcpLiveModeSettingsValidationTest extends PluginTestCase
      * @scenario mode=live,live_credentials=complete
      *
      * @effects sensitive_key_is_not_returned_in_plain_text
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_response_masks_encryption_key(): void
     {
@@ -173,6 +202,8 @@ class KcpLiveModeSettingsValidationTest extends PluginTestCase
      * @scenario mode=live,live_credentials=complete
      *
      * @effects sensitive_key_is_not_returned_in_plain_text
+     *
+     * @return void 반환값 없음
      */
     public function test_resubmitting_mask_preserves_stored_key(): void
     {
@@ -212,6 +243,8 @@ class KcpLiveModeSettingsValidationTest extends PluginTestCase
      * @scenario mode=live,live_credentials=complete
      *
      * @effects sm_prefix_is_added_once
+     *
+     * @return void 반환값 없음
      */
     public function test_site_cd_is_stored_without_sm_prefix(): void
     {
@@ -236,6 +269,8 @@ class KcpLiveModeSettingsValidationTest extends PluginTestCase
      * @scenario mode=live,live_credentials=complete
      *
      * @effects sm_prefix_is_added_once
+     *
+     * @return void 반환값 없음
      */
     public function test_normalized_site_cd_still_resolves_with_prefix(): void
     {
@@ -246,7 +281,7 @@ class KcpLiveModeSettingsValidationTest extends PluginTestCase
         ])->assertStatus(200);
 
         $provider = app()->makeWith(
-            \Plugins\Sirsoft\VerificationNhnkcp\Identity\KcpIdentityProvider::class,
+            KcpIdentityProvider::class,
             ['config' => app(PluginSettingsService::class)->get(self::PLUGIN_IDENTIFIER)],
         );
 
@@ -254,7 +289,145 @@ class KcpLiveModeSettingsValidationTest extends PluginTestCase
     }
 
     /**
+     * ko 요청에서 설정 항목 8개 모두의 오류 문구가 화면과 같은 한국어 항목 이름을 쓴다.
+     *
+     * 7.1.0 전수 실측(P-11): 리스너가 운영 자격증명만, 그것도 운영 모드일 때만 언어별 이름을
+     * 등록했다. 나머지 항목은 설정 스키마 label 로 대체돼 「중복체크 기준」이 「중복 판정 필드」로 나갔다.
+     *
+     * @scenario locale=ko
+     *
+     * @effects every_settings_field_error_label_follows_request_locale
+     *
+     * @return void 반환값 없음
+     */
+    public function test_every_settings_field_error_label_follows_korean_request(): void
+    {
+        $this->assertEveryFieldLabelFollowsLocale('ko');
+    }
+
+    /**
+     * en 요청에서 설정 항목 8개 모두의 오류 문구가 영어 항목 이름을 쓰고 한국어가 남지 않는다.
+     *
+     * @scenario locale=en
+     *
+     * @effects every_settings_field_error_label_follows_request_locale, no_korean_field_label_in_non_korean_error
+     *
+     * @return void 반환값 없음
+     */
+    public function test_every_settings_field_error_label_follows_english_request(): void
+    {
+        $this->assertEveryFieldLabelFollowsLocale('en');
+    }
+
+    /**
+     * ja 요청에서 설정 항목 8개 모두의 오류 문구가 일본어 언어팩의 항목 이름을 쓰고 한국어가 남지 않는다.
+     *
+     * ja 이름은 번들 일본어 언어팩 파일의 실제 값을 그대로 싣는다 — 언어팩에 키가 없으면 기대값이
+     * 안내 문구가 돼 실패한다.
+     *
+     * @scenario locale=ja
+     *
+     * @effects every_settings_field_error_label_follows_request_locale, no_korean_field_label_in_non_korean_error
+     *
+     * @return void 반환값 없음
+     */
+    public function test_every_settings_field_error_label_follows_japanese_request(): void
+    {
+        $this->assertEveryFieldLabelFollowsLocale('ja');
+    }
+
+    /**
+     * 모든 설정 항목이 형식 오류로 거절되는 저장을 보내고, 오류 문구의 항목 이름이 요청 언어를 따르는지 본다.
+     *
+     * 테스트 모드 값이 참·거짓이 아니고 문자열 칸에 목록이 오면 모든 항목이 422 가 된다(운영 모드 아님).
+     *
+     * @param  string  $locale  요청 언어(ko|en|ja)
+     * @return void 반환값 없음
+     */
+    private function assertEveryFieldLabelFollowsLocale(string $locale): void
+    {
+        $body = [
+            'is_test_mode' => 'not-a-boolean',
+            'test_site_cd' => ['x'],
+            'test_enc_key' => ['x'],
+            'live_site_cd' => ['x'],
+            'live_enc_key' => ['x'],
+            'web_siteid' => ['x'],
+            'duplicate_field' => 'zz',
+            'duplicate_block_enabled' => 'not-a-boolean',
+        ];
+
+        $packFile = base_path('lang-packs/_bundled/g7-plugin-sirsoft-verification_nhnkcp-ja/backend/ja/messages.php');
+        $jaSettings = (require $packFile)['settings'] ?? [];
+        $lines = [];
+        foreach ($jaSettings as $key => $value) {
+            if (is_string($value)) {
+                $lines['messages.settings.'.$key] = $value;
+            }
+        }
+        Lang::addLines($lines, 'ja', self::PLUGIN_IDENTIFIER);
+
+        $ko = [
+            'is_test_mode' => '테스트 모드',
+            'test_site_cd' => '테스트 사이트코드',
+            'test_enc_key' => '테스트 암호화 키',
+            'live_site_cd' => '운영 사이트코드',
+            'live_enc_key' => '운영 암호화 키',
+            'web_siteid' => '웹사이트 ID',
+            'duplicate_field' => '중복체크 기준',
+            'duplicate_block_enabled' => '중복 가입 차단',
+        ];
+        $expected = [
+            'ko' => $ko,
+            'en' => [
+                'is_test_mode' => 'Test Mode',
+                'test_site_cd' => 'Test Site Code',
+                'test_enc_key' => 'Test Encryption Key',
+                'live_site_cd' => 'Live Site Code',
+                'live_enc_key' => 'Live Encryption Key',
+                'web_siteid' => 'Web Site ID',
+                'duplicate_field' => 'Duplicate Check Basis',
+                'duplicate_block_enabled' => 'Block Duplicate Signup',
+            ],
+            'ja' => array_combine(array_keys($ko), array_map(
+                static fn (string $field) => $jaSettings[$field.'_attribute'] ?? "(ja 언어팩에 {$field}_attribute 없음)",
+                array_keys($ko),
+            )),
+        ][$locale];
+
+        $originalLocales = config('app.supported_locales');
+        config(['app.supported_locales' => array_values(array_unique(array_merge((array) $originalLocales, ['ja'])))]);
+
+        try {
+            // 코어 SetLocale 미들웨어의 1순위는 인증 사용자의 users.language 다.
+            $this->admin->forceFill(['language' => $locale])->save();
+            $this->app['auth']->forgetGuards();
+
+            $response = $this->withHeaders([
+                'Authorization' => 'Bearer '.$this->token,
+                'Accept' => 'application/json',
+                'Accept-Language' => $locale,
+            ])->putJson('/api/admin/plugins/'.self::PLUGIN_IDENTIFIER.'/settings', $body);
+
+            $response->assertStatus(422);
+            $errors = $response->json('errors');
+
+            foreach ($expected as $field => $label) {
+                $this->assertArrayHasKey($field, $errors, "{$locale}: {$field} 오류가 있어야 한다");
+                $this->assertStringContainsString($label, $errors[$field][0], "{$locale}: {$field} 오류 문구의 항목 이름");
+                if ($locale !== 'ko') {
+                    $this->assertStringNotContainsString($ko[$field], $errors[$field][0], "{$locale}: {$field} 항목 이름이 한국어로 남으면 안 된다");
+                }
+            }
+        } finally {
+            config(['app.supported_locales' => $originalLocales]);
+        }
+    }
+
+    /**
      * core.plugins.update 권한을 가진 관리자 생성.
+     *
+     * @return User 설정 수정·조회 권한이 붙은 관리자
      */
     private function createAdminUser(): User
     {
@@ -292,8 +465,8 @@ class KcpLiveModeSettingsValidationTest extends PluginTestCase
     /**
      * 인증 헤더가 적용된 설정 저장 요청.
      *
-     * @param  array<string, mixed>  $body
-     * @return TestResponse
+     * @param  array<string, mixed>  $body  저장 요청 본문
+     * @return TestResponse 설정 저장 응답
      */
     private function putSettings(array $body)
     {

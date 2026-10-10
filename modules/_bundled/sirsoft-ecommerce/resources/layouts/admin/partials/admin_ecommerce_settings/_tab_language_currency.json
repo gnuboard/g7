@@ -1,208 +1,292 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "쇼핑몰 설정 언어/통화 탭 콘텐츠"
-  },
-  "id": "tab_content_language_currency",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'language_currency'}}",
-  "props": {},
-  "children": [
-    {
-      "id": "language_settings_card",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "id": "language_settings_title",
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.title"
-        },
-        {
-          "id": "language_settings_description",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.description"
-        },
-        {
-          "id": "language_settings_content",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "grid-2col-responsive"
-          },
-          "children": [
-            {
-              "id": "field_default_currency",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "form-group"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.default_currency"
-                },
-                {
-                  "type": "composite",
-                  "name": "Select",
-                  "props": {
-                    "name": "language_currency.default_currency",
-                    "value": "{{_local.form?.language_currency?.default_currency}}",
-                    "options": "{{(Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map(c => ({ value: c.code, label: typeof c.name === 'object' ? $localized(c.name) : c.name }))}}",
-                    "className": "{{_local.errors?.['language_currency.default_currency'] ? 'w-full select-error' : 'w-full'}}",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['language_currency.default_currency']}}",
-                  "props": {
-                    "className": "form-error"
-                  },
-                  "text": "{{_local.errors?.['language_currency.default_currency']?.[0] ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "form-hint"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.currency_change_warning"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "쇼핑몰 설정 — 언어·통화 탭. 통화 목록 자체는 별도 조각(카드/표)이 맡고, 이 탭은 그것을\n  담고 통화 추가를 시작하는 자리다.",
+    "meta": {
+        "is_partial": true,
+        "description": "쇼핑몰 설정 언어/통화 탭 콘텐츠"
     },
-    {
-      "id": "exchange_settings_card",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
+    "id": "tab_content_language_currency",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'language_currency'}}",
+    "children": [
         {
-          "id": "exchange_settings_header",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-between mb-6"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "id": "exchange_settings_title",
-                  "type": "basic",
-                  "name": "H3",
-                  "props": {
-                    "className": "card-title"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.title"
-                },
-                {
-                  "id": "exchange_settings_description",
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "card-description"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.description"
-                }
-              ]
+            "id": "language_settings_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
             },
-            {
-              "id": "add_currency_button",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{_computed.isReadOnly || _local.isAddingCurrency === true}}"
-              },
-              "actions": [
+            "children": [
                 {
-                  "type": "click",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "isAddingCurrency": true,
-                    "form.newCurrency": {
-                      "code": "",
-                      "name": {},
-                      "symbol": "",
-                      "exchange_rate": 1,
-                      "rounding_unit": "0.01",
-                      "rounding_method": "round",
-                      "decimal_places": 2,
-                      "is_default": false
-                    }
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "plus",
-                    "className": "text-base mr-1"
-                  }
+                    "id": "language_settings_title",
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.title"
                 },
                 {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.add_currency"
+                    "id": "language_settings_description",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.description"
+                },
+                {
+                    "id": "language_settings_content",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid-2col-responsive"
+                    },
+                    "children": [
+                        {
+                            "id": "field_default_currency",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "form-group"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.default_currency"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "props": {
+                                        "name": "language_currency.default_currency",
+                                        "value": "{{_local.form?.language_currency?.default_currency}}",
+                                        "options": "{{((Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map(c => ({ value: c.code, label: typeof c.name === 'object' ? $localized(c.name) : c.name }))) ?? []}}",
+                                        "className": "{{_local.errors?.['language_currency.default_currency'] ? 'w-full input-error' : 'w-full'}}",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['language_currency.default_currency']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['language_currency.default_currency']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.currency_change_warning"
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         },
         {
-          "id": "exchange_rate_list",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "w-full"
-          },
-          "children": [
-            {
-              "partial": "_currency_exchange_table.json"
-            }
-          ],
-          "responsive": {
-            "portable": {
-              "children": [
+            "id": "exchange_settings_card",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
                 {
-                  "partial": "_currency_exchange_cards.json"
+                    "id": "exchange_rate_provider_select",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(settings?.data?.available_rate_providers ?? []).length > 0}}",
+                    "props": {
+                        "className": "form-group mb-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label",
+                                "htmlFor": "exchange_rate_provider"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.label"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "props": {
+                                "id": "exchange_rate_provider",
+                                "className": "{{_local.errors?.['language_currency.rate_provider'] ? 'w-full input-error' : 'w-full'}}",
+                                "name": "language_currency.rate_provider",
+                                "value": "{{_local.form?.language_currency?.rate_provider ?? ''}}",
+                                "options": "{{[{value: '', label: $t('sirsoft-ecommerce.admin.settings.language_currency.rate_provider.manual')}].concat((settings?.data?.available_rate_providers ?? []).map(p => ({value: p.id, label: $localized(p.name)})))}}",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.errors?.['language_currency.rate_provider']}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_local.errors?.['language_currency.rate_provider']?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "exchange_rate_provider_banner",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_computed.activeRateProvider !== null}}",
+                    "props": {
+                        "role": "status",
+                        "className": "alert-info mb-4 flex flex-wrap items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{$localized(_computed.activeRateProvider?.name)}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.last_updated"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_computed.activeRateProvider?.last_updated_at_formatted ?? '-'}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_computed.activeRateProvider?.notice_key}}",
+                            "text": "{{_computed.activeRateProvider.notice_key === 'auth_key_required' ? $t('sirsoft-ecommerce.admin.settings.language_currency.rate_provider.auth_key_required') : _computed.activeRateProvider.notice_key === 'auto_manage_disabled' ? $t('sirsoft-ecommerce.admin.settings.language_currency.rate_provider.auto_manage_disabled') : _computed.activeRateProvider.notice_key === 'unsupported_base' ? $t('sirsoft-ecommerce.admin.settings.language_currency.rate_provider.unsupported_base') : _computed.activeRateProvider.notice_key}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "A",
+                            "props": {
+                                "href": "{{_computed.activeRateProvider?.settings_url}}",
+                                "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.settings"
+                        }
+                    ]
+                },
+                {
+                    "id": "exchange_settings_header",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-between mb-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "id": "exchange_settings_title",
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "card-title"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.title"
+                                },
+                                {
+                                    "id": "exchange_settings_description",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "card-description"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.description"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "add_currency_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "통화 추가 시작. 여기서는 빈 입력줄을 여는 것뿐이고 실제 추가는 그 줄의 확인 버튼이 한다.",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "isAddingCurrency": true,
+                                        "form.newCurrency": {
+                                            "code": "",
+                                            "name": {},
+                                            "symbol": "",
+                                            "exchange_rate": 1,
+                                            "rounding_unit": "0.01",
+                                            "rounding_method": "round",
+                                            "decimal_places": 2,
+                                            "is_default": false
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_computed.isReadOnly || _local.isAddingCurrency === true}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "plus",
+                                        "className": "text-base mr-1"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.add_currency"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "exchange_rate_list",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "children": [
+                                {
+                                    "partial": "_currency_exchange_cards.json"
+                                }
+                            ]
+                        }
+                    },
+                    "props": {
+                        "className": "w-full"
+                    },
+                    "children": [
+                        {
+                            "partial": "_currency_exchange_table.json"
+                        }
+                    ]
                 }
-              ]
-            }
-          }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

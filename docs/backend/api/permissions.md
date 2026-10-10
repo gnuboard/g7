@@ -183,6 +183,6 @@ HTTP/1.1 200
 
 **설명**
 
-시스템의 전체 권한을 계층형 트리로 조회한다. 역할 생성·편집 화면(`admin_role_form.json`)의 권한 선택 트리를 채우는 데 사용된다. 권한은 모듈 → 카테고리 → 개별 권한 순으로 중첩되며(각 노드의 `children`), 코어 권한이 먼저 오도록 정렬된다. 응답의 `permissions` 는 권한 타입별(admin/user)로 그룹화되고, 각 그룹은 `label`·`icon` 메타와 필터링된 권한 트리를 담는다. 함께 반환되는 `types`(권한 타입 목록), `default_type`(기본 탭), `scope_options`(scope_type 선택지: 전체/역할/본인)는 편집 UI 구성에 쓰인다. 리프 노드만 실제 부여 가능한 권한(`is_assignable`)이다. `core.permissions.read` 권한이 필요하다.
+시스템의 전체 권한을 계층형 트리로 조회한다. 역할 생성·편집 화면(`admin_role_form.g7.html`)의 권한 선택 트리를 채우는 데 사용된다. 권한은 모듈 → 카테고리 → 개별 권한 순으로 중첩되며(각 노드의 `children`), 코어 권한이 먼저 오도록 정렬된다. 응답의 `permissions` 는 권한 타입별(admin/user)로 그룹화되고, 각 그룹은 `label`·`icon` 메타와 필터링된 권한 트리를 담는다. 함께 반환되는 `types`(권한 타입 목록), `default_type`(기본 탭), `scope_options`(scope_type 선택지: 전체/역할/본인)는 편집 UI 구성에 쓰인다. 리프 노드만 실제 부여 가능한 권한(`is_assignable`)이다. `core.permissions.read` 권한이 필요하다.
 
 

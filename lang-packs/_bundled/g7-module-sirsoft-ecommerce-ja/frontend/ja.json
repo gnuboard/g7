@@ -51,9 +51,6 @@
     "personal_payment_detail": {
       "$partial": "partial/admin/personal_payment_detail.json"
     },
-    "mileage_deposit_settings": {
-      "$partial": "partial/admin/mileage_deposit_settings.json"
-    },
     "product_notice_template": {
       "$partial": "partial/admin/product_notice_template.json"
     },
@@ -101,6 +98,300 @@
       "save_button": "保存",
       "saved": "会員の配送国が変更されました。",
       "save_failed": "会員の配送国の変更に失敗しました。"
+    },
+    "user_filter": {
+      "title": "ショップ条件",
+      "mileage": "マイレージ残高",
+      "mileage_min": "最小",
+      "mileage_max": "最大",
+      "shipping_country": "配送先の国",
+      "shipping_country_all": "国を問わない",
+      "has_address": "配送先の登録",
+      "has_address_yes": "あり",
+      "has_address_no": "なし"
+    },
+    "wishlists": {
+      "title": "お気に入り管理",
+      "description": "全会員が保存したお気に入りを確認し、整理します。",
+      "search_fields": {
+        "member": "会員",
+        "member_id": "会員ID",
+        "email": "メール",
+        "product": "商品名"
+      },
+      "filters": {
+        "search_label": "検索対象",
+        "keyword_label": "検索キーワード",
+        "keyword_placeholder": "検索キーワードを入力",
+        "date_label": "登録日",
+        "search": "検索",
+        "reset": "初期化",
+        "member_filter_notice": "特定会員のお気に入りのみ表示中",
+        "member_filter_clear": "会員フィルター解除"
+      },
+      "columns": {
+        "created_at": "登録日",
+        "member": "会員",
+        "product": "商品"
+      },
+      "badges": {
+        "withdrawn": "退会",
+        "guest": "非会員"
+      },
+      "actions": {
+        "delete": "削除",
+        "view_member": "会員情報"
+      },
+      "bulk": {
+        "selected_count": "{{count}}個選択されました",
+        "delete": "選択削除"
+      },
+      "sort": {
+        "created_at_desc": "最新順",
+        "created_at_asc": "古い順"
+      },
+      "table": {
+        "total_count": "合計{{count}}件",
+        "empty": "お気に入りはありません。"
+      },
+      "modal": {
+        "delete": {
+          "title": "このお気に入りを削除しますか？",
+          "message": "会員のお気に入り一覧から削除されます。商品自体は削除されません。"
+        },
+        "bulk_delete": {
+          "title": "選択したお気に入りを削除しますか？",
+          "message": "選択した{{count}}個のお気に入りを削除しますか？",
+          "deleting": "削除中..."
+        }
+      }
+    },
+    "carts": {
+      "title": "カート管理",
+      "description": "全会員および非会員セッションのカートを確認し、整理します。",
+      "search_fields": {
+        "member": "会員",
+        "member_id": "会員ID",
+        "email": "メール",
+        "product": "商品名"
+      },
+      "filters": {
+        "search_label": "検索対象",
+        "keyword_label": "検索キーワード",
+        "keyword_placeholder": "検索キーワードを入力",
+        "date_label": "追加日",
+        "search": "検索",
+        "reset": "初期化",
+        "owner_label": "区分",
+        "owner_all": "すべて",
+        "owner_member": "会員",
+        "owner_guest": "非会員",
+        "member_filter_notice": "特定会員のカートのみ表示中",
+        "member_filter_clear": "会員フィルター解除"
+      },
+      "columns": {
+        "created_at": "追加日",
+        "member": "会員",
+        "product": "商品",
+        "option": "オプション",
+        "quantity": "数量"
+      },
+      "badges": {
+        "withdrawn": "退会",
+        "guest": "非会員"
+      },
+      "actions": {
+        "delete": "削除",
+        "view_member": "会員情報"
+      },
+      "bulk": {
+        "selected_count": "{{count}}個選択されました",
+        "delete": "選択削除"
+      },
+      "sort": {
+        "created_at_desc": "最新順",
+        "created_at_asc": "古い順"
+      },
+      "table": {
+        "total_count": "合計{{count}}件",
+        "empty": "カート項目がありません。"
+      },
+      "modal": {
+        "delete": {
+          "title": "このカート項目を削除しますか？",
+          "message": "会員のカートから削除されます。商品自体は削除されません。"
+        },
+        "bulk_delete": {
+          "title": "選択したカート項目を削除しますか？",
+          "message": "選択した{{count}}個の項目を削除しますか？",
+          "deleting": "削除中..."
+        }
+      }
+    },
+    "user_addresses": {
+      "title": "会員配送先",
+      "description": "全会員が保存した配送先を照会・整理します。",
+      "search_fields": {
+        "member": "会員",
+        "member_id": "会員ID",
+        "email": "メール",
+        "recipient": "受取人",
+        "address": "住所"
+      },
+      "search": {
+        "placeholder": "受取人・住所で検索",
+        "column_select": "列を選択"
+      },
+      "filter": {
+        "member": "会員",
+        "member_select": "会員を選択",
+        "member_selected_count": "{count}名選択",
+        "member_search_placeholder": "名前・メールで検索",
+        "member_search_initial": "名前またはメールを入力してください",
+        "created_at": "登録日",
+        "is_default": "基本配送先",
+        "is_default_only": "基本のみ",
+        "is_default_except": "基本を除外",
+        "search": "検索",
+        "reset": "初期化"
+      },
+      "columns": {
+        "created_at": "登録日",
+        "member": "会員",
+        "recipient": "受取人",
+        "contact": "連絡先",
+        "address": "住所"
+      },
+      "badges": {
+        "withdrawn": "退会",
+        "guest": "非会員",
+        "is_default": "基本"
+      },
+      "actions": {
+        "delete": "削除",
+        "view_member": "会員情報",
+        "search_member": "この会員で検索"
+      },
+      "bulk": {
+        "delete": "選択削除"
+      },
+      "sort": {
+        "created_at_desc": "最新順",
+        "created_at_asc": "古い順"
+      },
+      "table": {
+        "total_count": "合計{{count}}件",
+        "selected_count": "{{count}}件選択されました",
+        "empty": "配送先がありません。"
+      },
+      "modal": {
+        "delete": {
+          "title": "この配送先を削除しますか？",
+          "message": "{{member}} 会員の配送先（受取人 {{recipient}}）を削除します。",
+          "warning": "会員の配送先一覧から消えます。すでに受け付けた注文の配送先には影響しません。"
+        },
+        "bulk_delete": {
+          "title": "選択した配送先を削除しますか？",
+          "message": "選択した{{count}}件の配送先を削除します。"
+        }
+      }
+    },
+    "inquiries": {
+      "title": "商品問い合わせ管理",
+      "description": "全会員の商品問い合わせを照会及び整理します。",
+      "search_fields": {
+        "member": "会員",
+        "member_id": "会員ID",
+        "email": "メールアドレス",
+        "product": "商品名",
+        "content": "問い合わせ内容"
+      },
+      "filters": {
+        "search_label": "検索対象",
+        "keyword_label": "検索キーワード",
+        "keyword_placeholder": "検索キーワードを入力",
+        "date_label": "問い合わせ日",
+        "search": "検索",
+        "reset": "初期化",
+        "is_answered_label": "回答状態",
+        "is_answered_all": "すべて",
+        "is_answered_yes": "回答完了",
+        "is_answered_no": "未回答",
+        "member_filter_notice": "特定ユーザーの問い合わせのみ表示中",
+        "member_filter_clear": "ユーザーフィルター解除"
+      },
+      "columns": {
+        "created_at": "問い合わせ日",
+        "member": "会員",
+        "product": "商品",
+        "content": "問い合わせ内容",
+        "status": "回答状態"
+      },
+      "badges": {
+        "withdrawn": "退会",
+        "guest": "非会員"
+      },
+      "status": {
+        "answered": "回答完了",
+        "pending": "未回答"
+      },
+      "content_unavailable": "本文を読み込むことができません",
+      "actions": {
+        "delete": "削除",
+        "view_member": "会員情報",
+        "reply": "回答"
+      },
+      "bulk": {
+        "selected_count": "{{count}}件選択されました",
+        "delete": "選択削除"
+      },
+      "sort": {
+        "created_at_desc": "最新順",
+        "created_at_asc": "古い順"
+      },
+      "table": {
+        "total_count": "合計{{count}}件",
+        "empty": "商品問い合わせがありません。"
+      },
+      "modal": {
+        "delete": {
+          "title": "この問い合わせを削除しますか?",
+          "message": "問い合わせと回答が一緒に削除されます。"
+        },
+        "bulk_delete": {
+          "title": "選択した問い合わせを削除しますか?",
+          "message": "選択した{{count}}件の問い合わせを削除しますか?",
+          "deleting": "削除中..."
+        },
+        "reply": {
+          "title": "お問い合わせに回答する",
+          "content_label": "回答内容",
+          "content_placeholder": "会員に表示する回答を入力してください(最大5000文字)",
+          "submit": "回答を登録",
+          "already_answered": "既に回答済みのお問い合わせです。登録すると回答が追加されます。"
+        }
+      }
+    },
+    "user_ecommerce_data": {
+      "tab_label": "ショッピングデータ",
+      "title": "会員ショッピングデータ",
+      "count_unit": "{{count}}件",
+      "wishlist": "お気に入り",
+      "cart": "カート",
+      "address": "配送先",
+      "inquiry": "商品問い合わせ",
+      "view_wishlists": "お気に入り一覧",
+      "view_carts": "カート",
+      "view_addresses": "配送先",
+      "view_inquiries": "商品問い合わせ",
+      "inquiry_pending": "未回答 {{count}}件",
+      "saved_addresses": "保存された配送先",
+      "address_empty": "登録された配送先がありません。",
+      "address_default": "基本",
+      "address_more": "他 {{count}}件は配送先管理で確認できます。"
+    },
+    "claim": {
+      "$partial": "partial/admin/claim.json"
     }
   },
   "user": {
@@ -142,6 +433,7 @@
       "common_infos": "共通情報一覧",
       "copy_source": "コピー元",
       "coupon": "クーポン",
+      "coupon_abilities": "クーポン権限",
       "couponIssues": "クーポン発行履歴",
       "coupons": "クーポン一覧",
       "ecommerceIdentityPolicies": "ショッピングモール本人認証ポリシー",
@@ -149,6 +441,8 @@
       "ecommerceNotificationDefinitions": "ショッピングモール通知定義",
       "ecommerce_settings": "ショッピングモール設定",
       "extra_fee_templates": "追加配送料金テンプレート",
+      "policy_abilities": "配送ポリシー権限",
+      "product_abilities": "商品権限",
       "identityProviders": "本人認証プロバイダー",
       "notice_templates": "商品情報表示テンプレート",
       "order": "注文",
@@ -166,7 +460,21 @@
       "settings": "設定",
       "shipping_policies": "配送ポリシー一覧",
       "templates": "テンプレート一覧",
-      "paymentSettings": "決済環境設定"
+      "paymentSettings": "決済環境設定",
+      "wishlists": "お気に入り一覧",
+      "carts": "カート一覧",
+      "addresses": "会員配送先一覧",
+      "inquiries": "商品問い合わせ一覧",
+      "ecommercePrivacyRetentionPreview": "イーコマース個人情報保有期間対象件数",
+      "privacyTargets": "保有期間処理対象注文一覧",
+      "privacyManualRuns": "個人情報措置職権実行状態",
+      "claim_detail": "キャンセル·返品·交換の詳細",
+      "claim_logs": "キャンセル·返品·交換のアクティビティログ",
+      "claim_reasons": "キャンセル·返品·交換理由",
+      "claims": "キャンセル·返品·交換一覧",
+      "orderClaims": "注文クレーム履歴",
+      "claim_settings": "配送ポリシークレーム設定",
+      "claimRequestContext": "職権受付文脈"
     },
     "action": {
       "request_pg_payment": {
@@ -180,12 +488,19 @@
       "response_pg_data": "決済データ(レスポンス)"
     }
   },
+  "user_address_card": {
+    "title": "基本の配送先",
+    "manage": "配送先管理",
+    "default_badge": "基本",
+    "empty_notice": "登録された配送先がありません。登録すると注文書に自動で入力されます。"
+  },
   "user_mileage": {
     "title": "私のマイレージ",
     "available": "利用可能",
     "expiring_soon": "失効予定 {{amount}} P",
     "view_history": "マイレージ履歴",
-    "disabled_notice": "マイレージ機能が無効化されています。"
+    "disabled_notice": "マイレージ機能が無効化されています。",
+    "withdraw_refund_credit_warning": "返金として受け取ったマイレージ {{amount}} P も退会すると失効し、元に戻せません。必要であれば退会前に使用するか、カスタマーセンターにお問い合わせください。"
   },
   "auth": {
     "register_currency": {

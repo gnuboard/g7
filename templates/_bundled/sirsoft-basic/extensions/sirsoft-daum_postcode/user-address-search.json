@@ -1,79 +1,85 @@
 {
-  "extension_point": "address_search_slot",
-  "scripts": [
-    {
-      "src": "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
-      "id": "daum_postcode_script"
-    }
-  ],
-  "components": [
-    {
-      "id": "daum_postcode_user_container",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "inline-flex"
-      },
-      "lifecycle": {
-        "onMount": [
-          {
-            "comment": "주소 검색 플러그인 마운트 시 지정된 필드를 readOnly로 설정",
-            "handler": "sirsoft-daum_postcode.setFieldReadOnly",
-            "params": {
-              "fields": "{{extensionPointProps.readOnlyFields ?? ['zipcode', 'address']}}",
-              "readOnly": true
-            }
-          }
-        ]
-      },
-      "children": [
+    "comment": "주소 검색 버튼 — 주소 입력이 있는 화면(배송지 등)의 address_search_slot 자리에 템플릿이 끼워 넣는 조각이다. 실제 검색창은 다음 우편번호 서비스가 띄우고, 고른 주소를 어느 칸에 넣을지는 끼워 넣은 쪽이 넘겨 준다.",
+    "extension_point": "address_search_slot",
+    "priority": 50,
+    "scripts": [
         {
-          "id": "btn_user_search_address",
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "flex-shrink-0 px-4 py-2.5 border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "flex-shrink-0 px-3 py-2 border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-              }
-            }
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": { "name": "search", "className": "w-4 h-4 mr-1.5" }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:sirsoft-daum_postcode.search_address"
-            }
-          ],
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sirsoft-daum_postcode.openPostcode",
-              "params": {
-                "displayMode": "{{_global.plugins['sirsoft-daum_postcode']?.display_mode ?? 'layer'}}",
-                "width": "{{_global.plugins['sirsoft-daum_postcode']?.popup_width ?? 500}}",
-                "height": "{{_global.plugins['sirsoft-daum_postcode']?.popup_height ?? 600}}",
-                "theme": {
-                  "searchBgColor": "{{_global.plugins['sirsoft-daum_postcode']?.theme_color ?? '#1D4ED8'}}",
-                  "queryTextColor": "#FFFFFF"
-                },
-                "callbackAction": "{{extensionPointCallbacks.onAddressSelect}}",
-                "targetFields": "{{extensionPointProps.targetFields}}"
-              }
-            }
-          ]
+            "src": "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js",
+            "id": "daum_postcode_script",
+            "label": "$t:sirsoft-daum_postcode.search_address"
         }
-      ]
-    }
-  ],
-  "priority": 50
+    ],
+    "components": [
+        {
+            "id": "daum_postcode_user_container",
+            "type": "basic",
+            "name": "Div",
+            "lifecycle": {
+                "onMount": [
+                    {
+                        "comment": "주소 검색 플러그인 마운트 시 지정된 필드를 readOnly로 설정",
+                        "handler": "sirsoft-daum_postcode.setFieldReadOnly",
+                        "params": {
+                            "fields": "{{extensionPointProps.readOnlyFields ?? ['zipcode', 'address']}}",
+                            "readOnly": true
+                        }
+                    }
+                ]
+            },
+            "props": {
+                "className": "inline-flex"
+            },
+            "children": [
+                {
+                    "id": "btn_user_search_address",
+                    "type": "basic",
+                    "name": "Button",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex-shrink-0 px-3 py-2 border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg text-xs font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                            }
+                        }
+                    },
+                    "actions": [
+                        {
+                            "comment": "주소 검색창 열기 — 띄우는 방식(레이어/팝업)과 크기·색은 플러그인 설정에서 오고, 설정이 없으면 기본값으로 뜬다. 고른 주소를 받는 쪽은 이 조각이 아니라 끼워 넣은 화면이 넘겨 준 콜백이다.",
+                            "type": "click",
+                            "handler": "sirsoft-daum_postcode.openPostcode",
+                            "params": {
+                                "displayMode": "{{_global.plugins['sirsoft-daum_postcode']?.display_mode ?? 'layer'}}",
+                                "width": "{{_global.plugins['sirsoft-daum_postcode']?.popup_width ?? 500}}",
+                                "height": "{{_global.plugins['sirsoft-daum_postcode']?.popup_height ?? 600}}",
+                                "callbackAction": "{{extensionPointCallbacks.onAddressSelect}}",
+                                "targetFields": "{{extensionPointProps.targetFields}}",
+                                "theme": {
+                                    "searchBgColor": "{{_global.plugins['sirsoft-daum_postcode']?.theme_color ?? '#1D4ED8'}}",
+                                    "queryTextColor": "#FFFFFF"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-shrink-0 px-4 py-2.5 border border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "search",
+                                "className": "text-base mr-1.5"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-daum_postcode.search_address"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
 }

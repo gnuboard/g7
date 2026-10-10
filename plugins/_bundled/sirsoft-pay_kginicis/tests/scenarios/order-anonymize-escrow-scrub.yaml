@@ -1,0 +1,24 @@
+feature: 주문 익명화 시 에스크로 배송 등록 수령인 사본 파기 (이슈 #636)
+
+description: |
+  이커머스 보유기간 익명화가 주문 한 건마다 발행하는 `sirsoft-ecommerce.order.after_anonymize` 를
+  구독해, 관리자 에스크로 배송 등록이 결제 행 `payment_meta.escrow_delivery` 에 남긴 수령인
+  이름·주소를 지운다. 이커머스는 주소 테이블만 알므로 플러그인 소유 사본은 플러그인이 지운다.
+
+  설계에서 못박은 것:
+    - 익명화 트랜잭션 안에서 동기(`sync: true`)로 돈다 — 던지면 익명화 표지까지 롤백되어 다음 실행이
+      다시 잡는다. 큐로 미루면 표지만 남고 사본이 남을 수 있다.
+    - 송장번호·택배사·PG 응답(화이트리스트 사본)은 배송 거래 기록이라 남긴다.
+    - 수정 시각을 바꾸지 않는다. 다른 결제 대행사의 행은 건드리지 않는다.
+
+axes:
+  escrow_state: [registered, not_registered]
+  pg_provider: [kginicis]
+
+effects:
+  - escrow_recipient_is_scrubbed_on_order_anonymize
+  - escrow_delivery_record_is_preserved
+  - payment_without_escrow_is_untouched
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Listeners/ScrubEscrowRecipientOnOrderAnonymizeListenerTest.php

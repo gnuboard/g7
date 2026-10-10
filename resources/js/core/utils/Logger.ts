@@ -188,6 +188,12 @@ export interface PrefixedLogger {
     log: (...args: unknown[]) => void;
     warn: (...args: unknown[]) => void;
     error: (...args: unknown[]) => void;
+    /**
+     * 디버그 출력이 켜져 있는가 — 로그 인자(템플릿 문자열 등)를 만드는 비용을 건너뛸 때 쓴다.
+     * 테스트 목(mock)·지연 번들 shim 호환을 위해 선택 멤버다(호출부는 `isDebugEnabled?.()`).
+     * @since engine-v1.74.0
+     */
+    isDebugEnabled?: () => boolean;
 }
 
 /**
@@ -232,6 +238,7 @@ export function createLogger(prefix: string): PrefixedLogger {
             // DevTools 추적 (버퍼링 지원 - 초기화 전 에러도 캡처)
             trackLogWithBuffer('error', prefix, args);
         },
+        isDebugEnabled: (): boolean => loggerInstance.isDebugEnabled(),
     };
 }
 

@@ -10,12 +10,15 @@ const t = (key: string, params?: Record<string, string | number>) =>
   (window as any).G7Core?.t?.(key, params) ?? key;
 
 // G7Core.renderComponentLayout() 헬퍼 참조
+// renderEnv 는 이 RichSelect 를 그린 렌더러의 렌더 환경 — 레이아웃 편집기 미리보기에서 항목이
+// 호스트 언어·dispatcher 대신 미리보기 값으로 그려지게 한다(#141).
 const renderComponentLayout = (
   layoutDefs: any[] | undefined,
   itemContext: Record<string, any>,
-  keyPrefix?: string
+  keyPrefix?: string,
+  renderEnv?: Record<string, any> | null
 ): React.ReactNode => {
-  return (window as any).G7Core?.renderComponentLayout?.(layoutDefs, itemContext, keyPrefix) ?? null;
+  return (window as any).G7Core?.renderComponentLayout?.(layoutDefs, itemContext, keyPrefix, { renderEnv }) ?? null;
 };
 
 export interface RichSelectOption {
@@ -70,6 +73,11 @@ export interface RichSelectProps {
   id?: string;
   /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
   editorAttrs?: EditorAttrs;
+  /**
+   * 엔진이 자동 주입하는 부모 컴포넌트 컨텍스트 — `renderEnvRef.current` 를 component_layout 렌더에 넘긴다(#141)
+   * @internal 템플릿 엔진 내부 사용
+   */
+  __componentContext?: { renderEnvRef?: { current: Record<string, any> | null } };
 }
 
 /**
@@ -121,8 +129,11 @@ export const RichSelect: React.FC<RichSelectProps> = ({
   __componentLayoutDefs,
   id,
   editorAttrs,
+  __componentContext,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  // 렌더 시점의 렌더 환경(호출 시점 값을 읽는다 — ref 라 매 렌더 최신)
+  const renderEnv = __componentContext?.renderEnvRef?.current ?? null;
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -199,7 +210,8 @@ export const RichSelect: React.FC<RichSelectProps> = ({
       const rendered = renderComponentLayout(
         __componentLayoutDefs.selected,
         { item: selectedOption, isSelected: true },
-        'selected'
+        'selected',
+        renderEnv
       );
       if (rendered) return rendered;
     }
@@ -301,7 +313,8 @@ export const RichSelect: React.FC<RichSelectProps> = ({
                       ? renderComponentLayout(
                           __componentLayoutDefs.item,
                           { item: option, index, isSelected },
-                          `item-${index}`
+                          `item-${index}`,
+                          renderEnv
                         )
                       : /* 2. children이 있으면 사용 */
                         children

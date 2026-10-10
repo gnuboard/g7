@@ -1,0 +1,654 @@
+<!-- 회원 등록·수정 폼. **한 레이아웃이 두 모드를 겸한다** — `route.id` 유무로 제목·요청 메서드·주소가
+  갈리고, 등록 모드에서는 아래 회원 조회 자체가 돌지 않는다(`if="{{route?.id}}"`).
+  입력값은 `_local.form` 한 덩어리로 모아 두었다가 저장 때 통째로 보낸다.
+  탭 5개는 화면을 나눌 뿐 저장은 한 번이다 — 어느 탭에 있든 하단 저장 버튼이 전부를 낸다.
+  저장은 코어 회원 API 한 번뿐이다 — 모듈이 주입한 칸(예: 이커머스 통화·배송국가)도 `_local.form` 에
+  실려 같은 요청으로 가고, 그 모듈이 코어 훅으로 검증·저장한다. 검증 오류도 같은 `_local.errors` 로 돌아온다. -->
+<layout name="admin_user_form" version="1.0.0" extends="_admin_base">
+  <meta title="{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}" description="{{route?.id ? '$t:admin.users.form.page_description_edit|name=' + (user?.data?.name ?? '') + '|email=' + (user?.data?.email ?? '') : '$t:admin.users.form.page_description_create'}}"/>
+  <!-- 수정할 회원. 응답을 `_local.form` 으로 바로 풀어 폼 초기값을 만든다(`initLocal`).
+       권한을 **응답 뒤에 한 번 더 본다** — 조회는 되지만 수정 권한이 없는 경우가 있어
+       `abilities.can_update` 가 false 면 스스로 403 으로 접는다(응답에 abilities 가 아예 없으면 접지 않고 저장 때 서버가 막는다). 어떤 실패든 화면을 에러로 갈아끼우는
+       이유는, 폼이 빈 채로 뜨면 "새 회원 등록" 으로 읽히고 저장하면 엉뚱한 것이 만들어지기 때문이다. -->
+  <data-source id="user" label_key="$t:editor.data_source.user" type="api" endpoint="/api/admin/users/{{route?.id}}" method="GET" :auto_fetch="true" :auth_required="true" if="{{route?.id}}" initLocal="form" :refetchOnMount="true">
+    <field name="errorCondition">
+      <field name="if" value="{{response?.data?.abilities?.can_update === false}}"/>
+      <field name="errorCode" :value="403"/>
+    </field>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+    <fallback :data="null"/>
+  </data-source>
+  <!-- 등록 모드 전용 — **권한 확인만이 목적**이라 1건만 받는다(역할 폼의 role_check 와 같은 방식). 목록 응답의
+       `abilities.can_create` 가 false 면 화면을 403 으로 접는다 — 수정 권한만 가진 운영자가 등록 화면에 들어와
+       폼을 다 채운 뒤 저장에서 403 을 받는 것을 막는다. 받은 데이터 자체는 화면에서 쓰지 않는다. -->
+  <data-source id="user_check" label_key="$t:editor.data_source.user_check" type="api" endpoint="/api/admin/users" method="GET" :auto_fetch="true" :auth_required="true" if="{{!route?.id}}">
+    <params :per_page="1"/>
+    <field name="errorCondition">
+      <field name="if" value="{{response?.data?.abilities?.can_create === false}}"/>
+      <field name="errorCode" :value="403"/>
+    </field>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+    <fallback :data="null"/>
+  </data-source>
+  <!-- 부여 가능한 역할 목록(활성 역할만). 회원 조회와 달리 실패해도 화면을 접지 않고 토스트만 띄운다 —
+       역할 칸이 비는 것이지 폼 전체가 못 쓰게 되는 것은 아니다. 403 만 예외로 에러 화면이다. -->
+  <data-source id="roles" label_key="$t:editor.data_source.roles" type="api" endpoint="/api/admin/roles/active" method="GET" :auto_fetch="true" :auth_required="true">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <toast type="error" message="{{error.message ?? '$t:common.error_occurred'}}"/>
+      </default>
+    </error-handling>
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="activeTab" value="basic_info"/>
+  </init-local>
+  <permissions>
+    <any-of>
+      <permission>core.users.create</permission>
+      <permission>core.users.update</permission>
+    </any-of>
+  </permissions>
+  <defines>
+    <define name="countryList">
+      <item code="KR" name="$t:countries.KR"/>
+      <item code="US" name="$t:countries.US"/>
+      <item code="JP" name="$t:countries.JP"/>
+      <item code="CN" name="$t:countries.CN"/>
+      <item code="GB" name="$t:countries.GB"/>
+      <item code="DE" name="$t:countries.DE"/>
+      <item code="FR" name="$t:countries.FR"/>
+      <item code="CA" name="$t:countries.CA"/>
+      <item code="AU" name="$t:countries.AU"/>
+      <item code="IN" name="$t:countries.IN"/>
+      <item code="BR" name="$t:countries.BR"/>
+      <item code="RU" name="$t:countries.RU"/>
+      <item code="IT" name="$t:countries.IT"/>
+      <item code="ES" name="$t:countries.ES"/>
+      <item code="MX" name="$t:countries.MX"/>
+      <item code="NL" name="$t:countries.NL"/>
+      <item code="SE" name="$t:countries.SE"/>
+      <item code="CH" name="$t:countries.CH"/>
+      <item code="SG" name="$t:countries.SG"/>
+      <item code="HK" name="$t:countries.HK"/>
+      <item code="TW" name="$t:countries.TW"/>
+      <item code="TH" name="$t:countries.TH"/>
+      <item code="VN" name="$t:countries.VN"/>
+      <item code="PH" name="$t:countries.PH"/>
+      <item code="MY" name="$t:countries.MY"/>
+      <item code="ID" name="$t:countries.ID"/>
+      <item code="NZ" name="$t:countries.NZ"/>
+      <item code="AT" name="$t:countries.AT"/>
+      <item code="BE" name="$t:countries.BE"/>
+      <item code="DK" name="$t:countries.DK"/>
+      <item code="FI" name="$t:countries.FI"/>
+      <item code="NO" name="$t:countries.NO"/>
+      <item code="PL" name="$t:countries.PL"/>
+      <item code="PT" name="$t:countries.PT"/>
+      <item code="IE" name="$t:countries.IE"/>
+      <item code="GR" name="$t:countries.GR"/>
+      <item code="CZ" name="$t:countries.CZ"/>
+      <item code="HU" name="$t:countries.HU"/>
+      <item code="TR" name="$t:countries.TR"/>
+      <item code="IL" name="$t:countries.IL"/>
+      <item code="AE" name="$t:countries.AE"/>
+      <item code="SA" name="$t:countries.SA"/>
+      <item code="ZA" name="$t:countries.ZA"/>
+      <item code="EG" name="$t:countries.EG"/>
+      <item code="AR" name="$t:countries.AR"/>
+      <item code="CL" name="$t:countries.CL"/>
+      <item code="CO" name="$t:countries.CO"/>
+      <item code="PE" name="$t:countries.PE"/>
+    </define>
+  </defines>
+  <transition-overlay>
+    <wait-for>user</wait-for>
+    <wait-for>user_check</wait-for>
+    <wait-for>roles</wait-for>
+  </transition-overlay>
+  <init>
+    <!-- 생성 모드: 회원 수정 화면에서 SPA 로 넘어오면 같은 레이아웃(admin_user_form)이라 엔진이 `_local` 을 비우지 않아 직전 회원의 form(이메일·이름 등)이 등록 폼에 남는다. form=null 로 지운다(깊은 병합이 객체 대신 null 로 덮어써 완전 삭제). 이 레이아웃은 `state.form` 기본값이 없으므로 다시 쓸 기본값도 없다. -->
+    <set-state if="{{!route?.id}}" target="local" :form="null" :hasChanges="false"/>
+    <!-- 생성 모드 기본값 — 비밀번호 만료 개별 설정은 「역할·사이트 설정 따름」에서 시작한다(#736). 위에서 form 을 비운 뒤라
+         이 한 키만 담긴다. -->
+    <set-state if="{{!route?.id}}" target="local" form.password_expiry_policy="inherit"/>
+    <!-- 수정 모드: 다른 회원의 수정 화면에서 SPA 로 넘어오면 `_local.form` 이 남고, 회원 데이터 소스(initLocal)는 기록에 있는 키만
+         덮어써 비밀번호 칸은 그대로 남는다 — 직전 회원에 입력하다 만 비밀번호가 이 회원 폼에 실려 저장되면 이 회원의 비밀번호가
+         바뀌고 다음 로그인 때 변경을 요구받는다(#736 S2 실측). 진입마다 세 칸을 비운다. -->
+    <set-state if="{{!!route?.id}}" target="local" form.password="" form.password_confirmation="" form.current_password=""/>
+  </init>
+  <slot name="content">
+    <div data-ref="user_form_content" data-key="form" class="admin-page-content-responsive">
+      <page-header data-type="composite" data-ref="page_header" title="{{route?.id ? '$t:admin.users.form.page_title_edit' : '$t:admin.users.form.page_title_create'}}" description="{{route?.id ? '$t:admin.users.form.page_description_edit|name=' + (user?.data?.name ?? '') + '|email=' + (user?.data?.email ?? '') : '$t:admin.users.form.page_description_create'}}"/>
+      <div data-ref="sticky_header" class="sticky-tab-nav-responsive">
+        <tab-navigation-scroll data-type="composite" data-ref="user_form_tabs" activeTabId="{{_local.activeTab ?? 'basic_info'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="" class="tab-nav-default">
+          <prop name="tabs">
+            <item id="basic_info" label="$t:admin.users.detail.tabs.basic_info"/>
+            <item id="contact_info" label="$t:admin.users.detail.tabs.contact_info"/>
+            <item id="location_info" label="$t:admin.users.detail.tabs.location_info"/>
+            <item id="profile_memo" label="$t:admin.users.detail.tabs.profile_memo"/>
+            <item id="activity_info" label="$t:admin.users.detail.tabs.activity_info" if="{{route?.id}}"/>
+            <item id="consent_info" label="$t:admin.users.detail.tabs.consent_info" if="{{route?.id}}"/>
+            <item id="notifications_info" label="$t:admin.users.detail.tabs.notifications_info" if="{{route?.id}}"/>
+          </prop>
+          <on type="change">
+            <!-- 탭 전환은 화면만 바꾼다 — 입력값은 `_local.form` 에 그대로 남으므로 탭을 옮겨 다녀도
+                 쓰던 것이 사라지지 않는다(탭마다 저장하지 않는 이유). -->
+            <set-state target="local" activeTab="{{$event.value}}"/>
+          </on>
+        </tab-navigation-scroll>
+      </div>
+      <div data-ref="user_form_tab_content" class="tab-content">
+        <div data-ref="user_api_error" data-if="{{_dataSourceErrors?.user}}" class="alert-danger">
+          <div class="flex-center gap-3">
+            <icon name="triangle-exclamation" size="md" class="text-red-600 dark:text-red-400 flex-shrink-0"/>
+            <div>
+              <h3 class="text-error-strong">$t:admin.users.form.error_loading_user</h3>
+              <p class="text-error-soft mt-1">{{_dataSourceErrors?.user?.message ?? '$t:common.error_occurred'}}</p>
+            </div>
+          </div>
+        </div>
+        <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
+          <div class="flex gap-3">
+            <icon name="triangle-exclamation" size="md" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+            <div>
+              <h3 class="text-error-strong">$t:admin.users.form.validation_error</h3>
+              <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>
+              <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+                <li class="text-error-soft">{{message}}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div data-ref="section_basic_info" id="basic_info" class="admin-card">
+          <h3 class="card-title">$t:admin.users.form.sections.basic_info</h3>
+          <div class="row-stack">
+            <div data-ref="field_uuid" data-if="{{!!route?.id}}" class="mb-4">
+              <label class="text-label-subtle block font-medium mb-1">UUID</label>
+              <div class="text-primary text-sm font-mono bg-gray-50 dark:bg-gray-700 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600">{{user?.data?.uuid ?? '-'}}</div>
+            </div>
+            <!-- 이메일은 **연락처** 칸에 있다 — 상세가 그 자리에 두고, 두 화면이 어긋나면
+                 상세에서 본 값을 수정 화면에서 다시 찾아야 한다. 수정 모드에서는 계정 식별자라
+                 잠긴다(종전과 같다). -->
+            <div class="grid-2col-responsive">
+              <div data-ref="field_name">
+                <label class="form-label">
+                  <span>$t:admin.users.form.fields.name</span>
+                  <span class="text-red-500 ml-1">*</span>
+                </label>
+                <input type="text" name="name" placeholder="$t:admin.users.form.fields.name" class=""/>
+                <span data-if="{{_local.errors?.name}}" class="text-red-500 text-xs mt-1">{{_local.errors?.name?.[0] ?? ''}}</span>
+              </div>
+              <div data-ref="field_nickname">
+                <label class="form-label">$t:admin.users.form.fields.nickname</label>
+                <input type="text" name="nickname" placeholder="$t:admin.users.form.fields.nickname" class=""/>
+              </div>
+            </div>
+            <!-- 역할. 수정에서는 필수이고, 등록에서는 비워 두면 서버가 기본 역할(일반 사용자)을 준다 —
+                 역할 부여 권한이 없는 운영자는 이 칸이 잠긴 채 등록하므로, 등록에서 필수로 표시하면
+                 채울 수 없는 칸을 요구하는 셈이 된다. 잠금 판정에서 회원 응답의 `can_assign_roles` 는 수정 모드에서만
+                 읽는다 — 수정 → 등록 SPA 이동 뒤에도 `user` 데이터소스에 직전 회원 응답이 남아 있다. -->
+            <div data-ref="field_roles">
+              <label class="form-label">
+                <span>$t:admin.users.form.fields.role</span>
+                <span data-if="{{!!route?.id}}" class="text-red-500 ml-1">*</span>
+              </label>
+              <tag-input data-type="composite" name="role_ids" value="{{_local.form?.role_ids ?? _local.form?.roles?.map(r => r.id) ?? []}}" options="{{(roles?.data?.data ?? []).map(r => ({value: r.id, label: r.name}))}}" placeholder="$t:admin.users.form.fields.role_placeholder" noOptionsMessage="$t:admin.users.form.fields.role_no_options" class="w-full" defaultVariant="blue" disabled="{{route?.id ? user?.data?.abilities?.can_assign_roles !== true : roles?.data?.abilities?.can_assign_roles !== true}}">
+                <on type="change">
+                  <!-- 역할 선택. 표시값은 저장된 `role_ids` 를 먼저 보고 없으면 조회 응답의 역할 객체에서
+                       id 만 뽑아 쓰지만(수정 진입 직후), 저장에 실리는 것은 언제나 이 `role_ids` 다. -->
+                  <set-state target="local">
+                    <field name="form">
+                      <field name="role_ids" value="{{$event.target.value}}"/>
+                    </field>
+                  </set-state>
+                </on>
+              </tag-input>
+              <span data-if="{{_local.errors?.role_ids || _local.errors?.roles}}" class="text-red-500 text-xs mt-1">{{_local.errors?.role_ids?.[0] ?? _local.errors?.roles?.[0] ?? ''}}</span>
+              <p data-if="{{!route?.id}}" class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.form.fields.role_default_hint</p>
+            </div>
+            <div data-ref="field_status">
+              <label class="form-label">$t:admin.users.form.fields.status</label>
+              <!-- 커스텀 Select 는 value-제어 전용 — defaultValue 는 렌더되지 않아 create 모드 표시가 비었다. 미전송 시 서버(CreateUserRequest)가 active 로 보정하므로 표시 기본값과 서버 기본값이 일치한다.
+                   수정 모드에만 탈퇴·휴면·가입대기를 둔다 — 셋 다 "그 상태가 되기까지의 이력"(탈퇴 처리·장기 미접속·인증 미완료)이 전제라 생성으로 건너뛰면 그 이력을 가진 회원과 구분되지 않는다. 휴면이 빠져 있으면 휴면 회원을 열었을 때 select 값이 옵션에 없어 칸이 빈다. -->
+              <select name="status" class="w-full" value="{{_local.form?.status ?? 'active'}}" options="{{route?.id ? [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}, {label: '$t:admin.users.form.status_options.withdrawn', value: 'withdrawn'}, {label: '$t:admin.users.form.status_options.dormant', value: 'dormant'}, {label: '$t:admin.users.form.status_options.pending_verification', value: 'pending_verification'}] : [{label: '$t:admin.users.form.status_options.active', value: 'active'}, {label: '$t:admin.users.form.status_options.inactive', value: 'inactive'}, {label: '$t:admin.users.form.status_options.blocked', value: 'blocked'}] ?? []}}">
+                <on type="change">
+                  <set-state target="local" form.status="{{$event.target.value}}"/>
+                </on>
+              </select>
+            </div>
+            <!-- 이메일 인증 여부 — 읽기 전용이다. 이 값은 회원이 받은 메일의 링크를 눌러야 서는
+                 것이라 운영자가 「인증됨」 으로 바꿔 줄 성질이 아니다. 그래도 상세와 같은 자리에
+                 세워, 상세에서 「미인증」 을 본 운영자가 수정 화면에서 그 칸을 찾아 헤매지 않게 한다.
+                 `route?.id` 로 막는 이유: 수정 → 등록 SPA 이동에서 `user` 데이터소스에는 직전 회원 응답이 남아,
+                 막지 않으면 새 회원 등록 폼이 직전 회원의 「인증됨」 을 보인다(#736 영역 C 실측). 새 회원은 늘 미인증으로 시작한다. -->
+            <div data-ref="field_email_verified">
+              <label class="form-label">$t:admin.users.detail.email_verification</label>
+              <div class="flex-center gap-1">
+                <icon data-if="{{!!route?.id &amp;&amp; user?.data?.email_verified_at}}" name="check-circle" class="text-base text-green-500"/>
+                <span class="text-primary text-sm">{{route?.id &amp;&amp; user?.data?.email_verified_at ? '$t:admin.users.form.fields.email_verified' : '$t:admin.users.detail.not_verified'}}</span>
+              </div>
+            </div>
+            <div class="grid-2col-responsive" data-ref="field_password_group">
+              <div data-ref="field_password">
+                <label class="form-label">
+                  <span>$t:admin.users.form.fields.password</span>
+                  <span data-if="{{!route?.id}}" class="text-red-500 ml-1">*</span>
+                </label>
+                <input type="password" name="password" placeholder="{{route?.id ? '$t:admin.users.form.fields.password_hint' : '$t:admin.users.form.fields.password'}}" class=""/>
+                <span data-if="{{_local.errors?.password}}" class="text-red-500 text-xs mt-1">{{_local.errors?.password?.[0] ?? ''}}</span>
+              </div>
+              <div data-ref="field_password_confirmation">
+                <label class="form-label">
+                  <span>$t:admin.users.form.fields.password_confirmation</span>
+                  <span data-if="{{!route?.id}}" class="text-red-500 ml-1">*</span>
+                </label>
+                <input type="password" name="password_confirmation" placeholder="$t:admin.users.form.fields.password_confirmation" class=""/>
+              </div>
+            </div>
+            <!-- 켜진 비밀번호 규칙을 한 줄로 안내한다(보안 환경설정 값 — 서버가 같은 규칙으로 검사한다). 재사용 금지는 본인 계정일 때만
+                 검사하므로(다른 회원에게 정해 주는 비밀번호는 검사하지 않는다) 본인일 때만 붙인다. -->
+            <p data-ref="password_rules_hint" class="flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400 -mt-2">
+              <span>$t:auth.password_rules.min_length|count={{_global.settings?.security?.password_min_length ?? 8}}</span>
+              <span data-if="{{!!_global.settings?.security?.require_password_special_char}}">$t:auth.password_rules.special</span>
+              <span data-if="{{!!_global.settings?.security?.password_require_char_types}}">$t:auth.password_rules.char_types</span>
+              <span data-if="{{!!_global.settings?.security?.password_block_identifier}}">$t:auth.password_rules.identifier</span>
+              <span data-if="{{!!_global.settings?.security?.password_block_repeated_chars}}">$t:auth.password_rules.repeated|count={{_global.settings?.security?.password_repeated_chars_length ?? 4}}</span>
+              <span data-if="{{!!_global.settings?.security?.password_block_sequential_chars}}">$t:auth.password_rules.sequential|count={{_global.settings?.security?.password_sequential_chars_length ?? 4}}</span>
+              <span data-if="{{!!route?.id &amp;&amp; route?.id === current_user?.data?.uuid &amp;&amp; !!_global.settings?.security?.password_reuse_prevention_enabled}}">$t:auth.password_rules.reuse|count={{_global.settings?.security?.password_reuse_count ?? 3}}</span>
+            </p>
+            <!-- 다른 회원의 비밀번호를 정해 주면 그 회원은 다음 로그인 때 본인이 바꿔야 한다(D11 — 서버가 플래그를 세운다).
+                 등록은 늘 그렇다. 저장 전에 미리 알려 운영자가 의도를 확인하게 한다. -->
+            <div data-ref="password_admin_assigned_notice" data-if="{{!!_local.form?.password &amp;&amp; !(!!route?.id &amp;&amp; route?.id === current_user?.data?.uuid)}}" class="alert-info">
+              <p class="text-info-soft">{{route?.id ? '$t:admin.users.form.password_policy.admin_assigned_notice' : '$t:admin.users.form.password_policy.create_notice'}}</p>
+            </div>
+            <!-- 본인 계정의 비밀번호를 바꿀 때만 현재 비밀번호를 묻는다(D19). 서버는 화면과 별개로 행위자 = 대상을 판정해
+                 같은 확인과 재사용 검사를 한다 — 이 칸은 그 요구를 미리 보여 주는 자리다. -->
+            <div data-ref="field_current_password" data-if="{{!!route?.id &amp;&amp; route?.id === current_user?.data?.uuid &amp;&amp; !!_local.form?.password}}">
+              <label class="form-label">
+                <span>$t:admin.users.form.password_policy.current_password</span>
+                <span class="text-red-500 dark:text-red-400 ml-1">*</span>
+              </label>
+              <input type="password" name="current_password" autoComplete="current-password" placeholder="$t:admin.users.form.password_policy.current_password" class="{{_local.errors?.current_password ? 'input-error' : ''}}"/>
+              <span data-if="{{_local.errors?.current_password}}" class="text-red-500 dark:text-red-400 text-xs mt-1">{{_local.errors?.current_password?.[0] ?? ''}}</span>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.form.password_policy.current_password_hint</p>
+            </div>
+          </div>
+        </div>
+        <div data-ref="section_contact_info" id="contact_info" class="admin-card">
+          <h3 class="card-title">$t:admin.users.form.sections.contact_info</h3>
+          <div class="row-stack">
+            <div class="grid-2col-responsive">
+              <div data-ref="field_email">
+                <label class="form-label">
+                  <span>$t:admin.users.form.fields.email</span>
+                  <span class="text-red-500 ml-1">*</span>
+                </label>
+                <input type="email" name="email" placeholder="$t:admin.users.form.fields.email" disabled="{{!!route?.id}}" class=""/>
+                <span data-if="{{_local.errors?.email}}" class="text-red-500 text-xs mt-1">{{_local.errors?.email?.[0] ?? ''}}</span>
+              </div>
+              <div data-ref="field_homepage">
+                <label class="form-label">$t:admin.users.form.fields.homepage</label>
+                <input type="url" name="homepage" placeholder="https://" class=""/>
+              </div>
+            </div>
+            <div class="grid-2col-responsive">
+              <div data-ref="field_mobile">
+                <label class="form-label">$t:admin.users.form.fields.mobile</label>
+                <input type="tel" name="mobile" placeholder="$t:admin.users.form.fields.mobile" class=""/>
+              </div>
+              <div data-ref="field_phone">
+                <label class="form-label">$t:admin.users.form.fields.phone</label>
+                <input type="tel" name="phone" placeholder="$t:admin.users.form.fields.phone" class=""/>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-ref="section_location_info" id="location_info" class="admin-card">
+          <h3 class="card-title">$t:admin.users.form.sections.location_info</h3>
+          <div class="row-stack">
+            <div data-ref="field_country">
+              <label class="form-label">$t:admin.users.form.fields.country</label>
+              <searchable-dropdown data-type="composite" options="{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}" value="{{_local.form?.country ?? ''}}" triggerLabel="$t:admin.users.form.fields.country_select" searchPlaceholder="$t:admin.users.form.fields.country_search" noResultsText="$t:common.no_results" class="w-full">
+                <on type="change" event="onChange">
+                  <!-- 국가 선택. 2026-03-31 에 노출을 막았다가 #705 에서 되살렸다 — 회원 목록의 국가 필터가
+                       이 값을 찾으므로 선택지는 목록 화면의 `countryList` 와 같아야 한다. -->
+                  <set-state target="local" form.country="{{$args[0]}}"/>
+                </on>
+              </searchable-dropdown>
+            </div>
+            <div class="grid-2col-responsive">
+              <div data-ref="field_language">
+                <label class="form-label">$t:admin.users.form.fields.language</label>
+                <select name="language" class="w-full" defaultValue="{{$locale}}" options="{{($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}"/>
+              </div>
+              <div data-ref="field_timezone">
+                <label class="form-label">$t:admin.users.form.fields.timezone</label>
+                <select name="timezone" class="w-full" defaultValue="Asia/Seoul" options="{{_global.appConfig?.supportedTimezones ?? []}}" :searchable="true" searchPlaceholder="{{$t('common.search')}}"/>
+              </div>
+            </div>
+            <div data-ref="field_address" class="space-y-2">
+              <label class="form-label">$t:admin.users.form.fields.address</label>
+              <!-- 우편번호 + 주소 검색 버튼 -->
+              <div class="flex gap-2">
+                <input type="text" name="zipcode" placeholder="$t:admin.users.form.fields.zipcode" :readOnly="false" class="w-32"/>
+                <extension-point name="address_search_slot" data-ref="admin_user_address_search_slot">
+                  <prop name="readOnlyFields">
+                    <item>zipcode</item>
+                    <item>address</item>
+                  </prop>
+                  <prop name="targetFields">
+                    <field name="zipcode" value="form.zipcode"/>
+                    <field name="address" value="form.address"/>
+                    <field name="region" value="form.region"/>
+                    <field name="city" value="form.city"/>
+                  </prop>
+                </extension-point>
+              </div>
+              <!-- 기본 주소 -->
+              <input type="text" name="address" placeholder="$t:admin.users.form.fields.address" :readOnly="false" class=""/>
+              <!-- 상세 주소 -->
+              <input type="text" name="address_detail" placeholder="$t:admin.users.form.fields.address_detail" class=""/>
+            </div>
+          </div>
+        </div>
+        <div data-ref="section_profile_memo" id="profile_memo" class="admin-card">
+          <h3 class="card-title">$t:admin.users.form.sections.profile_memo</h3>
+          <div class="row-stack">
+            <div data-ref="field_signature">
+              <label class="form-label">$t:admin.users.form.fields.signature</label>
+              <input type="text" name="signature" placeholder="$t:admin.users.form.fields.signature" class=""/>
+            </div>
+            <div data-ref="field_bio">
+              <label class="form-label">$t:admin.users.form.fields.bio</label>
+              <textarea name="bio" :rows="3" placeholder="$t:admin.users.form.fields.bio" class="resize-none"/>
+            </div>
+            <div data-ref="field_admin_memo">
+              <label class="form-label">$t:admin.users.form.fields.admin_memo</label>
+              <textarea name="admin_memo" :rows="3" placeholder="$t:admin.users.form.fields.admin_memo" class="resize-none"/>
+            </div>
+          </div>
+        </div>
+        <div data-ref="section_activity_info" data-if="{{route?.id}}" id="activity_info" class="admin-card">
+          <h3 class="card-title">$t:admin.users.form.sections.activity_info</h3>
+          <div class="row-stack">
+            <!-- 일곱 항목 모두 **시스템이 적는 기록**이라 잠근 채로 둔다. 종전에는 가입일·마지막
+                 로그인·IP 셋만 있어, 상세에서 본 잠금 상태·탈퇴일시·차단일시가 수정 화면에서
+                 사라졌다(요구사항 2026-09-21). 휴면 전환일도 상세에 있는 기록이라 같은 이유로
+                 함께 세운다. 잠금은 상세 헤더의 「잠금 해제」 버튼이 푼다.
+                 3열 고정은 규약(§6-0)대로 `md:` 대신 responsive 로 가른다. -->
+            <div class="grid grid-cols-3 gap-4">
+              <responsive on="portable" class="grid grid-cols-1 gap-4"/>
+              <div data-ref="field_created_at">
+                <label class="form-label">$t:admin.users.form.fields.created_at</label>
+                <input type="text" value="{{user?.data?.created_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+              <div data-ref="field_last_login_at">
+                <label class="form-label">$t:admin.users.form.fields.last_login_at</label>
+                <input type="text" value="{{user?.data?.last_login_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+              <div data-ref="field_lock_status">
+                <label class="form-label">$t:admin.users.form.fields.lock_status</label>
+                <div data-if="{{user?.data?.locked_permanently === true}}" class="text-error-soft text-sm py-2">$t:admin.users.detail.locked_permanently_value</div>
+                <div data-if="{{user?.data?.locked_permanently !== true &amp;&amp; user?.data?.is_locked === true}}" class="text-error-soft text-sm py-2">$t:admin.users.detail.locked_until_value|until={{user?.data?.locked_until ?? ''}}</div>
+                <div data-if="{{user?.data?.is_locked !== true}}" class="text-primary text-sm py-2">$t:admin.users.detail.not_locked_value</div>
+              </div>
+              <div data-ref="field_ip_address">
+                <label class="form-label">$t:admin.users.form.fields.ip_address</label>
+                <input type="text" value="{{user?.data?.ip_address ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+              <div data-ref="field_withdrawn_at">
+                <label class="form-label">$t:admin.users.detail.withdrawn_at</label>
+                <input type="text" value="{{user?.data?.withdrawn_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+              <div data-ref="field_blocked_at">
+                <label class="form-label">$t:admin.users.detail.blocked_at</label>
+                <input type="text" value="{{user?.data?.blocked_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+              <div data-ref="field_dormant_at">
+                <label class="form-label">$t:admin.users.detail.dormant_at</label>
+                <input type="text" value="{{user?.data?.dormant_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 비밀번호(#736) — 상세의 「비밀번호」 구획과 같은 자리·같은 순서로 선다(#599 상세↔수정 정합).
+             마지막 변경·만료 예정·다음 로그인 때 변경 필요·연기 종료는 서버가 적는 기록이라 잠긴 글자로 두고(등록 모드에는 회원이 없어 숨긴다),
+             고칠 수 있는 것은 만료 개별 설정 하나다 — 등록 모드에서도 보인다. -->
+        <div data-ref="section_password_info" id="password_info" class="admin-card">
+          <h3 class="card-title">$t:admin.users.detail.password.title</h3>
+          <div class="grid-2col-responsive">
+            <div data-ref="field_password_changed_at" data-if="{{!!route?.id}}">
+              <label class="form-label">$t:admin.users.detail.password.changed_at</label>
+              <div class="text-primary text-sm">{{user?.data?.password_status?.changed_at ?? '-'}}</div>
+            </div>
+            <div data-ref="field_password_expires_at" data-if="{{!!route?.id}}">
+              <label class="form-label">$t:admin.users.detail.password.expires_at</label>
+              <div data-if="{{!user?.data?.password_status?.applies}}" class="text-primary text-sm">$t:admin.users.detail.password.not_applies</div>
+              <div data-if="{{user?.data?.password_status?.applies &amp;&amp; user?.data?.password_status?.expired}}" class="text-error-soft text-sm">$t:admin.users.detail.password.expired|date={{user?.data?.password_status?.expires_at ?? ''}}</div>
+              <div data-if="{{user?.data?.password_status?.applies &amp;&amp; !user?.data?.password_status?.expired}}" class="text-primary text-sm">$t:admin.users.detail.password.expires_value|date={{user?.data?.password_status?.expires_at ?? '-'}}|days={{user?.data?.password_status?.days_left ?? 0}}</div>
+            </div>
+            <div data-ref="field_password_change_required" data-if="{{!!route?.id}}">
+              <label class="form-label">$t:admin.users.detail.password.change_required</label>
+              <div class="text-primary text-sm">{{user?.data?.password_status?.change_required ? '$t:admin.users.detail.password.yes' : '$t:admin.users.detail.password.no'}}</div>
+            </div>
+            <div data-ref="field_password_postponed_until" data-if="{{!!route?.id &amp;&amp; user?.data?.password_status?.postponed_until}}">
+              <label class="form-label">$t:admin.users.detail.password.postponed_until</label>
+              <div class="text-primary text-sm">{{user?.data?.password_status?.postponed_until ?? '-'}}</div>
+            </div>
+          </div>
+          <div data-ref="field_password_expiry_policy" class="mt-4">
+            <label class="form-label">$t:admin.users.form.password_policy.expiry</label>
+            <!-- 만료 개별 설정 — 고른 값을 폼에 담는다(커스텀 Select 는 value 제어 전용이라 상태 칸 선택과 같은 방식). -->
+            <select name="password_expiry_policy" class="w-full" value="{{_local.form?.password_expiry_policy ?? 'inherit'}}" error="{{_local.errors?.password_expiry_policy?.[0] ?? ''}}" options="{{[{label: '$t:admin.users.form.password_policy.expiry_inherit', value: 'inherit'}, {label: '$t:admin.users.form.password_policy.expiry_apply', value: 'apply'}, {label: '$t:admin.users.form.password_policy.expiry_exempt', value: 'exempt'}]}}">
+              <on type="change">
+                <set-state target="local" form.password_expiry_policy="{{$event.target.value}}"/>
+              </on>
+            </select>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:admin.users.form.password_policy.expiry_hint</p>
+            <!-- 현재 판정(수정 화면) — 저장된 설정 기준이다. 방금 고른 값은 저장해야 판정에 반영된다. -->
+            <p data-ref="password_expiry_status_line" data-if="{{!!route?.id &amp;&amp; user?.data?.password_status}}" class="text-xs text-gray-700 dark:text-gray-300 mt-1">
+              <span data-if="{{user?.data?.password_status?.applies &amp;&amp; user?.data?.password_status?.expired}}">$t:admin.users.form.password_policy.status_expired</span>
+              <span data-if="{{user?.data?.password_status?.applies &amp;&amp; user?.data?.password_status?.expires_at &amp;&amp; !user?.data?.password_status?.expired}}">$t:admin.users.form.password_policy.status_applies|date={{user?.data?.password_status?.expires_at | date}}|days={{user?.data?.password_status?.days_left ?? 0}}</span>
+              <span data-if="{{!user?.data?.password_status?.applies}}">$t:admin.users.form.password_policy.status_not_applies</span>
+            </p>
+          </div>
+        </div>
+        <!-- 동의정보 — 회원이 언제 동의했는가는 기록이지 설정이 아니라 잠긴 채로 세운다.
+             동의를 되돌리는 일은 회원 본인의 화면(마이페이지)이나 GDPR 플러그인이 맡는다.
+
+             **고칠 수 없는 값인데도 이 구획과 아래 알림함 구획을 수정 화면에 세우는 이유**는,
+             상세에서 본 것을 수정 화면에서 찾지 못하면 「고칠 수 있는데 칸이 없는 것」 인지
+             「원래 고칠 수 없는 것」 인지 화면이 말해 주지 않기 때문이다(요구사항 2026-09-21 —
+             상세에 나오는 것은 수정 화면에도 같은 자리·같은 양식으로 선다). 등록 모드에는
+             회원이 아직 없어 둘 다 빈 값이라 `route?.id` 로 닫는다. -->
+        <div data-ref="section_consent_info" data-if="{{route?.id}}" id="consent_info" class="admin-card">
+          <h3 class="card-title">$t:admin.users.detail.consent_history</h3>
+          <div class="row-stack">
+            <div class="grid-2col-responsive">
+              <div data-ref="field_terms_consent">
+                <label class="form-label">$t:admin.users.detail.consent_type.terms</label>
+                <input type="text" value="{{user?.data?.terms_consent?.agreed_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+              <div data-ref="field_privacy_consent">
+                <label class="form-label">$t:admin.users.detail.consent_type.privacy</label>
+                <input type="text" value="{{user?.data?.privacy_consent?.agreed_at ?? ''}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 알림함 요약 — 건수는 읽기 전용이고, 실제 수신함은 전용 목록이 소유한다(상세와 같다). -->
+        <div data-ref="section_notifications_info" data-if="{{route?.id}}" id="notifications_info" class="admin-card">
+          <h3 class="card-title">$t:admin.users.detail.tabs.notifications_info</h3>
+          <div class="row-stack">
+            <div class="grid-2col-responsive">
+              <div data-ref="field_notifications_total">
+                <label class="form-label">$t:admin.users.detail.notifications.total</label>
+                <input type="text" value="{{user?.data?.notifications_summary?.total ?? 0}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+              <div data-ref="field_notifications_unread">
+                <label class="form-label">$t:admin.users.detail.notifications.unread</label>
+                <input type="text" value="{{user?.data?.notifications_summary?.unread ?? 0}}" :disabled="true" class="text-gray-500 dark:text-gray-400"/>
+              </div>
+            </div>
+            <!-- 회원 알림함을 볼 권한(core.member-notifications.read)이 있을 때만 세운다 — 회원 읽기만 가진 관리자가 누르면 알림함 화면이 권한 오류로 뜬다.
+               회원 리소스의 abilities 는 회원 엔드포인트 권한만 싣는 규약이라, 보는 사람 권한 목록(current_user)으로 판정한다. -->
+            <div data-ref="notifications_inbox_link" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.member-notifications.read'))}}">
+              <button type="button" class="btn btn-secondary">
+                <on type="click">
+                  <!-- 이 회원의 알림 발송 이력으로 이동한다 — 회원 UUID 로 목록을 거른다 -->
+                  <navigate path="/admin/member-notifications">
+                    <query user_uuid="{{user?.data?.uuid}}"/>
+                  </navigate>
+                </on>
+                <span>$t:admin.users.detail.notifications.view_inbox</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- 모듈/플러그인 확장 UI가 동적으로 주입되는 영역 -->
+        <div data-ref="extension_form_content" class="mt-6"/>
+      </div>
+      <div data-ref="footer_buttons" class="sticky-footer-buttons">
+        <button data-ref="footer_cancel_button" class="btn btn-secondary">
+          <on type="click">
+            <navigate-back/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <!-- 수정 모드에서는 회원 정보가 폼에 채워지기 전까지 저장을 막는다 — 시드 전에 누르면 빈 본문이 나가 화면에는 값이 보이는데 "이름은 필수입니다" 로 거절된다. -->
+        <button data-ref="footer_save_button" disabled="{{_global.isSaving || (route?.id &amp;&amp; !_local.form?.email)}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <conditions>
+              <!-- 상태를 탈퇴로 바꾸는 저장은 비가역 파기라 확인을 먼저 받는다 (공개이슈 #112). -->
+              <when if="{{route?.id &amp;&amp; _local.form?.status === 'withdrawn' &amp;&amp; user?.data?.status !== 'withdrawn'}}">
+                <set-state target="local" :showWithdrawConfirm="true"/>
+              </when>
+              <else>
+                <!-- 저장. 등록/수정 한 자리에서 주소와 메서드를 함께 가른다.
+                     검증 실패는 필드별 오류를 `_local.errors` 에 담아 각 칸 아래에 띄우고, 403·500 은
+                     필드 오류가 아니므로 문구만 다르게 낸다 — 어느 갈래든 진행 표시를 반드시 끈다
+                     (한 갈래라도 빠뜨리면 저장 버튼이 영영 잠긴다). -->
+                <sequence>
+                  <set-state target="global" :isSaving="true"/>
+                  <api-call :auth_required="true" target="{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">
+                    <success>
+                      <set-state target="global" :isSaving="false"/>
+                      <toast type="success" message="{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"/>
+                      <navigate path="/admin/users" :mergeQuery="true">
+                        <query/>
+                      </navigate>
+                    </success>
+                    <fail>
+                      <set-state target="global" :isSaving="false"/>
+                      <set-state target="local" errors="{{error.errors ?? null}}"/>
+                      <toast type="error" message="{{error.message ?? '$t:admin.users.form.validation_error'}}"/>
+                    </fail>
+                    <error-handling>
+                      <on-code code="403">
+                        <sequence>
+                          <set-state target="global" :isSaving="false"/>
+                          <toast type="error" message="$t:auth.permission_denied"/>
+                        </sequence>
+                      </on-code>
+                      <on-code code="500">
+                        <sequence>
+                          <set-state target="global" :isSaving="false"/>
+                          <toast type="error" message="$t:errors.server_error"/>
+                        </sequence>
+                      </on-code>
+                    </error-handling>
+                  </api-call>
+                </sequence>
+              </else>
+            </conditions>
+          </on>
+          <icon data-if="{{!_global.isSaving}}" name="save" size="sm"/>
+          <icon data-if="{{_global.isSaving}}" name="spinner" size="sm" :spin="true"/>
+          <span>{{_global.isSaving ? $t:common.saving : $t:common.save}}</span>
+        </button>
+      </div>
+    </div>
+    <!-- modals 섹션이 아닌 페이지 트리에 두는 이유: modals 는 별도 컨텍스트라 _local.form 이 해석되지 않는다. -->
+    <modal data-type="composite" data-ref="withdraw_confirm_dialog" data-if="{{_local.showWithdrawConfirm === true}}" :isOpen="true" title="$t:admin.users.modals.withdraw_confirm_title" width="520px" :closeOnEscape="false" :closeOnOverlayClick="false" :showCloseButton="false">
+      <div class="py-2 space-y-3">
+        <p class="text-gray-700 dark:text-gray-300">$t:admin.users.modals.withdraw_confirm_lead</p>
+        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">$t:admin.users.modals.withdraw_confirm_effects_title</p>
+        <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+          <li class="list-disc list-inside">$t:admin.users.modals.withdraw_confirm_effect_anonymize</li>
+          <li class="list-disc list-inside">$t:admin.users.modals.withdraw_confirm_effect_sessions</li>
+          <li class="list-disc list-inside">$t:admin.users.modals.withdraw_confirm_effect_linked</li>
+        </ul>
+      </div>
+      <div class="modal-footer-buttons">
+        <button data-ref="withdraw_confirm_cancel_button" type="button" class="btn btn-secondary">
+          <on type="click">
+            <!-- 탈퇴 확인 취소. 확인 문구만 접고 폼은 그대로 둔다 -->
+            <set-state target="local" :showWithdrawConfirm="false"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="withdraw_confirm_submit_button" type="button" disabled="{{_global.isSaving}}" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <on type="click">
+            <!-- 탈퇴 실행. 확인 문구를 먼저 접는 것은 요청이 끝난 뒤 화면이 바뀌어도 확인 창이 남지 않게 하기 위해서다 -->
+            <sequence>
+              <set-state target="local" :showWithdrawConfirm="false"/>
+              <set-state target="global" :isSaving="true"/>
+              <api-call :auth_required="true" target="{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">
+                <success>
+                  <set-state target="global" :isSaving="false"/>
+                  <toast type="success" message="{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"/>
+                  <navigate path="/admin/users" :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                </success>
+                <fail>
+                  <set-state target="global" :isSaving="false"/>
+                  <set-state target="local" errors="{{error.errors ?? null}}"/>
+                  <toast type="error" message="{{error.message ?? '$t:admin.users.form.validation_error'}}"/>
+                </fail>
+                <error-handling>
+                  <on-code code="403">
+                    <sequence>
+                      <set-state target="global" :isSaving="false"/>
+                      <toast type="error" message="$t:auth.permission_denied"/>
+                    </sequence>
+                  </on-code>
+                  <on-code code="500">
+                    <sequence>
+                      <set-state target="global" :isSaving="false"/>
+                      <toast type="error" message="$t:errors.server_error"/>
+                    </sequence>
+                  </on-code>
+                </error-handling>
+              </api-call>
+            </sequence>
+          </on>
+          <span>$t:admin.users.modals.withdraw_confirm_submit</span>
+        </button>
+      </div>
+    </modal>
+  </slot>
+</layout>

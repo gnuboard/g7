@@ -1,0 +1,79 @@
+{
+    "editor": {
+        "data_source": {
+            "totpEnrollment": "Authenticator enrollment status",
+            "totpSettings": "Authenticator app settings"
+        }
+    },
+    "admin": {
+        "security": {
+            "title": "Authenticator App",
+            "description": "Use the 6-digit code from your authenticator app as the second step when signing in.",
+            "intro": {
+                "title": "Set up your authenticator app",
+                "description": "Link the authenticator app on your phone to this account, and signing in will ask for the app's code in addition to your password.",
+                "step_install": "Install an authenticator app on your phone (Google Authenticator, Authy, 1Password, and so on).",
+                "step_scan": "Scan the QR code shown here with the app, or enter the key by hand.",
+                "step_confirm": "Enter the 6-digit code shown in the app to finish enrolling.",
+                "start": "Start setup"
+            },
+            "enroll": {
+                "title": "Connect your app",
+                "description": "Add the account to your app, then enter the 6-digit code it shows. The code changes every 30 seconds.",
+                "qr_hint": "Use «Scan QR code» in your authenticator app.",
+                "manual_label": "Key for manual entry",
+                "manual_hint": "If you cannot use the camera, type this key into the app instead.",
+                "code_label": "Authenticator code",
+                "code_placeholder": "6 digits",
+                "confirm": "Finish setup",
+                "cancel": "Cancel"
+            },
+            "enrolled": {
+                "title": "Your authenticator app is enrolled",
+                "description": "Signing in asks for the code from your app. Removing the enrollment or issuing new backup codes requires a current code.",
+                "since": "Enrolled on {{at}}",
+                "backup_remaining": "{{count}} backup codes left",
+                "backup_remaining_one": "{{count}} backup code left",
+                "code_label": "Current code",
+                "code_placeholder": "6-digit code or backup code",
+                "code_hint": "If you cannot use your phone, enter a backup code instead.",
+                "regenerate": "Issue new backup codes",
+                "disable": "Remove enrollment"
+            },
+            "backup": {
+                "title": "Backup codes",
+                "warning": "These codes are shown once, right now. Write them down somewhere safe. They are the only way to sign in if you lose your phone, and each code disappears once used.",
+                "copy": "Copy all",
+                "copied": "Backup codes copied. Paste them somewhere safe to keep them.",
+                "done": "I saved them"
+            }
+        },
+        "user_card": {
+            "tab_label": "Authenticator",
+            "title": "Authenticator two-factor",
+            "description": "Remove this member's authenticator enrollment. Use this when they have lost both their phone and their backup codes and cannot sign in.",
+            "reset": "Remove enrollment",
+            "confirm": "Remove this member's authenticator enrollment? This cannot be undone and they will have to enroll again.",
+            "hint": "After removal this member is no longer asked for an app code when signing in. If the mail fallback is off, they cannot sign in until they enroll again.",
+            "status_label": "Enrollment",
+            "enrolled": "Enrolled",
+            "not_enrolled": "Not enrolled",
+            "not_enrolled_notice": "This member has no authenticator enrolled, so there is nothing to remove.",
+            "status_unavailable": "Only administrators who may remove enrollments can see whether this member is enrolled."
+        },
+        "settings": {
+            "title": "Site settings",
+            "description": "Authenticator app settings that apply to every member of this site.",
+            "issuer_label": "Site name shown in authenticator apps",
+            "issuer_placeholder": "Uses the site name when empty",
+            "issuer_hint": "Lets members tell which site a code belongs to in their authenticator app (up to 64 characters). Apps that are already enrolled keep the old name; the new name applies to new enrollments.",
+            "fallback_label": "Members without an authenticator app receive the code by email",
+            "fallback_hint": "When on, members who have not enrolled an authenticator app still sign in with a code sent by email, as before.",
+            "fallback_off_warning": "When off, members who have not enrolled an authenticator app cannot sign in. Members who finish enrolling while still signed in use the app code from then on, but members who are signed out without enrolling cannot get back in until this setting is turned on again. Make sure every affected member has enrolled before turning this off.",
+            "save": "Save settings",
+            "saving": "Saving...",
+            "saved": "Authenticator app settings saved."
+        }
+    },
+    "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only."
+}

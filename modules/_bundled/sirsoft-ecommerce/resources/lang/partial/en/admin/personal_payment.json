@@ -16,6 +16,7 @@
     "status": "Payment Status",
     "payment_method": "Payment Method",
     "date_search": "Date Search",
+    "date_type": "Date basis",
     "amount": "Amount",
     "all": "All",
     "pending": "Pending",

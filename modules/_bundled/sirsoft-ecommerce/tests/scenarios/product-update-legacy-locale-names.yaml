@@ -1,0 +1,21 @@
+feature: 상품 수정 — 이미 저장된 다국어 이름은 사이트 기본 언어 필수 면제
+
+description: |
+  B3(필수 언어 = 사이트 기본 언어) 이후, 그 전에 다른 언어로만 저장된 옵션 그룹 이름·옵션명·추가옵션 이름·선택지 이름·
+  상품정보제공고시 항목은 수정 화면에 고칠 칸이 없는데도 저장할 때마다 「ko 언어의 값은 필수」로 막혔다.
+  제품 결정(2026-10-08, 후속 B 세션 — 기존 행 필수 면제)에 따라 UpdateProductRequest 가 같은 상품에 같은 값이 이미
+  저장돼 있으면 길이·형식만 보고(TranslatableField), 바꾸거나 새로 넣은 이름은 종전대로 사이트 기본 언어를 필수로 본다.
+
+axes:
+  case: [unchanged_legacy_names, changed_or_new_names]
+
+effects:
+  - legacy_names_exempt_from_site_locale
+  - changed_names_still_require_site_locale
+  - legacy_names_keep_format_check
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Requests/UpdateProductLegacyLocaleNamesTest.php
+
+validation:
+  browser_check: 영어로만 이름이 저장된 옵션 그룹이 있는 상품을 한국어 관리자로 열어 [저장] → 200(종전 422 「ko 언어의 값은 필수입니다」). 옵션 그룹 이름을 바꿔 영어로만 저장 → 422

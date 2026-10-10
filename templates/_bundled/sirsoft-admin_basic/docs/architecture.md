@@ -25,7 +25,7 @@ routes.json (URL → 레이아웃 이름 매핑)
 layouts/*.json (extends: _admin_base)
         │
         ▼
-_admin_base.json (사이드바·헤더·Toast·PageTransitionIndicator·콘텐츠 슬롯·푸터)
+_admin_base.g7.html (사이드바·헤더·Toast·PageTransitionIndicator·콘텐츠 슬롯·푸터)
         │
         ▼
 src/components/{basic,composite,layout}/*.tsx (필수 컴포넌트 35개 포함 125개)
@@ -46,7 +46,7 @@ src/handlers/*.ts (이 템플릿 전용 핸들러 17개 — 범용 핸들러는 
 |---|---|---|
 | `template.json` | manifest (버전 SSoT) | version 변경 시 package.json·package-lock.json 동기화 |
 | `routes.json` | 라우트 → 레이아웃 매핑 | `php artisan template:update sirsoft-admin_basic --force` |
-| `layouts/` | 레이아웃 JSON | `php artisan template:update sirsoft-admin_basic --force` (빌드 불필요) |
+| `layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan template:update sirsoft-admin_basic --force` (빌드 불필요) |
 | `src/components/` | React 컴포넌트 | `php artisan template:build` → `php artisan template:update sirsoft-admin_basic --force` |
 | `src/handlers/` | 템플릿 전용 액션 핸들러 | `php artisan template:build` → `php artisan template:update sirsoft-admin_basic --force` |
 | `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
@@ -54,7 +54,8 @@ src/handlers/*.ts (이 템플릿 전용 핸들러 17개 — 범용 핸들러는 
 | `editor-spec/` | 분할 편집기 스펙 | `php artisan template:update sirsoft-admin_basic --force` |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
-| `components.json` | 편집기 컴포넌트 선언 (레이아웃 저작자가 읽는 props 계약) | `php artisan template:update sirsoft-admin_basic --force` |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan template:update sirsoft-admin_basic --force` |
+| `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan template:update sirsoft-admin_basic --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->

@@ -211,6 +211,11 @@ public static function providerMatrix(): array
 | `verify()` 성공 시 `consumed_at = now()` 자동 set | 다운스트림 listener (가입/비번리셋 등) 가 사용 시점에 set |
 | provider 가 listener 책임을 가져가서 직접 사용자 생성 | provider 는 verify 만 담당. 사용자 생성/세션은 도메인 service |
 | `purpose` 를 정책 purpose 와 다르게 임의 부여 | 정책-provider purpose 일치 (`signup`, `password_reset`, `sensitive_action`, `self_update`, `login`) |
+| 콜백·브리지·제공자 전송 주소를 `url()`·`route()`·요청 Host 로 생성 | `SiteUrl::absolute()` — 사이트 주소 기준 |
+
+### 콜백·브리지·제공자 전송 주소는 `SiteUrl`
+
+제공자에게 넘기는 복귀·콜백 주소, 결과를 창 밖으로 전달하는 브리지 화면의 대상 출처(`postMessage` targetOrigin), 메일 링크는 모두 `App\Support\SiteUrl` 로 사이트 주소 기준으로 만든다. `url()`·`route()` 는 요청 Host 를 따르므로 Host 를 바꿔 보낸 요청에서 시작한 인증은 결과와 `verification_token` 을 그 호스트로 넘기게 된다. 프런트에 내려주는 출처(`siteOrigin`)도 서버가 `SiteUrl::origin()` 으로 정해 주고, 클라이언트는 받은 메시지의 `origin` 을 그 값과 비교한다. 상세: [routing.md 「절대 URL 은 사이트 주소로 만든다」](routing.md#절대-url-은-사이트-주소로-만든다).
 
 ## 8. 관련 코드 진입점
 
@@ -226,6 +231,7 @@ public static function providerMatrix(): array
 ## 9. 관련 문서
 
 - [identity-policies.md](identity-policies.md) — 정책 시스템 전체 흐름
-- [identity-messages.md](identity-messages.md) — 메시지 템플릿 (provider 발송 콘텐츠)
+- [routing.md 「절대 URL 은 사이트 주소로 만든다」](routing.md#절대-url-은-사이트-주소로-만든다) — 콜백·링크 주소 생성 규칙
+- [identity-messages.md](identity-messages.md) — 본인인증 알림 (메일 provider 발송 문구 — 알림 정의 category=identity)
 - [../frontend/identity-verification-ui.md](../frontend/identity-verification-ui.md) — 프론트엔드 launcher/모달 UI
 - [../extension/module-identity-settings.md](../extension/module-identity-settings.md) — 모듈/플러그인 IDV 정책 등록

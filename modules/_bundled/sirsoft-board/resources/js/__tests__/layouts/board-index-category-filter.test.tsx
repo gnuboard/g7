@@ -10,7 +10,7 @@ import { describe, it, expect } from 'vitest';
 
 // ============================================================
 // 카테고리 필터 검증용 인라인 layout fixture
-// (실제 index.json 의 카테고리 필터 관련 영역만 추출)
+// (실제 index.g7.html 의 카테고리 필터 관련 영역만 추출)
 // ============================================================
 
 const categoryFilterLayoutJson = {

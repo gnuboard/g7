@@ -1,0 +1,222 @@
+<partial description="클레임 신청서 작성 - 실시간 요약 + 청구 2축(D6) + 제출" editor_label="$t:user.modal_label.mypage_claims.apply_summary">
+  <!-- 금액은 전부 서버 미리보기(claims/preview)가 정한다 — 화면은 표시만 한다. 미리보기가 거절되면(422) 그 사유가 곧 신청이 거절될 사유이므로 금액을 지우고 제출을 잠근 뒤 이 자리에 그대로 보여 준다. 토스트로만 알리면 사라진 뒤에는 왜 제출이 막혔는지 화면에 남지 않는다.
+청구는 반드시 2축이다(D6). 한 축(라디오 1그룹)으로 접으면 '승인 후 결제 + 마일리지' 조합이 표현 불가해진다. 두 축 모두 운영자 허용 목록만 노출하고, '환불금에서 차감' 은 환불이 발생하는 신청에서만 활성이며 선택 시 축2 는 쓰이지 않으므로 비활성으로 표시한다. 취소·환불 유형은 회수 배송이 없어 청구가 발생하지 않으므로 두 축 모두 미노출이다.
+PC 에서 카드는 sticky(top-24) 다. 비교표가 들어가 카드가 뷰포트보다 길어져도 카드 안에서 스크롤하지 않는다 — 요약은 전부 펼쳐 보여야 한다(제품 결정 2026-09-11). 뷰포트보다 긴 sticky 카드는 페이지 스크롤이 끝에 닿을 때 함께 밀려 제출 버튼까지 닿는다. -->
+  <div data-ref="claim_apply_summary" class="bg-white dark:bg-gray-800 rounded-lg p-6 space-y-4">
+    <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-3"/>
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white pb-4 border-b border-gray-200 dark:border-gray-700">
+      <responsive on="portable" class="text-base font-semibold text-gray-900 dark:text-white pb-3 border-b border-gray-200 dark:border-gray-700"/>
+      $t:claim.apply.summary_title
+    </h3>
+    <!-- 계산 중 -->
+    <div data-if="{{_local.claimEstimateLoading === true}}" class="py-6 text-center">
+      <icon name="spinner" class="text-xl text-gray-400 dark:text-gray-500 animate-spin"/>
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">$t:claim.apply.estimate_loading</p>
+    </div>
+    <!-- 미리보기 거절 안내 (P13) — 미리보기는 신청과 같은 자격 가드를 타므로 여기 나온 사유가 곧 신청 거절 사유다. 제출 버튼은 아래에서 함께 잠긴다. -->
+    <div data-if="{{_local.claimEstimateLoading !== true &amp;&amp; !!_local.claimEstimateError}}" class="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+      <icon name="circle-exclamation" class="text-base text-red-600 dark:text-red-400 flex-shrink-0"/>
+      <div class="min-w-0">
+        <p class="text-sm text-red-700 dark:text-red-300">{{_local.claimEstimateError ?? ''}}</p>
+        <p class="text-xs text-red-600 dark:text-red-400 mt-1">$t:claim.apply.blocked_hint</p>
+      </div>
+    </div>
+    <!-- 아직 계산할 수 없는 상태 — 상품과 사유가 모두 정해져야 서버가 금액을 낸다. -->
+    <div data-if="{{_local.claimEstimateLoading !== true &amp;&amp; !_local.claimEstimateError &amp;&amp; !_local.claimEstimate}}" class="py-6 text-center">
+      <p class="text-sm text-gray-400 dark:text-gray-500">$t:claim.apply.estimate_pending</p>
+    </div>
+    <!-- 금액 요약 — 표기는 주문 시점 기준 통화로 고정한다. -->
+    <div data-if="{{_local.claimEstimateLoading !== true &amp;&amp; !!_local.claimEstimate}}" class="space-y-2">
+      <!-- 배송비 — 교환은 왕복, 반품은 편도 회수비다. -->
+      <div data-if="{{_local.claimType !== 'refund'}}" class="flex items-center justify-between text-sm">
+        <span class="text-gray-500 dark:text-gray-400">{{_local.claimType === 'exchange' ? $t('claim.apply.round_trip_shipping_fee') : $t('claim.apply.one_way_shipping_fee')}}</span>
+        <!-- 기준통화 표기 + 보조통화 병기 — 형제 금액 줄과 같은 규약이다(§5-4). -->
+        <div class="text-right">
+          <span class="text-gray-900 dark:text-white">{{_local.claimEstimateFormatted?.shipping_fee ?? ''}}</span>
+          <div data-each="shippingFeeCurrency in {{_local.claimEstimateFormatted?.mc_shipping_fee ?? []}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{shippingFeeCurrency.formatted ?? ''}}</span>
+          </div>
+        </div>
+      </div>
+      <!-- 배송비 산출 근거 (§6-3) — 편도 단가 × 왕복 배수(교환 2 · 반품 1) + 도서산간. 서버가 배송정책 그룹마다 내려준 근거를 그대로 옮긴다. 근거가 없으면 구매자는 청구액이 어떻게 나왔는지 확인할 방법이 없고, 배송정책이 여러 개면 그룹마다 한 줄씩 나온다(그 줄 수가 곧 배송 건수다). -->
+      <div data-if="{{_local.claimType !== 'refund' &amp;&amp; (_local.claimEstimateFormatted?.shipping_groups ?? []).length > 0}}" class="pl-3 space-y-0.5">
+        <div data-each="shippingGroup in {{_local.claimEstimateFormatted?.shipping_groups ?? []}}" class="text-xs text-gray-500 dark:text-gray-400">
+          <span>$t:claim.apply.shipping_fee_basis|unit={{shippingGroup.base_fee ?? ''}}|times={{shippingGroup.multiplier ?? 1}}</span>
+          <span data-if="{{shippingGroup.has_extra_fee === true}}">$t:claim.apply.shipping_fee_extra_basis|extra={{shippingGroup.extra_fee ?? ''}}</span>
+        </div>
+      </div>
+      <div data-if="{{_local.claimType === 'exchange' &amp;&amp; (_local.claimEstimate?.price_difference ?? 0) !== 0}}" class="flex items-center justify-between text-sm">
+        <span class="text-gray-500 dark:text-gray-400">$t:claim.apply.option_price_difference</span>
+        <!-- 기준통화 표기 + 보조통화 병기 — 바로 위 배송비 줄, 아래 총 청구액 줄과 **같은 규약**이다(§5-4). 이 줄만 기준 통화 하나로 두면 같은 카드 안에서 표기가 갈리고, 접수 뒤 상세는 이 값을 병기하므로 같은 금액이 화면마다 다르게 보인다(S17 트랙 A F-1). -->
+        <div class="text-right">
+          <span class="{{(_local.claimEstimate?.price_difference ?? 0) > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}}">{{((_local.claimEstimate?.price_difference ?? 0) > 0 ? '+' : '-') + (_local.claimEstimateFormatted?.price_difference ?? '')}}</span>
+          <div data-each="priceDifferenceCurrency in {{_local.claimEstimateFormatted?.mc_price_difference ?? []}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{priceDifferenceCurrency.formatted ?? ''}}</span>
+          </div>
+        </div>
+      </div>
+      <!-- 옵션 차액의 상품별 분해 (§6-3) — 교환 대상은 상품마다 다르므로(D29) 합계만 보이면 어느 상품이 얼마를 보탰는지 알 수 없다. 상품 행에도 같은 값이 있지만, 여러 상품을 한꺼번에 신청하면 합계와 대조할 수 있는 자리는 요약뿐이다. 차액은 서버 미리보기가 상품마다 돌려준 값을 그 줄에 되붙인 것이라 합계와 출처가 같다. -->
+      <div data-if="{{_local.claimType === 'exchange' &amp;&amp; (_local.claimItems ?? []).filter(i => i.selected === true).length > 1}}" class="pl-3 space-y-0.5">
+        <div data-each="summaryItem in {{(_local.claimItems ?? []).filter(i => i.selected === true)}}" class="flex items-center justify-between text-xs">
+          <span class="text-gray-500 dark:text-gray-400 truncate pr-2">{{(summaryItem.product_name ?? '') + ' → ' + (summaryItem.exchange_mode === 'change' ? (summaryItem.new_option_label ?? '') : $t('claim.apply.exchange_same_option'))}}</span>
+          <span class="{{(summaryItem.price_difference ?? 0) > 0 ? 'text-blue-600 dark:text-blue-400 flex-shrink-0' : ((summaryItem.price_difference ?? 0) < 0 ? 'text-red-600 dark:text-red-400 flex-shrink-0' : 'text-gray-400 dark:text-gray-500 flex-shrink-0')}}">{{(summaryItem.price_difference ?? 0) === 0 ? $t('claim.apply.no_price_difference') : (((summaryItem.price_difference ?? 0) > 0 ? '+' : '-') + (summaryItem.price_difference_formatted ?? ''))}}</span>
+        </div>
+      </div>
+      <!-- 환불 예정액 — 반품·취소·환불에서만 그린다. 회수비를 환불금에서 차감하는 방식이면 이 줄은 **차감 전** 금액이고 아래 두 줄(차감·최종)이 이어진다(§6-3). 그 금액은 서버가 따로 낸다(`refund_before_deduction`) — `adjustment.refund_total` 은 이미 차감된 뒤의 값이라 화면이 되더하면 예고와 청구의 근거가 갈린다. 교환의 adjustment 는 대상 상품을 일단 되돌린 뒤 새 옵션을 얹는 형태라 refund_total 이 0 이 아닌데(2026-08-31 실측: 차액 0원 교환에서 15,000원), 그 값은 구매자에게 돌려줄 돈이 아니다. 교환에서 돈이 오가는 축은 옵션 차액과 총 청구액 둘뿐이고 저가 교환의 환불은 차액이 음수로 나른다(§6-3). -->
+      <div data-if="{{_local.claimType !== 'exchange' &amp;&amp; ((_local.claimEstimate?.adjustment?.refund_total ?? 0) > 0 || (_local.claimEstimate?.deducted_shipping_fee ?? 0) > 0)}}" class="flex items-center justify-between text-sm">
+        <span class="text-gray-500 dark:text-gray-400">$t:claim.apply.refund_expected</span>
+        <!-- 기준통화 표기 + 보조통화 병기 — 형제 금액 줄과 같은 규약이다(§5-4). 보조통화는 서버 정산이 낸 포맷 문자열을 그대로 쓴다. -->
+        <div class="text-right">
+          <span class="text-red-600 dark:text-red-400 font-medium">{{(_local.claimEstimate?.deducted_shipping_fee ?? 0) > 0 ? (_local.claimEstimateFormatted?.refund_before_deduction ?? '') : (_local.claimEstimate?.adjustment?.refund_formatted?.base?.refund_total ?? _local.claimEstimateFormatted?.refund_total ?? '')}}</span>
+          <div data-each="refundTotalCurrency in {{((_local.claimEstimate?.deducted_shipping_fee ?? 0) > 0 ? _local.claimEstimateFormatted?.mc_refund_before_deduction : _local.claimEstimateFormatted?.mc_refund_total) ?? []}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{refundTotalCurrency.formatted ?? ''}}</span>
+          </div>
+        </div>
+      </div>
+      <!-- 회수 배송비 차감 (§6-3 반품 요약 3줄) — 청구 방식이 '환불금에서 차감' 일 때만 선다. 별도 결제 방식은 회수비를 환불금에서 빼지 않으므로 서버가 차감액 0 을 낸다 — 그때 이 줄을 그리면 전액 환불되는데도 배송비만큼 덜 받는 것으로 읽힌다. -->
+      <div data-if="{{(_local.claimEstimate?.deducted_shipping_fee ?? 0) > 0}}" class="flex items-center justify-between text-sm">
+        <span class="text-gray-500 dark:text-gray-400">$t:claim.apply.collection_fee_deducted</span>
+        <!-- 기준통화 표기 + 보조통화 병기 — 위(차감 전 환불액)·아래(최종 환불액) 두 줄과 **같은 규약**이다(§5-4). 가운데 이 줄만 기준 통화 하나로 두면 세 줄의 표기가 갈린다(S17 트랙 A F-1). -->
+        <div class="text-right">
+          <span class="text-gray-900 dark:text-white">{{'-' + (_local.claimEstimateFormatted?.deducted_shipping_fee ?? '')}}</span>
+          <div data-each="deductedFeeCurrency in {{_local.claimEstimateFormatted?.mc_deducted_shipping_fee ?? []}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
+            <!-- 보조통화도 기준통화와 **같은 부호**로 적는다 — 기준통화만 '-' 를 붙이면 같은 줄에서 '−3,000원 / $3.00' 처럼 부호가 갈려 차감인지 청구인지 읽히지 않는다(2026-09-21 세션B 실측 S-B-D5). -->
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{'-' + (deductedFeeCurrency.formatted ?? '')}}</span>
+          </div>
+        </div>
+      </div>
+      <!-- 최종 환불액 (§6-3 — 환불예정 − 회수비). 서버가 정한 `adjustment.refund_total` 을 그대로 그린다 — 화면이 빼면 예고와 실제 환불액의 근거가 갈린다. -->
+      <div data-if="{{(_local.claimEstimate?.deducted_shipping_fee ?? 0) > 0}}" class="flex items-center justify-between pt-3 mt-1 border-t border-gray-200 dark:border-gray-700">
+        <span class="text-gray-900 dark:text-white font-medium">$t:claim.apply.refund_final</span>
+        <div class="text-right">
+          <span class="text-lg font-bold text-red-600 dark:text-red-400">{{_local.claimEstimate?.adjustment?.refund_formatted?.base?.refund_total ?? _local.claimEstimateFormatted?.refund_total ?? ''}}</span>
+          <div data-each="refundFinalCurrency in {{_local.claimEstimateFormatted?.mc_refund_total ?? []}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{refundFinalCurrency.formatted ?? ''}}</span>
+          </div>
+        </div>
+      </div>
+      <!-- 총 청구액 — 취소·환불은 회수 배송이 없어 청구가 발생하지 않으므로 그리지 않는다(§6-3). 형제 줄(청구 2축·환불 예정액)과 같은 유형 가드다 — 이 줄만 가드가 없으면 취소 신청서에 '총 청구액 0원' 이 선다.
+           '환불금에서 차감'(`deduct_from_refund`)도 그리지 않는다 — 그 방식은 회수비를 환불액에서 이미 뺐으므로 따로 낼 돈이 없는데, 바로 위 '회수 배송비 차감 −3,000원' 아래에 '총 청구액 3,000원' 이 서면 같은 3,000원을 두 번 내는 것으로 읽힌다(2026-09-21 세션B 실측 S-B-D6 · 운영 결정 「감추기」). 차감액은 위 세 줄(환불 예정액 / 차감 / 최종 환불액)이 이미 말한다. -->
+      <div data-if="{{_local.claimType !== 'refund' &amp;&amp; (_local.claimEstimate?.charge_method ?? _local.claimChargeMethod) !== 'deduct_from_refund'}}" class="flex items-center justify-between pt-3 mt-1 border-t border-gray-200 dark:border-gray-700">
+        <span class="text-gray-900 dark:text-white font-medium">$t:claim.apply.total_charge</span>
+        <!-- 기준통화 표기 + 보조통화 병기(§6-3 · §5-4). 보조통화 값은 서버 미리보기가 주문 통화 스냅샷의 동결 환율로 낸 것을 핸들러가 그 통화로 포맷한 것이다 — 화면이 환산하면 예고와 청구의 근거가 갈린다. 미리보기 응답의 다통화 값은 `{통화코드: 숫자}` 라 주문 리소스의 `{amount, formatted}` 와 형태가 다르므로 `.formatted` 로 직접 읽지 않는다(2026-08-31 3차 검증 실측 — 그렇게 읽으면 오류 없이 빈 줄이 된다). 스냅샷이 없는 주문은 서버가 값을 주지 않으므로 이 줄이 나타나지 않는다. -->
+        <div class="text-right">
+          <span class="text-lg font-bold text-gray-900 dark:text-white">{{_local.claimEstimateFormatted?.total_charge_amount ?? ''}}</span>
+          <div data-each="totalChargeCurrency in {{_local.claimEstimateFormatted?.mc_total_charge_amount ?? []}}" class="flex flex-wrap gap-x-2 justify-end mt-0.5">
+            <span class="text-xs text-gray-400 dark:text-gray-500">{{totalChargeCurrency.formatted ?? ''}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 주문금액 비교(전/후) 접이식 섹션 (#599 후속 P1) — 옛 취소 모달의 비교표를 세 유형 신청서로 옮긴 partial. 금액 요약 바로 뒤, 분기 안내 앞. -->
+    <include src="partials/mypage/claims/_apply_comparison.g7.html"/>
+    <!-- 취소·환불 분기 안내 (§6-3) — 같은 작성 셸이지만 서버는 두 파이프라인으로 갈린다. 즉시취소는 승인 없이 바로 환불되고 환불신청서는 판매자 확인을 거친다 — 금액은 같아도 언제 돈이 돌아오는지가 다르므로 신청 전에 밝힌다. 분기는 서버 판정(resolved_type)이 아니라 **지금 고른 상품**을 따른다 — 두 분기가 섞인 주문에서 서버 판정은 'mixed' 라, 그 값으로 안내하면 결제완료 상품만 골라 즉시 취소되는데도 판매자 확인을 거친다고 말하게 된다. -->
+    <div data-if="{{_local.claimType === 'refund' &amp;&amp; !!(_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) &amp;&amp; (_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) !== 'mixed'}}" class="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+      <icon name="circle-info" class="text-base text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+      <p class="text-xs text-blue-700 dark:text-blue-300 min-w-0">{{((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' &amp;&amp; (_local.claimableSnapshot ?? claimable?.data)?.refund_auto_approved !== false) ? $t('claim.apply.notice_cancel') : $t('claim.apply.notice_refund')}}</p>
+    </div>
+    <!-- 환불 우선순위 (#599 후속 P3-③) — 마일리지를 쓴 주문에서만 뜻이 있다(포인트 사용액 0 이면 미노출). 사용 마일리지를 차감하지 않은 주문도 돌려줄 마일리지가 없어 미노출(Q15). 교환은 저가 교환(차액 환불)일 때만. 바꾸면 미리보기를 다시 부른다(수량 변경과 같은 debounce·세대 가드). 수정 화면은 우선순위를 바꿀 수 없어 읽기 전용 텍스트다. -->
+    <div data-if="{{_local.claimEstimateLoading !== true &amp;&amp; !!_local.claimEstimate &amp;&amp; (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0) &amp;&amp; (_local.claimEstimate?.adjustment?.original_snapshot?.total_points_used_amount ?? 0) > 0 &amp;&amp; order?.data?.points_not_deducted !== true}}" class="pt-3 border-t border-gray-200 dark:border-gray-700" data-testid="claim-refund-priority">
+      <p class="text-sm font-medium text-gray-900 dark:text-white mb-2">$t:claim.apply.refund_priority.title</p>
+      <div data-if="{{_local.claimEditMode !== true}}" class="space-y-1">
+        <label class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+          <!-- PG 우선(기본값) — 환불액을 카드 등 원 결제금에서 먼저 돌려주고, 그것을 넘는 몫만 마일리지로 돌린다. 배분이 바뀌면 수단별 환불액이 달라지므로 고를 때마다 미리보기를 다시 부른다. -->
+          <input type="radio" name="claimRefundPriority" value="pg_first" checked="{{(_local.claimRefundPriority ?? 'pg_first') === 'pg_first'}}" class="text-blue-600 dark:text-blue-500">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.changeClaimRefundPriority" value="pg_first" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>
+            </on>
+          </input>
+          <span class="text-sm text-gray-700 dark:text-gray-300">$t:claim.apply.refund_priority.pg_first</span>
+        </label>
+        <label class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+          <!-- 마일리지 우선 — 쓴 마일리지에서 먼저 돌려주고, 그것을 넘는 몫을 원 결제수단으로 환불한다. 카드로 돌아오는 금액이 줄어드는 쪽이라 구매자가 직접 골라야만 적용된다. -->
+          <input type="radio" name="claimRefundPriority" value="points_first" checked="{{(_local.claimRefundPriority ?? 'pg_first') === 'points_first'}}" class="text-blue-600 dark:text-blue-500">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.changeClaimRefundPriority" value="points_first" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>
+            </on>
+          </input>
+          <span class="text-sm text-gray-700 dark:text-gray-300">$t:claim.apply.refund_priority.points_first</span>
+        </label>
+      </div>
+      <p data-if="{{_local.claimEditMode === true}}" class="text-sm text-gray-700 dark:text-gray-300">{{(_local.claimRefundPriority ?? 'pg_first') === 'points_first' ? $t('claim.apply.refund_priority.points_first') : $t('claim.apply.refund_priority.pg_first')}}</p>
+    </div>
+    <!-- 축1 청구 방식 — 취소·환불은 회수 배송이 없어 청구가 발생하지 않으므로 미노출이다. 수정 화면도 미노출이다(§6-3 — 승인 전에 바꿀 수 있는 것은 사유·상세 사유·첨부와 재발송지뿐이다). 대신 접수 때 고른 방식을 아래 읽기 전용 줄이 보여 준다. -->
+    <div data-if="{{_local.claimEditMode !== true &amp;&amp; _local.claimType !== 'refund' &amp;&amp; ((_local.claimableSnapshot ?? claimable?.data)?.settings?.allowed_charge_methods ?? []).length > 0}}" class="pt-3 border-t border-gray-200 dark:border-gray-700">
+      <p class="text-sm font-medium text-gray-900 dark:text-white mb-2">$t:claim.apply.charge_method_title</p>
+      <!-- 라디오 사이 간격은 부모가 준다 — 반복 노드(라벨)는 자기 자신이 복제되므로 그 노드의 space-y 는 형제 사이에 걸리지 않는다. -->
+      <div class="space-y-1">
+        <label data-each="chargeMethod in {{(_local.claimableSnapshot ?? claimable?.data)?.settings?.allowed_charge_methods ?? []}}" class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+          <!-- '환불금에서 차감' 은 환불이 발생하는 신청(반품·저가 교환)에서만 고를 수 있다(§6-3). 교환의 환불 여부는 adjustment.refund_total 이 아니라 refund_product_amount(저가 교환의 차액 환불)로 판정한다 — 교환의 adjustment 는 대상 상품을 일단 되돌린 뒤 새 옵션을 얹는 형태라 차액 0원 교환에서도 refund_total 이 0 이 아니다(2026-08-31 실측). 반품은 **차감 전** 금액(refund_before_deduction)으로 판정한다 — adjustment.refund_total 은 이 방식을 고른 뒤에는 차감된 뒤의 값이라, 회수비가 환불액을 다 먹는 반품에서 고르는 순간 자기 자신이 비활성으로 바뀐다. checked 는 사용자의 선택 상태에서 읽는다. -->
+          <input type="radio" name="claimChargeMethod" value="{{chargeMethod}}" checked="{{_local.claimChargeMethod === chargeMethod}}" disabled="{{chargeMethod === 'deduct_from_refund' &amp;&amp; (_local.claimType === 'exchange' ? (_local.claimEstimate?.refund_product_amount ?? 0) <= 0 : (_local.claimEstimate?.refund_before_deduction ?? _local.claimEstimate?.adjustment?.refund_total ?? 0) <= 0)}}" class="text-blue-600 dark:text-blue-500 disabled:opacity-50">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.setClaimChargeMethod" value="{{chargeMethod}}" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>
+            </on>
+          </input>
+          <span class="text-sm text-gray-700 dark:text-gray-300">{{chargeMethod === 'pay_on_request' ? $t('sirsoft-ecommerce.enums.claim_charge_method.pay_on_request') : (chargeMethod === 'pay_on_approval' ? $t('sirsoft-ecommerce.enums.claim_charge_method.pay_on_approval') : $t('sirsoft-ecommerce.enums.claim_charge_method.deduct_from_refund'))}}</span>
+        </label>
+      </div>
+    </div>
+    <!-- 축1 거절 사유 (§6-3 P13) — 운영자가 허용 목록을 바꾼 뒤 제출하면 서버가 `charge_method` 를 거절한다. 그 사유를 요약 카드 맨 아래에만 남기면 어느 라디오가 막혔는지 알 수 없다. -->
+    <p data-if="{{!!_local.claimFieldErrors?.charge_method}}" class="text-xs text-red-500 dark:text-red-400 mt-1">{{_local.claimFieldErrors?.charge_method ?? ''}}</p>
+    <!-- 축2 결제 수단 — '환불금에서 차감' 을 고르면 낼 돈이 없어 이 칸이 쓰이지 않으므로 **감춘다**(2026-09-21 세션B 실측 S-B-D6 · 운영 결정). 종전에는 회색 + disabled 로 남겼으나, 비활성이어도 칸이 서 있으면 '카드로 결제해야 하나' 로 읽힌다. -->
+    <div data-if="{{_local.claimEditMode !== true &amp;&amp; _local.claimType !== 'refund' &amp;&amp; (_local.claimEstimate?.charge_method ?? _local.claimChargeMethod) !== 'deduct_from_refund' &amp;&amp; ((_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_methods ?? []).length > 0}}" class="pt-3 border-t border-gray-200 dark:border-gray-700">
+      <!-- 안쪽의 `_local.claimChargeMethod === 'deduct_from_refund'` 분기(제목 회색 · 라디오 disabled · 라벨 회색)는 죽은 코드가 아니다 — 바깥 가드는 **서버 미리보기 값을 우선**(`claimEstimate?.charge_method ?? claimChargeMethod`)하고 안쪽은 **화면 선택값**만 본다. 사용자가 '환불금에서 차감' 을 고른 직후 미리보기 응답이 아직 이전 방식을 들고 있는 왕복 구간에서 이 블록이 한 프레임 더 서고, 그때 회색으로 전환되어 곧 사라진다. 지우면 그 구간에 활성처럼 보였다가 통째로 없어져 깜빡임이 커진다. -->
+      <p class="{{_local.claimChargeMethod === 'deduct_from_refund' ? 'text-sm font-medium text-gray-400 dark:text-gray-500 mb-2' : 'text-sm font-medium text-gray-900 dark:text-white mb-2'}}">$t:claim.apply.payment_method_title</p>
+      <!-- 라디오 사이 간격은 부모가 준다(축1과 같은 규칙). -->
+      <div class="space-y-1">
+        <label data-each="chargePaymentMethod in {{(_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_methods ?? []}}" class="flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+          <!-- 청구액을 무엇으로 낼지 고른다 — 결제 시점(축1)과 따로 고르는 축2 값이다. 수단은 금액을 바꾸지 않아 미리보기를 다시 부르지 않고 제출에만 실린다. -->
+          <input type="radio" name="claimPaymentMethod" value="{{chargePaymentMethod}}" checked="{{_local.claimPaymentMethod === chargePaymentMethod}}" disabled="{{_local.claimChargeMethod === 'deduct_from_refund'}}" class="text-blue-600 dark:text-blue-500 disabled:opacity-50">
+            <on type="change">
+              <action handler="sirsoft-ecommerce.setClaimPaymentMethod" value="{{chargePaymentMethod}}"/>
+            </on>
+          </input>
+          <span class="{{_local.claimChargeMethod === 'deduct_from_refund' ? 'text-sm text-gray-400 dark:text-gray-500' : 'text-sm text-gray-700 dark:text-gray-300'}}">{{chargePaymentMethod === 'point' ? $t('claim.apply.payment_method_point') : (chargePaymentMethod === 'card' ? $t('claim.apply.payment_method_card') : ((_local.claimableSnapshot ?? claimable?.data)?.settings?.charge_payment_method_labels?.[chargePaymentMethod] ?? chargePaymentMethod))}}</span>
+        </label>
+      </div>
+    </div>
+    <!-- 축2 거절 사유 (§6-3 P13) — `payment_method` 와 `refund_priority` 는 같은 칸이 정하는 값이라 한 자리에 남긴다. -->
+    <p data-if="{{!!_local.claimFieldErrors?.payment_method}}" class="text-xs text-red-500 dark:text-red-400 mt-1">{{_local.claimFieldErrors?.payment_method ?? ''}}</p>
+    <!-- 수정 화면의 청구 방식 — 읽기 전용이다. 접수 때 고른 방식이 그대로 남으므로 값은 보이되 바꿀 수는 없다(§6-3). -->
+    <div data-if="{{_local.claimEditMode === true &amp;&amp; _local.claimType !== 'refund' &amp;&amp; !!_local.claimEditSnapshot?.charge_method_label}}" class="flex items-center justify-between text-sm pt-3 border-t border-gray-200 dark:border-gray-700">
+      <span class="text-gray-500 dark:text-gray-400">$t:claim.apply.charge_method_title</span>
+      <span class="text-gray-900 dark:text-white">{{_local.claimEditSnapshot?.charge_method_label ?? ''}}</span>
+    </div>
+    <!-- 재발송지를 바꿔 배송비가 다시 계산된 결과의 차액 (D14). 접수 시점 청구액과의 차이이며, 더 내야 하면 저장 뒤 결제창이 열리고 돌려받을 금액이면 이미 받은 추가결제에서 환급된다. 이 줄이 없으면 구매자는 얼마가 달라지는지 모른 채 저장하게 되고, 그 사실은 저장 뒤에야 드러난다. -->
+    <div data-if="{{_local.claimEditMode === true &amp;&amp; (_local.claimEditChargeDelta ?? 0) !== 0}}" class="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-yellow-900/20 border border-amber-200 dark:border-yellow-800">
+      <icon name="circle-info" class="text-base text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+      <p class="text-xs text-amber-800 dark:text-yellow-200 min-w-0">{{(_local.claimEditChargeDelta ?? 0) > 0 ? $t('claim.edit.charge_delta_more') : $t('claim.edit.charge_delta_less')}} {{_local.claimEditChargeDeltaFormatted ?? ''}}</p>
+    </div>
+    <!-- 수정 거절 사유 (§6-3 P13) — 승인 뒤에는 수정할 수 없어 서버가 거절한다. 토스트로만 알리면 사라진 뒤 왜 막혔는지 화면에 남지 않는다. -->
+    <div data-if="{{!!_local.claimEditError}}" class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+      <p class="text-sm text-red-700 dark:text-red-300">{{_local.claimEditError ?? ''}}</p>
+    </div>
+    <!-- 제출 오류 (필드 오류가 아닌 사유) — 필드 오류는 각 섹션이 자기 자리에 표시한다. -->
+    <div data-if="{{!!_local.claimSubmitError}}" class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+      <p class="text-sm text-red-700 dark:text-red-300">{{_local.claimSubmitError ?? ''}}</p>
+    </div>
+    <!-- 환불 계좌 미입력 안내 (T2-D5 · #599 3차 실측 L-8) — 계좌로 돈이 돌아가는 주문인데 계좌가 비면 제출을 막고 그 이유를 버튼 위에 남긴다. 막기만 하면 구매자는 버튼이 왜 회색인지 알 수 없다. 판정은 계좌 카드가 서는 조건과 **같은 값**을 쓴다((claimableSnapshot ?? claimable).refund_account.required + 교환은 돌려줄 돈이 있을 때만) — 다른 값을 쓰면 칸은 없는데 버튼만 잠기거나 그 반대가 되고, 둘 다 오류를 남기지 않는다. 서버도 같은 규칙으로 422 를 낸다(StoreRefundRequestRequest::requiresRefundBank). 수정 화면에는 세우지 않는다 — 그 화면은 계좌 칸을 빈 채로 열고 「비워 두면 그대로 둔다」 고 안내하며, [저장]도 계좌를 요구하지 않는다. -->
+    <div data-if="{{_local.claimEditMode !== true &amp;&amp; (((_local.claimableSnapshot ?? claimable?.data)?.refund_account?.required === true) &amp;&amp; (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0) &amp;&amp; !((_local.claimRefundBankCode ?? '').trim() &amp;&amp; (_local.claimRefundBankAccount ?? '').trim() &amp;&amp; (_local.claimRefundBankHolder ?? '').trim()))}}" class="p-3 rounded-lg bg-amber-50 dark:bg-yellow-900/20 border border-amber-200 dark:border-yellow-800">
+      <p class="text-xs text-amber-800 dark:text-yellow-200">$t:claim.apply.refund_account_required_to_submit</p>
+    </div>
+    <!-- 제출 — 미리보기가 성공하지 않았으면(=신청 자격이 확인되지 않았으면) 누를 수 없다. 화면이 예고하는 금액과 실제 청구가 어긋난 채 제출되는 창을 없앤다. 수정 화면에는 서지 않는다(그 자리는 아래 [저장]이다). -->
+    <button data-if="{{_local.claimEditMode !== true}}" type="button" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_local.claimItems ?? []).filter(i => i.selected).length === 0 || !_local.claimReason || _local.claimEstimateLoading === true || !!_local.claimEstimateError || !_local.claimEstimate || _local.claimEstimate?.adjustment?.cancel_blocked === true || _local.isSubmittingClaim === true || (((_local.claimableSnapshot ?? claimable?.data)?.refund_account?.required === true) &amp;&amp; (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0) &amp;&amp; !((_local.claimRefundBankCode ?? '').trim() &amp;&amp; (_local.claimRefundBankAccount ?? '').trim() &amp;&amp; (_local.claimRefundBankHolder ?? '').trim()))}}">
+      <on type="click">
+        <action handler="sirsoft-ecommerce.submitClaim" comment="접수 뒤 갈 곳 — **방금 만든 신청서 상세**다(F8). 서버가 응답에 신청번호를 실어 주므로 핸들러가 detailPathBase 와 이어 붙인다. 목록으로 보내면 구매자가 방금 낸 신청서를 스스로 찾아야 하고, 유형 탭이 어긋나면 아예 보이지 않는다. successPath 는 신청번호를 받지 못했을 때의 대비책이며, 그때는 유형 서브탭을 실은 목록으로 간다(유형마다 서버가 다른 테이블을 읽는다)." claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}" successPath="{{(_local.claimListPath ?? '') + '?type=' + (_local.claimType ?? 'exchange')}}" detailPathBase="{{_local.claimDetailPathBase ?? ''}}"/>
+      </on>
+      <icon data-if="{{_local.isSubmittingClaim === true}}" name="spinner" class="text-sm animate-spin mr-1"/>
+      <!-- 실행 버튼의 라벨은 **지금 결제창이 뜨는가**를 말한다. 서버의 `requires_payment` 는 `ClaimChargeMethodEnum::requiresPayment()` = '상계가 아니다' 라는 도메인 뜻이라 `신청 시 결제`와 `승인 후 결제`를 구분하지 않는다 — 그 값만 보면 승인 후 결제에서도 'N원 결제하기' 로 예고하는데 실제로는 접수만 되고 결제창이 뜨지 않는다(S17 트랙 A F-6). 결제 시점 축(`charge_method`)을 함께 본다. 결제 시점의 정본은 미리보기 응답의 `charge_method` 이고, 응답이 아직 없으면 사용자가 고른 값으로 떨어진다.
+           결제창이 뜨는 경우의 라벨은 금액을 **번역문의 파라미터**로 넘긴다 — 금액을 번역문 밖에서 이어 붙이면 어순이 언어마다 틀린다(`9,000원 Pay now`). 표현식 안의 $t() 는 파라미터를 받지 않아 그 경우만 따로 그린다. -->
+      <span data-if="{{_local.isSubmittingClaim !== true &amp;&amp; _local.claimType !== 'refund' &amp;&amp; _local.claimEstimate?.requires_payment === true &amp;&amp; (_local.claimEstimate?.charge_method ?? _local.claimChargeMethod) === 'pay_on_request'}}">$t:claim.apply.submit_with_payment|amount={{_local.claimEstimateFormatted?.total_charge_amount ?? ''}}</span>
+      <span data-if="{{!(_local.isSubmittingClaim !== true &amp;&amp; _local.claimType !== 'refund' &amp;&amp; _local.claimEstimate?.requires_payment === true &amp;&amp; (_local.claimEstimate?.charge_method ?? _local.claimChargeMethod) === 'pay_on_request')}}">{{_local.isSubmittingClaim === true ? $t('common.processing') : (_local.claimType === 'refund' ? ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.submit_cancel') : $t('claim.apply.submit_refund')) : $t('claim.apply.submit'))}}</span>
+    </button>
+    <!-- 저장 (수정 화면) — 사유가 없으면 누를 수 없다. 작성과 달리 미리보기 성공을 요구하지 않는다: 수정 화면의 미리보기는 재발송지를 바꿨을 때 차액을 보여 주기 위한 것이고, 사유·상세 사유·첨부만 고치는 저장은 금액을 건드리지 않는다. 미리보기 성공을 요구하면 그 경우까지 저장이 잠긴다. -->
+    <button data-if="{{_local.claimEditMode === true}}" type="button" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-bold hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.claimReason || _local.claimEditSaving === true || _local.claimEstimateLoading === true}}">
+      <on type="click">
+        <action handler="sirsoft-ecommerce.saveClaimEdit" comment="저장 뒤 돌아갈 곳은 그 신청서의 상세다 — 방금 고친 내용이 그 화면에 그대로 서므로 저장됐다는 사실이 값으로 확인된다." claimEditApiBase="{{_local.claimEditApiBase ?? ''}}" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}" successPath="{{(_local.claimDetailPathBase ?? '') + '/' + (route.claim_number ?? '')}}"/>
+      </on>
+      <icon data-if="{{_local.claimEditSaving === true}}" name="spinner" class="text-sm animate-spin mr-1"/>
+      <span>{{_local.claimEditSaving === true ? $t('common.processing') : $t('claim.edit.save')}}</span>
+    </button>
+  </div>
+</partial>

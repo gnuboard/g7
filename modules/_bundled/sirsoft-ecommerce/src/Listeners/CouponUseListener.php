@@ -126,15 +126,16 @@ class CouponUseListener implements HookListenerInterface
                 'total_coupons' => count(array_unique($appliedCouponIds)),
                 'used_count' => $usedCount,
             ]);
-        } catch (CouponAlreadyUsedException $e) {
-            // 도메인 실패는 삼키지 않고 전파한다 (주문 트랜잭션 롤백 트리거)
-            throw $e;
-        } catch (\Exception $e) {
-            Log::error('CouponUseListener: 쿠폰 사용 차감 실패', [
+        } catch (\Throwable $e) {
+            // 어떤 실패도 삼키지 않는다(F3) — 동기 리스너라 예외가 주문 생성 트랜잭션을 되돌린다. 삼키면 차감 쓰기가
+            // 실패해도 주문은 할인된 금액으로 만들어지고 쿠폰은 사용 가능으로 남아 다음 주문에 또 쓰였다(마일리지 차감과 같은 동작).
+            Log::error('CouponUseListener: 쿠폰 사용 차감 실패 — 주문 생성 롤백', [
                 'order_id' => $order->id,
                 'order_number' => $order->order_number ?? null,
                 'error' => $e->getMessage(),
             ]);
+
+            throw $e;
         }
     }
 }

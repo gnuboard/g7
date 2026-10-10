@@ -99,7 +99,7 @@ spec 이 전부 실패한다.
 ([TemplateApp.ts](../../resources/js/core/TemplateApp.ts) 생성자), 서버값은 `SetLocale` 미들웨어가
 **미로그인 요청에서 `Accept-Language` 헤더로** 결정한다. Playwright 의 `locale` 옵션이 그 헤더를
 만들므로, 지정하지 않으면 첫 페이지 로드가 `en-US` 로 나가 화면이 영어로 렌더되고 엔진이 그 값을
-`localStorage` 에 저장한다. 이후 인증해도 저장된 값이 최우선이라 세션 전체가 영어로 고정된다.
+`localStorage` 에 저장한다. 비로그인 화면은 저장된 값이 최우선이라 세션 전체가 영어로 고정된다. 로그인 상태에서는 부팅 때 회원 언어(DB `users.language`)로 맞추므로(engine-v1.79.0+), 로케일별 실측은 테스트 계정의 회원 언어를 바꿔서 정한다.
 
 `getByText('전체회원수')` 처럼 한국어만 단언하는 곳은 물론이고, `getByRole('button', { name: /저장/ })`
 같은 접근 가능한 이름 조회도 함께 깨진다.
@@ -117,8 +117,9 @@ Playwright 의 기본 UA 에는 `HeadlessChrome` 이 들어 있고, `SeoMiddlewa
 번들 로드·상태 바인딩)은 한 번도 실행되지 않은 채 단언이 통과한다. 실측(2026-08-26)에서
 사용자 홈을 재던 spec 들이 전부 이 경로였다.
 
-봇 화면을 의도적으로 검증하는 spec 은 UA 가 아니라 `?_escaped_fragment_=` 로 그 경로를 유발하므로,
-UA 를 실제 브라우저 값으로 고정해도 그 검증은 그대로 동작한다.
+봇 화면을 의도적으로 검증하는 spec 은 요청마다 검색엔진 UA(`Googlebot` 등)를 헤더로 지정해 그 경로를
+유발하므로, 설정의 UA 를 실제 브라우저 값으로 고정해도 그 검증은 그대로 동작한다. `?_escaped_fragment_=`
+쿼리는 더 이상 봇 신호가 아니다 — 그 쿼리만 붙이면 SPA 를 받는다.
 
 측정으로 확인하려면 `typeof window.G7Core` 가 `'object'` 인지 본다 — `'undefined'` 면 SPA 가 아니라
 봇 화면을 재고 있는 것이다.
@@ -170,13 +171,48 @@ Firefox/WebKit 프로젝트를 상시 스위트에 넣지 않은 이유:
 | 코어 권한/역할/유저/Sanctum 토큰 | 코어 | `app/Console/Commands/PlaywrightIssueToken.php` | `php artisan playwright:issue-token --permissions=core.xxx` (권한 경계 검증은 `--no-admin-role` 추가 — §5.1) |
 | 편집기 저장 spec 대상 시드 화면 | 코어 | `app/Console/Commands/PlaywrightSeedLayout.php` | `php artisan playwright:seed-layout [--remove]` (globalSetup/globalTeardown 자동 호출) |
 | 로그인 2단계 인증 계정·인증번호 | 코어 | `app/Console/Commands/PlaywrightSeedTwoFactor.php` | `php artisan playwright:seed-two-factor --ensure-user=… \| --plant=<challenge_id>` (§4.2) |
-| 모듈 권한 (`sirsoft-ecommerce.*`) | 모듈 | 코어 커맨드의 `--permissions=` 임의 식별자 | 동일 (Permission::firstOrCreate 자동 생성) |
+| 인증 앱(TOTP) 자격증명·현재 코드 | 플러그인 | `plugins/_bundled/sirsoft-totp/src/Console/Commands/PlaywrightSeedTotp.php` | `php artisan playwright:seed-totp --enroll=<email> \| --code=<secret>` (§4.2) |
+| 모듈 권한 (`sirsoft-ecommerce.*`) | 모듈 | 그 모듈이 정의한 권한(설치 때 생성)·게시판별 권한(게시판 생성 때 생성) | 코어 커맨드의 `--permissions=` — **DB 에 있는 식별자만** 받는다(없으면 발급 거절 — 아래 「없는 권한 식별자」) |
 | 모듈 도메인 데이터 (상품/주문) | 모듈 | `modules/_bundled/{id}/src/Console/Commands/PlaywrightSeed{id}.php` | `php artisan playwright:seed-{id}` |
 | 플러그인 도메인 데이터 (결제 키) | 플러그인 | `plugins/_bundled/{id}/src/Console/Commands/PlaywrightSeed{id}.php` | 동일 |
 | 외부 의존 (토스 결제창 응답) | spec 안 mock | `page.route(...)` | 호출 없음 |
 
 **핵심 원칙**: 코어는 모듈 도메인을 모른다. 모듈 도메인 시드를 코어에 두면 의존 역전.
 
+### 없는 권한 식별자는 발급 때 거절된다
+
+`playwright:issue-token` 은 `--permissions` 의 식별자가 하나라도 DB 에 없으면 **아무것도 만들지 않고 실패 코드(1)로
+끝나며**, 없는 식별자를 오류 줄에 나열한다. 계정·테스트 역할·토큰·권한 행 모두 생기지 않는다. 예전에는 없는 식별자를
+받으면 이름·설명이 식별자 그대로인 권한 행을 만들었는데, 그 행은 실제 라우트가 검사하는 권한이 아니어서 spec 은
+「권한을 받았다」고 믿지만 실제로는 함께 붙은 `admin` 역할 덕에 통과하는 거짓 녹색이 됐고, 관리자 권한 트리에도 식별자가
+그대로 보였다.
+
+- 식별자는 그 권한을 정의한 코어 설정·확장(`getPermissions()`)에 있는 이름을 쓴다(예: `core.settings.read`,
+  `sirsoft-ecommerce.products.read`). 확장 권한은 그 확장이 설치돼 있어야 발급된다.
+- 게시판별 권한(`sirsoft-board.{slug}.admin.posts.read` 등)은 **그 게시판이 만들어질 때** 생긴다. spec 안에서 게시판을
+  만든다면 발급 시점에는 아직 없으므로, 그 식별자를 넘기지 말고 함께 붙는 `admin` 역할(게시판 생성 때 그 게시판의 관리자
+  권한을 받는다)에 맡기거나, 게시판을 만든 뒤 토큰을 따로 받는다.
+- 잘못된 범위 접미사(`:self`·`:role` 외)는 종전처럼 예외로 거절된다.
+
+### 발급분 회수 (`playwright:cleanup`)
+
+`playwright:issue-token` 은 호출마다 `playwright_test_{uniqid}` 역할과 신규 유저를 새로 만든다 —
+병렬 실행이 서로의 권한 집합을 밟지 않게 하려는 의도된 격리다. 회수 수단이 없으면 이 발급분이
+영구 누적되어 `/api/admin/roles/active` 응답이 부풀고, 그 목록을 당기는 관리자 화면(게시판 폼 등)
+진입이 함께 느려진다.
+
+```powershell
+$env:G7_PLAYWRIGHT_BYPASS='1'; php artisan playwright:cleanup --dry-run      # 대상만 센다
+$env:G7_PLAYWRIGHT_BYPASS='1'; php artisan playwright:cleanup --keep-hours=2 # 최근 2시간분은 남긴다
+```
+
+회수 대상은 `playwright_test_` 로 시작하는 역할과, 그 역할 외에 `admin` 밖에 갖지 않은 계정
+(+ 그 계정의 토큰)뿐이다. 사람이 쓰는 계정에 테스트 역할이 섞여 있으면 그 계정은 건너뛴다.
+권한(`permissions`) 행은 발급 커맨드가 만들지 않는 공용 행이므로 원칙적으로 남긴다. 다만 예전 발급 커맨드가 DB 에
+없던 식별자로 만들어 둔 행 — 이름·설명(ko·en)이 식별자 그대로, 코어 소유, 부모·자식 없음, 코어 정의(`config('core.permissions')`)
+밖, 회수하는 테스트 역할 말고는 붙은 역할 없음, `--keep-hours` 밖 — 은 함께 회수한다(`--dry-run` 이 권한 수까지 센다).
+사람이 읽는 이름을 가진 권한·사람 역할이 쓰는 권한은 남는다.
+가드는 발급 커맨드와 같다 (CLI 한정 + `G7_PLAYWRIGHT_BYPASS=1`).
 ### 4.2 로그인 2단계 인증 픽스처
 
 2단계 인증은 **사이트 설정과 메일 발송**에 의존하므로 브라우저만으로는 재현할 수 없다.
@@ -209,7 +245,11 @@ Node 기본 `net` 만으로 최소 SMTP 서버를 127.0.0.1 에 잠깐 띄우고
 | `--plant=<uuid>` | 그 challenge 에 알려진 인증번호의 해시를 심고 코드를 출력 |
 | `--code=` | `--plant` 가 심을 인증번호 (기본 `135790`) |
 | `--gc-hours=` | 이 시간보다 오래된 테스트 계정 정리 (기본 6, `0` 이면 정리 안 함) |
-| `--purge-users` | 나이와 무관하게 테스트 계정을 전부 제거 — 실측 종료 직후 호출한다. 이 계정들은 알려진 비밀번호를 갖고 관리자용은 관리자 역할까지 가지므로, 나이 기준 정리를 기다리는 사이가 그대로 열린 문이 된다 |
+| `--purge-users` | 나이와 무관하게 테스트 계정을 전부 제거 — 실측 종료 직후 호출한다. 이 계정들은 알려진 비밀번호를 갖고 관리자용은 관리자 역할까지 가지므로, 나이 기준 정리를 기다리는 사이가 그대로 열린 문이 된다. 삭제는 운영자 삭제와 같은 경로(`UserService::deleteUser`)를 타서, 확장이 `core.user.before_delete` 에서 자기 행을 치운다 |
+
+인증 앱 자격증명은 그 플러그인 소유라 코어 커맨드가 다루지 않는다 — `playwright:seed-totp --enroll=<email>` 이
+확정된 자격증명과 고정 백업 코드를 심고 시크릿을 출력하며, `--code=<secret>` 이 그 순간의 코드를 계산한다
+(fixture `enrollTotpFor()`·`totpCodeFor()`).
 
 가드는 `playwright:issue-token` 과 동형이다 — CLI 한정 + `G7_PLAYWRIGHT_BYPASS=1` + `APP_DEBUG` 강제.
 
@@ -239,7 +279,7 @@ spec 안에 "추가한 노드를 삭제하고 다시 저장" 원복을 넣는 �
 |---|---|
 | 레이아웃 이름 | `e2e_sandbox` |
 | 라우트 | 사용자 템플릿 `/e2e-sandbox`, 관리자 템플릿 `*/admin/e2e-sandbox` |
-| fixture 원본 | `tests/Playwright/fixtures/seed-layouts/{템플릿}.e2e_sandbox.json` |
+| fixture 원본 | `tests/Playwright/fixtures/seed-layouts/{user\|admin}.e2e_sandbox.json` (활성 템플릿 종류별) |
 | 설치 위치 | **활성 템플릿 디렉토리만** (`_bundled` 배포 원본 무변경, 활성 디렉토리는 Git 무시 → 릴리스 미포함) |
 | 설치/제거 | `php artisan playwright:seed-layout [--remove]` (CLI + `G7_PLAYWRIGHT_BYPASS=1` 가드) |
 | 자동 호출 | `globalSetup` 설치 / `globalTeardown` 제거 |
@@ -339,6 +379,30 @@ await expect(page.locator('input[name="..."]')).toBeDisabled();   // 통과
 그 화면 자체의 검증과 무관한 잡음이므로, 콘솔 에러 0 을 단언하는 테스트에는 이 토큰을 쓰지 않는다.
 권한 밖 탭·라우트로 이동하면 403 에러 페이지로 전환되므로, 왕복 시나리오는 그 권한으로 접근
 가능한 대상만 경유해야 한다.
+
+#### 조회 범위(scope)를 검증할 때는 `식별자:self` · `식별자:role`
+
+권한은 기본적으로 전체 범위로 부여된다. 「본인만」·「같은 역할만」으로 제한된 위임 관리자 세션이
+필요하면 식별자 뒤에 범위를 붙인다 — 커맨드가 그 범위(`role_permissions.scope_type`)로 부여한다.
+범위를 거는 보조 경로(최근 목록·통계·대시보드 카드 등)가 주 경로와 같은 범위를 따르는지 잠글 때 쓴다.
+`self`·`role` 외의 값은 커맨드가 거부한다.
+
+```typescript
+// 회원 조회를 본인 범위로만 가진 계정 — 회원 목록·최근 가입·통계가 모두 본인 1명이어야 한다
+const token = issueScopedToken('core.users.read:self', 'core.dashboard.read');
+```
+
+#### 정해 둔 관리자 계정으로 재야 할 때는 `adminToken` (`tests/Playwright/fixtures/admin-login.ts`)
+
+`issueToken` 은 실행마다 `playwright_test_*` 계정을 만든다. 테스트 데이터를 정해 둔 계정으로만 남겨야 하는 실행에서는
+`G7_E2E_ADMIN_EMAIL` 과 `G7_E2E_ADMIN_PASSWORD_FILE`(비밀번호를 담은 파일 경로 — 비밀번호를 명령줄·로그에 남기지 않는다)을
+주면 `adminToken(request, ...permissions)` 이 그 계정으로 `POST /api/auth/admin/login` 해 토큰을 받는다. 둘 중 하나라도
+없으면 `issueToken(...permissions)` 로 돌아간다.
+
+```typescript
+const token = await adminToken(request, 'core.templates.layouts.edit');
+await authenticatePage(page, token);
+```
 
 ### 5.2 확장 fixture — 권한 + 시드 분리
 
@@ -441,7 +505,7 @@ test('unauthenticated_401 × no_token', async ({ page }) => {
 });
 ```
 
-정적 검사가 매니페스트 axes ↔ docblock 매칭을 자동 검증.
+자동 검증이 매니페스트 axes ↔ docblock 매칭을 자동 검증.
 
 ## §8. 회귀 테스트 4단계
 
@@ -474,7 +538,7 @@ E2E spec 작성 중 발견한 무관 에러는 같은 세션에서 처리:
 | `defaultPrevented` 가 항상 false | onClickCapture 가 도달 안 함 | anchor 가 `preview-canvas-container` 자손인지 확인 |
 | `location.href` setter override 실패 | Chromium 에서 `window.location` 은 non-configurable | best-effort 캡처. SSoT 신호는 `defaultPrevented` |
 | 외부 origin navigation 으로 trace 복잡 | spec 이 외부 도메인을 로드 | `page.route('https://example.com/**', route => route.fulfill(...))` |
-| Sanctum 토큰 누적 DB 오염 | 매 spec 마다 새 user/role 생성 | `globalTeardown.ts` 에서 `php artisan playwright:cleanup-tokens` (별도 커맨드 신설) |
+| Sanctum 토큰·역할 누적 DB 오염 (`roles/active` 가 느려짐) | 매 spec 마다 새 user/role 생성 | `php artisan playwright:cleanup` — §4 "발급분 회수" 참조 |
 | Windows 라인엔딩 | git autocrlf 충돌 | `.gitattributes` 에 `*.spec.ts text eol=lf` |
 
 ## §11. 디버깅 — Claude MCP 역할

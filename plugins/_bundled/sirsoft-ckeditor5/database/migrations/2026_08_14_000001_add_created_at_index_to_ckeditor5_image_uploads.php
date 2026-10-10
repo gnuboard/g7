@@ -18,9 +18,11 @@ return new class extends Migration
             return;
         }
 
-        Schema::table('ckeditor5_image_uploads', function (Blueprint $table) {
-            $table->index('created_at', 'ckeditor5_image_uploads_created_at_index');
-        });
+        if (! Schema::hasIndex('ckeditor5_image_uploads', 'ckeditor5_image_uploads_created_at_index')) {
+            Schema::table('ckeditor5_image_uploads', function (Blueprint $table) {
+                $table->index('created_at', 'ckeditor5_image_uploads_created_at_index');
+            });
+        }
     }
 
     /**

@@ -1,22 +1,23 @@
 {
+    "comment": "재주문 경유 화면 — 사람이 조작하는 화면이 아니라 «지난 주문을 장바구니에 다시 담는» 한 동작을\n     수행하고 결과만 알려 주는 자리다. 진입과 동시에 API 를 부르고, 품절 등으로 담지 못한 항목이 있으면\n     그 목록을 보여 준 뒤 장바구니로 보낸다. 회원 전용(auth_required).",
     "version": "1.0.0",
+    "layout_name": "shop/reorder",
+    "extends": "_user_base",
     "meta": {
         "_e2e_allow": "e2e:allow 다크 모드 대비 클래스(dark:bg-indigo-500/dark:hover:bg-indigo-600) 추가만으로 동작 변화 없음. safelist 등록 후 빌드 CSS 에 셀렉터 생성 확인. 재주문 화면 Playwright spec 부재."
     },
-    "layout_name": "shop/reorder",
-    "permissions": [],
-    "extends": "_user_base",
-    "state": {
+    "initLocal": {
         "status": "pending",
         "message": "",
         "skipped": []
     },
+    "permissions": [],
     "init_actions": [
         {
             "comment": "재주문 API 호출 — 과거 주문의 상품 옵션을 장바구니에 일괄 추가. user 인증 토큰 필수.",
             "handler": "apiCall",
-            "auth_required": true,
             "target": "/api/modules/sirsoft-ecommerce/user/orders/{{route.id}}/reorder",
+            "auth_required": true,
             "params": {
                 "method": "POST"
             },
@@ -24,8 +25,8 @@
                 {
                     "comment": "결과 상태 저장 (skipped 항목 노출용)",
                     "handler": "setState",
-                    "target": "local",
                     "params": {
+                        "target": "local",
                         "status": "success",
                         "message": "{{response.message}}",
                         "skipped": "{{response.data?.skipped ?? []}}"
@@ -33,8 +34,8 @@
                 },
                 {
                     "comment": "skipped 없으면 즉시 장바구니로 이동",
-                    "if": "{{(response.data?.skipped?.length ?? 0) === 0}}",
                     "handler": "navigate",
+                    "if": "{{(response.data?.skipped?.length ?? 0) === 0}}",
                     "params": {
                         "path": "{{_global.shopBase}}/cart"
                     }
@@ -43,8 +44,8 @@
             "onError": [
                 {
                     "handler": "setState",
-                    "target": "local",
                     "params": {
+                        "target": "local",
                         "status": "error",
                         "message": "{{error.message ?? ''}}"
                     }
@@ -81,7 +82,7 @@
                                 "type": "basic",
                                 "name": "Icon",
                                 "props": {
-                                    "name": "loader-2",
+                                    "name": "spinner",
                                     "className": "text-4xl animate-spin text-gray-500 dark:text-gray-400"
                                 }
                             },
@@ -138,13 +139,13 @@
                                 "comment": "skipped 항목 목록",
                                 "type": "basic",
                                 "name": "Ul",
-                                "props": {
-                                    "className": "space-y-2 mb-6 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900"
-                                },
                                 "iteration": {
                                     "source": "{{_local.skipped ?? []}}",
                                     "item_var": "item",
                                     "index_var": "idx"
+                                },
+                                "props": {
+                                    "className": "space-y-2 mb-6 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900"
                                 },
                                 "children": [
                                     {
@@ -184,10 +185,6 @@
                                     {
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "flex-1 px-4 py-2.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-lg font-medium cursor-pointer"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -197,15 +194,15 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "flex-1 px-4 py-2.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-lg font-medium cursor-pointer"
+                                        },
                                         "text": "$t:shop.reorder.go_cart"
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Button",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                                        },
                                         "actions": [
                                             {
                                                 "type": "click",
@@ -215,6 +212,10 @@
                                                 }
                                             }
                                         ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                                        },
                                         "text": "$t:shop.reorder.back_to_orders"
                                     }
                                 ]
@@ -263,10 +264,6 @@
                             {
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "className": "px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -276,6 +273,10 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                                },
                                 "text": "$t:shop.reorder.back_to_orders"
                             }
                         ]

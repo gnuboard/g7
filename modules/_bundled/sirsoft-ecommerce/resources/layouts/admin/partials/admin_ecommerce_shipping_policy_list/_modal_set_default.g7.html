@@ -1,0 +1,51 @@
+<!-- 이 정책을 기본 배송정책으로 삼을지 확인하는 창. 기본은 쇼핑몰에 하나뿐이라 다른 정책의 표시가
+  함께 풀린다.
+  **취소 쪽에 할 일이 하나 더 있다** — 이 창은 목록 행의 기본값 스위치를 눌러 열리는데, 그 스위치는
+  이미 화면에서 켜진 상태다. 그냥 닫으면 서버에는 반영되지 않은 채 켜진 것처럼 보이므로, 그 스위치
+  컴포넌트를 다시 그려(`remount`) 원래대로 되돌린다.
+  성공 쪽은 목록을 다시 부르므로 그 되돌리기가 필요 없다. -->
+<partial description="Set Default Shipping Policy Confirmation Modal">
+  <modal data-type="composite" data-ref="set_default_modal" title="$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.title" size="medium">
+    <div>
+      <div>
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.message</p>
+        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+          <span class="text-primary font-medium">{{_global.targetDefaultPolicy?.name_localized}}</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <!-- 기본 정책 지정. 성공하면 목록을 다시 부르므로 다른 정책의 기본 표시가 풀린 것도 함께 반영된다 — 그래서 화면에서 직접 되돌리는 처리가 없다 -->
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSettingDefault}}">
+        <on type="click">
+          <remount componentId="is_default_toggle_{{_global.targetDefaultPolicy?.id}}"/>
+          <set-state target="global" :targetDefaultPolicy="null"/>
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.cancel
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSettingDefault}}">
+        <on type="click">
+          <!-- 기본 정책 지정 실행. 성공하면 목록을 다시 부르므로 다른 정책의 기본 표시가 풀린 것도 함께 반영된다(그래서 여기에는 취소 쪽 같은 되돌리기가 없다). -->
+          <sequence>
+            <set-state target="global" :isSettingDefault="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{_global.targetDefaultPolicy?.id}}/set-default" method="PATCH">
+              <success>
+                <set-state target="global" :isSettingDefault="false" :targetDefaultPolicy="null"/>
+                <refetch-data-source dataSourceId="shipping_policies"/>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.success"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isSettingDefault="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isSettingDefault}}" name="spinner" class="spinner-sm"/>
+        <span>$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.confirm</span>
+      </button>
+    </div>
+  </modal>
+</partial>

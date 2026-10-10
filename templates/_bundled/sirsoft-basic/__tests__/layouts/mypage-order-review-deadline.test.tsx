@@ -3,7 +3,7 @@
  * @description 마이페이지 주문 상세 — 리뷰 작성 기간 만료 안내 레이아웃 회귀 테스트
  *
  * 테스트 대상:
- * - templates/.../layouts/partials/mypage/orders/_items.json
+ * - templates/.../layouts/partials/mypage/orders/_items.g7.html
  *
  * 검증 항목:
  * - 리뷰 작성 버튼이 사라지는 만료 상황에서 사용자가 인지할 수 있도록

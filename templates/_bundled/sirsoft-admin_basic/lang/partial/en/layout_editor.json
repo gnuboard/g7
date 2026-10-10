@@ -220,6 +220,12 @@
       "default_label1": "A",
       "default_label2": "B"
     },
+    "line_chart": {
+      "label": "Line chart",
+      "default_label1": "Day 1",
+      "default_label2": "Day 2",
+      "default_label3": "Day 3"
+    },
     "donut_chart": {
       "label": "Donut chart",
       "default_label1": "A",
@@ -308,6 +314,9 @@
     },
     "permission_tree": {
       "label": "Permission Tree"
+    },
+    "menu_access_tree": {
+      "label": "Menu Access Tree"
     },
     "category_tree": {
       "label": "Category Tree",

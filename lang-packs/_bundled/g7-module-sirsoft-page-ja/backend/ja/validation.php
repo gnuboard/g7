@@ -65,5 +65,8 @@ return [
     ],
     'attributes' => [
         'search' => '検索ワード',
+        'temp_key' => '一時添付キー',
+        'title' => 'ページタイトル',
+        'content' => 'ページ本文',
     ],
 ];

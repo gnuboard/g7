@@ -1,0 +1,352 @@
+<!-- 마케팅 플러그인 환경설정 화면 — 수신 채널을 더하고 지우고 순서를 정하며, 각 채널이 가리킬 약관 페이지를 연결한다 -->
+<layout name="plugin_settings" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-marketing.settings.title" description="$t:sirsoft-marketing.settings.description"/>
+  <!-- 현재 설정값. 채널 목록은 편집 창과 오가야 해서 화면 상태가 아니라 전역에 풀어 둔다 -->
+  <data-source id="settings" label_key="$t:sirsoft-marketing.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
+    <success>
+      <sequence>
+        <set-state target="local" form.channels="{{typeof response.data.data.channels === 'string' ? (JSON.parse(response.data.data.channels) ?? []) : (response.data.data.channels ?? [])}}"/>
+        <set-state target="global" channels="{{typeof response.data.data.channels === 'string' ? (JSON.parse(response.data.data.channels) ?? []) : (response.data.data.channels ?? [])}}"/>
+      </sequence>
+    </success>
+  </data-source>
+  <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
+  <permissions>
+    <permission>core.plugins.update</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-marketing.settings.title" description="$t:sirsoft-marketing.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
+        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+        <span class="text-warning-soft">$t:sirsoft-marketing.plugin_read_only</span>
+      </div>
+      <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
+        <div class="flex gap-3">
+          <icon name="triangle-exclamation" size="md" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+          <div>
+            <h3 class="text-error-strong">$t:admin.plugins.settings.validation_error</h3>
+            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+              <li class="text-error-soft">{{message}}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_channels_card" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div data-ref="section_channels_header" class="panel-header-row">
+          <h3 class="section-heading-md">$t:sirsoft-marketing.settings.section.channels</h3>
+        </div>
+        <div data-ref="section_channels_fields" class="divide-y divide-gray-100 dark:divide-gray-700">
+          <div data-ref="field_marketing_consent_enabled" class="grid-2col lg:grid-cols-3 items-center px-6 py-4">
+            <div class="lg:col-span-2">
+              <label class="form-label">$t:sirsoft-marketing.settings.fields.marketing_consent_enabled.label</label>
+              <p class="form-hint">$t:sirsoft-marketing.settings.fields.marketing_consent_enabled.hint</p>
+            </div>
+            <div class="lg:col-span-1 flex justify-end">
+              <toggle data-type="composite" name="marketing_consent_enabled" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+          <div data-ref="field_marketing_consent_terms_slug" class="grid-3col-responsive px-6 py-4 bg-gray-100 dark:bg-gray-700">
+            <div class="lg:col-span-2">
+              <label class="form-label">$t:sirsoft-marketing.settings.fields.marketing_consent_terms_slug.label</label>
+              <p class="form-hint">$t:sirsoft-marketing.settings.fields.marketing_consent_terms_slug.hint</p>
+            </div>
+            <div class="lg:col-span-1">
+              <input type="text" name="marketing_consent_terms_slug" placeholder="$t:sirsoft-marketing.settings.fields.terms_slug_placeholder" class="dark:focus:ring-blue-400 focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+          <div data-ref="channels_table_section" class="px-6 py-4">
+            <div class="flex-between mb-3">
+              <p class="text-body font-medium">$t:sirsoft-marketing.settings.fields.channels.label</p>
+              <button type="button" class="flex-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-medium transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isPluginReadOnly}}">
+                <on type="click">
+                  <!-- 채널 추가 — 빈 채널을 전역에 세우고 편집 창을 연다(창이 별도 컨텍스트라 편집 대상은 전역으로만 오간다) -->
+                  <sequence>
+                    <set-state target="global">
+                      <field name="editingChannel">
+                        <field name="key" value=""/>
+                        <field name="label">
+                          <field name="ko" value=""/>
+                          <field name="en" value=""/>
+                        </field>
+                        <field name="page_slug" value=""/>
+                        <field name="enabled" :value="true"/>
+                        <field name="is_system" :value="false"/>
+                        <field name="_editing" :value="false"/>
+                        <field name="_labelTouched" :value="false"/>
+                      </field>
+                    </set-state>
+                    <open-modal target="channel_edit_modal"/>
+                  </sequence>
+                </on>
+                <icon name="plus" size="sm"/>
+                <span>$t:sirsoft-marketing.settings.channels.add</span>
+              </button>
+            </div>
+            <p class="text-tertiary mb-3">$t:sirsoft-marketing.settings.channels.description</p>
+            <div data-ref="channels_table" class="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+              <div class="text-tertiary grid grid-cols-12 gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700 font-medium uppercase">
+                <div class="col-span-6 sm:col-span-4">$t:sirsoft-marketing.settings.channels.col_label</div>
+                <div class="hidden sm:block sm:col-span-4">$t:sirsoft-marketing.settings.channels.col_slug</div>
+                <div class="col-span-4 sm:col-span-2 text-center">$t:sirsoft-marketing.settings.channels.col_enabled</div>
+                <div class="col-span-2 hidden sm:block"/>
+              </div>
+              <div data-ref="channels_table_rows_{{channelIdx}}" data-each="channel, channelIdx in _global.channels ?? (typeof _local.form.channels === 'string' ? JSON.parse(_local.form.channels) : (_local.form.channels ?? []))" class="divide-y divide-gray-100 dark:divide-gray-700">
+                <div class="grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50">
+                  <div class="col-span-6 sm:col-span-4">
+                    <div class="flex-center gap-2 flex-wrap">
+                      <!-- 채널 라벨 — 현재 로케일 우선. ko 고정이면 다른 언어로 운영하는 관리자에게도 한국어가 나간다. 시스템 채널은 저장 맵에 없는 로케일(언어팩으로 늘어난 언어)을 플러그인 번역으로 보강한다 — 운영자가 만든 채널은 키가 번역 키와 우연히 겹칠 수 있어 저장 맵만 쓴다 -->
+                      <span class="text-heading">{{channel.is_system ? $localized(channel.label, 'sirsoft-marketing.' + channel.key) : (channel.label?.[$locale] ?? channel.label?.ko ?? channel.label?.en ?? channel.key)}}</span>
+                      <span data-if="{{channel.is_system}}" class="text-info-soft inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-blue-100 dark:bg-blue-900">$t:sirsoft-marketing.settings.channels.system_badge</span>
+                    </div>
+                    <span class="text-hint font-mono mt-0.5">{{channel.key}}</span>
+                    <span data-if="{{!!channel.page_slug}}" class="block sm:hidden text-xs text-blue-400 dark:text-blue-500 font-mono mt-0.5">{{channel.page_slug}}</span>
+                  </div>
+                  <div class="hidden sm:block sm:col-span-4">
+                    <span class="text-label-subtle font-mono">{{channel.page_slug || '-'}}</span>
+                  </div>
+                  <div class="col-span-4 sm:col-span-2 flex justify-center">
+                    <toggle data-type="composite" checked="{{channel.enabled}}" size="sm" disabled="{{_computed.isPluginReadOnly}}">
+                      <on type="change">
+                        <!-- 채널 사용 여부 토글 — 목록을 통째로 다시 만들어 그 채널만 바꾸고, 저장 버튼이 열리도록 변경 표시를 세운다 -->
+                        <sequence>
+                          <set-state target="global" channels="{{(_global.channels ?? []).map((ch) => ch.key === channel.key ? { ...ch, enabled: $event.target.checked } : ch)}}"/>
+                          <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true"/>
+                        </sequence>
+                      </on>
+                    </toggle>
+                  </div>
+                  <div class="col-span-2 flex justify-end gap-1 sm:gap-2">
+                    <button aria-label="$t:common.edit" title="$t:common.edit" type="button" class="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isPluginReadOnly}}">
+                      <on type="click">
+                        <!-- 채널 편집 — 그 행을 전역에 옮겨 담고 편집 창을 연다 -->
+                        <sequence>
+                          <set-state target="global" editingChannel="{{{ ...channel, _editing: true, _labelTouched: false }}}"/>
+                          <open-modal target="channel_edit_modal"/>
+                        </sequence>
+                      </on>
+                      <icon name="pen" size="sm"/>
+                    </button>
+                    <button aria-label="$t:common.delete" title="$t:common.delete" data-if="{{!channel.is_system}}" type="button" class="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isPluginReadOnly}}">
+                      <on type="click">
+                        <!-- 채널 삭제 — 목록에서 빼고 변경 표시를 세운다(저장을 눌러야 서버에 반영된다). 시스템 채널에는 이 버튼이 없다 -->
+                        <sequence>
+                          <set-state target="global" channels="{{(_global.channels ?? []).filter((ch) => ch.key !== channel.key)}}"/>
+                          <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true"/>
+                        </sequence>
+                      </on>
+                      <icon name="trash" size="sm"/>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="section_legal_card" class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div data-ref="section_legal_header" class="panel-header-row">
+          <h3 class="section-heading-md">$t:sirsoft-marketing.settings.section.legal</h3>
+        </div>
+        <div data-ref="section_legal_fields" class="divide-y divide-gray-100 dark:divide-gray-700">
+          <div data-ref="field_third_party_consent_enabled" class="grid-2col lg:grid-cols-3 items-center px-6 py-4">
+            <div class="lg:col-span-2">
+              <label class="form-label">$t:sirsoft-marketing.settings.fields.third_party_consent_enabled.label</label>
+              <p class="form-hint">$t:sirsoft-marketing.settings.fields.third_party_consent_enabled.hint</p>
+            </div>
+            <div class="lg:col-span-1 flex justify-end">
+              <toggle data-type="composite" name="third_party_consent_enabled" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+          <div data-ref="field_third_party_consent_terms_slug" class="grid-3col-responsive px-6 py-4 bg-gray-100 dark:bg-gray-700">
+            <div class="lg:col-span-2">
+              <label class="form-label">$t:sirsoft-marketing.settings.fields.third_party_consent_terms_slug.label</label>
+              <p class="form-hint">$t:sirsoft-marketing.settings.fields.third_party_consent_terms_slug.hint</p>
+            </div>
+            <div class="lg:col-span-1">
+              <input type="text" name="third_party_consent_terms_slug" placeholder="$t:sirsoft-marketing.settings.fields.terms_slug_placeholder" class="dark:focus:ring-blue-400 focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+          <div data-ref="field_info_disclosure_enabled" class="grid-2col lg:grid-cols-3 items-center px-6 py-4">
+            <div class="lg:col-span-2">
+              <label class="form-label">$t:sirsoft-marketing.settings.fields.info_disclosure_enabled.label</label>
+              <p class="form-hint">$t:sirsoft-marketing.settings.fields.info_disclosure_enabled.hint</p>
+            </div>
+            <div class="lg:col-span-1 flex justify-end">
+              <toggle data-type="composite" name="info_disclosure_enabled" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+          <div data-ref="field_info_disclosure_terms_slug" class="grid-3col-responsive px-6 py-4 bg-gray-100 dark:bg-gray-700">
+            <div class="lg:col-span-2">
+              <label class="form-label">$t:sirsoft-marketing.settings.fields.info_disclosure_terms_slug.label</label>
+              <p class="form-hint">$t:sirsoft-marketing.settings.fields.info_disclosure_terms_slug.hint</p>
+            </div>
+            <div class="lg:col-span-1">
+              <input type="text" name="info_disclosure_terms_slug" placeholder="$t:sirsoft-marketing.settings.fields.terms_slug_placeholder" class="dark:focus:ring-blue-400 focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="footer_buttons" class="sticky-footer-buttons">
+        <button data-ref="cancel_button" type="button" class="btn btn-secondary">
+          <on type="click">
+            <navigate path="/admin/plugins"/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
+          <on type="click">
+            <!-- 저장은 두 번에 나눠 나간다 — 채널 목록은 전용 엔드포인트가 받고 동의 항목은 플러그인 설정이 받는다. 채널 저장이 성공한 뒤에야 설정을 보내므로, 채널 쪽이 실패하면 동의 설정은 손대지 않은 채로 남는다 -->
+            <sequence>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-marketing/admin/channels" method="PUT" body="{{{ channels: _global.channels ?? [] }}}">
+                <success>
+                  <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{{ marketing_consent_enabled: _local.form.marketing_consent_enabled, marketing_consent_terms_slug: _local.form.marketing_consent_terms_slug, third_party_consent_enabled: _local.form.third_party_consent_enabled, third_party_consent_terms_slug: _local.form.third_party_consent_terms_slug, info_disclosure_enabled: _local.form.info_disclosure_enabled, info_disclosure_terms_slug: _local.form.info_disclosure_terms_slug, channels: _global.channels ?? [] }}}">
+                    <success>
+                      <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                      <refetch-data-source dataSourceId="settings"/>
+                      <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                    </success>
+                    <fail>
+                      <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                      <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
+                    </fail>
+                  </api-call>
+                </success>
+                <fail>
+                  <!-- 채널 저장 실패 — 검증 오류는 위 오류 목록에 그대로 보인다. 동의가 쌓인 채널을 지우려 한 경우에만(서버가 그 키를 blocked_channel_keys 로 돌려준다) 비활성 전환 창을 연다. 되살릴 원본은 이 화면의 저장본에서 골라 전역에 실어 둔다(창은 별도 컨텍스트라 이 화면의 _local 을 읽지 못한다) -->
+                  <set-state target="local" :isSaving="false" errors="{{Object.fromEntries(Object.entries(error.errors ?? {}).filter(([field]) => field !== 'blocked_channel_keys'))}}"/>
+                  <conditions>
+                    <when if="{{(error.errors?.blocked_channel_keys ?? []).length > 0}}">
+                      <set-state target="global" channelDeactivation="{{{ keys: error.errors.blocked_channel_keys, saved: typeof _local.form?.channels === 'string' ? JSON.parse(_local.form.channels) : (_local.form?.channels ?? []) }}}"/>
+                      <open-modal target="channel_deactivate_modal"/>
+                    </when>
+                    <else>
+                      <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
+                    </else>
+                  </conditions>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+          <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+  <modal>
+    <!-- 채널 추가·수정 창 — 대상은 전역 editingChannel 이고, 확정 전까지 목록에 반영하지 않는다 -->
+    <modal data-type="composite" data-ref="channel_edit_modal" title="$t:sirsoft-marketing.settings.channel_modal.title" width="min(500px, 95vw)" :closeOnBackdropClick="false">
+      <meta :is_partial="true"/>
+      <div class="row-stack">
+        <div class="flex-between">
+          <label class="text-body font-medium">$t:sirsoft-marketing.settings.channel_modal.enabled</label>
+          <toggle data-type="composite" checked="{{_global.editingChannel.enabled}}" onChange="" disabled="{{_computed.isPluginReadOnly}}">
+            <on type="change">
+              <!-- 채널 사용 여부 -->
+              <set-state target="global" editingChannel.enabled="{{$event.target.checked}}"/>
+            </on>
+          </toggle>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-marketing.settings.channel_modal.key</label>
+          <input type="text" value="{{_global.editingChannel.key ?? ''}}" readOnly="{{_global.editingChannel.is_system || _global.editingChannel._editing}}" placeholder="$t:sirsoft-marketing.settings.channel_modal.key_placeholder" class="{{_global.editingChannel.is_system || _global.editingChannel._editing ? 'input-readonly w-full' : 'w-full'}}" disabled="{{_computed.isPluginReadOnly}}">
+            <on type="change">
+              <!-- 채널 키 — 저장 뒤에는 바꿀 수 없다(이미 쌓인 동의 이력이 이 키를 가리킨다) -->
+              <set-state target="global" editingChannel.key="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <p class="form-hint">$t:sirsoft-marketing.settings.channel_modal.key_hint</p>
+          <!-- 키 형식·중복 안내 — 서버 규칙(영문 소문자·숫자·밑줄, 목록 안에서 유일)과 같다. 확정 버튼도 같은 조건으로 잠긴다 -->
+          <p data-if="{{!_global.editingChannel?._editing &amp;&amp; (_global.editingChannel?.key ?? '') !== '' &amp;&amp; !(_global.editingChannel?.key ?? '').split('').every((c) => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(c))}}" class="text-error-soft mt-1">$t:sirsoft-marketing.settings.channel_modal.key_invalid</p>
+          <p data-if="{{!_global.editingChannel?._editing &amp;&amp; (_global.editingChannel?.key ?? '') !== '' &amp;&amp; (_global.channels ?? []).some((ch) => ch.key === _global.editingChannel?.key)}}" class="text-error-soft mt-1">$t:sirsoft-marketing.settings.channel_modal.key_duplicate</p>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-marketing.settings.channel_modal.label_ko</label>
+          <div data-ref="channel_label_field">
+            <on type="blur">
+              <!-- 항목명 입력칸(언어 탭 포함)을 떠나면 그때부터 이름 필수 안내를 보인다 — 창을 막 연 입력 전에는 빨간 안내를 띄우지 않는다 -->
+              <set-state target="global" :editingChannel._labelTouched="true"/>
+            </on>
+            <multilingual-input data-type="composite" value="{{_global.editingChannel.label ?? {ko: '', en: ''}}}" layout="tabs" name="channel_label" placeholder="$t:sirsoft-marketing.settings.channel_modal.label_placeholder" disabled="{{_computed.isPluginReadOnly}}">
+              <on event="onChange">
+                <!-- 채널 이름 — 로케일별로 입력받아 객체 그대로 담는다 -->
+                <set-state target="global" editingChannel.label="{{$args[0]?.target?.value ?? _global.editingChannel.label}}"/>
+              </on>
+            </multilingual-input>
+          </div>
+          <!-- 이름 필수 안내 — 서버는 요청 언어(지금 화면 언어)의 이름을 필수로 본다. 입력칸을 떠났거나 확정을 누른 뒤에만 보인다 -->
+          <p data-if="{{(_global.editingChannel?._labelTouched ?? false) &amp;&amp; String(_global.editingChannel?.label?.[_global.appConfig?.siteLocale ?? $locale] ?? '').trim() === ''}}" class="text-error-soft mt-1">$t:sirsoft-marketing.settings.channel_modal.label_required</p>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-marketing.settings.channel_modal.page_slug</label>
+          <input type="text" value="{{_global.editingChannel.page_slug ?? ''}}" placeholder="$t:sirsoft-marketing.settings.channel_modal.page_slug_placeholder" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}">
+            <on type="change">
+              <!-- 약관 페이지 슬러그 — 비워 두면 그 채널에는 약관 보기 버튼이 뜨지 않는다 -->
+              <set-state target="global" editingChannel.page_slug="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <p class="form-hint">$t:sirsoft-marketing.settings.channel_modal.page_slug_hint</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-4">
+        <button type="button" class="btn btn-secondary">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button data-ref="channel_edit_confirm" type="button" disabled="{{_computed.isPluginReadOnly || !(_global.editingChannel?.key ?? '').split('').every((c) => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(c)) || (_global.editingChannel?.key ?? '') === '' || (!_global.editingChannel?._editing &amp;&amp; (_global.channels ?? []).some((ch) => ch.key === _global.editingChannel?.key))}}" class="btn btn-primary">
+          <on type="click">
+            <!-- 편집 확정 — 지금 화면 언어의 이름이 비었으면 목록에 붙이지 않고 이름 필수 안내만 세운다. 그 밖에는 새 채널이면 목록에 붙이고 수정이면 그 자리를 바꾼 뒤, 부모 화면의 변경 표시를 세우고 창을 닫는다(키 형식·중복은 버튼 잠금으로 막는다) -->
+            <conditions>
+              <when if="{{String(_global.editingChannel?.label?.[_global.appConfig?.siteLocale ?? $locale] ?? '').trim() === ''}}">
+                <set-state target="global" :editingChannel._labelTouched="true"/>
+              </when>
+              <else>
+                <set-state target="global" channels="{{_global.editingChannel._editing ? (_global.channels ?? []).map((ch) => ch.key === _global.editingChannel.key ? { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false } : ch) : [...(_global.channels ?? []), { key: _global.editingChannel.key, label: _global.editingChannel.label, page_slug: _global.editingChannel.page_slug, enabled: _global.editingChannel.enabled, is_system: _global.editingChannel.is_system ?? false }]}}"/>
+                <set-state if="{{!_computed.isPluginReadOnly}}" target="$parent._local" :hasChanges="true"/>
+                <close-modal/>
+              </else>
+            </conditions>
+          </on>
+          <span>$t:common.save</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 비활성 채널 안내 창 — 저장된 목록에서 빠진 채널을 되살릴지 묻는다 -->
+    <modal data-type="composite" data-ref="channel_deactivate_modal" title="$t:sirsoft-marketing.settings.channel_deactivate_modal.title" width="min(400px, 95vw)" :closeOnBackdropClick="false">
+      <meta :is_partial="true"/>
+      <div class="row-stack">
+        <p class="text-body">$t:sirsoft-marketing.settings.channel_deactivate_modal.message</p>
+        <ul class="list-disc list-inside space-y-1">
+          <li data-each="blockedChannel in (_global.channelDeactivation?.saved ?? []).filter((ch) => (_global.channelDeactivation?.keys ?? []).includes(ch.key))" class="text-heading">{{blockedChannel.is_system ? $localized(blockedChannel.label, 'sirsoft-marketing.' + blockedChannel.key) : (blockedChannel.label?.[$locale] ?? blockedChannel.label?.ko ?? blockedChannel.label?.en ?? blockedChannel.key)}} ({{blockedChannel.key}})</li>
+        </ul>
+        <div class="flex justify-end gap-2 mt-4">
+          <button type="button" class="btn btn-secondary">
+            <on type="click">
+              <close-modal/>
+            </on>
+            <span>$t:common.cancel</span>
+          </button>
+          <button type="button" class="btn btn-primary" disabled="{{_computed.isPluginReadOnly}}">
+            <on type="click">
+              <!-- 비활성 채널 되살리기 — 서버가 막은 키의 채널을 저장본에서 꺼내 꺼진 채로 원래 자리에 되돌린다(저장본 순서를 따르고, 새로 더한 채널은 뒤에 둔다). 반영은 저장을 다시 눌러야 한다 -->
+              <sequence>
+                <set-state target="global" channels="{{[...(_global.channelDeactivation?.saved ?? []).filter((ch) => (_global.channels ?? []).some((c) => c.key === ch.key) || (_global.channelDeactivation?.keys ?? []).includes(ch.key)).map((ch) => (_global.channels ?? []).find((c) => c.key === ch.key) ?? { ...ch, enabled: false }), ...(_global.channels ?? []).filter((c) => !(_global.channelDeactivation?.saved ?? []).some((ch) => ch.key === c.key))]}}" :channelDeactivation="null"/>
+                <set-state if="{{!_computed.isPluginReadOnly}}" target="$parent._local" :hasChanges="true" :errors="null"/>
+                <close-modal/>
+                <toast type="info" message="$t:sirsoft-marketing.settings.channel_deactivate_modal.restored"/>
+              </sequence>
+            </on>
+            <span>$t:sirsoft-marketing.settings.channel_deactivate_modal.confirm</span>
+          </button>
+        </div>
+      </div>
+    </modal>
+  </modal>
+</layout>

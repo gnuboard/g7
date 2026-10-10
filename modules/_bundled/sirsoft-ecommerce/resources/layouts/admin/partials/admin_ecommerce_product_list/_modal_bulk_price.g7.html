@@ -1,0 +1,67 @@
+<!-- 상품 목록 — 일괄 가격변경 **조건 입력** 창. 여기서는 아무것도 바꾸지 않는다. 고른 방식(증액·
+  감액·정액)과 값·단위를 `_global` 에 담아 두기만 하고, 실제 적용은 확인 창(`modal_bulk_confirm`)
+  이 한 번 더 물은 뒤에 일어난다 — 되돌리기 어려운 변경이라 입력과 실행을 갈라 두었다.
+
+  통화 기호는 고정값이 아니라 쇼핑몰 설정의 기본 통화에서 읽는다(설정이 비어 있을 때만 KRW).
+  미리보기 문구는 `_local` 값을 그대로 읽고, 확정 시 사람이 읽을 한 줄(`bulkPriceCondition`)로
+  접어 `_global` 에 함께 담는다 — 확인 창이 그 문구를 그대로 보여 주기 때문이다. -->
+<partial description="Product Index - Bulk Price Change Modal">
+  <modal data-type="composite" data-ref="modal_bulk_price" title="$t:sirsoft-ecommerce.admin.product.modal.bulk_price.title" size="md">
+    <div data-ref="bulk_price_form">
+      <div data-ref="price_method_field">
+        <label class="form-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method</label>
+        <select class="select w-full">
+          <on type="change">
+            <!-- 방식이 정액(`fixed`)이면 아래 값이 "얼마만큼" 이 아니라 "얼마로" 가 된다 — 미리보기 문구 세 개가 이 값 하나로 갈린다. -->
+            <set-state target="local" bulkPriceMethod="{{$event.target.value}}"/>
+          </on>
+          <option value="increase">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_increase</option>
+          <option value="decrease">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_decrease</option>
+          <option value="fixed">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method_fixed</option>
+        </select>
+      </div>
+      <div data-ref="price_value_field">
+        <label class="form-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.value</label>
+        <div class="flex gap-2">
+          <input type="number" placeholder="0" class="input flex-1">
+            <on type="input">
+              <!-- 값은 문자열로 담긴다(`input` 이 주는 그대로) — 계산은 서버가 하므로 여기서 숫자로 바꾸지 않는다. 빈 칸이면 아래에서 0 으로 읽힌다. -->
+              <set-state target="local" bulkPriceValue="{{$event.target.value}}"/>
+            </on>
+          </input>
+          <select class="select w-24" aria-label="$t:sirsoft-ecommerce.admin.product.modal.bulk_price.unit">
+            <on type="change">
+              <!-- 단위가 `percent` 면 값이 비율이고 `won` 이면 금액이다 — 표시 기호는 쇼핑몰 기본 통화에서 오므로 원화가 아닌 몰에서도 맞는다. -->
+              <set-state target="local" bulkPriceUnit="{{$event.target.value}}"/>
+            </on>
+            <option value="won">{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}</option>
+            <option value="percent">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.unit_percent</option>
+          </select>
+        </div>
+      </div>
+      <div data-ref="price_preview" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+        <span data-ref="preview_increase" data-if="{{(_local.bulkPriceMethod || 'increase') === 'increase'}}" class="text-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.preview_increase|value={{_local.bulkPriceValue || 0}}|unit={{(_local.bulkPriceUnit || 'won') === 'percent' ? '%' : ((_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency))}}</span>
+        <span data-ref="preview_decrease" data-if="{{(_local.bulkPriceMethod || 'increase') === 'decrease'}}" class="text-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.preview_decrease|value={{_local.bulkPriceValue || 0}}|unit={{(_local.bulkPriceUnit || 'won') === 'percent' ? '%' : ((_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency))}}</span>
+        <span data-ref="preview_fixed" data-if="{{(_local.bulkPriceMethod || 'increase') === 'fixed'}}" class="text-label">$t:sirsoft-ecommerce.admin.product.modal.bulk_price.preview_fixed|value={{_local.bulkPriceValue || 0}}|unit={{(_local.bulkPriceUnit || 'won') === 'percent' ? '%' : ((_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency))}}</span>
+      </div>
+    </div>
+    <div data-ref="bulk_price_footer" class="flex justify-end gap-2 mt-6">
+      <button type="button" class="btn btn-outline">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.product.modal.common.cancel
+      </button>
+      <button type="button" class="btn btn-primary">
+        <on type="click">
+          <!-- 적용. 확인 창에 보여 줄 조건 문구를 여기서 만든다 — 창은 별도 컨텍스트라 이 창의 입력값을 다시 계산할 수 없다. 단위 기호는 기본 통화 설정에서 끌어오므로 원화가 아닌 상점에서도 맞는 기호가 붙는다 -->
+          <set-state target="global" bulkPriceCondition="{{(() => { const unit = (_local.bulkPriceUnit || 'won') === 'percent' ? '%' : ((_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)); const val = _local.bulkPriceValue || 0; return (_local.bulkPriceMethod || 'increase') === 'fixed' ? val + unit : ((_local.bulkPriceMethod || 'increase') === 'increase' ? '+' : '-') + val + unit; })()}}" bulkPriceMethod="{{_local.bulkPriceMethod || 'increase'}}" bulkPriceValue="{{_local.bulkPriceValue || 0}}" bulkPriceUnit="{{_local.bulkPriceUnit || 'won'}}"/>
+        </on>
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.product.modal.common.change
+      </button>
+    </div>
+  </modal>
+</partial>

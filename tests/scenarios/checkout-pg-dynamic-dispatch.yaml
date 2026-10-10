@@ -13,7 +13,7 @@ description: |
     - 백엔드(B): ecommerce 모듈이 provider 레지스트리(`registered_pg_providers`)의
       payment_handler 를 읽어 주문 응답에 pg_payment_handler 통로를 연다. provider 미선언
       시 키 부재 → checkout PG 분기 미발화.
-    - 템플릿(C): _checkout_summary.json onSuccess 가 `handler:"{{response.data.pg_payment_handler}}"`
+    - 템플릿(C): _checkout_summary.g7.html onSuccess 가 `handler:"{{response.data.pg_payment_handler}}"`
       로 dispatch, non-PG fallback(비회원 verify→saveGuestOrderToken→navigate) 보존.
     - 편집기(E): "결제 진입" recipe(requestPgPayment) 친화 입력(핸들러·결제 데이터 칩,
       chipContext=response), matchAction placeholder-aware 역매칭(greedy 가드 포함).
@@ -55,11 +55,14 @@ effects:
   - editor_match_action_literal_handler_unaffected_regression
   - editor_placeholder_recipe_not_greedy_for_unrelated_actions
   - editor_response_chip_candidates_expose_pg_payment_handler_and_data
+  # KVE-2026-2434 — 결제창을 열기 전 비회원 조회 토큰 확보 순서 (close-report 소유자 증명)
+  - checkout_pg_branch_saves_order_response_guest_token_first
+  - checkout_pg_branch_falls_back_to_guest_verify_without_response_token
+  - checkout_pg_branch_member_skips_guest_token
 
 test_files:
   - resources/js/core/template-engine/__tests__/ActionDispatcher.dynamicHandler.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/spec/actionRecipeEngine.test.ts
-  - resources/js/core/template-engine/layout-editor/__tests__/spec/coreActionRecipes.test.ts
   - templates/_bundled/sirsoft-basic/__tests__/layouts/checkout-pg-dynamic-dispatch.test.tsx
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderResponsePaymentHandlerTest.php
 

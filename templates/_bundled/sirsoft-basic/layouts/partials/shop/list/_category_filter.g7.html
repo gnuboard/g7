@@ -1,0 +1,79 @@
+<!-- 목록 위의 카테고리 칩 판 — 고른 깊이까지만 하위 줄이 펼쳐진다. 칩을 누르면 쿼리를 바꾸는 것이 아니라
+     **그 카테고리 화면으로 이동**하고(`/category/{slug}`), 지금 위치는 `d1`~`d3` 쿼리로 표시된다. -->
+<partial description="카테고리 필터 (토글 접기/펼치기, 4단계 카테고리 칩)">
+  <div class="mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+    <!-- 토글 헤더 -->
+    <button class="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/80 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg border-b border-gray-200 dark:border-gray-700 transition-colors">
+      <on type="click">
+        <set-state target="local" categoryFilterOpen="{{_local.categoryFilterOpen === false ? true : false}}"/>
+      </on>
+      <div class="flex items-center gap-2">
+        <icon name="filter" class="text-base text-gray-500 dark:text-gray-400"/>
+        <span>$t:shop.category_filter</span>
+      </div>
+      <!-- 펼침 아이콘 -->
+      <icon data-if="{{_local.categoryFilterOpen !== false}}" name="chevron-up" class="text-base"/>
+      <!-- 접힘 아이콘 -->
+      <icon data-if="{{_local.categoryFilterOpen === false}}" name="chevron-down" class="text-base"/>
+    </button>
+    <!-- 카테고리 칩 영역 (펼침 시에만 표시) -->
+    <div data-if="{{_local.categoryFilterOpen !== false}}" class="px-4 py-4 space-y-3">
+      <!-- 1단계 카테고리 칩 (항상 표시) -->
+      <div class="flex flex-wrap gap-2">
+        <button class="{{!query.category || query.category === 'all' ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}">
+          <on type="click">
+            <!-- 전체 — 빈 `<query/>` 로 이동해 카테고리 깊이·검색·쪽수를 한꺼번에 떨군다 -->
+            <navigate path="{{_global.shopBase}}/products">
+              <query/>
+            </navigate>
+          </on>
+          $t:shop.category.all
+        </button>
+        <div data-each="cat in {{categories?.data ?? []}}">
+          <button class="{{query.d1 == cat.id ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}">
+            <on type="click">
+              <navigate path="{{_global.shopBase}}/category/{{cat?.slug}}"/>
+            </on>
+            {{cat?.name_localized}}
+          </button>
+        </div>
+      </div>
+      <!-- 2단계 하위 카테고리 (d1 선택 시) -->
+      <div data-if="{{!!query.d1 &amp;&amp; ((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).length > 0}}" class="pl-4 flex flex-wrap items-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+        <icon name="turn-up" class="text-base text-gray-400 dark:text-gray-500 rotate-90 flex-shrink-0 mt-1 ml-2"/>
+        <div data-each="sub2 in {{(categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []}}">
+          <button class="{{query.d2 == sub2?.id ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}">
+            <on type="click">
+              <navigate path="{{_global.shopBase}}/category/{{sub2?.slug}}"/>
+            </on>
+            {{sub2?.name_localized}}
+          </button>
+        </div>
+      </div>
+      <!-- 3단계 하위 카테고리 (d2 선택 시) -->
+      <div data-if="{{!!query.d2 &amp;&amp; (((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.d2)?.children ?? []).length > 0}}" class="pl-8 flex flex-wrap items-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+        <icon name="turn-up" class="text-base text-gray-400 dark:text-gray-500 rotate-90 flex-shrink-0 mt-1 ml-2"/>
+        <div data-each="sub3 in {{((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.d2)?.children ?? []}}">
+          <button class="{{query.d3 == sub3?.id ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}">
+            <on type="click">
+              <navigate path="{{_global.shopBase}}/category/{{sub3?.slug}}"/>
+            </on>
+            {{sub3?.name_localized}}
+          </button>
+        </div>
+      </div>
+      <!-- 4단계 하위 카테고리 (d3 선택, category == d3) -->
+      <div data-if="{{!!query.d3 &amp;&amp; query.category == query.d3 &amp;&amp; ((((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.d2)?.children ?? []).find(c => c.id == query.d3)?.children ?? []).length > 0}}" class="pl-12 flex flex-wrap items-center gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+        <icon name="turn-up" class="text-base text-gray-400 dark:text-gray-500 rotate-90 flex-shrink-0 mt-1 ml-2"/>
+        <div data-each="sub4 in {{(((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.d2)?.children ?? []).find(c => c.id == query.d3)?.children ?? []}}">
+          <button class="{{query.category == sub4?.id ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}">
+            <on type="click">
+              <navigate path="{{_global.shopBase}}/category/{{sub4?.slug}}"/>
+            </on>
+            {{sub4?.name_localized}}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

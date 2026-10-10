@@ -1,253 +1,257 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "배송유형 관리 - Mobile 카드 뷰"
-  },
-  "id": "shipping_type_cards_container",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-  },
-  "children": [
-    {
-      "id": "shipping_type_card_{{tIdx}}",
-      "type": "basic",
-      "name": "Div",
-      "iteration": {
-        "source": "(_local.form?.shipping?.types ?? []).map((t, i) => ({...t, _idx: i}))",
-        "item_var": "type",
-        "index_var": "tIdx"
-      },
-      "props": {
-        "className": "excel-card"
-      },
-      "children": [
+    "comment": "쇼핑몰 설정 — 배송유형 목록, 좁은 화면용 카드. 넓은 화면용 표(`_shipping_type_section`)와\n  같은 배열을 편집한다.\n  배송유형은 상품·주문이 참조하는 분류라(택배·방문수령 등) 지우면 그것을 쓰던 상품의 배송\n  조건이 바뀐다.",
+    "meta": {
+        "is_partial": true,
+        "description": "배송유형 관리 - Mobile 카드 뷰"
+    },
+    "id": "shipping_type_cards_container",
+    "type": "basic",
+    "name": "Div",
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "excel-card-header"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 min-w-0"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "min-w-0"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "excel-card-title font-mono"
-                      },
-                      "text": "{{type.code}}"
-                    }
-                  ]
-                }
-              ]
+            "id": "shipping_type_card_{{tIdx}}",
+            "type": "basic",
+            "name": "Div",
+            "iteration": {
+                "source": "(_local.form?.shipping?.types ?? []).map((t, i) => ({...t, _idx: i}))",
+                "item_var": "type",
+                "index_var": "tIdx"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 shrink-0"
-              },
-              "children": [
+            "props": {
+                "className": "excel-card mb-3"
+            },
+            "children": [
                 {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "checked": "{{type.is_active ?? false}}",
-                    "size": "sm",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).map((t, i) => i === type._idx ? {...t, is_active: !(t.is_active)} : t)}}",
-                        "hasChanges": true
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "excel-card-body"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "excel-card-row"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "excel-card-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.name"
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "excel-card-header"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 min-w-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "excel-card-title font-mono"
+                                            },
+                                            "text": "{{type.code}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2 shrink-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "actions": [
+                                        {
+                                            "comment": "사용 여부. 끄면 새 상품에서 고를 수 없고 이미 그 유형인 상품은 그대로 남는다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).map((t, i) => i === type._idx ? {...t, is_active: !(t.is_active)} : t)}}",
+                                                "hasChanges": true
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "checked": "{{type.is_active ?? false}}",
+                                        "size": "sm",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "excel-card-value flex-1"
-                  },
-                  "children": [
-                    {
-                      "type": "composite",
-                      "name": "MultilingualInput",
-                      "props": {
-                        "value": "{{type.name ?? {}}}",
-                        "layout": "compact",
-                        "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      },
-                      "actions": [
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "excel-card-body"
+                    },
+                    "children": [
                         {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).map((t, i) => i === type._idx ? {...t, name: $event.target.value} : t)}}",
-                            "hasChanges": true
-                          }
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "excel-card-row"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "excel-card-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.name"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "excel-card-value flex-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "MultilingualInput",
+                                            "actions": [
+                                                {
+                                                    "comment": "유형 이름(언어별). 고객 화면에 그대로 보인다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).map((t, i) => i === type._idx ? {...t, name: $event.target.value} : t)}}",
+                                                        "hasChanges": true
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "value": "{{type.name ?? {}}}",
+                                                "layout": "compact",
+                                                "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder",
+                                                "error": "{{_local.errors?.['shipping.types.' + type._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + type._idx + '.name']?.[0] ?? ''}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "excel-card-row"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "excel-card-label"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.category"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "excel-card-value flex-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "actions": [
+                                                {
+                                                    "comment": "구분(국내/해외/기타). 배송비 정책을 이 갈래로 나눠 적용한다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).map((t, i) => i === type._idx ? {...t, category: $event.target.value} : t)}}",
+                                                        "hasChanges": true
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "value": "{{type.category ?? 'domestic'}}",
+                                                "className": "w-full",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "options": [
+                                                    {
+                                                        "value": "domestic",
+                                                        "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.domestic"
+                                                    },
+                                                    {
+                                                        "value": "international",
+                                                        "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.international"
+                                                    },
+                                                    {
+                                                        "value": "other",
+                                                        "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.other"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
                         }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "excel-card-row"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "excel-card-label"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.settings.shipping.types.columns.category"
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "excel-card-value flex-1"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Select",
-                      "props": {
-                        "value": "{{type.category ?? 'domestic'}}",
-                        "className": "w-full",
-                        "options": [
-                          {
-                            "value": "domestic",
-                            "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.domestic"
-                          },
-                          {
-                            "value": "international",
-                            "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.international"
-                          },
-                          {
-                            "value": "other",
-                            "label": "$t:sirsoft-ecommerce.admin.settings.shipping.types.categories.other"
-                          }
-                        ],
-                        "disabled": "{{_computed.isReadOnly}}"
-                      },
-                      "actions": [
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "excel-card-footer"
+                    },
+                    "children": [
                         {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).map((t, i) => i === type._idx ? {...t, category: $event.target.value} : t)}}",
-                            "hasChanges": true
-                          }
+                            "type": "basic",
+                            "name": "Div"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "유형 삭제.",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).filter((_, i) => i !== type._idx)}}",
+                                        "hasChanges": true
+                                    },
+                                    "confirm": "$t:sirsoft-ecommerce.admin.settings.shipping.types.confirm_delete"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "title": "$t:common.delete",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "fa-solid fa-trash",
+                                        "className": "text-sm"
+                                    }
+                                }
+                            ]
                         }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "excel-card-footer"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div"
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                "title": "$t:common.delete",
-                "disabled": "{{_computed.isReadOnly}}"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "setState",
-                  "confirm": "$t:sirsoft-ecommerce.admin.settings.shipping.types.confirm_delete",
-                  "params": {
-                    "target": "local",
-                    "form.shipping.types": "{{(_local.form?.shipping?.types ?? []).filter((_, i) => i !== type._idx)}}",
-                    "hasChanges": true
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "fa-solid fa-trash",
-                    "className": "text-sm"
-                  }
-                }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

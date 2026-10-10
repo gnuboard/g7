@@ -383,7 +383,7 @@ function buildMessageArea(items: AssetFailure[], isMobile: boolean): HTMLElement
         line.setAttribute('data-asset-failure-id', only.id);
         line.textContent =
             only.message ??
-            t('core.assets.load_failed', '{label}을(를) 불러오지 못했습니다.', { label: only.label });
+            t('core.assets.load_failed', '{label} 불러오기에 실패했습니다.', { label: only.label });
         texts.appendChild(line);
     } else {
         const head = document.createElement('div');

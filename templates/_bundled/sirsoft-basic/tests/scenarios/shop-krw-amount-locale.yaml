@@ -1,0 +1,24 @@
+feature: 사용자 쇼핑 화면 — 화면이 계산한 원화 금액의 언어별 표기
+
+description: |
+  서버는 원화를 언어별 접두·접미로 적는데(ko 「5,000원」·en 「₩5,000」·ja 「5,000ウォン」), 사용자 템플릿 금액 처리기와
+  인라인 표현식(상품 상세·장바구니 옵션 변경 창 추가옵션 금액, 주문서 배송비 할인 대체 표기)은 「원」 고정이라 영어
+  화면에서 서버 금액과 화면 계산 금액이 섞였다. 이커머스 번역 키 `sirsoft-ecommerce.currency.krw_prefix`·`krw_suffix` 로
+  적는다(후속 B 세션 B4, S3-D23 같은 결함군). 번역이 없으면 종전 「원」.
+  선택한 상품 합계(productOptions `formatPrice`)는 브라우저 언어의 Intl 통화 서식이라 한국어 화면에서도 「₩8,000」이었다 —
+  같은 금액 처리기(formatCurrencyHandler)로 적는다(실측에서 발견).
+
+axes:
+  surface: [handler, layout]
+
+effects:
+  - shop_krw_amount_follows_locale
+  - shop_krw_amount_falls_back_without_translation
+  - shop_inline_krw_uses_locale_affix
+  - shop_selected_total_follows_locale
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/shop-krw-amount-locale.test.tsx
+
+validation:
+  browser_check: 사용자 화면 언어 English 로 추가옵션이 있는 상품 상세 → 추가옵션 금액 「+₩2,000」, 장바구니 담기 후 금액 표기 ₩ 접두

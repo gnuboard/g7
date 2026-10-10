@@ -1,0 +1,61 @@
+<!-- 브랜드 삭제 확인 창. 여는 쪽(`_panel_view`)이 `_global.modal_data` 에 브랜드 id·이름과 **연결
+  상품 수**를 실어 보내고, 이 창은 그 셋만 읽는다 — 스스로 조회하지 않으므로 창을 여는 자리가
+  상품 수를 빠뜨리면 여기서는 0 으로 보인다.
+  상품이 하나라도 걸려 있으면 삭제 버튼이 잠긴다(빨간 안내 + `disabled`). 즉 이 창은 확인만 받는
+  자리가 아니라 **삭제 가능 여부를 알리는 자리**이기도 하다.
+  삭제가 끝나면 목록을 다시 부르는 것으로 그치지 않고 오른쪽 패널을 빈 상태로 되돌린다 — 방금
+  지운 브랜드가 선택된 채 남아 있으면 상세가 빈 응답을 그리게 된다. -->
+<partial description="Brand Delete Confirmation Modal">
+  <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:sirsoft-ecommerce.admin.brand.delete_modal.title" size="medium">
+    <div>
+      <div>
+        <p class="text-primary text-base">{{_global.modal_data?.brandName}}{{$t('sirsoft-ecommerce.admin.brand.delete_modal.message_suffix')}}</p>
+        <div data-if="{{(_global.modal_data?.productsCount ?? 0) > 0}}" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
+          <div class="flex-start gap-3">
+            <div class="flex-shrink-0 mt-0.5">
+              <icon name="times-circle" class="text-xl text-red-600 dark:text-red-400"/>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-semibold text-danger-soft mb-1">$t:sirsoft-ecommerce.admin.brand.delete_modal.cannot_delete_title</p>
+              <p class="text-error-soft">$t:sirsoft-ecommerce.admin.brand.delete_modal.has_products_cannot_delete|count={{_global.modal_data?.productsCount ?? 0}}</p>
+            </div>
+          </div>
+        </div>
+        <p data-if="{{(_global.modal_data?.productsCount ?? 0) === 0}}" class="text-sm text-red-600 dark:text-red-400 font-medium">$t:sirsoft-ecommerce.admin.brand.delete_modal.irreversible_warning</p>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isDeleting || (_global.modal_data?.productsCount ?? 0) > 0}}">
+        <on type="click">
+          <!-- 삭제 실행. `isDeleting` 은 버튼 잠금과 라벨을 함께 쥐고 있어 성공·실패 **양쪽 갈래에서
+            모두** 풀어야 한다 — 한쪽만 풀면 실패한 뒤 버튼이 영영 잠긴 채 "처리 중" 으로 남는다.
+            성공 갈래의 순서가 곧 화면 복구 순서다: 목록 갱신 → 패널 비우기 → 알림 → 창 닫기. -->
+          <sequence>
+            <set-state target="local" :isDeleting="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/brands/{{_global.modal_data.brandId}}" method="DELETE">
+              <success>
+                <set-state target="local" :isDeleting="false"/>
+                <refetch-data-source dataSourceId="brands"/>
+                <set-state target="global" panelMode="empty" :selectedBrandId="null" :selectedBrand="null"/>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.brand.messages.deleted"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="local" :isDeleting="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <span data-if="{{!_local.isDeleting}}">$t:common.delete</span>
+        <span data-if="{{_local.isDeleting}}">$t:common.loading</span>
+      </button>
+    </div>
+  </modal>
+</partial>

@@ -1,0 +1,71 @@
+{
+    "id": "dashboard",
+    "type": "basic",
+    "name": "Div",
+    "lifecycle": {
+        "onMount": [
+            {
+                "handler": "apiCall",
+                "target": "/api/admin/dashboard",
+                "params": {
+                    "method": "GET"
+                }
+            },
+            {
+                "handler": "toast",
+                "params": {
+                    "message": "$t:dashboard.loaded",
+                    "type": "info"
+                }
+            }
+        ],
+        "onUnmount": [
+            {
+                "handler": "stopInterval"
+            }
+        ]
+    },
+    "onComponentEvent": [
+        {
+            "event": "dashboard.stats.updated",
+            "handler": "refetchDataSource",
+            "params": {
+                "dataSourceId": "dashboard_stats"
+            }
+        }
+    ],
+    "children": [
+        {
+            "id": "filter_btn",
+            "type": "basic",
+            "name": "Button",
+            "actions": [
+                {
+                    "type": "click",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{_local.tab === 'all'}}",
+                            "then": {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "_local",
+                                    "filtered": "false"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "_local",
+                                    "filtered": "true"
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

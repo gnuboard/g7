@@ -32,6 +32,7 @@
 | date_type | query | string | 아니오 | — | 기간 필터 기준 일자 종류 (ordered_at 주문일 / paid_at 결제일 / confirmed_at 구매확정일 / delivered_at 배송완료일 / cancelled_at 취소일) |
 | start_date | query | date | 아니오 | — | 조회 기간 시작일 (이 날짜 이후 데이터) |
 | end_date | query | date | 아니오 | — | 조회 기간 종료일 (이 날짜 이전 데이터) |
+| date_basis | query | string | 아니오 | `site` | 시작·종료일을 어느 시간대의 하루로 풀지. 없으면 보는 사람(로그인 계정)의 하루, `site` 면 사이트 기본 시간대의 하루 — 대시보드 「오늘」 배지 링크가 배지가 센 하루와 같은 범위로 목록을 열 때 싣는다. 그 밖의 값은 422 |
 | order_status | query | array | 아니오 | — | 주문상태 다중 선택 필터 (OrderStatusEnum 값 배열, 해당 상태의 주문만 조회) |
 | option_status | query | array | 아니오 | — | 주문옵션 상태 다중 선택 필터 (OrderStatusEnum 값 배열, 해당 옵션 상태를 가진 주문만 조회) |
 | shipping_type | query | array | 아니오 | — | 배송유형 다중 선택 필터 (ShippingType 코드 배열) |
@@ -47,6 +48,14 @@
 | user_id | query | integer | 아니오 | — | user 식별자 |
 | orderer_uuid | query | uuid | 아니오 | — | 특정 회원의 주문만 조회하는 주문자 UUID 필터 (회원 검색 연동용) |
 | member_type | query | string | 아니오 | `member`, `guest` | 회원 구분 필터 (member 회원 주문 / guest 비회원 주문) |
+| claim_presence | query | string | 아니오 | `none`, `any`, `active` | 클레임 유무 필터 (D22) — none 클레임 없음 / any 클레임 있음 / active 미종결 클레임 있음. 아래 클레임 축(상태·귀책·신청일)과 조합하면 그 조건의 클레임 기준으로 판정 |
+| claim_exchange_statuses | query | array | 아니오 | ExchangeStatusEnum 값 배열 | 교환 상태 필터 — 해당 상태의 교환 신청서가 있는 주문 (여러 유형의 상태 집합은 OR 로 조합) |
+| claim_return_statuses | query | array | 아니오 | ReturnStatusEnum 값 배열 | 반품 상태 필터 |
+| claim_refund_statuses | query | array | 아니오 | RefundStatusEnum 값 배열 | 환불 상태 필터 — 출처로 거르지 않는다. 취소 발 환불도 환불 탭에 선다(D6) |
+| claim_cancel_types | query | array | 아니오 | `full`, `partial` | 취소 필터 — 어휘는 전이 상태가 아니라 **취소 유형**(전체/부분, CancelTypeEnum)이다. 취소는 즉시 파이프라인이라 상태 2종(신청/완료)이 화면 구분 축이 되지 못한다 |
+| claim_fault_types | query | array | 아니오 | `customer`, `seller`, `carrier` | 귀책 필터 — 같은 클레임 행에 함께 적용. 취소 테이블에는 귀책 축이 없어 귀책 지정 시 취소 유형은 매칭에서 제외 |
+| claim_requested_from | query | date | 아니오 | — | 클레임 신청일 범위 시작 (해당 범위에 접수된 클레임이 있는 주문) |
+| claim_requested_to | query | date | 아니오 | after_or_equal:claim_requested_from | 클레임 신청일 범위 종료 |
 | sort_by | query | string | 아니오 | `ordered_at`, `paid_at`, `total_amount`, `shipped_at` | 정렬 기준 필드명 (그 외 값은 422). `shipped_at` 은 배송 테이블 기준 — `desc` 는 주문별 **가장 늦은** 발송일, `asc` 는 **가장 이른** 발송일로 정렬하며 발송 이력이 없는 주문도 목록에 남는다 |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (asc 오름차순 / desc 내림차순) |
 | per_page | query | integer | 아니오 | min 10, max 100 | 페이지당 항목 수 |
@@ -75,6 +84,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | order_status | string | `pending_payment` | 주문상태 (OrderStatusEnum 값 — 결제대기/결제완료/배송중 등) |
 | order_status_label | string | `결제대기` | `order_status` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | order_status_variant | string | `warning` | `order_status` 값의 표시 변형 키 (UI 배지 색상/스타일) |
+| order_status_icon | string\|null | `status-paid` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립 — 어휘는 [admin-claims.md](admin-claims.md#progress_steps-항목) "아이콘 의미 토큰 어휘" 참조). `OrderStatusEnum::icon()` 단일 출처이며, 토큰을 글리프로 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다 |
 | base_currency | string | `JPY` | 금액 표기 기준 통화 (모든 *_formatted 필드의 통화, 주문 시점 base_currency 고정) |
 | payment_currency | string | `JPY` | 결제 통화 (유저가 선택·결제한 통화, base_currency 와 다르면 병기 표시) |
 | is_cross_currency | boolean | `false` | cross currency 여부 |
@@ -102,8 +112,9 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | first_option | object | `{"product_name":"겨울 패딩 점퍼 #16","product_option_name":"카키\…` | 대표 표시용 첫 번째 주문 옵션 요약 (상품명·옵션명·수량·썸네일·추가옵션 요약) |
 | options_count | integer | `1` | options 개수 (집계) |
 | address | object | `{"orderer_name":"연정훈","recipient_name":"소정훈","recipient_c…` | 배송지 요약 (주문자명·수령인명·배송국가 코드/현지화명) |
-| payment | object | `{"payment_method":"dbank","payment_method_label":"무통장입금"}` | 결제 요약 (결제수단 값·현지화 라벨) |
+| payment | object | `{"payment_method":"dbank","payment_method_label":"무통장입금","payment_method_display_label":null}` | 결제 요약 (결제수단 값·현지화 라벨). `payment_method_display_label` 은 결제 플러그인이 필터 훅 `sirsoft-ecommerce.order.filter_payment_method_display_label` 로 채우는 표시 라벨(간편결제 원 수단 등) — 채우는 플러그인이 없으면 `null` |
 | shipping | object | `{"shipping_type":null,"shipping_type_label":null,"shippin…` | 배송 요약 (배송유형·배송방법 라벨·택배사명·송장번호, 첫 번째 배송 기준) |
+| claim_summary | array | `[{"type":"return","type_label":"반품","count":2,"latest_cla…` | 유형별 최신 상태 배지 배열 (D22). 항상 직렬화된다 — 접수 건이 있는 유형만 항목으로 실리므로 클레임이 없는 주문은 빈 배열이다. 항목: `{type, type_label, count, latest_claim_number, status, status_label, status_variant}` — 환불 축은 취소 발 신청서를 제외 |
 | is_owner | boolean | `false` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
@@ -176,6 +187,7 @@ HTTP/1.1 200
                     "carrier_name": null,
                     "tracking_number": null
                 },
+                "claim_summary": [],
                 "is_owner": false,
                 "abilities": {
                     "can_read": true,
@@ -239,6 +251,7 @@ HTTP/1.1 200
                     "carrier_name": null,
                     "tracking_number": null
                 },
+                "claim_summary": [],
                 "is_owner": false,
                 "abilities": {
                     "can_read": true,
@@ -304,9 +317,12 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | ids | body | array | 예 | min 1 | 대상 리소스 식별자 배열 (대량 작업 대상) |
-| order_status | body | string | 아니오 | — | 일괄 전환할 주문상태 (OrderStatusEnum 값, pending_order 제외 · 전이 규칙 검증) |
+| order_status | body | string | 아니오 | — | 일괄 전환할 주문상태 (OrderStatusEnum 값, `pending_order` 및 클레임 코스 상태 4종(`exchange_in_progress`, `return_in_progress`, `exchanged`, `returned`) 제외 · 전이 규칙 검증) |
 | carrier_id | body | integer | 아니오 | — | carrier 식별자 |
 | tracking_number | body | string | 아니오 | max 50 | 송장(운송장)번호 (배송 관련 상태로 전환 시 carrier_id 와 함께 필수) |
+| apply_stock_deduction | body | boolean | 아니오 | — | 수동 결제 처리 — 재고 차감 (판매 상태로 가는 전이에만 쓰임, 생략하면 켬 — Q13) |
+| apply_mileage_deduction | body | boolean | 아니오 | — | 수동 결제 처리 — 사용 마일리지 차감 (생략하면 켬. 취소 주문을 되살리면 취소 때 돌려준 마일리지를 다시 뺀다 — Q14) |
+| record_paid_amount | body | boolean | 아니오 | — | 수동 결제 처리 — 결제금액 기록 (생략하면 켬. 결제 전 주문은 결제예정금액을, 되살린 주문은 취소 때 돌려준 현금을 받은 것으로 기록한다) |
 
 **요청 예시**
 
@@ -345,7 +361,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": ":count개 주문이 수정되었습니다.",
+    "message": "2개 주문이 수정되었습니다.",
     "data": {
         "updated_count": 3,
         "requested_count": 3
@@ -360,12 +376,78 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 상태 전이 규칙 위반(현재 상태 → 목표 상태 불가), 배송 관련 상태 전환 시 `carrier_id`/`tracking_number` 누락, 취소→판매상태 복원 시 재고 부족 등도 여기에 해당 (`일괄 처리에 실패했습니다.`) |
+| 422 | Unprocessable Entity | 수동 결제 처리 — 회원 마일리지 잔액 부족(`exceptions.mileage.insufficient_for_payment_complete[_bulk]`, `errors.order_numbers` 에 모자란 주문번호 전부 · 일괄은 전체를 바꾸지 않음), 재고 부족(`exceptions.manual_paid.stock_insufficient`, `errors.items`), 되살릴 주문의 쿠폰을 다른 주문이 이미 씀(`exceptions.reactivation.coupon_unavailable[_bulk]`, `errors.order_numbers`·`errors.coupons`) |
 | 500 | Server Error | 일괄 처리 중 예기치 못한 오류 (`일괄 처리에 실패했습니다.`) |
 
 <!-- @generated:end -->
 
 **설명** 관리자가 여러 주문(`ids`)의 주문상태나 배송 정보(택배사·송장번호)를 일괄 변경합니다. `auth:sanctum` + `sirsoft-ecommerce.orders.update` 권한이 필요하며, `Admin\OrderController@bulkUpdate`가 `OrderService::bulkUpdate()`로 처리합니다. 주문 목록에서 여러 건을 선택해 "배송 처리"·"상태 일괄 변경" 등을 수행할 때 사용합니다.
 
+
+### POST /api/modules/sirsoft-ecommerce/admin/orders/bulk/manual-paid-preview
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.orders.bulk.manual-paid-preview -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.orders.bulk.manual-paid-preview`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\OrderController@bulkManualPaidPreview`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.orders.update`
+
+**요청 파라미터** — `PATCH .../orders/bulk` 와 같은 검증을 쓴다(미리보기 통과 ⇔ 실행 검증 통과).
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| ids | body | array | 예 | min 1 | 대상 주문 ID 배열 |
+| order_status | body | string | 아니오 | — | 일괄 전환할 주문상태 (판매 상태가 아니면 모든 주문이 「해당 없음」) |
+| carrier_id | body | integer | 아니오 | — | 택배사 ID (실행과 같은 검증) |
+| tracking_number | body | string | 아니오 | max 50 | 송장번호 (실행과 같은 검증) |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/admin/orders/bulk/manual-paid-preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "ids": [1624, 1625],
+    "order_status": "payment_complete"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| target_status | string | `payment_complete` | 목표 상태 |
+| orders | array | `[{…}]` | 주문별 판정 (주문 id 오름차순) |
+| orders[].transition | object | `{"enters_paid_course":true,"revives_whole_order":false,"revived_item_count":0}` | 전이 분류 — 결제 전 → 판매(P) / 취소 → 판매(R-주문) / 되살리는 취소 상품 수(R-상품) |
+| orders[].stock_deduction | object | `{"applicable":true,"option_count":2,"reason":null}` | 재고 차감 해당 여부·대상 상품 행 수 (`reason`: `no_pending_stock`) |
+| orders[].mileage_deduction | object | `{"applicable":true,"amount":5000,"amount_formatted":"5,000원","currency":"KRW","balance":3000,"balance_sufficient":false,"reason":null}` | 사용 마일리지 차감 — 같은 회원의 주문은 id 순으로 잔액을 누적 판정 (`reason`: `guest`·`not_used`·`already_deducted`·`nothing_to_reclaim`) |
+| orders[].paid_amount_record | object | `{"applicable":true,"amount":55000,"amount_formatted":"55,000원","auto_sync":false,"auto_sync_amount":null,"auto_sync_amount_formatted":null,"reason":null}` | 결제금액 기록 — `auto_sync=true` 는 결제행에 입금이 이미 기록돼 체크와 무관하게 맞춘다는 뜻 (`reason`: `already_recorded`·`payment_row_settled`·`nothing_due`·`nothing_to_reclaim`·`never_paid`(입금 전 취소 주문 — 해당이며 복원 합계를 기록)) |
+| orders[].restoration | object | `{"applicable":true,"revived_option_count":2,"revived_quantity":3,"totals_before":{…},"totals_after":{…},"total_amount_before_formatted":"0원","total_amount_after_formatted":"58,000원","coupon_conflicts":[],"legacy_snapshot":false}` | 재활성 복원 — 되살릴 상품과 처음 주문 조건으로 다시 계산한 합계, 쿠폰 충돌(`reason`: `used_by_other_order`·`revoked`·`missing`) |
+| orders[].warnings | array | `["pg_already_cancelled"]` | 경고 — PG 결제가 이미 취소된 주문을 되살림(이후 환불은 계좌·마일리지) |
+| summary.order_count | integer | `2` | 요청 주문 수 |
+| summary.affected_order_count | integer | `1` | 대상 전이가 있는 주문 수 |
+| summary.any_applicable | boolean | `true` | 세 항목·자동 정합·복원 중 하나라도 해당하면 true (확인 창 블록 표시) |
+| summary.stock_deduction.applicable_count | integer | `1` | 재고 차감 해당 주문 수 |
+| summary.mileage_deduction | object | `{"applicable_count":1,"total_amount_formatted":"5,000원","short_order_numbers":["ORD-…"]}` | 마일리지 해당 수·합계(기준 통화가 섞이면 `null`)·잔액 부족 주문번호 |
+| summary.paid_amount_record | object | `{"applicable_count":1,"total_amount_formatted":"55,000원","auto_sync_count":0}` | 결제금액 해당 수·합계·자동 정합 수 |
+| summary.never_paid_count | integer | `0` | 입금 전에 취소된 주문 수 |
+| summary.restoration | object | `{"applicable_count":1,"revived_quantity":3,"coupon_conflict_order_numbers":[],"legacy_snapshot_count":0}` | 복원 대상 수·되살릴 수량·쿠폰 충돌 주문번호(있으면 실행이 422) |
+| summary.warnings.pg_already_cancelled | array | `[]` | PG 결제가 이미 취소된 주문번호 |
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없거나 권한 범위 밖 주문이 섞인 경우 |
+| 422 | Unprocessable Entity | 실행 요청과 같은 검증 실패 (전이 규칙 위반·택배사 누락·세 값이 boolean 아님 등) |
+| 500 | Server Error | 미리보기 계산 실패 (`결제 처리 항목을 확인하지 못했습니다.`) |
+
+<!-- @generated:end -->
+
+**설명** 주문 목록 일괄변경 확인 창이 열릴 때 부르는 미리보기입니다. DB 를 바꾸지 않습니다. 실행(`PATCH .../orders/bulk`)과 같은 판정 메서드(`OrderProcessingService::planManualPaidTransitionEffects`)를 써서, 결제 전 주문을 결제완료 이후로 올리거나 취소 주문을 되살릴 때 「재고 차감 · 사용 마일리지 차감 · 결제금액 기록」 중 무엇이 해당하는지와 금액, 재활성 복원 합계, 경고를 돌려줍니다. 해당 없는 항목은 확인 창에서 숨깁니다.
 
 ### DELETE /api/modules/sirsoft-ecommerce/admin/orders/{order}
 <!-- @generated:start:api.modules.sirsoft-ecommerce.admin.orders.destroy -->
@@ -430,6 +512,7 @@ HTTP/1.1 200
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.orders.show`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\OrderController@show`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.orders.read`
+- **권한 메모(1.3.0)**: 응답 `abilities.can_execute_refund`(= `sirsoft-ecommerce.claims.execute-refund`) — 취소 창 「환불까지 한 번에 처리」와 결제 플러그인 [환불 재시도]를 잠그는 키. 기존 `can_update` 는 그대로.
 
 **요청 파라미터**
 
@@ -460,7 +543,10 @@ _단건 응답: `data` 객체의 필드._
 | order_status | string | `payment_complete` | 주문상태 (OrderStatusEnum) |
 | order_status_label | string | `Payment Complete` | `order_status` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | order_status_variant | string | `info` | `order_status` 값의 표시 변형 키 (UI 배지 색상/스타일) |
+| order_status_icon | string\|null | `status-paid` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립 — 어휘는 [admin-claims.md](admin-claims.md#progress_steps-항목) "아이콘 의미 토큰 어휘" 참조). `OrderStatusEnum::icon()` 단일 출처이며, 토큰을 글리프로 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다 |
+| progress_steps | array | `[{"value":"pending_payment","label":"결제대기","state":"done","icon":"status-payment-pending","variant":"warning"}, …]` | **진행단계 배열** — 관리자·회원·비회원 상세가 같은 배열(`OrderProgressSteps` 단일 출처)로 스텝퍼를 그린다. 순서는 `OrderStatusEnum::progressSequence()` 7단계(결제대기 → 결제완료 → 상품준비중 → 배송준비완료 → 배송중 → 배송완료 → 구매확정). 항목 `state` 는 `done`/`current`/`upcoming`/`off_path` — 배송보류·주문취소·교환/반품 진행·교환/반품 완료는 순서 밖이라 마지막에 `off_path` 칸 하나로 붙고 그때 순서 안에 `current` 는 없다. 도달 지점은 현재 상태와 `paid_at`·상품 `delivered_at`·`confirmed_at` 중 더 나아간 쪽. `icon`·`variant` 는 각 상태 Enum 의 `icon()`/`variant()` |
 | is_partially_cancelled | boolean | `false` | partially cancelled 여부 |
+| is_past_payment | boolean | `true` | 결제 이후 단계(결제완료 ~ 구매확정)인지 여부. 결제 전 상태와 주문취소는 `false`. 판정은 `OrderStatusEnum::isPastPayment()` — 관리자 입금확인 창이 「결제완료로 처리」 체크와 「상태는 그대로 두고 입금만 기록」 안내를 이 값으로 가른다 |
 | order_device | string | `pc` | 주문 디바이스 (pc/mobile/app) |
 | order_device_label | string | `PC` | `order_device` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | is_first_order | boolean | `true` | first order 여부 |
@@ -485,6 +571,11 @@ _단건 응답: `data` 객체의 필드._
 | total_refunded_amount_formatted | string | `¥0` | `total_refunded_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_refunded_points_amount | integer | `0` | 총 환불 포인트 |
 | total_refunded_points_amount_formatted | string | `¥0` | `total_refunded_points_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| total_refunded_mileage_credit_amount | number | `0` | 현금 환불 중 「마일리지로 환불」로 회원 마일리지에 지급한 합계(`total_refunded_amount` 에 포함된 그중 내역). 결제수단이 마일리지인 주문은 0 |
+| total_refunded_mileage_credit_amount_formatted | string | `¥0` | `total_refunded_mileage_credit_amount` 의 주문 시점 통화 표기 |
+| claim_additional_paid_total | number | `0` | 이 주문의 클레임(교환·반품) 추가결제 실수납 합계 — 결제 완료 건의 청구액에서 부분 환급을 뺀 값. 주문 총 배송비와 분리해 표기하며 0원이면 화면에 노출하지 않는다 |
+| claim_additional_paid_total_formatted | string | `¥0` | `claim_additional_paid_total` 값의 주문 시점 통화 표기 문자열 |
+| mc_claim_additional_paid_total | array | `[]` | 다통화 표기 맵 (통화 코드 => `{amount, formatted}`). 다통화 기록이 없으면 빈 배열 |
 | total_product_coupon_discount_amount | integer | `3000` | 상품 쿠폰 할인 합계 |
 | total_product_coupon_discount_amount_formatted | string | `¥3,000` | `total_product_coupon_discount_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_order_coupon_discount_amount | integer | `0` | 주문 쿠폰 할인 합계 |
@@ -494,6 +585,7 @@ _단건 응답: `data` 객체의 필드._
 | total_code_discount_amount | integer | `0` | 총 할인코드 할인금액 |
 | total_code_discount_amount_formatted | string | `¥0` | `total_code_discount_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_points_used_amount | integer | `0` | 총 포인트 사용액 |
+| points_not_deducted | boolean | `false` | 사용 마일리지가 있는데 회원 잔액에서 차감되지 않은 주문인지(수동 결제완료에서 「마일리지 차감」을 끈 경우 등) — 참이면 환불 때 마일리지 몫이 0 이다 |
 | total_points_used_amount_formatted | string | `¥0` | `total_points_used_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_deposit_used_amount | integer | `0` | 총 예치금 사용액 |
 | total_deposit_used_amount_formatted | string | `¥0` | `total_deposit_used_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
@@ -510,8 +602,8 @@ _단건 응답: `data` 객체의 필드._
 | mc_total_points_used_amount | object | `{"KRW":{"amount":0,"formatted":"0원"},"USD":{"amount":0,"f…` | 포인트 사용 다중 통화 |
 | mc_total_deposit_used_amount | object | `{"KRW":{"amount":0,"formatted":"0원"},"USD":{"amount":0,"f…` | 예치금 사용 다중 통화 |
 | item_count | integer | `2` | item 개수 (집계) |
-| total_quantity | integer | `5` | 주문 옵션 수량 합계 (options 로드 시) |
-| total_list_price | integer | `207000` | 정가 합계 (옵션 스냅샷 정가 × 수량 합계) |
+| total_quantity | integer | `5` | 남은 상품 수량 합계 — 취소 행·교환완료로 닫힌 원 행·교환 진행 중인 후속 행을 뺀 회계 주체 행만 센다 (options 로드 시) |
+| total_list_price | integer | `207000` | 정가 합계 (옵션 스냅샷 정가 × 수량) — `total_quantity` 와 같은 행만 센다 |
 | total_list_price_formatted | string | `¥207,000` | `total_list_price` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | ordered_at | string | `2026-07-27T14:36:22+00:00` | ordered 일시 |
 | ordered_at_formatted | string | `2026-07-27 23:36:22` | `ordered_at` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
@@ -548,7 +640,7 @@ _단건 응답: `data` 객체의 필드._
 | options | array | `[{"id":1263,"option_status":"payment_complete","option_st…` | 주문 옵션(품목) 목록 (OrderOptionResource — 상품·옵션·수량·옵션상태·금액) |
 | shipping_address | object | `{"id":319,"address_type":"shipping","orderer_name":"박대수",…` | 배송지 상세 (OrderAddressResource — 주문자/수령인/국내·해외 주소) |
 | billing_address | null | `null` | 청구지 상세 (OrderAddressResource, 미분리 시 null) |
-| payment | object | `{"id":1,"payment_status":"paid","payment_status_label":"P…` | 대표 결제 정보 (OrderPaymentResource — 결제수단·결제상태·금액) |
+| payment | object | `{"id":1,"payment_status":"paid","payment_status_label":"P…` | 대표 결제 정보 (OrderPaymentResource — 결제수단·결제상태·금액). 무통장 결제행은 현금영수증 발급 프로바이더 `cash_receipt_provider`(id)와 그 현재 언어 표시명 `cash_receipt_provider_label`(등록 항목의 `name_key` 번역 → `name` → id 순)을 함께 싣는다. `has_cash_to_return`(bool)은 이 주문에 돌려줄 현금이 남아 있는지(주문 장부·결제행 수납액 기준 — [입금확인]에서 입금만 기록한 결제 전 주문도 포함) — 취소 창의 환불 계좌 칸 노출 근거 |
 | payments | array | `[{"id":1,"payment_status":"paid","payment_status_label":"…` | 결제 이력 목록 (OrderPaymentResource 배열 — 다회 결제/부분결제 포함) |
 | cash_receipt | null | `null` | 현재 유효한 현금영수증 (CashReceiptResource — 취소되지 않은 발급 건, 없으면 null) |
 | cash_receipts | array | `[]` | 현금영수증 발급·취소 이력 전체 (CashReceiptResource 배열 — 취소된 건 포함) |
@@ -557,9 +649,9 @@ _단건 응답: `data` 객체의 필드._
 | shippings | array | `[]` | 배송 이력 목록 (OrderShippingResource 배열 — 배송유형·택배사·송장번호) |
 | cancels | array | `[]` | 취소 이력 목록 (OrderCancelResource 배열 — 취소 사유·상세·취소일시, 최근순) |
 | promotions_applied_snapshot | object | `{"coupon_issue_ids":[7330],"item_coupons":[],"discount_co…` | 적용된 프로모션 스냅샷 (재계산용) |
-| shipping_policy_applied_snapshot | object | `{"items": [], "address": {}}` | 적용된 배송정책 스냅샷 (재계산용). `items` 는 옵션별 적용 정책 목록(각 항목: `product_option_id`, `policy`), `address` 는 주문 시점 배송지 메타(`country_code`, `zipcode`). 항목이 없어도 `items` 는 빈 배열이다 |
+| shipping_policy_applied_snapshot | object | `{"items": [], "address": {}}` | 적용된 배송정책 스냅샷 (재계산용). `items` 는 옵션별 적용 정책 목록(각 항목: `product_option_id`, `policy`), `address` 는 주문 시점 배송지 메타(`country_code`, `zipcode`). 항목이 없어도 `items` 는 빈 배열이다. 정책의 `standalone_shipping_amount_formatted` 는 저장된 문자열(주문 당시 언어 표기)이 아니라 응답 시점 언어로 다시 포맷한 값이다 — 저장 스냅샷 자체는 바꾸지 않는다 |
 | shipping_policy_applied_snapshot (비회원 응답) | object | `{"items": [{"product_option_id": 481, "policy": {"policy_name": "국내 무료배송", "standalone_shipping_amount": 0, "standalone_shipping_amount_formatted": "무료배송"}}]}` | 비로그인(비회원 조회 토큰) 응답은 **표시용 필드만** 내보낸다 — `policy_name` · `standalone_shipping_amount(_formatted)`. 정책 id·계산 근거와 배송지 메타(`address`)는 제외된다. 비회원 주문 상세 화면이 회원과 같은 partial 로 상품별 정책명·개별 배송비를 그리므로 필드 자체를 빼면 그 줄만 오류 없이 사라진다 |
-| admin_memo | null | `null` | 관리자 메모 (내부 관리용) |
+| admin_memo | string\|null | `null` | 관리자 메모 (내부 관리용 — 관리자 응답에서만 값이 실리고 고객·회원 응답은 `null`) |
 | customer_memo | null | `null` | 고객 메모 (주문 시 고객이 남긴 메모) |
 | created_at | string | `2026-07-30T14:36:22+00:00` | 생성 일시 |
 | updated_at | string | `2026-07-30T14:36:22+00:00` | 최종 수정 일시 |
@@ -611,7 +703,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | order | path | string | 예 | — | 정렬 방향 (asc 오름차순 / desc 내림차순) |
-| order_status | body | string | 아니오 | — | 변경할 주문상태 (OrderStatusEnum 값, 현재 상태에서 전이 가능한 값만 허용) |
+| order_status | body | string | 아니오 | — | 변경할 주문상태 (OrderStatusEnum 값, 클레임 코스 상태 4종(`exchange_in_progress`, `return_in_progress`, `exchanged`, `returned`) 제외 · 현재 상태에서 전이 가능한 값만 허용) |
 | admin_memo | body | string | 아니오 | max 2000 | 관리자 메모 (내부 관리용, 고객 비노출) |
 | recipient_name | body | string | 예 | max 50 | 수령인 이름 |
 | recipient_phone | body | string | 아니오 | max 20 | 수령인 연락처 |
@@ -626,6 +718,9 @@ HTTP/1.1 200
 | intl_postal_code | body | string | 아니오 | max 20 | 우편번호 (국제 주소) |
 | delivery_memo | body | string | 아니오 | max 500 | 배송 메모 (배송 시 요청사항) |
 | recipient_country_code | body | string | 아니오 | — | 수령인 배송국가 코드 (ISO 3166-1 alpha-2 2자리) |
+| apply_stock_deduction | body | boolean | 아니오 | — | 수동 결제 처리 — 재고 차감 (판매 상태로 가는 전이에만 쓰임, 생략하면 켬 — Q13) |
+| apply_mileage_deduction | body | boolean | 아니오 | — | 수동 결제 처리 — 사용 마일리지 차감 (생략하면 켬. 취소 주문을 되살리면 취소 때 돌려준 마일리지를 다시 뺀다 — Q14) |
+| record_paid_amount | body | boolean | 아니오 | — | 수동 결제 처리 — 결제금액 기록 (생략하면 켬. 결제 전 주문은 결제예정금액을, 되살린 주문은 취소 때 돌려준 현금을 받은 것으로 기록한다) |
 
 **요청 예시**
 
@@ -738,6 +833,7 @@ HTTP/1.1 200
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.orders.cancel`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\OrderController@cancelOrder`
 - **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.orders.update`
+- **권한 메모(1.3.0)**: `auto_advance_refund=true` 이면 환불 실행 권한(`sirsoft-ecommerce.claims.execute-refund`)도 요구한다. 없으면 403(`messages.claims.auto_refund_forbidden`)이고 신청서를 만들지 않는다.
 
 **요청 파라미터**
 
@@ -748,7 +844,7 @@ HTTP/1.1 200
 | reason | body | string | 예 | — | 취소 사유 코드 (ClaimReason 의 refund·활성 코드) |
 | reason_detail | body | string | 아니오 | max 500 | 취소 사유 상세 (관리자 입력 자유 텍스트) |
 | items | body | array | 아니오 | min 1 | 처리 대상 항목 배열 |
-| cancel_pg | body | boolean | 아니오 | — | PG 결제 취소 동반 여부 (미지정 시 기본 true — 실제 PG 취소 수행) |
+| auto_advance_refund | body | boolean | 아니오 | — | 환불까지 한 번에 처리할지 (미지정 시 **false**). 켜면 환불신청서를 만든 뒤 승인·환불완료까지 자동으로 진행한다 — 계좌 환불 수단은 그래도 승인에서 멈춘다. 종전의 `cancel_pg` 는 **없앴다**: 끈 채로 카드 취소를 하면 PG 를 부르지 않고도 환불이 완료로 찍혀 고객 카드는 그대로인데 장부만 환불완료가 됐다. PG 없이 장부만 정리해야 하면 환불 수단을 계좌 환불로 바꿔 수동 처리한다 |
 | refund_priority | body | string | 아니오 | `pg_first`, `points_first` | 환불 배분 우선순위 (pg_first PG 우선 / points_first 포인트 우선, 기본 pg_first) |
 | refund_bank.bank_code | body | string | 아니오 | max 10 | 환불 계좌 은행코드. 가상계좌 + 입금완료 건은 필수(주문 시 입력된 계좌가 있으면 생략 가능). 세 필드는 전부 입력하거나 전부 비워야 함 |
 | refund_bank.account_number | body | string | 아니오 | max 50 | 환불 계좌번호 |
@@ -770,7 +866,7 @@ Content-Type: application/json
     "items": [
         "예시값"
     ],
-    "cancel_pg": true,
+    "auto_advance_refund": false,
     "refund_priority": "pg_first",
     "refund_bank.bank_code": "예시값",
     "refund_bank.account_number": "예시값",
@@ -846,7 +942,21 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 특정 주문(`order`)을 전체취소 또는 부분취소합니다. `auth:sanctum` + `sirsoft-ecommerce.orders.update` 권한이 필요하며, `Admin\OrderController@cancelOrder`가 `items` 유무에 따라 `OrderCancellationService`의 `cancelOrder()`(전체) 또는 `cancelOrderOptions()`(부분)를 호출합니다. 취소자(`cancelledBy`)로 관리자 ID가 기록되고, `cancel_pg`로 PG 결제 취소 동반 여부를, `refund_priority`로 PG/포인트 환불 우선순위를 지정합니다. 취소 후 갱신된 주문을 `OrderResource`로 반환하며, 취소 불가 상태 등 실패 시 422를 반환합니다.
+**설명** 관리자가 특정 주문(`order`)을 전체취소 또는 부분취소합니다. `auth:sanctum` +
+`sirsoft-ecommerce.orders.update` 권한이 필요합니다.
+
+**취소 즉시 환불되지 않습니다.** 이 API 는 **환불신청서**(출처 `admin`)를 만들 뿐이고, 금액확인
+→ 승인 → 환불완료는 운영자가 클레임 상세에서 하나씩 밟습니다. 취소신청서는 그 환불이 완료되는
+순간에 생기므로, 응답 시점의 주문은 아직 취소로 확정돼 있지 않습니다.
+
+`auto_advance_refund` 를 켜면 승인·완료까지 자동으로 밉니다. 계좌 환불 수단은 그래도 승인에서
+멈추고(사람이 송금해야 합니다) 그때는 취소신청서도 아직 생기지 않습니다. 환불할 돈이 없는
+주문(미결제·0원)은 환불신청서 없이 취소신청서가 즉시 생깁니다.
+
+운영자가 접수한 신청서는 **구매자가 철회·수정할 수 없습니다** — 출처가 `admin` 이기 때문입니다.
+`refund_priority` 로 PG/포인트 환불 우선순위를, `refund_bank` 로 송금 계좌를 지정합니다(사람이
+송금해야 하는 수단은 계좌가 필수입니다). 취소 후 갱신된 주문을 `OrderResource` 로 반환하며,
+신청 자격·수량 잠금 위반이나 취소 불가 상태는 422 입니다.
 
 
 ### DELETE /api/modules/sirsoft-ecommerce/admin/orders/{order}/cash-receipt
@@ -1162,6 +1272,18 @@ Content-Type: application/json
 }
 ```
 
+**응답 메시지** — 요청 전 주문 상태와 `mark_order_complete` 에 따라 갈립니다.
+
+| 요청 전 주문 상태 | `mark_order_complete` | 처리 | `message` |
+| --- | --- | --- | --- |
+| 주문대기·결제대기 | `true` | 결제완료로 전이 | `입금이 확인되어 결제완료 처리되었습니다.` |
+| 주문대기·결제대기 | `false`(기본) | 입금 내역만 기록 | `입금 내역을 기록했습니다. 주문 상태는 결제대기로 유지됩니다.` |
+| 결제완료 이후(상품준비중·배송 등) | 무관 | 입금 내역과 주문 결제금액(`total_paid_amount`)을 기록, 상태는 그대로 | `입금 내역과 결제금액을 기록했습니다. 이미 결제 이후 단계인 주문이라 주문 상태는 그대로 유지됩니다.` |
+
+> 운영자가 주문 목록에서 상태를 먼저 올려 둔 뒤 입금을 기록하는 경우다. 종전에는 결제 기록만 입금완료가 되고 주문 결제금액이 0 으로 남아 환불 예정액이 0원으로 계산됐고, `true` 로 보내면 상품준비중 주문이 결제완료로 되돌아갔다(실측 2026-10-03).
+
+> 종전에는 두 경우 모두 「결제완료 처리되었습니다」로 응답해, **결제완료로 전이하지 않은 건에도 전이했다고 알렸습니다.** 운영자가 실제 상태를 오해할 수 있어 분기했습니다.
+
 **응답 필드** (`data` 내부)
 
 _단건 응답: `data` 객체의 필드. 입금확인 후 재조회한 주문을 `OrderResource` 로 반환하므로 필드 구성은 `GET /admin/orders/{order}` (주문 상세) 의 응답 필드 표와 동일합니다._
@@ -1231,7 +1353,8 @@ HTTP/1.1 200
 <!-- @generated:start:api.modules.sirsoft-ecommerce.admin.orders.estimate-refund -->
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.orders.estimate-refund`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\OrderController@estimateRefund`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.orders.update`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.claims.create`
+- **권한 메모(1.3.0)**: 취소·환불 접수 창 전용이라 접수(`cancel-refund`)와 같은 `sirsoft-ecommerce.claims.create` 로 판정한다(종전 `orders.update`).
 
 **요청 파라미터**
 
@@ -1288,6 +1411,7 @@ _단건 응답: `data` 객체의 필드 (`AdjustmentResult::toPreviewArray()` �
 | mc_recalculated_snapshot | object \| null | `{"mc_subtotal_amount":{…},"mc_total_paid_amount":{…}}` | 재계산 다중 통화 스냅샷 |
 | original_coupons | array | `[{"name":"첫구매 무료배송","target_type":"shipping_fee","discount_amount":0}]` | 원 주문에 적용된 쿠폰 상세 |
 | recalculated_coupons | array | `[]` | 재계산 후 유지되는 쿠폰 상세 (조건 미달 시 소멸) |
+| substituted_items | array | `[]` | 교환 미리보기의 옵션 치환 근거 행 — 취소 경로에서는 항상 빈 배열 (형태는 [claims/preview](#post-apimodulessirsoft-ecommerceuserordersidclaimspreview) 참조) |
 | cancel_blocked | boolean | `false` | 취소 차단 여부 (부분취소로 추가결제가 필요해지는 실결제 주문이면 `true`) |
 | cancel_blocked_reason | string \| null | `null` | 차단 사유 문구 (차단이 아니면 `null`) |
 
@@ -1348,14 +1472,16 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.claims.create`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 환불 예상금액 계산 중 오류 (`환불 예상금액 계산에 실패했습니다.`) |
 
 <!-- @generated:end -->
 
-**설명** 관리자가 특정 주문(`order`)의 선택 옵션(`items`) 취소 시 예상 환불 금액을 실제 취소 없이 미리 계산합니다. `auth:sanctum` + `sirsoft-ecommerce.orders.update` 권한이 필요하며, `Admin\OrderController@estimateRefund`가 `OrderCancellationService::previewRefund()`로 환불 예상값을 반환합니다. `refund_priority`에 따라 PG 우선/포인트 우선 환불 배분 결과가 달라집니다. 취소 화면에서 "환불 예정 금액"을 관리자에게 미리 보여주는 용도입니다.
+**설명** 관리자가 특정 주문(`order`)의 선택 옵션(`items`) 취소 시 예상 환불 금액을 실제 취소 없이 미리 계산합니다. `auth:sanctum` + `sirsoft-ecommerce.claims.create` 권한이 필요하며, `Admin\OrderController@estimateRefund`가 `OrderCancellationService::previewRefund()`로 환불 예상값을 반환합니다. `refund_priority`에 따라 PG 우선/포인트 우선 환불 배분 결과가 달라집니다. 취소 화면에서 "환불 예정 금액"을 관리자에게 미리 보여주는 용도입니다.
+
+교환·반품·환불 신청으로 **클레임 코스에 들어간 상품**이 `items` 에 섞이면 `422` 입니다 — 미리보기와 실행(`DELETE /admin/orders/{order}`)이 같은 가드를 쓰므로 "미리보기는 되는데 실행만 막히는" 비대칭이 없습니다. 사유는 `errors.detail` 에 실립니다(`claim_option_in_course` / `claim_quantity_locked` — 관리자 전용 면의 조치 근거).
 
 
 ### GET /api/modules/sirsoft-ecommerce/admin/orders/{order}/logs
@@ -1580,9 +1706,12 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | order | path | string | 예 | — | 정렬 방향 (asc 오름차순 / desc 내림차순) |
 | items | body | array | 예 | min 1 | 처리 대상 항목 배열 |
-| status | body | string | 예 | — | 일괄 전환할 옵션 상태 (OrderStatusEnum 값, 옵션별 전이 규칙 검증) |
+| status | body | string | 예 | — | 일괄 전환할 옵션 상태 (OrderStatusEnum 값, 클레임 코스 상태 4종(`exchange_in_progress`, `return_in_progress`, `exchanged`, `returned`) 제외 · 옵션별 전이 규칙 검증) |
 | carrier_id | body | integer | 아니오 | — | carrier 식별자 |
 | tracking_number | body | string | 아니오 | max 50 | 송장(운송장)번호 (배송 관련 상태로 전환 시 carrier_id 와 함께 필수) |
+| apply_stock_deduction | body | boolean | 아니오 | — | 수동 결제 처리 — 재고 차감 (판매 상태로 가는 전이에만 쓰임, 생략하면 켬 — Q13) |
+| apply_mileage_deduction | body | boolean | 아니오 | — | 수동 결제 처리 — 사용 마일리지 차감 (생략하면 켬. 취소 주문을 되살리면 취소 때 돌려준 마일리지를 다시 뺀다 — Q14) |
+| record_paid_amount | body | boolean | 아니오 | — | 수동 결제 처리 — 결제금액 기록 (생략하면 켬. 결제 전 주문은 결제예정금액을, 되살린 주문은 취소 때 돌려준 현금을 받은 것으로 기록한다) |
 
 **요청 예시**
 
@@ -1627,7 +1756,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": ":count개 옵션의 상태가 변경되었습니다.",
+    "message": "2개 옵션의 상태가 변경되었습니다.",
     "data": {
         "changed_count": 2,
         "split_count": 1,
@@ -1659,6 +1788,8 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 또는 옵션 상태 변경 실패 — 옵션 전이 규칙 위반, 취소 후 복원 시 재고 부족 등 (`옵션 상태 변경에 실패했습니다.`) |
+| 422 | Unprocessable Entity | 대상 옵션이 교환·반품 진행 중(`exchange_in_progress` / `return_in_progress` / `exchanged` / `returned`)인 경우 — 화면 요청은 `items.N.status` 에 안내가 실리고, 검증을 거치지 않는 내부·훅 호출로 서비스 방어가 트립한 경우에는 같은 안내가 `message` 에 실린다 |
+| 422 | Unprocessable Entity | 수동 결제 처리 — 회원 마일리지 잔액 부족(`exceptions.mileage.insufficient_for_payment_complete[_bulk]`, `errors.order_numbers` 에 모자란 주문번호 전부 · 일괄은 전체를 바꾸지 않음), 재고 부족(`exceptions.manual_paid.stock_insufficient`, `errors.items`), 되살릴 주문의 쿠폰을 다른 주문이 이미 씀(`exceptions.reactivation.coupon_unavailable[_bulk]`, `errors.order_numbers`·`errors.coupons`) |
 | 428 | Identity Verification Required | 결제완료(`payment_complete`) 전이 시 본인인증(IDV) 정책이 enforce 이고 미인증인 경우 |
 | 500 | Server Error | 옵션 상태 변경 중 예기치 못한 오류 (`옵션 상태 변경에 실패했습니다.`) |
 
@@ -1666,6 +1797,55 @@ HTTP/1.1 200
 
 **설명** 관리자가 특정 주문(`order`)의 여러 주문 옵션 상태를 수량 분할까지 지원해 일괄 변경합니다. `auth:sanctum` + `sirsoft-ecommerce.orders.update` 권한이 필요하며, `Admin\OrderController@bulkChangeOptionStatus`가 `status`를 `OrderStatusEnum`으로 변환한 뒤 `OrderOptionService::bulkChangeStatusWithQuantity()`로 처리합니다. 배송중으로 전환 시 `carrier_id`·`tracking_number`(택배사·송장번호)를 함께 넘길 수 있습니다. 한 옵션의 일부 수량만 상태 전환(부분 배송 등)하는 시나리오를 지원합니다. `items[].option_id`는 경로의 `{order}`에 속한 옵션이어야 합니다. 다른 주문의 옵션 ID를 포함하면 422(`items.N.option_id`)로 거절되며, 요청 전체가 반영되지 않습니다. 검증을 거치지 않는 내부·훅 호출 경로에서 같은 불일치가 감지되면 400으로 응답합니다.
 
+교환·반품이 진행 중인 옵션은 이 엔드포인트로 상태를 바꿀 수 없습니다. 클레임 코스 상태는 `status` 로 **지정**할 수 없을 뿐 아니라 그 상태에서 **빠져나오는** 전이도 막힙니다 — 코스 상태의 전이 게이트는 클레임 반려·철회 시의 복귀를 위해 판매 상태로의 전이를 허용하지만, 그 허용은 교환·반품 서비스의 복귀 경로 전용입니다. 주문 화면에서 직접 빼내면 그 옵션은 이후 신청서의 복귀 대상에서 조용히 제외되어 신청서와 주문옵션이 어긋납니다. 해당 교환·반품 건을 먼저 처리(승인·반려·철회·완료)한 뒤 상태를 변경하세요.
+
+
+### POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/options/bulk-status/manual-paid-preview
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.orders.options.bulk-status.manual-paid-preview -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.orders.options.bulk-status.manual-paid-preview`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\OrderController@optionBulkManualPaidPreview`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.orders.update`
+
+**요청 파라미터** — `PATCH .../{order}/options/bulk-status` 와 같은 검증을 쓴다.
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| order | path | string | 예 | — | 주문번호 |
+| items | body | array | 예 | min 1 | `[{option_id, quantity}]` — 바꿀 상품 행과 수량 |
+| status | body | string | 예 | — | 목표 상품 상태 |
+| carrier_id | body | integer | 아니오 | — | 택배사 ID (실행과 같은 검증) |
+| tracking_number | body | string | 아니오 | max 50 | 송장번호 (실행과 같은 검증) |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/options/bulk-status/manual-paid-preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "items": [{"option_id": 2007, "quantity": 1}],
+    "status": "payment_complete"
+}
+```
+
+**응답 필드** (`data` 내부) — 목록 미리보기(`POST .../orders/bulk/manual-paid-preview`)와 같은 형태이고 `orders` 가 이 주문 하나다. 수량에 따라 부모 주문의 파생 상태(혼합 → 가장 낮은 진행 상태)를 시뮬레이션해 결제 코스 진입 여부를 정한다.
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 400 | Bad Request | 내부·훅 호출에서 상품 행이 경로의 주문에 속하지 않음 |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
+| 422 | Unprocessable Entity | 실행 요청과 같은 검증 실패, 교환·반품 진행 중 상품 |
+| 500 | Server Error | 미리보기 계산 실패 (`결제 처리 항목을 확인하지 못했습니다.`) |
+
+<!-- @generated:end -->
+
+**설명** 주문상세 상품 일괄변경 확인 창이 열릴 때와 수량을 바꿀 때 부르는 미리보기입니다. DB 를 바꾸지 않습니다. 실행과 같은 전이 분류(`OrderOptionService::buildOptionTransition`)와 판정 메서드를 씁니다.
 
 ### POST /api/modules/sirsoft-ecommerce/admin/orders/{order}/reset-guest-lookup-password
 <!-- @generated:start:api.modules.sirsoft-ecommerce.admin.orders.reset-guest-lookup-password -->
@@ -1788,10 +1968,12 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 메일 채널이 꺼져 있거나 준비되지 않았거나 알림 정의 `order_custom_email` 의 메일 템플릿이 꺼져 있어 보낼 수 없는 경우 (`messages.orders.email_channel_disabled`, `error.errors` 없음) |
+| 500 | Internal Server Error | 발송 중 예외 (`messages.orders.email_send_failed`, `error.errors.detail` 에 원인) |
 
 <!-- @generated:end -->
 
-**설명** 관리자가 특정 주문(`order`)에 대해 주문 관련 안내 이메일을 지정 주소(`email`)로 발송합니다. `auth:sanctum` + `sirsoft-ecommerce.orders.update` 권한이 필요하며, `Admin\OrderController@sendEmail`이 `OrderService::sendEmail()`로 관리자가 작성한 메시지(`message`)를 전송합니다. 주문 관련 개별 안내가 필요할 때 관리자가 상세 화면에서 수동으로 메일을 보내는 용도입니다.
+**설명** 관리자가 특정 주문(`order`)에 대해 주문 관련 안내 이메일을 지정 주소(`email`)로 발송합니다. `auth:sanctum` + `sirsoft-ecommerce.orders.update` 권한이 필요하며, `Admin\OrderController@sendEmail`이 `OrderService::sendEmail()`로 관리자가 작성한 메시지(`message`)를 전송합니다. 주문 관련 개별 안내가 필요할 때 관리자가 상세 화면에서 수동으로 메일을 보내는 용도입니다. 1.3.0 부터 발송은 알림 정의 `order_custom_email`(이커머스 설정 > 알림에서 제목·본문 틀 편집)을 거치므로, 메일 채널 설정·발송 로그(`notification_logs`)를 따릅니다 — 채널을 끄면 422 로 거절되고 아무것도 보내지 않습니다. 회원 주문은 그 회원 계정으로, 비회원·다른 주소는 그 주소로 보내며, 성공했을 때만 훅 `sirsoft-ecommerce.order.after_send_email` 이 발화합니다(활동 로그).
 
 
 ### POST /api/modules/sirsoft-ecommerce/orders/{orderNumber}/cancel-payment
@@ -1898,9 +2080,10 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | status | string | `preparing` | 주문상태 값 (OrderStatusEnum value — 마이페이지용 status 별칭) |
 | status_label | string | `상품준비중` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `info` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
+| status_icon | string\|null | `status-preparing` | 상태를 상징하는 **아이콘 의미 토큰** (`OrderStatusEnum::icon()`) — 목록 행 상태 뱃지가 라벨 앞에 아이콘을 함께 그린다 |
 | is_partially_cancelled | boolean | `false` | partially cancelled 여부 |
 | recipient_country_code | string | `KR` | 배송국가 코드 (ISO 3166-1 alpha-2, shippingAddress 로드 시) |
-| recipient_country_name | object | `{"ko":"한국","en":"South Korea"}` | 배송국가 현지화명 (로케일별 국가명 맵) |
+| recipient_country_name | object | `{"ko":"한국","en":"South Korea","ja":"大韓民国"}` | 배송국가 현지화명 (로케일별 국가명 맵) — 코어 국가 사전(ko·en)에 없는 언어는 상점 배송국가 설정(`shipping.available_countries[].name`)의 이름으로 채운다 |
 | ordered_at | string | `2026-07-29T14:36:24+00:00` | ordered 일시 |
 | ordered_at_formatted | string | `2026-07-29 23:36:24` | `ordered_at` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_amount | integer | `30000` | 최종 주문금액 (상품합계 − 할인 + 배송비) |
@@ -1914,7 +2097,10 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | total_earned_points_amount | integer | `300` | 총 적립 예정 포인트 |
 | total_earned_points_amount_formatted | string | `¥300` | `total_earned_points_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | items | array | `[{"product_name":"USB 충전 케이블 #7","product_option_name":"2…` | 주문 품목 목록 (상품명·옵션명·썸네일·수량·단가/소계·추가옵션 요약) |
+| statistics | object | `{"pending_payment":0,"payment_complete":20,"preparing":10,…}` | 상태별 주문 건수 (응답 최상위 `data.statistics`). `preparing` 은 상품준비중 + 배송준비완료 합산(`OrderStatusEnum::statisticsFilterGroups`) — `status` 필터로 `preparing` 을 보내면 같은 집합으로 확장된다 |
+| status_summary | array | `[{"key":"pending_payment","label":"결제대기","icon":"status-payment-pending","variant":"warning","count":0}, …]` | 마이페이지 목록 상단 **건수 칸 배열** (응답 최상위 `data.status_summary`). 순서·키·건수는 `statistics` 와 같고(클릭 필터가 같은 키를 보낸다), 상태 Enum 의 아이콘 토큰·색·라벨이 붙는다. 합산 칸(`preparing`)의 라벨은 `enums.order_status_groups.preparing`("상품준비·배송준비") |
 | item_count | integer | `1` | item 개수 (집계) |
+| claim_summary | array | `[{"type":"exchange","type_label":"교환","count":1,"latest_c…` | 그 주문에 접수된 클레임의 유형별 최신 상태 배지 배열. 관리자 목록과 **같은 산출**(`SummarizesClaims`)이라 같은 주문이 두 화면에서 같은 상태로 보인다. 항상 직렬화되며 접수 건이 있는 유형만 항목으로 실리므로 클레임이 없는 주문은 빈 배열(`[]`)이다. 항목: `{type, type_label, count, latest_claim_number, status, status_label, status_variant}` |
 | abilities | object | `{"can_view":true,"can_cancel":false}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -1935,7 +2121,7 @@ HTTP/1.1 200
                 "status": "preparing",
                 "status_label": "상품준비중",
                 "status_variant": "info",
-                "...": "(18개 키 생략, 총 23개)"
+                "...": "(19개 키 생략, 총 24개)"
             },
             {
                 "id": 1344,
@@ -1943,7 +2129,7 @@ HTTP/1.1 200
                 "status": "preparing",
                 "status_label": "상품준비중",
                 "status_variant": "info",
-                "...": "(18개 키 생략, 총 23개)"
+                "...": "(19개 키 생략, 총 24개)"
             },
             "... (총 25건 중 2건 표시)"
         ],
@@ -2005,7 +2191,7 @@ HTTP/1.1 200
 | shipping.intl_city | body | string | 아니오 | max 100 | 도시 (국제 주소) |
 | shipping.intl_state | body | string | 아니오 | max 100 | 주/도 (국제 주소) |
 | shipping.intl_postal_code | body | string | 아니오 | max 20 | 우편번호 (국제 주소) |
-| payment_method | body | string | 예 | — | 결제수단. 코어 8종(`card`/`vbank`/`dbank`/`bank`/`phone`/`point`/`deposit`/`free`) 과 PG 플러그인이 등록한 확장 결제수단 ID(예: `nhnkcp_naverpay`, `kginicis_lpay`)를 모두 허용한다. 확장 결제수단도 1급 시민으로 그대로 저장된다. 카탈로그에 없는 값은 422 |
+| payment_method | body | string | 예 | — | 결제수단. 코어 8종(`card`/`vbank`/`dbank`/`bank`/`phone`/`point`/`deposit`/`free`) 과 PG 플러그인이 등록한 확장 결제수단 ID(예: `nhnkcp_naverpay`, `kginicis_lpay`)를 모두 허용한다. 확장 결제수단도 1급 시민으로 그대로 저장된다. 카탈로그에 없는 값은 422. 결제 통화(회원 선호 통화 → `X-Currency` → 기본 통화)에서 고를 수 없는 수단도 422(`payment_method_not_allowed_for_currency`) — 판정은 필터 훅 `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency` 이고 주문서 응답의 `allowed_payment_methods` 와 같다(#639) |
 | expected_total_amount | body | number | 예 | min 0 | 프론트가 계산한 예상 결제금액 (서버 재계산값과 대조해 금액 위변조 검증) |
 | shipping_memo | body | string | 아니오 | max 500 | 배송 요청사항 메모 |
 | depositor_name | body | string | 아니오 | max 50 | depositor 이름 (식별자) |
@@ -2015,6 +2201,7 @@ HTTP/1.1 200
 | dbank.account_holder | body | string | 아니오 | max 50 | 수동 무통장입금 계좌 예금주 (`payment_method=dbank` 이면 필수) |
 | dbank.due_days | body | integer | 아니오 | min 1, max 30 | 입금 기한 일수 (주문일로부터 며칠 이내 입금, 1~30일) |
 | save_shipping_address | body | boolean | 아니오 | — | 회원 주소록에 이번 배송지 저장 여부 (회원 주문 한정) |
+| save_shipping_address_id | body | integer | 아니오 | 1 이상 | **갱신할 주소록 행 ID** (회원 주문 한정). 주문서에서 저장된 배송지를 고른 뒤 그 자리에서 주소를 고쳤을 때 싣습니다 — 새 행을 만들지 않고 그 행을 갱신합니다. 배송지명(`name`)은 유지됩니다. 소유자가 아닌 행 ID 면 아무 것도 바뀌지 않고, 대체로 새로 만들지도 않습니다 |
 | cash_receipt_requested | body | boolean | 아니오 | — | 현금영수증 신청 여부 (true 면 아래 3개 필드가 필수) |
 | cash_receipt_type | body | string | 아니오 | — | 발급 용도 (`income` 소득공제 / `expense` 지출증빙) |
 | cash_receipt_identifier_type | body | string | 아니오 | — | 발급 수단 (`phone` 휴대폰번호 / `card` 현금영수증카드 / `business` 사업자등록번호 — business 는 지출증빙 전용) |
@@ -2088,6 +2275,8 @@ _단건 응답: `data` 객체의 필드 (HTTP 201). 회원은 `order` 에 `Order
 | pg_provider | string | `sirsoft-tosspayments` | PG 플러그인 식별자 (`requires_pg_payment=true` 일 때만 포함) |
 | pg_payment_handler | string | `sirsoft-tosspayments.requestPayment` | 프론트가 dispatch 할 결제 진입 핸들러 풀네임 (provider 가 선언한 경우에만 포함) |
 | pg_payment_data | object | `{"order_number":"…","amount":184000,"currency":"KRW", …}` | PG SDK 결제창 호출 파라미터 (`requires_pg_payment=true` 일 때만 포함 — 아래 표 참조) |
+| guest_order_token | string | `1759999999\|6f1c…` | **비회원 주문에만** 포함되는 비회원 조회 토큰(30분 유효, `X-Guest-Order-Token` 헤더 값). 결제창 닫힘 보고(PG 플러그인 close-report)·재결제 준비가 이 토큰으로 주문 소유자를 확인한다. 회원 주문에는 포함되지 않는다 |
+| guest_order_token_expires_at | string | `2026-09-28T15:30:00+09:00` | `guest_order_token` 의 만료시각 (ISO 8601, 비회원 주문에만 포함) |
 
 `pg_payment_data` 하위 필드 (프로바이더 비의존 공통):
 
@@ -2156,14 +2345,14 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-orders.create`)이 없는 경우 |
 | 404 | Not Found | 임시 주문(주문서)이 없거나 만료된 경우 (`주문서를 찾을 수 없습니다.` 계열 — `exceptions.temp_order_not_found`) |
-| 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 예상 결제금액 불일치(`expected_total_amount` ≠ 서버 재계산값), 결제 통화 미지원(`errors.code = unsupported_payment_currency`), 재고 부족(`errors.insufficient_items`), 구매 불가 상품(`errors.code = cart_unavailable`), 주문 확정 재계산 검증 실패(쿠폰 만료·최소주문금액 미달 등 — `errors.code = order_calculation_validation_failed`). `payment_method` 가 결제수단 카탈로그에 없는 값이면 여기서 차단된다 |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 예상 결제금액 불일치(`expected_total_amount` ≠ 서버 재계산값), 결제 통화 미지원(`errors.code = unsupported_payment_currency`), 재고 부족(`errors.insufficient_items`), 구매 불가 상품(`errors.code = cart_unavailable`), 주문 확정 재계산 검증 실패(쿠폰 만료·최소주문금액 미달 등 — `errors.code = order_calculation_validation_failed`). `payment_method` 가 결제수단 카탈로그에 없는 값이면 여기서 차단된다. 필드별 메시지는 `error.errors` 에 담긴다 |
 | 409 | Conflict | 적용한 쿠폰을 다른 주문이 먼저 사용한 경우 (`errors.code = coupon_already_used`, `errors.coupon_issue_id` 에 해당 발급 ID). 주문은 생성되지 않고 쿠폰도 소모되지 않으므로 그대로 재시도할 수 있습니다 |
-| 428 | Identity Verification Required | 결제 진입 본인인증(IDV) 정책이 활성이고 미인증(grace 만료)인 경우 |
-| 500 | Server Error | 주문 생성 중 예기치 못한 오류 (`주문 생성에 실패했습니다.`) |
+| 428 | Identity Verification Required | 결제 진입 본인인증(IDV) 정책이 활성이고 미인증(grace 만료)인 경우. 응답 payload 로 인증 수단·목적이 함께 내려간다 |
+| 500 | Server Error | 주문 생성 중 예기치 못한 오류 (`주문 생성에 실패했습니다.` — `messages.order.create_failed`). 원인은 서버 로그 `Order create: unexpected failure` 항목에 예외 클래스·메시지·발생 위치가 기록된다 |
 
 <!-- @generated:end -->
 
-**설명** 주문서 작성을 마치고 실제 주문을 생성(결제하기)하는 회원/비회원 공용 엔드포인트입니다. PG 플러그인의 fetch 인터셉터가 이 한 경로만 매칭하므로 회원/비회원이 동일 URL로 진입하고, `Public\OrderController@store`가 `Auth::id()`로 분기합니다(회원은 `OrderResource`, 비회원은 민감 필드를 가린 `GuestOrderResource`). `optional.sanctum` + `sirsoft-ecommerce.user-orders.create` 권한이 필요하며, `expected_total_amount`로 금액 위변조를 검증하고 비회원은 `guest_lookup_password`로 이후 조회 비밀번호를 설정합니다. 회원이 `save_shipping_address`를 켜면 배송지가 자동 저장(PG 결제는 결제완료 시점) 됩니다.
+**설명** 주문서 작성을 마치고 실제 주문을 생성(결제하기)하는 회원/비회원 공용 엔드포인트입니다. PG 플러그인의 fetch 인터셉터가 이 한 경로만 매칭하므로 회원/비회원이 동일 URL로 진입하고, `Public\OrderController@store`가 `Auth::id()`로 분기합니다(회원은 `OrderResource`, 비회원은 민감 필드를 가린 `GuestOrderResource`). `optional.sanctum` + `sirsoft-ecommerce.user-orders.create` 권한이 필요하며, `expected_total_amount`로 금액 위변조를 검증하고 비회원은 `guest_lookup_password`로 이후 조회 비밀번호를 설정합니다. 회원이 `save_shipping_address`를 켜면 배송지가 자동 저장(PG 결제는 결제완료 시점) 됩니다. 비회원 주문이면 응답에 그 주문의 조회 토큰(`guest_order_token`, 30분)을 함께 내려줍니다 — 주문을 실제로 만든 브라우저만 받는 값이라, 결제창 닫힘 보고처럼 결제 도중 주문 상태를 바꾸는 요청의 소유 증명으로 쓰입니다. 주문자 이메일·전화번호는 제3자도 알 수 있어 소유 증명이 되지 못합니다 (KVE-2026-2434). 토큰 발급이 실패해도 주문 생성은 성공하며, 그 경우 닫힘 보고는 거부되고 결제대기 주문은 만료 정리 잡이 정리합니다. `save_shipping_address_id` 를 함께 실으면 새로 만드는 대신 그 주소록 행을 갱신합니다.
 
 주문 확정 시점에는 재고·구매대상제한·배송국가·쿠폰 유효성과 함께 **마일리지 사용 정책**도 현재 설정 기준으로 재검증합니다. 임시 주문을 만든 뒤 관리자가 한도를 강화했거나 임시 주문이 조작된 경우 `422`(`errors.code = mileage_usage_not_allowed`)로 차단되며 주문은 생성되지 않습니다. 반대로 정상 생성된 주문에는 그 시점의 사용 정책이 `mileage_policy_snapshot` 으로 고정되어, 이후 설정이 바뀌어도 해당 주문의 판정 근거를 재현할 수 있습니다(통화·프로모션·배송정책 스냅샷과 동일 취지).
 
@@ -2172,6 +2361,8 @@ HTTP/1.1 201
 | 필드 | 타입 | 용도 |
 | --- | --- | --- |
 | `escrow_products` | array | 에스크로 결제(가상계좌·계좌이체)에서 필수인 상품 상세 배열. 각 원소는 `{id, name, code, unitPrice, quantity}` 형식이며 `unitPrice`는 개당가(합계 아님), `name`은 현재 로케일로 로컬라이즈됩니다. 에스크로 사용 여부는 PG 프론트에서 결정하므로 항상 조립되어 내려가고, 비에스크로 결제는 이 필드를 무시합니다. |
+
+가상계좌 주문에는 `vbank_due_at`(string, ISO 8601 · 한국 시각 `+09:00`)이 더 실립니다 — 주문이 정한 입금 기한(설정 `order_settings.auto_cancel_days`, 주문서 「입금 기한: N일 이내」와 같은 값)입니다. 결제 플러그인은 이 값을 결제사의 계좌 만료 파라미터(KG이니시스 `acceptmethod` 의 `vbank(YYYYMMDDhhmm)`·모바일 `P_VBANK_DT`/`P_VBANK_TM`, 나이스페이먼츠 `VbankExpDate`, NHN KCP `vcnt_expire_term`/`vcnt_expire_term_time`)로 넘겨, 계좌 기한·주문서 안내·자동취소 시점이 결제사와 무관하게 같게 합니다. 가상계좌가 아니면 키가 없습니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/user/orders/{id}
@@ -2202,14 +2393,17 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | id | integer | `4` | 기본 키 (내부 식별자) |
-| order_number | string | `APIDOC-20260708-000001` | 주문번호 |
+| order_number | string | `APIDOC-20260708-1005224318` | 주문번호 |
 | base_currency | string | `KRW` | 금액 표기 기준 통화 (모든 *_formatted 필드의 통화, 주문 시점 base_currency 고정) |
 | payment_currency | string | `KRW` | 결제 통화 (유저가 선택·결제한 통화, base_currency 와 다르면 병기 표시) |
 | is_cross_currency | boolean | `false` | cross currency 여부 |
 | order_status | string | `pending_payment` | 주문상태 (OrderStatusEnum) |
 | order_status_label | string | `결제대기` | `order_status` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | order_status_variant | string | `warning` | `order_status` 값의 표시 변형 키 (UI 배지 색상/스타일) |
+| order_status_icon | string\|null | `status-paid` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립 — 어휘는 [admin-claims.md](admin-claims.md#progress_steps-항목) "아이콘 의미 토큰 어휘" 참조). `OrderStatusEnum::icon()` 단일 출처이며, 토큰을 글리프로 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다 |
+| progress_steps | array | `[{"value":"pending_payment","label":"결제대기","state":"done","icon":"status-payment-pending","variant":"warning"}, …]` | **진행단계 배열** — 관리자·회원·비회원 상세가 같은 배열(`OrderProgressSteps` 단일 출처)로 스텝퍼를 그린다. 순서는 `OrderStatusEnum::progressSequence()` 7단계(결제대기 → 결제완료 → 상품준비중 → 배송준비완료 → 배송중 → 배송완료 → 구매확정). 항목 `state` 는 `done`/`current`/`upcoming`/`off_path` — 배송보류·주문취소·교환/반품 진행·교환/반품 완료는 순서 밖이라 마지막에 `off_path` 칸 하나로 붙고 그때 순서 안에 `current` 는 없다. 도달 지점은 현재 상태와 `paid_at`·상품 `delivered_at`·`confirmed_at` 중 더 나아간 쪽. `icon`·`variant` 는 각 상태 Enum 의 `icon()`/`variant()` |
 | is_partially_cancelled | boolean | `false` | partially cancelled 여부 |
+| is_past_payment | boolean | `true` | 결제 이후 단계(결제완료 ~ 구매확정)인지 여부. 결제 전 상태와 주문취소는 `false`. 판정은 `OrderStatusEnum::isPastPayment()` — 관리자 입금확인 창이 「결제완료로 처리」 체크와 「상태는 그대로 두고 입금만 기록」 안내를 이 값으로 가른다 |
 | order_device | string | `pc` | 주문 디바이스 (pc/mobile/app) |
 | order_device_label | string | `PC` | `order_device` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | is_first_order | boolean | `false` | first order 여부 |
@@ -2234,6 +2428,11 @@ _단건 응답: `data` 객체의 필드._
 | total_refunded_amount_formatted | string | `0원` | `total_refunded_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_refunded_points_amount | integer | `0` | 총 환불 포인트 |
 | total_refunded_points_amount_formatted | string | `0원` | `total_refunded_points_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| total_refunded_mileage_credit_amount | number | `0` | 현금 환불 중 「마일리지로 환불」로 회원 마일리지에 지급한 합계(`total_refunded_amount` 에 포함된 그중 내역). 결제수단이 마일리지인 주문은 0 |
+| total_refunded_mileage_credit_amount_formatted | string | `0원` | `total_refunded_mileage_credit_amount` 의 주문 시점 통화 표기 |
+| claim_additional_paid_total | number | `0` | 이 주문의 클레임(교환·반품) 추가결제 실수납 합계 — 결제 완료 건의 청구액에서 부분 환급을 뺀 값. 주문 총 배송비와 분리해 표기하며 0원이면 화면에 노출하지 않는다 |
+| claim_additional_paid_total_formatted | string | `0원` | `claim_additional_paid_total` 값의 주문 시점 통화 표기 문자열 |
+| mc_claim_additional_paid_total | array | `[]` | 다통화 표기 맵 (통화 코드 => `{amount, formatted}`). 다통화 기록이 없으면 빈 배열 |
 | total_product_coupon_discount_amount | integer | `0` | 상품 쿠폰 할인 합계 |
 | total_product_coupon_discount_amount_formatted | string | `0원` | `total_product_coupon_discount_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_order_coupon_discount_amount | integer | `0` | 주문 쿠폰 할인 합계 |
@@ -2243,6 +2442,7 @@ _단건 응답: `data` 객체의 필드._
 | total_code_discount_amount | integer | `0` | 총 할인코드 할인금액 |
 | total_code_discount_amount_formatted | string | `0원` | `total_code_discount_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_points_used_amount | integer | `0` | 총 포인트 사용액 |
+| points_not_deducted | boolean | `false` | 사용 마일리지가 있는데 회원 잔액에서 차감되지 않은 주문인지(수동 결제완료에서 「마일리지 차감」을 끈 경우 등) — 참이면 환불 때 마일리지 몫이 0 이다 |
 | total_points_used_amount_formatted | string | `0원` | `total_points_used_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_deposit_used_amount | integer | `0` | 총 예치금 사용액 |
 | total_deposit_used_amount_formatted | string | `0원` | `total_deposit_used_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
@@ -2259,8 +2459,8 @@ _단건 응답: `data` 객체의 필드._
 | mc_total_points_used_amount | array | `[]` | 포인트 사용 다중 통화 |
 | mc_total_deposit_used_amount | array | `[]` | 예치금 사용 다중 통화 |
 | item_count | integer | `4` | item 개수 (집계) |
-| total_quantity | integer | `0` | 주문 옵션 수량 합계 (options 로드 시) |
-| total_list_price | integer | `0` | 정가 합계 (옵션 스냅샷 정가 × 수량 합계) |
+| total_quantity | integer | `0` | 남은 상품 수량 합계 — 취소 행·교환완료로 닫힌 원 행·교환 진행 중인 후속 행을 뺀 회계 주체 행만 센다 (options 로드 시) |
+| total_list_price | integer | `0` | 정가 합계 (옵션 스냅샷 정가 × 수량) — `total_quantity` 와 같은 행만 센다 |
 | total_list_price_formatted | string | `0원` | `total_list_price` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | ordered_at | string | `2026-07-08T01:44:49+00:00` | ordered 일시 |
 | ordered_at_formatted | string | `2026-07-08 10:44:49` | `ordered_at` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
@@ -2303,7 +2503,7 @@ _단건 응답: `data` 객체의 필드._
 | cancels | array | `[]` | 취소 이력 목록 (OrderCancelResource 배열 — 취소 사유·상세·취소일시, 최근순) |
 | promotions_applied_snapshot | null | `null` | 적용된 프로모션 스냅샷 (재계산용) |
 | shipping_policy_applied_snapshot | object | `{"items": [], "address": {}}` | 적용된 배송정책 스냅샷 (재계산용). `items` 는 옵션별 적용 정책 목록(각 항목: `product_option_id`, `policy`), `address` 는 주문 시점 배송지 메타(`country_code`, `zipcode`). 항목이 없어도 `items` 는 빈 배열이다 |
-| admin_memo | null | `null` | 관리자 메모 (내부 관리용) |
+| admin_memo | null | `null` | 관리자 메모 — 고객 응답에서는 항상 `null` (키는 호환용으로 유지, 값은 관리자 주문 API 에서만 제공) |
 | customer_memo | null | `null` | 고객 메모 (주문 시 고객이 남긴 메모) |
 | created_at | string | `2026-07-08T01:44:49+00:00` | 생성 일시 |
 | updated_at | string | `2026-07-08T01:44:49+00:00` | 최종 수정 일시 |
@@ -2451,7 +2651,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 회원이 마이페이지에서 본인 주문(`id`)을 취소합니다. `auth:sanctum` + `sirsoft-ecommerce.user-orders.cancel` 권한이 필요하며, `User\OrderController@cancel`이 `items` 유무에 따라 `OrderCancellationService`의 `cancelOrderOptions()`(부분) 또는 `cancelOrder()`(전체)를 호출합니다. 취소자(`cancelledBy`)로 회원 본인 ID가 기록되고, `refund_priority`로 PG/포인트 환불 우선순위를 지정합니다. 취소 가능 상태의 주문만 취소되며, 취소 후 갱신된 주문을 `OrderResource`로 반환합니다.
+**설명** 회원이 마이페이지에서 본인 주문(`id`)을 취소합니다. `auth:sanctum` + `sirsoft-ecommerce.user-orders.cancel` 권한이 필요하며, `User\OrderController@cancel`이 `items` 유무에 따라 `OrderCancellationService`의 `cancelOrderOptions()`(부분) 또는 `cancelOrder()`(전체)를 호출합니다. 두 메서드는 **클레임 접수 경로**(`OrderRefundRequestService::request()`)로 흐르는 어댑터입니다 — 돈이 수납된 주문은 환불신청서를 거치고, 취소신청서는 환불이 집행된 순간에만 생깁니다. 취소자(`cancelledBy`)로 회원 본인 ID가 기록되고, `refund_priority`로 PG/포인트 환불 우선순위를 지정합니다. 취소 가능 상태의 주문만 취소되며, 취소 후 갱신된 주문을 `OrderResource`로 반환합니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/user/orders/{id}/cash-receipt
@@ -2688,6 +2888,7 @@ _단건 응답: `data` 객체의 필드 (`AdjustmentResult::toPreviewArray()` �
 | original_snapshot / recalculated_snapshot | object | `{"total_paid_amount":184000, …}` | 재계산 전/후 금액 스냅샷 |
 | mc_original_snapshot / mc_recalculated_snapshot | object \| null | `{"mc_total_paid_amount":{…}}` | 다중 통화 스냅샷 |
 | original_coupons / recalculated_coupons | array | `[]` | 재계산 전/후 쿠폰 적용 상세 |
+| substituted_items | array | `[]` | 교환 미리보기의 옵션 치환 근거 행 — 취소 경로에서는 항상 빈 배열 |
 | cancel_blocked | boolean | `false` | 취소 차단 여부 (부분취소로 추가결제가 필요해지는 실결제 주문이면 `true`) |
 | cancel_blocked_reason | string \| null | `null` | 차단 사유 문구 (차단이 아니면 `null`) |
 
@@ -2750,7 +2951,11 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+**유저 화면 소비처 없음** — 마이페이지의 옛 주문 취소 모달이 삭제되어(sirsoft-basic 1.2.0) 이 라우트를 부르는 유저 화면은 없다. 취소·환불 신청은 [claims/preview](#post-apimodulessirsoft-ecommerceuserordersidclaimspreview)(`type=refund`)가 같은 `AdjustmentResult` 를 `adjustment` 로 싣는다. 관리자 주문상세의 취소 모달만 관리자 `estimate-refund` 를 쓴다. 라우트·요청 검증·응답 형태는 **API 계약으로 유지**한다.
+
 **설명** 회원이 마이페이지에서 본인 주문(`id`)의 선택 옵션(`items`) 취소 시 예상 환불 금액을 실제 취소 없이 미리 계산합니다. `auth:sanctum` + `sirsoft-ecommerce.user-orders.cancel` 권한이 필요하며, `User\OrderController@estimateRefund`가 `OrderCancellationService::previewRefund()`로 환불 예상값을 반환합니다. `refund_priority`에 따라 PG 우선/포인트 우선 환불 배분 결과가 달라집니다. 취소 확정 전 "환불 예정 금액"을 회원에게 안내하는 용도입니다.
+
+교환·반품·환불 신청으로 **클레임 코스에 들어간 상품**이 `items` 에 섞이면 `422` 이며, `message` 에 그 사유가 그대로 실립니다(`claim_option_in_course` / `claim_quantity_locked` — 관리자 면과 같은 키). 미리보기가 성공하면 그 조합은 취소 실행도 가능하다는 뜻입니다.
 
 
 ### POST /api/modules/sirsoft-ecommerce/user/orders/{id}/options/{optionId}/confirm
@@ -3033,14 +3238,17 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | id | integer | `4` | 기본 키 (내부 식별자) |
-| order_number | string | `APIDOC-20260708-000001` | 주문번호 |
+| order_number | string | `APIDOC-20260708-1005224318` | 주문번호 |
 | base_currency | string | `KRW` | 금액 표기 기준 통화 (모든 *_formatted 필드의 통화, 주문 시점 base_currency 고정) |
 | payment_currency | string | `KRW` | 결제 통화 (유저가 선택·결제한 통화, base_currency 와 다르면 병기 표시) |
 | is_cross_currency | boolean | `false` | cross currency 여부 |
 | order_status | string | `pending_payment` | 주문상태 (OrderStatusEnum) |
 | order_status_label | string | `결제대기` | `order_status` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | order_status_variant | string | `warning` | `order_status` 값의 표시 변형 키 (UI 배지 색상/스타일) |
+| order_status_icon | string\|null | `status-paid` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립 — 어휘는 [admin-claims.md](admin-claims.md#progress_steps-항목) "아이콘 의미 토큰 어휘" 참조). `OrderStatusEnum::icon()` 단일 출처이며, 토큰을 글리프로 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다 |
+| progress_steps | array | `[{"value":"pending_payment","label":"결제대기","state":"done","icon":"status-payment-pending","variant":"warning"}, …]` | **진행단계 배열** — 관리자·회원·비회원 상세가 같은 배열(`OrderProgressSteps` 단일 출처)로 스텝퍼를 그린다. 순서는 `OrderStatusEnum::progressSequence()` 7단계(결제대기 → 결제완료 → 상품준비중 → 배송준비완료 → 배송중 → 배송완료 → 구매확정). 항목 `state` 는 `done`/`current`/`upcoming`/`off_path` — 배송보류·주문취소·교환/반품 진행·교환/반품 완료는 순서 밖이라 마지막에 `off_path` 칸 하나로 붙고 그때 순서 안에 `current` 는 없다. 도달 지점은 현재 상태와 `paid_at`·상품 `delivered_at`·`confirmed_at` 중 더 나아간 쪽. `icon`·`variant` 는 각 상태 Enum 의 `icon()`/`variant()` |
 | is_partially_cancelled | boolean | `false` | partially cancelled 여부 |
+| is_past_payment | boolean | `true` | 결제 이후 단계(결제완료 ~ 구매확정)인지 여부. 결제 전 상태와 주문취소는 `false`. 판정은 `OrderStatusEnum::isPastPayment()` — 관리자 입금확인 창이 「결제완료로 처리」 체크와 「상태는 그대로 두고 입금만 기록」 안내를 이 값으로 가른다 |
 | order_device | string | `pc` | 주문 디바이스 (pc/mobile/app) |
 | order_device_label | string | `PC` | `order_device` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | is_first_order | boolean | `false` | first order 여부 |
@@ -3065,6 +3273,11 @@ _단건 응답: `data` 객체의 필드._
 | total_refunded_amount_formatted | string | `0원` | `total_refunded_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_refunded_points_amount | integer | `0` | 총 환불 포인트 |
 | total_refunded_points_amount_formatted | string | `0원` | `total_refunded_points_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| total_refunded_mileage_credit_amount | number | `0` | 현금 환불 중 「마일리지로 환불」로 회원 마일리지에 지급한 합계(`total_refunded_amount` 에 포함된 그중 내역). 결제수단이 마일리지인 주문은 0 |
+| total_refunded_mileage_credit_amount_formatted | string | `0원` | `total_refunded_mileage_credit_amount` 의 주문 시점 통화 표기 |
+| claim_additional_paid_total | number | `0` | 이 주문의 클레임(교환·반품) 추가결제 실수납 합계 — 결제 완료 건의 청구액에서 부분 환급을 뺀 값. 주문 총 배송비와 분리해 표기하며 0원이면 화면에 노출하지 않는다 |
+| claim_additional_paid_total_formatted | string | `0원` | `claim_additional_paid_total` 값의 주문 시점 통화 표기 문자열 |
+| mc_claim_additional_paid_total | array | `[]` | 다통화 표기 맵 (통화 코드 => `{amount, formatted}`). 다통화 기록이 없으면 빈 배열 |
 | total_product_coupon_discount_amount | integer | `0` | 상품 쿠폰 할인 합계 |
 | total_product_coupon_discount_amount_formatted | string | `0원` | `total_product_coupon_discount_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_order_coupon_discount_amount | integer | `0` | 주문 쿠폰 할인 합계 |
@@ -3074,6 +3287,7 @@ _단건 응답: `data` 객체의 필드._
 | total_code_discount_amount | integer | `0` | 총 할인코드 할인금액 |
 | total_code_discount_amount_formatted | string | `0원` | `total_code_discount_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_points_used_amount | integer | `0` | 총 포인트 사용액 |
+| points_not_deducted | boolean | `false` | 사용 마일리지가 있는데 회원 잔액에서 차감되지 않은 주문인지(수동 결제완료에서 「마일리지 차감」을 끈 경우 등) — 참이면 환불 때 마일리지 몫이 0 이다 |
 | total_points_used_amount_formatted | string | `0원` | `total_points_used_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_deposit_used_amount | integer | `0` | 총 예치금 사용액 |
 | total_deposit_used_amount_formatted | string | `0원` | `total_deposit_used_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
@@ -3090,8 +3304,8 @@ _단건 응답: `data` 객체의 필드._
 | mc_total_points_used_amount | array | `[]` | 포인트 사용 다중 통화 |
 | mc_total_deposit_used_amount | array | `[]` | 예치금 사용 다중 통화 |
 | item_count | integer | `4` | item 개수 (집계) |
-| total_quantity | integer | `0` | 주문 옵션 수량 합계 (options 로드 시) |
-| total_list_price | integer | `0` | 정가 합계 (옵션 스냅샷 정가 × 수량 합계) |
+| total_quantity | integer | `0` | 남은 상품 수량 합계 — 취소 행·교환완료로 닫힌 원 행·교환 진행 중인 후속 행을 뺀 회계 주체 행만 센다 (options 로드 시) |
+| total_list_price | integer | `0` | 정가 합계 (옵션 스냅샷 정가 × 수량) — `total_quantity` 와 같은 행만 센다 |
 | total_list_price_formatted | string | `0원` | `total_list_price` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | ordered_at | string | `2026-07-08T01:44:49+00:00` | ordered 일시 |
 | ordered_at_formatted | string | `2026-07-08 10:44:49` | `ordered_at` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
@@ -3134,7 +3348,7 @@ _단건 응답: `data` 객체의 필드._
 | cancels | array | `[]` | 취소 이력 목록 (OrderCancelResource 배열 — 취소 사유·상세·취소일시, 최근순) |
 | promotions_applied_snapshot | null | `null` | 적용된 프로모션 스냅샷 (재계산용) |
 | shipping_policy_applied_snapshot | object | `{"items": [], "address": {}}` | 적용된 배송정책 스냅샷 (재계산용). `items` 는 옵션별 적용 정책 목록(각 항목: `product_option_id`, `policy`), `address` 는 주문 시점 배송지 메타(`country_code`, `zipcode`). 항목이 없어도 `items` 는 빈 배열이다 |
-| admin_memo | null | `null` | 관리자 메모 (내부 관리용) |
+| admin_memo | null | `null` | 관리자 메모 — 고객 응답에서는 항상 `null` (키는 호환용으로 유지, 값은 관리자 주문 API 에서만 제공) |
 | customer_memo | null | `null` | 고객 메모 (주문 시 고객이 남긴 메모) |
 | created_at | string | `2026-07-08T01:44:49+00:00` | 생성 일시 |
 | updated_at | string | `2026-07-08T01:44:49+00:00` | 최종 수정 일시 |
@@ -3149,6 +3363,8 @@ _단건 응답: `data` 객체의 필드._
 | order_status | string | `payment_complete` | 주문상태 (OrderStatusEnum) |
 | order_status_label | string | `결제완료` | `order_status` 의 사람이 읽는 라벨 |
 | order_status_variant | string | `info` | `order_status` 의 표시 변형 키 (UI 배지 색상) |
+| order_status_icon | string\|null | `status-paid` | 상태를 상징하는 **아이콘 의미 토큰** (아이콘 라이브러리 중립 — 어휘는 [admin-claims.md](admin-claims.md#progress_steps-항목) "아이콘 의미 토큰 어휘" 참조). `OrderStatusEnum::icon()` 단일 출처이며, 토큰을 글리프로 바꾸는 표는 템플릿의 Icon 컴포넌트가 가진다 |
+| progress_steps | array | `[{"value":"pending_payment","label":"결제대기","state":"done","icon":"status-payment-pending","variant":"warning"}, …]` | **진행단계 배열** — 관리자·회원·비회원 상세가 같은 배열(`OrderProgressSteps` 단일 출처)로 스텝퍼를 그린다. 순서는 `OrderStatusEnum::progressSequence()` 7단계(결제대기 → 결제완료 → 상품준비중 → 배송준비완료 → 배송중 → 배송완료 → 구매확정). 항목 `state` 는 `done`/`current`/`upcoming`/`off_path` — 배송보류·주문취소·교환/반품 진행·교환/반품 완료는 순서 밖이라 마지막에 `off_path` 칸 하나로 붙고 그때 순서 안에 `current` 는 없다. 도달 지점은 현재 상태와 `paid_at`·상품 `delivered_at`·`confirmed_at` 중 더 나아간 쪽. `icon`·`variant` 는 각 상태 Enum 의 `icon()`/`variant()` |
 | is_partially_cancelled | boolean | `false` | 부분취소 여부 (options 로드 시) |
 | subtotal_amount / subtotal_amount_formatted | integer / string | `184000` / `184,000원` | 상품 합계 (할인 전) |
 | total_discount_amount / total_discount_amount_formatted | integer / string | `0` / `0원` | 총 할인금액 |
@@ -3159,11 +3375,12 @@ _단건 응답: `data` 객체의 필드._
 | total_refunded_amount / total_refunded_amount_formatted | integer / string | `0` / `0원` | 총 환불금액 |
 | total_refunded_points_amount / _formatted | integer / string | `0` / `0원` | 총 환불 포인트 |
 | total_points_used_amount / _formatted | integer / string | `0` / `0원` | 총 포인트 사용액 |
+| points_not_deducted | boolean | `false` | 사용 마일리지가 있는데 회원 잔액에서 차감되지 않은 주문인지(수동 결제완료에서 「마일리지 차감」을 끈 경우 등) — 참이면 환불 때 마일리지 몫이 0 이다 |
 | total_deposit_used_amount / _formatted | integer / string | `0` / `0원` | 총 예치금 사용액 |
 | total_earned_points_amount / _formatted | integer / string | `1840` / `1,840원` | 총 적립 예정 포인트 |
 | mc_subtotal_amount / mc_total_discount_amount / mc_total_shipping_amount / mc_total_amount / mc_total_points_used_amount / mc_total_deposit_used_amount | object | `{"KRW":{"amount":184000,"formatted":"184,000원"}, …}` | 각 금액의 다중 통화 표기 |
 | item_count | integer | `3` | 주문 품목 수 |
-| total_quantity | integer | `4` | 주문 옵션 수량 합계 (options 로드 시) |
+| total_quantity | integer | `4` | 남은 상품 수량 합계 — 취소 행·교환완료로 닫힌 원 행·교환 진행 중인 후속 행을 뺀 회계 주체 행만 센다 (options 로드 시) |
 | ordered_at / ordered_at_formatted | string | `2026-07-05T14:05:44+00:00` / `2026-07-05 23:05:44` | 주문 일시 |
 | paid_at / paid_at_formatted | string \| null | `2026-07-06T14:05:44+00:00` / `2026-07-06 23:05:44` | 결제 일시 |
 | confirmed_at / confirmed_at_formatted | string \| null | `null` | 구매확정 일시 |
@@ -3245,4 +3462,671 @@ HTTP/1.1 200
 
 **설명** 주문번호(`orderNumber`)로 주문 상세를 조회하는 회원/비회원 공용 엔드포인트입니다. `optional.sanctum`으로 로그인 여부에 따라 분기하는데, 로그인 상태면 본인 회원 주문만 `OrderResource`로 반환하고 아니면 404(마이페이지 주문 목록으로 안내), 비로그인이면 `X-Guest-Order-Token`으로 비회원 주문을 매칭해 `GuestOrderResource`로 반환하고 실패 시 404(비회원 조회 폼으로 안내)합니다. 회원이 비회원 토큰을 들고 와도 회원 분기가 우선하며, 실패 사유는 모두 동일한 404로 처리해 정보 노출을 차단합니다. 결제 완료 후 주문번호 기반 주문 완료/상세 페이지에서 사용합니다.
 
+결제 정보(`payment`)의 날짜는 두 벌로 온다 — `vbank_due_at` 은 기계가 읽는 ISO8601 원시 값이고, `vbank_due_at_formatted`·`due_date_formatted` 는 사용자 언어·시간대로 서식을 입힌 표시용 값이다. 화면(템플릿·PG 플러그인 주입 스크립트)은 표시용 값을 그대로 쓰고 원시 값에 다시 서식을 입히지 않는다 — 입히면 모든 언어 화면에 그 플러그인이 정한 한 가지 서식·시간대가 나온다. 번들 PG 플러그인(KG이니시스·NHN KCP·나이스페이먼츠)은 모두 표시용 값만 쓰며, 원시 값은 기계가 읽는 API 소비자(외부 연동)용이다.
 
+
+
+---
+
+## 클레임 신청 (주문 단위)
+
+<a id="클레임-신청-주문-단위"></a>
+
+주문 하나를 기준으로 교환/반품/취소·환불을 신청하는 회원 경로입니다. 응답 리소스의 필드 표(`ClaimResource` / `ClaimItemResource` / `ClaimPaymentResource` / `ClaimImageResource`)는 [claims.md](claims.md#claim-resource) 에 있고, 신청 뒤의 목록·상세·수정·철회는 [claims.md](claims.md), 추가결제는 [claim-payments.md](claim-payments.md), 비회원 경로는 [guest.md](guest.md#비회원-클레임) 에 있습니다.
+
+| 메서드 | URI | 라우트명 |
+| --- | --- | --- |
+| GET | /api/modules/sirsoft-ecommerce/user/orders/{id}/claimable-options | `api.modules.sirsoft-ecommerce.user.orders.claimable-options` |
+| GET | /api/modules/sirsoft-ecommerce/user/orders/{id}/claims | `api.modules.sirsoft-ecommerce.user.orders.claims.index` |
+| POST | /api/modules/sirsoft-ecommerce/user/orders/{id}/claims/preview | `api.modules.sirsoft-ecommerce.user.orders.claims.preview` |
+| POST | /api/modules/sirsoft-ecommerce/user/orders/{id}/exchanges | `api.modules.sirsoft-ecommerce.user.orders.exchanges.store` |
+| POST | /api/modules/sirsoft-ecommerce/user/orders/{id}/returns | `api.modules.sirsoft-ecommerce.user.orders.returns.store` |
+| POST | /api/modules/sirsoft-ecommerce/user/orders/{id}/refund-requests | `api.modules.sirsoft-ecommerce.user.orders.refund-requests.store` |
+| POST | /api/modules/sirsoft-ecommerce/user/orders/{id}/claims/images | `api.modules.sirsoft-ecommerce.user.orders.claim-images.store` |
+
+공통 규칙:
+
+- `{id}` 는 주문 ID 이며 본인 주문이 아니면 존재 여부를 드러내지 않고 404 입니다.
+- 신청 대상 `items[]` 는 `order_option_id` + `quantity` 이고, 같은 옵션을 두 줄로 보내면 422 입니다. 수량은 진행 중인 다른 클레임이 잡아 둔 수량을 뺀 잔여(`available_quantity`) 이내여야 합니다(`claim_quantity_locked`).
+- 도메인 규칙 위반(신청 불가 상태·기간 경과·수량 잠금·사유 사용 불가·청구 방식 불허 등)은 422 로, 메시지는 해당 사유의 다국어 문구입니다. 그 밖의 서버 오류는 500 이며 예외 원문은 응답에 실리지 않습니다.
+
+---
+
+### GET /api/modules/sirsoft-ecommerce/user/orders/{id}/claimable-options
+<!-- @generated:start:api.modules.sirsoft-ecommerce.user.orders.claimable-options -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.user.orders.claimable-options`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimController@claimableOptions`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.user-claims.read`
+- **권한 메모(1.3.0)**: 응답 `abilities.can_cancel`(= `user-orders.cancel`)·`abilities.can_request`(= `user-claims.request`) — 신청 버튼 잠금 키. 즉시 취소 분기(`refund_branch=auto`) 상품은 `can_cancel` 도 필요하다.
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 주문 ID |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/user/orders/120/claimable-options HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| order_id | integer | `120` | 주문 ID |
+| order_number | string | `20260823-1130558472` | 주문번호 |
+| base_currency | string | `KRW` | 이 주문의 금액 표기 기준 통화. 신청서 화면이 보조 통화 목록에서 기준 통화를 걸러 낼 때 쓴다 — 그 기준을 주문 상세 응답에서 따로 읽으면 두 응답의 도착 순서에 따라 기준 통화가 보조 통화 줄에 한 번 더 나열된다. 판정 규칙은 주문 상세의 `base_currency` 와 같다(거래 시점 통화 스냅샷 → 없으면 상점 기본 통화) |
+| resolved_type | string\|null | `null` | 취소·환불 신청이 열리는 상품들의 분기 — 전부 자동 전이면 `auto`, 전부 운영자 승인 대기면 `request`, 섞여 있으면 `mixed`, 열린 상품이 없으면 `null` |
+| options[].option | object | — | 주문 옵션 (`OrderOptionResource`, 취소된 옵션은 제외) |
+| options[].available_quantity | integer | `1` | 지금 신청할 수 있는 잔여 수량 (옵션 수량 − 진행 중 클레임 점유 수량) |
+| options[].locked_quantity | integer | `0` | 진행 중인 교환·반품·환불신청이 잡아 둔 수량 |
+| options[].claimable_types | string[] | `["exchange","return"]` | 이 옵션에 열린 클레임 유형 (`exchange`, `return`, `refund`). 잔여 수량이 0 이면 빈 배열 |
+| options[].refund_branch | string\|null | `null` | 취소·환불 신청 시 분기 — 자동 전이 대상 상태면 `auto`, 운영자 승인 대상 상태면 `request`, 둘 다 아니면 `null`. **두 값 모두 환불신청서를 만든다** — 다른 것은 승인·완료까지 자동으로 진행하는지 여부뿐이다 |
+| reasons.exchange | array | — | 교환 사유 카탈로그 (`ClaimReasonResource`). **`name` 은 다국어 맵**(`{"ko":…,"en":…}`)이고 화면에 그대로 쓸 문자열은 `localized_name` 이다 — `name` 을 라벨에 바인딩하면 객체가 그대로 찍힌다 |
+| reasons.return | array | — | 반품 사유 카탈로그 |
+| reasons.refund | array | — | 취소·환불 사유 카탈로그 |
+| settings.allowed_charge_methods | string[] | `["deduct_from_refund","pay_on_request"]` | 허용된 배송비 청구 방식 (환경설정 `claim.allowed_charge_methods`) |
+| settings.charge_payment_methods | string[] | `["card","point"]` | 추가결제에 쓸 수 있는 결제 수단 (환경설정 `claim.charge_payment_methods`) |
+| settings.charge_payment_method_labels | object | `{"card":"신용카드","point":"포인트결제"}` | `charge_payment_methods` 의 값마다 현재 언어 표시명(결제수단 카탈로그 이름). 화면은 `card`·`point` 를 자체 문구로, 그 밖의 수단은 이 이름으로 그린다 |
+| settings.max_images | integer | `5` | 신청서당 첨부 이미지 상한 (`claim.max_images`) |
+| settings.image_max_size_kb | integer | `5120` | 첨부 1장 크기 상한 KB (`claim.image_max_size_kb`) |
+| settings.allowed_extensions | string[] | `["jpeg","jpg","png","gif","webp"]` | 서버가 받는 확장자 전수. 화면의 파일 선택창 필터와 서버 검증이 이 하나를 읽는다 |
+| settings.accept | string | `.jpeg,.jpg,.png,.gif,.webp` | 파일 선택창에 그대로 넣는 필터 문자열. `image/*` 로 두면 서버가 받지 않는 확장자를 고를 수 있고, 고르면 이유 없이 422 가 된다 |
+| settings.request_period_days | integer | `7` | 배송완료 후 신청 가능 일수 (`claim.request_period_days`, 0 이면 제한 없음) |
+| settings.exchange_requestable_statuses | string[] | `["delivered","confirmed"]` | 교환 신청이 열리는 주문 옵션 상태 |
+| settings.return_requestable_statuses | string[] | `["delivered","confirmed"]` | 반품 신청이 열리는 주문 옵션 상태 |
+| settings.instant_cancel_statuses | string[] | `["pending_order","pending_payment","payment_complete"]` | 취소·환불 신청이 **자동 전이**로 처리되는 상태 (`claim.instant_cancel_statuses`). 이 상태의 상품도 환불신청서를 만들고, 승인·환불완료까지 자동으로 진행한다 |
+| settings.refund_request_statuses | string[] | `["preparing","shipping_ready"]` | 취소·환불 신청이 환불신청서(운영자 승인)로 접수되는 상태 (`claim.refund_request_statuses`) |
+| refund_auto_approved | boolean | `false` | 이 주문의 환불이 **사람 손 없이 끝나는지** (P16·P17). 판정은 결제수단 카탈로그(`PaymentMethodResolver::autoApprovesRefund()`)가 소유하며, 운영자가 클레임 정책 탭에서 고른 목록(`claim.auto_approve_refund_payment_methods`)과 플러그인 선언을 함께 본다. **분기(`resolved_type`·`refund_branch`)와 다른 축이다** — 무통장·가상계좌는 분기가 `auto` 여도 이 값이 거짓이라 접수 뒤 `requested` 에서 멈추고 운영자 승인 → [환불하기] 를 기다린다. 거짓이면 신청서는 「자동 처리」가 아니라 「판매자 확인」 문구로 안내해야 한다 |
+| refund_account.required | boolean | `false` | 이 주문의 환불이 **계좌 이체**로 나가는지 (`PaymentMethodResolver::refundMethod()` 판정 = `bank`). 참이면 취소·환불 신청서가 환불 계좌 입력칸을 세운다. 어느 결제수단이 계좌 환불인지는 확장 결제수단이 자기 카탈로그에 선언하므로 화면이 결제수단 코드로 재현하지 않는다 |
+| refund_account.banks | array | `[{"code":"004","name":{"ko":"국민은행"}}]` | 운영자가 주문설정에 등록한 은행 목록 (`order_settings.banks`). `required` 가 거짓이면 빈 배열이다. `name` 은 다국어 맵이라 라벨은 `$localized(name)` 로 푼다 |
+| refund_account.prefill | object\|null | `{"bank_code":"004","account_number":"********7890","holder":"홍**","masked":true}` | 주문 시 등록해 둔 환불 계좌를 **가린 모양**으로 싣는다(계좌번호 뒤 4자리·예금주 첫 글자, `masked: true`). 이 응답은 비회원 조회 토큰을 가진 누구에게나 나가므로 원문을 싣지 않는다. 신청서는 이 값으로 입력칸을 채우고, 구매자가 손대지 않고 제출하면(세 값이 가린 모양과 정확히 같으면) 서버가 등록 계좌 원문으로 되돌려 저장한다 — 한 칸이라도 고치면 제출값을 쓴다. 세 값이 모두 있을 때만 실리고 그 밖에는 `null`, `required` 가 거짓이면 실리지 않는다 |
+| pending_images | array | — | 이 주문에 올려 둔 임시 첨부 ([ClaimImageResource](claims.md#claim-image-resource), `claimable_type=pending`) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "신청 가능 상품을 조회했습니다.",
+    "data": {
+        "order_id": 120,
+        "order_number": "20260823-1130558472",
+        "base_currency": "KRW",
+        "resolved_type": null,
+        "options": [
+            {
+                "option": { "id": 310, "product_name": "반팔 티셔츠", "option_name": "화이트 / M", "quantity": 1, "option_status": "delivered" },
+                "available_quantity": 1,
+                "locked_quantity": 0,
+                "claimable_types": ["exchange", "return"],
+                "refund_branch": null
+            }
+        ],
+        "reasons": {
+            "exchange": [ { "code": "size_mismatch", "name": { "ko": "사이즈가 맞지 않음", "en": "Size Does Not Fit" }, "localized_name": "사이즈가 맞지 않음", "fault_type": "customer", "fault_type_label": "고객 귀책", "is_user_selectable": true, "sort_order": 1 } ],
+            "return": [ { "code": "changed_mind", "name": { "ko": "단순 변심", "en": "Changed Mind" }, "localized_name": "단순 변심", "fault_type": "customer", "fault_type_label": "고객 귀책", "is_user_selectable": true, "sort_order": 1 } ],
+            "refund": [ { "code": "changed_mind", "name": { "ko": "단순 변심", "en": "Changed Mind" }, "localized_name": "단순 변심", "fault_type": "customer", "fault_type_label": "고객 귀책", "is_user_selectable": true, "sort_order": 1 } ]
+        },
+        "settings": {
+            "allowed_charge_methods": ["deduct_from_refund", "pay_on_request", "pay_on_approval"],
+            "charge_payment_methods": ["card", "point"],
+            "charge_payment_method_labels": { "card": "신용카드", "point": "포인트결제" },
+            "max_images": 5,
+            "image_max_size_kb": 5120,
+            "allowed_extensions": ["jpeg", "jpg", "png", "gif", "webp"],
+            "accept": ".jpeg,.jpg,.png,.gif,.webp",
+            "request_period_days": 7,
+            "exchange_requestable_statuses": ["delivered", "confirmed"],
+            "return_requestable_statuses": ["delivered", "confirmed"],
+            "instant_cancel_statuses": ["pending_order", "pending_payment", "payment_complete"],
+            "refund_request_statuses": ["preparing", "shipping_ready"]
+        },
+        "refund_auto_approved": true,
+        "refund_account": { "required": false, "banks": [], "prefill": null },
+        "pending_images": []
+    }
+}
+```
+
+**오류 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-claims.read`)이 없는 경우 |
+| 404 | Not Found | 주문이 없거나 본인 주문이 아닌 경우 |
+| 500 | Server Error | 조회 중 예기치 못한 오류 |
+
+<!-- @generated:end -->
+
+**설명** 클레임 신청 화면을 여는 첫 호출입니다. 주문의 각 상품에 어떤 클레임이 열려 있는지(`claimable_types`), 잔여 수량, 취소·환불 신청 시 즉시취소/환불신청 분기, 사유 카탈로그, 화면이 따라야 할 설정값, 작성 중 올려 둔 임시 첨부를 한 번에 돌려줍니다. 교환·반품이 진행 중인 상품은 옵션 상태가 코스 상태(`exchange_in_progress`/`return_in_progress`)라 `claimable_types` 가 비고, 직접 환불신청이 진행 중인 상품은 상태가 그대로라도 `locked_quantity` 만큼 잔여가 줄어듭니다. `resolved_type` 이 `mixed` 면 자동 전이 상품과 승인 대기 상품을 한 신청에 섞을 수 없으므로 화면이 상품 선택을 분기별로 나눠야 합니다 — 한쪽은 바로 환불되고 다른 쪽은 심사를 기다려, 고객이 보는 환불 예정액과 실제 환불액이 갈리기 때문입니다. `refund_account` 는 그 주문의 환불이 계좌 이체로 나가는지, 그때 고를 은행 목록, 그리고 주문 시 등록해 둔 계좌(`prefill`)입니다 — 화면은 이 값으로만 계좌 입력칸을 세우고 채웁니다. 프리필은 반드시 `prefill` 을 쓰고 표시용 응답의 마스킹된 계좌를 되쓰지 않습니다(마스킹 값을 되보내면 별표가 섞인 계좌가 저장됩니다). 계좌 입력칸은 반품·취소·환불 세 유형에 서고, 교환은 저가 옵션으로 바꿔 **차액이 구매자에게 돌아갈 때만** 섭니다.
+
+---
+
+### GET /api/modules/sirsoft-ecommerce/user/orders/{id}/claims
+<!-- @generated:start:api.modules.sirsoft-ecommerce.user.orders.claims.index -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.user.orders.claims.index`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimController@orderClaims`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.user-claims.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 주문 ID (본인 주문이 아니면 존재를 드러내지 않고 404) |
+| type | query | string | 아니오 | `exchange` \| `return` \| `refund` \| `cancel` | 유형 서브탭. 비우면(`?type=` 포함) 접수 건이 있는 첫 유형을 서버가 고른다 — 교환 → 반품 → 취소 → 환불 순, 넷 다 없으면 `exchange`. 고른 값은 응답 `claim_type` 에 실린다 |
+| status | query | string | 아니오 | 유형별 상태 Enum | 상태 필터 (`type` 과 함께 쓴다 — 유형을 비우면 상태 어휘는 교환 기준으로 검증된다) |
+| from | query | date | 아니오 | — | 신청일 시작 (그날 00:00:00 부터) |
+| to | query | date | 아니오 | — | 신청일 종료 (그날 23:59:59 까지) |
+| page | query | integer | 아니오 | 1 이상 | 페이지 번호 |
+| per_page | query | integer | 아니오 | 1~50 | 페이지당 건수 (기본 20) |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/user/orders/120/claims?type=return&page=1&per_page=20 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| data | array | — | 이 주문에서 접수된 그 유형의 신청서 목록 ([ClaimResource](claims.md#claim-resource) 목록 표현, 최신순) |
+| pagination | object | — | 페이지 정보 (`current_page` / `per_page` / `from` / `to` / `has_more_pages` / `last_page` / `total`) |
+| claim_type | string | `return` | 이 응답이 실은 유형 — `type` 을 지정했으면 그 값, 비웠으면 서버가 고른 값. 화면은 주소에 유형이 없을 때 이 값으로 활성 서브탭을 세운다 |
+| counts | object | `{"exchange": 0, "return": 1, "refund": 0, "cancel": 0}` | 이 주문의 유형별 접수 건수 (네 유형 전부). 목록과 같은 기준으로 세므로 환불 건수에 취소 발 환불은 들지 않는다 |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "신청 내역을 조회했습니다.",
+    "data": {
+        "data": [
+            { "claim_number": "RT20260823-1358024460", "claim_type": "return", "status": "requested", "order_number": "20260823-1130558472" }
+        ],
+        "pagination": {
+            "current_page": 1,
+            "per_page": 20,
+            "from": 1,
+            "to": 1,
+            "has_more_pages": false,
+            "last_page": 1,
+            "total": 1
+        },
+        "claim_type": "return",
+        "counts": { "exchange": 0, "return": 1, "refund": 0, "cancel": 0 }
+    }
+}
+```
+
+**오류 응답**
+
+401 (미인증) / 403 (`user-claims.read` 없음) / 404 (본인 주문이 아니거나 없음) / 422 (유형·상태 어휘 밖, 페이지 범위 밖) / 500.
+
+<!-- @generated:end -->
+
+**설명** 마이페이지 주문 상세의 '이 주문의 취소·반품·교환' 섹션이 읽는 목록입니다. 회원 신청내역([claims.md](claims.md) `GET /user/claims`)·비회원 주문상세 섹션([guest.md](guest.md) `GET /guest/orders/{orderNumber}/claims`)과 같은 계약(유형 서브탭 하나 · 최신순 · 페이지)이며 조회도 같은 지점입니다 — 회원 목록에 주문 필터를 얹지 않고 주문 스코프 경로를 따로 두는 것은, 주문 상세가 이미 주문 ID 로 형제 자원(`claimable-options`)을 부르고 있어 같은 모양이 화면에 자연스럽고, 본인 주문이 아니면 존재를 드러내지 않고 404 로 닫는 규칙을 그 형제와 함께 두기 위해서입니다. 화면은 주문 응답이 도착해 주문 ID 를 얻은 뒤 이 목록을 부르고, 유형 서브탭·페이지는 주문 상세 주소의 `?type=`·`?page=` 로 왕복합니다. 주소에 유형이 없으면 화면은 `type` 을 비워 보내고, 서버가 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불)을 골라 `claim_type` 으로 알려 줍니다 — 종전에는 늘 교환이어서 취소만 있는 주문에서 '접수된 건이 없습니다' 가 먼저 보였습니다. `counts` 는 유형별 접수 건수이고 회원 신청내역(`GET /user/claims`)에는 이 두 필드가 없습니다(그 화면은 주소가 늘 유형을 실어 보냅니다).
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/user/orders/{id}/claims/preview
+<!-- @generated:start:api.modules.sirsoft-ecommerce.user.orders.claims.preview -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.user.orders.claims.preview`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimController@preview`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.user-claims.request`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 주문 ID |
+| type | body | string | 예 | `exchange`, `return`, `refund` | 미리보기할 클레임 유형 |
+| items | body | array | 예 | min 1, max 200 | 신청 대상 `[{order_option_id, quantity, new_product_option_id?, custom_options?}]` (`new_product_option_id` 는 교환 전용 — 없으면 동일 옵션 교환) |
+| reason_code | body | string | `type` 이 `exchange`·`return` 이면 예 | max 50 | 사유 코드. 귀책 구분이 회수·왕복 배송비의 부담 주체를 정하므로 교환·반품은 **필수**다(없으면 `reason_code` 필드 오류 422). `refund` 는 회수 배송이 없어 선택 |
+| charge_method | body | string | 아니오 | 환경설정 `claim.allowed_charge_methods` | 배송비 청구 방식 (교환·반품) |
+| refund_priority | body | string | 아니오 | `pg_first`, `points_first` | 환불 배분 우선순위 (미전달 시 `pg_first`) |
+| redelivery_address | body | object | 아니오 | — | (교환) 재발송지 — `zipcode`(max 20), `country_code`(2자). 배송비 재산정에만 쓰인다 |
+| claim_number | body | string | 아니오 | max 50 | 수정 화면의 미리보기면 자기 신청서 번호 — 그 신청서가 잡아 둔 수량·코스 상태를 판정에서 제외한다 |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/user/orders/120/claims/preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "type": "return",
+    "items": [ { "order_option_id": 310, "quantity": 1 } ],
+    "reason_code": "changed_mind",
+    "charge_method": "pay_on_request"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+공통으로 `type` 이 실리고, 유형별로 형태가 다릅니다.
+
+_교환 (`type=exchange`)_
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| shipping_fee | object | — | 배송비 산정 결과 (`fee`, `extra_fee`, `mc_fee`, `mode`, `claim_type`, `fault_type`, `charged`, `reason`, `redelivery_changed`, `groups`) |
+| adjustment | object | — | 교환으로 돌려주는 금액의 재계산 결과 (취소 미리보기와 같은 `AdjustmentResult` 형태). **교환은 옵션 치환 재계산**이다 — `recalculated_snapshot`·`mc_recalculated_snapshot`·`recalculated_coupons`·`total_list_price_amount` 는 대상 상품을 신규 옵션(단가·정가·적립 규칙·추가옵션)으로 바꿔 넣고 쿠폰 재배분·배송비·부가세·적립까지 다시 계산한 "교환 후" 값이며, 환불·청구 산식(`refund_*`·`shipping_difference`·`discount_difference`)은 치환 없이 계산한다(옵션 차액은 `additional_product_amount`/`refund_product_amount` 가 다룬다). `substituted_items` 는 그 치환의 근거 행 `[{order_option_id, quantity, product_option_id|null, unit_price, new_unit_price, line_key, option_label}]` 이고, 고가 교환에서도 `cancel_blocked` 는 `false` 다 |
+| items | array | — | 상품별 교환 계획 (`order_option_id`, `quantity`, `is_option_change`, `new_product_option_id`, `unit_price`, `new_unit_price`, `price_difference`) |
+| price_difference | number | `0` | 옵션 차액 합계 (양수 추가 결제 / 음수 환불) |
+| additional_product_amount | number | `0` | 추가로 받을 상품 금액 |
+| refund_product_amount | number | `0` | 돌려줄 상품 금액 |
+| mc_price_difference | object\|null | `{"KRW":3000,"USD":2.25}` | 옵션 차액 합계의 통화별 환산 (주문 통화 스냅샷의 동결 환율. 스냅샷이 없으면 `null`). 요약 카드의 형제 금액 줄과 **같은 규약**이라 이 값이 없으면 그 줄만 기준 통화 하나로 남는다 |
+| mc_additional_product_amount | object\|null | `{"KRW":3000,"USD":2.25}` | 추가로 받을 상품 금액의 통화별 환산 (주문 통화 스냅샷의 동결 환율. 스냅샷이 없으면 `null`). 요약 카드의 형제 금액 줄과 **같은 규약**이라 이 값이 없으면 그 줄만 기준 통화 하나로 남는다 |
+| mc_refund_product_amount | object\|null | `{"KRW":0,"USD":0}` | 돌려줄 상품 금액의 통화별 환산 (주문 통화 스냅샷의 동결 환율. 스냅샷이 없으면 `null`). 요약 카드의 형제 금액 줄과 **같은 규약**이라 이 값이 없으면 그 줄만 기준 통화 하나로 남는다 |
+| total_charge_amount | number | `6000` | 총 청구액 (배송비 + 추가 상품 금액) |
+| mc_total_charge_amount | object\|null | `{"KRW":9000,"USD":6.75}` | 총 청구액의 통화별 환산 (주문 통화 스냅샷의 동결 환율. 스냅샷이 없으면 `null`) |
+| fault_type | string | `customer` | 사유의 귀책 구분 |
+| charge_method | string\|null | `pay_on_request` | 적용된 청구 방식 |
+| requires_payment | boolean | `true` | 신청 시 추가결제가 필요한지 (청구액 > 0 이고 결제형 청구 방식) |
+
+_반품 (`type=return`)_
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| shipping_fee | object | — | 배송비 산정 결과 (위와 동일 형태) |
+| adjustment | object | — | 반품 환불 금액 재계산 결과 (`refund_amount`, `refund_points_amount`, `refund_total`, `shipping_difference`, `cancelled_items`, `refund_priority`, `original_snapshot`/`recalculated_snapshot` + `formatted`, `mc_*_snapshot`, `restored_coupons`, `remaining_*_balance`, `cancel_blocked` …). 신청서 요약 카드의 "주문금액 비교(전/후)" 표와 환불 요약은 이 객체만 읽는다 — `substituted_items` 는 항상 `[]` |
+| fault_type | string | `customer` | 귀책 구분 |
+| charge_method | string\|null | `pay_on_request` | 적용된 청구 방식 |
+| total_charge_amount | number | `3000` | 총 청구액 (반품 배송비) |
+| mc_total_charge_amount | object\|null | `{"KRW":3000,"USD":2.25}` | 총 청구액의 통화별 환산 (배송비 산정이 낸 값. 스냅샷이 없으면 `null`) |
+| deducted_shipping_fee | number | `3000` | 환불금에서 실제로 차감한 회수 배송비. 청구 방식이 `deduct_from_refund` 일 때만 0 이 아니다 — 별도 결제 방식(`pay_on_request`/`pay_on_approval`)은 배송비를 클레임 결제 건으로 따로 받으므로 0 이다 |
+| mc_deducted_shipping_fee | object\|null | `{"KRW":3000,"USD":2.25}` | 차감한 회수 배송비의 통화별 환산 (주문 통화 스냅샷의 동결 환율. 스냅샷이 없으면 `null`). 요약 카드의 형제 금액 줄과 **같은 규약**이라 이 값이 없으면 그 줄만 기준 통화 하나로 남는다 |
+| refund_before_deduction | number | `29000` | 회수 배송비를 빼기 **전**의 환불 예정액. `adjustment.refund_total` 은 이미 차감된 뒤의 금액이라, 화면이 "환불예정 / 회수비 / 최종" 세 줄을 세우려면 이 값이 필요하다. 차감하지 않는 방식에서는 `adjustment.refund_total` 과 같다 |
+| mc_refund_before_deduction | object\|null | `{"KRW":29000,"USD":21.75}` | 차감 전 환불 예정액의 통화별 환산 (주문 통화 스냅샷의 동결 환율. 스냅샷이 없으면 `null`) |
+| requires_payment | boolean | `true` | 신청 시 추가결제가 필요한지 |
+
+_취소·환불 (`type=refund`)_
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| branch | string | `auto` | 이 상품들로 신청하면 타게 될 분기 (`auto` 접수 후 자동 전이 / `request` 접수 후 운영자 승인 대기) |
+| adjustment | object | — | 환불 금액 재계산 결과 (취소 미리보기 `estimate-refund` 와 같은 형태 — 전/후 스냅샷·다통화 스냅샷·복원 쿠폰·잔여 잔액·`cancel_blocked` 포함). 신청서의 비교표·환불 우선순위·환불 불가 안내가 전부 이 객체를 읽는다 |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "신청 예상 금액을 계산했습니다.",
+    "data": {
+        "type": "return",
+        "shipping_fee": { "fee": 3000, "extra_fee": 0, "mode": "fixed", "claim_type": "return", "fault_type": "customer", "charged": true },
+        "adjustment": { "refund_amount": 29000, "refund_points_amount": 0, "refund_total": 29000, "refund_priority": "pg_first" },
+        "fault_type": "customer",
+        "charge_method": "pay_on_request",
+        "total_charge_amount": 3000,
+        "mc_total_charge_amount": { "KRW": 3000, "USD": 2.25 },
+        "deducted_shipping_fee": 3000,
+        "refund_before_deduction": 29000,
+        "mc_refund_before_deduction": { "KRW": 29000, "USD": 21.75 },
+        "requires_payment": true
+    }
+}
+```
+
+**오류 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-claims.request`)이 없는 경우 |
+| 404 | Not Found | 주문이 없거나 본인 주문이 아닌 경우 |
+| 422 | Unprocessable Entity | 검증 위반, 신청 불가 상태(`claim_option_not_claimable`), 신청 기간 경과(`claim_request_period_expired`), 수량 잠금(`claim_quantity_locked`), 사유 사용 불가(`claim_reason_unavailable`), 청구 방식 불허(`claim_charge_method_not_allowed`), 분기 혼재(`claim_refund_branch_mixed`) |
+| 500 | Server Error | 계산 중 예기치 못한 오류 |
+
+<!-- @generated:end -->
+
+**설명** 신청 전에 배송비·차액·환불액을 미리 계산합니다. 미리보기는 신청과 **같은 자격 가드**를 탑니다 — 신청 불가 상태·기간·수량 잠금이면 신청과 같은 422 를 돌려주므로, 화면은 미리보기 성공을 "신청 가능" 의 근거로 써도 됩니다. 수정 화면에서는 `claim_number` 를 넘겨야 자기 신청서가 잡아 둔 수량과 코스 상태가 판정에서 빠집니다(안 넘기면 자기 신청서에 막혀 신청 불가로 나온다). 금액 계산의 기준은 서버이며 화면은 표시만 합니다.
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/user/orders/{id}/exchanges
+<!-- @generated:start:api.modules.sirsoft-ecommerce.user.orders.exchanges.store -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.user.orders.exchanges.store`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimController@storeExchange`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.user-claims.request`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 주문 ID |
+| items | body | array | 예 | min 1, max 200 | 교환 대상 `[{order_option_id, quantity, new_product_option_id?, custom_options?}]` |
+| items.*.new_product_option_id | body | integer | 아니오 | 같은 상품의 옵션 | 교환받을 옵션 (미전달·`null` 이면 동일 옵션 교환) |
+| reason_code | body | string | 예 | `exchange` 유형의 활성·사용자 선택 가능 사유 | 교환 사유 |
+| reason_detail | body | string | 아니오 | max 1000 | 사유 상세 |
+| charge_method | body | string | 아니오 | 환경설정 `claim.allowed_charge_methods` | 배송비·차액 청구 방식. 청구액이 0 이면 무시 |
+| payment_method | body | string | 아니오 | 환경설정 `claim.charge_payment_methods` | `pay_on_request` 일 때 결제 수단 (`point` 는 회원만) |
+| refund_priority | body | string | 아니오 | `pg_first`, `points_first` | 옵션 차액이 음수일 때 환불 배분 우선순위 |
+| refund_bank | body | object | 아니오 | `bank_code`(max 10) · `account_number`(max 50) · `holder`(max 50) | 환불 계좌. 저가 옵션으로 바꿔 **차액이 구매자에게 돌아가는** 교환에서, 그 환불이 계좌 이체로 나가는 주문(`claimable-options` 의 `refund_account.required=true`)일 때 화면이 싣는다. **세 값이 함께 오거나 하나도 오지 않아야 한다** — 일부만 오면 422 다. 값이 오면 교환 신청서 행에 저장되고, 완료 시 만들어지는 환불 레코드가 그 값을 이어받는다 |
+| image_ids | body | integer[] | 아니오 | max = 환경설정 `claim.max_images`(기본 5) | 귀속시킬 임시 첨부 ID (이 주문에 올린 `pending` 첨부만). 상한은 운영자 설정을 그대로 따른다 |
+| redelivery_address | body | object | 아니오 | — | 재발송지 — `recipient_name`, `phone`, `zipcode`, `address1`, `address2`, `country_code`(원 배송지와 같은 국가만), `changed_by_user` |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/user/orders/120/exchanges HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "items": [ { "order_option_id": 310, "quantity": 1, "new_product_option_id": 56 } ],
+    "reason_code": "size_mismatch",
+    "reason_detail": "한 치수 크게",
+    "charge_method": "pay_on_request",
+    "payment_method": "card",
+    "image_ids": [9]
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| claim | object | — | 접수된 교환 신청서 ([ClaimResource](claims.md#claim-resource), 결제 블록 포함) |
+| payment | object\|null | — | `pay_on_request` 로 청구액이 있으면 만들어진 결제 건 ([ClaimPaymentResource](claims.md#claim-payment-resource)), 아니면 `null` |
+| requires_pg_payment | boolean | `true` | 결제창을 열어야 하는지 (결제 건이 없거나 마일리지로 즉시 결제되면 `false`) |
+| pg_provider | string\|null | `sirsoft-kginicis` | (결제 건이 있을 때) PG provider id — 결제 진입 페이로드는 `sirsoft-` 접두를 붙인다(`ClaimPaymentResource.pg_provider` 는 접두 없는 raw id) |
+| pg_payment_handler | string\|null | `sirsoft-pay_kginicis.requestPayment` | (결제 건이 있을 때) 결제창 핸들러 |
+| pg_payment_data | object\|null | — | (결제 건이 있을 때) 결제창 파라미터 — [claim-payments.md](claim-payments.md) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "신청이 접수되었습니다.",
+    "data": {
+        "claim": {
+            "claim_number": "EX20260823-1349207731",
+            "claim_type": "exchange",
+            "status": "payment_pending",
+            "total_charge_amount": 8000,
+            "additional_product_amount": 2000,
+            "items": [ { "order_option_id": 310, "quantity": 1, "is_option_change": true, "new_option_label": "화이트 / L", "price_difference": 2000 } ],
+            "images": [ { "id": 9, "claimable_type": "exchange", "claimable_id": 17 } ],
+            "outstanding_amount": 8000,
+            "pending_payment": { "payment_number": "CP20260823-1512087213" }
+        },
+        "payment": { "payment_number": "CP20260823-1512087213", "payment_status": "pending", "total_amount": 8000 },
+        "requires_pg_payment": true,
+        "pg_provider": "sirsoft-kginicis",
+        "pg_payment_handler": "sirsoft-pay_kginicis.requestPayment",
+        "pg_payment_data": { "order_number": "CP20260823-1512087213", "amount": 8000, "currency": "KRW", "claim_type": "exchange", "claim_number": "EX20260823-1349207731" }
+    }
+}
+```
+
+**오류 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-claims.request`)이 없는 경우 |
+| 404 | Not Found | 주문이 없거나 본인 주문이 아닌 경우 |
+| 422 | Unprocessable Entity | 검증 위반(사유 코드 부재, 재발송지 국가 변경 등), 미리보기와 같은 자격 위반, 교환 옵션 무효·재고 부족(`exchange_target_option_invalid` / `exchange_target_out_of_stock`), 첨부 부재·장수 초과(`claim_image_not_found` / `claim_image_limit_exceeded`), 결제 수단 불허(`claim_payment_method_not_allowed`), 청구가 발생하는데 주문의 거래 시점 통화 스냅샷을 읽을 수 없어 결제 통화 기준을 세울 수 없는 경우(`claim_payment_currency_unavailable` — 신청 시점 결제 진입이 실패할 건이므로 **결제행을 만들기 전에** 거절합니다) |
+| 500 | Server Error | 접수 중 예기치 못한 오류 |
+
+<!-- @generated:end -->
+
+**설명** 교환을 접수합니다(201). 접수되는 순간 대상 상품 행은 `exchange_in_progress` 로 바뀌고(부분 수량이면 분할), 첨부(`image_ids`)는 이 신청서에 귀속됩니다. 청구액이 있고 청구 방식이 `pay_on_request` 면 결제 건을 만들고 신청서를 `payment_pending` 으로 옮기며 응답 최상위에 결제 진입 4키를 싣습니다 — `payment_method=point` 면 마일리지로 즉시 결제되어 `requires_pg_payment=false`, 신청서는 `paid`(결제완료)로 넘어갑니다(자동 승인이 켜져 있으면 이어서 `approved`). `pay_on_approval` 은 운영자 승인 시점에 결제 건이 만들어지고, `deduct_from_refund` 는 환불액에서 차감합니다. 재발송지 국가는 원 배송지와 같아야 하며(D14), 바꾸려면 신청을 철회하고 새로 넣습니다.
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/user/orders/{id}/returns
+<!-- @generated:start:api.modules.sirsoft-ecommerce.user.orders.returns.store -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.user.orders.returns.store`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimController@storeReturn`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.user-claims.request`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 주문 ID |
+| items | body | array | 예 | min 1, max 200 | 반품 대상 `[{order_option_id, quantity}]` |
+| reason_code | body | string | 예 | `return` 유형의 활성·사용자 선택 가능 사유 | 반품 사유 |
+| reason_detail | body | string | 아니오 | max 1000 | 사유 상세 |
+| charge_method | body | string | 아니오 | 환경설정 `claim.allowed_charge_methods` | 반품 배송비 청구 방식. 청구액이 0 이면 무시 |
+| payment_method | body | string | 아니오 | 환경설정 `claim.charge_payment_methods` | `pay_on_request` 일 때 결제 수단 |
+| refund_priority | body | string | 아니오 | `pg_first`, `points_first` | 환불 배분 우선순위 |
+| refund_bank | body | object | 조건부 | `bank_code`(max 10) · `account_number`(max 50) · `holder`(max 50) | 환불 계좌. 계좌 이체로 환불되는 주문(`claimable-options` 의 `refund_account.required=true`)에서는 **필수**다 — 비면 `422 refund_bank`(주문 시점 등록 계좌가 있으면 생략 가능). 취소·환불 신청과 같은 게이트다. **세 값이 함께 오거나 하나도 오지 않아야 한다** — 일부만 오면 422 다. 값이 오면 **그 신청서 행**(`refund_bank_*`)에 저장된다. 주문 결제행은 신청 접수만으로는 바뀌지 않는다 — 실제 송금이 읽는 자리라, 그 환불을 **실행하는 시점**에 실행 대상 환불의 계좌로 갱신된다(즉시취소는 접수가 곧 실행이라 그 자리에서 반영된다) |
+| image_ids | body | integer[] | 아니오 | max = 환경설정 `claim.max_images`(기본 5) | 귀속시킬 임시 첨부 ID |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/user/orders/120/returns HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "items": [ { "order_option_id": 310, "quantity": 1 } ],
+    "reason_code": "changed_mind",
+    "charge_method": "deduct_from_refund"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+교환 신청과 같은 형태 — `claim`(반품 [ClaimResource](claims.md#claim-resource), 결제 블록 포함) + `payment` + 결제 진입 4키.
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "신청이 접수되었습니다.",
+    "data": {
+        "claim": {
+            "claim_number": "RT20260823-1402331875",
+            "claim_type": "return",
+            "status": "requested",
+            "charge_method": "deduct_from_refund",
+            "claim_shipping_fee": 3000,
+            "total_charge_amount": 3000,
+            "requires_additional_payment": false,
+            "items": [ { "order_option_id": 310, "quantity": 1, "status": "requested" } ],
+            "payments": [],
+            "outstanding_amount": 3000,
+            "pending_payment": null,
+            "payment_entry": null
+        },
+        "payment": null,
+        "requires_pg_payment": false
+    }
+}
+```
+
+**오류 응답**
+
+교환 신청과 같습니다 (401 / 403 / 404 / 422 / 500). 반품은 옵션 변경이 없으므로 `exchange_target_*` 계열은 발생하지 않습니다.
+
+<!-- @generated:end -->
+
+**설명** 반품을 접수합니다(201). 대상 상품 행은 `return_in_progress` 로 바뀌고(부분 수량이면 분할), 반품 배송비는 사유의 귀책 구분과 배송정책(고정비/정책/없음)으로 산정됩니다. `deduct_from_refund` 면 환불 시 환불액에서 배송비를 빼고(`outstanding_amount` 는 남지만 결제 건은 만들지 않는다), `pay_on_request` 면 교환과 같은 결제 흐름을 탑니다. 회수(택배사·송장)는 운영자가 승인 뒤 진행하며 `collection_*` 필드로 드러납니다.
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/user/orders/{id}/refund-requests
+<!-- @generated:start:api.modules.sirsoft-ecommerce.user.orders.refund-requests.store -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.user.orders.refund-requests.store`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimController@storeRefund`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.user-claims.request`
+- **권한 메모(1.3.0)**: 선택 상품이 즉시 취소 분기(`auto`)면 `sirsoft-ecommerce.user-orders.cancel` 도 요구한다. 없으면 403(`messages.claims.instant_cancel_forbidden`).
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 주문 ID |
+| items | body | array | 예 | min 1, max 200 | 대상 `[{order_option_id, quantity}]` — 전부 같은 분기(`auto` 또는 `request`)여야 한다 |
+| reason_code | body | string | 예 | `refund` 유형의 활성·사용자 선택 가능 사유 | 취소·환불 사유 |
+| reason_detail | body | string | 아니오 | max 1000 | 사유 상세 |
+| refund_priority | body | string | 아니오 | `pg_first`, `points_first` | 환불 배분 우선순위 |
+| refund_bank | body | object | 아니오 | — | 무통장 주문의 환불 계좌 — `bank_code`(max 10), `account_number`(max 50), `holder`(max 50). 셋을 함께 보내거나 모두 생략 |
+| image_ids | body | integer[] | 아니오 | max = 환경설정 `claim.max_images`(기본 5) | 귀속시킬 임시 첨부 ID (환불신청 분기에서만 귀속) |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/user/orders/120/refund-requests HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "items": [ { "order_option_id": 310, "quantity": 1 } ],
+    "reason_code": "changed_mind",
+    "reason_detail": "주문 착오"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| branch | string | `auto` | 실제로 탄 분기 — `auto`(접수 후 승인·완료까지 자동 전이) 또는 `request`(접수 후 운영자 승인 대기) |
+| claim | object | — | **언제나 환불신청서**(`claim_type=refund`) — [ClaimResource](claims.md#claim-resource). 예외는 환불할 돈이 없는 주문(미결제·0원)으로, 그때만 취소신청서(`claim_type=cancel`)가 실린다. 화면은 이 값의 `claim_type` 으로 이동할 탭을 정한다 — 분기(`branch`)로 추측하면 분기가 섞인 주문에서 접수한 탭과 어긋난다 |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "주문이 취소되었습니다.",
+    "data": {
+        "branch": "auto",
+        "claim": {
+            "claim_number": "CN20260823-1421669305",
+            "claim_type": "cancel",
+            "status": "completed",
+            "cancel_type": "full",
+            "refund_amount": 29000,
+            "refund_status": "completed",
+            "items": [ { "order_option_id": 310, "quantity": 1 } ],
+            "cancelled_at_formatted": "2026-08-23 13:41"
+        }
+    }
+}
+```
+
+**오류 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-claims.request`)이 없는 경우 |
+| 404 | Not Found | 주문이 없거나 본인 주문이 아닌 경우 |
+| 422 | Unprocessable Entity | 검증 위반, 취소·환불 신청 불가 상태(`claim_refund_not_requestable` — 배송완료 이후는 반품으로), 분기 혼재(`claim_refund_branch_mixed`), 수량 잠금(`claim_quantity_locked`), 자동 전이 중 PG 환불 거절(`order_cancel_failed` — 이때 접수까지 **전체 롤백**되고 `errors.detail` 에 PG 사유가 실린다) |
+| 500 | Server Error | 접수 중 예기치 못한 오류 |
+
+<!-- @generated:end -->
+
+**설명** 취소·환불 신청을 하나의 입구로 받아 상품 상태로 분기합니다(D2). **두 분기 모두 환불신청서**(`refund_source_type=direct`)를 만들며, 다른 것은 전이 방식뿐입니다.
+
+- 대상 상품이 전부 `claim.instant_cancel_statuses`(기본 미결제 2종 + 결제완료)면 `auto` — 접수 후 승인·환불완료까지 자동으로 진행합니다. 종착점은 **환불수단**이 가릅니다: PG·마일리지는 완료까지, 계좌 환불은 승인에서 멈추고 운영자의 [환불하기]를 기다립니다.
+- 전부 `claim.refund_request_statuses`(기본 상품준비중~배송중)면 `request` — 접수에서 멈춰 운영자 승인을 기다립니다. `claim.auto_approve_refund_request` 가 켜져 있고 상품 상태가 `claim.auto_approve_refund_statuses` 에 들어 있으면 승인까지 자동으로 갑니다.
+- 두 분기 상품이 섞이면 422 이므로 화면은 `claimable-options` 의 `refund_branch` 로 상품을 나눠 보냅니다.
+
+**취소신청서는 이 API 가 만들지 않습니다.** 환불이 완료되는 순간 서버가 만듭니다 — 취소신청서는 "주문이 취소된 사실" 이 아니라 **"환불이 집행되어 주문에서 금액이 빠진 사실"** 의 기록이기 때문입니다. 그래서 계좌 환불처럼 승인에서 멈추는 건은 운영자가 송금을 마칠 때까지 취소신청서도 생기지 않습니다. 예외는 **환불할 돈이 없는 주문**(미결제·0원)으로, 환불신청서 없이 취소신청서만 즉시 생깁니다.
+
+자동 전이는 단계를 건너뛰지 않습니다 — 한 트랜잭션 안이라도 `요청 → 승인 → 완료` 를 실제로 거치므로 활동 로그가 단계마다 남습니다. 그 도중 PG 가 환불을 거절하면 **접수까지 전체가 롤백**되고 422 의 `errors.detail` 에 사유가 실립니다.
+
+환불신청서는 원 주문 옵션의 상태를 바꾸지 않는 대신 수량을 선점하므로, 같은 상품을 다시 신청하면 `claim_quantity_locked` 가 됩니다.
+
+---
+
+### POST /api/modules/sirsoft-ecommerce/user/orders/{id}/claims/images
+<!-- @generated:start:api.modules.sirsoft-ecommerce.user.orders.claim-images.store -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.user.orders.claim-images.store`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\ClaimImageController@store`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.user-claims.request`
+
+**요청 파라미터** (`multipart/form-data`)
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 주문 ID |
+| image | body | file | 예 | `jpeg`·`png`·`jpg`·`gif`·`webp`, 최대 환경설정 `claim.image_max_size_kb` KB | 첨부할 이미지 1장 (여러 장은 반복 호출) |
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/user/orders/120/claims/images HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: multipart/form-data; boundary=----g7
+
+------g7
+Content-Disposition: form-data; name="image"; filename="defect.jpg"
+Content-Type: image/jpeg
+
+(binary)
+------g7--
+```
+
+**응답 필드** (`data` 내부)
+
+[ClaimImageResource](claims.md#claim-image-resource) — `claimable_type` 은 `pending`, `claimable_id` 는 주문 ID.
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "이미지를 첨부했습니다.",
+    "data": {
+        "id": 9,
+        "hash": "a1B2c3D4e5F6",
+        "claimable_type": "pending",
+        "claimable_id": 120,
+        "original_name": "defect.jpg",
+        "mime_type": "image/jpeg",
+        "size": 183204,
+        "width": 800,
+        "height": 600,
+        "download_url": "/api/modules/sirsoft-ecommerce/claim-image/a1B2c3D4e5F6?expires=1787000000&signature=0f3c"
+    }
+}
+```
+
+**오류 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-claims.request`)이 없는 경우 |
+| 404 | Not Found | 주문이 없거나 본인 주문이 아닌 경우 |
+| 422 | Unprocessable Entity | 파일 누락·이미지가 아님·크기 초과(검증), 주문당 임시 첨부 장수 초과(`claim_image_limit_exceeded`) |
+| 500 | Server Error | 저장 중 예기치 못한 오류 |
+
+<!-- @generated:end -->
+
+**설명** 신청서를 만들기 전에 이미지를 먼저 올려 두는 2단계 업로드의 1단계입니다(201). 첨부는 주문에 임시로 묶이고(`pending`), 신청 시 `image_ids` 로 넘기면 그 신청서에 귀속됩니다. 귀속 전 첨부는 `claimable-options` 의 `pending_images` 로 다시 받을 수 있고, `DELETE user/claims/images/{image}` 로 지웁니다. 다른 주문에 올린 첨부를 이 주문의 신청에 붙이려 하면 `claim_image_not_found` 로 거절됩니다.

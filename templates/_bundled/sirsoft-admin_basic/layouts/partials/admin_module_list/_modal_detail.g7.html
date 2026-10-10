@@ -1,0 +1,226 @@
+<!-- 모듈 상세 창 — 매니페스트가 선언한 것을 여덟 구획으로 늘어놓는다(기본정보·의존·언어·메뉴·권한·역할·
+  레이아웃·변경이력). 읽기 전용이라 저장 배선이 없다.
+  대상은 목록이 담아 준 전역 `selectedModule` 이고, 이 창이 그 값을 **한 번 더 받아 덮어쓴다** —
+  목록 응답에는 권한·역할처럼 무거운 항목이 없기 때문이다.
+  변경 이력만 다른 전역(`moduleChangelog`)에서 읽는다. 여는 쪽이 미리 받아 담아 준다.
+  라이선스 줄은 눌러서 전문 창을 여는 유일한 상호작용이다. -->
+<partial description="모듈 상세 정보 모달" editor_label="$t:admin.modal_label.admin_module_list.module_detail_modal">
+  <modal data-type="composite" data-ref="module_detail_modal" title="$t:admin.modules.modals.detail_title" size="medium">
+    <!-- 상세 재조회 — 응답을 **같은 전역(`selectedModule`)에 덮어쓴다**. 목록이 담아 준 얕은 값 위에
+         전체 정보를 얹는 것이라, 창이 열리는 순간에는 목록 값으로 먼저 그려지고 곧 채워진다. -->
+    <data-source id="moduleDetail" label_key="$t:editor.data_source.moduleDetail" type="api" endpoint="/api/admin/modules/{{_global.selectedModule.identifier}}" :auth_required="true" initGlobal="selectedModule"/>
+    <div class="flex flex-col max-h-[70vh]">
+      <div class="flex-1 overflow-y-auto min-h-0 pr-2">
+        <div class="row-stack">
+          <div data-ref="basic_info_section">
+            <div class="flex-center gap-2 mb-4">
+              <icon name="cog" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.modules.modals.basic_info</span>
+            </div>
+            <div class="grid-2col">
+            <div data-ref="detail_ext_icon" class="col-span-2 flex items-center gap-3 mb-4">
+              <!-- 글리프를 늘 깔아 두고 이미지가 그 위를 덮는다 — 로드 전에도 자리가 유지되고,
+                   404·손상이면 그 식별자만 목록에 담아 이미지를 감추면 글리프가 다시 드러난다.
+                   깨짐을 불리언 하나로 들면 창이 재사용되면서 그 뒤에 여는 확장까지 전부
+                   아이콘을 잃는다(전례) — 그래서 식별자 목록으로 든다. -->
+              <div class="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden">
+                <icon name="cube" class="text-xl text-gray-600 dark:text-gray-400" aria-hidden="true"/>
+                <img data-if="{{_global.selectedModule?.icon_url && !(_local.selectedModuleIconBroken ?? []).includes(_global.selectedModule?.identifier)}}" src="{{_global.selectedModule.icon_url}}" alt="$t:extensions.icon.alt|name={{_global.selectedModule?.name ?? ''}}" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-gray-100 dark:bg-gray-700">
+                  <on event="onError">
+                    <!-- 이미지 404·손상 — 이 확장의 식별자만 깨진 목록에 더해 이미지를 감추고, 아래 깔린 글리프가
+                         다시 드러나게 한다. 불리언 하나로 들면 창이 재사용될 때 다음 확장까지 아이콘을 잃는다. -->
+                    <set-state target="local" selectedModuleIconBroken="{{[...(_local.selectedModuleIconBroken ?? []), _global.selectedModule?.identifier]}}"/>
+                  </on>
+                </img>
+              </div>
+              <div class="min-w-0">
+                <p class="text-primary font-semibold truncate">{{_global.selectedModule?.name ?? ''}}</p>
+                <code class="text-label-subtle text-xs">{{_global.selectedModule?.identifier ?? ''}}</code>
+              </div>
+            </div>
+              <div>
+                <span class="text-label-subtle">$t:admin.modules.modals.field_name</span>
+                <p class="text-primary font-medium">{{_global.selectedModule.name}}</p>
+              </div>
+              <div>
+                <span class="text-label-subtle">$t:admin.modules.modals.field_version</span>
+                <p class="text-primary font-medium">v{{_global.selectedModule.version}}</p>
+              </div>
+              <div class="col-span-2">
+                <span class="text-label-subtle">$t:admin.modules.modals.field_description</span>
+                <p class="text-primary font-medium">{{_global.selectedModule.description}}</p>
+              </div>
+              <div>
+                <span class="text-label-subtle">$t:admin.modules.modals.field_vendor</span>
+                <p class="text-primary font-medium">{{_global.selectedModule.vendor}}</p>
+              </div>
+              <div>
+                <span class="text-label-subtle">$t:admin.modules.modals.field_license</span>
+                <button type="button" class="block text-left text-primary font-medium cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                  <on type="click">
+                    <!-- 라이선스 이름을 누르면 전문을 받아 별도 창으로 띄운다. 전문은 길어 상세 응답에 싣지 않고
+     이때 따로 받는다. 버튼이어야 키보드로도 열린다(종전 문단은 Tab 으로 닿지 않았다 — #736 F 실측). -->
+                    <sequence>
+                      <api-call :auth_required="true" target="/api/admin/modules/{{_global.selectedModule.identifier}}/license" method="GET">
+                        <success>
+                          <set-state target="global" extensionLicenseContent="{{response.data.content}}"/>
+                          <open-modal target="extension_license_modal"/>
+                        </success>
+                        <fail>
+                          <toast type="error" message="{{error.message}}"/>
+                        </fail>
+                      </api-call>
+                    </sequence>
+                  </on>
+                  {{_global.selectedModule.license || '-'}}
+                </button>
+              </div>
+              <div>
+                <span class="text-label-subtle">$t:admin.modules.modals.field_status</span>
+                <div>
+                  <span class="{{_global.selectedModule.status === 'active' ? 'badge badge-green' : (_global.selectedModule.status === 'uninstalled' ? 'badge badge-blue' : 'badge badge-gray')}}">{{_global.selectedModule.status === 'active' ? '$t:admin.modules.status.active' : (_global.selectedModule.status === 'uninstalled' ? '$t:admin.modules.status.not_installed' : '$t:admin.modules.status.inactive')}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div data-ref="dependencies_section">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="link" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.modules.modals.dependencies</span>
+            </div>
+            <div class="row-stack">
+              <div class="flex-center gap-2">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.modules.modals.required_core_version</span>
+                <span data-if="{{_global.selectedModule.requires_core}}" class="text-info-soft px-2 py-0.5 bg-blue-100 dark:bg-blue-900 rounded font-mono">{{_global.selectedModule.requires_core}}</span>
+                <span data-if="{{!_global.selectedModule.requires_core}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded">$t:admin.modules.modals.no_required_core_version</span>
+              </div>
+              <p data-if="{{!_global.selectedModule.dependencies || _global.selectedModule.dependencies.length === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_dependencies_required</p>
+              <div data-if="{{_global.selectedModule.dependencies &amp;&amp; _global.selectedModule.dependencies.length > 0}}" class="row-stack">
+                <div data-each="dep in _global.selectedModule.dependencies" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                  <icon data-if="{{dep.type === 'module'}}" name="cube" class="text-base text-gray-500 dark:text-gray-400"/>
+                  <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400"/>
+                  <span class="text-heading">{{dep.name || dep.identifier}} ({{dep.identifier}})</span>
+                  <span class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono">$t:admin.modules.modals.dependency_required_version|version={{dep.required_version}}</span>
+                  <span data-if="{{dep.installed_version}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded font-mono">$t:admin.modules.modals.dependency_installed_version|version={{dep.installed_version}}</span>
+                  <span data-if="{{dep.is_met}}" class="text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded">$t:admin.modules.modals.dependency_met</span>
+                  <span data-if="{{!dep.is_met &amp;&amp; !dep.installed_version}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.modules.modals.dependency_not_installed</span>
+                  <span data-if="{{!dep.is_met &amp;&amp; dep.installed_version &amp;&amp; !dep.is_active}}" class="text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded">$t:admin.modules.modals.dependency_inactive</span>
+                  <span data-if="{{!dep.is_met &amp;&amp; dep.installed_version &amp;&amp; dep.is_active}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.modules.modals.dependency_unmet_version</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 함께 쓰면 연동되는 확장 (#639) — manifest `integrations`. 의존(dependencies)과 달리 없어도 이 확장은 동작하므로
+            설치를 막지 않고 알려만 준다. 미설치·비활성 대상은 배지로 표시한다. 선언이 없으면 절을 그리지 않는다. -->
+          <div data-ref="integrations_section" data-if="{{(_global.selectedModule?.integrations ?? []).length > 0}}">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="plug" class="text-xl text-gray-500" aria-hidden="true"/>
+              <span class="text-primary font-semibold">$t:admin.extension_integrations.title</span>
+            </div>
+            <p class="text-label-subtle mb-2">$t:admin.extension_integrations.hint</p>
+            <div class="row-stack">
+              <div data-each="item in _global.selectedModule.integrations" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                <icon data-if="{{item.type === 'module'}}" name="cube" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+                <icon data-if="{{item.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+                <icon data-if="{{item.type === 'template'}}" name="palette" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+                <span class="text-heading">{{item.name}} ({{item.identifier}})</span>
+                <span data-if="{{!item.is_installed}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.extension_integrations.not_installed</span>
+                <span data-if="{{item.is_installed &amp;&amp; !item.is_active}}" class="text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded">$t:admin.extension_integrations.inactive</span>
+              </div>
+            </div>
+          </div>
+          <div data-ref="supported_languages_section">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="language" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.modules.modals.supported_languages</span>
+            </div>
+            <p data-if="{{!_global.selectedModule.language_packs || _global.selectedModule.language_packs.length === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_supported_languages</p>
+            <div data-if="{{_global.selectedModule.language_packs &amp;&amp; _global.selectedModule.language_packs.length > 0}}" class="row-stack">
+              <div data-each="lp in _global.selectedModule.language_packs" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                <span class="text-heading">{{lp.locale_native_name}} ({{lp.locale}})</span>
+                <span data-if="{{lp.origin === 'built_in'}}" class="text-info-soft px-2 py-0.5 bg-blue-100 dark:bg-blue-900 rounded">$t:admin.language_packs.origin.built_in</span>
+                <span data-if="{{lp.origin === 'bundled'}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.language_packs.origin.bundled</span>
+                <span data-if="{{lp.origin === 'user_installed'}}" class="text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded">$t:admin.language_packs.origin.user_installed</span>
+                <span data-if="{{lp.status === 'active'}}" class="px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded">$t:admin.language_packs.status.active</span>
+                <span data-if="{{lp.status === 'inactive'}}" class="text-tertiary px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">$t:admin.language_packs.status.inactive</span>
+                <span data-if="{{lp.status === 'uninstalled'}}" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded">$t:admin.language_packs.status.uninstalled</span>
+                <span data-if="{{lp.version}}" class="text-tertiary font-mono">v{{lp.version}}</span>
+              </div>
+            </div>
+          </div>
+          <div data-ref="admin_menus_section">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="list" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.modules.modals.admin_menus</span>
+            </div>
+            <p data-if="{{!_global.selectedModule.admin_menus || _global.selectedModule.admin_menus.length === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_admin_menus</p>
+            <ul data-if="{{_global.selectedModule.admin_menus &amp;&amp; _global.selectedModule.admin_menus.length > 0}}" class="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
+              <li data-each="menu in _global.selectedModule.admin_menus">{{$localized(menu.name)}}</li>
+            </ul>
+          </div>
+          <div data-ref="permissions_section">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="key" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.modules.modals.permissions</span>
+            </div>
+            <p data-if="{{!_global.selectedModule.permissions || _global.selectedModule.permissions.length === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_permissions</p>
+            <div data-if="{{_global.selectedModule.permissions &amp;&amp; _global.selectedModule.permissions.length > 0}}" class="row-stack">
+              <div data-each="category in _global.selectedModule.permissions">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">{{$localized(category.name)}}</span>
+                <div class="flex flex-wrap gap-1.5">
+                  <span data-each="perm in category.permissions" class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono">{{$localized(perm.name) + ' (' + category.identifier + '.' + perm.action + ')'}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div data-ref="roles_section">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="user-group" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.modules.modals.roles</span>
+            </div>
+            <p data-if="{{!_global.selectedModule.roles || _global.selectedModule.roles.length === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_roles</p>
+            <div data-if="{{_global.selectedModule.roles &amp;&amp; _global.selectedModule.roles.length > 0}}" class="flex flex-wrap gap-2">
+              <span data-each="role in _global.selectedModule.roles" class="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">{{$localized(role.name) + ' (' + role.identifier + ')'}}</span>
+            </div>
+          </div>
+          <div data-ref="layouts_section">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="file-code" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.modules.modals.layouts</span>
+            </div>
+            <p data-if="{{!_global.selectedModule.layouts_count || _global.selectedModule.layouts_count === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_layouts</p>
+            <p data-if="{{_global.selectedModule.layouts_count &amp;&amp; _global.selectedModule.layouts_count > 0}}" class="text-body">$t:admin.modules.modals.layouts_count|count={{_global.selectedModule.layouts_count}}</p>
+          </div>
+          <div data-ref="changelog_section">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="clock-rotate-left" class="text-xl text-gray-500"/>
+              <span class="text-primary font-semibold">$t:admin.modules.modals.changelog</span>
+            </div>
+            <p data-if="{{!_global.moduleChangelog || _global.moduleChangelog.length === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_changelog</p>
+            <div data-if="{{_global.moduleChangelog &amp;&amp; _global.moduleChangelog.length > 0}}" class="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+              <div data-each="entry, entryIdx in _global.moduleChangelog" class="pb-3 mb-3 border-b border-gray-200 dark:border-gray-700 last:border-b-0 last:mb-0 last:pb-0">
+                <div class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">v{{entry.version}}{{entry.date ? ' (' + entry.date + ')' : ''}}</div>
+                <div data-each="category, catIdx in entry.categories" class="row-stack">
+                  <div>
+                    <span class="text-secondary text-xs font-medium">{{category.name}}</span>
+                    <div data-each="changeItem, itemIdx in category.items" class="ml-3 space-y-0.5">
+                      <div class="text-secondary text-xs">• {{changeItem}}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0">
+        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.close</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

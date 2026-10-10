@@ -104,7 +104,8 @@ _에러 없음 (공개 조회 — 인증·검증·도메인 예외 경로가 없
 - **약관 slug 은 값을 노출하지 않는다.** 각 동의 항목마다 실제 slug(`*_terms_slug`)와 존재 플래그(`*_terms_slug_set`)를 함께 반환하되, slug 미설정 시 값은 `null` 이고 플래그는 `false` 다. 프론트는 링크 표시 여부를 `*_terms_slug_set` 으로 판정하고, slug 값 자체는 약관 페이지 라우팅에만 쓴다.
 - **세 가지 법적 동의 축**: `marketing_consent_*`(광고성 정보 수신 전체 동의), `third_party_consent_*`(제3자 제공), `info_disclosure_*`(정보 이용 안내). 각 축의 `*_enabled` 가 false 면 해당 동의 UI 를 렌더하지 않는다. `marketing_consent_enabled` 는 미설정 시 기본 `true`, 나머지 두 축은 기본 `false`.
 - **`channels` 배열**은 `MarketingConsentService::getRegisteredChannels()` 가 반환하는 **활성 채널만** 담는다. 각 원소는 `key`, 현재 로케일로 해석된 `label`, 로케일 맵 원본 `label_i18n`, `enabled`, 그리고 slug 값(`terms_slug`)과 존재 플래그(`terms_slug_set`)를 갖는다. 회원가입/마이페이지 폼의 iteration 렌더링에 그대로 쓰인다.
-- `label` 은 요청 시점의 `app()->getLocale()` 기준으로 해석되며, 해당 로케일 라벨이 없으면 `fallback_locale`(기본 `ko`) → `key` 순으로 폴백한다.
+- `label` 은 요청 시점의 `app()->getLocale()` 기준으로 해석되며, 해당 로케일 라벨이 없으면 `fallback_locale`(기본 `ko`) → `key` 순으로 폴백한다. 시스템 채널(`label_key` 가 있는 채널)은 그 키의 번역이 우선이다 — 회원 응답(`filterResourceData`)과 같은 규칙(`MarketingConsentService::resolveChannelLabel()`).
+- `label_i18n` 은 저장된 로케일 맵에 `label_key` 번역을 지원 로케일마다 덮어 씌운 맵이다(`MarketingConsentService::localizedLabelMap()`). 저장 맵은 저장 당시 로케일만 담으므로, 언어팩으로 늘어난 로케일(ja 등)은 이 보강이 있어야 가입·프로필 수정 화면(`$localized(channel.label_i18n)`)이 그 언어로 그린다. 번역이 실제로 있는 로케일만 채우고, 폴백 로케일 문구로 빈 로케일을 채우지 않는다.
 
 **응답 예시** (실측)
 

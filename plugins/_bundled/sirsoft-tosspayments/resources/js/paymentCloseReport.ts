@@ -2,13 +2,15 @@
  * 토스페이먼츠 결제창 닫힘·결제 실패 보고
  *
  * 브라우저 리턴 콜백(`/payment/fail`)은 인증도 서명도 없고 주문번호가 쿼리스트링으로 오므로
- * 주문 상태를 바꾸지 않는다. 정당한 결제 실패를 기록하는 것은 구매자 정보를 대조하는
- * close-report 엔드포인트뿐이며, 이 모듈이 그 호출을 담당한다.
+ * 주문 상태를 바꾸지 않는다. 정당한 결제 실패를 기록하는 것은 주문 소유자(회원 로그인 /
+ * 비회원 조회 토큰)를 확인하는 close-report 엔드포인트뿐이며, 이 모듈이 그 호출을 담당한다.
  *
- * 결제창은 전체 페이지 이동으로 열리고 돌아오므로, 결제 요청 직전에 구매자 정보를
+ * 결제창은 전체 페이지 이동으로 열리고 돌아오므로, 결제 요청 직전에 주문 정보를
  * sessionStorage 에 남겨 두었다가 실패 화면으로 돌아왔을 때 꺼내 쓴다. sessionStorage 는
  * 같은 탭에서 외부 도메인을 다녀와도 유지된다.
  */
+
+import { buildGuestOwnershipHeaders, waitForGuestOrderTokenContract } from './guestOrderToken';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-tosspayments';
 
@@ -19,8 +21,6 @@ const CLOSE_REPORT_PATH = '/api/plugins/sirsoft-tosspayments/payment/close-repor
 export interface PaymentCloseReportContext {
     orderId: string;
     amount: number;
-    buyer_email?: string;
-    buyer_phone?: string;
 }
 
 /**
@@ -36,9 +36,9 @@ function safeSessionStorage(): Storage | null {
 }
 
 /**
- * 결제창을 열기 직전에 구매자 정보를 저장합니다.
+ * 결제창을 열기 직전에 주문 정보를 저장합니다.
  *
- * @param context 결제창 닫힘 보고에 필요한 주문·구매자 정보
+ * @param context 결제창 닫힘 보고에 필요한 주문 정보
  */
 export function rememberPendingClose(context: PaymentCloseReportContext): void {
     const storage = safeSessionStorage();
@@ -54,7 +54,7 @@ export function rememberPendingClose(context: PaymentCloseReportContext): void {
 }
 
 /**
- * 저장해 둔 구매자 정보를 지웁니다 (보고 완료 또는 결제 성공 시).
+ * 저장해 둔 주문 정보를 지웁니다 (보고 완료 또는 결제 성공 시).
  */
 export function forgetPendingClose(): void {
     const storage = safeSessionStorage();
@@ -70,7 +70,7 @@ export function forgetPendingClose(): void {
 }
 
 /**
- * 저장해 둔 구매자 정보를 읽습니다.
+ * 저장해 둔 주문 정보를 읽습니다.
  *
  * @returns 저장된 정보, 없거나 형식이 깨졌으면 null
  */
@@ -99,7 +99,7 @@ function readPendingClose(): PaymentCloseReportContext | null {
 /**
  * close-report 엔드포인트에 보고합니다.
  *
- * @param context 주문·구매자 정보
+ * @param context 주문 정보
  * @param code 결제 실패 코드 (결제창을 닫은 경우 빈 값)
  * @param reason 사람이 읽을 실패 사유
  */
@@ -111,25 +111,29 @@ async function postCloseReport(
     const payload = {
         orderId: context.orderId,
         amount: Number(context.amount),
-        buyer_email: context.buyer_email ?? '',
-        buyer_phone: context.buyer_phone ?? '',
         code: code.slice(0, 60),
         reason: reason.trim().slice(0, 160),
     };
 
+    // 서버는 주문 소유자(회원 로그인 / 비회원 조회 토큰)만 받아 준다. 회원 Bearer 와 401 처리는
+    // G7Core.api 가 맡고, 비회원은 쇼핑몰 계약 `_global.guestOrderToken` 을 헤더로 싣는다.
+    // 화면 초기화가 그 값을 올리기 전일 수 있으므로 먼저 기다린다.
+    await waitForGuestOrderTokenContract();
+
     const apiClient = ((window as any).G7Core)?.api;
-    if (typeof apiClient?.post === 'function') {
-        await apiClient.post(CLOSE_REPORT_PATH, payload);
+    if (typeof apiClient?.post !== 'function') {
+        console.warn(`[${PLUGIN_IDENTIFIER}] G7Core.api is not available — payment failure not reported`);
 
         return;
     }
 
-    await fetch(CLOSE_REPORT_PATH, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(payload),
-        keepalive: true,
-    });
+    const ownershipHeaders = buildGuestOwnershipHeaders();
+
+    if (Object.keys(ownershipHeaders).length > 0) {
+        await apiClient.post(CLOSE_REPORT_PATH, payload, { headers: ownershipHeaders });
+    } else {
+        await apiClient.post(CLOSE_REPORT_PATH, payload);
+    }
 }
 
 /**

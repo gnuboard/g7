@@ -1,0 +1,24 @@
+feature: 게시판 신고 관리 — 좁은 화면 일괄 처리 메뉴 잠금 (#703)
+
+description: |
+  데스크톱 일괄 처리 버튼 4개(검토·기각·정지·삭제)는 관리 권한이 없거나 고른 신고가 0건이면 비활성인데,
+  좁은 화면(portable)의 일괄 처리 드롭다운 항목 4개에는 조건이 없어 선택 없이 눌리고 서버 거절(ids 필수)을
+  무안내로 삼켰다. 회원 목록 좁은 화면 메뉴와 같은 부류로, 드롭다운 항목을 데스크톱 버튼과 같은 조건으로 잠근다.
+
+axes:
+  can_manage: [granted, denied]
+  selection: [none, some]
+
+exclusions:
+  - { can_manage: denied, selection: none, reason: "권한이 없으면 선택과 무관하게 잠긴다 — 권한 없음·선택 1건 행이 조건식의 권한 갈래를 고정" }
+
+effects:
+  - mobile_bulk_menu_follows_desktop_gate
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/boardReportsMobileBulkGate.test.ts
+
+validation:
+  manual: |
+    관리자로 게시판 신고 관리 화면을 휴대폰 폭(390px)으로 열고 「일괄 처리」 메뉴를 펼쳐 항목 4개가 비활성인지,
+    신고 1건을 고른 뒤 다시 펼쳐 활성인지 확인한다.

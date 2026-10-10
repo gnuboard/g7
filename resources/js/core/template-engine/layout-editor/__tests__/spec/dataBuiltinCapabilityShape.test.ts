@@ -18,6 +18,10 @@
  * 가드한다(방어 심층화 + NON_TARGET allowlist SSoT 공유).
  *
  * @since engine-v1.50.0, 누락 0 게이트 추가
+ *
+ * @effects data_builtin_capability_attached_to_8a_targets_both_templates,
+ *   array_editor_newitem_shape_matches_component_read_shape,
+ *   review_group_chipcheckbox_value_covered_by_propcontrol_not_dataprop
  */
 
 import { describe, it, expect } from 'vitest';

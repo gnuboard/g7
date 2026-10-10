@@ -1,0 +1,48 @@
+feature: 클레임 신청서 작성 화면의 핸들러 계약 (회원·비회원 공용)
+
+description: |
+  교환·반품·취소·환불 신청서를 작성하는 한 화면을 `claimApplyHandlers` 가 통째로 맡는다.
+  화면이 하는 일은 많지만 계약은 몇 갈래로 갈린다:
+
+  1. **초기화** — 어떤 상품을 줄로 세우고 무엇을 미리 골라 두는가. 응답 페이로드·기준 통화·
+     주소 파라미터를 **각각 어디서 읽는지**가 정해져 있다(데이터소스 store 는 자기 onSuccess
+     시점에 비어 있어 믿을 수 없다 — 2026-08-31 브라우저 실측).
+  2. **입력** — 사유·수량·교환 상품·재발송지·환불계좌. 상한과 귀책 카탈로그는 진입 시
+     박아 둔 사본에서 읽는다.
+  3. **미리보기** — 금액은 언제나 서버가 만든다. 화면은 그 값을 되붙일 뿐이고, 연속 입력은
+     타이머로 묶어 마지막 것만 보낸다.
+  4. **제출** — 유형별 엔드포인트, 페이로드 모양, 거절 시 필드 오류를 어느 칸에 붙이는가.
+  5. **표기** — 기준 통화와 보조통화를 같은 줄에 어떻게 세우는가.
+
+  이 목록이 곧 **「신청서 화면이 무엇을 보장하는가」의 명세**다. 핸들러가 조용히 다른 값을
+  쓰면 화면에는 그럴듯한 숫자가 그대로 뜨므로 런타임에서 알아채기 어렵다 —
+  #599 통합실측 세션2 의 S2-D9(수량 칸과 전송값이 갈림)가 정확히 그 형태였다.
+
+  계약: 이 매니페스트는 **핸들러 단위 계약**을 잠근다. 개별 결함의 회귀는 자기 매니페스트가
+  따로 들고 있다(`claim-quantity-input-clamp.yaml` ·
+  `claim-attachment-limit-feedback.yaml` · `user-claim-refund-return-apply.yaml` 등).
+
+axes:
+  apply_handler:
+    - init
+    - reason_and_exchange
+    - refund_account
+    - preview
+    - submit
+    - submit_rejection
+    - currency_display
+
+effects:
+  - claim_apply_init_seeds_rows_and_selection_from_the_right_source
+  - claim_apply_reason_and_exchange_selection_is_scoped_to_its_row
+  - claim_apply_redelivery_prefills_the_international_address # 해외 주문 재발송지 첫 채움 (S2-D8)
+  - claim_apply_refund_account_is_validated_and_preserved
+  - claim_apply_preview_amounts_come_from_the_server
+  - claim_apply_submit_uses_the_type_specific_endpoint_and_payload
+  - claim_apply_rejection_is_attached_to_the_offending_field
+  - claim_apply_shows_base_and_secondary_currency_together
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/claimApplyHandlers.test.ts
+  # 브라우저 — 신청 화면의 입력 칸이 state 와 같은 값을 말하는지(리액트 리렌더 경계)
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/claim-quantity-input-clamp.spec.ts

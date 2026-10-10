@@ -8,6 +8,8 @@ interface TemplateManagerInterface
 {
     /**
      * 모든 템플릿을 로드하고 초기화합니다. (항상 재스캔)
+     *
+     * @return void 반환값 없음
      */
     public function loadTemplates(): void;
 
@@ -16,6 +18,8 @@ interface TemplateManagerInterface
      *
      * "맵이 채워져 있기만 하면 되는" 소비자용 진입점. 재스캔이 필요한 경우
      * (설치/삭제/업데이트 직후)에만 `loadTemplates()` 를 직접 호출합니다.
+     *
+     * @return void 반환값 없음
      */
     public function ensureLoaded(): void;
 
@@ -65,11 +69,18 @@ interface TemplateManagerInterface
      *
      * @param  string  $identifier  제거할 템플릿 식별자
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
+     * @param  array<int, array{directory: string, archive: string}>|null  $preservedBackups  삭제 전에 보관한 운영자 소유 디렉토리 사본 경로 (out)
+     * @param  bool  $deleteData  운영자가 "데이터도 삭제" 를 골랐는지 — after_uninstall 훅 인자로 전달
      * @return bool 제거 성공 여부
      *
      * @throws \Exception 템플릿을 찾을 수 없을 때
      */
-    public function uninstallTemplate(string $identifier, ?\Closure $onProgress = null): bool;
+    public function uninstallTemplate(
+        string $identifier,
+        ?\Closure $onProgress = null,
+        ?array &$preservedBackups = null,
+        bool $deleteData = false,
+    ): bool;
 
     /**
      * 지정된 템플릿을 활성화합니다.
@@ -86,12 +97,14 @@ interface TemplateManagerInterface
      * @param  string  $identifier  비활성화할 템플릿 식별자
      * @param  string  $reason  비활성화 사유 (DeactivationReason enum value: manual|incompatible_core)
      * @param  string|null  $incompatibleRequiredVersion  incompatible_core 사유 시 요구된 코어 버전 제약
+     * @param  string|null  $failureReason  실패 시 사유가 담기는 out 파라미터 (성공 시 null)
      * @return bool 비활성화 성공 여부
      */
     public function deactivateTemplate(
         string $identifier,
         string $reason = DeactivationReason::Manual->value,
         ?string $incompatibleRequiredVersion = null,
+        ?string &$failureReason = null,
     ): bool;
 
     /**
@@ -138,11 +151,22 @@ interface TemplateManagerInterface
      * 템플릿의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
      * @param  string  $identifier  템플릿 식별자
-     * @return array{success: bool, layouts_refreshed: int} 갱신 결과 및 갱신된 레이아웃 개수
+     * @param  bool  $preserveModified  true(keep) 시 운영자가 고친 화면은 조각 단위로 병합(고친 부분 유지)
+     * @param  string|null  $backupPath  업데이트 백업 디렉토리 — 원본 본문이 없는 행의 비교 기준
+     * @return array{success: bool, layouts_refreshed: int, layout_sync?: array<string, mixed>} 갱신 결과 (layout_sync = 운영자 관련 행 보고)
      *
      * @throws \Exception 템플릿을 찾을 수 없거나 레이아웃 갱신 실패 시
      */
-    public function refreshTemplateLayouts(string $identifier): array;
+    public function refreshTemplateLayouts(string $identifier, bool $preserveModified = false, ?string $backupPath = null): array;
+
+    /**
+     * 마지막 설치·갱신이 빈 자리로 등록한 조각 참조 경고를 꺼내고 비웁니다.
+     *
+     * 7.0 JSON 레이아웃의 깨진 조각 참조는 설치를 막지 않고 빈 자리로 등록된다 — 설치를 부른 쪽이 이 목록으로 알린다.
+     *
+     * @return array<int, array{file: string, partial: string, reason: string, message: string}> 경고 목록
+     */
+    public function takeLastLayoutWarnings(): array;
 
     /**
      * 템플릿의 의존성 충족 상태를 확인합니다.

@@ -1,4 +1,5 @@
 {
+    "comment": "쌓아 둔 언어 자료를 버리고 다시 읽게 하는 창. 팩을 손대지 않고 **읽은 것만 비우므로**\n  설치 상태나 켜짐 여부는 그대로다. 파일을 직접 고쳤는데 화면에 안 비칠 때 쓰는 자리다.",
     "meta": {
         "is_partial": true,
         "description": "언어팩 캐시 갱신 확인 모달 — registry / translator / template 캐시 무효화",
@@ -15,45 +16,80 @@
         {
             "type": "basic",
             "name": "P",
-            "props": { "className": "text-body" },
+            "props": {
+                "className": "text-body"
+            },
             "text": "$t:admin.language_packs.modal.refresh_cache.body"
         },
         {
             "type": "basic",
             "name": "Div",
-            "props": { "className": "flex justify-end gap-2 mt-6" },
+            "props": {
+                "className": "flex justify-end gap-2 mt-6"
+            },
             "children": [
                 {
                     "type": "basic",
                     "name": "Button",
-                    "props": { "type": "button", "className": "px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md" },
-                    "text": "$t:admin.language_packs.actions.cancel",
                     "actions": [
-                        { "event": "onClick", "handler": "closeModal", "target": "language_pack_refresh_cache_modal" }
-                    ]
+                        {
+                            "event": "onClick",
+                            "handler": "closeModal",
+                            "target": "language_pack_refresh_cache_modal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md"
+                    },
+                    "text": "$t:admin.language_packs.actions.cancel"
                 },
                 {
+                    "comment": "번역 캐시 비우기. 언어팩 파일을 바꿔도 캐시가 남아 있으면 화면 문구가 그대로라, 그 캐시를 운영자가 직접 비우는 자리다",
                     "type": "basic",
                     "name": "Button",
-                    "props": { "type": "button", "className": "px-4 py-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white text-sm font-medium rounded-md" },
-                    "text": "$t:admin.language_packs.actions.refresh_cache_now",
                     "actions": [
                         {
                             "event": "onClick",
                             "handler": "apiCall",
-                            "auth_required": true,
                             "target": "/api/admin/language-packs/refresh-cache",
-                            "params": { "method": "POST" },
+                            "auth_required": true,
+                            "params": {
+                                "method": "POST"
+                            },
                             "onSuccess": [
-                                { "handler": "toast", "params": { "type": "success", "message": "$t:admin.language_packs.messages.refresh_cache_done" } },
-                                { "handler": "closeModal", "target": "language_pack_refresh_cache_modal" },
-                                { "handler": "refetchDataSource", "params": { "dataSourceId": "language_packs" } }
+                                {
+                                    "handler": "toast",
+                                    "params": {
+                                        "type": "success",
+                                        "message": "$t:admin.language_packs.messages.refresh_cache_done"
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal",
+                                    "target": "language_pack_refresh_cache_modal"
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "language_packs"
+                                    }
+                                }
                             ],
-                            "onError": [
-                                { "handler": "toast", "params": { "type": "error", "message": "{{error.message ?? '$t:admin.language_packs.messages.refresh_cache_failed'}}" } }
-                            ]
+                            "onError": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "{{error.message ?? '$t:admin.language_packs.messages.refresh_cache_failed'}}"
+                                }
+                            }
                         }
-                    ]
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white text-sm font-medium rounded-md"
+                    },
+                    "text": "$t:admin.language_packs.actions.refresh_cache_now"
                 }
             ]
         }

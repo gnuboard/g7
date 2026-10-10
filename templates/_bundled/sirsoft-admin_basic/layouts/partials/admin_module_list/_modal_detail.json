@@ -1,910 +1,1211 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "모듈 상세 정보 모달",
-    "editor_label": "$t:admin.modal_label.admin_module_list.module_detail_modal"
-  },
-  "id": "module_detail_modal",
-  "type": "composite",
-  "name": "Modal",
-  "data_sources": [
-    {
-      "id": "moduleDetail",
-      "label_key": "$t:editor.data_source.moduleDetail",
-      "type": "api",
-      "endpoint": "/api/admin/modules/{{_global.selectedModule.identifier}}",
-      "auth_required": true,
-      "initGlobal": "selectedModule"
-    }
-  ],
-  "props": {
-    "title": "$t:admin.modules.modals.detail_title",
-    "size": "medium"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "flex flex-col max-h-[70vh]" },
-      "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "flex-1 overflow-y-auto min-h-0 pr-2" },
-      "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "row-stack"
-      },
-      "children": [
+    "comment": "모듈 상세 창 — 매니페스트가 선언한 것을 여덟 구획으로 늘어놓는다(기본정보·의존·언어·메뉴·권한·역할·\n  레이아웃·변경이력). 읽기 전용이라 저장 배선이 없다.\n  대상은 목록이 담아 준 전역 `selectedModule` 이고, 이 창이 그 값을 **한 번 더 받아 덮어쓴다** —\n  목록 응답에는 권한·역할처럼 무거운 항목이 없기 때문이다.\n  변경 이력만 다른 전역(`moduleChangelog`)에서 읽는다. 여는 쪽이 미리 받아 담아 준다.\n  라이선스 줄은 눌러서 전문 창을 여는 유일한 상호작용이다.",
+    "meta": {
+        "is_partial": true,
+        "description": "모듈 상세 정보 모달",
+        "editor_label": "$t:admin.modal_label.admin_module_list.module_detail_modal"
+    },
+    "data_sources": [
         {
-          "id": "basic_info_section",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 mb-4"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "cog",
-                    "className": "w-5 h-5 text-gray-500"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-primary font-semibold"
-                  },
-                  "text": "$t:admin.modules.modals.basic_info"
-                }
-              ]
+            "id": "moduleDetail",
+            "label_key": "$t:editor.data_source.moduleDetail",
+            "type": "api",
+            "endpoint": "/api/admin/modules/{{_global.selectedModule.identifier}}",
+            "auth_required": true,
+            "initGlobal": "selectedModule",
+            "comment": "상세 재조회 — 응답을 **같은 전역(`selectedModule`)에 덮어쓴다**. 목록이 담아 준 얕은 값 위에\n         전체 정보를 얹는 것이라, 창이 열리는 순간에는 목록 값으로 먼저 그려지고 곧 채워진다."
+        }
+    ],
+    "id": "module_detail_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.modules.modals.detail_title",
+        "size": "medium"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-col max-h-[70vh]"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "grid-2col"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:admin.modules.modals.field_name"
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1 overflow-y-auto min-h-0 pr-2"
                     },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-primary font-medium"
-                      },
-                      "text": "{{_global.selectedModule.name}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:admin.modules.modals.field_version"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-primary font-medium"
-                      },
-                      "text": "v{{_global.selectedModule.version}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "col-span-2"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:admin.modules.modals.field_description"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-primary font-medium"
-                      },
-                      "text": "{{_global.selectedModule.description}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:admin.modules.modals.field_vendor"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-primary font-medium"
-                      },
-                      "text": "{{_global.selectedModule.vendor}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:admin.modules.modals.field_license"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-primary font-medium cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                      },
-                      "actions": [
+                    "children": [
                         {
-                          "type": "click",
-                          "handler": "sequence",
-                          "actions": [
-                            {
-                              "handler": "apiCall",
-                              "auth_required": true,
-                              "target": "/api/admin/modules/{{_global.selectedModule.identifier}}/license",
-                              "params": {
-                                "method": "GET"
-                              },
-                              "onSuccess": [
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "row-stack"
+                            },
+                            "children": [
                                 {
-                                  "handler": "setState",
-                                  "params": {
-                                    "target": "global",
-                                    "extensionLicenseContent": "{{response.data.content}}"
-                                  }
+                                    "id": "basic_info_section",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2 mb-4"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "cog",
+                                                        "className": "text-xl text-gray-500"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary font-semibold"
+                                                    },
+                                                    "text": "$t:admin.modules.modals.basic_info"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "grid-2col"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "detail_ext_icon",
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "col-span-2 flex items-center gap-3 mb-4"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "comment": "글리프를 늘 깔아 두고 이미지가 그 위를 덮는다 — 로드 전에도 자리가 유지되고,\n                   404·손상이면 그 식별자만 목록에 담아 이미지를 감추면 글리프가 다시 드러난다.\n                   깨짐을 불리언 하나로 들면 창이 재사용되면서 그 뒤에 여는 확장까지 전부\n                   아이콘을 잃는다(전례) — 그래서 식별자 목록으로 든다.",
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "cube",
+                                                                        "className": "text-xl text-gray-600 dark:text-gray-400",
+                                                                        "aria-hidden": "true"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Img",
+                                                                    "if": "{{_global.selectedModule?.icon_url && !(_local.selectedModuleIconBroken ?? []).includes(_global.selectedModule?.identifier)}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "이미지 404·손상 — 이 확장의 식별자만 깨진 목록에 더해 이미지를 감추고, 아래 깔린 글리프가\n                         다시 드러나게 한다. 불리언 하나로 들면 창이 재사용될 때 다음 확장까지 아이콘을 잃는다.",
+                                                                            "event": "onError",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "selectedModuleIconBroken": "{{[...(_local.selectedModuleIconBroken ?? []), _global.selectedModule?.identifier]}}"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "src": "{{_global.selectedModule.icon_url}}",
+                                                                        "alt": "$t:extensions.icon.alt|name={{_global.selectedModule?.name ?? ''}}",
+                                                                        "loading": "lazy",
+                                                                        "decoding": "async",
+                                                                        "className": "absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-gray-100 dark:bg-gray-700"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "min-w-0"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "props": {
+                                                                        "className": "text-primary font-semibold truncate"
+                                                                    },
+                                                                    "text": "{{_global.selectedModule?.name ?? ''}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Code",
+                                                                    "props": {
+                                                                        "className": "text-label-subtle text-xs"
+                                                                    },
+                                                                    "text": "{{_global.selectedModule?.identifier ?? ''}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label-subtle"
+                                                            },
+                                                            "text": "$t:admin.modules.modals.field_name"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-primary font-medium"
+                                                            },
+                                                            "text": "{{_global.selectedModule.name}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label-subtle"
+                                                            },
+                                                            "text": "$t:admin.modules.modals.field_version"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-primary font-medium"
+                                                            },
+                                                            "text": "v{{_global.selectedModule.version}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "col-span-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label-subtle"
+                                                            },
+                                                            "text": "$t:admin.modules.modals.field_description"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-primary font-medium"
+                                                            },
+                                                            "text": "{{_global.selectedModule.description}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label-subtle"
+                                                            },
+                                                            "text": "$t:admin.modules.modals.field_vendor"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-primary font-medium"
+                                                            },
+                                                            "text": "{{_global.selectedModule.vendor}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label-subtle"
+                                                            },
+                                                            "text": "$t:admin.modules.modals.field_license"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "라이선스 이름을 누르면 전문을 받아 별도 창으로 띄운다. 전문은 길어 상세 응답에 싣지 않고\n     이때 따로 받는다. 버튼이어야 키보드로도 열린다(종전 문단은 Tab 으로 닿지 않았다 — #736 F 실측).",
+                                                                    "type": "click",
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "apiCall",
+                                                                            "target": "/api/admin/modules/{{_global.selectedModule.identifier}}/license",
+                                                                            "auth_required": true,
+                                                                            "params": {
+                                                                                "method": "GET"
+                                                                            },
+                                                                            "onSuccess": [
+                                                                                {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "global",
+                                                                                        "extensionLicenseContent": "{{response.data.content}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "handler": "openModal",
+                                                                                    "target": "extension_license_modal"
+                                                                                }
+                                                                            ],
+                                                                            "onError": {
+                                                                                "handler": "toast",
+                                                                                "params": {
+                                                                                    "type": "error",
+                                                                                    "message": "{{error.message}}"
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "button",
+                                                                "className": "block text-left text-primary font-medium cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                                            },
+                                                            "text": "{{_global.selectedModule.license || '-'}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label-subtle"
+                                                            },
+                                                            "text": "$t:admin.modules.modals.field_status"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "{{_global.selectedModule.status === 'active' ? 'badge badge-green' : (_global.selectedModule.status === 'uninstalled' ? 'badge badge-blue' : 'badge badge-gray')}}"
+                                                                    },
+                                                                    "text": "{{_global.selectedModule.status === 'active' ? '$t:admin.modules.status.active' : (_global.selectedModule.status === 'uninstalled' ? '$t:admin.modules.status.not_installed' : '$t:admin.modules.status.inactive')}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
                                 },
                                 {
-                                  "handler": "openModal",
-                                  "target": "extension_license_modal"
-                                }
-                              ],
-                              "onError": [
+                                    "id": "dependencies_section",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2 mb-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "link",
+                                                        "className": "text-xl text-gray-500"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary font-semibold"
+                                                    },
+                                                    "text": "$t:admin.modules.modals.dependencies"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "row-stack"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.modules.modals.required_core_version"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{_global.selectedModule.requires_core}}",
+                                                            "props": {
+                                                                "className": "text-info-soft px-2 py-0.5 bg-blue-100 dark:bg-blue-900 rounded font-mono"
+                                                            },
+                                                            "text": "{{_global.selectedModule.requires_core}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!_global.selectedModule.requires_core}}",
+                                                            "props": {
+                                                                "className": "text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded"
+                                                            },
+                                                            "text": "$t:admin.modules.modals.no_required_core_version"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{!_global.selectedModule.dependencies || _global.selectedModule.dependencies.length === 0}}",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.modules.modals.no_dependencies_required"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{_global.selectedModule.dependencies && _global.selectedModule.dependencies.length > 0}}",
+                                                    "props": {
+                                                        "className": "row-stack"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "iteration": {
+                                                                "source": "_global.selectedModule.dependencies",
+                                                                "item_var": "dep"
+                                                            },
+                                                            "props": {
+                                                                "className": "flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "if": "{{dep.type === 'module'}}",
+                                                                    "props": {
+                                                                        "name": "cube",
+                                                                        "className": "text-base text-gray-500 dark:text-gray-400"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "if": "{{dep.type === 'plugin'}}",
+                                                                    "props": {
+                                                                        "name": "puzzle-piece",
+                                                                        "className": "text-base text-gray-500 dark:text-gray-400"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "text-heading"
+                                                                    },
+                                                                    "text": "{{dep.name || dep.identifier}} ({{dep.identifier}})"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono"
+                                                                    },
+                                                                    "text": "$t:admin.modules.modals.dependency_required_version|version={{dep.required_version}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{dep.installed_version}}",
+                                                                    "props": {
+                                                                        "className": "text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded font-mono"
+                                                                    },
+                                                                    "text": "$t:admin.modules.modals.dependency_installed_version|version={{dep.installed_version}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{dep.is_met}}",
+                                                                    "props": {
+                                                                        "className": "text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded"
+                                                                    },
+                                                                    "text": "$t:admin.modules.modals.dependency_met"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{!dep.is_met && !dep.installed_version}}",
+                                                                    "props": {
+                                                                        "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
+                                                                    },
+                                                                    "text": "$t:admin.modules.modals.dependency_not_installed"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{!dep.is_met && dep.installed_version && !dep.is_active}}",
+                                                                    "props": {
+                                                                        "className": "text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded"
+                                                                    },
+                                                                    "text": "$t:admin.modules.modals.dependency_inactive"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{!dep.is_met && dep.installed_version && dep.is_active}}",
+                                                                    "props": {
+                                                                        "className": "text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded"
+                                                                    },
+                                                                    "text": "$t:admin.modules.modals.dependency_unmet_version"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
                                 {
-                                  "handler": "toast",
-                                  "params": {
-                                    "type": "error",
-                                    "message": "{{error.message}}"
-                                  }
+                                    "comment": "함께 쓰면 연동되는 확장 (#639) — manifest `integrations`. 의존(dependencies)과 달리 없어도 이 확장은 동작하므로\n            설치를 막지 않고 알려만 준다. 미설치·비활성 대상은 배지로 표시한다. 선언이 없으면 절을 그리지 않는다.",
+                                    "id": "integrations_section",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_global.selectedModule?.integrations ?? []).length > 0}}",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2 mb-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "plug",
+                                                        "className": "text-xl text-gray-500",
+                                                        "aria-hidden": "true"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary font-semibold"
+                                                    },
+                                                    "text": "$t:admin.extension_integrations.title"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle mb-2"
+                                            },
+                                            "text": "$t:admin.extension_integrations.hint"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "row-stack"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "_global.selectedModule.integrations",
+                                                        "item_var": "item"
+                                                    },
+                                                    "props": {
+                                                        "className": "flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{item.type === 'module'}}",
+                                                            "props": {
+                                                                "name": "cube",
+                                                                "className": "text-base text-gray-500 dark:text-gray-400",
+                                                                "aria-hidden": "true"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{item.type === 'plugin'}}",
+                                                            "props": {
+                                                                "name": "puzzle-piece",
+                                                                "className": "text-base text-gray-500 dark:text-gray-400",
+                                                                "aria-hidden": "true"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{item.type === 'template'}}",
+                                                            "props": {
+                                                                "name": "palette",
+                                                                "className": "text-base text-gray-500 dark:text-gray-400",
+                                                                "aria-hidden": "true"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-heading"
+                                                            },
+                                                            "text": "{{item.name}} ({{item.identifier}})"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!item.is_installed}}",
+                                                            "props": {
+                                                                "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
+                                                            },
+                                                            "text": "$t:admin.extension_integrations.not_installed"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{item.is_installed && !item.is_active}}",
+                                                            "props": {
+                                                                "className": "text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded"
+                                                            },
+                                                            "text": "$t:admin.extension_integrations.inactive"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "supported_languages_section",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2 mb-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "language",
+                                                        "className": "text-xl text-gray-500"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary font-semibold"
+                                                    },
+                                                    "text": "$t:admin.modules.modals.supported_languages"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!_global.selectedModule.language_packs || _global.selectedModule.language_packs.length === 0}}",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.modules.modals.no_supported_languages"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{_global.selectedModule.language_packs && _global.selectedModule.language_packs.length > 0}}",
+                                            "props": {
+                                                "className": "row-stack"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "_global.selectedModule.language_packs",
+                                                        "item_var": "lp"
+                                                    },
+                                                    "props": {
+                                                        "className": "flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-heading"
+                                                            },
+                                                            "text": "{{lp.locale_native_name}} ({{lp.locale}})"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{lp.origin === 'built_in'}}",
+                                                            "props": {
+                                                                "className": "text-info-soft px-2 py-0.5 bg-blue-100 dark:bg-blue-900 rounded"
+                                                            },
+                                                            "text": "$t:admin.language_packs.origin.built_in"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{lp.origin === 'bundled'}}",
+                                                            "props": {
+                                                                "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
+                                                            },
+                                                            "text": "$t:admin.language_packs.origin.bundled"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{lp.origin === 'user_installed'}}",
+                                                            "props": {
+                                                                "className": "text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded"
+                                                            },
+                                                            "text": "$t:admin.language_packs.origin.user_installed"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{lp.status === 'active'}}",
+                                                            "props": {
+                                                                "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded"
+                                                            },
+                                                            "text": "$t:admin.language_packs.status.active"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{lp.status === 'inactive'}}",
+                                                            "props": {
+                                                                "className": "text-tertiary px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
+                                                            },
+                                                            "text": "$t:admin.language_packs.status.inactive"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{lp.status === 'uninstalled'}}",
+                                                            "props": {
+                                                                "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded"
+                                                            },
+                                                            "text": "$t:admin.language_packs.status.uninstalled"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{lp.version}}",
+                                                            "props": {
+                                                                "className": "text-tertiary font-mono"
+                                                            },
+                                                            "text": "v{{lp.version}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "admin_menus_section",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2 mb-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "list",
+                                                        "className": "text-xl text-gray-500"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary font-semibold"
+                                                    },
+                                                    "text": "$t:admin.modules.modals.admin_menus"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!_global.selectedModule.admin_menus || _global.selectedModule.admin_menus.length === 0}}",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.modules.modals.no_admin_menus"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Ul",
+                                            "if": "{{_global.selectedModule.admin_menus && _global.selectedModule.admin_menus.length > 0}}",
+                                            "props": {
+                                                "className": "list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Li",
+                                                    "iteration": {
+                                                        "source": "_global.selectedModule.admin_menus",
+                                                        "item_var": "menu"
+                                                    },
+                                                    "text": "{{$localized(menu.name)}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "permissions_section",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2 mb-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "key",
+                                                        "className": "text-xl text-gray-500"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary font-semibold"
+                                                    },
+                                                    "text": "$t:admin.modules.modals.permissions"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!_global.selectedModule.permissions || _global.selectedModule.permissions.length === 0}}",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.modules.modals.no_permissions"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{_global.selectedModule.permissions && _global.selectedModule.permissions.length > 0}}",
+                                            "props": {
+                                                "className": "row-stack"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "_global.selectedModule.permissions",
+                                                        "item_var": "category"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
+                                                            },
+                                                            "text": "{{$localized(category.name)}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "flex flex-wrap gap-1.5"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "iteration": {
+                                                                        "source": "category.permissions",
+                                                                        "item_var": "perm"
+                                                                    },
+                                                                    "props": {
+                                                                        "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono"
+                                                                    },
+                                                                    "text": "{{$localized(perm.name) + ' (' + category.identifier + '.' + perm.action + ')'}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "roles_section",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2 mb-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "user-group",
+                                                        "className": "text-xl text-gray-500"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary font-semibold"
+                                                    },
+                                                    "text": "$t:admin.modules.modals.roles"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!_global.selectedModule.roles || _global.selectedModule.roles.length === 0}}",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.modules.modals.no_roles"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{_global.selectedModule.roles && _global.selectedModule.roles.length > 0}}",
+                                            "props": {
+                                                "className": "flex flex-wrap gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "iteration": {
+                                                        "source": "_global.selectedModule.roles",
+                                                        "item_var": "role"
+                                                    },
+                                                    "props": {
+                                                        "className": "px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded"
+                                                    },
+                                                    "text": "{{$localized(role.name) + ' (' + role.identifier + ')'}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "layouts_section",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2 mb-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "file-code",
+                                                        "className": "text-xl text-gray-500"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary font-semibold"
+                                                    },
+                                                    "text": "$t:admin.modules.modals.layouts"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!_global.selectedModule.layouts_count || _global.selectedModule.layouts_count === 0}}",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.modules.modals.no_layouts"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{_global.selectedModule.layouts_count && _global.selectedModule.layouts_count > 0}}",
+                                            "props": {
+                                                "className": "text-body"
+                                            },
+                                            "text": "$t:admin.modules.modals.layouts_count|count={{_global.selectedModule.layouts_count}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "changelog_section",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2 mb-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "clock-rotate-left",
+                                                        "className": "text-xl text-gray-500"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-primary font-semibold"
+                                                    },
+                                                    "text": "$t:admin.modules.modals.changelog"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!_global.moduleChangelog || _global.moduleChangelog.length === 0}}",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.modules.modals.no_changelog"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{_global.moduleChangelog && _global.moduleChangelog.length > 0}}",
+                                            "props": {
+                                                "className": "max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "_global.moduleChangelog",
+                                                        "item_var": "entry",
+                                                        "index_var": "entryIdx"
+                                                    },
+                                                    "props": {
+                                                        "className": "pb-3 mb-3 border-b border-gray-200 dark:border-gray-700 last:border-b-0 last:mb-0 last:pb-0"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1"
+                                                            },
+                                                            "text": "v{{entry.version}}{{entry.date ? ' (' + entry.date + ')' : ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "iteration": {
+                                                                "source": "entry.categories",
+                                                                "item_var": "category",
+                                                                "index_var": "catIdx"
+                                                            },
+                                                            "props": {
+                                                                "className": "row-stack"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "props": {
+                                                                                "className": "text-secondary text-xs font-medium"
+                                                                            },
+                                                                            "text": "{{category.name}}"
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Div",
+                                                                            "iteration": {
+                                                                                "source": "category.items",
+                                                                                "item_var": "changeItem",
+                                                                                "index_var": "itemIdx"
+                                                                            },
+                                                                            "props": {
+                                                                                "className": "ml-3 space-y-0.5"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Div",
+                                                                                    "props": {
+                                                                                        "className": "text-secondary text-xs"
+                                                                                    },
+                                                                                    "text": "• {{changeItem}}"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
                                 }
-                              ]
-                            }
-                          ]
+                            ]
                         }
-                      ],
-                      "text": "{{_global.selectedModule.license || '-'}}"
-                    }
-                  ]
+                    ]
                 },
                 {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:admin.modules.modals.field_status"
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "{{_global.selectedModule.status === 'active' ? 'badge badge-green' : (_global.selectedModule.status === 'uninstalled' ? 'badge badge-blue' : 'badge badge-gray')}}"
-                          },
-                          "text": "{{_global.selectedModule.status === 'active' ? '$t:admin.modules.status.active' : (_global.selectedModule.status === 'uninstalled' ? '$t:admin.modules.status.not_installed' : '$t:admin.modules.status.inactive')}}"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "dependencies_section",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 mb-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "link",
-                    "className": "w-5 h-5 text-gray-500"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-primary font-semibold"
-                  },
-                  "text": "$t:admin.modules.modals.dependencies"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "row-stack"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-center gap-2"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
-                      },
-                      "text": "$t:admin.modules.modals.required_core_version"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{_global.selectedModule.requires_core}}",
-                      "props": {
-                        "className": "text-info-soft px-2 py-0.5 bg-blue-100 dark:bg-blue-900 rounded font-mono"
-                      },
-                      "text": "{{_global.selectedModule.requires_core}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{!_global.selectedModule.requires_core}}",
-                      "props": {
-                        "className": "text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded"
-                      },
-                      "text": "$t:admin.modules.modals.no_required_core_version"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "if": "{{!_global.selectedModule.dependencies || _global.selectedModule.dependencies.length === 0}}",
-                  "props": {
-                    "className": "text-label-subtle"
-                  },
-                  "text": "$t:admin.modules.modals.no_dependencies_required"
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{_global.selectedModule.dependencies && _global.selectedModule.dependencies.length > 0}}",
-                  "props": {
-                    "className": "row-stack"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "iteration": {
-                        "source": "_global.selectedModule.dependencies",
-                        "item_var": "dep"
-                      },
-                      "props": {
-                        "className": "flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Icon",
-                          "if": "{{dep.type === 'module'}}",
-                          "props": {
-                            "name": "cube",
-                            "className": "w-4 h-4 text-gray-500 dark:text-gray-400"
-                          }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Icon",
-                          "if": "{{dep.type === 'plugin'}}",
-                          "props": {
-                            "name": "puzzle-piece",
-                            "className": "w-4 h-4 text-gray-500 dark:text-gray-400"
-                          }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-heading"
-                          },
-                          "text": "{{dep.name}} ({{dep.identifier}})"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono"
-                          },
-                          "text": "$t:admin.modules.modals.dependency_required_version|version={{dep.required_version}}"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{dep.installed_version}}",
-                          "props": {
-                            "className": "text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded font-mono"
-                          },
-                          "text": "$t:admin.modules.modals.dependency_installed_version|version={{dep.installed_version}}"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{dep.is_met}}",
-                          "props": {
-                            "className": "text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded"
-                          },
-                          "text": "$t:admin.modules.modals.dependency_met"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{!dep.is_met && !dep.installed_version}}",
-                          "props": {
-                            "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
-                          },
-                          "text": "$t:admin.modules.modals.dependency_not_installed"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{!dep.is_met && dep.installed_version && !dep.is_active}}",
-                          "props": {
-                            "className": "text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded"
-                          },
-                          "text": "$t:admin.modules.modals.dependency_inactive"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{!dep.is_met && dep.installed_version && dep.is_active}}",
-                          "props": {
-                            "className": "text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded"
-                          },
-                          "text": "$t:admin.modules.modals.dependency_unmet_version"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "supported_languages_section",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": { "className": "flex-center gap-2 mb-3" },
-              "children": [
-                { "type": "basic", "name": "Icon", "props": { "name": "language", "className": "w-5 h-5 text-gray-500" } },
-                { "type": "basic", "name": "Span", "props": { "className": "text-primary font-semibold" }, "text": "$t:admin.modules.modals.supported_languages" }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "if": "{{!_global.selectedModule.language_packs || _global.selectedModule.language_packs.length === 0}}",
-              "props": { "className": "text-label-subtle" },
-              "text": "$t:admin.modules.modals.no_supported_languages"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_global.selectedModule.language_packs && _global.selectedModule.language_packs.length > 0}}",
-              "props": { "className": "row-stack" },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "iteration": { "source": "_global.selectedModule.language_packs", "item_var": "lp" },
-                  "props": { "className": "flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700" },
-                  "children": [
-                    { "type": "basic", "name": "Span", "props": { "className": "text-heading" }, "text": "{{lp.locale_native_name}} ({{lp.locale}})" },
-                    { "type": "basic", "name": "Span", "if": "{{lp.origin === 'built_in'}}", "props": { "className": "text-info-soft px-2 py-0.5 bg-blue-100 dark:bg-blue-900 rounded" }, "text": "$t:admin.language_packs.origin.built_in" },
-                    { "type": "basic", "name": "Span", "if": "{{lp.origin === 'bundled'}}", "props": { "className": "px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded" }, "text": "$t:admin.language_packs.origin.bundled" },
-                    { "type": "basic", "name": "Span", "if": "{{lp.origin === 'user_installed'}}", "props": { "className": "text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded" }, "text": "$t:admin.language_packs.origin.user_installed" },
-                    { "type": "basic", "name": "Span", "if": "{{lp.status === 'active'}}", "props": { "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded" }, "text": "$t:admin.language_packs.status.active" },
-                    { "type": "basic", "name": "Span", "if": "{{lp.status === 'inactive'}}", "props": { "className": "text-tertiary px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded" }, "text": "$t:admin.language_packs.status.inactive" },
-                    { "type": "basic", "name": "Span", "if": "{{lp.status === 'uninstalled'}}", "props": { "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded" }, "text": "$t:admin.language_packs.status.uninstalled" },
-                    { "type": "basic", "name": "Span", "if": "{{lp.version}}", "props": { "className": "text-tertiary font-mono" }, "text": "v{{lp.version}}" }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "admin_menus_section",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 mb-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "list",
-                    "className": "w-5 h-5 text-gray-500"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-primary font-semibold"
-                  },
-                  "text": "$t:admin.modules.modals.admin_menus"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "if": "{{!_global.selectedModule.admin_menus || _global.selectedModule.admin_menus.length === 0}}",
-              "props": {
-                "className": "text-label-subtle"
-              },
-              "text": "$t:admin.modules.modals.no_admin_menus"
-            },
-            {
-              "type": "basic",
-              "name": "Ul",
-              "if": "{{_global.selectedModule.admin_menus && _global.selectedModule.admin_menus.length > 0}}",
-              "props": {
-                "className": "list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Li",
-                  "iteration": {
-                    "source": "_global.selectedModule.admin_menus",
-                    "item_var": "menu"
-                  },
-                  "text": "{{$localized(menu.name)}}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "permissions_section",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 mb-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "key",
-                    "className": "w-5 h-5 text-gray-500"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-primary font-semibold"
-                  },
-                  "text": "$t:admin.modules.modals.permissions"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "if": "{{!_global.selectedModule.permissions || _global.selectedModule.permissions.length === 0}}",
-              "props": {
-                "className": "text-label-subtle"
-              },
-              "text": "$t:admin.modules.modals.no_permissions"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_global.selectedModule.permissions && _global.selectedModule.permissions.length > 0}}",
-              "props": {
-                "className": "row-stack"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "iteration": {
-                    "source": "_global.selectedModule.permissions",
-                    "item_var": "category"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block"
-                      },
-                      "text": "{{$localized(category.name)}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex flex-wrap gap-1.5"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "iteration": {
-                            "source": "category.permissions",
-                            "item_var": "perm"
-                          },
-                          "props": {
-                            "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono"
-                          },
-                          "text": "{{$localized(perm.name) + ' (' + category.identifier + '.' + perm.action + ')'}}"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "roles_section",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 mb-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "user-group",
-                    "className": "w-5 h-5 text-gray-500"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-primary font-semibold"
-                  },
-                  "text": "$t:admin.modules.modals.roles"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "if": "{{!_global.selectedModule.roles || _global.selectedModule.roles.length === 0}}",
-              "props": {
-                "className": "text-label-subtle"
-              },
-              "text": "$t:admin.modules.modals.no_roles"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_global.selectedModule.roles && _global.selectedModule.roles.length > 0}}",
-              "props": {
-                "className": "flex flex-wrap gap-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "iteration": {
-                    "source": "_global.selectedModule.roles",
-                    "item_var": "role"
-                  },
-                  "props": {
-                    "className": "px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded"
-                  },
-                  "text": "{{$localized(role.name) + ' (' + role.identifier + ')'}}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "layouts_section",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 mb-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "file-code",
-                    "className": "w-5 h-5 text-gray-500"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-primary font-semibold"
-                  },
-                  "text": "$t:admin.modules.modals.layouts"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "if": "{{!_global.selectedModule.layouts_count || _global.selectedModule.layouts_count === 0}}",
-              "props": {
-                "className": "text-label-subtle"
-              },
-              "text": "$t:admin.modules.modals.no_layouts"
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "if": "{{_global.selectedModule.layouts_count && _global.selectedModule.layouts_count > 0}}",
-              "props": {
-                "className": "text-body"
-              },
-              "text": "$t:admin.modules.modals.layouts_count|count={{_global.selectedModule.layouts_count}}"
-            }
-          ]
-        },
-        {
-          "id": "changelog_section",
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 mb-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "clock-rotate-left",
-                    "className": "w-5 h-5 text-gray-500"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-primary font-semibold"
-                  },
-                  "text": "$t:admin.modules.modals.changelog"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "if": "{{!_global.moduleChangelog || _global.moduleChangelog.length === 0}}",
-              "props": {
-                "className": "text-label-subtle"
-              },
-              "text": "$t:admin.modules.modals.no_changelog"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_global.moduleChangelog && _global.moduleChangelog.length > 0}}",
-              "props": {
-                "className": "max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-3"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "iteration": {
-                    "source": "_global.moduleChangelog",
-                    "item_var": "entry",
-                    "index_var": "entryIdx"
-                  },
-                  "props": {
-                    "className": "pb-3 mb-3 border-b border-gray-200 dark:border-gray-700 last:border-b-0 last:mb-0 last:pb-0"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1"
-                      },
-                      "text": "v{{entry.version}}{{entry.date ? ' (' + entry.date + ')' : ''}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "row-stack"
-                      },
-                      "iteration": {
-                        "source": "entry.categories",
-                        "item_var": "category",
-                        "index_var": "catIdx"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-secondary text-xs font-medium"
-                              },
-                              "text": "{{category.name}}"
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
                             },
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "props": {
-                                "className": "ml-3 space-y-0.5"
-                              },
-                              "iteration": {
-                                "source": "category.items",
-                                "item_var": "changeItem",
-                                "index_var": "itemIdx"
-                              },
-                              "children": [
+                            "children": [
                                 {
-                                  "type": "basic",
-                                  "name": "Div",
-                                  "props": {
-                                    "className": "text-secondary text-xs"
-                                  },
-                                  "text": "• {{changeItem}}"
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.close"
                                 }
-                              ]
-                            }
-                          ]
+                            ]
                         }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": { "className": "flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0" },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
-          },
-          "actions": [
-            { "type": "click", "handler": "closeModal" }
-          ],
-          "children": [
-            { "type": "basic", "name": "Span", "text": "$t:common.close" }
-          ]
-        }
-      ]
-    }
-      ]
-    }
-  ]
+    ]
 }

@@ -31,6 +31,12 @@ type BoardAuthFixtures = {
   attachmentDownloadToken: string;
   /** 본문 썸네일 폴백 E2E 용 — 게시판 CRUD + 전용 게시판(e2e-content-thumbnail) 글/첨부 관리 토큰 (공개 #22) */
   contentThumbnailToken: string;
+  /** 관리자 상세 원글·답변 첨부 내려받기 E2E 용 — 게시판 CRUD + 전용 게시판(e2e-reply-attachment) 글/첨부 관리 토큰 (#703) */
+  replyAttachmentToken: string;
+  /** 게시글 조회 권한 토큰 (#524 스크랩 사용자 흐름 검증용) */
+  memberScrapToken: string;
+  /** 게시판/게시글 조회 권한 토큰 (반응 등록/전환/해제 흐름 검증용, 반응은 로그인만 요구) */
+  reactionToken: string;
 };
 
 export const test = base.extend<BoardAuthFixtures>({
@@ -52,7 +58,7 @@ export const test = base.extend<BoardAuthFixtures>({
     );
   },
   replyPolicyToken: async ({}, use) => {
-    // 게시판 스코프 권한은 slug 가 식별자에 박히므로 전용 게시판 slug 로 발급.
+    // 게시판 스코프 권한은 slug 가 식별자에 박혀 게시판을 만든 뒤에야 생긴다 — admin 역할이 그 권한을 받는다.
     // core.profile.read: 게시판 생성 필수값(board_manager_ids)에 넣을 본인 uuid 조회용.
     await use(
       issueToken(
@@ -63,9 +69,8 @@ export const test = base.extend<BoardAuthFixtures>({
         'sirsoft-board.boards.delete',
         'sirsoft-board.settings.read',
         'sirsoft-board.settings.update',
-        'sirsoft-board.e2e-reply-policy.admin.posts.read',
-        'sirsoft-board.e2e-reply-policy.admin.posts.write',
-        'sirsoft-board.e2e-reply-policy.admin.manage',
+        // 게시판별 권한(sirsoft-board.{slug}.admin.*)은 spec 이 게시판을 만들 때 생기고 admin 역할(함께 부여)에 붙는다.
+        // 게시판이 생기기 전에 그 식별자로 발급하면 발급 커맨드가 거절한다(없는 권한 — 7.1.0 O-D2).
       ),
     );
   },
@@ -83,7 +88,7 @@ export const test = base.extend<BoardAuthFixtures>({
     );
   },
   attachmentDownloadToken: async ({}, use) => {
-    // 다운로드는 scope 권한(sirsoft-board.{slug}.attachments.download). 임의 식별자라 즉시 발급.
+    // 다운로드는 scope 권한(sirsoft-board.{slug}.attachments.download). notice 게시판이 있어야 발급된다(없으면 발급 커맨드가 거절).
     await use(
       issueToken(
         'sirsoft-board.boards.read',
@@ -100,10 +105,34 @@ export const test = base.extend<BoardAuthFixtures>({
         'sirsoft-board.boards.create',
         'sirsoft-board.boards.update',
         'sirsoft-board.boards.delete',
-        'sirsoft-board.e2e-content-thumbnail.admin.posts.read',
-        'sirsoft-board.e2e-content-thumbnail.admin.posts.write',
-        'sirsoft-board.e2e-content-thumbnail.admin.manage',
-        'sirsoft-board.e2e-content-thumbnail.admin.attachments.upload',
+        // 게시판별 권한(sirsoft-board.{slug}.admin.*)은 spec 이 게시판을 만들 때 생기고 admin 역할(함께 부여)에 붙는다.
+        // 게시판이 생기기 전에 그 식별자로 발급하면 발급 커맨드가 거절한다(없는 권한 — 7.1.0 O-D2).
+      ),
+    );
+  },
+  replyAttachmentToken: async ({}, use) => {
+    // 전용 게시판(e2e-reply-attachment)을 spec 안에서 생성/삭제하고, 관리자 글·답변 작성 +
+    // 첨부 업로드 후 관리자 상세 화면에서 원글·답변 첨부를 내려받는다 (#703).
+    await use(
+      issueToken(
+        'sirsoft-board.boards.read',
+        'sirsoft-board.boards.create',
+        'sirsoft-board.boards.delete',
+        // 게시판별 권한(sirsoft-board.{slug}.admin.*)은 spec 이 게시판을 만들 때 생기고 admin 역할(함께 부여)에 붙는다.
+        // 게시판이 생기기 전에 그 식별자로 발급하면 발급 커맨드가 거절한다(없는 권한 — 7.1.0 O-D2).
+      ),
+    );
+  },
+  memberScrapToken: async ({}, use) => {
+    // 스크랩은 로그인 회원이면 누구나 가능. 게시글 조회 권한만 있으면 상세 진입 → 토글 가능.
+    await use(issueToken('sirsoft-board.free.posts.read'));
+  },
+  reactionToken: async ({}, use) => {
+    // 반응은 별도 권한 없이 로그인(auth:sanctum)만 요구. 게시글 조회 권한만 발급.
+    await use(
+      issueToken(
+        'sirsoft-board.boards.read',
+        'sirsoft-board.notice.posts.read',
       ),
     );
   },

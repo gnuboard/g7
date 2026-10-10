@@ -1,0 +1,22 @@
+feature: 배송정책 등록 화면 입력칸의 라벨 이름
+
+description: |
+  관리자 배송정책 등록 화면의 교환·반품 회수지(우편번호·기본주소·상세주소)와 배송비·반품/교환 배송비 숫자칸이
+  화면 낭독기에 이름 없는 칸으로 읽혔다. 이 템플릿의 실제 basic 부품으로 이커머스 모듈의 구운 레이아웃을 그려,
+  각 칸이 보이는 라벨 이름으로 읽히고 id 가 겹치지 않으며 aria-labelledby 가 없는 id 를 가리키지 않는지 고정한다.
+  산정 방식 라디오는 감싼 라벨 이름을 그대로 지킨다.
+
+  수정 이력: 이커머스 전수 실측 후속 B7 (2026-10-08).
+
+axes:
+  section: [claim_addresses, charge_settings, claim_country_fee]
+
+effects:
+  - shipping_policy_claim_address_named   # 회수지 다섯 칸이 라벨 이름
+  - shipping_policy_fee_named             # 배송비·부과 정책·반품/교환 배송비가 라벨 이름
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/shippingPolicyFormLabelNames.test.tsx
+
+validation:
+  browser_check: 관리자 배송정책 등록 화면 접근성 트리 — 위 칸들의 이름이 라벨 글자, 중복 id 0

@@ -1,0 +1,10 @@
+<!-- 언어팩 목록의 **플러그인 범위** 진입점. `admin_language_packs` 와 같은 뼈대이고 `scopeContext` 만 다르다. -->
+<layout name="admin_plugin_language_packs" version="1.0.0" extends="admin_language_pack_list">
+  <meta title="$t:admin.language_packs.page_title" description="$t:admin.language_packs.page_description"/>
+  <init-local>
+    <field name="scopeContext" value="plugin"/>
+  </init-local>
+  <permissions>
+    <permission>core.language_packs.read</permission>
+  </permissions>
+</layout>

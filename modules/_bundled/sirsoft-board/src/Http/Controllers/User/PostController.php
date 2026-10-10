@@ -6,6 +6,7 @@ use App\Enums\PermissionType;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Models\User;
 use App\Support\Query\PaginationLimits;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ use Modules\Sirsoft\Board\Exceptions\BoardNotFoundException;
 use Modules\Sirsoft\Board\Exceptions\PostHasRepliesException;
 use Modules\Sirsoft\Board\Exceptions\PostNotFoundException;
 use Modules\Sirsoft\Board\Http\Requests\User\DestroyPostRequest;
+use Modules\Sirsoft\Board\Http\Requests\User\PostIndexRequest;
 use Modules\Sirsoft\Board\Http\Requests\User\StorePostRequest;
 use Modules\Sirsoft\Board\Http\Requests\User\UpdatePostRequest;
 use Modules\Sirsoft\Board\Http\Requests\User\VerifyGuestPasswordRequest;
@@ -28,10 +30,13 @@ use Modules\Sirsoft\Board\Http\Resources\PostCollection;
 use Modules\Sirsoft\Board\Http\Resources\PostResource;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
+use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Services\PostService;
+use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Services\ReportService;
+use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -66,12 +71,11 @@ class PostController extends PublicBaseController
     /**
      * 게시글 목록을 조회합니다.
      *
-     * @param  Request  $request  HTTP 요청
+     * @param  PostIndexRequest  $request  목록 조회 요청 (search_field 검증)
      * @param  string  $slug  게시판 슬러그
      * @return JsonResponse 게시글 목록 응답
      */
-    // audit:allow controller-base-request-injection reason: GET 목록 조회. all()/header() 로 필터·페이징 파라미터만 읽음 (검증 불필요)
-    public function index(Request $request, string $slug): JsonResponse
+    public function index(PostIndexRequest $request, string $slug): JsonResponse
     {
         try {
             // 게시판 조회 및 활성화 확인
@@ -278,8 +282,19 @@ class PostController extends PublicBaseController
             // 요청 데이터 준비
             $data = $request->validated();
 
+            // 공지 지정은 게시판 관리 권한 또는 공지 등록 권한 보유자만 가능하다.
+            // 화면은 권한자에게만 옵션을 노출하지만 UI 은닉일 뿐이므로 서버가 판정한다.
+            if (! empty($data['is_notice']) && ! $this->canSetNotice($slug)) {
+                return $this->forbidden('sirsoft-board::messages.permission.notice_denied');
+            }
+
             // user_id 설정 (인증 필수)
             $data['user_id'] = Auth::id();
+
+            // 회원 글의 작성자명은 계정 이름이 SSoT — 요청값을 저장하면 작성자 검색·정렬이 오염된다.
+            if (Auth::check()) {
+                unset($data['author_name']);
+            }
 
             // IP 주소 설정
             $data['ip_address'] = $request->ip();
@@ -367,6 +382,29 @@ class PostController extends PublicBaseController
             // 남고 이후 본인 확인이 "bcrypt 가 아니다" 예외로 끝나 본인이 자기 글을 수정·삭제할
             // 수 없게 된다. 댓글 수정 경로(CommentController::update)와 같은 규칙이다.
             $data = collect($request->validated())->except(['password', 'verification_token'])->toArray();
+
+            // 공지 등록·해제는 게시판 관리 권한 또는 공지 등록 권한 보유자만 가능하다.
+            // 수정 폼은 서버가 준 기존 값을 통째로 되돌려 보내므로, 값이 바뀔 때만 판정한다 —
+            // 권한자가 공지로 지정한 글을 작성자가 고칠 때 같은 값이 다시 오는 것은 막지 않는다.
+            if (array_key_exists('is_notice', $data)
+                && (bool) $data['is_notice'] !== (bool) $post->is_notice
+                && ! $this->canSetNotice($slug)) {
+                return $this->forbidden('sirsoft-board::messages.permission.notice_denied');
+            }
+
+            // secret_mode 에 따른 비밀글 설정 검증 (작성 경로와 같은 규칙)
+            if (array_key_exists('is_secret', $data)) {
+                if ($board->secret_mode === SecretMode::Disabled) {
+                    // 비밀글 기능이 꺼진 게시판에서 일반글을 비밀글로 바꾸는 요청은 거부한다.
+                    // 기능을 끄기 전에 쓴 비밀글이 같은 값으로 다시 오는 것은 전환이 아니므로 통과시킨다.
+                    if (! empty($data['is_secret']) && ! $post->is_secret) {
+                        return $this->error('sirsoft-board::messages.posts.secret_post_not_allowed', 403);
+                    }
+                } elseif ($board->secret_mode === SecretMode::Always) {
+                    // 비밀글 필수 게시판에서는 비밀글 해제를 허용하지 않는다.
+                    $data['is_secret'] = true;
+                }
+            }
 
             // `attachment_ids` 를 Service 로 넘기지 않으면 검증(형식·개수 상한 합산)은 통과하고
             // 첨부만 조용히 연결되지 않는다 (200 + 첨부 0 건). 관리자 경로는 넘기고 있으므로
@@ -603,6 +641,12 @@ class PostController extends PublicBaseController
             // 게시글 폼에서는 게시판 이름을 로컬라이즈된 문자열로 반환
             $boardData['name'] = $board->getLocalizedName();
 
+            // 최대 파일 크기가 비어 있으면(기본값 따름) 업로드 검증과 같은 게시판 기본값을 내려 준다 —
+            // 업로더 안내·클라이언트 용량 차단이 서버 상한과 어긋나지 않도록
+            $boardData['max_file_size'] = $board->max_file_size
+                ?? g7_module_settings('sirsoft-board', 'basic_defaults.max_file_size')
+                ?? 10;
+
             $metaData = [
                 'board' => $boardData,
             ];
@@ -626,6 +670,8 @@ class PostController extends PublicBaseController
                 $token = $this->verificationTokenFrom($request);
                 if ($requiresPassword && $token !== '' && $this->verificationTokenMatches($slug, $postId, $token)) {
                     $requiresPassword = false;
+                    // 비밀번호를 맞힌 작성자 — 비밀글 첨부 목록을 받게 form-data 와 같이 검증 완료로 표시
+                    $post->password_verified = true;
                 }
 
                 $metaData['requires_password'] = $requiresPassword;
@@ -787,26 +833,6 @@ class PostController extends PublicBaseController
     }
 
     /**
-     * 사용자 페이지에서 게시판 관리 권한을 보유했는지 확인합니다.
-     *
-     * 관리자 페이지 권한(admin.manage)과 사용자 페이지 관리 권한(manager)을
-     * 모두 인정합니다. 사용자 페이지 화면은 manager 권한으로 can_manage 를
-     * 노출하므로, 실제 처리도 manager 를 인정해야 화면-서버 정합이 맞습니다.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @return bool 관리 권한 보유 여부
-     */
-    private function hasBoardManagePermission(string $slug): bool
-    {
-        if (! Auth::check()) {
-            return false;
-        }
-
-        return $this->checkBoardPermission($slug, 'admin.manage')
-            || $this->checkBoardPermission($slug, 'manager', PermissionType::User);
-    }
-
-    /**
      * 부모 게시글이 답글 작성 가능한 상태인지 검증합니다.
      *
      * 블라인드/삭제된 부모글에는 답글 폼 진입 단계에서 차단하여,
@@ -814,16 +840,25 @@ class PostController extends PublicBaseController
      * 차단은 PostNotFoundException(404)으로 처리하여 부모글의 존재 자체를 숨깁니다.
      * (제출 단계 차단은 ParentPostValidationRule 이 별도로 수행)
      *
+     * 부모글이 비밀글이면 열람 권한(SecretContentGate::canWriteChild)이 있는 요청만 통과합니다.
+     * 답글 폼은 부모 원문을 함께 싣기 때문에, 폼 진입이 곧 비밀글 읽기가 되던 결함(KVE-2026-2375)을
+     * 막습니다. 제출 단계 ParentPostValidationRule 과 같은 판정입니다.
+     *
      * @param  Post  $parentPost  부모 게시글 모델
      * @param  int  $parentId  부모 게시글 ID (예외 메시지용)
+     * @return void
      *
-     * @throws PostNotFoundException 부모글이 블라인드/삭제 상태인 경우
+     * @throws PostNotFoundException 부모글이 블라인드/삭제 상태이거나, 열람할 수 없는 비밀글인 경우
      */
     private function assertParentReplyable(Post $parentPost, int $parentId): void
     {
         if ($parentPost->status === PostStatus::Blinded
             || $parentPost->status === PostStatus::Deleted
             || $parentPost->deleted_at !== null) {
+            throw new PostNotFoundException($parentId);
+        }
+
+        if (! app(SecretContentGate::class)->canWriteChild($parentPost)) {
             throw new PostNotFoundException($parentId);
         }
     }
@@ -1050,9 +1085,18 @@ class PostController extends PublicBaseController
      * @param  Board  $board  이미 조회한 게시판 (재조회 방지)
      * @param  string  $slug  게시판 슬러그
      * @param  int  $id  게시글 ID
+     * @return void
      */
     private function attachComments(Request $request, Post $post, Board $board, string $slug, int $id): void
     {
+        // 댓글 열람 권한(comments.read)이 없으면 댓글을 싣지 않는다 — 화면은 can_read_comments 로 가렸지만 응답에는
+        // 원문이 그대로 실렸다. 전량·comment_page 두 경로 모두 여기서 막는다.
+        if (! $this->checkBoardPermission($slug, 'comments.read', PermissionType::User)) {
+            $post->setRelation('comments', new Collection);
+
+            return;
+        }
+
         // manager 권한 체크 (삭제 게시글/댓글 포함 여부 결정)
         $canViewDeleted = $this->checkBoardPermission($slug, 'manager', PermissionType::User);
 
@@ -1099,17 +1143,27 @@ class PostController extends PublicBaseController
             $reportedCommentIds = $this->reportService
                 ->getReportedTargetIds($user->id, $board->id, 'comment', $commentIds);
 
+            // 내 댓글 반응도 같은 이유로 일괄 조회한다 (댓글 수와 무관하게 쿼리 1회).
+            $myCommentReactions = app(ReactionRepositoryInterface::class)
+                ->getUserReactionTypeIdsByTargets($user->id, ReactionService::TARGET_COMMENT, $commentIds);
+
             foreach ($comments as $comment) {
                 $comment->is_already_reported_preloaded = in_array($comment->id, $reportedCommentIds);
+                // 정당한 null("반응 없음")과 "프리로드 안 됨"을 구분하려면 키 자체가 있어야 한다.
+                $comment->my_reaction_type_id_preloaded = $myCommentReactions[$comment->id] ?? null;
                 $comment->setRelation('post', $post);
             }
         } else {
-            // 비로그인: 신고 불가이므로 모두 false
+            // 비로그인: 신고·반응 불가이므로 모두 false/null
             foreach ($comments as $comment) {
                 $comment->is_already_reported_preloaded = false;
+                $comment->my_reaction_type_id_preloaded = null;
                 $comment->setRelation('post', $post);
             }
         }
+
+        // 비밀 대댓글 판정에 쓰는 부모 댓글 작성자 — 댓글마다 조회하지 않게 목록에서 미리 싣는다
+        SecretContentGate::preloadParentCommentOwners($comments);
 
         // 정렬된 댓글을 post에 설정
         $post->setRelation('comments', $comments);

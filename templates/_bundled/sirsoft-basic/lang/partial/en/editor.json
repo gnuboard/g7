@@ -452,23 +452,6 @@
       "full": "Full",
       "icon": "Icon"
     },
-    "pr_user_reaction": {
-      "label": "My Reaction",
-      "like": "Like",
-      "funny": "Funny",
-      "agree": "Agree",
-      "thanks": "Thanks",
-      "wow": "Wow"
-    },
-    "pr_post_id": {
-      "label": "Post ID"
-    },
-    "pr_size": {
-      "label": "Size",
-      "sm": "SM",
-      "md": "MD",
-      "lg": "LG"
-    },
     "pi_label": {
       "label": "Label"
     },
@@ -677,6 +660,23 @@
       "label": "Dropdown Align",
       "left": "Left",
       "right": "Right"
+    },
+    "vc_today": {
+      "label": "Today"
+    },
+    "vc_yesterday": {
+      "label": "Yesterday"
+    },
+    "vc_max": {
+      "label": "Peak"
+    },
+    "vc_total": {
+      "label": "Total"
+    },
+    "vc_layout": {
+      "label": "Layout",
+      "row": "Row",
+      "column": "Column"
     }
   },
   "component": {
@@ -706,6 +706,7 @@
     "pagination": "Pagination",
     "search_bar": "Search Bar",
     "avatar": "Avatar",
+    "visitor_counter": "Visitor counter",
     "user_info": "User Info",
     "html_content": "HTML Content",
     "html_editor": "HTML Editor",
@@ -717,7 +718,6 @@
     "file_uploader": "File Uploader",
     "avatar_uploader": "Avatar Uploader",
     "social_login_buttons": "Social Login Buttons",
-    "post_reactions": "Post Reactions",
     "input": "Input",
     "textarea": "Textarea",
     "select": "Select",
@@ -1020,7 +1020,13 @@
     "user_base_default": "Default",
     "mobile_menu_open": "Mobile menu open",
     "gdpr_cookie_banner_visible": "Cookie banner visible",
-    "identity_challenge_inicis": "Identity verification modal (Inicis)"
+    "identity_challenge_inicis": "Identity verification modal (Inicis)",
+    "modal_filled": "Modal content filled",
+    "replies_expanded": "Replies expanded",
+    "validation_failed": "Validation failed",
+    "screen_filled": "Screen state filled",
+    "two_factor_challenge": "Two-factor challenge",
+    "comment_editing": "Comment being edited"
   },
   "cell_border": {
     "side_all": "All",
@@ -1085,7 +1091,6 @@
     "user": "User",
     "current_page": "Current page",
     "total_pages": "Total pages",
-    "reactions": "Reactions",
     "product": "Product",
     "author": "Author",
     "value": "Value",
@@ -1101,7 +1106,11 @@
     "footer_social_links": "Social Links",
     "footer_link_groups": "Link Groups",
     "notification_items": "Notification Items",
-    "notification_unread_count": "Unread Notification Count"
+    "notification_unread_count": "Unread Notification Count",
+    "visitor_today": "Visits today",
+    "visitor_yesterday": "Visits yesterday",
+    "visitor_max": "Peak visits",
+    "visitor_total": "Total visits"
   },
   "state_label": {
     "current_user": "Current user",
@@ -1132,6 +1141,8 @@
     "myComments": "My Comments",
     "myInquiries": "My Inquiries",
     "myPosts": "My Posts",
+    "myReactions": "My Reactions",
+    "myReports": "My Reports",
     "navigation": "Navigation",
     "newProducts": "New Products",
     "notification_unread_count": "Unread Notification Count",
@@ -1171,6 +1182,11 @@
     "userPosts": "User Posts",
     "userProfile": "User Profile",
     "user_notification_ws": "Notifications (Live)",
-    "wishlist": "Wishlist"
+    "wishlist": "Wishlist",
+    "scrap": "Scrap",
+    "visitor_summary": "Visitor summary",
+    "claimable": "Claimable items",
+    "claims": "Claim requests",
+    "claim": "Claim request"
   }
 }

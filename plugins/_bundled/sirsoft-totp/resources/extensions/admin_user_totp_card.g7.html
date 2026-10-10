@@ -1,0 +1,73 @@
+<!-- 회원 «상세» 화면에 인증 앱 탭을 하나 얹는 조각. 형제 확장(board 스크랩·ecommerce 마일리지)과
+  같은 짜임으로 주입이 **두 군데**로 갈린다 — 탭 버튼은 `inject_props` 로 기존 탭 목록 배열에
+  항목을 덧붙이고(`append`), 그 탭이 펼칠 본문은 별도 앵커(`extension_tab_content`)에 자식으로
+  붙인다. 둘을 잇는 것은 `id`(`ext_totp_security`) 하나뿐이라 한쪽만 고치면 탭은 있고 내용은
+  빈 화면이 된다.
+
+  관리자 템플릿을 고치지 않으므로 이 플러그인을 끄면 탭도 함께 사라진다.
+
+  **권한 가드를 화면 조건으로 두지 않는다.** 종전 판본은 `_global.currentUser?.permissions` 를
+  봤는데, 관리자 셸(`_admin_base`)이 전역에 올리는 것은 `installedModules`·`installedPlugins`·
+  `adminNotificationCount` 뿐이라 그 값이 **항상 undefined** 였다 — 탭은 뜨는데 본문만 통째로
+  사라졌다(2026-09-18 브라우저 실측). 형제 확장(board 반응·스크랩, marketing)도 전부 화면
+  조건은 `user?.data?.*` 같은 서버 제공 값으로만 쓴다. 강제 해제의 실제 권한 집행은 라우트
+  미들웨어(`permission:admin,sirsoft-totp.credentials.delete`)가 하며, 그쪽이 정본이다. 등록 여부와 [강제 해제]
+  노출도 같은 결로 서버 제공 값(`user.data.totp_enrollment` — 해제 권한자의 응답에만 실림)으로만 정한다.
+
+  강제 해제는 코드 확인 없이 남의 2단계 인증을 푸는 경로다. 실행은
+  `sirsoft-totp.credential.admin_reset` 훅을 타고 `TotpAdminResetActivityLogListener` 가
+  활동 로그에 남긴다 — 누가 누구의 2단계 인증을 풀었는지 추적할 수 없으면 이 경로 자체가
+  권한 상승 수단이 된다. -->
+<extension target-layout="admin_user_detail" priority="120">
+  <inject target-id="user_detail_tabs" position="inject_props">
+    <props>
+      <prop name="tabs">
+        <append>
+          <item id="ext_totp_security" label="$t:sirsoft-totp.admin.user_card.tab_label" iconName="shield-halved" if="{{!!route?.id}}"/>
+        </append>
+      </prop>
+    </props>
+  </inject>
+  <inject target-id="extension_tab_content" position="append_child">
+    <div data-ref="ext_totp_security_content" data-if="{{!!route?.id}}" id="ext_totp_security" class="scroll-mt-32">
+      <div data-ref="admin_user_totp_card" class="admin-card">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <icon name="shield-halved" class="text-xl text-gray-600 dark:text-gray-400"/>
+            <h3 data-ref="admin_user_totp_title" class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-totp.admin.user_card.title</h3>
+          </div>
+          <extension-badge data-type="composite" type="plugin" identifier="sirsoft-totp" installedPlugins="{{_global.installedPlugins}}"/>
+        </div>
+        <p data-ref="admin_user_totp_description" class="card-description">$t:sirsoft-totp.admin.user_card.description</p>
+        <!-- 등록 여부 — `totp_enrollment` 는 UserTotpEnrollmentInfoListener 가 **해제 권한을 가진 관리자의 응답에만** 싣는다.
+             값이 없으면(권한 없음) 상태 대신 그 사실을 알리고 [강제 해제] 도 내지 않는다(눌러 봐야 403).
+             미등록이면 해제할 것이 없으므로 단추를 숨기고 안내만 둔다(결정 2026-10-07, 7.1.0 관측 R-26). -->
+        <div data-ref="admin_user_totp_status" data-if="{{!!user?.data?.totp_enrollment}}" class="mt-3 flex items-center gap-2">
+          <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-totp.admin.user_card.status_label</span>
+          <span data-ref="admin_user_totp_status_enrolled" data-if="{{user?.data?.totp_enrollment?.enrolled === true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">$t:sirsoft-totp.admin.user_card.enrolled</span>
+          <span data-ref="admin_user_totp_status_not_enrolled" data-if="{{user?.data?.totp_enrollment?.enrolled === false}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-totp.admin.user_card.not_enrolled</span>
+        </div>
+        <p data-ref="admin_user_totp_not_enrolled_notice" data-if="{{user?.data?.totp_enrollment?.enrolled === false}}" class="text-hint mt-2">$t:sirsoft-totp.admin.user_card.not_enrolled_notice</p>
+        <p data-ref="admin_user_totp_status_unavailable" data-if="{{!user?.data?.totp_enrollment}}" class="text-hint mt-3">$t:sirsoft-totp.admin.user_card.status_unavailable</p>
+        <button data-ref="admin_user_totp_reset" data-if="{{user?.data?.totp_enrollment?.enrolled === true}}" type="button" class="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg font-medium transition-colors cursor-pointer">
+          <on type="click">
+            <!-- 되돌릴 수 없는 조치라 확인을 거친다 — 해제하면 그 회원은 다음 로그인부터 인증 앱을
+                 요구받지 않고, 메일 폴백이 꺼져 있으면 재등록 전까지 로그인하지 못한다. -->
+            <api-call :auth_required="true" method="DELETE" confirm="$t:sirsoft-totp.admin.user_card.confirm" target="/api/plugins/sirsoft-totp/admin/credentials/{{route?.id}}">
+              <success>
+                <toast type="success" message="{{response.message}}"/>
+                <!-- 해제 뒤 카드가 「미등록」으로 바뀌도록 회원 상세를 다시 받는다 -->
+                <refetch-data-source dataSourceId="user"/>
+              </success>
+              <fail>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </on>
+          <span data-ref="admin_user_totp_reset_text">$t:sirsoft-totp.admin.user_card.reset</span>
+        </button>
+        <p data-ref="admin_user_totp_hint" data-if="{{user?.data?.totp_enrollment?.enrolled === true}}" class="text-hint mt-2">$t:sirsoft-totp.admin.user_card.hint</p>
+      </div>
+    </div>
+  </inject>
+</extension>

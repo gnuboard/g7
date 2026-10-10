@@ -11230,66 +11230,6 @@
     ],
     "label": "$t:editor.control.slb_variant.label"
   },
-  "prUserReaction": {
-    "widget": "select",
-    "apply": {
-      "type": "propValue",
-      "propKey": "userReaction"
-    },
-    "options": [
-      {
-        "value": "like",
-        "label": "$t:editor.control.pr_user_reaction.like"
-      },
-      {
-        "value": "funny",
-        "label": "$t:editor.control.pr_user_reaction.funny"
-      },
-      {
-        "value": "agree",
-        "label": "$t:editor.control.pr_user_reaction.agree"
-      },
-      {
-        "value": "thanks",
-        "label": "$t:editor.control.pr_user_reaction.thanks"
-      },
-      {
-        "value": "wow",
-        "label": "$t:editor.control.pr_user_reaction.wow"
-      }
-    ],
-    "label": "$t:editor.control.pr_user_reaction.label"
-  },
-  "prPostId": {
-    "widget": "text",
-    "apply": {
-      "type": "propValue",
-      "propKey": "postId"
-    },
-    "label": "$t:editor.control.pr_post_id.label"
-  },
-  "prSize": {
-    "widget": "select",
-    "apply": {
-      "type": "propValue",
-      "propKey": "size"
-    },
-    "options": [
-      {
-        "value": "sm",
-        "label": "$t:editor.control.pr_size.sm"
-      },
-      {
-        "value": "md",
-        "label": "$t:editor.control.pr_size.md"
-      },
-      {
-        "value": "lg",
-        "label": "$t:editor.control.pr_size.lg"
-      }
-    ],
-    "label": "$t:editor.control.pr_size.label"
-  },
   "piLabel": {
     "widget": "i18n-text",
     "apply": {
@@ -11857,5 +11797,55 @@
         "label": "$t:editor.control.nc_dropdown_align.right"
       }
     ]
+  },
+  "vcToday": {
+    "widget": "text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "today"
+    },
+    "label": "$t:editor.control.vc_today.label"
+  },
+  "vcYesterday": {
+    "widget": "text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "yesterday"
+    },
+    "label": "$t:editor.control.vc_yesterday.label"
+  },
+  "vcMax": {
+    "widget": "text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "max"
+    },
+    "label": "$t:editor.control.vc_max.label"
+  },
+  "vcTotal": {
+    "widget": "text",
+    "apply": {
+      "type": "propValue",
+      "propKey": "total"
+    },
+    "label": "$t:editor.control.vc_total.label"
+  },
+  "vcLayout": {
+    "widget": "select",
+    "apply": {
+      "type": "propValue",
+      "propKey": "layout"
+    },
+    "options": [
+      {
+        "value": "row",
+        "label": "$t:editor.control.vc_layout.row"
+      },
+      {
+        "value": "column",
+        "label": "$t:editor.control.vc_layout.column"
+      }
+    ],
+    "label": "$t:editor.control.vc_layout.label"
   }
 }

@@ -9,6 +9,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * 관리자 댓글 관리 API 테스트
@@ -18,11 +19,10 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * - 블라인드/복원 기능 동작 및 상태 전이
  * - 권한 부재 시 403, 미인증 시 401 응답
  * - 블라인드 시 comments_count 무변동, 복원 시 실제 DB 카운트로 동기화
- *
- * @group board
- * @group admin
- * @group comment
  */
+#[Group('board')]
+#[Group('admin')]
+#[Group('comment')]
 class AdminCommentManagementTest extends BoardTestCase
 {
     private User $adminWithManage;
@@ -31,11 +31,22 @@ class AdminCommentManagementTest extends BoardTestCase
 
     private User $regularUser;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'admin-comment-mgmt';
     }
 
+    /**
+     * 이 테스트에 맞춘 게시판 속성을 반환합니다.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return array 게시판 속성
+     */
     protected function getDefaultBoardAttributes(string $slug): array
     {
         return [
@@ -48,6 +59,11 @@ class AdminCommentManagementTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -76,6 +92,9 @@ class AdminCommentManagementTest extends BoardTestCase
      *
      * controller의 authorizeCommentModification은 'admin.write' identifier를 확인하므로
      * 'sirsoft-board.{slug}.admin.write' 권한을 부여해야 본인 댓글 수정/삭제 가능.
+     *
+     * @param  string  $slug  게시판 slug
+     * @return User 만든 관리자
      */
     private function createWriteOnlyAdminUser(string $slug): User
     {
@@ -110,6 +129,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * admin.comments.write 권한 보유 시 댓글 생성 → 201
+     *
+     * @scenario action=create, entitlement=entitled
+     *
+     * @effects admin_can_create_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_create_comment(): void
     {
@@ -131,6 +156,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * 미인증 요청 → 401
+     *
+     * @scenario action=create, entitlement=not_entitled
+     *
+     * @effects unauthenticated_cannot_create_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthenticated_cannot_create_comment(): void
     {
@@ -144,6 +175,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * 권한 없는 사용자 → 403
+     *
+     * @scenario action=create, entitlement=not_entitled
+     *
+     * @effects user_without_permission_cannot_create_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_user_without_permission_cannot_create_comment(): void
     {
@@ -157,6 +194,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * use_comment=false 게시판 → 403
+     *
+     * @scenario action=create, entitlement=not_entitled
+     *
+     * @effects cannot_create_comment_when_comments_disabled
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_create_comment_when_comments_disabled(): void
     {
@@ -175,6 +218,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * admin.manage 권한으로 다른 사용자 댓글 수정 → 200
+     *
+     * @scenario action=update, entitlement=entitled
+     *
+     * @effects admin_manage_can_update_any_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_manage_can_update_any_comment(): void
     {
@@ -199,6 +248,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * admin.write 권한으로 본인 댓글 수정 → 200
+     *
+     * @scenario action=update, entitlement=entitled
+     *
+     * @effects admin_write_can_update_own_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_write_can_update_own_comment(): void
     {
@@ -218,6 +273,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * admin.write 권한으로 타인 댓글 수정 → 403
+     *
+     * @scenario action=update, entitlement=not_entitled
+     *
+     * @effects admin_write_cannot_update_others_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_write_cannot_update_others_comment(): void
     {
@@ -236,6 +297,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * admin.write 권한으로 비회원 댓글 수정 → 403
+     *
+     * @scenario action=update, entitlement=not_entitled
+     *
+     * @effects admin_write_cannot_update_guest_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_write_cannot_update_guest_comment(): void
     {
@@ -257,6 +324,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * admin.manage 권한으로 댓글 삭제 → 200 + soft delete
+     *
+     * @scenario action=delete, entitlement=entitled
+     *
+     * @effects admin_manage_can_delete_any_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_manage_can_delete_any_comment(): void
     {
@@ -272,6 +345,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * admin.write 권한으로 본인 댓글 삭제 → 200
+     *
+     * @scenario action=delete, entitlement=entitled
+     *
+     * @effects admin_write_can_delete_own_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_write_can_delete_own_comment(): void
     {
@@ -289,6 +368,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * 권한 없는 사용자 삭제 → 403
+     *
+     * @scenario action=delete, entitlement=not_entitled
+     *
+     * @effects user_without_permission_cannot_delete_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_user_without_permission_cannot_delete_comment(): void
     {
@@ -306,6 +391,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * admin.manage 권한으로 댓글 블라인드 → 200 + status=blinded
+     *
+     * @scenario action=blind, entitlement=entitled
+     *
+     * @effects admin_manage_can_blind_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_manage_can_blind_comment(): void
     {
@@ -326,6 +417,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * 댓글 블라인드 사유 1000자 → 통과 (200) (#413-71-2)
+     *
+     * @scenario action=blind, entitlement=entitled
+     *
+     * @effects blind_comment_reason_at_max_length_passes
+     *
+     * @return void 반환값 없음
      */
     public function test_blind_comment_reason_at_max_length_passes(): void
     {
@@ -340,6 +437,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * 댓글 블라인드 사유 1001자 → 검증 실패 (422) (#413-71-2)
+     *
+     * @scenario action=blind, entitlement=entitled
+     *
+     * @effects blind_comment_reason_over_max_length_fails
+     *
+     * @return void 반환값 없음
      */
     public function test_blind_comment_reason_over_max_length_fails(): void
     {
@@ -354,6 +457,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * 블라인드 시 comments_count 무변동 (카운트 불변 정책)
+     *
+     * @scenario action=blind, entitlement=entitled
+     *
+     * @effects blind_comment_does_not_change_comments_count
+     *
+     * @return void 반환값 없음
      */
     public function test_blind_comment_does_not_change_comments_count(): void
     {
@@ -373,6 +482,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * admin.comments.write 권한만으로 블라인드 → 403 (manage 필요)
+     *
+     * @scenario action=blind, entitlement=not_entitled
+     *
+     * @effects admin_write_cannot_blind_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_write_cannot_blind_comment(): void
     {
@@ -387,6 +502,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * use_comment=false 게시판 블라인드 → 403
+     *
+     * @scenario action=blind, entitlement=not_entitled
+     *
+     * @effects cannot_blind_comment_when_comments_disabled
+     *
+     * @return void 반환값 없음
      */
     public function test_cannot_blind_comment_when_comments_disabled(): void
     {
@@ -406,6 +527,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * admin.manage 권한으로 블라인드된 댓글 복원 → 200 + status=published
+     *
+     * @scenario action=restore, entitlement=entitled
+     *
+     * @effects admin_manage_can_restore_blinded_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_manage_can_restore_blinded_comment(): void
     {
@@ -429,6 +556,12 @@ class AdminCommentManagementTest extends BoardTestCase
      *
      * PostCountSyncListener(after_restore, sync:true)가 실제 DB 카운트로 재동기화.
      * published 댓글 1개 + blinded 댓글 복원 → published 2개 → comments_count=2
+     *
+     * @scenario action=restore, entitlement=entitled
+     *
+     * @effects restore_comment_syncs_comments_count
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_comment_syncs_comments_count(): void
     {
@@ -450,6 +583,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * admin.write 권한만으로 복원 → 403 (manage 필요)
+     *
+     * @scenario action=restore, entitlement=not_entitled
+     *
+     * @effects admin_write_cannot_restore_comment
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_write_cannot_restore_comment(): void
     {
@@ -464,6 +603,12 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * 존재하지 않는 댓글 복원 → 404
+     *
+     * @scenario action=restore, entitlement=entitled
+     *
+     * @effects restore_nonexistent_comment_returns_404
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_nonexistent_comment_returns_404(): void
     {
@@ -481,6 +626,9 @@ class AdminCommentManagementTest extends BoardTestCase
 
     /**
      * Admin comment API URL 생성
+     *
+     * @param  string  $suffix  게시글 경로 뒤에 붙일 부분
+     * @return string API 주소
      */
     private function url(string $suffix): string
     {

@@ -1,0 +1,220 @@
+<!-- 템플릿 관리 화면. 모듈·플러그인 화면과 형태는 같지만 **한 갈래 더 있다** — 사용자용/관리자용
+  두 종류를 탭으로 가르고, 종류가 URL 경로(`/admin/templates/{type}`)에 들어간다.
+  카드 목록은 이 파일에 없다 — 종류별 조각(`_tab_user`·`_tab_admin`)이 갖고 있고 여기는 뼈대와
+  공용 창만 둔다. 두 조각이 **같은 창들을 공유**하므로 창은 이 자리에 한 벌만 있다.
+  템플릿은 종류마다 하나만 활성이라 활성/비활성이 토글이 아니라 각각 확인 창이다. -->
+<layout name="admin_template_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.templates.page_title" description="$t:admin.templates.page_description"/>
+  <!-- 템플릿 목록. 종류(`route.type`)가 파라미터로 들어가므로 탭을 바꾸면 다른 목록이 된다.
+       `refetchOnMount` 라 다른 화면에 다녀와도 다시 받는다 — 설치·활성 결과가 즉시 반영돼야 한다. -->
+  <data-source id="templates" label_key="$t:editor.data_source.templates" type="api" endpoint="/api/admin/templates" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true">
+    <params type="{{route.type}}" page="{{query.page}}" per_page="{{query.per_page || 12}}" search="{{query.search}}" include_hidden="{{query.include_hidden === '1' ? 1 : 0}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="per_page" :value="12"/>
+          <field name="total" :value="0"/>
+        </field>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 코어 버전이 올라 자동 비활성된 확장 알림. 모듈·플러그인 화면과 같은 API 를 부르고
+       여기서는 응답의 `templates` 만 읽는다. -->
+  <data-source id="auto_deactivated_banner" label_key="$t:editor.data_source.auto_deactivated_banner" type="api" endpoint="/api/admin/extensions/auto-deactivated" method="GET" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="items">
+          <field name="plugins" :value="[]"/>
+          <field name="modules" :value="[]"/>
+          <field name="templates" :value="[]"/>
+        </field>
+        <field name="current_core_version" value=""/>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="searchQuery" value=""/>
+  </init-local>
+  <permissions>
+    <permission>core.templates.read</permission>
+  </permissions>
+  <transition-overlay target="templates_tab_content" fallback-target="right_content_area">
+    <wait-for>templates</wait-for>
+    <wait-for>auto_deactivated_banner</wait-for>
+  </transition-overlay>
+  <init>
+    <!-- 확장 목록 보기 방식(갤러리/목록) 복원 — 4화면이 같은 키를 공유한다.
+         저장값이 없거나 깨졌으면 갤러리다(기본 보기). GDPR 허용목록에 등재된 키라
+         functional 미동의 상태에서도 살아남는다. -->
+    <load-from-local-storage key="g7_view_mode_extensions" defaultValue="gallery">
+      <field name="resultTo">
+        <field name="target" value="_global"/>
+        <field name="key" value="extensionViewMode"/>
+      </field>
+    </load-from-local-storage>
+    <set-state target="global">
+      <field name="_local">
+        <field name="searchQuery" value="{{query.search || ''}}"/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="template_list_content" class="admin-page-content-responsive-fluid">
+      <page-header data-type="composite" data-ref="page_header" title="$t:admin.templates.title" description="$t:admin.templates.description">
+        <icon-button data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
+          <on type="click">
+            <refetch-data-source dataSourceId="templates"/>
+          </on>
+        </icon-button>
+        <button data-ref="check_updates_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isCheckingTemplateUpdates || templates?.data?.abilities?.can_install !== true}}" type="button">
+          <responsive on="portable" class="hidden"/>
+          <on type="click">
+            <!-- 업데이트 확인 — 서버가 저장소를 훑어 최신 버전을 갱신하므로 끝나면 목록을 다시 받는다.
+                 진행 표시 전역 키가 모듈·플러그인 화면과 다르다(`isCheckingTemplateUpdates`) —
+                 세 화면이 같은 키를 쓰면 한쪽에서 확인하는 동안 다른 쪽 버튼까지 잠긴다. -->
+            <sequence>
+              <set-state target="global" :isCheckingTemplateUpdates="true"/>
+              <api-call :auth_required="true" target="/api/admin/templates/check-updates" method="POST">
+                <success>
+                  <set-state target="global" :isCheckingTemplateUpdates="false"/>
+                  <refetch-data-source dataSourceId="templates"/>
+                  <toast type="success" message="{{response.data?.updated_count > 0 ? '$t:admin.templates.check_updates_success|count=' + response.data.updated_count : '$t:admin.templates.check_updates_no_updates'}}"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isCheckingTemplateUpdates="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{!_global.isCheckingTemplateUpdates}}" name="refresh" size="sm"/>
+          <icon data-if="{{_global.isCheckingTemplateUpdates}}" name="spinner" size="sm" class="animate-spin"/>
+          <span>$t:admin.templates.actions.check_updates</span>
+        </button>
+        <button data-ref="manual_install_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true}}">
+          <responsive on="portable" class="hidden"/>
+          <on type="click">
+            <open-modal target="template_manual_install_modal"/>
+          </on>
+          <icon name="upload" class="text-xl"/>
+          <span>$t:admin.templates.manual_install</span>
+        </button>
+        <button data-ref="marketplace_button" data-if="{{false}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+          <responsive on="portable" class="hidden"/>
+          <icon name="globe" class="text-xl"/>
+          <span>$t:admin.templates.marketplace</span>
+        </button>
+      </page-header>
+      <div data-ref="mobile_action_buttons" class="hidden">
+        <responsive on="portable" class="flex-center gap-2 -mt-4 mb-4"/>
+        <button data-ref="mobile_manual_install_button" class="flex-center flex-1 justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true}}">
+          <on type="click">
+            <open-modal target="template_manual_install_modal"/>
+          </on>
+          <icon name="upload" class="text-xl"/>
+          <span>$t:admin.templates.manual_install</span>
+        </button>
+        <button data-ref="mobile_marketplace_button" data-if="{{false}}" class="flex-center flex-1 justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+          <icon name="globe" class="text-xl"/>
+          <span>$t:admin.templates.marketplace</span>
+        </button>
+      </div>
+      <div data-ref="auto_deactivated_banner_wrapper" data-if="{{(auto_deactivated_banner?.data?.items?.templates?.length ?? 0) > 0}}" class="alert-warning" role="alert">
+        <div class="flex-start gap-3">
+          <icon name="exclamation-triangle" class="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"/>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-warning-soft mb-2">$t:extensions.banner.title</p>
+            <div>
+              <div data-each="banner_item in {{auto_deactivated_banner?.data?.items?.templates ?? []}}" class="flex-between gap-2 text-warning-soft">
+                <span class="font-mono">{{banner_item.identifier}} — $t:defer:extensions.banner.item_required|required={{banner_item.incompatible_required_version ?? ''}}</span>
+                <button type="button" class="text-warning-soft hover:underline" aria-label="$t:extensions.banner.dismiss">
+                  <on type="click">
+                    <!-- 배너에서 이 줄만 지운다(템플릿은 비활성 상태 그대로다). -->
+                    <api-call :auth_required="true" target="/api/admin/extensions/template/{{banner_item.identifier}}/dismiss" method="POST">
+                      <success>
+                        <refetch-data-source dataSourceId="auto_deactivated_banner"/>
+                      </success>
+                      <fail>
+                        <toast type="error" message="{{error.message}}"/>
+                      </fail>
+                    </api-call>
+                  </on>
+                  <icon name="times" size="xs"/>
+                </button>
+              </div>
+            </div>
+            <div class="mt-2">
+              <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-amber-500 dark:border-amber-400 bg-white dark:bg-gray-800 text-warning-soft hover:bg-amber-50 dark:hover:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:ring-offset-2 transition-colors cursor-pointer">
+                <on type="click">
+                  <open-modal target="core_update_guide_modal"/>
+                </on>
+                <icon name="circle-arrow-up" size="xs"/>
+                <span>$t:extensions.banner.guide_link</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="tab_navigation_wrapper" class="sticky-tab-nav-responsive">
+        <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeTemplateTab || route.type || 'user'}}" variant="default">
+          <prop name="tabs">
+            <item id="user" label="$t:admin.templates.tabs.user"/>
+            <item id="admin" label="$t:admin.templates.tabs.admin"/>
+          </prop>
+          <on type="change" event="onTabChange">
+            <!-- 종류 탭 전환 — 종류가 **URL 경로에 있으므로 이동**이다(쿼리 변경이 아니다).
+                 전역값을 먼저 두는 것은 이동이 끝나기 전에도 탭 표시가 따라오게 하기 위함이고,
+                 마지막 스크롤은 목록이 길 때 아래쪽에 머문 화면을 위로 되돌린다. -->
+            <sequence>
+              <set-state target="global" activeTemplateTab="{{$args[0]}}"/>
+              <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 사용자 템플릿과 관리자 템플릿은 각자 검색어·페이지를 갖는 서로 다른 목록이므로, 이전 탭의 목록 상태를 물려받으면 남의 검색 결과로 걸러진 화면이 열린다.
+                   「숨김 항목 포함」만은 목록이 아니라 보는 방식이라 넘긴다 — 넘기지 않으면 사용자 탭에서 켠 체크가 관리자 탭에서 풀렸다(7.1.0 O-G3-4). 꺼져 있으면 빈 값이라 주소에 붙지 않는다. -->
+              <navigate path="/admin/templates/{{$args[0]}}">
+                <query include_hidden="{{query.include_hidden === '1' ? '1' : undefined}}"/>
+              </navigate>
+              <scroll-into-view selector="#main_content" behavior="instant" block="start" :waitForElement="true" :timeout="1000"/>
+            </sequence>
+          </on>
+        </tab-navigation>
+      </div>
+      <div data-ref="templates_tab_content" class="tab-content">
+        <include src="partials/admin_template_list/_tab_admin.g7.html"/>
+        <include src="partials/admin_template_list/_tab_user.g7.html"/>
+      </div>
+    </div>
+  </slot>
+  <!-- 상세 보기 창(설명·변경 이력).
+       아래 창들은 전역 `selectedTemplate` 하나를 대상으로 읽고, **사용자용·관리자용 두 탭이 공유**한다
+       — 그래서 탭 조각이 아니라 이 파일에 있다. -->
+  <modal src="partials/admin_template_list/_modal_detail.g7.html"/>
+  <!-- 설치 확인 창 — 미설치 카드의 설치 버튼이 연다. -->
+  <modal src="partials/admin_template_list/_modal_install.g7.html"/>
+  <!-- 매니페스트 원문을 보는 서랍. 수동 설치 창이 검사한 결과를 펼쳐 보여 준다. -->
+  <modal src="partials/admin_template_list/_drawer_manifest_preview.g7.html"/>
+  <!-- 삭제 확인 창. 지금 쓰고 있는 템플릿은 지울 수 없으므로 그 사정을 함께 보여 준다. -->
+  <modal src="partials/admin_template_list/_modal_uninstall.g7.html"/>
+  <!-- 활성 확인 창 — 템플릿은 종류마다 하나만 활성이라, 켜면 **쓰던 것이 자동으로 꺼진다**.
+       그 교체를 확인받는 자리라 모듈·플러그인의 토글과 달리 창으로 갈라 두었다. -->
+  <modal src="partials/admin_template_list/_modal_activate.g7.html"/>
+  <!-- 비활성 확인 창 — 위 활성과 짝이다(토글 하나가 아니라 두 창인 이유는 결과가 서로 다르기 때문). -->
+  <modal src="partials/admin_template_list/_modal_deactivate.g7.html"/>
+  <!-- 압축 파일로 직접 설치하는 창 — 목록에 없는 템플릿을 들이는 유일한 경로다. -->
+  <modal src="partials/admin_template_list/_modal_manual_install.g7.html"/>
+  <!-- 레이아웃 다시 심기 확인 창. 편집기로 고친 레이아웃을 되돌릴 수 있어 확인을 받는다. -->
+  <modal src="partials/admin_template_list/_modal_refresh_layouts.g7.html"/>
+  <!-- 강제 활성 창 — 이 템플릿이 요구하는 확장이 갖춰지지 않았을 때(409) 열린다.
+       모듈·플러그인과 달리 **강제 비활성 창이 없다** — 템플릿에 의존하는 확장이라는 방향이 없기 때문. -->
+  <modal src="partials/admin_template_list/_modal_force_activate.g7.html"/>
+  <!-- 업데이트 창. 변경 이력과 함께, 고친 레이아웃이 있으면 덮어쓸지 남길지 묻는다. -->
+  <modal src="partials/admin_template_list/_modal_update.g7.html"/>
+  <!-- 언어팩 되살리기 창 — 템플릿을 다시 켰을 때 함께 꺼졌던 언어팩이 있으면 활성 성공 갈래가 연다. -->
+  <modal src="partials/admin_template_list/_modal_reactivate_language_packs.g7.html"/>
+  <!-- 라이선스 고지 창 — 상세 창에서 이어 연다. -->
+  <modal src="partials/admin_template_list/_modal_extension_license.g7.html"/>
+  <!-- 코어 업데이트 안내 창. 자동 비활성 배너의 안내 링크가 연다 — 설정 화면 소유 조각을 세 확장
+       화면이 함께 쓴다. -->
+  <modal src="partials/admin_settings/_modal_core_update_guide.g7.html"/>
+</layout>

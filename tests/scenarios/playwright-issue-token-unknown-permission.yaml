@@ -1,0 +1,20 @@
+feature: Playwright 토큰 발급 — 없는 권한 식별자는 발급 때 거절
+
+description: |
+  7.1.0 전수 실측 O-D2 · 결정(2026-10-08, 「발급 때 거절」).
+  `playwright:issue-token` 은 DB 에 없는 권한 식별자를 받으면 `Permission::firstOrCreate` 로 이름·설명이 식별자
+  그대로인 코어 소유 권한 행을 만들었다. 그 행은 관리자 권한 트리에 식별자 그대로 보였고, 실제 라우트가 검사하는
+  권한이 아니어서 spec 은 「권한을 받았다」고 믿지만 함께 붙은 admin 역할 덕에 통과하는 거짓 녹색이 됐다.
+  이제는 식별자가 하나라도 없으면 권한 행·테스트 역할·계정·토큰을 하나도 만들지 않고 실패 코드로 끝나며,
+  없는 식별자를 오류 줄에 나열한다. 있는 식별자만 받으면 종전대로 발급한다.
+
+axes:
+  case: [unknown_permission, existing_permission]
+
+effects:
+  - e2e_token_rejects_unknown_permission
+  - e2e_token_creates_nothing_on_rejection
+  - e2e_token_grants_existing_permission
+
+test_files:
+  - tests/Feature/Console/PlaywrightIssueTokenUnknownPermissionTest.php

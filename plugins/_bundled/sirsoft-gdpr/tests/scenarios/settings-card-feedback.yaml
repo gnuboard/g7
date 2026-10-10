@@ -1,0 +1,22 @@
+feature: GDPR 설정 화면의 상태 안내 — 알림 템플릿 카드 조회 실패 구분·서문 오류 자리·스냅샷 안내 문구
+
+description: |
+  설정 화면이 「없음」과 「볼 수 없음」, 저장 오류의 자리를 운영자가 알아볼 수 있게 구분한다.
+    - 알림 템플릿 카드: 알림 정의 조회가 403 이면 「권한이 없습니다」, 그 밖의 실패는 「불러오지 못했습니다」,
+      정상 응답이 빈 경우에만 「등록된 알림 정의가 없습니다」. 실패 종류는 데이터 소스 error-handling 이
+      `_local.gdprNotificationDefinitionsError` 에 남긴다(fallback 이 빈 목록을 줘 셋이 같아 보이던 것).
+    - 통지문 서문: 길이 초과 오류는 언어별 키(`annual_notice.introduction.{언어}`) 한 건으로 오고, 칸 아래에 보인다.
+    - 정책 스냅샷 창 안내: 설정 키 이름(settings) 같은 내부 용어 없이 쓴다(ko/en/ja).
+    - 알림 템플릿 편집 창 「이벤트 유발자 제외」 스위치: 옆 글자 대신 스위치 label 로 이름을 준다.
+
+axes:
+  case: [definitions_forbidden, definitions_failed, definitions_empty, introduction_error, snapshot_description, exclude_trigger_switch]
+
+effects:
+  - notification_card_distinguishes_forbidden_from_empty
+  - introduction_error_shown_under_field
+  - snapshot_description_uses_user_terms
+  - exclude_trigger_switch_has_accessible_name
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/settings-card-feedback.test.ts

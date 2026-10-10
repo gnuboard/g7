@@ -4,6 +4,7 @@ namespace App\Extension;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -29,6 +30,11 @@ class HookArgumentSerializer
      * Enum 직렬화 마커 키
      */
     private const ENUM_MARKER = '__hook_enum__';
+
+    /**
+     * 날짜 값 직렬화 마커 키 (Carbon·CarbonImmutable·DateTime·DateTimeImmutable).
+     */
+    private const DATETIME_MARKER = '__hook_datetime__';
 
     /**
      * 인자 배열을 직렬화 안전한 형태로 변환합니다.
@@ -90,6 +96,17 @@ class HookArgumentSerializer
             ];
         }
 
+        // 날짜 → 클래스명 + 마이크로초·시간대까지 담은 문자열. 예전에는 직렬화 불가로 null 이 돼
+        // 큐 리스너가 가입 시각·동의 시각을 비어 있는 값으로 받았다(#138 후속).
+        if ($value instanceof \DateTimeInterface) {
+            return [
+                self::DATETIME_MARKER => true,
+                'class' => get_class($value),
+                'value' => $value->format('Y-m-d\TH:i:s.uP'),
+                'timezone' => $value->getTimezone()->getName(),
+            ];
+        }
+
         // Collection → 배열로 변환 (내부 요소도 재귀 직렬화)
         if ($value instanceof Collection) {
             return [
@@ -147,7 +164,7 @@ class HookArgumentSerializer
                 // (after_delete 훅의 큐 워커가 listener 호출 시 null 대신 살아있을 때 상태 전달)
                 if (isset($value['attributes']) && is_array($value['attributes'])) {
                     /** @var Model $instance */
-                    $instance = new $class();
+                    $instance = new $class;
                     $instance->setRawAttributes($value['attributes']);
                     $instance->exists = false; // in-memory only — save() 가 update 시도 못 하도록
 
@@ -164,6 +181,10 @@ class HookArgumentSerializer
         }
 
         // Collection 복원
+        if (! empty($value[self::DATETIME_MARKER])) {
+            return self::restoreDateTime($value);
+        }
+
         if (! empty($value[self::COLLECTION_MARKER])) {
             return collect(self::deserialize($value['items']));
         }
@@ -195,5 +216,49 @@ class HookArgumentSerializer
 
         // 일반 배열 → 재귀 역직렬화
         return array_map([self::class, 'deserializeValue'], $value);
+    }
+
+    /**
+     * 날짜 마커를 원래 클래스의 날짜 객체로 복원합니다.
+     *
+     * 클래스가 없거나 날짜 클래스가 아니면 Carbon 으로 복원한다 — 시각 자체는 잃지 않는다.
+     *
+     * @param  array<string, mixed>  $value  날짜 마커 배열
+     * @return \DateTimeInterface|null 복원된 날짜 (값이 깨졌으면 null)
+     */
+    private static function restoreDateTime(array $value): ?\DateTimeInterface
+    {
+        $class = (string) ($value['class'] ?? '');
+        $raw = (string) ($value['value'] ?? '');
+        $timezone = new \DateTimeZone((string) ($value['timezone'] ?? 'UTC'));
+
+        try {
+            $instance = new \DateTimeImmutable($raw);
+            $instance = $instance->setTimezone($timezone);
+
+            if ($class !== '' && class_exists($class) && is_subclass_of($class, \DateTimeInterface::class)) {
+                if (method_exists($class, 'instance')) {
+                    return $class::instance($instance);
+                }
+
+                if (is_a($class, \DateTimeImmutable::class, true)) {
+                    return $class::createFromInterface($instance);
+                }
+
+                if (is_a($class, \DateTime::class, true)) {
+                    return $class::createFromInterface($instance);
+                }
+            }
+
+            return Carbon::instance($instance);
+        } catch (\Throwable $e) {
+            Log::warning('훅 인자 역직렬화 실패: 날짜 값을 해석할 수 없습니다.', [
+                'class' => $class,
+                'value' => $raw,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 }

@@ -2,12 +2,15 @@
 
 namespace Plugins\Sirsoft\Gdpr\Http\Controllers\Admin;
 
+use App\Helpers\PermissionHelper;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Services\PluginSettingsService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Plugins\Sirsoft\Gdpr\Http\Requests\UpdateAdminSettingsRequest;
 use Plugins\Sirsoft\Gdpr\Plugin;
+use Plugins\Sirsoft\Gdpr\Services\CookieCategoryService;
 use Plugins\Sirsoft\Gdpr\Services\GdprSettingsService;
 
 /**
@@ -33,10 +36,12 @@ class GdprAdminSettingsController extends AdminBaseController
      *
      * @param  PluginSettingsService  $pluginSettings  플러그인 설정 서비스 (코어 — 조회용)
      * @param  GdprSettingsService  $settingsService  GDPR 설정 저장 서비스
+     * @param  CookieCategoryService  $categoryService  쿠키 카테고리 카탈로그 (저장값이 비었을 때 기본값)
      */
     public function __construct(
         private readonly PluginSettingsService $pluginSettings,
         private readonly GdprSettingsService $settingsService,
+        private readonly CookieCategoryService $categoryService,
     ) {
         parent::__construct();
     }
@@ -56,10 +61,21 @@ class GdprAdminSettingsController extends AdminBaseController
 
         $settings = $this->normalizeJsonFields(is_array($settings) ? $settings : []);
 
+        // 저장된 카탈로그가 비었으면 공개 응답과 같은 기본 카탈로그를 싣는다 — 화면은 이 값으로
+        // 카테고리 카드와 카테고리별 차단 도메인 입력칸을 그리므로, 비어 오면 두 곳이 통째로 사라진다.
+        if (empty($settings['cookie_categories'])) {
+            $settings['cookie_categories'] = $this->categoryService->getCategories();
+        }
+
         return ResponseHelper::success('common.success', [
             'settings' => $settings,
+            'annual_notice_limits' => ['min' => Plugin::ANNUAL_NOTICE_MIN, 'max' => Plugin::ANNUAL_NOTICE_MAX],
             'default_blocked_domains_preview' => Plugin::DEFAULT_BLOCKED_DOMAINS_CATALOG,
             'default_necessary_allowlist_preview' => Plugin::DEFAULT_NECESSARY_ALLOWLIST_CATALOG,
+            // 설정 화면이 입력·저장·시험 발송·새 버전 발행을 잠그는 근거 — 저장 라우트와 같은 권한(privacy.update)
+            'abilities' => [
+                'can_update' => PermissionHelper::check('sirsoft-gdpr.privacy.update', Auth::user()),
+            ],
         ]);
     }
 

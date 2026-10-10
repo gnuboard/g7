@@ -1,0 +1,16 @@
+feature: Hello 모듈 관리자 메모 목록 — 카드 반복 위치
+
+description: |
+  관리자 메모 목록(admin_memo_list)이 반복(data-each)을 row-stack 묶음에 붙여 메모마다 자식 하나뿐인 묶음이 생겼고,
+  row-stack 이 첫·마지막 자식의 위아래 여백을 0 으로 두어 카드 사이 간격이 0px 이었다. 사용자 메모 목록(user-memo-list-markup)과
+  같은 결함군이라 같은 방식으로 반복은 카드에 두고 카드를 감싼 묶음 하나(space-y-3)가 간격을 준다(7.1.0 S2 검증).
+  축 part 는 확인 부분(반복 위치)이다.
+
+axes:
+  part: [iteration]
+
+effects:
+  - memo_cards_repeat_inside_single_spaced_list
+
+test_files:
+  - modules/_bundled/gnuboard7-hello_module/resources/js/components/__tests__/AdminMemoListIteration.test.ts

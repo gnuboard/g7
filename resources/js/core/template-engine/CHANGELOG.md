@@ -5,6 +5,506 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.79.0] - 2026-10-09
+
+### Added
+
+- `navigate`(`replace: true`)에 이 이동에서 다시 받을 데이터 소스를 정하는 `refetch_data_sources`(쉼표 구분 id 또는 배열)를 추가했습니다. 생략하면 종전처럼 auto_fetch 소스를 전부 다시 받습니다. 한 화면에 설정 폼과 목록이 함께 있을 때 목록의 검색·필터·쪽 넘김이 설정 소스까지 다시 받아 고친 칸을 서버 값으로 되돌리던 경로를 막는 데 씁니다. `G7Core.updateQueryParams(path, { refetchDataSourceIds })` 로도 줄 수 있습니다. 레이아웃 편집기의 「다른 페이지로 이동」 폼에도 같은 칸(주소만 바꾸는 이동일 때)이 있어, 편집기로 그 이동을 고쳐 저장해도 값이 남습니다 (ActionDispatcher.ts `handleNavigate`, TemplateApp.ts `updateQueryParams`, G7CoreGlobals.ts, layout-editor/spec/coreActionRecipes.ts `navigate`, 회귀: `ActionDispatcher.navigateRefetchDataSources.test.ts`·`TemplateApp.updateQueryParams.overlap.test.ts`·`coreActionRecipes.test.ts`)
+- `G7Core.locale.change(locale, { persist: false })` 로 언어를 바꾸면서 회원 언어 저장을 건너뛸 수 있습니다. 회원 언어를 직접 저장한 컴포넌트가 쓰며, 생략하면 종전처럼 로그인 회원의 언어를 저장합니다 (TemplateApp.ts `changeLocale`, G7CoreGlobals.ts, 회귀: `TemplateApp.memberLocale.test.ts`)
+- 레이아웃 `scripts[]` 항목에 로드 실패 안내 이름 `label`(`$t:키` 허용)을 선언할 수 있습니다. 마크업은 `<script src id label>` 입니다. 스크립트를 끝내 불러오지 못했을 때의 안내가 레이아웃이 선언한 `label` 을 쓰고, 없거나 번역이 풀리지 않으면 「화면 기능 스크립트」(`core.assets.layout_script`)로 안내합니다. 스크립트 id 는 안내에 쓰지 않습니다 (LayoutLoader.ts `LayoutScript.label`, TemplateApp.ts `layoutScriptLabel`, 회귀: `TemplateApp.layoutScripts.test.ts`)
+- 언어 전환 인계 저장소 `G7Core.locale.handoff`(`isSwitching()`·`stash(key, value)`·`take(key)`)를 추가했습니다. 언어 전환은 같은 화면을 새로 마운트하므로, 컴포넌트 안에만 있는 저장 전 상태(업로더가 고른 대기 파일 등)를 언마운트 때 맡기고 새 인스턴스가 마운트 때 되찾습니다. `stash` 는 언어 전환 중에만 받고, `take` 는 한 번 꺼내면 지우며, 다음 화면 이동이 시작되면 남은 값은 버립니다 (localeSwitchHandoff.ts, G7CoreGlobals.ts)
+
+### Fixed
+
+- 권한이 좁은 운영자가 볼 권한이 없는 화면으로 SPA 이동하면 콘솔 오류가 수백 건 쌓이던 문제(실측: 회원 상세 「알림함 보기」 한 번에 198건과 React #185). 레이아웃 403 의 오류 화면(ErrorDisplay)이 `#app` 을 `innerHTML` 로 덮는 동안 React 루트가 그대로 남아, 이어진 토스트 갱신이 지워진 노드를 기준으로 `insertBefore`/`removeChild` 를 시도했고(NotFoundError) 렌더 오류 경계가 다시 그리기를 되풀이했습니다. 오류 화면(레이아웃 실패·초기화 실패·레이아웃 편집기 번들 실패)을 그리기 직전에 React 루트만 내려놓고(엔진 상태는 유지), 그동안 도착한 데이터 업데이트는 버리며(떠난 화면의 `_local` 이 다음 화면에 흘러들지 않도록), 다음 화면 렌더가 오류 화면을 걷고 새 루트를 만듭니다. 엔진을 정리·재초기화하면 반납 표식도 거둬 첫 렌더 전 업데이트 큐는 종전과 같습니다. 오류 화면에서 브라우저 뒤로 가기로 돌아가도 화면이 다시 그려집니다(종전에는 오류 화면에 머묾). 7.0.0-beta 부터 있던 결함입니다 (template-engine.ts `releaseTemplateRoot`·`renderTemplate`·`updateTemplateData`·`destroyTemplate`, TemplateApp.ts `showRouteError`·`showInitError`, 회귀: `template-engine.releaseRoot.test.tsx`·`TemplateApp.unauthorized.test.ts`)
+- 인증이 필요 없는 데이터 소스의 GET 요청이 값이 없는 파라미터를 문자열 `"undefined"`·`"null"` 로 보내던 문제. `page="{{query.page}}"` 를 쿼리 없이 열면 `?page=undefined` 가 나가 서버 검증이 422 로 거절했습니다. 값이 없는 파라미터는 싣지 않습니다(인증 요청 경로는 이미 빼고 있었습니다). 7.0.0-beta 부터 있던 결함입니다 (DataSourceManager.ts 일반 fetch 쿼리 생성, 회귀: `DataSourceManager.requestHygiene.test.ts`)
+- 레이아웃이 `suppress` 로 처리한 데이터 소스 실패와, 비회원이라 보내지 않고 건너뛴 인증 필요 데이터 소스가 디버그 모드 콘솔에 오류로 남던 문제. 비회원 사용자 화면마다 `current_user`·`notification_unread_count`·`notifications` 의 「Auth required but not authenticated」 3건, 외부 서비스 연결 실패를 suppress 한 알림 템플릿 편집 창에서 2건이 찍혔습니다. 예정된 흐름이라 일반 로그로 남기고, 처리기가 없거나 화면에 알리는 실패는 종전대로 오류로 남깁니다. 7.0.0-beta 부터 있던 결함입니다 (DataSourceManager.ts `logFetchFailure`, 회귀: `DataSourceManager.requestHygiene.test.ts`)
+- 같은 레이아웃을 쓰는 두 화면을 SPA 로 오가면 앞 화면의 폼 값이 뒤 화면에 섞이던 문제. 게시판 「수정」에서 이름을 고친 뒤 「등록」으로 가면(앱 이동·브라우저 뒤로 가기 모두) 숨은 영어 칸에 직전 게시판 이름이 보였고, 게시글 「수정」에서 「작성」으로 가면 제목을 입력하는 순간 이전 글의 `id` 가 폼에 되살아나 저장 요청에 실렸습니다. 레이아웃 이름이 같아 상태를 소유한 보존 루트의 내부 상태 초기화(engine-v1.72.1)가 발동하지 않았고, 레이아웃이 init 에서 `_local.form` 을 비워도 그 내부 상태가 병합 때 되살렸습니다. 같은 레이아웃이라도 라우트 경로가 바뀌면 같은 렌더 단계 초기화를 합니다(쿼리만 바뀌는 이동은 그대로). 경로가 바뀌기 전에 걸린 자동 바인딩 대기 값(debounce)은 새 화면에서 버리고, 새 화면의 initLocal 이 처음부터 적용되도록 적용 기록도 비웁니다. 보존 루트(engine-v1.24.8)부터 있던 결함입니다 (DynamicRenderer.tsx, TemplateApp.ts `handleRouteChange`, 회귀: `DynamicRenderer.sameLayoutRouteReset.test.tsx`·`TemplateApp.localeSwitch.test.ts`)
+- 언어를 바꿔도 이미 받은 목록의 서버 문구가 이전 언어로 남던 문제(예: 마이페이지 「내 반응」의 반응 유형 이름). 탭을 열 때 받는 데이터 소스(`auto_fetch: false`)는 언어 전환 재진입이 다시 받지 않았습니다. 전환 직전에 데이터가 있던 그런 소스를 새 언어로 다시 받습니다. 재진입이 실패했거나 오류 화면에서 바꾼 경우에는 다시 받지 않습니다. 7.0.0-beta 부터 있던 결함입니다 (TemplateApp.ts `changeLocale`, 회귀: `TemplateApp.localeSwitch.test.ts`)
+- 언어를 바꾸면 저장하지 않은 입력이 사라지던 문제(예: 관리자 페이지 작성 화면의 제목과 고른 첨부). 언어 전환 재진입이 레이아웃 init 과 데이터 소스 initLocal 을 다시 돌려 폼을 처음 상태로 되돌렸고, 화면을 새로 마운트해 업로더의 대기 파일도 잃었습니다. 언어 전환 재진입은 데이터 소스를 새 언어로 다시 받되 전환 직전 `_local` 로 그리고 initLocal 은 적용하지 않으며, 대기 파일은 위 인계 저장소로 넘깁니다. 전환 직전에 입력 대기(debounce) 중이던 값(본문 편집기 등)도 먼저 반영한 뒤 넘깁니다. 7.0.0-beta 부터 있던 결함입니다 (TemplateApp.ts `changeLocale`·`handleRouteChange`, 회귀: `TemplateApp.localeSwitch.test.ts`)
+- 환경설정에서 다른 탭을 누른 직후 원래 탭으로 돌아와 칸을 고치면, 덮개가 설정 응답보다 먼저 걷혀 그 사이 입력이 늦게 온 설정 응답에 말없이 덮이던 문제(실측: 게시판 환경설정, 덮개 해제 3450ms, 설정 응답 4012ms). 탭 전환(`navigate` replace)이 겹치면 먼저 시작한 이동이 끝나면서 뒤 이동이 띄운 덮개와 대기 표시를 걷었고, 늦게 끝난 옛 이동의 응답이 새 탭의 폼(`initLocal`)을 다시 덮기도 했습니다. 데이터 소스마다 가장 최근에 다시 받기 시작한 이동의 응답이면서 지금 탭에서 쓰는 소스의 응답만 적용하고(화면 이동이 시작되면 진행 중이던 쿼리 갱신의 응답은 버립니다), 덮개와 대기 표시는 현재 화면 소스를 받는 이동이 모두 끝난 뒤 걷습니다. 탭 전환 쿼리 갱신 덮개(engine-v1.35.0)부터 있던 결함입니다 (TemplateApp.ts `updateQueryParams`·`isQueryUpdateLoadingCurrentSources`·`handleRouteChange`, 회귀: `TemplateApp.updateQueryParams.overlap.test.ts`)
+- 로그인 회원의 언어(`users.language`)와 이 브라우저에 남은 화면 언어(`g7_locale`)가 다르면(다른 기기에서 언어를 바꾼 경우 등) 화면 문구는 브라우저 언어, 필수 언어 검증 문구와 확장 목록 이름은 회원 언어로 섞이던 문제. 로그인 상태면 부팅·새로고침 때 인증 확인 뒤 첫 렌더 전에 화면 언어를 회원 언어로 맞춥니다(사이트가 지원하지 않는 언어면 그대로). 같은 언어를 다시 골라도 로그인 회원의 언어를 저장해 둘이 다시 갈리지 않게 합니다. 비로그인은 종전대로 브라우저 언어입니다 (TemplateApp.ts `init`·`alignLocaleWithMemberLanguage`·`changeLocale`, 회귀: `TemplateApp.memberLocale.test.ts`)
+- 회원 언어가 지금 화면 언어와 다른 회원이 로그인하면 로그인 직후 콘솔 오류가 수십 건 나던 문제(실측: 회원 언어 ja, 사용자 화면 로그인 → 홈에서 26건 — 「템플릿 엔진이 초기화되지 않았습니다」, `Unknown action handler: sirsoft-ecommerce.initPreferredCurrency` 등). 로그인 후처리가 회원 언어로 바꾸려고 엔진을 내렸다 올리는 동안 로그인 뒤 홈으로 가는 화면 전환이 함께 진행돼, 내려간 엔진에 데이터를 쓰고 핸들러가 다시 달리기 전의 디스패처로 init_actions 를 실행했습니다. 언어 전환은 진행 중인 화면 전환이 끝난 뒤 엔진을 내리고, 엔진이 내려가 있는 동안 시작한 화면 전환은 새 엔진과 핸들러가 준비된 뒤 진행합니다. 7.0.0-beta 부터 있던 경쟁입니다 (TemplateApp.ts `changeLocale`·`handleRouteChange`, 회귀: `TemplateApp.memberLocale.test.ts`)
+- 화면 구동 자산을 불러오지 못했을 때 번역이 아직 없으면 안내 문구가 「주소 검색을(를) 불러오지 못했습니다.」처럼 괄호 조사로 나오던 문제. 대체 문구를 코어 한국어 문구와 같은 「{label} 불러오기에 실패했습니다.」로 바꿨습니다 (AssetFailureNotice.ts, 회귀: `AssetFailureNotice.test.ts`)
+- 스켈레톤 전환 덮개의 상태 영역 이름이 화면 언어와 상관없이 「Loading...」 이고, 안쪽 스켈레톤 컴포넌트의 상태 영역과 겹쳐 두 번 읽히던 문제. 이름은 템플릿 번역(`nav.loading`)을 쓰고, 안쪽 컴포넌트가 상태 영역을 그리면 바깥 덮개는 역할과 이름을 갖지 않습니다 (TemplateApp.ts `renderSkeletonOverlay`, 회귀: `TemplateApp.skeletonOverlayA11y.test.ts`)
+
+## [engine-v1.78.8] - 2026-10-09
+
+### Added
+
+- 레이아웃 편집기 [동작] 탭에서 값을 그대로 넘기는 부품(`rawValueEvents` 표식)의 칸 위에 「바뀐 값은 동작 값 칸에서 `{{$args[0]}}` 로 읽는다(`$event.target.value` 는 비어 있다)」 안내를 보입니다. 값이 첫 인자가 아닌 부품은 역량의 새 표식 `rawValueArgIndex`(칸 이름 → `$args` 위치)로 위치를 알립니다 — FilterGroup 은 `onChange(filterId, value)` 라 `{{$args[1]}}`. 문구는 `layout_editor.action.raw_value_hint`(ko/en/ja) (property-controls/ActionRecipeEditor.tsx, spec/specTypes.ts `rawValueArgIndex`, 회귀: `ActionRecipeEditor.rawValueHint.test.tsx`·`rawValueEventsMarked.test.ts`)
+
+### Fixed
+
+- 레이아웃 편집기 버전 기록 창의 문자 수 변화가 1 이어도 「(+1 chars)」로 나오던 문제. 부호가 붙은 글자(`+1`)는 수가 아니라 복수형을 고르지 못했습니다 — 절댓값을 `count` 로도 넘기고 en 사전에 `_one` 을 더했습니다. 같은 묶음에서 코어 편집기 en 사전의 「{count} unsaved edit(s)」 같은 `(s)` 표기 5곳을 복수형 기본 키와 단수형 `_one` 으로 나누고, `{count} lines`·`{count} cells` 등 5곳에 `_one` 을 더했습니다 (VersionHistoryModal.tsx, 회귀: `i18n/pluralDictionary.test.ts`)
+
+## [engine-v1.78.7] - 2026-10-09
+
+### Added
+
+- 레이아웃 편집기 [동작] 탭에서 한 이벤트 칸에 기다렸다 실행하는 동작(debounce)과 바로 실행하는 동작이 섞이면 그 칸에 경고를 띄웁니다. 런타임은 바로 실행하는 동작을 돌리기 전에 대기 중인 디바운스를 모두 즉시 실행하므로(저장 직전 최신 입력 반영, engine-v1.20.0) 섞어 두면 디바운스 동작도 매 입력 실행됩니다 — 실행 의미는 바꾸지 않고 알리기만 합니다. 묶음 판정은 런타임과 같은 순서(`event` → `type`)입니다. 코드 편집기 검사에도 같은 경고(`mixed_debounce_flushed`)가 붙습니다 (property-controls/ActionRecipeEditor.tsx `hasMixedDebounce`, 회귀: `ActionRecipeEditor.mixedDebounce.test.tsx`)
+- 편집기 확인·입력 대화상자 `useEditorDialog(t)` — `confirm({title, message, confirmLabel, cancelLabel, danger})`·`prompt({…, defaultValue})` 가 편집기 모달 스택 위에 role=alertdialog 창을 띄우고 약속(Promise)으로 답합니다. 이름=제목·설명=본문, 처음 초점(입력칸 / 위험 확인은 [취소] / 그 밖 [확인]), Tab 가두기, Esc·백드롭·[취소]=취소, 닫히면 연 요소로 초점 복귀. Provider 없이 단독 렌더되면 브라우저 기본 대화상자로 대체합니다. 모달 옵션에 `role`·`ariaDescribedBy` 추가, Provider 밖에서도 부를 수 있는 `useOptionalEditorModal()` (components/EditorDialog.tsx, EditorModalContext.tsx, 회귀: `EditorDialog.test.tsx`)
+- 부품 역량 스펙 `rawValueEvents` — `events` 중 부품이 DOM 이벤트·`{ target }` 대신 값을 그대로 넘기는 칸 표식 (spec/specTypes.ts)
+
+### Changed
+
+- 레이아웃 편집기의 나가기·템플릿 전환·커스텀 자산 적용 토글·링크 경로 이동·초기화, 커스텀 자산 창의 미저장 버리기·삭제·이름변경, 버전 복원, 다국어 키 삭제(1건·일괄), 첨부 이미지 삭제가 브라우저 기본 `window.confirm`/`window.prompt` 대신 편집기 대화상자를 씁니다(11곳). 단추 이름이 동작을 말하고(「변경 사항 버리기」/「편집 계속」·「삭제」·「이름변경」·「복원」) 위험한 확인은 처음 초점이 [취소]입니다. 호출 쪽 처리기는 비동기가 되었고, 커스텀 자산 창의 Esc 는 대화상자가 떠 있으면 대화상자만 닫습니다 (LayoutEditorChrome.tsx, CustomAssetsModal.tsx, VersionHistoryModal.tsx, CustomTranslationManager.tsx, LayoutAttachmentManager.tsx, 회귀: `EditorDialog.test.tsx` 「편집기 소스에 window.confirm/prompt 0」·`CustomAssetsModal.test.tsx`)
+
+### Fixed
+
+- 레이아웃 편집기 [동작] 탭에서 값을 그대로 넘기는 부품(SearchableDropdown·TagSelect·IconSelect·FilterGroup·QuantitySelector·RichTextEditor)의 「값이 바뀌면」 칸에 붙인 동작이 저장은 되는데 실행되지 않던 문제. 탭이 그 칸을 `type: "change"` 로 적었고, 런타임 `type` 경로는 첫 인자가 DOM 이벤트·`{ target }` 일 때만 실행합니다. 역량 스펙에 `rawValueEvents: ["onChange"]` 표식이 있는 부품만 `event: "onChange"` 로 적어 `onChange(값)` 호출로 실행됩니다 — 표식은 onChange 를 사용자 조작 때만 부르는 부품에만 달았습니다(마운트·리렌더 때도 부르는 부품에 달면 그때마다 동작이 실행되기 때문). `{ target: { value } }` 로 부르는 PermissionTree·관리자 FileInput 은 종전 `type` 이 실행되므로 표식이 없습니다. 7.1.0 이전부터의 한계 (ActionRecipeEditor.tsx `eventKeysFor`, 회귀: `ActionRecipeEditor.runtimeEventForm.test.tsx`·`rawValueEventsMarked.test.ts`)
+- 영어 화면에서 개수가 1이어도 「1 posts」「Total 1 items」처럼 복수형 문구가 나오던 문제. 번역 엔진에 복수형 선택이 없어 사전 문구 하나를 모든 수에 썼습니다. `$t:키|count=N`(·`G7Core.t(키, { count })`)의 `count` 가 숫자 표기이면 문구를 꺼낸 사전 로케일의 CLDR 범주(`Intl.PluralRules`)로 `키_{zero|one|two|few|many}` 를 먼저 찾고, 없거나 범주가 other 면 기본 키(= other 꼴)를 씁니다. 현재 로케일 사전에 기본 키가 있으면 그 사전 안에서만 고르고, 폴백(en) 사전으로 넘어가면 en 범주로 다시 고릅니다. `count` 가 없거나 수가 아니면(빈 값·`1,000`) 종전과 같습니다. 봇(SEO) 화면 평가기도 같은 규칙(ExpressionEvaluator `pluralVariant`). 7.0.x 부터의 한계이며 en 사전 72곳에 `_one` 변형을 더했습니다(ko·ja 는 범주가 other 뿐이라 그대로) (TranslationEngine.ts `getTranslation`·`lookupWithPlural`·`pluralCount`·`pluralCategory`, 회귀: `TranslationEngine.plural.test.ts`·`ExpressionEvaluatorTest` 복수형 2건)
+
+## [engine-v1.78.6] - 2026-10-09
+
+### Fixed
+
+- 레이아웃 편집기 번들을 받지 못했을 때 뜨는 오류 화면의 제목(「레이아웃 편집기 로드 실패」)과 안내(「편집기를 불러오지 못했습니다 …」·「… 초기화하지 못했습니다 …」)가 화면 언어와 무관하게 한국어였던 문제(영어 화면에서도 버튼만 「Reload」). 문구를 엔진 공통 오류 화면과 같은 방식으로 번역 키(`core.errors.layout_editor_*`)가 풀리면 그 값을, 못 풀면 엔진 내장 문구를 `<html lang>` 으로 고릅니다 (template-engine.ts `loadLayoutEditorBundle`·편집기 진입 분기, ErrorDisplay.ts 내장 문구, 회귀: `loadLayoutEditorBundle.test.ts`·`ErrorDisplay.locale.test.ts`)
+
+## [engine-v1.78.5] - 2026-10-09
+
+### Fixed
+
+- 권한이 좁은 운영자가 관리자 화면을 열면 화면 공통 데이터소스(알림·대시보드 위젯 등) 여러 개가 403 으로 실패하면서 시스템 기본 처리가 같은 「해당 권한이 없습니다.」 토스트를 한 화면에 13장까지 쌓던 문제. 같은 종류·같은 문구의 토스트가 3초 안에 이미 쌓였으면 새로 쌓지 않습니다. 문구가 다르거나 시간이 지나면 종전대로 쌓입니다 (ActionDispatcher.ts `handleToast`·`TOAST_DEDUPE_WINDOW_MS`, 회귀: `ActionDispatcher.toastDedupe.test.ts`)
+- 권한 없는 화면·없는 화면을 열 때 뜨는 엔진 공통 오류 화면의 제목(「페이지 로딩 실패」·「초기화 실패」)과 「새로고침」 버튼이 화면 언어와 무관하게 한국어였고, 본문이 개발자용 원문(「Failed to fetch layout: 403 Forbidden」)이던 문제. 레이아웃 403·404 는 사람이 읽는 안내(「이 화면을 볼 권한이 없습니다.」)를 싣고, 문구는 번역 키(`core.errors.*`)가 풀리면 그 값을, 못 풀면(번역 파일 실패가 원인일 수 있다) 엔진 내장 문구를 `<html lang>` 으로 고릅니다. 서버가 준 사유(필요 권한)는 상세 줄에 그대로 남고, 아이콘은 꾸밈으로 숨깁니다 (ErrorDisplay.ts `text`, TemplateApp.ts 오류 화면, 회귀: `ErrorDisplay.locale.test.ts`)
+
+## [engine-v1.78.4] - 2026-10-09
+
+### Fixed
+
+- 레이아웃 편집기 요소 속성 창 [동작] 탭이 `event` 로 적힌 동작을 그 이벤트 칸에 보여 주지 않던 문제. 탭은 동작의 `type` 만 보고 이벤트를 나눴는데, 런타임은 `event` 를 먼저 보고 `type` 은 그다음에 본다. 그래서 기본 제공 화면이 쓰는 `event: "onSearch"`(활동 로그 행위자 검색 등)·`event: "onChange"`·`event: "onPageChange"`·`event: "onItemClick"` 동작이 탭에서 빠졌고(「검색어를 입력하면」이 빈 칸으로 보임), `type` 이 없는 `event` 동작은 「클릭하면」 칸에 잘못 섞였습니다. 탭이 런타임과 같은 순서(`event` → `type` → 둘 다 없으면 클릭)로 나누고, 이미 `event` 로 적힌 동작에는 `type` 을 덧붙이지 않습니다. 7.1.0 개발 중 결함이며 릴리스에는 포함되지 않았습니다 (property-controls/ActionRecipeEditor.tsx `belongsToEvent`, 회귀: `ActionRecipeEditor.test.tsx`)
+- [동작] 탭에서 「검색어를 입력하면」 같은 컴포넌트 콜백 칸에 붙인 동작이 저장은 되는데 화면에서 실행되지 않던 문제. 탭이 새 동작을 `type: "search"` 로 적었고, 런타임의 `type` 경로는 콜백 첫 인자가 DOM 이벤트나 `{ target }` 모양일 때만 실행하므로 검색어(문자열)·페이지 번호처럼 값을 그대로 넘기는 콜백에서는 아무 일도 일어나지 않았습니다(예외·경고 없음). DOM 이벤트로 매핑되지 않는 칸(`onSearch`·`onPageChange`·`onItemClick`·`onTabChange` 등)의 새 동작은 기본 제공 화면과 같은 `event` 표기로 적어 `$args` 와 함께 실행됩니다. 클릭·값 바뀜 같은 DOM 이벤트 칸은 종전대로 `type` 입니다 (ActionRecipeEditor.tsx `eventKeysFor`, 회귀: `ActionRecipeEditor.runtimeEventForm.test.tsx` — 편집기 출력을 실제 `ActionDispatcher.bindActionsToProps` 에 묶어 원시값 콜백 호출)
+
+## [engine-v1.78.3] - 2026-10-09
+
+### Fixed
+
+- 레이아웃 편집기에서 콘텐츠 언어를 바꿔도 식으로 고르는 문구(`{{조건 ? '$t:a' : '$t:b'}}` — 창 아래 [삭제] 버튼, 상태 배지 「현재 활성」 등)만 표본 언어(한국어)로 남던 문제. 편집 대상 표본 전역(`sampleGlobal`)의 `$locale` 이 미리보기 렌더 맥락 최상위로 올라가, 편집 모드의 `$locale` 자동 주입(콘텐츠 언어)을 막았습니다. 미리보기의 `$locale` 은 이제 콘텐츠 언어입니다 (sample-data/dollarGlobals.ts `previewDollarGlobals`, PreviewCanvas.tsx, 회귀: `previewDollarGlobals.test.ts`)
+- 같은 창 id(`delete_confirm_modal`·`privacy_run_modal`·`identity_policy_form_modal` 등)를 여러 확장이 따로 쓰면, 창 편집의 「화면 상태」 고르개에 다른 확장의 창 상태가 같은 이름으로 겹쳐 보이고 먼저 병합된 확장의 표본이 이 화면의 창에 적용되던 문제. 로더가 상태 묶음마다 출처(`__source`)를 남기고, 창 편집은 창을 연 화면(호스트 레이아웃)의 주인 확장 묶음을 우선합니다 — 확장 레이아웃(`{확장}.{이름}`)은 그 확장 묶음, 템플릿 레이아웃은 템플릿 묶음. 주인이 낸 묶음이 없으면 종전처럼 매칭된 묶음을 모두 씁니다 (editorSpecLoader.ts `mergeStates`, utils/matchStateScope.ts `matchStateItems` 의 `hostLayoutName`, LayoutEditorChrome.tsx, 회귀: `matchStateScope.test.ts`·`editorSpecLoader.stateSource.test.ts`)
+- 속성 편집 창의 접근 가능한 이름(aria-label)이 「속성 편집: {name}」 자리표시 원문이던 문제. 창을 여는 쪽이 이름 인자 없이 번역 키를 풀었습니다. 제목과 같은 요소 이름(편집 역량 이름 → 컴포넌트 이름 → 「요소」)을 끼웁니다 (utils/propertyModalAriaLabel.ts, EditorCanvasOverlay.tsx, 회귀: `propertyModalAriaLabel.test.ts`)
+
+## [engine-v1.78.2] - 2026-10-09
+
+### Fixed
+
+- 토큰이 만료된 채 비회원도 쓸 수 있는 화면(게시판 글쓰기 등)을 열면, 로그인 화면으로 옮겨지기 직전 「요청을 보내지 못했습니다. 네트워크 연결을 확인…」 토스트가 뜨던 문제. 시스템 기본 401 처리(`navigate {{auth.loginPath}}`)의 `auth` 를 싣는 실행 문맥이 없어 경로가 빈 값으로 풀렸고, 빈 경로 이동의 TypeError 가 「네트워크 실패」 로 분류돼 기본 오류 토스트가 네트워크 안내를 띄웠습니다. 오류 처리 문맥에 `auth.loginPath`(템플릿의 로그인 화면 + 현재 주소를 복귀 경로로)를 싣고, 빈 경로 이동은 건너뜁니다 (ActionDispatcher.ts `setLoginPathResolver`·`buildErrorAuthContext`, TemplateApp.ts `bindLoginPathResolver`, 회귀: `ActionDispatcher.defaultUnauthorizedHandler.test.ts`)
+- 세션 만료로 로그인 화면으로 옮기는 중(ApiClient 401 → `window.location.href`)에도 같은 401 로 실패한 데이터 소스·액션의 오류 처리가 떠날 화면에서 돌던 문제. 이동을 시작하기 직전에 이탈 가드를 켜(`markDocumentLeaving`) 오류 처리(토스트·이동)를 건너뜁니다 (networkResilience.ts, ErrorHandlingResolver.ts `execute`, ActionDispatcher.ts 오류 경로)
+
+## [engine-v1.78.1] - 2026-10-09
+
+### Added
+
+- `AuthConfig.guestOnlyPaths` — 로그인 이동 시 복귀 경로로 싣지 않을 로그인 전용 화면 경로. 기본값은 관리자 `/admin/login`·`/admin/forgot-password`·`/admin/reset-password`, 사용자 `/login`·`/register`·`/forgot-password`·`/reset-password` 이며 `loginPath` 는 항상 포함됩니다. 다른 경로를 쓰는 템플릿은 `AuthManager.updateConfig(type, { guestOnlyPaths })` 로 바꿉니다 (AuthManager.ts)
+
+### Fixed
+
+- 세션이 끊긴 채 로그인 화면 자체(`/login`, `/admin/login`)를 열면 데이터 소스 401 이 로그인 이동을 일으키면서 로그인 화면 자신을 복귀 경로(`?redirect=/login`)로 실어, 로그인(비밀번호 변경 단계 포함)을 마친 뒤 다시 로그인 폼에 떨어지던 문제. 로그인·가입·비밀번호 찾기·재설정 화면은 복귀 경로로 싣지 않고, 로그인 화면이 이미 복귀 경로를 갖고 있으면(`/login?redirect=/mypage`) 그 경로를 이어 싣습니다 (AuthManager.ts `getLoginRedirectUrl`, 회귀: `AuthManager.test.ts`)
+- 언어를 바꾸거나 저장해 둔 언어로 시작해도 `<html lang>` 이 서버가 처음 찍은 언어로 남던 문제. 시작할 때와 `changeLocale()` 때 앱 로케일로 맞춥니다(밑줄 로케일은 하이픈으로) (TemplateApp.ts `syncDocumentLang`, 회귀: `TemplateApp.documentLang.test.ts`)
+
+## [engine-v1.78.0] - 2026-10-06
+
+### Added
+
+- 방문자 동의 런타임(코어 소유)을 추가했습니다. 사용자 템플릿 부팅 때 인증 확인이 끝난 뒤 `/api/consent` 를 조회해 전역 상태 `_global.consent`(`contractVersion`·`status`·`categories`·`needsRenewal`·`policyVersion`)를 채우고, 값이 바뀔 때만 컴포넌트 이벤트 `consent:changed` 를 냅니다. 로그인·로그아웃마다 세대를 올려 `unknown` 으로 비운 뒤 다시 조회하며(동의 관리 확장이 없는 사이트의 `none` 은 비우지 않고 다시 조회만 합니다), 이전 세대에서 출발한 응답은 버립니다. 같은 세대의 겹친 조회는 요청 하나를 공유하고, 조회 실패·형식 오류·모르는 계약 버전은 `unknown` 입니다. 관리자 템플릿에서는 만들지 않습니다.
+- 내장 액션 핸들러 `refreshConsent` 를 추가했습니다. 동의를 저장한 화면이 성공 뒤에 부르면 런타임이 다시 조회하고, `consent:changed` 리스너가 끝날 때까지(최대 3초) 기다린 뒤 끝나므로 같은 시퀀스의 다음 동작은 동기화 이후에 실행됩니다. 리스너 하나가 끝나지 않아도 3초 뒤에는 진행해, 다음 조회와 판정 대기가 함께 멈추지 않습니다. 레이아웃 편집기 액션 목록에도 「방문자 동의 상태 다시 읽기」로 올렸습니다.
+- `G7Core.consent` 파사드(`getSnapshot()`·`refresh()`·`subscribe(listener)` — `subscribe` 는 해제 함수 반환)를 추가했습니다.
+- 다른 확장이 읽는 공개 전역 상태의 소유자·모양을 조회하는 `G7Core.stateContracts`(`get(name)`·`list()`·`ownerOf(name)`, 읽기 전용)를 추가했습니다. 이름은 선언된 계약에서만 찾으며 `constructor` 같은 객체 기본 속성 이름은 계약으로 보지 않습니다.
+- `AuthManager.off(event, handler)` 와 현재 인증 상태 사본을 돌려주는 `AuthManager.getState()` 를 추가했습니다. 확장 번들은 최초 인증 확인 뒤에 실리므로 최초 상태는 이벤트가 아니라 `getState()` 로 읽습니다. 돌려주는 사용자 정보도 사본이라 고쳐도 내부 상태는 바뀌지 않습니다.
+
+### Changed
+
+- 방문자 통계 트래커의 동의 판정 출처를 코어 동의 런타임으로 바꿨습니다. 자체 조회(`/api/analytics/consent`)와 `g7:analytics-permission-changed` 이벤트 구독을 없앴고, 로그인·로그아웃 직후처럼 판정이 다시 대기로 돌아가면 그 사이의 비콘도 들고 있다가 새 판정으로 보내거나 버립니다(로그인 직후 화면의 페이지뷰 보존).
+
+### Fixed
+
+- `G7Core.state.subscribe()` 가 해제 함수 대신 `undefined` 를 돌려줘, 반환값을 해제 함수로 쓰던 화면(상품 카드·관리자 사이드바·본인인증 실행기)이 떠날 때마다 전역 상태 리스너를 남기던 문제를 고쳤습니다(실측: 상품 목록 왕복 20회에 29 → 281). `TemplateApp.onGlobalStateChange()` 가 해제 함수를 돌려줍니다. 도입 때부터(7.0.0-beta.1) 있던 결함입니다.
+- `AuthManager.on()` 이 해제 수단을 돌려주지 않던 문제와, 토큰이 사라지거나 인증 확인이 실패해 비인증이 되어도 `authStateChange` 를 내지 않던 문제를 고쳤습니다. 이제 `on()` 은 해제 함수를 돌려주고, 인증 상태에서 비인증으로 바뀔 때 한 번 발행합니다(로그아웃은 종전처럼 한 번만). 이 발행을 받은 구독자가 예외를 던져도 인증 확인은 종전처럼 `false` 로 끝납니다. 도입 때부터(7.0.0-beta.1) 있던 결함입니다.
+
+## [engine-v1.77.2] - 2026-10-05
+
+### Fixed
+
+- 입력칸을 고친 뒤 저장하지 않고 탭을 오가면(데이터 소스 `initLocal` + `refetchOnMount`, 예: 관리자 환경설정) 칸은 서버값으로 돌아오는데 「저장하지 않은 변경이 있습니다」 표시와 저장 버튼 활성만 남던 문제. 같은 데이터를 다른 렌더러가 먼저 적용하면 폼을 가진 렌더러는 정리(prune) 경로를 타는데, 이 경로가 데이터 키만 지우고 자동바인딩이 남긴 `hasChanges: true` 는 그대로 둬서 저장소 B 의 false 를 덮었습니다. engine-v1.54.7(정리 경로 도입)부터 있던 결함이며 7.0.x 릴리스에는 포함되지 않았습니다
+- 게시판·이커머스 설정의 알림 설정 탭에서 채널을 바꾼 뒤(저장 전) 알림 하나를 켜고 끄면, 채널 변경은 화면에 남아 있는데 저장 버튼이 꺼져 저장할 수 없던 문제. 적용 경로가 폼과 무관한 데이터(알림 목록 페이지 정보)가 와도 `hasChanges` 를 무조건 false 로 만들었고, 위 정리 경로의 잔존이 이를 일부만 가리고 있었습니다
+
+### Changed
+
+- `_localInit` 의 「변경 있음」(`hasChanges`) 초기화 범위: 적용·정리·대기 상태 사전 동기화 모두, 들어온 데이터가 **마운트된 변경 추적 폼(`data-key` + `data-track-changes`)의 dataKey 첫 키**를 담을 때만 초기화합니다. 변경 추적 폼이 없는 화면은 종전대로 항상 초기화합니다. 폼 dataKey 등록은 `localInitSlot.ts` 의 `registerTrackChangesRoot` / 판정은 `shouldResetHasChanges` (DynamicRenderer.tsx `_localInit` 처리, 회귀: `DynamicRenderer.localInitPruneHasChanges.test.tsx`, 트러블슈팅 state-global initLocal 사례 8)
+
+## [engine-v1.77.1] - 2026-10-05
+
+### Fixed
+
+- 컴포넌트가 액션 콜백을 이벤트 없이 부르면(관리자 모달의 Escape → `onClose()`) 핸들러가 `event.type`·`preventDefault()` 를 읽다 TypeError 로 거부돼 액션이 실행되지 않던 문제. 모달이 Escape 로 닫히지 않고 콘솔에 오류가 남았습니다. 인자가 없으면 액션 type 의 대체 이벤트(대상 없음)로 실행합니다 — 인자가 있는 호출은 그대로입니다. 2025-12-19(로거 도입)부터 있던 결함입니다 (ActionDispatcher.ts `createHandler`, 회귀: `ActionDispatcher.eventlessHandler.test.ts`)
+
+## [engine-v1.77.0] - 2026-10-05
+
+### Added
+
+- 로그인 결과에 「비밀번호 변경 단계」 형태를 추가했습니다. 비밀번호가 만료됐거나 관리자가 정해 준 비밀번호면 서버가 로그인·2단계 인증 확인에 토큰 대신 변경 단계(`password_change_required: true` + `challenge_id`·`reason`·`can_postpone`·`postpone_days`·`expired_at`·`expires_at`)를 돌려줍니다. `LoginResult` 에 `{ status: 'password_change_required'; challenge: PasswordChangeChallenge }` 가 생기고, 이 형태에서는 토큰을 저장하지 않습니다 (AuthManager.ts `resolveLoginPayload`)
+- `AuthManager.completePasswordChange(type, { challengeId, password, passwordConfirmation })`·`postponePasswordChange(type, { challengeId })` 와 엔드포인트 설정 `passwordChangeEndpoint`·`passwordChangePostponeEndpoint`(관리자 `/auth/admin/login/password-change[/postpone]`, 사용자 `/auth/login/password-change[/postpone]`) (AuthManager.ts)
+- 액션 핸들러 `loginPasswordChange`(body `challenge_id`·`password`·`password_confirmation`)·`loginPasswordChangePostpone`(body `challenge_id`) — 성공하면 `{ user, password_change_required: false, ...서버 안내 필드(dormancy_restored·postponed_until 등) }` — 안내 필드는 engine-v1.76.0 의 `LoginResult.extras` 와 같은 방식으로 서버가 실었을 때만 있습니다. 마크업 태그 `<login-password-change>`·`<login-password-change-postpone>`, 레이아웃 편집기 「기타」 분류에도 등록 (ActionDispatcher.ts·ActionHandlerManifest·coreActionRecipes)
+- `login`·`loginTwoFactor` 응답에 `password_change_required` 를 싣습니다 — 변경 단계면 `true` 와 단계 정보(`user: null`), 아니면 `false`
+
+### Changed
+
+- `AuthManager.completeTwoFactorSession()`(engine-v1.76.0)이 인증번호가 맞아도 비밀번호 변경 단계를 돌려줄 수 있습니다 — 결과 타입 `TwoFactorSession` 이 `status` 로 가르는 두 형태(`authenticated` 의 `user`·`extras` / `password_change_required` 의 `challenge`)가 됐습니다. 공개 API `completeTwoFactor()` 는 종전대로 사용자를 돌려주며, 비밀번호 변경 단계가 오면 세션을 열지 않고 오류를 던집니다 — 그 단계를 처리하려면 `completeTwoFactorSession()` 을 씁니다 (AuthManager.ts)
+- **템플릿 제작자 조치**: 로그인 화면이 `navigate if="{{!response.two_factor_required}}"` 처럼 「2단계 인증이 아니면 로그인 성공」으로 판정하면 변경 단계 응답(`user: null`, 토큰 없음)을 성공으로 오판해 이동합니다. `login`·`loginTwoFactor` 성공 분기에서 `response.password_change_required` 를 먼저 보고 변경 단계 화면으로 바꾸고, 그 단계의 제출은 `loginPasswordChange`(연기 허용 시 `loginPasswordChangePostpone`)로 보냅니다. 세 단계의 `if` 는 상호배타로 둡니다 — 작성 규칙은 `docs/frontend/auth-system.md` 「비밀번호 변경 요구 로그인」
+
+## [engine-v1.76.0] - 2026-10-05
+
+### Added
+
+- `G7Core.AuthManager` 의 로그인 결과(`LoginResult`)에 서버가 함께 보낸 안내 필드를 담는 `extras`(예 `dormancy_restored`)를 더했습니다. 서버가 싣지 않으면 키 자체가 없어 종전 결과 모양은 그대로입니다.
+- 2단계 인증 확인 뒤 세션을 마무리하고 사용자와 안내 필드를 함께 돌려주는 `AuthManager.completeTwoFactorSession()` 과 그 결과 타입(`TwoFactorSession`, `LoginExtras`)을 공개했습니다. 기존 `completeTwoFactor()` 는 같은 사용자 값을 그대로 돌려줍니다.
+
+### Fixed
+
+- 휴면 회원이 로그인해 계정이 풀려도 로그인 화면(사용자·관리자)의 「휴면 상태가 해제되었습니다」 안내가 한 번도 뜨지 않던 문제를 고쳤습니다. 서버는 해제된 로그인에만 `dormancy_restored: true` 를 싣는데, `AuthManager.login()` 이 응답에서 사용자만 골라 돌려주고 `login`·`loginTwoFactor` 핸들러가 `{ user, two_factor_required }` 만 만들어 레이아웃의 `<toast if="{{response.dormancy_restored}}">` 에 닿지 않았습니다. 세션을 연 응답에서 토큰·사용자·2단계 표지를 뺀 나머지 필드를 `LoginResult.extras` 로 넘기고(서버가 실었을 때만 키가 있음), 핸들러가 그것을 `response` 에 펼칩니다. 토큰은 ApiClient 가 보관하므로 `response` 로 흘려보내지 않습니다. 2단계 인증 완료는 공개 API `completeTwoFactor()`(사용자만 반환)를 그대로 두고 `completeTwoFactorSession()` 을 새로 두어 핸들러가 씁니다. 회귀 잠금: `ActionDispatcher.loginServerFlags.test.ts` (AuthManager.ts, ActionDispatcher.ts, auth/index.ts)
+- 레이아웃 편집기 「커스텀 자산」 창에서 새 파일 경로를 적고 본문을 치면 글자가 지워지며 마지막 한 글자만 남고, 그대로 저장하면 1바이트 파일이 생기던 문제를 고쳤습니다(파일별 버퍼를 도입한 engine-v1.71.0 부터). 본문 칸이 고른 파일의 버퍼만 읽어 새 파일에서는 늘 빈 값을 그렸습니다. 새 파일 본문은 경로와 따로 두는 전용 버퍼(`NEW_FILE_BUFFER_KEY`)에 담아, 경로보다 본문을 먼저 써도 입력이 남고 경로를 나중에 고쳐도 본문이 따라가며, 저장에 성공하면 그 경로의 버퍼로 옮깁니다. 저장하지 않은 새 파일 본문은 미저장 개수와 대상 전환·닫기 확인에 함께 잡히고 본문 검색에서는 빠집니다. 회귀 잠금: `CustomAssetsModal.test.tsx` 3건 (CustomAssetsModal.tsx)
+- 모듈이나 플러그인이 자기 editor-spec `componentPalette` 에 등재한 컴포넌트(`{확장식별자}.{이름}`, 예 Hello 모듈의 `MemoCard`)가 레이아웃 편집기 「요소 추가」 창에 한 번도 나오지 않던 문제를 고쳤습니다(확장 팔레트 등재를 처음 도입한 engine-v1.67.0 부터). 팔레트 목록의 원천이 편집 대상 템플릿 `components.json` 하나라 `resolveCategories` 가 그룹의 확장 이름을 매니페스트에서 찾지 못해 버렸고, 놓을 자리(`nesting`)도 템플릿이 자기 이름으로만 써 루트(`draggable`)와 컨테이너(`accepts`) 필터가 다시 걸렀습니다. 셸이 병합 스펙에서 팔레트에 등재된 확장 이름을 모아 그 확장의 `components.json` 만 받아 등록 이름으로 바꿔 매니페스트에 더하고(템플릿이 `overrides` 로 대체했으면 대체본 메타), 스펙 로더가 병합 뒤 확장 컴포넌트에 템플릿이 `Div` 를 받는 자리(끌어 놓기 목록·`Div` 를 받는 컨테이너)를 함께 줍니다. 템플릿이 그 이름을 어느 컨테이너 `accepts` 에 직접 적었으면 그 선언을 따릅니다. 등재한 확장이 없으면 요청도 없습니다. 회귀 잠금: `extensionPaletteComponents.test.tsx` 13건(번들 실물 Hello 모듈 + 관리자 기본 템플릿 포함) (extensionPaletteComponents.ts, editorSpecLoader.ts, LayoutEditorChrome.tsx)
+- 「커스텀 자산」 창을 Esc 나 바깥(백드롭) 클릭으로 닫으면 「저장하지 않은 편집 N건」 확인 없이 닫혀 쓰던 본문이 사라지던 문제를 고쳤습니다. 편집기 모달 루트가 Esc 를 캡처 단계에서 가로채 창을 바로 닫아, 창 자신의 Esc 처리(`handleClose` → 확인)까지 키가 닿지 않았습니다. 창을 `closeOnEscape: false` 로 열어 Esc 는 창 자신의 처리가 받고, 백드롭 클릭은 편집기 모달의 새 선택지 `onRequestClose`(백드롭 클릭을 바로 닫지 않고 호출자에게 맡김)로 창이 등록한 같은 처리에 넘깁니다. 편집이 없으면 바로 닫혀 페이지 설정 창과 같고, 있으면 확인을 거칩니다. 같은 창의 문구 3건(`custom_assets.binary_hint`·`discard_confirm`·`no_match`)이 서버 형식 자리(`:count`)를 써 화면에 자리 이름이 그대로 보이던 것도 엔진 번역기 형식(`{count}`)으로 바꿨습니다(ko·en·ja 팩). 회귀 잠금: `CustomAssetsModal.test.tsx` 「커스텀 자산 창의 미저장 보호」 3건·「편집기 문구 치환 자리 형식」 1건 (LayoutEditorChrome.tsx, EditorModalContext.tsx, CustomAssetsModal.tsx)
+- 레이아웃 편집기 미리보기의 본문 편집기(CKEditor)가 임시 입력창으로 바뀌던 문제를 고쳤습니다. 미리보기의 레이아웃 스크립트 주입이 런타임과 달리 자산 주소 방식(`convertToCurrentMode`)을 거치지 않아 확장자 없는 방식 사이트에서 404 가 났고, 다른 로더(편집기 플러그인의 자체 로더)가 다른 id 로 먼저 실은 같은 스크립트를 알아보지 못해 한 번 더 실어 UMD 가 두 번 실행됐습니다. 이제 바꾼 주소로 싣고, 이미 실린 태그는 id 와 주소(두 형태)로 찾습니다. 회귀 잠금: `PreviewCanvas.scriptGate.test.tsx` (PreviewCanvas.tsx)
+- 레이아웃 편집기 창 편집에서 창을 연 화면의 값(`$parent._local`)을 읽는 창이 상태 표본을 넣어도 빈 채로 그려지던 문제를 고쳤습니다. 런타임은 창에 창을 연 레이아웃의 데이터 맥락을 `parentDataContext` 로 넘기는데, 미리보기는 창 노드를 루트 형제로 덧붙여 그리면서 이 맥락을 넘기지 않았습니다. 이제 창 노드에 런타임 openModal 과 같은 모양(`_local`, `_global`, 호스트 레이아웃의 `computed` 정의로 계산한 `_computed`)을 `$parent` 로 넘깁니다. 회귀 잠금: `modalEditParentContext.test.ts`, `PreviewCanvas.modalParentContext.test.tsx` (PreviewCanvas.tsx, modalEditParentContext.ts)
+## [engine-v1.75.3] - 2026-10-04
+
+> 요청 Host·외부 주소를 믿던 자리를 닫은 버전이다. 모두 도입 때부터 있던 잠재 결함이며(창 열기 engine-v1.40 계열 2026-03, 전역 헤더 engine-v1.16.0, 본인인증 재요청·폴백 2026-04) 상태 저장소·렌더 사이클은 건드리지 않는다.
+
+### Security
+
+- `openWindow` 가 외부 주소 새 창을 열 때 그 창이 이 창(`window.opener`)을 조작할 수 있던 문제를 고쳤습니다(역방향 탭내빙). 같은 출처 경로는 종전처럼 바로 열고, 외부 주소는 https 만 빈 창을 연 뒤 `opener` 를 끊고 싣습니다. 외부 http 주소는 열지 않습니다 (ActionDispatcher.ts `handleOpenWindow`)
+- 레이아웃 전역 헤더(`globalHeaders` — 비회원 주문 조회 토큰·비밀글 열람 토큰 등)가 패턴만 맞으면 교차 출처 요청에도 실리던 문제를 고쳤습니다. 같은 출처 요청에만 싣습니다 — Bearer 토큰과 같은 판정(`isSameOriginRequestUrl`)입니다 (ActionDispatcher.ts·DataSourceManager.ts `getMatchingGlobalHeaders`)
+- 본인인증(428) 뒤 원 요청을 다시 보낼 때 재요청 주소의 출처를 확인하지 않아, 그 주소가 다른 출처면 원 요청의 인증 헤더와 검증 토큰이 그쪽으로 갈 수 있던 문제를 고쳤습니다. 같은 출처가 아니면 재요청하지 않습니다(서버도 재요청 주소를 경로로만 내려줍니다) (identity/IdentityGuardInterceptor.ts `handle`)
+
+### Fixed
+
+- 본인인증 실행기를 등록하지 않은 템플릿에서 인증 화면으로 넘어갈 때 복귀 주소를 `?return=<절대 주소>` 로 넘겨, 인증 화면(`query.return_url`)이 읽지 못하고 기본 화면으로 돌아가던 문제를 고쳤습니다. `return_url=<현재 경로>` 로 넘깁니다 (identity/IdentityGuardInterceptor.ts `defaultLauncher`)
+
+회귀 잠금: `ActionDispatcher.hostTrust.test.ts`·`IdentityGuardInterceptor.hostTrust.test.ts` (수정 전 6 failed → 수정 후 통과)
+
+## [engine-v1.75.2] - 2026-10-02
+
+### Fixed
+
+- 같은 동작 순서(`sequence`, API 성공 분기) 안에서 창을 닫고 바로 다른 창을 열면 방금 닫은 창이 다시 나타나던 문제를 고쳤습니다. `closeModal`·`openModal` 이 순서 시작 시점에 복사해 둔 `_global.modalStack` 을 읽어, 닫기는 `[]` 를 쓰고 열기는 낡은 `[A]` 에 쌓아 `[A, B]` 를 썼습니다(관리자 확장 목록의 강제 활성 창 → 「언어팩 다시 켜기」 창, #712 실측). 두 핸들러가 `G7Core.state.get()` 의 최신 스택을 읽습니다(`ActionDispatcher::latestModalStack()`). 문맥에 전역 사본이 없는 호출(액션 문맥 없이 `G7Core.dispatch()` 를 부른 확장 JS)은 종전대로 빈 스택에서 시작합니다.
+- `G7Core.modal.isOpen()`·`getStack()` 이 실제 화면에서 늘 `false`·`[]` 를 돌려주던 문제를 고쳤습니다. `G7Core.state.get()` 은 `_global` 의 내용물을 바로 돌려주는데 두 함수는 `state._global.modalStack` 을 읽었습니다.
+- 레이아웃 편집기 미리보기에서 컴포넌트가 셀 렌더 함수로 직접 그리는 자식(CardGrid·DataGrid 셀, 확장 행, component_layout)이 미리보기 기기 폭 대신 브라우저 창 폭으로 `responsive` 분기를 고르고, `$t:defer:` 를 호스트 언어로 번역하고, 액션을 호스트 dispatcher 에 편집 모드에서도 바인딩하던 문제를 고쳤습니다(공개 이슈 #141). 미리보기는 iframe 이 아니라 같은 문서의 div 라 미리보기 값은 React Context·prop 으로만 전달되는데, 셀 렌더 함수는 Context 를 못 읽어 전역 싱글톤(창 폭)·호스트 상태를 읽었습니다 — `renderItemChildren` 반응형 지원 도입 이후 줄곧 있던 결함이며 7.0.11 에서 제보됐습니다. DynamicRenderer 가 자기 렌더 환경(폭·번역 컨텍스트·엔진·dispatcher·레지스트리·편집 모드)을 안정 ref 로 `__componentContext.renderEnvRef` 에 노출하고(identity 불변이라 deps 재계산 없음), 셀 렌더 함수·`G7Core.renderItemChildren`·`renderComponentLayout`(4번째 인자 신설)·`renderExpandContent` 는 「명시 옵션 > 렌더 환경 > 호스트 값」 순으로 고릅니다. 편집 모드면 셀 액션을 바인딩하지 않습니다(DynamicRenderer 와 같은 규약). 슬롯 등록에는 `getRenderEnv`·`componentPath` 가 실려 SlotContainer 가 등록 렌더러의 환경과 원본 편집 경로로 그립니다. 편집기 밖에서는 렌더 환경이 곧 호스트 값이라 동작이 같습니다. 회귀 잠금: `ResponsiveOverride.renderPathParity.test.tsx`(제보자 요청 두 경로 패리티)·`troubleshooting-render-path-environment.test.ts` (RenderEnvironment.ts, RenderHelpers.ts, G7CoreGlobals.ts, DynamicRenderer.tsx, SlotContext.tsx)
+- 레이아웃 편집기 미리보기에서 CSS 폭 `@media` 와 `vw` 가 브라우저 창 폭으로 판정돼, 창 1440 에서 모바일 미리보기를 골라도 `md:` 규칙이 켜지고 창 700 에서 데스크톱 미리보기를 골라도 손으로 쓴 `max-width` 규칙이 표를 숨기던 문제를 고쳤습니다(#141). 편집기 생존 동안 문서의 스타일시트를 훑어 폭 `@media` 블록을 원본(선택자 끝 `:where(:not(.g7le-preview-frame *))` 가드 — 프레임 밖 전용) + 바로 뒤 `@container g7le-preview` 복제본으로 나누고, `vw` 규칙은 프레임 폭 변수(`--g7le-vw`) 복제본을 만듭니다. 선택자 이름이 아니라 조건식만 보므로 CSS 제작 도구와 무관하며, 같은 인덱스에 넣어 캐스케이드 순서·`@layer` 소속·우선순위가 그대로입니다. rem/em 조건은 `@media` 기준 px 로 바꿉니다. 새 `<style>`·`<link>`·CSS-in-JS 규칙도 감시해 처리하고, 언마운트 때 원문 그대로 되돌립니다. 미리보기 프레임 테두리는 `box-shadow` 로 바꿔 내용 폭이 기기 폭과 같아졌습니다(종전 390 → 389). 계측은 `window.__g7lePreviewMediaIsolation`. 소유 노드에 `data-g7le-no-media-isolation` 을 단 시트는 건너뜁니다 (previewMediaIsolation/*, usePreviewMediaIsolation.ts, PreviewCanvas.tsx, LayoutEditorChrome.tsx)
+- 레이아웃 편집기 스타일 탭의 분기 판정(`resolveBranchSeparationMode`)이 폭을 넘겨받지 못하면 브라우저 창 폭으로 폴백하던 것을 사용자 지정 기본 폭(`DEFAULT_PREVIEW_CUSTOM_WIDTH` 1024)·기기 기본 폭으로 바꿨습니다(#141). 유일한 호출부는 늘 폭을 넘겨 화면 동작은 같습니다 (styleScope.ts, deviceList.ts, LayoutEditorContext.tsx)
+
+## [engine-v1.75.1] - 2026-10-01
+
+### Fixed
+
+- 확장자를 가로채는 서버에서 정적 게시본이 없을 때(정적 게시를 끈 운영·개발 환경·버전이 바뀐 직후 첫 방문) 템플릿 자산 디렉토리 URL(`G7Core.asset.templateDir`)이 경로 형태라 404 가 나, 코드 편집기가 늘 일반 입력창으로 떨어지던 문제. 확장자 없는 모드에서는 경로를 인코딩하지 않은 `?file=` 디렉토리를 돌려주고, 쿼리가 있는 URL 에 `.js` 를 붙이지 않는 AMD 로더의 모듈 요청은 템플릿 자산 서빙이 같은 이름의 `.js` 파일로 찾는다 (assetUrl.ts)
+
+## [engine-v1.75.0] - 2026-10-01
+
+### Fixed
+
+- 저장 버튼을 빠르게 두 번 누르면 폼 제출이 두 번 실행돼 같은 저장 요청이 2건 나가던 문제. 같은 폼의 submit 액션이 끝나기 전에 들어온 새 submit 은 기본 동작만 막고 무시한다 — 한 submit 이벤트에 묶인 액션 여럿은 종전대로 모두 실행되고, 잠금은 액션이 성공하든 실패하든 끝나면 풀린다. 버튼의 `disabled="{{_global.isSaving}}"` 는 첫 제출의 상태 변경이 렌더된 뒤에야 걸려 같은 틱의 두 번째 클릭을 막지 못했고, submit 에는 `debounce` 를 쓸 수 없다(트러블슈팅 state-advanced 사례 1) (ActionDispatcher.ts `runGuardingFormSubmit`)
+
+## [engine-v1.74.0] - 2026-09-29
+
+> 레이아웃 `computed` 가 렌더되는 컴포넌트 수만큼, 재렌더마다 전량 재평가되던 성능 문제를 고친 버전이다.
+> computed 간 참조(정의 순서)와 스코프 단위 계산은 이 버전에서 처음 구현된다 — engine-v1.17.5 「computed 의존성 추적 기반 캐시 무효화」·engine-v1.17.7 「computed 순환 의존성 감지」 항목은 대응 코드가 없던 기재다.
+
+### Added
+
+- computed 의 정의 순서 참조 — 앞에 정의된 computed 를 뒤 computed 가 `_computed.X`·`$computed.X` 로 읽으면 같은 계산의 최신 값을 본다. 렌더·액션 sequence·라우트 진입·편집기 미리보기가 같은 규칙이다 (ComputedEvaluator.ts)
+- 안전 스위치 `G7Core.engineFlags.get()`·`set({...})` — 표현식 컴파일 캐시(`expressionCompileCache`)·AST 캐시(`astCache`)·computed 스코프 공유(`computedScopeInheritance`)를 기능별로 끈다. 기본값은 모두 켜짐, 그림자 검증(`verifyComputedInheritance`)은 꺼짐. 브라우저 쪽(개발자 콘솔·확장 스크립트)에서만 바꾼다 (EngineFlags.ts)
+
+### Changed
+
+- computed 가 상태 스코프 단위로 1회 계산되고, 같은 스코프의 자식 컴포넌트는 부모가 계산한 값을 공유한다. iteration 항목·모달·격리 상태 영역·`$parent`·extension point 주입 컴포넌트·`_localInit` 미적용 첫 렌더·편집기 캔버스는 각자 계산한다. 뒤에 정의된 키·자기 자신·대상을 특정할 수 없는 `_computed[…]` 를 읽는 정의가 있는 레이아웃은 종전처럼 모든 컴포넌트가 계산한다(디버그 모드 경고 1회) (DynamicRenderer.tsx)
+- computed 정의 문자열의 앞뒤 공백을 무시하고 `{{ … }}` 이면 식으로 평가한다(종전 렌더·진입 경로는 공백이 있으면 원문 문자열). 단일 바인딩 판정은 `extractSingleBinding` 정본을 쓴다 (ComputedEvaluator.ts)
+- 라우트 진입 시점 computed 계산이 렌더 경로와 같은 평가기를 쓴다 — 파이프·`$t`·`$localized`·`$computed` 가 진입 시점에도 동작, 옵셔널 체이닝 전처리로 nullish 객체 접근이 경고 대신 조용히 undefined, `'$t:key'` 가 원문 대신 번역문, 금지 전역은 예외 대신 undefined(차단은 동일), 실패 로그가 `Failed to evaluate expression "…"` 로 감싸짐, `$switch` 가 `$cases` 없이 `$default` 만 있어도 평가 (TemplateApp.ts)
+- DevTools `g7-computed` 의 컴포넌트별 기록은 computed 를 직접 계산한 렌더러에서만 남는다 (DynamicRenderer.tsx)
+
+### Fixed
+
+- 액션 sequence 의 setState·커스텀 핸들러 직후 `$switch` computed 와 `{{ }}` 없는 리터럴 computed(마이페이지 `currentTab` 등)의 키가 사라져 다음 액션에서 undefined 가 되던 문제. 뒤에 정의된 키를 읽으면 undefined 대신 직전 값을 본다 (ActionDispatcher.ts)
+- 라우트 진입 시점에 파이프가 있는 computed 가 비트 OR 로 거부되어 undefined 로 시작하던 문제 (TemplateApp.ts)
+
+#### 성능
+
+- 표현식 평가의 전처리(옵셔널 체이닝·`$t:` 토큰 정규식 7회)·변수 추출 결과를 식 문자열 단위로 기억한다(상한 5,000). 값은 담지 않는다 — 컨텍스트 조립·`$t`·로케일은 매번 수행 (ExpressionCompileCache.ts)
+- 안전 평가기의 토큰화·파싱 결과(AST, 동결)와 파싱 실패 메시지를 식 문자열 단위로 기억한다(상한 5,000). 적중해도 금지 구문은 같은 메시지로 차단된다 (SafeExpressionEvaluator.ts)
+- computed 계산이 렌더러마다 새 엔진을 만들지 않고 공유 엔진을 쓴다. 제보 규모 합성 화면(computed 36·컴포넌트 453)에서 키 입력 1회당 평가가 16,310회에서 스코프 수 × computed 수로 준다 (DynamicRenderer.tsx) (#140 @lyg-kaban 님께서 제보해주셨습니다.)
+- 번역 파라미터 치환 정규식을 키별로 재사용한다(상한 500, 키 이스케이프 없음은 종전 그대로) (TranslationEngine.ts)
+- G7 DevTools 가 꺼져 있으면 prop·text·slot 평가의 추적 정보 객체와 slot 로그 문자열을 만들지 않는다 (DynamicRenderer.tsx)
+
+## [engine-v1.73.0] - 2026-09-27
+
+### Security
+
+#### 같은 탭 이동 sink 가 레이아웃 입력을 검증 없이 따라가던 문제 (KVE-2026-2348)
+
+- 관리자 로그인 레이아웃은 `{{query.redirect}}` 를 그대로 `navigate` 로 넘기고, 라우트 미매칭 폴백 `openWindow{_self}` 의 `location.assign` 이 무검증이었다. `?redirect=javascript:…` 가 관리자 origin 에서 실행되고(실 Chrome 재현) `//evil` 은 오프사이트로 나갔다.
+- 신규 `support/navPolicy` — `sanitizeNavPath`(same-origin 절대 경로만, 정규화는 `normalizeScriptSrcForOriginCheck` 재사용) · `resolveSafeNavPath` · `isDangerousScheme`(`javascript:`/`vbscript:`/`data:`) · `isScriptScheme`.
+- 적용: `openWindow` `_self`(= navigate 폴백)·`redirect` 는 same-origin 만(아니면 `/`), `openWindow` `_blank` 는 실행 스킴만 차단, `AuthManager.getRedirectUrl` 은 `startsWith('/')` 대신 같은 판정, `IdentityGuardInterceptor.redirectExternally` 는 실행 스킴 거부(`UNSAFE_REDIRECT_URL`).
+- `DynamicRenderer` 가 바인딩된 `href`/`xlinkHref` 의 실행 스킴을 `#` 로, `formAction`/`action`/`poster` 는 속성 제거, `src` 는 스크립트 스킴만 제거한다(정상 외부 링크·mailto·tel·`data:` 이미지는 유지).
+- **동작 변화**: `redirect` 핸들러가 외부 origin 으로 나가지 않는다(engine-v1.70.0 의 외부 이동 용례). 명시 허용목록은 후속.
+
+#### 표현식이 DOM 객체 그래프로 Window 에 닿던 문제 (KVE-2026-2350)
+
+- `$event`(원본 DOM 이벤트)·`error`(원본 Error)·`$args`(원본 콜백 인자)가 그대로 표현식 컨텍스트에 실려 `$event.target.ownerDocument.defaultView.localStorage`·`fetch` 가 정상 읽기·호출로 통과했다.
+- 신규 `helpers/expressionData` — `toExpressionEvent`/`toExpressionArgs`/`toExpressionData`/`toExpressionError`. 이벤트는 스칼라 필드 + target 스냅샷(value·checked·name·type·tagName·dataset·files·selectedOptions, scroll 필드는 scroll 이벤트만, form 은 이름 있는 컨트롤), 오류는 own 필드 + message·name(stack 제외), 그 외는 재귀 사본(호스트 객체 null). 필드는 번들 레이아웃 전수 집계 기준. `extractEventData` 는 이 변환기에 위임한다. 핸들러의 `context.event` 는 원본 그대로다.
+- `SafeExpressionEvaluator` 타입 경계: 식별자 해석·프로퍼티 읽기·호출 결과·최종 결과에서 호스트 capability 객체(EventTarget·Window·Document·Storage·Location·History·Navigator·Promise 등)를 거부하고, 함수는 평가기 클로저·순수 계산 네이티브(원시/컨테이너 프로토타입·Math/JSON/Number/String/Array/Date/Object facade static)·JS 로 작성된 함수만 호출한다(`call`/`apply`/`bind`·리플렉션·bound 는 거부). 공개: `isUnsafeHostValue`·`isExpressionSafeFunction`.
+- 허용 전역 함수(`parseInt`·`encodeURIComponent` 등)는 호출 허용목록에도 함께 둔다 — engine-v1.72.0 이 허용한 `encodeURIComponent` 가 이 목록에 없으면 식별자는 풀리고 호출만 막혀, 검색어가 있는 동안 방문자 통계 CSV 주소가 비고 회원 상세의 마일리지 내역 링크가 빈다.
+- `DataBindingEngine.resolvePath`(호출 없는 경로 바인딩)와 엔진 `$get` 헬퍼도 경로 한 단계마다 같은 판정으로 호스트 객체·허용목록 밖 네이티브 함수에 닿으면 기본값(폴백)으로 끊는다 — 평가기는 헬퍼의 최종 반환값만 보므로 중간 호스트 객체를 건너 문자열을 꺼낼 수 있었다.
+- `apiCall` 은 인증 정보(`Authorization: Bearer`·`X-XSRF-TOKEN`)를 **동일 출처 대상에만** 싣는다(신규 `navPolicy.isSameOriginRequestUrl` — `fetch` 와 같은 URL 파서). 대상은 표현식으로 조립할 수 있어 저장측 정적 규칙이 다 잡지 못하는데, 출처와 무관하게 토큰을 실어 레이아웃 편집 권한만으로 관리자 토큰을 외부로 보낼 수 있었다. 데이터 소스(ApiClient)는 이미 같은 원칙이다. 교차 출처 요청 자체는 막지 않는다.
+- 교차 출처 **응답**은 인증 흐름을 조종하지 못한다. `apiCall`·`ApiClient` 는 교차 출처 응답의 428(`identity_verification_required`)을 `IdentityGuardInterceptor` 로 넘기지 않는다 — launcher 가 응답의 `challenge_start_url` 로 토큰을 실어 보내므로, 외부 서버가 428 을 흉내 내면 요청에서 뺀 토큰을 후속 요청으로 받아 갔다. `ApiClient` 는 교차 출처 401 에 토큰 갱신·재시도(갱신 토큰을 헤더에 직접 붙여 같은 외부 주소로 재요청)와 세션 정리를 하지 않는다. 판정은 토큰 첨부와 같은 출처 판정이다.
+- `G7Core.api.isSameOriginUrl(url)` 신설 — 확장이 `fetch` 로 직접 요청하며 `getToken()` 을 실을 때 쓰는 판정(apiCall 과 같은 `navPolicy.isSameOriginRequestUrl`). 번들 템플릿의 본인인증 launcher·언어 선택·프로필 메뉴·프로필 사진 컴포넌트가 이 판정으로 동일 출처 대상에만 토큰을 싣는다.
+
+#### 권한 오류 뒤에도 이전 계정의 응답이 화면에 남던 문제
+
+- engine-v1.72.0 의 「같은 요청의 마지막 성공값 유지」(`DataSourceManager.lastSuccessful`)가 실패 상태를 가리지 않았다. 보관 값은 클래스 전역이고 키에 사용자가 없어, 같은 브라우저의 다른 탭에서 권한이 적은 계정으로 로그인하면 관리자 탭의 요청이 403 으로 막혀도 이전 계정이 보던 대시보드(리뷰·문의·비밀글 제목·신고)가 그대로 남았다(브라우저 실측).
+- 실패 상태가 401·403 이면 마지막 값을 지키지 않고 그 보관 값을 지운 뒤 `fallback` 으로 그린다. 서버 오류·네트워크 실패 때의 유지(실시간 화면이 「지금 0명」을 띄우지 않게 한 목적)는 그대로다.
+## [engine-v1.72.1] - 2026-09-27
+
+> 2026-09-13 작성 당시 `engine-v1.66.2` 로 적었으나, develop-7.1.0 병합(1.67~1.71)과 번호가 뒤집혀 최상위 다음 패치(`engine-v1.71.1`)로 다시 매겼고, develop-7.1.0 16차 병합(2026-09-27)에서 그 번호를 먼저 쓴 `engine-v1.71.1`(2026-09-21, 편집기 반복 항목 scope)·`engine-v1.72.0`(2026-09-26, 방문자 통계 트래커)과 다시 겹쳐 최상위 다음 패치로 한 번 더 옮겼다. 과거 이력 문서의 `engine-v1.66.2` 와 2026-09-13~27 사이 이 브랜치 문서의 `engine-v1.71.1`(SPA 이동 `_local` 잔존 수정)은 이 절을 가리킨다.
+>
+> 발생 시점: 엔진 번들 이분 탐색으로 2026-06-21 번들(f7eb1615f)까지 정상, 2026-06-23 번들(3a2e76e46)부터 재현 — 창 안의 엔진 변경은 `0c3c32d4c`(engine-v1.50.0 COMPONENT 경로 `_global._local` 동기화)뿐이다. 2026-09-01 `addMissingLeafKeys` 보충(engine-v1.63.3)이 유출 범위를 바뀐 키에서 저장소 A 의 전체 키로 넓혔다. 확장(레이아웃·핸들러·컴포넌트) 변경과는 무관하다
+
+### Changed
+
+- `loadScript` 가 로드를 미룰 스크립트를 코어 속성 `data-g7-script-deferred`(`SCRIPT_DEFERRED_ATTRIBUTE`)로 판별합니다.
+  종전에는 특정 동의 관리 플러그인의 속성 이름을 직접 봤습니다. 스크립트를 막는 확장은 src setter 에서 이 속성을 붙입니다.
+- 방문자 통계 동의 브리지가 코어 API(`/api/analytics/consent`)와 코어 이벤트(`g7:analytics-permission-changed`)를 씁니다.
+  동의 확인 대상 유무는 활성 플러그인 이름이 아니라 서버가 인라인한 `settings.analytics.consent_provider` 로 판정합니다.
+
+### Fixed
+
+#### SPA 이동 시 보존된 base 루트의 stale 저장소 A 가 새 페이지 첫 렌더에 병합되어 `_local` 이 이전 페이지 값으로 굳던 문제
+- `_fromBase` 컴포넌트의 `localDynamicState`(저장소 A) 초기화를 `useEffect` 에서 **렌더 단계**로 앞당김 — React 의 "이전 렌더 정보 저장" 패턴(`appliedLayoutKey` useState + 렌더 중 조건부 setState). 새 페이지의 자식은 stale A 가 병합된 컨텍스트를 한 번도 받지 않는다 (DynamicRenderer.tsx)
+- 배경: engine-v1.24.8 의 useEffect 초기화는 새 페이지의 첫 렌더와 자식 useEffect **뒤**에 실행됐다. 첫 렌더는 `_localInit` 이 없는 목록 화면에서 `deepMergeState(dataContext._local, dynamicState)` 로 stale A 를 새 `_local` 위에 덮었고, ColumnSelector·FilterVisibilitySelector 의 마운트 동기화 콜백이 그 오염값을 `setState(target:"_local")` 로 되썼다. engine-v1.50.0 부터 COMPONENT 경로 setState 가 `_global._local`(저장소 B)을 동기화하므로 되쓴 값이 B 에 영구 고정됐다 — 주문 목록 → 쿠폰 목록 이동 시 `visibleColumns` 가 주문 컬럼으로 남아 표에 체크박스·작업 열만 남는다(7.0.11 시크릿 창에서 재현 확인). 브라우저에 목록 컬럼 저장값(`g7_columns_*`)이 있으면 표는 정상이라 증상만 가려지고 `_local` 유출은 그대로였다
+- 버려지는 첫 패스도 `dynamicState` 를 빈 값으로 파생시켜 stale A 를 한 번도 평가하지 않는다 — 렌더 사이클 캐시(표현식 문자열 키)에 stale 평가가 남는 경로를 원천 차단
+- 발동 조건(`_fromBase` && layoutKey 변경)은 종전과 같다. 성능: `reactRoot.render` 호출 수 동일(14=14), 종전의 초기화 전용 커밋(루트급 `_fromBase` 5개 리렌더)이 사라지고 대신 상태 소유 루트 1개만 자식 콜백으로 리렌더된다. navigate → 목록 표시 중앙값 787 ms → 588 ms(저장값 있는 동일 조건, 5회)
+- 회귀 잠금: `__tests__/DynamicRenderer.fromBaseLayoutKeyReset.test.tsx`(실물 렌더, useEffect 방식으로 되돌리면 red) · `tests/Playwright/specs/admin/spa-list-navigation-local-isolation.spec.ts` · 트러블슈팅 state-closure 사례 4 · 엔진 수정 회귀 절차 신설
+
+#### 진단 규칙 `spa-local-leak` 추가 (devtools)
+- `DiagnosticEngine` 에 목록 → 목록 SPA 이동 뒤 `_local` 에 이전 화면 키가 남는 증상을 짚는 규칙을 추가했다. 이동 뒤 마운트 콜백 흔적만으로는 발화하지 않고, 현재 레이아웃이 알지 못하는 `_local` 키가 실제로 남았을 때만 발화한다 — 컬럼 선택기가 있는 목록은 정상 진입에서도 같은 콜백을 내기 때문이다. 해결 안내는 g7-state 로 현재 레이아웃 state 에 없는 키를 찾는 절차다 (DiagnosticEngine.ts)
+
+#### 반복 컨텍스트 안의 확장점이 버려지던 문제
+
+- 반복 컨텍스트(DataGrid 셀 `cellChildren`, 카드 children 등) 안의 확장점(`extension_point`)이 「컴포넌트를 찾을 수 없습니다」
+  경고와 함께 통째로 버려지던 문제를 고쳤습니다. `renderItemChildren` 이 확장점을 컴포넌트 이름으로 찾았기 때문입니다.
+  이제 백엔드가 주입한 children 을 행 컨텍스트로 평가해 그리며, 호스트 `<div>` 규칙(허용 DOM 속성·layout 클래스)은
+  `DynamicRenderer` 와 공용 헬퍼 `buildExtensionPointHostProps` 로 공유합니다. 관리자 주문 목록 결제수단 셀의 테스트 결제
+  배지(이커머스가 연 확장점에 결제 플러그인이 주입)가 여기에 해당합니다.
+
+## [engine-v1.72.0] - 2026-09-26
+
+### Added
+
+#### 방문자 통계 트래커 — 사용자 템플릿에서만 켜지고, 실패해도 화면을 막지 않는다
+
+- `TemplateApp` 초기화 8.1 단계에 트래커가 붙는다. `templateType` 이 `user` 일 때만 만든다 —
+  관리자 화면까지 세면 인기 페이지 1위가 관리자 대시보드가 되어 통계가 쓸모없어진다.
+  설정(`G7Config.settings.analytics`)이 없거나 꺼져 있으면 아무것도 만들지 않는다.
+- SPA 이동은 라우터의 `routeChange` 로 잡는다. 라우터가 핸들러를 `Promise.all` 로 기다리므로
+  이 구독은 **동기로 반환**하고, 전송은 트래커 안에서 다음 틱으로 미룬다 — 화면 전환이 비콘
+  왕복만큼 늦어지면 안 된다. 첫 화면은 라우터가 매칭되지 않는 경우(404 등)까지 세려고 직접
+  한 번 알리고, 라우터가 같은 경로로 내는 첫 `routeChange` 는 한 번 거른다 — 거르지 않으면
+  모든 첫 로드가 페이지뷰 2건이 되고 한 쪽만 본 방문이 이탈로 잡히지 않는다.
+- `window.G7Core.analytics` 로 확장이 쓸 수 있는 6가지가 열린다 — `trackGoal`·`trackEvent`·
+  `setDimension`·`isOptedOut` 에 더해 `optOut`·`optIn` 으로 방문자가 자기 방문을 세지 말라고
+  고를 수 있다(쿠키는 서버가 심는다). 여섯 다 안에서 예외를 삼킨다. 통계가 깨졌다고 남의
+  화면이 깨지면 안 된다.
+- 트래커 초기화가 실패해도 부팅은 계속된다(`setupAnalytics` 전체가 `try`/`catch`). 실패는
+  경고로 남고, 방문자는 아무 차이를 느끼지 않는다.
+- 내려받기 중 받아 둔 내용을 임시 링크로 저장시키는 `blob:`·`data:` 주소는 `target` 없이
+  표시 이름만 보낸다. 게시판 첨부가 이 방식이라, 그 주소를 실으면 서버가 URL 이 아니라며
+  거절해 첨부 내려받기가 통째로 빠졌다(브라우저 실측 이슈 #682 §8 M1-T7).
+- 같은 화면(주소 + 라우트 경로)으로의 되풀이 이동이 1초 안에 다시 오면 페이지뷰를 한 번만
+  보낸다. 라우터는 같은 주소로의 이동도 매번 알려, 메뉴 더블클릭 한 번이 페이지뷰 2건이 됐다
+  (§8 M1-T10). 창은 링크 클릭 중복 억제와 같은 1초다.
+- 브라우저가 미리 그리는(prerender) 화면은 페이지뷰를 보류했다가 실제로 열릴 때(`prerenderingchange`·
+  `visibilitychange`) 한 번 보낸다. 열리지 않고 버려진 화면은 세지 않는다.
+- 비콘 값을 서버의 검증 한계에 맞춰 보낸다 — 주소 2,048자(넘으면 쿼리를 떼고 자름)·제목 512자·
+  이름 255자·분류 값 20개·각 255자. 넘는 유입·대상 주소는 뺀다. 한 값이 넘치면 서버가 비콘 전체를
+  거절해 그 방문이 통째로 빠졌다.
+- 제외 경로 규칙을 서버 판정과 맞췄다 — 끝의 `*` 를 **모두** 떼고 앞부분 일치(`/admin/**` = `/admin/*`),
+  정확 일치는 끝 슬래시를 따지지 않는다. 동의 조회를 기다리며 보관한 비콘도 보내기 직전 제외 규칙을
+  다시 본다.
+- `setDimension` 으로 넣은 분류 값은 그 화면의 비콘에만 실린다 — 다음 페이지로 옮기면 비운다.
+
+### Changed
+
+#### 요청이 실패해도 마지막으로 받은 값을 지킨다
+
+- `fallback` 은 **아직 한 번도 못 받았을 때**의 첫 그림이다. 종전에는 이미 값을 그리고 있는 소스가
+  다시 부르다 실패해도 `fallback` 으로 되돌아가, 30초마다 도는 실시간 화면이 서버 오류 한 번에
+  「지금 0명」이라는 거짓을 띄웠다(이슈 #682 §8 M4-T4). 이제 한 번이라도 성공한 소스는 마지막 값을
+  그대로 두고, 실패는 종전처럼 `errorHandling`·토스트로 알린다. 성공한 적이 없으면 종전대로
+  `fallback` 을 쓴다. 세 경로(첫 그림·결과 추적·백그라운드)와 방송 수신이 같은 규칙을 따른다.
+
+#### 표현식 평가기가 `encodeURIComponent` 를 부를 수 있다
+
+- 허용 전역에 `encodeURIComponent` 를 더했다. 레이아웃이 검색어처럼 사용자가 넣은 값을 주소에
+  실을 때 필요하다 — 없으면 호출이 「non-function」으로 실패해 식 전체가 비고, 방문자 통계 리포트는
+  검색어가 있는 동안 CSV 주소가 사라져 내려받기 버튼이 숨었다(이슈 #682 §8 M3). 인자를 문자열로
+  바꿔 돌려줄 뿐 전역이나 프로토타입에 닿지 않는다. 역함수는 잘못된 입력에 예외를 던지므로 넣지 않았다.
+
+## [engine-v1.71.1] - 2026-09-21
+
+### Fixed
+
+#### 반복 항목 편집에 들어가면 편집 대상이 캔버스에서 사라지던 문제
+
+- `deriveCurrentScope` 는 `iteration_item` 을 states scope 비대상으로 보고 `null` 로 디그레이드했다. 그런데 반복 항목 템플릿은 **그 항목을 그리는 화면의 상태 뒤에** 있다(예: 알림톡 템플릿 행은 `query.tab=templates` 상태에서만 존재). scope 가 풀리면 그 상태도 풀려 편집하러 들어간 항목 자체가 캔버스에서 없어졌다.
+- 이제 `extension` 과 같은 **호스트 scope 상속** 갈래로 묶는다. 호스트 path 는 호출부가 진입 직전 라우트(`returnRoute.path`)에서 도출해 `hostRoutePath` 로 넘긴다. 호스트가 base(`__base__/`)·모달(`__modal__/`)인 경우도 해당 scope 로 매칭한다(모달 해석은 이번에 추가됐다 — 종전에는 route 로만 떨어졌다).
+- 호스트 path 가 끝내 미상이면 종전대로 `null` 디그레이드다(동작 변화 없음).
+
+#### 고른 페이지 상태가 모드를 드나들면 풀리거나, 다른 화면까지 따라가던 문제
+
+- 반복 항목·모달 편집을 드나들면 scope 가 재도출되는데, `SET_AVAILABLE_STATES` 가 활성 상태를 **무조건 기본값으로 덮었다**. 저작자가 고른 화면으로 돌아오지 못하고, 그 상태에서만 보이던 구역이 다시 사라졌다.
+- 전환 도중 매칭 목록이 **한 프레임 동안 비는 구간**(호스트 path 확정 전)이 있어 `activeStateId` 만으로는 기억이 지워진다. 비우지 않는 `lastActiveStateId` 가 그 구간을 건너뛴다.
+- 다만 상태 id 는 화면마다 재사용된다 — 번들 실측으로 `modal_filled` 하나가 170개 scope, `validation_failed` 가 17개 scope 에 쓰인다. id 만 대조해 되살리면 A 화면에서 고른 상태가 B 화면을 열 때도 살아나 B 가 기본 모습으로 열리지 않는다. 그래서 scope 키(`kind|match`)를 함께 기억해 **같은 화면의 기억만** 이어 간다.
+- `SET_AVAILABLE_STATES` 액션에 `scopeKey` 가 **필수 필드로 추가**됐다. 이 액션을 직접 dispatch 하는 호출부는 scope 키를 함께 넘겨야 한다(엔진 내부 호출부는 모두 갱신됐다).
+- 신규 심볼: `stateScopeKey`, `resolveNextActiveStateId`(`layout-editor/utils/matchStateScope`). 상태 필드 `lastActiveStateId` · `activeStateScopeKey` · `lastActiveStateScopeKey`.
+
+## [engine-v1.71.0] - 2026-09-13
+
+### Added
+
+#### 커스텀 자산 모달 — 파일별 편집 버퍼·폴더 트리·파일명+내용 검색·이름변경
+
+- 편집 중인 내용이 **파일마다 따로** 남는다. 종전에는 초안이 한 벌뿐이라 다른 파일을 열면 앞 파일의 저장하지 않은 편집이 말없이 사라졌고, 대상(템플릿·모듈·플러그인)을 바꿀 때도 경고 없이 버려졌다. 이제 저장하지 않은 파일을 다시 열면 서버 본문 대신 편집 중인 값을 보여 주고, 대상을 바꾸기 전에는 확인을 받는다.
+- 평면 목록이 **경로 기반 폴더 트리**가 됐다. 검색은 파일명과 **내용** 둘 다 본다 — 열려 있는 파일의 저장하지 않은 본문은 클라이언트가 바로 찾고, 나머지는 서버 검색(`GET …/custom-assets/search`)을 부른다(2자 미만은 부르지 않는다).
+- 파일 **이름변경**(`POST …/custom-assets/rename`)이 붙었다. 대상 자리에 파일이 있거나 확장자가 바뀌면 서버가 막고 그 사유를 보여 준다.
+- 저장하지 않은 파일에는 목록 행의 ● 점과 모달 제목의 개수가 붙고, `Ctrl+S`(⌘S) 저장 · `Esc` 닫기(미저장이면 확인) · 자동 줄바꿈 토글 · 줄 번호 거터 · 본문 입력칸의 `Tab`/`Shift+Tab` 두 칸 들여쓰기가 생겼다. Monaco 는 코어 번들 크기 때문에 들이지 않고 textarea 를 유지한다.
+- `layout-editor/shared/treeSearch.ts` — 라우트 트리와 자산 트리가 같은 검색 강조(`highlightMatch`)·경로 트리 도구(`buildPathTree`/`sortPathTree`/`filterPathTree`)를 쓴다. 강조 로직이 트리마다 따로 있으면 한쪽만 고쳐진 채 남는다.
+- `useCustomAssets` 훅에 `rename`·`search` 가 추가됐다(기존 호출부는 그대로 동작한다).
+
+## [engine-v1.70.0] - 2026-09-11
+
+### Added
+
+#### `redirect` 핸들러 — 같은 탭으로 외부 주소에 나간다
+
+- 본인인증 제공자처럼 **현재 탭에서 나갔다가 돌아오는** 흐름을 적을 수단이 없었다. `navigate` 는 SPA 경로용이라 절대 주소를 라우트로 해석하고, `openWindow` 는 새 창이라 팝업 차단에 걸린다.
+- `<redirect url="…"/>` 로 적는다. `replace: true` 를 주면 뒤로가기 이력을 남기지 않는다. 주소가 비면 아무 데도 가지 않는다.
+- 미리보기에서는 실행되지 않는다 — 미리보기 창이 사라지기 때문이다(`navigate` 계열과 같은 규칙).
+- `auth/identity_challenge` 레이아웃은 #297 부터 `handler="redirect"` 를 적고 있었으나 **엔진에 소비처가 없어 한 번도 동작하지 않았다**(전 이력 조사: `case 'redirect'` 0건 · 매니페스트 0건 · 확장 등록 0건). 미등록 핸들러는 조용히 무동작이라 콘솔·네트워크에 흔적이 남지 않는다.
+
+### Fixed
+
+#### 디바운스 창 안에서 눌린 비디바운스 액션이 직전 버퍼를 읽던 문제
+
+- `flushPendingDebounceTimers()` 는 대기 중인 디바운스를 즉시 실행해 store 를 갱신하지만, 액션에 넘어가는 `dataContext` 는 **렌더 시점 스냅샷**이다. 그래서 타이핑 직후(디바운스 창 안에) 저장을 누르면 갱신된 store 가 아니라 스냅샷이 읽혀 **마지막 편집이 빠진 채** 요청이 나갔다. 응답은 200 이라 화면에는 성공으로 보인다 — 회귀를 재려면 응답 상태가 아니라 **요청 본문**을 봐야 한다.
+- 이제 실제로 flush 한 경우에만 문맥의 `_global` 을 flush 직후 store 값으로 덮는다(`withFlushedState`). 대기분이 없으면 문맥을 그대로 재사용해 불필요한 사본을 만들지 않는다.
+- `_local` 은 이 자리에서 손대지 않는다 — `createHandler` 가 `componentContext.state` 로 무조건 다시 덮으므로 여기서의 갱신은 도달하지 못한다(그 축은 별도다).
+- `flushPendingDebounceTimers()` 의 반환 타입이 `void` → `boolean` 으로 바뀌었다(flush 한 대기분이 있었는지). 반환을 쓰지 않는 기존 호출부는 그대로 동작한다.
+
+#### `_global` 최신화가 네 자리에서 접근자 한 칸이 어긋나 돌지 않던 문제
+
+- `G7Core.state.get()` 은 **전역 상태의 내용물을 그대로** 돌려준다(`_global` 로 감싸지 않는다). 그런데 네 자리가 그 결과에 `._global` 을 한 번 더 붙여 읽고 있어 값이 언제나 비었다.
+- `evaluateExpression` 두 분기 — 액션이 렌더 시점 문맥을 잡고 있어도 `_global` 만은 최신을 보게 하려던 stale closure 방어가 **가드에 걸려 한 번도 실행되지 않았다**. 이제 실제로 최신 값을 읽는다.
+- DataGrid 의 `cellChildren`·`expandChildren` 문맥 — `_global` 이 통째로 빈 객체로 들어가 행 안에서 전역 값을 읽을 수 없었고 `_remountKeys` 도 서지 않았다.
+- DevTools 진단이 개발자에게 제시하던 해결책 문구도 같은 접근자를 담고 있어 함께 바로잡았다.
+- 종전 단위 테스트의 목이 `{_global: {...}}` 를 돌려주도록 쓰여 **어긋난 접근자와 짝이 맞아** 결함이 green 인 채 남아 있었다. 브라우저 실측으로 반환 형태를 확정하고 목을 실제 형태로 고쳤다.
+
+## [engine-v1.69.1] - 2026-08-21
+
+> 이 릴리스는 issue476 브랜치에서 `engine-v1.67.1` 였다. develop 이 같은 번호대(1.65.0~1.66.1)를 다른 내용으로
+> 먼저 발행해 11차 병합(2026-09-09)에서 재번호했다 — 코드의 `@since` 표기도 같은 매핑으로 옮겼다.
+
+### Fixed
+
+#### 레이아웃 편집기 저장 버튼의 진행 표시가 뜨지 않던 문제
+
+- 저장을 눌러도 진행 스피너가 나타나지 않고 버튼도 잠기지 않아, 응답이 늦으면 저장이 걸린 것인지 알 수 없고 같은 버튼을 여러 번 누를 수 있었다.
+- 툴바에 저장 동작을 넘길 때 `void` 로 완료 시점을 버려서, 툴바가 "저장 중" 을 알 방법이 없던 것이 원인이다. 완료 시점을 그대로 넘기도록 고쳤다.
+- 단위 테스트는 완료 시점을 직접 주입해 검사하고 있어 이 결함을 볼 수 없었다 — 브라우저 회귀 가드를 함께 추가했다.
+
+## [engine-v1.69.0] - 2026-07-30
+
+> 이 릴리스는 issue476 브랜치에서 `engine-v1.56.0` 였다. develop 이 같은 번호를 다른 내용으로 먼저 발행해
+> 병합 시 `engine-v1.67.0` 으로, 11차 병합(2026-09-09)에서 다시 `engine-v1.69.0` 으로 재번호했다 — 코드의 `@since` 표기도 같은 매핑으로 옮겼다.
+
+### Changed
+
+#### 레이아웃 편집기 라우트 트리가 소스 파일 경로를 보여준다
+
+- 좌측 라우트 트리의 경로 보조 줄이 `.json` 을 붙여 표시하고 있었다. 그 파일은 사람이 여는 것이 아니다 — 짝 `.json` 은 기계 산출물이고 마크업은 `.g7.html` 로 한다. 표기를 따라간 개발자가 산출물을 손으로 고치면 그 수정은 다음 굽기에서 지워진다.
+- 이제 `layouts/home.g7.html` · `sirsoft-board · resources/layouts/admin/admin_board_index.g7.html` 처럼 **소스 파일 경로**를 보여준다. 출처별 디렉토리 prefix 규약은 그대로다.
+
+## [engine-v1.68.1] - 2026-07-28
+
+> 이 릴리스는 issue476 브랜치에서 `engine-v1.55.1` 였다. develop 이 같은 번호를 다른 내용으로 먼저 발행해
+> 병합 시 `engine-v1.66.1` 으로, 11차 병합(2026-09-09)에서 다시 `engine-v1.68.1` 으로 재번호했다 — 코드의 `@since` 표기도 같은 매핑으로 옮겼다.
+
+### Fixed
+
+#### 확장 삽입 영역이 자기 설정값을 화면 마크업에 흘리던 문제
+
+- `extension_point` 컨테이너가 선언된 props 를 호스트 `<div>` 에 그대로 spread 하고 있었다. 그 props 는 통째로 **주입된 자식이** `{{extensionPointProps.xxx}}` 로 읽는 페이로드인데, 호스트에 실리면서 두 갈래로 샜다 — 객체·배열은 `targetfields="[object Object]"` 로(쇼핑몰 설정의 주소 검색 영역), 원시값은 `content="…"` `ishtml="true"` `rows="10"` 로(게시판·상품의 글 편집기 영역). 뒤쪽은 React 도 `multilingual`·`disabled` 를 무효 속성으로 경고하던 자리다.
+- 이제 호스트에는 **DOM 표준 속성만** 남긴다(`data-*` · `aria-*` · `role` · `title` · `lang` · `dir` · `hidden` · `tabIndex` · `style`, 그리고 종전부터 따로 처리하던 `id`/`className`). 페이로드 키는 확장마다 늘어나 열거할 수 없지만 호스트가 받아야 할 DOM 속성은 닫힌 집합이라, 차단 목록이 아니라 허용 목록으로 둔다.
+- 주입된 자식의 소비 경로(`extensionPointProps` 데이터 컨텍스트)는 호스트 DOM 속성과 무관하므로 동작은 그대로다 — 주소 검색 팝업, 글 편집기 마운트·입력 반영을 브라우저에서 확인했다.
+
+#### 아이콘 이름이 폼 필드 이름과 겹치면 값이 주입되던 문제
+
+- Form 자동 바인딩의 활성 조건이 "`name` prop 존재 + 부모 `dataKey`" 뿐이라, `name` 이 폼 필드명이 **아닌** 컴포넌트까지 대상이 됐다. Icon 의 `name` 은 아이콘 글리프 이름이라 같은 이름의 폼 필드가 있으면 그 값이 `value` 로 주입됐고, 배열·객체 필드면 `<i value="[object Object],...">` 로 새어 나왔다(상품 등록/수정의 이미지 영역에서 실측).
+- `ComponentMetadata.autoBinding: false` 를 신설해 매니페스트가 자동 바인딩 제외를 선언할 수 있게 했다. 번들 템플릿에서는 Icon·Avatar·UserInfo·TemplateCard·ExtensionBadge 가 이 선언을 갖는다 — 다섯 모두 `name` 이 표시용 이름이다.
+- 미선언은 종전과 동일하게 자동 바인딩 대상이라(fail-open) 기존 폼 동작은 바뀌지 않는다. 레이아웃 단위로 끄는 기존 `props.autoBinding: false` 도 그대로 유효하다.
+
+### Changed
+
+- 자동바인딩 경로 레지스트리(`__g7AutoBindingPaths`) 등록도 위 제외 선언을 따른다 — 번들 코퍼스 기준 폼 스코프 안의 Icon 220개가 등록·`onChange` 주입 대상에서 빠진다.
+
+## [engine-v1.68.0] - 2026-07-24
+
+> 이 릴리스는 issue476 브랜치에서 `engine-v1.55.0` 였다. develop 이 같은 번호를 다른 내용으로 먼저 발행해
+> 병합 시 `engine-v1.66.0` 으로, 11차 병합(2026-09-09)에서 다시 `engine-v1.68.0` 으로 재번호했다 — 코드의 `@since` 표기도 같은 매핑으로 옮겼다.
+
+### Added
+
+#### 액션이 이벤트 전파를 막을 수 있게 됨
+
+- 액션 키 `stopPropagation: true` — 진입점 액션에서 `event.stopPropagation()` 을 호출한다. 클릭 가능한 행 안에 토글·버튼을 두는 구조에서 안쪽 컨트롤만 반응시킬 때 쓴다.
+- 레이아웃은 예전부터 이 키를 적어 왔으나 **엔진에 소비처가 없어 한 번도 동작한 적이 없었다** — 고시 목록의 활성 토글을 누르면 행 선택까지 함께 일어나던 것이 그 결과다. 같은 목적의 `handler: "stopPropagation"` 형태도 코퍼스에 있었지만 그런 핸들러는 등록된 적이 없어 마찬가지로 무동작이었고, 표면을 하나로 모으기 위해 키 형태만 지원한다.
+- `true` 일 때만 동작하는 opt-in 이라 키가 없던 기존 액션의 동작은 그대로다. `change` 이벤트에서 `preventDefault` 를 부르지 않는 기존 규칙도 유지된다 — 토글의 네이티브 상태 변경이 취소되면 React 상태와 어긋나기 때문이다.
+
+## [engine-v1.67.0] - 2026-07-17
+
+> 이 릴리스는 issue476 브랜치에서 `engine-v1.54.0` 였다. develop 이 같은 번호를 다른 내용으로 먼저 발행해
+> 병합 시 `engine-v1.65.0` 으로, 11차 병합(2026-09-09)에서 다시 `engine-v1.67.0` 으로 재번호했다 — 코드의 `@since` 표기도 같은 매핑으로 옮겼다.
+
+### Added
+
+#### 확장이 자기 컴포넌트를 제공할 수 있게 됨
+
+- `ComponentRegistry.ts::registerExtensionComponent` — 모듈/플러그인이 자기 번들에서 컴포넌트를 직접 등록하는 공개 API. 종전에는 컴포넌트 등록 경로가 `loadComponents()` → 템플릿 매니페스트 → `window[PascalCase(templateId)]` 하나뿐이라, 확장에는 컴포넌트를 실을 자리가 없었고 UI 는 `extension_point` 노드 주입으로만 붙일 수 있었다. 확장은 이제 액션 핸들러와 같은 방식(자가등록)으로 컴포넌트를 낸다.
+- 이름은 `{확장식별자}.{컴포넌트명}` 을 강제한다 — 핸들러의 네임스페이스 관례와 같다. 접두어 없는 이름은 거부한다(템플릿 컴포넌트를 덮어쓸 수 있다).
+- 호출 시점은 안전하다: `TemplateApp.init()` 이 확장 번들 로드를 초기 라우트 처리 **전에** await 하므로 확장의 등록은 첫 렌더보다 먼저 끝난다. 번들 로드가 실패해 등록이 영영 오지 않는 경우는 `getMissingExtensionComponents()` 로 관측한다 — 미발견 컴포넌트는 렌더에서 조용히 사라지기 때문이다(`DynamicRenderer` 가 null 반환). 이 관측은 `TemplateApp` 이 레이아웃을 로드할 때마다 자동으로 수행돼, 확장 컴포넌트가 통째로 빠졌다는 사실을 렌더 전에 로그로 남긴다(폼 필드 props 는 컴포넌트 노드와 모양이 같아 타입으로 걸러낸다).
+
+#### 템플릿이 확장 컴포넌트를 갈아끼울 수 있게 됨
+
+- `ComponentManifest.overrides` — 템플릿이 확장 소유 컴포넌트를 자기 구현으로 대체한다는 선언. 구현체는 `components/overrides/{확장식별자}/{이름}.tsx` 에 두며 디렉토리명이 곧 대상 식별자다 — 레이아웃 오버라이드(`layouts/overrides/{확장식별자}/`)와 같은 규약이다. 대체는 **같은 이름 아래에서** 일어나므로 마크업 표면은 바뀌지 않는다: 오버라이드가 붙든 떨어지든 레이아웃은 그대로다.
+- 대체 권한은 템플릿에만 있다. 확장이 남의 컴포넌트를 대체하는 방향은 열지 않았다 — 그 방향에는 선례가 없고, 서로 덮어쓰는 교착의 승자 규칙도 없다.
+- `overrides[].exportName` — 대체본을 템플릿 번들에서 다른 이름으로 내보낼 때 쓴다. 번들 전역은 평면이라 템플릿에도 같은 이름의 컴포넌트가 있으면 어느 쪽인지 가릴 수 없기 때문이다. 이것은 **번들 조회용 로컬 별칭일 뿐 좌표가 아니다** — 레지스트리 좌표는 언제나 대상 확장이 붙인 이름(`{확장식별자}.{이름}`)이며, 별칭이 좌표에 섞이면 대체본이 아무도 조회하지 않는 키에 앉아 확장 원본이 조용히 렌더된다.
+- 템플릿이 대체한 이름은 확장의 자가등록이 되덮지 못한다. 확장 번들이 레지스트리 로딩보다 나중에 실행되므로 이 가드가 없으면 확장의 원본이 항상 이긴다.
+- 버전 제약(`targetVersion`)이 대상과 맞지 않으면 대체본을 폐기하고 원본으로 폴백한다 — 화면이 조용히 사라지지 않는 것이 이 규약의 요점이다. 판정은 대상 확장의 실제 버전을 아는 서버(컴파일러)가 하고, 런타임은 그 결과를 이행만 한다(판정이 두 곳에 있으면 서로 갈린다).
+
+#### 확장이 특정 템플릿 전용 판본을 낼 수 있게 됨
+
+- `registerExtensionComponent(..., { forTemplate })` — 확장이 **자기** 컴포넌트를 특정 템플릿에서만 다른 모양으로 내는 선언. 소스는 `resources/js/components/for/{템플릿식별자}/{이름}.tsx` 에 둔다.
+- **선택은 코어가 한다.** 확장은 "이 판본은 그 템플릿용" 이라고 선언만 하고, 활성 템플릿과 대조하는 판정은 레지스트리가 전담한다. 확장이 활성 템플릿을 읽어 스스로 분기하면 확장마다 판정 규칙과 폴백이 갈리고, 그 순간 선언형이 아니라 명령형이 된다.
+- 기본 판본과 전용 판본의 **등록 순서가 결과를 바꾸지 않는다** — 순서에 결과가 걸리면 그것 자체가 침묵 승자다.
+
+#### 레이아웃 편집기가 확장 컴포넌트를 다룰 수 있게 됨
+
+- `ComponentRegistry.ts::applyExtensionComponents` — 편집기는 호스트 페이지와 별도의 격리 레지스트리로 편집 대상 템플릿을 렌더한다. 확장 IIFE 는 호스트 부팅 때 이미 실행이 끝났으므로, 그 격리 인스턴스에는 확장 컴포넌트가 없어 캔버스에서 해당 노드가 조용히 사라졌다. 이제 확장의 **선언 전체**를 보관해 두고 각 레지스트리가 자기 몫을 다시 고른다.
+- 단순 복사가 아닌 이유: 호스트가 admin 템플릿을 띄운 채 user 템플릿을 편집하면 같은 선언에서 호스트는 기본 판본을, 캔버스는 user 전용 판본을 골라야 한다. 판본 선택의 답이 레지스트리마다 다르다.
+- 확장은 `editor-spec.json` 의 `componentPalette` / `componentCapabilities` 로 자기 컴포넌트를 팔레트에 등재한다. 등재하지 않으면 작성자가 편집기에서 그 컴포넌트를 꺼낼 수 없다.
+
+#### 확장 컴포넌트 매니페스트 생성 (`components.json`)
+
+- `GeneratesComponentManifest`(PHP) — `module:build`/`plugin:build` 가 확장의 컴포넌트 소스를 스캔해 매니페스트를 만든다. `for/{템플릿식별자}/` 하위는 같은 이름의 다른 구현이므로 컴포넌트 목록에 중복 등재하지 않고 `for` 맵에만 싣는다.
+- 컴포넌트 소스의 `{이름}Props` 선언에서 prop 메타데이터(타입·필수 여부·설명)를 추출한다. 종전에는 빈 객체라 편집기가 확장 컴포넌트의 prop 을 편집할 방법이 없었다. 추출 결과는 부분 목록이다 — 상속된 표준 속성은 선언에 나타나지 않으며, 컴파일러도 이 선언을 화이트리스트가 아니라 타입 판정 힌트로만 쓴다.
+
 ## [engine-v1.66.1] - 2026-09-09
 
 ### Fixed

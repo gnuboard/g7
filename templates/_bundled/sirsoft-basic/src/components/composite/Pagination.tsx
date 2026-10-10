@@ -198,7 +198,8 @@ export const Pagination: React.FC<PaginationProps> = ({
 
   return (
     <Div
-      className={`flex items-center gap-2 ${className}`}
+      // flex-wrap·max-w-full: 좁은 화면(390px)에서 버튼이 칸보다 많으면 줄을 바꿔 문서가 가로로 밀리지 않게 한다 (7.1.0 실측 O-K3T-4)
+      className={`flex flex-wrap items-center gap-2 max-w-full ${className}`}
       style={style}
       role="navigation"
       aria-label={t('common.pagination')}
@@ -209,7 +210,8 @@ export const Pagination: React.FC<PaginationProps> = ({
         <Button
           onClick={() => handlePageClick(1)}
           disabled={currentPage === 1}
-          className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
+          // 좁은 화면에서는 숨긴다 — 번호 목록이 첫 쪽을 늘 품고 있어 갈 수 있는 쪽이 줄지 않는다
+          className="hidden sm:inline-block px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
           aria-label={t('common.first_page')}
         >
           &#171;
@@ -227,7 +229,7 @@ export const Pagination: React.FC<PaginationProps> = ({
       </Button>
 
       {/* Page Numbers — 마지막 페이지를 모르면 아는 범위까지만 표시 */}
-      <Div className="flex items-center gap-1">
+      <Div className="flex flex-wrap items-center gap-1">
         {pageNumbers.map((page, index) => {
           if (page === '...') {
             return (
@@ -276,7 +278,8 @@ export const Pagination: React.FC<PaginationProps> = ({
         <Button
           onClick={() => handlePageClick(resolvedTotalPages)}
           disabled={currentPage === resolvedTotalPages}
-          className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
+          // 좁은 화면에서는 숨긴다 — 번호 목록이 마지막 쪽을 늘 품고 있다
+          className="hidden sm:inline-block px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
           aria-label={t('common.last_page')}
         >
           &#187;

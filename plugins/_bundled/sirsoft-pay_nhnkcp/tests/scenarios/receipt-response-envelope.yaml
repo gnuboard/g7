@@ -1,0 +1,15 @@
+feature: NHN KCP 영수증 조회 응답의 공통 형식(data)을 화면이 읽는다
+
+description: |
+  영수증 조회 API 가 공통 형식({ success, message, data })으로 바뀌면서 매출전표·현금영수증 주소가 data 안으로 들어갔다.
+  최상위에서 주소를 읽으면 버튼은 그려져도 누르면 빈 주소로 팝업을 만든다(오류 없음). 마이페이지 주문 상세·주문 완료의
+  두 레이아웃 조각이 모두 data 를 거쳐 읽는지 잠근다. 같은 일을 하던 주입 스크립트는 조각으로 대체해 지웠다(#639).
+
+axes:
+  surface: [mypage_fragment, order_complete_fragment]
+
+effects:
+  - fragment_reads_envelope_data
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/resources/js/__tests__/layouts/receiptResponseEnvelopeBinding.test.ts

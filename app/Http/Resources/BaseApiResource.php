@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Helpers\TimezoneHelper;
+use App\Http\Resources\Traits\ExposesMemberContact;
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\App;
 
 class BaseApiResource extends JsonResource
 {
+    use ExposesMemberContact;
     use HasAbilityCheck;
 
     /**
@@ -242,6 +244,21 @@ class BaseApiResource extends JsonResource
     }
 
     /**
+     * datetime 값을 사이트 기본 timezone으로 변환하여 Y-m-d H:i:s 형식으로 반환합니다.
+     *
+     * 보는 사람이 아니라 사이트를 기준으로 시각을 보여야 하는 화면에 씁니다 — 집계 경계가
+     * 사이트 자정에 잠긴 방문자 통계가 그렇습니다. 사용자 기준이 맞는 화면은
+     * `formatDateTimeStringForUser()` 를 씁니다.
+     *
+     * @param  Carbon|null  $datetime  변환할 datetime
+     * @return string|null Y-m-d H:i:s 형식의 datetime 문자열
+     */
+    protected function formatDateTimeStringForSite(?Carbon $datetime): ?string
+    {
+        return TimezoneHelper::toSiteDateTimeString($datetime);
+    }
+
+    /**
      * datetime 값을 사이트 기본 timezone으로 변환하여 datetime-local 호환 형식으로 반환합니다.
      *
      * HTML <input type="datetime-local"> 호환용 (Y-m-d\TH:i 형식).
@@ -256,11 +273,39 @@ class BaseApiResource extends JsonResource
 
     /**
      * 현재 요청의 타임존을 가져옵니다.
+     *
      * SetTimezone 미들웨어에서 설정한 값을 사용하며, 미설정 시 기본값을 반환합니다.
+     *
+     * @return string 타임존 이름 (예: Asia/Seoul)
      */
     protected function getUserTimezone(): string
     {
         return TimezoneHelper::getUserTimezone();
+    }
+
+    /**
+     * 파일 크기를 사람이 읽는 형식으로 바꿉니다.
+     *
+     * 파일을 싣는 리소스가 늘 때마다 같은 변환을 복제하면 단위·자릿수 규칙이 화면마다
+     * 갈린다 — 같은 파일이 상품에서는 `1.5 MB`, 클레임에서는 `1.46MB` 로 보이는 식이다.
+     *
+     * @param  int|null  $bytes  바이트 크기
+     * @return string 사람이 읽는 크기 (예: `1.5 MB`)
+     */
+    protected function formatFileSize(?int $bytes): string
+    {
+        if ($bytes === null || $bytes === 0) {
+            return '0 B';
+        }
+
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $index = 0;
+        while ($bytes >= 1024 && $index < count($units) - 1) {
+            $bytes /= 1024;
+            $index++;
+        }
+
+        return round($bytes, 2).' '.$units[$index];
     }
 
     /**

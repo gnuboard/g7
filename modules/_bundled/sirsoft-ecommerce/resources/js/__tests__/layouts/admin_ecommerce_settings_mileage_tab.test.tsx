@@ -23,11 +23,12 @@ import currencyTable from '../../../layouts/admin/partials/admin_ecommerce_setti
 import currencyCards from '../../../layouts/admin/partials/admin_ecommerce_settings/_tab_mileage_currency_cards.json';
 import expiryCard from '../../../layouts/admin/partials/admin_ecommerce_settings/_tab_mileage_expiry_card.json';
 import notificationCard from '../../../layouts/admin/partials/admin_ecommerce_settings/_tab_mileage_notification_card.json';
+import { asArray, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 function findById(node: any, id: string): any | null {
   if (!node) return null;
   if (node.id === id) return node;
-  const kids = [...(node.children ?? []), ...(node.responsive?.portable?.children ?? [])];
+  const kids = [...asArray(node?.children), ...asArray(node.responsive?.portable?.children)];
   for (const child of kids) {
     const found = findById(child, id);
     if (found) return found;
@@ -39,10 +40,10 @@ function findFirst(node: any, predicate: (n: any) => boolean): any | null {
   if (!node) return null;
   if (predicate(node)) return node;
   const kids = [
-    ...(node.children ?? []),
-    ...(node.responsive?.portable?.children ?? []),
-    ...(node.actions ?? []),
-    ...(node.params?.actions ?? []),
+    ...asArray(node?.children),
+    ...asArray(node.responsive?.portable?.children),
+    ...asArray(node?.actions),
+    ...callbacksOf(node, 'actions'),
   ];
   for (const child of kids) {
     const found = findFirst(child, predicate);
@@ -55,7 +56,7 @@ function findAll(node: any, predicate: (n: any) => boolean): any[] {
   const out: any[] = [];
   if (!node) return out;
   if (predicate(node)) out.push(node);
-  const kids = [...(node.children ?? []), ...(node.responsive?.portable?.children ?? [])];
+  const kids = [...asArray(node?.children), ...asArray(node.responsive?.portable?.children)];
   for (const child of kids) out.push(...findAll(child, predicate));
   return out;
 }
@@ -78,7 +79,7 @@ describe('마일리지 설정 — 환경설정 서브탭 통합 (별도 화면 �
 
   it('저장 body 분기에 mileage 탭이 해당 카테고리만 전송한다', () => {
     const save = findById(content, 'save_button');
-    const apiCall = findFirst(save.actions[0], (n) => n.handler === 'apiCall');
+    const apiCall = findFirst(asArray(save?.actions)[0], (n) => n.handler === 'apiCall');
     expect(apiCall.params.body).toContain("tab === 'mileage'");
     expect(apiCall.params.body).toContain("_tab: 'mileage'");
     expect(apiCall.params.body).toContain('mileage: form.mileage');
@@ -89,8 +90,8 @@ describe('마일리지 설정 — 환경설정 서브탭 통합 (별도 화면 �
     // 임시 입력(newMileageCurrency)이 currency_rules 배열에 확정되지 않아 저장 시 조용히 사라진다.
     // 저장 sequence는 미확정 상태(isAddingMileageCurrency/isAddingCurrency)에서 차단 + 경고해야 한다.
     const save = findById(content, 'save_button');
-    const seq = save.actions[0];
-    const actions = seq.params.actions;
+    const seq = asArray(save?.actions)[0];
+    const actions = callbacksOf(seq, 'actions');
 
     // 1) 차단 경고 toast: 미확정 통화가 있을 때만 발화
     const guardToast = actions.find((a: any) => a.handler === 'toast'
@@ -168,7 +169,7 @@ describe('마일리지 탭 콘텐츠 (_tab_mileage.json)', () => {
 
   it('[+ 통화 추가] 버튼이 즉시 push 가 아니라 인라인 입력 행을 연다 (환율 설정 패턴 일관)', () => {
     const addBtn = findById(tabMileage, 'add_currency_rule_button');
-    const setState = addBtn.actions[0];
+    const setState = asArray(addBtn?.actions)[0];
     expect(setState.handler).toBe('setState');
     // 즉시 currency_rules 에 push 하지 않는다
     expect(setState.params['form.mileage.currency_rules']).toBeUndefined();
@@ -183,8 +184,8 @@ describe('마일리지 탭 콘텐츠 (_tab_mileage.json)', () => {
     // 공간 절약 위해 별도 헤더 행 대신 기본 설정 카드 우측 상단으로 이동 (요청)
     const btn = findById(basicCard, 'view_transactions_button');
     expect(btn, '내역 보기 버튼이 기본 설정 카드에 없다').toBeTruthy();
-    expect(btn.actions[0].handler).toBe('navigate');
-    expect(btn.actions[0].params.path).toBe('/admin/ecommerce/mileage-transactions');
+    expect(asArray(btn?.actions)[0].handler).toBe('navigate');
+    expect(asArray(btn?.actions)[0].params.path).toBe('/admin/ecommerce/mileage-transactions');
     // _tab_mileage.json 의 기존 별도 헤더 행은 제거됨
     expect(findById(tabMileage, 'mileage_tab_header')).toBeNull();
   });
@@ -234,7 +235,7 @@ describe('통화 규칙 테이블 (_tab_mileage_currency_table.json)', () => {
 
   it('삭제 버튼이 행 제거 시 hasChanges 를 true 로 만든다', () => {
     const delBtn = findFirst(currencyTable, (n) => n.name === 'Button' && n.if && String(n.if).includes('rule._idx !== 0'));
-    const setState = delBtn.actions[0];
+    const setState = asArray(delBtn?.actions)[0];
     expect(setState.handler).toBe('setState');
     expect(setState.params.hasChanges).toBe(true);
   });
@@ -279,12 +280,12 @@ describe('통화 규칙 테이블 (_tab_mileage_currency_table.json)', () => {
 
     // 부모 Label 이 click → setState 로 max_use_type 갱신
     const labels = findAll(currencyTable, (n) => n.name === 'Label'
-      && (n.actions ?? []).some((a: any) => a.type === 'click' && a.handler === 'setState'
+      && asArray(n?.actions).some((a: any) => a.type === 'click' && a.handler === 'setState'
         && JSON.stringify(a.params ?? {}).includes('max_use_type')));
     // currency_rules 행 percent/fixed Label 2개 + 인라인 추가 행 percent/fixed Label 2개 = 4
     expect(labels.length).toBe(4);
     for (const label of labels) {
-      const click = label.actions.find((a: any) => a.type === 'click' && a.handler === 'setState');
+      const click = asArray(label?.actions).find((a: any) => a.type === 'click' && a.handler === 'setState');
       expect(click.params.target).toBe('local');
     }
 
@@ -293,7 +294,7 @@ describe('통화 규칙 테이블 (_tab_mileage_currency_table.json)', () => {
       && JSON.stringify(l.actions).includes('rule._idx'));
     expect(rowLabels.length, 'currency_rules 행 Label click 액션이 2개여야 함').toBe(2);
     for (const rowLabel of rowLabels) {
-      const rowClick = rowLabel.actions.find((a: any) => a.handler === 'setState');
+      const rowClick = asArray(rowLabel?.actions).find((a: any) => a.handler === 'setState');
       const expr = String(rowClick.params['form.mileage.currency_rules']);
       expect(expr).toContain('.map(');
       expect(expr).toContain('i === rule._idx');
@@ -306,7 +307,7 @@ describe('통화 규칙 테이블 (_tab_mileage_currency_table.json)', () => {
     const inlineLabels = labels.filter((l: any) => JSON.stringify(l.actions).includes('newMileageCurrency'));
     expect(inlineLabels.length, '인라인 추가 행 Label click 액션이 2개여야 함').toBe(2);
     for (const inlineLabel of inlineLabels) {
-      const click = inlineLabel.actions.find((a: any) => a.handler === 'setState');
+      const click = asArray(inlineLabel?.actions).find((a: any) => a.handler === 'setState');
       expect(click.params['form.newMileageCurrency.max_use_type']).toMatch(/^(percent|fixed)$/);
     }
   });
@@ -345,7 +346,7 @@ describe('통화 규칙 테이블 (_tab_mileage_currency_table.json)', () => {
     const newRow = findById(currencyTable, 'new_mileage_currency_row');
     const seq = findFirst(newRow, (n) => n.handler === 'sequence');
     expect(seq).toBeTruthy();
-    const actions = seq.actions ?? seq.params?.actions ?? [];
+    const actions = seq.actions ?? callbacksOf(seq, 'actions') ?? [];
     // 중복 시 error toast
     const dupToast = actions.find((a) => a.handler === 'toast' && String(a.if).includes('duplicate') === false && String(a.if).includes('some('));
     expect(dupToast).toBeTruthy();
@@ -468,13 +469,13 @@ describe('유효기간 / 소멸 알림 카드', () => {
   // 가드: admin-ecommerce-settings-tab-scoped-datasources.test.tsx
   it('알림 설정으로 이동 버튼이 환경설정 알림 탭으로 전환한다', () => {
     const btn = findById(notificationCard, 'go_to_notification_settings');
-    const seq = btn.actions[0];
+    const seq = asArray(btn?.actions)[0];
     expect(seq.handler).toBe('sequence');
-    const navigate = seq.params.actions.find((a: any) => a.handler === 'navigate');
+    const navigate = callbacksOf(seq, 'actions').find((a: any) => a.handler === 'navigate');
     expect(navigate.params.path).toBe('/admin/ecommerce/settings');
     expect(navigate.params.query.tab).toBe('notification_definitions');
     expect(navigate.params.replace).toBe(true);
-    const setGlobal = seq.params.actions.find((a: any) => a.handler === 'setState');
+    const setGlobal = callbacksOf(seq, 'actions').find((a: any) => a.handler === 'setState');
     expect(setGlobal.params.activeEcommerceSettingsTab).toBe('notification_definitions');
   });
 });

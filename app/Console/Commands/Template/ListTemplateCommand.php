@@ -23,6 +23,9 @@ class ListTemplateCommand extends Command
 
     /**
      * 템플릿 관리자 및 리포지토리
+     *
+     * @param  TemplateManager  $templateManager  템플릿 관리자
+     * @param  TemplateRepositoryInterface  $templateRepository  템플릿 리포지토리
      */
     public function __construct(
         private TemplateManager $templateManager,
@@ -33,6 +36,8 @@ class ListTemplateCommand extends Command
 
     /**
      * Execute the console command.
+     *
+     * @return int 명령 종료 코드
      */
     public function handle(): int
     {
@@ -156,7 +161,7 @@ class ListTemplateCommand extends Command
         $installedCount = count(array_filter($tableData, fn ($t) => ! str_contains($t['status'], __('templates.commands.list.status.uninstalled'))));
 
         $this->newLine();
-        $this->info(__('templates.commands.list.summary', [
+        $this->info(trans_choice('templates.commands.list.summary', $totalCount, [
             'total' => $totalCount,
             'installed' => $installedCount,
             'active' => $activeCount,
@@ -167,6 +172,9 @@ class ListTemplateCommand extends Command
 
     /**
      * 상태 포맷팅
+     *
+     * @param  string  $status  템플릿 상태 값
+     * @return string 변환한 문자열
      */
     private function formatStatus(string $status): string
     {

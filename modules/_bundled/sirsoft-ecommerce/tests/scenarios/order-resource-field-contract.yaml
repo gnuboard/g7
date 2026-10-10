@@ -1,0 +1,78 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   이 매니페스트의 축은 "리소스가 어떤 재료를 낼 때 값이 갈리는가" 다 — 세 축의 전 교차곱
+#   (금액 스냅샷 × 통화 관계 × 파생 플래그)은 한 Unit 메서드가 재현하지 않는다. 각 테스트는
+#   축 하나를 격리해 값을 고정하고, 조합의 실체는 Feature/E2E 가 화면에서 잰다.
+#   effects 는 전부 실제 검증 메서드에 @effects 로 매핑한다(effects 축은 면제하지 않는다).
+feature: 주문 리소스 필드 계약 — 금액 재료 · 통화 표기 · 파생 플래그
+
+description: |
+  `OrderResource` · `OrderOptionResource` · `OrderPaymentResource` 가 화면에 **무엇을 내는가**를
+  고정한다. 재고·적립 배지(admin-order-detail-stock-earn-badges)와 취소 도메인(mp02-order-cancellation)은
+  각자의 매니페스트가 소유하고, 여기서는 그 둘이 다루지 않는 **표시 재료의 계약**만 잰다.
+
+  조용히 깨지는 지점은 셋이다.
+
+  ① **합계·정가는 화면이 다시 계산하지 않는다.** 주문상품의 `final_amount` 는 할인·마일리지·
+     예치금을 모두 뺀 값이고, 주문의 `total_list_price` 는 옵션 스냅샷의 정가 × 수량 합계다.
+     화면이 같은 식을 다시 적으면 한쪽만 고쳐졌을 때 합계행과 상세행이 어긋나는데, 둘 다
+     정상 숫자라 어긋난 흔적이 남지 않는다. 정가가 스냅샷에 없는 옛 주문은 `unit_price` 로
+     떨어져야 하고, 그 폴백이 없으면 정가 열이 0 으로 비어 할인율이 100% 로 보인다.
+
+  ② **통화 표기의 기준은 주문 시점 스냅샷이다.** 운영자가 이후 기본 통화를 바꿔도 과거 주문의
+     `*_formatted` 는 그 주문이 기록된 통화를 계속 가리켜야 한다(소급 통화 변경 방지). 자식
+     리소스는 부모가 주입한 주문 통화로 base 환산 필드를 쓰되, **PG 가 실제 청구한 금액**
+     (`paid_amount_local`)만은 결제 행의 통화를 따른다 — 주입 통화로 찍으면 base ≠ 결제 통화
+     주문에서 숫자와 기호의 단위가 어긋난다(#421).
+
+     같은 이유로 base ≠ 결제 통화 주문에는 **결제 통화 기준 실청구액**이 응답에 함께 실린다.
+     서버의 입금·PG 금액 검증 SSoT 는 `resolveOrderPaymentChargeAmount()` 이므로, 화면이
+     base 금액을 입금액으로 보내면 그런 주문에서 **항상** 422 가 되어 입금확인이 막힌다.
+
+  ③ **파생 플래그의 판정자는 리소스 한 곳이다.** 부분취소는 별도 주문상태가 아니라
+     「취소 옵션 ∧ 잔여 활성 옵션」의 파생이고(2026-06-22), PG 취소 필요 여부는 결제수단이
+     정하며(A28), 리뷰 작성 기한은 `confirmed_at + N일` 경계다. 세 판정이 화면으로 새어 나가면
+     같은 규칙을 그리는 자리가 늘어날 때마다 갈린다.
+
+# axis 의미:
+#   amount_source — 금액 재료의 출처. `snapshot_list_price` 는 옵션 스냅샷의 정가,
+#                   `unit_price_fallback` 은 그 정가가 없는 옛 주문, `deductions_applied` 는
+#                   할인·마일리지·예치금이 모두 걸린 행이다.
+#   currency_relation — 주문의 base 통화와 결제 통화의 관계. `cross` 일 때만 실청구액 필드가
+#                   base 금액과 갈린다.
+#   derived_flag  — 리소스가 소유한 파생 판정. 축의 값마다 검사하는 컬럼이 다르다.
+axes:
+  amount_source: [snapshot_list_price, unit_price_fallback, deductions_applied]
+  currency_relation: [same, cross]
+  derived_flag: [partial_cancellation, pg_cancellation_required, review_deadline]
+
+exclusions:
+  - { amount_source: unit_price_fallback, currency_relation: cross, reason: "정가 스냅샷이 없는 옛 주문은 단일통화 시절의 기록이다 — 교차통화 주문에는 언제나 스냅샷이 있다" }
+
+effects:
+  # ① 합계·정가 재료 (OrderResource / OrderOptionResource)
+  - option_final_amount_deducts_discount_points_and_deposit
+  - option_list_price_comes_from_the_option_snapshot
+  - option_list_price_adds_the_option_adjustment_without_an_option_list_price  # 옵션 스냅샷 정가가 없으면 상품 정가 + 옵션 조정액(실측 2026-10-03: 정가 ¥4,000 < 판매가 ¥5,000)
+  - option_resource_drops_the_removed_mc_discount_field
+  - order_total_quantity_sums_the_option_quantities
+  - order_total_list_price_sums_snapshot_list_price_times_quantity
+  - order_total_list_price_falls_back_to_unit_price_without_a_snapshot
+  - order_total_list_price_and_quantity_count_only_accountable_rows   # 합계 줄 정가·수량은 판매가·결제액과 같은 「남은 상품」 기준(취소·교환완료 원 행·진행 중 후속 행 제외)
+  - order_exposes_used_earned_and_refunded_mileage_totals
+  # ② 통화 표기
+  - order_formatted_amounts_follow_the_order_snapshot_currency_not_the_current_default
+  - child_resource_formats_base_fields_with_the_injected_order_currency
+  - child_resource_formats_the_actually_charged_amount_with_the_payment_currency
+  - order_exposes_the_payment_currency_charge_amount_for_cross_currency_orders
+  - order_charge_amount_equals_the_base_amount_for_single_currency_orders
+  # ③ 파생 플래그
+  - order_exposes_cancelled_at_with_its_formatted_twin
+  - order_cancelled_at_formatted_is_null_when_the_order_was_never_cancelled
+  - payment_resource_declares_whether_the_method_requires_a_pg_cancellation
+  - order_is_partially_cancelled_only_with_both_cancelled_and_active_options
+  - option_review_deadline_passed_after_the_write_period_from_confirmation
+  - option_review_deadline_not_passed_inside_the_write_period
+  - option_review_deadline_not_passed_before_confirmation
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Resources/OrderResourceFieldsTest.php

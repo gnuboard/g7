@@ -1,0 +1,75 @@
+feature: 코어 활동 로그 훅 — 관리 행위가 올바른 액션·유형·대상으로 기록된다
+
+description: |
+  코어 서비스가 발행하는 훅(회원·인증·역할·메뉴·설정·스케줄·첨부·모듈·플러그인·템플릿·레이아웃·
+  확장 설정)을 `CoreActivityLogListener` 가 구독해 activity 로그 채널에 한 줄씩 남긴다. 각 기록은
+  액션 이름, 로그 유형(관리자/사용자), 설명 다국어 키와 인자, 대상 모델 참조, 부가 속성을 담는다.
+
+  이 매니페스트가 잠그는 행동:
+    - 구독 목록 자체 — 훅 수, 훅마다 실재하는 핸들러, 로깅 훅의 우선순위 20, 훅→핸들러 카탈로그.
+    - 도메인별 기록 내용 — 생성은 대상 id·표시명, 수정은 변경 내역(수정 전 스냅샷 인자 허용),
+      삭제는 지운 id·스냅샷, 동기화는 추가·제거분만, 일괄 처리는 대상마다 한 건(없는 대상 제외).
+    - 확장 수명주기 — 식별자, 설치 버전, 제거 시 데이터 삭제 여부, 업데이트 결과.
+    - 기록 실패가 그 행위를 일으킨 요청을 죽이지 않는다 — 예외를 삼키고 오류 로그로 남긴다.
+
+  축은 요청이 들어온 영역 하나다. 로그 유형은 핸들러가 아니라 요청 경로로 정해진다 — 관리자 API
+  경로는 관리자(Admin), 회원가입·비밀번호 찾기처럼 사용자 화면 경로는 사용자(User) 유형이다.
+
+axes:
+  request_area: [admin, user]
+
+effects:
+  # 구독 목록
+  - subscribed_hook_count_matches_registry
+  - every_subscribed_hook_maps_to_existing_method
+  - logging_hooks_run_at_priority_20
+  - hook_to_handler_mapping_matches_catalog
+  - default_handle_is_noop
+  # 회원
+  - user_create_logs_identity_properties
+  - user_delete_logs_deleted_user_snapshot
+  - user_delete_tolerates_missing_uuid
+  - user_view_and_withdraw_logged_against_model
+  - user_list_and_search_log_query_and_count
+  # 인증
+  - admin_login_and_logout_logged_as_admin
+  - login_logout_description_follows_auth_route   # 설명 키는 인증 경로로 고른다(사용자 로그인 ≠ 「관리자 로그인」, 7.1.0 실측 O-B3)
+  - public_auth_actions_logged_as_user_type
+  - consent_log_records_client_ip
+  # 도메인 공통 (역할·메뉴·스케줄·회원)
+  - create_hook_logs_target_id_and_label
+  - update_hook_records_change_set
+  - update_hook_accepts_prior_snapshot
+  - delete_hook_logs_removed_id
+  - sync_hook_logs_added_and_removed_members
+  - toggle_status_logged_against_model
+  - bulk_update_logs_one_entry_per_item
+  - bulk_update_skips_missing_targets
+  - bulk_delete_logs_one_entry_per_id
+  # 메뉴·설정·스케줄·첨부·레이아웃
+  - menu_reorder_logged
+  - settings_save_logs_tab_and_changed_keys
+  - single_setting_update_logs_key
+  - schedule_run_logged_against_schedule
+  - attachment_upload_and_delete_logged
+  - layout_update_and_restore_logged_with_path
+  # 확장 업데이트 기록에 레이아웃 처리 요약과 운영자 관련 행별 변경 내역 (#727 D2)
+  - extension_update_records_layout_sync
+  # 확장 수명주기·확장 설정
+  - extension_lifecycle_hooks_log_identifier
+  - extension_install_records_version
+  - extension_uninstall_records_delete_data_flag
+  - extension_update_records_result
+  - template_activate_tolerates_missing_identifier
+  - extension_settings_save_logs_changed_keys
+  - extension_settings_reset_logged
+  # 실패 격리
+  - activity_log_write_failure_is_swallowed_and_reported
+
+test_files:
+  - tests/Unit/Listeners/CoreActivityLogListenerTest.php
+
+notes: |
+  테스트 71건 전부가 `@effects` 를 갖는다. 기록을 남기는 핸들러를 호출하는 66건은 요청 영역 칸
+  (`request_area`)도 갖고, 구독 목록만 읽는 4건(훅 수·메서드 실재·우선순위·카탈로그)과 아무것도
+  기록하지 않는 기본 handle() 1건은 요청 영역과 무관해 효과로만 잠근다(설계 결정 2026-09-26).

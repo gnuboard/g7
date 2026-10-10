@@ -1,0 +1,17 @@
+feature: Hello 모듈 메모 목록 — 0건 안내 문구
+
+description: |
+  관리자 메모 목록(admin_memo_list)과 사용자 메모 목록(user_memo_list)이 메모 0건일 때 제목 아래를 비워 두어
+  불러오는 중인지 메모가 없는지 구분되지 않았다. 0건일 때만 보이는 안내 문구를 두고 문구는 모듈 언어 파일(ko/en)의
+  키(admin.memos.index.empty, user.memos.index.empty)로 둔다(7.1.0 S2 검증).
+  축 screen 은 관리자 화면과 사용자 화면이다.
+
+axes:
+  screen: [admin, user]
+
+effects:
+  - empty_list_shows_notice
+  - empty_notice_key_exists_ko_en
+
+test_files:
+  - modules/_bundled/gnuboard7-hello_module/resources/js/components/__tests__/MemoListEmptyState.test.ts

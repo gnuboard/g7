@@ -1,0 +1,23 @@
+feature: 코어 환경설정 — 데이터소스를 그 탭에서만 받는다
+
+description: >
+  환경설정 화면에 들어오면 모든 탭의 데이터소스를 한꺼번에 받던 결함(이커머스·게시판 환경설정과 같은 결함)을
+  막는다. 탭 전용 소스는 소유 탭을 가리키는 `if` 게이트를 갖고, 탭 전환은 navigate(replace)로 게이트를 다시
+  평가하게 한다. 여러 탭이 함께 쓰는 소스는 쓰는 탭을 모두 게이트에 적는다 — 본인인증 정책 목록은 7.1.0(#699)
+  부터 본인인증 탭과 알림 설정 탭(정책별 문구 추가 창)이 함께 쓴다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-tab-scoped-datasources.test.tsx
+
+axes:
+  # 소스 종류 — 늘 받는 공유 소스 · 상세 창이 부르는 지연 소스 · 탭 전용 소스
+  source_kind: [shared, lazy_detail, tab_scoped]
+
+effects:
+  - shared_settings_source_always_fetched
+  - modal_detail_sources_stay_lazy
+  - tab_scoped_sources_have_if_gate
+  - tab_scoped_source_gate_references_owner_tabs
+  - tab_scoped_sources_not_disabled
+  - tab_switch_navigates_with_replace
+  - unknown_tab_key_falls_back_to_general   # 탭 목록에 없는 ?tab= 키는 진입 때 기본 탭으로 바꿔 연다(빈 본문 방지, 7.1.0 실측 O-6)

@@ -1,22 +1,30 @@
 /**
- * 비회원 주문 조회 토큰 확보 (플러그인 공용)
+ * 비회원 주문 조회 토큰 (플러그인 공용)
  *
- * 비회원 주문의 영수증·결제수단 정보는 서버가 `X-Guest-Order-Token` 으로 소유자를
- * 확인한다. 이 토큰을 싣지 않으면 서버는 그 주문을 찾을 수 없다고 응답하므로,
- * 비회원 손님에게는 영수증 버튼이 아예 나타나지 않는다 — 예외도 콘솔 오류도 남지
- * 않아 운영자가 원인을 알 수 없다.
+ * 결제창 닫힘 보고·재결제 준비처럼 주문 상태를 바꾸는 요청은 서버가 주문 소유자만 받아 준다. 회원 주문은
+ * 로그인한 본인(Bearer — `G7Core.api` 가 싣는다), 비회원 주문은 주문 생성 때 발급된 조회 토큰
+ * (`X-Guest-Order-Token`)으로 확인한다.
  *
- * 코어 storageHandlers 가 sessionStorage 에 저장하며, 그 접근이 막힌 환경
- * (프라이빗 창·iframe)을 위해 전역 상태 폴백을 함께 본다.
+ * 토큰은 공개 상태 계약 `_global.guestOrderToken`(sirsoft-ecommerce module.json `state_contracts`)으로만 읽는다.
+ * 템플릿이 세션 저장소에서 이 값을 되살려 두므로, 저장소 키를 플러그인이 직접 읽지 않는다 — 저장 방식이 바뀌어도
+ * 이 계약만 지켜지면 그대로 동작한다.
  */
 
+/** 템플릿이 토큰을 되살릴 때까지 기다리는 최대 시간(ms) */
+const TOKEN_WAIT_MS = 3000;
+
+interface G7CoreState {
+    get?: () => Record<string, unknown> | undefined;
+    subscribe?: (listener: (state: Record<string, unknown>) => void) => (() => void) | undefined;
+}
+
 /**
- * 회원 인증 토큰을 돌려줍니다.
+ * 코어 공개 상태 API 를 돌려줍니다.
  *
- * @return 토큰 또는 null
+ * @return 상태 API (코어가 아직 없으면 undefined)
  */
-export function getAuthToken(): string | null {
-    return localStorage.getItem('auth_token');
+function coreState(): G7CoreState | undefined {
+    return (window as unknown as { G7Core?: { state?: G7CoreState } }).G7Core?.state;
 }
 
 /**
@@ -25,38 +33,68 @@ export function getAuthToken(): string | null {
  * @return 토큰 또는 null
  */
 export function getGuestOrderToken(): string | null {
+    let token: unknown;
     try {
-        const sessionToken = sessionStorage.getItem('g7_guest_order_token');
-        if (sessionToken) return sessionToken;
+        token = coreState()?.get?.()?.guestOrderToken;
     } catch {
-        // sessionStorage 접근 불가 환경 — 전역 상태 폴백으로 진행
-    }
-
-    const globalToken = (window as any).G7Core?.state?.get?.('_global')?.guestOrderToken;
-
-    return typeof globalToken === 'string' && globalToken !== '' ? globalToken : null;
-}
-
-/**
- * 주문 조회 요청 헤더를 만듭니다. 회원 토큰을 우선하고, 없으면 비회원 토큰을 씁니다.
- *
- * @return 헤더 객체. 둘 다 없으면 null (호출 자체를 하지 않아야 함)
- */
-export function buildOrderRequestHeaders(): Record<string, string> | null {
-    const authToken = getAuthToken();
-    const guestToken = getGuestOrderToken();
-
-    if (!authToken && !guestToken) {
         return null;
     }
 
-    const headers: Record<string, string> = { Accept: 'application/json' };
+    return typeof token === 'string' && token !== '' ? token : null;
+}
 
-    if (authToken) {
-        headers.Authorization = `Bearer ${authToken}`;
-    } else if (guestToken) {
-        headers['X-Guest-Order-Token'] = guestToken;
+/**
+ * 주문 상태를 바꾸는 요청에 실을 비회원 소유자 증명 헤더를 만듭니다.
+ *
+ * 회원 주문은 서버가 로그인 사용자로만 판정하므로 이 헤더가 함께 실려도 결과가 달라지지 않는다.
+ * 토큰이 없으면 빈 객체 — 서버가 보고를 거부하고, 결제대기 주문은 이커머스 만료 정리 잡이 정리한다.
+ *
+ * @return 헤더 객체 (실을 것이 없으면 빈 객체)
+ */
+export function guestOwnershipHeaders(): Record<string, string> {
+    const token = getGuestOrderToken();
+
+    return token ? { 'X-Guest-Order-Token': token } : {};
+}
+
+/**
+ * 템플릿이 비회원 조회 토큰을 전역 상태에 되살릴 때까지 잠시 기다립니다.
+ *
+ * 결제창에서 돌아온 직후에는 템플릿의 초기화 액션(세션 저장소 → `_global.guestOrderToken`)이 아직 돌지
+ * 않았을 수 있다. 토큰이 이미 있으면 바로 끝나고, 없으면 전역 상태 변경을 구독하다가 토큰이 생기거나
+ * 제한 시간이 지나면 끝난다(회원이면 토큰이 생기지 않으므로 제한 시간까지 기다린 뒤 진행한다).
+ *
+ * @param timeoutMs 최대 대기 시간(ms)
+ * @return 대기가 끝나면 이행되는 Promise
+ */
+export function waitForGuestOrderToken(timeoutMs: number = TOKEN_WAIT_MS): Promise<void> {
+    if (getGuestOrderToken() !== null) {
+        return Promise.resolve();
     }
 
-    return headers;
+    return new Promise<void>((resolve) => {
+        let finished = false;
+        let unsubscribe: (() => void) | undefined;
+
+        const finish = (): void => {
+            if (finished) return;
+            finished = true;
+            clearTimeout(timer);
+            unsubscribe?.();
+            resolve();
+        };
+
+        const timer = setTimeout(finish, timeoutMs);
+
+        try {
+            unsubscribe = coreState()?.subscribe?.(() => {
+                if (getGuestOrderToken() !== null) finish();
+            }) ?? undefined;
+        } catch {
+            // 구독할 수 없으면 제한 시간까지 기다린다.
+        }
+
+        // 구독 중에 끝났으면(동기 통지) 방금 받은 해제 함수도 바로 부른다.
+        if (finished) unsubscribe?.();
+    });
 }

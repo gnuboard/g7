@@ -7,6 +7,7 @@ require_once __DIR__.'/../../ModuleTestCase.php';
 
 use Modules\Sirsoft\Board\Repositories\PostRepository;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * PostRepository 답글 조회 메서드 테스트
@@ -17,20 +18,29 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  *   - 직계 살아있는 답글 존재 → true
  *   - 직계 답글 전부 trashed → false
  *   - 직계는 trashed 이고 손자만 살아있음(끊긴 체인 고아) → false (직계만 판정)
- *
- * @group board
- * @group unit
- * @group repository
  */
+#[Group('board')]
+#[Group('unit')]
+#[Group('repository')]
 class PostRepositoryReplyLookupTest extends BoardTestCase
 {
     private PostRepository $repository;
 
+    /**
+     * 이 테스트가 쓰는 게시판 slug 를 돌려줍니다.
+     *
+     * @return string 게시판 slug
+     */
     protected function getTestBoardSlug(): string
     {
         return 'post-repository-reply-lookup';
     }
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -44,6 +54,10 @@ class PostRepositoryReplyLookupTest extends BoardTestCase
 
     /**
      * countRepliesByParentId: 살아있는 자식만 집계한다 (trashed 자식 제외).
+     *
+     * @effects count_replies_by_parent_id_counts_only_live_children
+     *
+     * @return void 반환값 없음
      */
     public function test_count_replies_by_parent_id_counts_only_live_children(): void
     {
@@ -76,6 +90,10 @@ class PostRepositoryReplyLookupTest extends BoardTestCase
 
     /**
      * hasAliveReplies: 살아있는 직계 답글이 있으면 true.
+     *
+     * @effects has_alive_replies_returns_true_for_direct_live_reply
+     *
+     * @return void 반환값 없음
      */
     public function test_has_alive_replies_returns_true_for_direct_live_reply(): void
     {
@@ -91,6 +109,10 @@ class PostRepositoryReplyLookupTest extends BoardTestCase
 
     /**
      * hasAliveReplies: 직계 답글이 전부 trashed 이면 false.
+     *
+     * @effects has_alive_replies_returns_false_when_all_replies_trashed
+     *
+     * @return void 반환값 없음
      */
     public function test_has_alive_replies_returns_false_when_all_replies_trashed(): void
     {
@@ -123,6 +145,10 @@ class PostRepositoryReplyLookupTest extends BoardTestCase
      *
      * 끊긴 체인 밑 고아 손자는 별도로 cascade 스윕이 정리하며, block 정책 차단
      * 판정은 직계 검사만으로 완결됩니다.
+     *
+     * @effects has_alive_replies_returns_false_when_only_grandchild_alive
+     *
+     * @return void 반환값 없음
      */
     public function test_has_alive_replies_returns_false_when_only_grandchild_alive(): void
     {

@@ -153,7 +153,7 @@ public function register(): void
 }
 ```
 
-정적 검사가 자동 차단한다. 면제 표지 불허.
+자동으로 차단된다. 면제 표지 불허.
 
 ### 표준 패턴 — contextual binding
 

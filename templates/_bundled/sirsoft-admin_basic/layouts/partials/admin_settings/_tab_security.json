@@ -1,643 +1,609 @@
 {
-  "comment": "e2e:allow 체크박스 label prop 미렌더 정정(Label 래핑+Span) — 마크업 치환만, 동작 변화 없음. admin-settings-security-password-policy 레이아웃 테스트가 커버",
-  "meta": {
-    "is_partial": true,
-    "description": "환경설정 보안 탭 콘텐츠"
-  },
-  "id": "tab_content_security",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{(_global.activeSettingsTab || query.tab) === 'security'}}",
-  "children": [
-    {
-      "id": "card_security_settings",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "card-stack-item"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:admin.settings.security.title"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:admin.settings.security.desc"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "row-stack"
-          },
-          "children": [
-            {
-              "id": "toggle_force_https",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-heading"
-                          },
-                          "text": "$t:admin.settings.security.force_https"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-red-500 ml-1"
-                          },
-                          "text": "*"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:admin.settings.security.force_https_desc"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{_local.errors?.['security.force_https']}}",
-                      "props": {
-                        "className": "form-error"
-                      },
-                      "text": "{{_local.errors?.['security.force_https']?.[0] ?? ''}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "name": "security.force_https",
-                    "size": "md",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "toggle_allow_internal_outbound_urls",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-heading"
-                          },
-                          "text": "$t:admin.settings.security.allow_internal_outbound_urls"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:admin.settings.security.allow_internal_outbound_urls_desc"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{_local.errors?.['security.allow_internal_outbound_urls']}}",
-                      "props": {
-                        "className": "form-error"
-                      },
-                      "text": "{{_local.errors?.['security.allow_internal_outbound_urls']?.[0] ?? ''}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "name": "security.allow_internal_outbound_urls",
-                    "size": "md",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "toggle_login_attempt",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-between"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-heading"
-                          },
-                          "text": "$t:admin.settings.security.login_attempt_limit"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-red-500 ml-1"
-                          },
-                          "text": "*"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-label-subtle"
-                      },
-                      "text": "$t:admin.settings.security.login_attempt_limit_desc"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "if": "{{_local.errors?.['security.login_attempt_enabled']}}",
-                      "props": {
-                        "className": "form-error"
-                      },
-                      "text": "{{_local.errors?.['security.login_attempt_enabled']?.[0] ?? ''}}"
-                    }
-                  ]
-                },
-                {
-                  "type": "composite",
-                  "name": "Toggle",
-                  "props": {
-                    "name": "security.login_attempt_enabled",
-                    "size": "md",
-                    "disabled": "{{_computed.isReadOnly}}"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "field_auth_token_lifetime",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.security.auth_token_lifetime"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "security.auth_token_lifetime",
-                    "placeholder": "30",
-                    "min": "{{_local?.form?._meta?.limits?.security_auth_token_lifetime_min ?? 0}}",
-                    "max": "{{_local?.form?._meta?.limits?.security_auth_token_lifetime_max ?? 3600}}",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "input input-w-md {{_local.errors?.['security.auth_token_lifetime'] ? 'input-error' : ''}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['security.auth_token_lifetime']}}",
-                  "props": {
-                    "className": "form-error"
-                  },
-                  "text": "{{_local.errors?.['security.auth_token_lifetime']?.[0] ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-hint mt-1"
-                  },
-                  "text": "$t:admin.settings.security.zero_means_unlimited"
-                }
-              ]
-            },
-            {
-              "id": "field_max_login_attempts",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.security.max_login_attempts"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "security.max_login_attempts",
-                    "placeholder": "5",
-                    "min": "{{_local?.form?._meta?.limits?.security_max_login_attempts_min ?? 0}}",
-                    "max": "{{_local?.form?._meta?.limits?.security_max_login_attempts_max ?? 100}}",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "input input-w-md {{_local.errors?.['security.max_login_attempts'] ? 'input-error' : ''}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['security.max_login_attempts']}}",
-                  "props": {
-                    "className": "form-error"
-                  },
-                  "text": "{{_local.errors?.['security.max_login_attempts']?.[0] ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-hint mt-1"
-                  },
-                  "text": "$t:admin.settings.security.zero_means_unlimited"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-hint mt-1"
-                  },
-                  "text": "$t:admin.settings.security.ip_throttle_floor_hint"
-                }
-              ]
-            },
-            {
-              "id": "field_login_lockout_time",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.security.login_lockout_time_full"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "security.login_lockout_time",
-                    "placeholder": "5",
-                    "min": "{{_local?.form?._meta?.limits?.security_login_lockout_time_min ?? 0}}",
-                    "max": "{{_local?.form?._meta?.limits?.security_login_lockout_time_max ?? 1440}}",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "input input-w-md {{_local.errors?.['security.login_lockout_time'] ? 'input-error' : ''}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['security.login_lockout_time']}}",
-                  "props": {
-                    "className": "form-error"
-                  },
-                  "text": "{{_local.errors?.['security.login_lockout_time']?.[0] ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-hint mt-1"
-                  },
-                  "text": "$t:admin.settings.security.zero_means_unlimited"
-                }
-              ]
-            },
-            {
-              "id": "field_password_min_length",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.security.password_min_length"
-                },
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "name": "security.password_min_length",
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "input input-w-md {{_local.errors?.['security.password_min_length'] ? 'input-error' : ''}}",
-                    "placeholder": "8",
-                    "min": "{{_local?.form?._meta?.limits?.security_password_min_length_min ?? 6}}",
-                    "max": "{{_local?.form?._meta?.limits?.security_password_min_length_max ?? 64}}"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "if": "{{_local.errors?.['security.password_min_length']}}",
-                  "props": {
-                    "className": "form-error"
-                  },
-                  "text": "{{_local.errors?.['security.password_min_length']?.[0] ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-hint mt-1"
-                  },
-                  "text": "$t:admin.settings.security.password_min_length_hint"
-                }
-              ]
-            },
-            {
-              "id": "field_require_password_special_char",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.security.require_password_special_char"
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Checkbox",
-                      "props": {
-                        "name": "security.require_password_special_char",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:admin.settings.security.require_password_special_char_label"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-hint mt-1"
-                  },
-                  "text": "$t:admin.settings.security.require_password_special_char_hint"
-                }
-              ]
-            },
-            {
-              "id": "field_two_factor_auth",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": ""
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "form-label"
-                  },
-                  "text": "$t:admin.settings.security.two_factor_auth"
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Checkbox",
-                      "props": {
-                        "name": "security.two_factor_auth",
-                        "disabled": "{{_computed.isReadOnly}}"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:admin.settings.security.two_factor_auth_label"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-hint mt-1"
-                  },
-                  "text": "$t:admin.settings.security.two_factor_auth_hint"
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "보안 탭 — 로그인 시도 제한 같은 값과 함께 **IP 접근 제한**과 **앱 키**를 보여 준다.\n  키를 다시 만드는 것은 여기서 곧바로 하지 않고 비밀번호 확인 창을 거친다.\n  비밀번호 작성 규칙·재사용 금지·만료(#736)는 별도 조각(`_tab_security_password_policy`)이 보안 설정 카드 뒤에 그린다 —\n  최소 길이·특수문자 두 칸도 그 조각으로 옮겼다(data-ref 유지).\n  활동 로그(접속기록) 보관 기간(#736 D14)은 별도 조각(`_tab_security_activity_log`)이 접근 제한 카드 뒤에 그린다.\n  IP 접근 제한 카드는 별도 조각(`_tab_security_ip_restriction`)이다 — 프리셋 혼용 린트가 **문서 단위**로\n  재고(`LayoutLinter::lintResponsiveMix`), `<include>` 는 굽기 뒤에도 참조로 남아 두 문서의 프리셋이 섞이지\n  않는다. 이 문서는 portable(앱 키 카드), 그 조각은 mobile(규칙 표/카드)을 쓴다.\n  e2e:allow 이 문서의 변경은 ① 위 조각 include 한 줄 ② 체크박스 두 개를 자동 바인딩에서 명시 배선으로 돌린 것\n  (저장값이 boolean 이 아닐 때 빈 문자열이 실려 null 로 굳는 것을 막는다)이다. ②는 값이 오가는 경로만 바꾸고\n  화면·문구는 그대로이며, 레이아웃 테스트(admin-settings-security-password-policy)와 보안 탭 E2E\n  (settings-security-outbound-toggle · settings-ip-restriction)가 그 경로를 지난다",
+    "meta": {
+        "is_partial": true,
+        "description": "환경설정 보안 탭 콘텐츠"
     },
-    {
-      "id": "card_app_key",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "card-stack-item"
-      },
-      "children": [
+    "id": "tab_content_security",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeSettingsTab || query.tab) === 'security'}}",
+    "props": {
+        "className": "card-stack"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "card-title"
-          },
-          "text": "$t:admin.settings.security.app_key"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "card-description"
-          },
-          "text": "$t:admin.settings.security.app_key_desc"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "form-label"
-              },
-              "text": "$t:admin.settings.security.current_app_key"
+            "id": "card_security_settings",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "card-stack-item"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-3"
-              },
-              "responsive": {
-                "portable": {
-                  "props": {
-                    "className": "row-stack"
-                  }
-                }
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "text",
-                    "value": "{{appKey?.data?.app_key ?? ''}}",
-                    "disabled": true,
-                    "className": "input flex-1 font-mono"
-                  }
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.security.title"
                 },
                 {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "disabled": "{{_computed.isReadOnly}}",
-                    "className": "px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors whitespace-nowrap"
-                  },
-                  "responsive": {
-                    "portable": {
-                      "props": {
-                        "className": "w-full px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors"
-                      }
-                    }
-                  },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "openModal",
-                      "target": "settings_password_confirm_modal"
-                    }
-                  ],
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:admin.settings.security.regenerate_key"
-                    }
-                  ]
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.security.desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "toggle_force_https",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-heading"
+                                                    },
+                                                    "text": "$t:admin.settings.security.force_https"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-red-500 ml-1"
+                                                    },
+                                                    "text": "*"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.security.force_https_desc"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['security.force_https']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['security.force_https']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "security.force_https",
+                                        "size": "md",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "toggle_allow_internal_outbound_urls",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-heading"
+                                                    },
+                                                    "text": "$t:admin.settings.security.allow_internal_outbound_urls"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.security.allow_internal_outbound_urls_desc"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['security.allow_internal_outbound_urls']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['security.allow_internal_outbound_urls']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "security.allow_internal_outbound_urls",
+                                        "size": "md",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "toggle_login_attempt",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-heading"
+                                                    },
+                                                    "text": "$t:admin.settings.security.login_attempt_limit"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-red-500 ml-1"
+                                                    },
+                                                    "text": "*"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.security.login_attempt_limit_desc"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['security.login_attempt_enabled']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['security.login_attempt_enabled']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "security.login_attempt_enabled",
+                                        "size": "md",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_auth_token_lifetime",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.security.auth_token_lifetime"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "security.auth_token_lifetime",
+                                        "placeholder": "30",
+                                        "min": "{{_local?.form?._meta?.limits?.security_auth_token_lifetime_min ?? 0}}",
+                                        "max": "{{_local?.form?._meta?.limits?.security_auth_token_lifetime_max ?? 3600}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "input input-w-md {{_local.errors?.['security.auth_token_lifetime'] ? 'input-error' : ''}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['security.auth_token_lifetime']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['security.auth_token_lifetime']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
+                                    "text": "$t:admin.settings.security.zero_means_unlimited"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_max_login_attempts",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.security.max_login_attempts"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "security.max_login_attempts",
+                                        "placeholder": "5",
+                                        "min": "{{_local?.form?._meta?.limits?.security_max_login_attempts_min ?? 0}}",
+                                        "max": "{{_local?.form?._meta?.limits?.security_max_login_attempts_max ?? 100}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "input input-w-md {{_local.errors?.['security.max_login_attempts'] ? 'input-error' : ''}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['security.max_login_attempts']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['security.max_login_attempts']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
+                                    "text": "$t:admin.settings.security.zero_means_unlimited"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
+                                    "text": "$t:admin.settings.security.ip_throttle_floor_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_login_lockout_time",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.security.login_lockout_time_full"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "security.login_lockout_time",
+                                        "placeholder": "5",
+                                        "min": "{{_local?.form?._meta?.limits?.security_login_lockout_time_min ?? 0}}",
+                                        "max": "{{_local?.form?._meta?.limits?.security_login_lockout_time_max ?? 1440}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "input input-w-md {{_local.errors?.['security.login_lockout_time'] ? 'input-error' : ''}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['security.login_lockout_time']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['security.login_lockout_time']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
+                                    "text": "$t:admin.settings.security.zero_means_unlimited"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_two_factor_auth",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.security.two_factor_auth"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "같은 이유로 자동 바인딩을 끄고 직접 담는다 — 이 값이 빈 문자열로 굳으면 아래 「적용 범위」 칸이\n                 사라지고 2단계 인증이 꺼진 것처럼 읽힌다.",
+                                            "type": "basic",
+                                            "name": "Checkbox",
+                                            "actions": [
+                                                {
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "form.security.two_factor_auth": "{{$event.target.checked}}",
+                                                        "hasChanges": true
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "name": "security.two_factor_auth",
+                                                "autoBinding": false,
+                                                "checked": "{{!!_local.form?.security?.two_factor_auth && _local.form?.security?.two_factor_auth !== '0'}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.security.two_factor_auth_label"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
+                                    "text": "$t:admin.settings.security.two_factor_auth_hint"
+                                },
+                                {
+                                    "comment": "적용 범위는 마스터 토글이 켜져 있을 때만 뜻이 있다 — 꺼진 채로 보이면 범위를 골라도\n               아무 일이 없어 설정이 먹히지 않는 것처럼 읽힌다.\n               저장값이 boolean 이 아닐 수 있어(미저장이면 null, 자동바인딩이 빈 문자열을 넣기도 한다)\n               느슨하게 참 판정한다 — 엄격 비교로 두면 켜 둔 사이트에서 범위 칸이 사라진다.",
+                                    "id": "field_two_factor_scope",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{!!_local.form?.security?.two_factor_auth && _local.form?.security?.two_factor_auth !== '0'}}",
+                                    "props": {
+                                        "className": "mt-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:admin.settings.security.two_factor_scope"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "security.two_factor_scope",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "className": "w-full",
+                                                "error": "{{_local.errors?.['security.two_factor_scope']?.[0] ?? ''}}",
+                                                "options": "{{[{value: 'all', label: $t('admin.settings.security.two_factor_scope_all')}, {value: 'admin', label: $t('admin.settings.security.two_factor_scope_admin')}]}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-hint mt-1"
+                                            },
+                                            "text": "$t:admin.settings.security.two_factor_scope_hint"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
+            ]
+        },
+        {
+            "partial": "partials/admin_settings/_tab_security_password_policy.json"
+        },
+        {
+            "partial": "partials/admin_settings/_tab_security_ip_restriction.json"
+        },
+        {
+            "partial": "partials/admin_settings/_tab_security_activity_log.json"
+        },
+        {
+            "id": "card_app_key",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "card-stack-item"
             },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-tertiary"
-              },
-              "text": "$t:admin.settings.security.app_key_warning"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.security.app_key"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.security.app_key_desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:admin.settings.security.current_app_key"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "row-stack"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "flex-center gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "value": "{{appKey?.data?.app_key ?? ''}}",
+                                        "disabled": true,
+                                        "className": "input flex-1 font-mono"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "responsive": {
+                                        "portable": {
+                                            "props": {
+                                                "className": "w-full px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors"
+                                            }
+                                        }
+                                    },
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "openModal",
+                                            "target": "settings_password_confirm_modal"
+                                        }
+                                    ],
+                                    "props": {
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors whitespace-nowrap"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.security.regenerate_key"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-tertiary"
+                            },
+                            "text": "$t:admin.settings.security.app_key_warning"
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ],
-  "props": {
-    "className": "card-stack"
-  }
+    ]
 }

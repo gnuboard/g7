@@ -27,6 +27,11 @@ class BoardSetSettingPipelineTest extends ModuleTestCase
 
     private string $storagePath;
 
+    /**
+     * 테스트 서비스와 격리 저장 경로를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,6 +48,11 @@ class BoardSetSettingPipelineTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 격리 저장 경로를 지우고 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (File::isDirectory($this->storagePath)) {
@@ -75,6 +85,8 @@ class BoardSetSettingPipelineTest extends ModuleTestCase
      * @scenario save_path=single_key
      *
      * @effects single_key_save_invalidates_service_cache
+     *
+     * @return void 반환값 없음
      */
     public function test_single_key_save_invalidates_cache_without_manual_clear(): void
     {
@@ -99,6 +111,8 @@ class BoardSetSettingPipelineTest extends ModuleTestCase
      * @scenario save_path=single_key
      *
      * @effects single_key_save_does_not_backfill_booleans
+     *
+     * @return void 반환값 없음
      */
     public function test_single_key_save_does_not_backfill_unsubmitted_booleans(): void
     {
@@ -123,6 +137,8 @@ class BoardSetSettingPipelineTest extends ModuleTestCase
      * @scenario save_path=bulk
      *
      * @effects bulk_save_backfills_unsubmitted_booleans
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_save_still_backfills_unsubmitted_booleans(): void
     {
@@ -135,11 +151,47 @@ class BoardSetSettingPipelineTest extends ModuleTestCase
     }
 
     /**
+     * 벌크 저장 본문에 빠진 비불리언 값(기본 권한·금지어·쪽당 글 수 등)은 저장본 값을 지킨다. (실패-먼저)
+     *
+     * 환경설정 화면이 설정을 다 받기 전에 칸 하나를 고쳐 저장하면 `{ basic_defaults: { max_file_size: 10 } }`
+     * 처럼 한 칸만 실린 본문이 왔다(7.1.0 실측 K3). 서버가 구획을 통째로 갈아 써 운영자가 정한 기본 권한과
+     * 금지어 74개가 모듈 기본값으로 돌아갔다. 화면 쪽 잠금과 별개로, 본문에 없는 비불리언 키는 저장본을
+     * 이어 쓴다 — 불리언은 스위치 끔 미전송 대응(아래 backfill 고정 테스트)이라 종전대로 false 로 채운다.
+     *
+     * @scenario save_path=bulk
+     *
+     * @effects bulk_save_keeps_unsubmitted_non_boolean_values
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bulk_save_keeps_unsubmitted_non_boolean_values(): void
+    {
+        $this->service->saveSettings(['basic_defaults' => [
+            'per_page' => 33,
+            'blocked_keywords' => ['금지어A', '금지어B'],
+            'max_file_size' => 20,
+            'use_comment' => true,
+        ]]);
+
+        // 한 칸만 실린 본문
+        $this->service->saveSettings(['basic_defaults' => ['max_file_size' => 10]]);
+
+        $saved = $this->savedFile('basic_defaults');
+
+        $this->assertSame(10, $saved['max_file_size'] ?? null, '본문에 실린 값이 저장되지 않았습니다.');
+        $this->assertSame(33, $saved['per_page'] ?? null, '본문에 없는 쪽당 글 수가 저장본에서 사라졌습니다.');
+        $this->assertSame(['금지어A', '금지어B'], $saved['blocked_keywords'] ?? null, '본문에 없는 금지어가 저장본에서 사라졌습니다.');
+        $this->assertFalse($saved['use_comment'] ?? null, '불리언 backfill 고정 동작이 바뀌었습니다.');
+    }
+
+    /**
      * 신고 정책 단건 저장도 알림 강제 활성 규칙을 거친다. (실패-먼저)
      *
      * @scenario save_path=single_key
      *
      * @effects report_notification_flags_forced_on_single_key_save
+     *
+     * @return void 반환값 없음
      */
     public function test_single_key_save_forces_report_notification_flags(): void
     {
@@ -169,6 +221,8 @@ class BoardSetSettingPipelineTest extends ModuleTestCase
      * @scenario save_path=single_key
      *
      * @effects report_notification_flags_forced_on_single_key_save
+     *
+     * @return void 반환값 없음
      */
     public function test_single_key_save_syncs_notification_definition_status(): void
     {
@@ -195,6 +249,8 @@ class BoardSetSettingPipelineTest extends ModuleTestCase
      * @scenario save_path=single_key
      *
      * @effects report_notification_flags_forced_on_single_key_save
+     *
+     * @return void 반환값 없음
      */
     public function test_single_key_save_skips_notification_definition_update_when_already_active(): void
     {
@@ -219,6 +275,8 @@ class BoardSetSettingPipelineTest extends ModuleTestCase
      * @scenario save_path=single_key
      *
      * @effects numeric_string_normalized_on_single_key_save
+     *
+     * @return void 반환값 없음
      */
     public function test_single_key_save_normalizes_numeric_strings(): void
     {
@@ -233,6 +291,8 @@ class BoardSetSettingPipelineTest extends ModuleTestCase
      * 테스트 실행 중에는 운영 설정 경로를 쓰지 않는다. (실패-먼저)
      *
      * @effects board_settings_storage_isolated_in_tests
+     *
+     * @return void 반환값 없음
      */
     public function test_storage_path_is_isolated_during_tests(): void
     {

@@ -19,7 +19,7 @@ class GdprUserConsentResourceTest extends PluginTestCase
     /**
      * 주어진 동의 레코드를 Resource 배열로 변환합니다.
      *
-     * @param GdprUserConsent $consent 대상 동의 레코드
+     * @param  GdprUserConsent  $consent  대상 동의 레코드
      * @return array<string, mixed>
      */
     private function toArray(GdprUserConsent $consent): array

@@ -32,6 +32,8 @@
 | search | query | string | 아니오 | max 255 | 검색어 (지정한 검색 대상 필드에서 부분 일치) |
 | is_active | query | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
 
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.role.list_validation_rules`).
+
 **요청 예시**
 
 ```http
@@ -58,6 +60,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | extension_name | string | `게시판` | 이 리소스를 소유한 확장의 표시 이름 (manifest name) |
 | is_deletable | boolean | `false` | deletable 여부 |
 | is_active | boolean | `true` | active 여부 |
+| password_expiry_policy | string | `inherit` | 비밀번호 만료 설정 — `inherit` 사이트 설정 따름 · `apply` 적용 · `exempt` 제외 (회원 개별 설정이 우선, 한 회원의 역할끼리 부딪치면 적용) |
 | users_count | integer | `1` | users 개수 (집계) |
 | permissions_count | integer | `2` | 이 역할에 할당된 권한 개수 (집계 — 목록은 권한 배열을 싣지 않고 규모만 제공) |
 | created_at | string | `2026-07-31 00:46:12` | 생성 일시 |
@@ -166,7 +169,7 @@ HTTP/1.1 200
 
 **설명**
 
-역할 관리 화면(`admin_role_list.json`)의 목록 데이터를 제공하는 페이지네이션 조회 엔드포인트다. `search`(identifier/name 텍스트 검색)와 `is_active`(활성 여부)로 필터링하며 `per_page` 로 페이지 크기를 조절한다. 응답에는 소유 확장 정보, 사용자 수(`users_count`), 할당 권한 개수(`permissions_count`), 현재 사용자의 조작 가능 여부(abilities)가 포함된다. 목록에는 **할당 권한의 목록(`permission_ids`/`permission_values`/`permissions`)이 실리지 않는다** — 권한 트리는 역할 하나당 수백 건까지 갈 수 있어 목록을 여는 것만으로 전 행의 권한이 전송됐다. 권한 목록이 필요하면 단건 조회(`GET /api/admin/roles/{role}`)를 사용한다. `core.permissions.read` 권한이 필요하다.
+역할 관리 화면(`admin_role_list.g7.html`)의 목록 데이터를 제공하는 페이지네이션 조회 엔드포인트다. `search`(identifier/name 텍스트 검색)와 `is_active`(활성 여부)로 필터링하며 `per_page` 로 페이지 크기를 조절한다. 응답에는 소유 확장 정보, 사용자 수(`users_count`), 할당 권한 개수(`permissions_count`), 현재 사용자의 조작 가능 여부(abilities)가 포함된다. 목록에는 **할당 권한의 목록(`permission_ids`/`permission_values`/`permissions`)이 실리지 않는다** — 권한 트리는 역할 하나당 수백 건까지 갈 수 있어 목록을 여는 것만으로 전 행의 권한이 전송됐다. 권한 목록이 필요하면 단건 조회(`GET /api/admin/roles/{role}`)를 사용한다. `core.permissions.read` 권한이 필요하다.
 
 
 ### POST /api/admin/roles
@@ -183,7 +186,9 @@ HTTP/1.1 200
 | name | body | string | 예 | — | 대상의 이름/명칭 |
 | description | body | string | 아니오 | — | 설명 |
 | is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
+| password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 (사이트 설정 따름·적용·제외 — 회원 개별 설정이 우선, 역할끼리 부딪치면 적용, #736) |
 | permissions | body | array | 아니오 | — | 역할에 부여할 권한 목록. 각 원소는 `{id, scope_type}` (id=권한 식별자, scope_type=적용 범위: null 전체 / role 역할 범위 / self 본인 범위). 전달된 목록 기준으로 역할의 권한 집합이 재설정됨 |
+| menu_ids | body | array\<integer\> | 아니오 | 존재하는 메뉴 ID | 이 역할이 접근할 관리자 메뉴 ID 목록. 보내면 요청자가 관리할 수 있는 메뉴 범위 안에서 그 목록으로 맞추고(하위를 고르면 상위도 포함, 상위를 빼면 하위도 제외), 관리 밖 메뉴의 기존 할당은 그대로 둔다. 생략하면 메뉴 할당을 건드리지 않는다. 보낼 때는 `core.menus.update` 권한이 필요하다(없으면 403). 관리자 역할은 관리할 수 있는 메뉴 전부를 포함해야 한다(빠지면 422) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.role.store_validation_rules`).
 
@@ -224,6 +229,7 @@ _단건 응답: `data` 객체의 필드._
 | extension_name | null | `null` | 이 리소스를 소유한 확장의 표시 이름 (manifest name) |
 | is_deletable | boolean | `true` | deletable 여부 |
 | is_active | boolean | `true` | active 여부 |
+| password_expiry_policy | string | `inherit` | 비밀번호 만료 설정 — `inherit` 사이트 설정 따름 · `apply` 적용 · `exempt` 제외 (회원 개별 설정이 우선, 한 회원의 역할끼리 부딪치면 적용) |
 | created_at | string | `2026-08-04 21:53:47` | 생성 일시 |
 | updated_at | string | `2026-08-04 21:53:47` | 최종 수정 일시 |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true,"c…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
@@ -280,7 +286,7 @@ HTTP/1.1 201
 
 **설명**
 
-새 역할을 생성한다. `identifier` 는 소문자로 시작하는 영숫자·언더스코어 형식(`^[a-z][a-z0-9_]*$`)이어야 하고 전역 고유해야 한다. `name`·`description` 은 다국어 필드로, 문자열로 보내면 설정된 로케일 전체에 동일 값이 채워지고 객체(`{"ko":..., "en":...}`)로도 보낼 수 있다. `permissions` 는 `[{id, scope_type}]` 형식으로 부여할 권한과 각 권한의 적용 범위(scope_type: null=전체, role, self)를 지정한다. 검증 규칙은 `core.role.store_validation_rules` 필터 훅으로 확장이 확장할 수 있다. `core.permissions.create` 권한이 필요하며 성공 시 201 로 생성된 역할을 반환한다.
+새 역할을 생성한다. `identifier` 는 소문자로 시작하는 영숫자·언더스코어 형식(`^[a-z][a-z0-9_]*$`)이어야 하고 전역 고유해야 한다. `name`·`description` 은 다국어 필드로, 문자열로 보내면 설정된 로케일 전체에 동일 값이 채워지고 객체(`{"ko":..., "en":...}`)로도 보낼 수 있다. `permissions` 는 `[{id, scope_type}]` 형식으로 부여할 권한과 각 권한의 적용 범위(scope_type: null=전체, role, self)를 지정한다. 검증 규칙은 `core.role.store_validation_rules` 필터 훅으로 확장이 확장할 수 있다. `core.permissions.create` 권한이 필요하며 성공 시 201 로 생성된 역할을 반환한다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「역할 이름의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the role name field is required.").
 
 
 ### GET /api/admin/roles/active
@@ -319,6 +325,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | extension_name | string | `이커머스` | 이 리소스를 소유한 확장의 표시 이름 (manifest name) |
 | is_deletable | boolean | `false` | deletable 여부 |
 | is_active | boolean | `true` | active 여부 |
+| password_expiry_policy | string | `inherit` | 비밀번호 만료 설정 — `inherit` 사이트 설정 따름 · `apply` 적용 · `exempt` 제외 (회원 개별 설정이 우선, 한 회원의 역할끼리 부딪치면 적용) |
 | created_at | string | `2026-07-30 17:36:00` | 생성 일시 |
 | updated_at | string | `2026-08-01 11:46:14` | 최종 수정 일시 |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true,"c…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
@@ -510,10 +517,12 @@ _단건 응답: `data` 객체의 필드._
 | extension_name | null | `null` | 이 리소스를 소유한 확장의 표시 이름 (manifest name) |
 | is_deletable | boolean | `false` | deletable 여부 |
 | is_active | boolean | `true` | active 여부 |
+| password_expiry_policy | string | `inherit` | 비밀번호 만료 설정 — `inherit` 사이트 설정 따름 · `apply` 적용 · `exempt` 제외 (회원 개별 설정이 우선, 한 회원의 역할끼리 부딪치면 적용) |
 | users_count | integer | `71` | users 개수 (집계) |
 | permission_ids | array | `[2,3,4,5,6,1470,1471,1472,1473,1475,1476,1478,1479,1481,1…` | permission 식별자 배열 (연관 리소스 참조) |
 | permission_values | array | `[{"id":2,"scope_type":null},{"id":3,"scope_type":null},{"…` | 할당된 각 권한의 id와 적용 범위만 담은 경량 목록 (원소 id/scope_type — 역할-권한 pivot 파생). scope_type: null=전체, role=역할 범위, self=본인 범위 |
 | permissions | array | `[{"id":1468,"parent_id":null,"identifier":"sirsoft-board"…` | 연결된 권한 목록 (id/identifier/name — 역할 경유 권한 관계 파생) |
+| menu_ids | array\<integer\> | `[1,13,15]` | 이 역할이 접근할 수 있는 관리자 메뉴 ID (역할 폼의 「접근 가능 메뉴」 초기값 — 단건 조회에만 실린다) |
 | created_at | string | `2026-07-30 17:36:00` | 생성 일시 |
 | updated_at | string | `2026-08-01 11:46:14` | 최종 수정 일시 |
 | abilities | object | `{"can_create":true,"can_update":true,"can_delete":true,"c…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
@@ -558,6 +567,7 @@ HTTP/1.1 200
 
 단일 역할의 상세 정보를 조회한다. 역할 편집 화면과 복제(clone_from) 시 원본 값을 채우는 데 사용된다. 목록 응답과 달리 permissions 관계를 pivot(scope_type)과 함께 로드하므로 `permission_ids`·`permission_values`·`permissions`(계층 트리)와 `users_count` 가 항상 포함된다. `core.permissions.read` 권한이 필요하다.
 
+**응답 필드(7.1.0)** `is_active_locked`(불리언) — 사용 여부를 바꿀 수 없는 역할(최고관리자 역할)인지. 역할 폼이 사용 여부 토글을 잠그는 값이다.
 
 ### PUT /api/admin/roles/{role}
 <!-- @generated:start:api.admin.roles.update -->
@@ -573,7 +583,9 @@ HTTP/1.1 200
 | name | body | string | 예 | — | 대상의 이름/명칭 |
 | description | body | string | 아니오 | — | 설명 |
 | is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
+| password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 (사이트 설정 따름·적용·제외 — 회원 개별 설정이 우선, 역할끼리 부딪치면 적용, #736) |
 | permissions | body | array | 아니오 | — | 역할에 부여할 권한 목록. 각 원소는 `{id, scope_type}` (id=권한 식별자, scope_type=적용 범위: null 전체 / role 역할 범위 / self 본인 범위). 전달된 목록 기준으로 역할의 권한 집합이 재설정됨 |
+| menu_ids | body | array\<integer\> | 아니오 | 존재하는 메뉴 ID | 이 역할이 접근할 관리자 메뉴 ID 목록. 보내면 요청자가 관리할 수 있는 메뉴 범위 안에서 그 목록으로 맞추고(하위를 고르면 상위도 포함, 상위를 빼면 하위도 제외), 관리 밖 메뉴의 기존 할당은 그대로 둔다. 생략하면 메뉴 할당을 건드리지 않는다. 보낼 때는 `core.menus.update` 권한이 필요하다(없으면 403). 관리자 역할은 관리할 수 있는 메뉴 전부를 포함해야 한다(빠지면 422) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.role.update_validation_rules`).
 
@@ -613,6 +625,7 @@ _단건 응답: `data` 객체의 필드._
 | extension_name | null | `null` | 이 리소스를 소유한 확장의 표시 이름 (manifest name) |
 | is_deletable | boolean | `false` | deletable 여부 |
 | is_active | boolean | `true` | active 여부 |
+| password_expiry_policy | string | `inherit` | 비밀번호 만료 설정 — `inherit` 사이트 설정 따름 · `apply` 적용 · `exempt` 제외 (회원 개별 설정이 우선, 한 회원의 역할끼리 부딪치면 적용) |
 | created_at | string | `2026-07-30 17:36:00` | 생성 일시 |
 | updated_at | string | `2026-08-04 21:53:48` | 최종 수정 일시 |
 | abilities | object | `{"can_create":false,"can_update":false,"can_delete":false…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
@@ -670,8 +683,9 @@ HTTP/1.1 200
 
 **설명**
 
-기존 역할의 `name`·`description`·`is_active`·`permissions` 를 수정한다. 생성과 달리 `identifier` 는 변경 대상이 아니며, 각 필드는 `sometimes` 규칙이라 전달된 항목만 갱신된다. `permissions` 를 보내면 `[{id, scope_type}]` 형식으로 역할의 권한 집합 전체가 동기화된다(전달된 목록 기준으로 재설정). `name`·`description` 은 문자열/다국어 객체 양쪽을 받는다. 검증 규칙은 `core.role.update_validation_rules` 필터 훅으로 확장할 수 있다. `core.permissions.update` 권한이 필요하다.
+기존 역할의 `name`·`description`·`is_active`·`permissions` 를 수정한다. 생성과 달리 `identifier` 는 변경 대상이 아니며, 각 필드는 `sometimes` 규칙이라 전달된 항목만 갱신된다. `permissions` 를 보내면 `[{id, scope_type}]` 형식으로 역할의 권한 집합 전체가 동기화된다(전달된 목록 기준으로 재설정). `name`·`description` 은 문자열/다국어 객체 양쪽을 받는다. 검증 규칙은 `core.role.update_validation_rules` 필터 훅으로 확장할 수 있다. `core.permissions.update` 권한이 필요하다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「역할 이름의 한국어(ko) 값은 필수입니다.」).
 
+**최고관리자 역할(7.1.0)** `admin` 역할에 `is_active: false` 를 보내면 422(`exceptions.role_active_state_locked`)이고 아무것도 바뀌지 않는다.
 
 ### PATCH /api/admin/roles/{role}/toggle-status
 <!-- @generated:start:api.admin.roles.toggle-status -->
@@ -711,6 +725,7 @@ _단건 응답: `data` 객체의 필드._
 | extension_name | null | `null` | 이 리소스를 소유한 확장의 표시 이름 (manifest name) |
 | is_deletable | boolean | `false` | deletable 여부 |
 | is_active | boolean | `false` | active 여부 |
+| password_expiry_policy | string | `inherit` | 비밀번호 만료 설정 — `inherit` 사이트 설정 따름 · `apply` 적용 · `exempt` 제외 (회원 개별 설정이 우선, 한 회원의 역할끼리 부딪치면 적용) |
 | users_count | integer | `71` | users 개수 (집계) |
 | created_at | string | `2026-07-30 17:36:00` | 생성 일시 |
 | updated_at | string | `2026-08-04 21:53:48` | 최종 수정 일시 |
@@ -774,4 +789,5 @@ HTTP/1.1 200
 
 역할의 `is_active` 상태를 반대로 토글한다(활성↔비활성). 목록 화면의 상태 스위치에서 호출되며, 별도 본문 없이 대상 역할만 지정하면 된다. 성공 시 사용자 수를 다시 집계한 갱신된 역할 리소스를 반환한다. `core.permissions.update` 권한이 필요하다.
 
+**최고관리자 역할(7.1.0)** 사용 여부를 끈 역할의 권한은 즉시 판정에서 빠진다. 그래서 최고관리자 역할(`admin`)은 최고관리자라도 끌 수 없고 422(`exceptions.role_active_state_locked`)를 낸다. 역할 응답의 `is_active_locked` 가 true 이고 `abilities.can_toggle_status` 는 false 다.
 

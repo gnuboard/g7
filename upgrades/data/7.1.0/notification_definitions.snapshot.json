@@ -1,0 +1,519 @@
+{
+    "source": "config/core.php notification_definitions.*.templates (7.1.0)",
+    "declarations": {
+        "welcome": {
+            "templates": [
+                {
+                    "channel": "mail",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "[{app_name}] 회원가입을 환영합니다",
+                        "en": "[{app_name}] Welcome to Our Service"
+                    },
+                    "body": {
+                        "ko": "<h1>{name}님, 환영합니다!</h1><p>{app_name}에 가입해 주셔서 감사합니다.</p><p>이제 모든 서비스를 이용하실 수 있습니다. 아래 버튼을 클릭하여 로그인해 주세요.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">로그인하기</a></td></tr></table><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
+                        "en": "<h1>Welcome, {name}!</h1><p>Thank you for joining {app_name}.</p><p>You now have access to all our services. Click the button below to log in.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">Log In</a></td></tr></table><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
+                    }
+                },
+                {
+                    "channel": "database",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "회원가입을 환영합니다",
+                        "en": "Welcome to our service"
+                    },
+                    "body": {
+                        "ko": "{name}님, {app_name}에 가입해 주셔서 감사합니다.",
+                        "en": "Welcome {name}, thank you for joining {app_name}."
+                    },
+                    "click_url": "/mypage"
+                }
+            ]
+        },
+        "reset_password": {
+            "templates": [
+                {
+                    "channel": "mail",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "[{app_name}] 비밀번호 재설정 안내",
+                        "en": "[{app_name}] Password Reset Request"
+                    },
+                    "body": {
+                        "ko": "<h1>{name}님, 안녕하세요.</h1><p>비밀번호 재설정 요청을 받았습니다. 아래 버튼을 클릭하여 비밀번호를 재설정해 주세요.</p><p>이 링크는 <strong>{expire_minutes}분</strong> 후 만료됩니다.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">비밀번호 재설정</a></td></tr></table><p>비밀번호 재설정을 요청하지 않으셨다면, 이 이메일을 무시해 주세요.</p><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
+                        "en": "<h1>Hello, {name}.</h1><p>We received a request to reset your password. Click the button below to set a new password.</p><p>This link will expire in <strong>{expire_minutes} minutes</strong>.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">Reset Password</a></td></tr></table><p>If you did not request a password reset, please ignore this email.</p><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
+                    }
+                },
+                {
+                    "channel": "database",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "비밀번호 재설정 안내",
+                        "en": "Password Reset Request"
+                    },
+                    "body": {
+                        "ko": "{name}님, 비밀번호 재설정이 요청되었습니다. 본인이 요청하지 않았다면 이 알림을 무시해 주세요.",
+                        "en": "{name}, a password reset has been requested. If you did not request this, please ignore this notification."
+                    },
+                    "click_url": "{action_url}"
+                }
+            ]
+        },
+        "password_changed": {
+            "templates": [
+                {
+                    "channel": "mail",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "[{app_name}] 비밀번호가 변경되었습니다",
+                        "en": "[{app_name}] Your Password Has Been Changed"
+                    },
+                    "body": {
+                        "ko": "<h1>{name}님, 안녕하세요.</h1><p>계정의 비밀번호가 성공적으로 변경되었습니다.</p><p><strong>본인이 변경하지 않았다면, 즉시 고객 지원팀에 문의하시기 바랍니다.</strong></p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">로그인하기</a></td></tr></table><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
+                        "en": "<h1>Hello, {name}.</h1><p>Your account password has been successfully changed.</p><p><strong>If you did not make this change, please contact our support team immediately.</strong></p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">Log In</a></td></tr></table><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
+                    }
+                },
+                {
+                    "channel": "database",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "비밀번호가 변경되었습니다",
+                        "en": "Your password has been changed"
+                    },
+                    "body": {
+                        "ko": "{name}님, 비밀번호가 변경되었습니다. 본인이 변경하지 않았다면 즉시 고객 지원팀에 문의하시기 바랍니다.",
+                        "en": "{name}, your password has been changed. If you did not make this change, please contact support immediately."
+                    },
+                    "click_url": "/mypage/change-password"
+                }
+            ]
+        },
+        "password_expiry_notice": {
+            "templates": [
+                {
+                    "channel": "mail",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "[{app_name}] 비밀번호 만료 {days_left}일 전 안내",
+                        "en": "[{app_name}] Your password expires in {days_left} days"
+                    },
+                    "body": {
+                        "ko": "<h1>{name}님, 안녕하세요.</h1><p>회원님의 비밀번호 사용 기간이 <strong>{expires_at}</strong>에 끝납니다.</p><p>만료 전에 변경해 주세요. 만료 후에는 로그인할 때 새 비밀번호를 설정해야 합니다.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">비밀번호 변경하기</a></td></tr></table><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
+                        "en": "<h1>Hello, {name}.</h1><p>Your password expires on <strong>{expires_at}</strong>.</p><p>Please change it before then. After it expires, you will be asked to set a new password when you sign in.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">Change password</a></td></tr></table><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
+                    }
+                },
+                {
+                    "channel": "database",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "비밀번호 만료 {days_left}일 전입니다",
+                        "en": "Your password expires in {days_left} days"
+                    },
+                    "body": {
+                        "ko": "{name}님, 비밀번호가 {expires_at}에 만료됩니다. 만료 전에 변경해 주세요.",
+                        "en": "{name}, your password expires on {expires_at}. Please change it before then."
+                    },
+                    "click_url": "{action_url}"
+                }
+            ]
+        },
+        "password_expired": {
+            "templates": [
+                {
+                    "channel": "mail",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "[{app_name}] 비밀번호 사용 기간이 만료되었습니다",
+                        "en": "[{app_name}] Your password has expired"
+                    },
+                    "body": {
+                        "ko": "<h1>{name}님, 안녕하세요.</h1><p>회원님의 비밀번호 사용 기간이 <strong>{expired_at}</strong> 에 끝났습니다.</p><p>다음 로그인 때 새 비밀번호를 설정하는 단계가 표시됩니다.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">로그인하기</a></td></tr></table><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
+                        "en": "<h1>Hello, {name}.</h1><p>Your password expired on <strong>{expired_at}</strong>.</p><p>You will be asked to set a new password the next time you sign in.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">Sign in</a></td></tr></table><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
+                    }
+                },
+                {
+                    "channel": "database",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "비밀번호가 만료되었습니다",
+                        "en": "Your password has expired"
+                    },
+                    "body": {
+                        "ko": "비밀번호 사용 기간이 {expired_at} 에 끝났습니다. 다음 로그인 때 새 비밀번호를 설정해 주세요.",
+                        "en": "Your password expired on {expired_at}. Please set a new password the next time you sign in."
+                    },
+                    "click_url": "{action_url}"
+                }
+            ]
+        },
+        "sitemap_regenerated": {
+            "templates": [
+                {
+                    "channel": "mail",
+                    "is_active": false,
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "[{app_name}] 사이트맵 재생성이 완료되었습니다",
+                        "en": "[{app_name}] Sitemap Regeneration Complete"
+                    },
+                    "body": {
+                        "ko": "<h1>사이트맵 재생성 완료</h1><p>요청하신 사이트맵 재생성이 완료되었습니다.</p><p>총 <strong>{url_count}</strong>개의 URL 이 <strong>{child_count}</strong>개의 파일로 생성되었습니다.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">SEO 설정 보기</a></td></tr></table><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
+                        "en": "<h1>Sitemap Regeneration Complete</h1><p>The sitemap regeneration you requested has completed.</p><p>A total of <strong>{url_count}</strong> URLs were generated across <strong>{child_count}</strong> file(s).</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">View SEO Settings</a></td></tr></table><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
+                    }
+                },
+                {
+                    "channel": "database",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "사이트맵 재생성 완료",
+                        "en": "Sitemap regeneration complete"
+                    },
+                    "body": {
+                        "ko": "요청하신 사이트맵 재생성이 완료되었습니다. 총 {url_count}개 URL, {child_count}개 파일이 생성되었습니다.",
+                        "en": "Your sitemap regeneration is complete. {url_count} URLs across {child_count} file(s) were generated."
+                    },
+                    "click_url": "/admin/settings?tab=seo"
+                }
+            ]
+        },
+        "sitemap_regenerate_failed": {
+            "templates": [
+                {
+                    "channel": "mail",
+                    "is_active": false,
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "[{app_name}] 사이트맵 재생성이 실패했습니다",
+                        "en": "[{app_name}] Sitemap Regeneration Failed"
+                    },
+                    "body": {
+                        "ko": "<h1>사이트맵 재생성 실패</h1><p>요청하신 사이트맵 재생성이 실패했습니다.</p><p>오류: <strong>{error}</strong></p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">SEO 설정 보기</a></td></tr></table><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
+                        "en": "<h1>Sitemap Regeneration Failed</h1><p>The sitemap regeneration you requested has failed.</p><p>Error: <strong>{error}</strong></p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">View SEO Settings</a></td></tr></table><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
+                    }
+                },
+                {
+                    "channel": "database",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "사이트맵 재생성 실패",
+                        "en": "Sitemap regeneration failed"
+                    },
+                    "body": {
+                        "ko": "요청하신 사이트맵 재생성이 실패했습니다. 오류: {error}",
+                        "en": "Your sitemap regeneration failed. Error: {error}"
+                    },
+                    "click_url": "/admin/settings?tab=seo"
+                }
+            ]
+        },
+        "dormant_pre_notice": {
+            "templates": [
+                {
+                    "channel": "mail",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "[{app_name}] {scheduled_date} 휴면 계정 전환 예정 안내",
+                        "en": "[{app_name}] Your account will become dormant on {scheduled_date}"
+                    },
+                    "body": {
+                        "ko": "<h1>{name}님, 안녕하세요.</h1><p>{app_name} 에 <strong>{dormant_days}일</strong> 이상 접속하지 않으셔서, <strong>{scheduled_date}</strong> 에 회원님의 계정이 휴면 상태로 전환될 예정입니다.</p><p>그 전에 한 번 로그인하시면 휴면 전환이 취소됩니다. 휴면으로 전환된 뒤에도 로그인하시면 곧바로 원래대로 복구됩니다.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">지금 로그인하기</a></td></tr></table><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
+                        "en": "<h1>Hello, {name}.</h1><p>You have not signed in to {app_name} for more than <strong>{dormant_days} days</strong>, so your account is scheduled to become dormant on <strong>{scheduled_date}</strong>.</p><p>Signing in before then cancels the change. Even after it takes effect, signing in restores your account immediately.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">Sign in now</a></td></tr></table><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
+                    }
+                },
+                {
+                    "channel": "database",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "휴면 계정 전환 예정 안내",
+                        "en": "Your account will become dormant soon"
+                    },
+                    "body": {
+                        "ko": "{dormant_days}일 이상 미접속으로 {scheduled_date} 에 휴면 계정으로 전환됩니다. 로그인하시면 전환이 취소됩니다.",
+                        "en": "Your account becomes dormant on {scheduled_date} after {dormant_days} days of inactivity. Signing in cancels it."
+                    },
+                    "click_url": "/mypage"
+                }
+            ]
+        },
+        "dormant_converted": {
+            "templates": [
+                {
+                    "channel": "mail",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "[{app_name}] 휴면 계정으로 전환되었습니다",
+                        "en": "[{app_name}] Your account is now dormant"
+                    },
+                    "body": {
+                        "ko": "<h1>{name}님, 안녕하세요.</h1><p>장기 미접속으로 회원님의 {app_name} 계정이 <strong>휴면 상태</strong>로 전환되었습니다.</p><p>휴면 상태에서는 서비스 이용이 제한되지만, <strong>로그인만 하시면 곧바로 원래대로 복구</strong>됩니다. 별도의 신청 절차는 없습니다.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">로그인해 복구하기</a></td></tr></table><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
+                        "en": "<h1>Hello, {name}.</h1><p>Your {app_name} account has become <strong>dormant</strong> after a long period of inactivity.</p><p>Service is limited while dormant, but <strong>simply signing in restores it immediately</strong> — no application is required.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">Sign in to restore</a></td></tr></table><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
+                    }
+                },
+                {
+                    "channel": "database",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "휴면 계정으로 전환되었습니다",
+                        "en": "Your account is now dormant"
+                    },
+                    "body": {
+                        "ko": "장기 미접속으로 휴면 계정이 되었습니다. 로그인하시면 곧바로 복구됩니다.",
+                        "en": "Your account is dormant after a long period of inactivity. Signing in restores it immediately."
+                    },
+                    "click_url": "/login"
+                }
+            ]
+        },
+        "dormant_withdraw_notice": {
+            "templates": [
+                {
+                    "channel": "mail",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "[{app_name}] {scheduled_date} 회원 탈퇴 처리 예정 안내",
+                        "en": "[{app_name}] Your account will be withdrawn on {scheduled_date}"
+                    },
+                    "body": {
+                        "ko": "<h1>{name}님, 안녕하세요.</h1><p>휴면 상태가 계속되어 <strong>{scheduled_date}</strong> 에 회원님의 {app_name} 계정이 탈퇴 처리될 예정입니다.</p><p><strong>탈퇴 처리 후에는 계정과 개인정보를 되돌릴 수 없습니다.</strong> 계정을 계속 이용하시려면 그 전에 로그인해 주세요 — 로그인하시면 휴면이 해제되고 탈퇴 예정도 함께 취소됩니다.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">지금 로그인하기</a></td></tr></table><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
+                        "en": "<h1>Hello, {name}.</h1><p>Your {app_name} account has remained dormant and is scheduled to be withdrawn on <strong>{scheduled_date}</strong>.</p><p><strong>Once withdrawn, the account and its personal data cannot be restored.</strong> To keep using it, please sign in before then — signing in lifts the dormancy and cancels the scheduled withdrawal.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">Sign in now</a></td></tr></table><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
+                    }
+                },
+                {
+                    "channel": "database",
+                    "recipients": [
+                        {
+                            "type": "trigger_user"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "회원 탈퇴 처리 예정 안내",
+                        "en": "Your account will be withdrawn soon"
+                    },
+                    "body": {
+                        "ko": "휴면 상태가 계속되어 {scheduled_date} 에 탈퇴 처리됩니다. 되돌릴 수 없으니 계속 이용하시려면 로그인해 주세요.",
+                        "en": "Your dormant account will be withdrawn on {scheduled_date}. This cannot be undone — sign in to keep it."
+                    },
+                    "click_url": "/login"
+                }
+            ]
+        },
+        "analytics_archive_failed": {
+            "templates": [
+                {
+                    "channel": "mail",
+                    "recipients": [
+                        {
+                            "type": "role",
+                            "value": "admin"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "[{app_name}] 방문자 통계 집계가 실패했습니다",
+                        "en": "[{app_name}] Analytics Archiving Failed"
+                    },
+                    "body": {
+                        "ko": "<h1>방문자 통계 집계 실패</h1><p>{period} 기간의 {run_type}가 실패했습니다. 집계가 밀린 동안에는 통계 화면의 숫자가 갱신되지 않습니다.</p><p>오류: <strong>{error}</strong></p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{diagnostics_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">수집 진단 열기</a></td></tr></table><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
+                        "en": "<h1>Analytics Archiving Failed</h1><p>{run_type} for {period} failed. Statistics screens will not update while archiving is behind.</p><p>Error: <strong>{error}</strong></p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{diagnostics_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">Open Diagnostics</a></td></tr></table><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
+                    }
+                },
+                {
+                    "channel": "database",
+                    "recipients": [
+                        {
+                            "type": "role",
+                            "value": "admin"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "방문자 통계 집계 실패",
+                        "en": "Analytics archiving failed"
+                    },
+                    "body": {
+                        "ko": "{period} 기간의 {run_type}가 실패했습니다. 오류: {error}",
+                        "en": "{run_type} for {period} failed. Error: {error}"
+                    },
+                    "click_url": "/admin/analytics/diagnostics"
+                }
+            ]
+        },
+        "analytics_ledger_limit_exceeded": {
+            "templates": [
+                {
+                    "channel": "mail",
+                    "recipients": [
+                        {
+                            "type": "role",
+                            "value": "admin"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "[{app_name}] 방문자 통계 원장이 임계치를 넘었습니다",
+                        "en": "[{app_name}] Analytics Ledger Exceeded Threshold"
+                    },
+                    "body": {
+                        "ko": "<h1>방문자 통계 원장 임계 초과</h1><p>방문 {visits}행(임계 {threshold_visits}) · 액션 {actions}행(임계 {threshold_actions})입니다. 현재 보존일은 {retention_days}일입니다.</p><p>보존일을 줄이거나 정리 배치가 도는지 확인해 주세요.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{settings_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">보존 설정 열기</a></td></tr></table><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
+                        "en": "<h1>Analytics Ledger Exceeded Threshold</h1><p>{visits} visit rows (threshold {threshold_visits}) and {actions} action rows (threshold {threshold_actions}). Current retention is {retention_days} days.</p><p>Consider lowering retention or checking that the prune batch runs.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{settings_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">Open Retention Settings</a></td></tr></table><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
+                    }
+                },
+                {
+                    "channel": "database",
+                    "recipients": [
+                        {
+                            "type": "role",
+                            "value": "admin"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "방문자 통계 원장 임계 초과",
+                        "en": "Analytics ledger exceeded threshold"
+                    },
+                    "body": {
+                        "ko": "방문 {visits}행 · 액션 {actions}행으로 경고 임계치를 넘었습니다.",
+                        "en": "{visits} visit rows and {actions} action rows exceeded the warning threshold."
+                    },
+                    "click_url": "/admin/analytics/settings?tab=retention"
+                }
+            ]
+        },
+        "analytics_visit_limit_exceeded": {
+            "templates": [
+                {
+                    "channel": "database",
+                    "recipients": [
+                        {
+                            "type": "role",
+                            "value": "admin"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "방문당 액션 상한 초과",
+                        "en": "Visit action limit exceeded"
+                    },
+                    "body": {
+                        "ko": "방문자 {visitor_key}({ip_display})의 액션이 상한 {limit}건을 넘어 이후 액션은 기록되지 않았습니다.",
+                        "en": "Visitor {visitor_key} ({ip_display}) exceeded the {limit} action limit; further actions were not recorded."
+                    },
+                    "click_url": "/admin/analytics/diagnostics"
+                }
+            ]
+        },
+        "analytics_weekly_report": {
+            "templates": [
+                {
+                    "channel": "mail",
+                    "recipients": [
+                        {
+                            "type": "role",
+                            "value": "admin"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "[{app_name}] 주간 방문자 통계 ({period_label})",
+                        "en": "[{app_name}] Weekly Analytics Report ({period_label})"
+                    },
+                    "body": {
+                        "ko": "<h1>주간 방문자 통계</h1><p>{period_label} 기간 요약입니다.</p><p>방문 <strong>{visits}</strong> · 순방문자 <strong>{visitors}</strong> · 페이지뷰 <strong>{pageviews}</strong> (직전 기간 대비 {change_pct})</p><h2>인기 페이지</h2>{top_pages}<h2>유입 경로</h2>{top_referrers}<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{report_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">통계 전체 보기</a></td></tr></table><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
+                        "en": "<h1>Weekly Analytics Report</h1><p>Summary for {period_label}.</p><p>Visits <strong>{visits}</strong> · Unique visitors <strong>{visitors}</strong> · Pageviews <strong>{pageviews}</strong> ({change_pct} vs previous period)</p><h2>Top Pages</h2>{top_pages}<h2>Top Referrers</h2>{top_referrers}<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{report_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">View Full Statistics</a></td></tr></table><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
+                    }
+                }
+            ]
+        },
+        "analytics_monthly_report": {
+            "templates": [
+                {
+                    "channel": "mail",
+                    "recipients": [
+                        {
+                            "type": "role",
+                            "value": "admin"
+                        }
+                    ],
+                    "subject": {
+                        "ko": "[{app_name}] 월간 방문자 통계 ({period_label})",
+                        "en": "[{app_name}] Monthly Analytics Report ({period_label})"
+                    },
+                    "body": {
+                        "ko": "<h1>월간 방문자 통계</h1><p>{period_label} 요약입니다.</p><p>방문 <strong>{visits}</strong> · 순방문자 <strong>{visitors}</strong> · 페이지뷰 <strong>{pageviews}</strong> (직전 기간 대비 {change_pct})</p><h2>인기 페이지</h2>{top_pages}<h2>유입 경로</h2>{top_referrers}<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{report_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">통계 전체 보기</a></td></tr></table><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
+                        "en": "<h1>Monthly Analytics Report</h1><p>Summary for {period_label}.</p><p>Visits <strong>{visits}</strong> · Unique visitors <strong>{visitors}</strong> · Pageviews <strong>{pageviews}</strong> ({change_pct} vs previous period)</p><h2>Top Pages</h2>{top_pages}<h2>Top Referrers</h2>{top_referrers}<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{report_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">View Full Statistics</a></td></tr></table><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
+                    }
+                }
+            ]
+        }
+    }
+}

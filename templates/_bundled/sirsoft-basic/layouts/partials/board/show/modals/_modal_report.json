@@ -1,432 +1,436 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "공용 신고 모달 - 게시글/댓글",
-    "editor_label": "$t:user.modal_label.board_show.board_report_modal"
-  },
-  "comment": "공용 신고 모달 - modals 섹션이므로 _global 사용 (페이지 _local 접근 불가)",
-  "id": "board_report_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
+    "meta": {
+        "is_partial": true,
+        "description": "공용 신고 모달 - 게시글/댓글",
+        "editor_label": "$t:user.modal_label.board_show.board_report_modal"
+    },
+    "comment": "공용 신고 모달 - modals 섹션이므로 _global 사용 (페이지 _local 접근 불가)",
     "id": "board_report_modal",
-    "title": "{{_global.reportModal.type === 'comment' ? '$t:board.post.report_comment' : '$t:board.post.report_post'}}",
-    "size": "lg"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
-      "children": [
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "id": "board_report_modal",
+        "title": "{{_global.reportModal.type === 'comment' ? '$t:board.post.report_comment' : '$t:board.post.report_post'}}",
+        "size": "lg"
+    },
+    "children": [
         {
-          "comment": "안내 배너",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex items-start gap-3"
-              },
-              "children": [
-                {
-                  "type": "composite",
-                  "name": "Icon",
-                  "props": {
-                    "name": "info-circle",
-                    "size": "lg",
-                    "className": "text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-1"
-                      },
-                      "text": "$t:board.post.report_notice_title"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-sm text-yellow-700 dark:text-yellow-300"
-                      },
-                      "text": "$t:board.post.report_notice_content"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "신고 대상 댓글 내용 표시 (댓글 신고 시에만)",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.reportModal.type === 'comment' && _global.reportModal.comment_content}}",
-          "props": {
-            "className": "p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 mb-2"
-              },
-              "text": "$t:board.post.report_target_comment"
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-4"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_global.reportModal.comment_author_name}}",
-              "props": {
-                "className": "flex items-center gap-2 mb-2"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "composite",
-                  "name": "Avatar",
-                  "props": {
-                    "name": "{{_global.reportModal.comment_author_name}}",
-                    "avatar": "{{_global.reportModal.comment_author_avatar}}",
-                    "size": "xs"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-xs font-medium text-gray-600 dark:text-gray-400"
-                  },
-                  "text": "{{_global.reportModal.comment_author_name}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-xs text-gray-400 dark:text-gray-500/80"
-                  },
-                  "text": "{{_global.reportModal.comment_created_at}}"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-sm text-gray-700 dark:text-gray-300 line-clamp-3"
-              },
-              "text": "{{_global.reportModal.comment_content}}"
-            }
-          ]
-        },
-        {
-          "comment": "신고 사유 선택 (Label + native Select + Option)",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "space-y-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
-              },
-              "text": "$t:board.post.report_reason"
-            },
-            {
-              "type": "basic",
-              "name": "Select",
-              "props": {
-                "value": "{{_global.reportForm?.reason_type ?? ''}}",
-                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "reportForm": {
-                      "reason_type": "{{$event.target.value}}"
-                    }
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Option",
-                  "props": {
-                    "value": "",
-                    "selected": true
-                  },
-                  "text": "$t:board.post.select_reason"
-                },
-                {
-                  "comment": "API에서 받은 report_types 배열을 iteration으로 Option 생성",
-                  "type": "basic",
-                  "name": "Option",
-                  "iteration": {
-                    "source": "{{post?.data?.board?.report_types ?? []}}",
-                    "item_var": "type",
-                    "index_var": "idx"
-                  },
-                  "props": {
-                    "value": "{{type.value}}"
-                  },
-                  "text": "{{type.label}}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "상세 내용 입력 (Label + Textarea)",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "space-y-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
-              },
-              "text": "$t:board.post.report_detail"
-            },
-            {
-              "type": "basic",
-              "name": "Textarea",
-              "props": {
-                "placeholder": "$t:board.post.report_detail_placeholder",
-                "value": "{{_global.reportForm?.reason_detail ?? ''}}",
-                "rows": 4,
-                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none",
-                "minLength": 3,
-                "maxLength": 1000
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "reportForm": {
-                      "reason_detail": "{{$event.target.value}}"
-                    }
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "comment": "버튼 영역",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex justify-end gap-2 mt-6"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
-              },
-              "text": "$t:common.cancel",
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "reportForm": {
-                          "reason_type": "",
-                          "reason_detail": ""
-                        }
-                      }
+                    "comment": "안내 배너",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg"
                     },
-                    {
-                      "handler": "closeModal"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
-                "disabled": "{{_global.reportSubmitting === true}}"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex items-center gap-2"
-                  },
-                  "children": [
-                    {
-                      "type": "composite",
-                      "name": "Icon",
-                      "if": "{{_global.reportSubmitting}}",
-                      "props": {
-                        "name": "spinner",
-                        "size": "sm",
-                        "className": "animate-spin"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:board.post.submit_report"
-                    }
-                  ]
-                }
-              ],
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "conditions",
-                  "if": "{{_global.reportSubmitting !== true}}",
-                  "conditions": [
-                    {
-                      "comment": "1. 신고 사유 미선택 시 toast",
-                      "if": "{{!_global.reportForm?.reason_type}}",
-                      "then": {
-                        "handler": "toast",
-                        "params": {
-                          "type": "error",
-                          "message": "$t:board.post.report_reason_required"
-                        }
-                      }
-                    },
-                    {
-                      "comment": "2. 상세 사유 미입력 시 toast",
-                      "if": "{{!_global.reportForm?.reason_detail?.trim()}}",
-                      "then": {
-                        "handler": "toast",
-                        "params": {
-                          "type": "error",
-                          "message": "$t:board.post.report_detail_required"
-                        }
-                      }
-                    },
-                    {
-                      "comment": "3. 검증 통과 → 제출",
-                      "then": [
+                    "children": [
                         {
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "reportSubmitting": true
-                          }
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-start gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "info-circle",
+                                        "size": "lg",
+                                        "className": "text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-1"
+                                            },
+                                            "text": "$t:board.post.report_notice_title"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-sm text-yellow-700 dark:text-yellow-300"
+                                            },
+                                            "text": "$t:board.post.report_notice_content"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "신고 대상 댓글 내용 표시 (댓글 신고 시에만)",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.reportModal.type === 'comment' && _global.reportModal.comment_content}}",
+                    "props": {
+                        "className": "p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 mb-2"
+                            },
+                            "text": "$t:board.post.report_target_comment"
                         },
                         {
-                          "handler": "apiCall",
-                          "target": "{{_global.reportModal?.apiEndpoint}}",
-                          "auth_required": true,
-                          "params": {
-                            "method": "POST",
-                            "body": {
-                              "reason_type": "{{_global.reportForm?.reason_type}}",
-                              "reason_detail": "{{_global.reportForm?.reason_detail}}"
-                            }
-                          },
-                          "onSuccess": [
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "global",
-                                "reportSubmitting": false,
-                                "reportForm": {
-                                  "reason_type": "",
-                                  "reason_detail": ""
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.reportModal.comment_author_name}}",
+                            "props": {
+                                "className": "flex items-center gap-2 mb-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "Avatar",
+                                    "props": {
+                                        "name": "{{_global.reportModal.comment_author_name}}",
+                                        "avatar": "{{_global.reportModal.comment_author_avatar}}",
+                                        "size": "xs"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-xs font-medium text-gray-600 dark:text-gray-400"
+                                    },
+                                    "text": "{{_global.reportModal.comment_author_name}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500/80"
+                                    },
+                                    "text": "{{_global.reportModal.comment_created_at}}"
                                 }
-                              }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-gray-700 dark:text-gray-300 line-clamp-3"
                             },
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "global",
-                                "reportModal": {
-                                  "type": null,
-                                  "apiEndpoint": ""
-                                }
-                              }
-                            },
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "success",
-                                "message": "$t:board.post.report_submitted"
-                              }
-                            },
-                            {
-                              "handler": "closeModal"
-                            },
-                            {
-                              "comment": "신고 성공 후 게시글 데이터 재조회 → is_already_reported 갱신 → 버튼이 즉시 '신고됨'으로 전환 (게시글/댓글 공통). 새로고침 없이 반영 (이슈 #413-60 증상2)",
-                              "handler": "refetchDataSource",
-                              "params": {
-                                "dataSourceId": "post"
-                              }
-                            }
-                          ],
-                          "onError": [
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "global",
-                                "reportSubmitting": false
-                              }
-                            },
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "error",
-                                "message": "{{error.message}}"
-                              }
-                            },
-                            {
-                              "comment": "신고 실패(409 중복/403/422) 시 모달을 닫는다 → 에러 토스트만 화면에 노출되어 '진행 불가'처럼 보이던 현상 해소 (이슈 #413-60 증상1, 설계 결정: 모달 닫고 토스트)",
-                              "handler": "closeModal"
-                            }
-                          ]
+                            "text": "{{_global.reportModal.comment_content}}"
                         }
-                      ]
-                    }
-                  ]
+                    ]
+                },
+                {
+                    "comment": "신고 사유 선택 (Label + native Select + Option)",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:board.post.report_reason"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "신고 사유 선택 — 고를 수 있는 사유는 게시판 설정에서 오므로 게시판마다 다르다. 이 창은 modals 소속이라 화면의 _local 을 못 보고, 그래서 입력값을 전역에 담는다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "reportForm": {
+                                            "reason_type": "{{$event.target.value}}"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "value": "{{_global.reportForm?.reason_type ?? ''}}",
+                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Option",
+                                    "props": {
+                                        "value": "",
+                                        "selected": true
+                                    },
+                                    "text": "$t:board.post.select_reason"
+                                },
+                                {
+                                    "comment": "API에서 받은 report_types 배열을 iteration으로 Option 생성",
+                                    "type": "basic",
+                                    "name": "Option",
+                                    "iteration": {
+                                        "source": "{{post?.data?.board?.report_types ?? []}}",
+                                        "item_var": "type",
+                                        "index_var": "idx"
+                                    },
+                                    "props": {
+                                        "value": "{{type.value}}"
+                                    },
+                                    "text": "{{type.label}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "상세 내용 입력 (Label + Textarea)",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:board.post.report_detail"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Textarea",
+                            "actions": [
+                                {
+                                    "comment": "상세 사유 입력 — 사유 선택과 같은 전역 묶음에 쌓인다. 입력 자체는 막지 않고 비어 있는지는 보낼 때 본다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "reportForm": {
+                                            "reason_detail": "{{$event.target.value}}"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "placeholder": "$t:board.post.report_detail_placeholder",
+                                "value": "{{_global.reportForm?.reason_detail ?? ''}}",
+                                "rows": 4,
+                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none",
+                                "minLength": 3,
+                                "maxLength": 1000
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "버튼 영역",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex justify-end gap-2 mt-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "취소 — 적던 사유를 비우고 닫는다. 전역에 남겨 두면 다음에 다른 글을 신고하려 열 때 앞의 내용이 그대로 보인다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "reportForm": {
+                                                    "reason_type": "",
+                                                    "reason_detail": ""
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                            },
+                            "text": "$t:common.cancel"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "신고 보내기 — 사유와 상세를 차례로 확인해 비어 있으면 그 자리에서 알리고 멈춘다. 성공하면 창을 닫고 글을 다시 받아 «신고됨» 표시가 새로고침 없이 바뀌게 하고, 실패(이미 신고함·권한 없음 등)해도 창을 닫아 오류 안내만 남긴다 — 열린 채로 두면 무엇이 막혔는지 모른 채 다시 누르게 된다.",
+                                    "type": "click",
+                                    "handler": "conditions",
+                                    "if": "{{_global.reportSubmitting !== true}}",
+                                    "conditions": [
+                                        {
+                                            "comment": "1. 신고 사유 미선택 시 toast",
+                                            "if": "{{!_global.reportForm?.reason_type}}",
+                                            "then": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "$t:board.post.report_reason_required"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "comment": "2. 상세 사유 미입력 시 toast",
+                                            "if": "{{!_global.reportForm?.reason_detail?.trim()}}",
+                                            "then": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "$t:board.post.report_detail_required"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "comment": "3. 검증 통과 → 제출",
+                                            "then": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "reportSubmitting": true
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "{{_global.reportModal?.apiEndpoint}}",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "POST",
+                                                        "body": {
+                                                            "reason_type": "{{_global.reportForm?.reason_type}}",
+                                                            "reason_detail": "{{_global.reportForm?.reason_detail}}"
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "reportSubmitting": false,
+                                                                "reportForm": {
+                                                                    "reason_type": "",
+                                                                    "reason_detail": ""
+                                                                }
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "reportModal": {
+                                                                    "type": null,
+                                                                    "apiEndpoint": ""
+                                                                }
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "success",
+                                                                "message": "$t:board.post.report_submitted"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "closeModal"
+                                                        },
+                                                        {
+                                                            "comment": "신고 성공 후 게시글 데이터 재조회 → is_already_reported 갱신 → 버튼이 즉시 '신고됨'으로 전환 (게시글/댓글 공통). 새로고침 없이 반영 (이슈 #413-60 증상2)",
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "post"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "reportSubmitting": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "{{error.message}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "신고 실패(409 중복/403/422) 시 모달을 닫는다 → 에러 토스트만 화면에 노출되어 '진행 불가'처럼 보이던 현상 해소 (이슈 #413-60 증상1, 설계 결정: 모달 닫고 토스트)",
+                                                            "handler": "closeModal"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.reportSubmitting === true}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "if": "{{_global.reportSubmitting}}",
+                                            "props": {
+                                                "name": "spinner",
+                                                "size": "sm",
+                                                "className": "animate-spin"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:board.post.submit_report"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

@@ -1,0 +1,34 @@
+feature: 글꼴 아이콘 크기 — 너비·높이만으로 키우지 않는다
+
+description: |
+  번들 확장의 `Icon` 컴포넌트는 Font Awesome 글꼴 아이콘을 그린다. 글리프 크기는 글자 크기를
+  따르므로 `w-12 h-12` 처럼 칸만 키우면 글리프는 기본 글자 크기(16px)로 칸 위쪽에 작게 놓인다.
+
+  배경:
+    - 관리자 템플릿 빈 화면 부품(EmptyState)이 아이콘에 48px 칸만 줘, 아이콘을 넘기는 방문자 통계
+      빈 화면 11곳에서 아이콘이 원 안에서 작고 위로 치우쳐 보였다(#682 S4 라운드 8, PO 지적).
+    - 같은 방식으로 24px 칸을 준 사용자 템플릿 모바일 메뉴 열기·닫기 버튼 2곳도 함께 고쳤다.
+
+    - 관리자 템플릿의 원형 스타일 자산(`danger-confirm-icon`)을 레이아웃이 아이콘 요소에 직접 줘, 방문자 통계
+      전체 삭제 확인 창의 경고 아이콘이 원 위쪽에 작게 붙었다 — 첫 가드가 TSX 만 봐서 놓쳤다(#682 PO 실측 후속 4).
+
+  적용 지점:
+    - 번들 템플릿·모듈·플러그인의 TSX 와 레이아웃(`.g7.html`) 전체 — 16px 이하 칸은 글자 크기와 같아 대상이 아니다.
+    - 템플릿 스타일시트의 칸·원 자산(글자 크기 없음)은 아이콘을 감싸는 요소에만 준다.
+
+# 소스 위치(관리자·사용자 템플릿·모듈·플러그인)는 축이 아니다 — 한 테스트가 번들 TSX·레이아웃 전체를 한 번에 훑는다.
+axes:
+  box: [small, large]
+
+exclusions:
+  - { box: small, reason: "w-4 이하 칸은 기본 글자 크기와 같거나 작아 글리프가 칸을 채운다" }
+
+effects:
+  - large_font_icon_declares_font_size
+  - box_style_asset_wraps_the_icon_not_the_icon_itself
+  # 브라우저 실측 — 클래스 조합이 아니라 실제로 그려진 글리프 크기와 위치
+  - empty_state_icon_is_centered_at_font_size
+
+test_files:
+  - tests/Unit/Extension/FontIconSizingTest.php
+  - tests/Playwright/specs/font-icon-sizing.spec.ts

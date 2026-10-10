@@ -1,123 +1,136 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Post Form - Attachments Section (Compact List Style)"
-  },
-  "id": "attachments_card",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{form_meta?.data?.board?.use_file_upload}}",
-  "props": {
-    "className": "admin-card"
-  },
-  "classMap": {
-    "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-    "variants": {
-      "readonly": "opacity-60",
-      "normal": ""
-    }
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex-center gap-2 mb-4"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Icon",
-          "props": {
-            "name": "paperclip",
-            "className": "text-xl text-gray-700 dark:text-gray-300"
-          }
-        },
-        {
-          "type": "basic",
-          "name": "H3",
-          "props": {
-            "className": "section-heading-md"
-          },
-          "text": "$t:sirsoft-board.admin.posts.form.attachments"
-        }
-      ]
+    "comment": "글 작성 폼의 첨부 구획. 개수·용량·확장자 한도는 그 게시판 설정에서 그대로 가져오고(없으면 안전한 기본값), 파일은 고르는 즉시가 아니라 저장 버튼이 쏘는 이벤트를 받아서야 올라간다(`autoUpload=false`) — 글보다 파일이 먼저 올라가므로 `tempKey` 가 둘을 잇는다",
+    "meta": {
+        "is_partial": true,
+        "description": "Post Form - Attachments Section (Compact List Style)"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
+    "id": "attachments_card",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{form_meta?.data?.board?.use_file_upload}}",
+    "classMap": {
+        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
+        "variants": {
+            "readonly": "opacity-60",
+            "normal": ""
+        }
+    },
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
         {
-          "id": "attachments_desc",
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-xs text-gray-500 dark:text-gray-400 mb-2"
-          },
-          "text": "$t:sirsoft-board.admin.posts.form.attachments_desc|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}"
-        },
-        {
-          "type": "composite",
-          "name": "FileUploader",
-          "props": {
-            "disabled": "{{_computed.isReadOnly}}",
-            "collection": "post_attachments",
-            "maxFiles": "{{form_meta?.data?.board?.max_file_count ?? 5}}",
-            "maxSize": "{{form_meta?.data?.board?.max_file_size ?? 10}}",
-            "accept": "{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta.data.board.allowed_extensions.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}",
-            "initialFiles": "{{form_meta?.data?.attachments ?? []}}",
-            "autoUpload": false,
-            "uploadTriggerEvent": "upload:board_attachments",
-            "compact": true,
-            "confirmBeforeRemove": true,
-            "confirmRemoveTitle": "$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_title",
-            "confirmRemoveMessage": "$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_message",
-            "uploadParams": {
-              "temp_key": "{{_local.tempKey}}"
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-center gap-2 mb-4"
             },
-            "apiEndpoints": {
-              "upload": "/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments",
-              "delete": "/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments/:id",
-              "reorder": "/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments/reorder"
-            }
-          },
-          "actions": [
-            {
-              "event": "onFilesChange",
-              "type": "change",
-              "handler": "setState",
-              "if": "{{!_local.hasChanges}}",
-              "params": {
-                "target": "local",
-                "hasChanges": true
-              }
-            },
-            {
-              "event": "onUploadError",
-              "type": "change",
-              "handler": "sequence",
-              "actions": [
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "uploadError": "{{$args[0]}}",
-                    "isSaving": false
-                  }
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "paperclip",
+                        "className": "text-xl text-gray-700 dark:text-gray-300"
+                    }
                 },
                 {
-                  "handler": "toast",
-                  "params": {
-                    "type": "error",
-                    "message": "{{$args[0]}}",
-                    "icon": "triangle-exclamation"
-                  }
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "section-heading-md"
+                    },
+                    "text": "$t:sirsoft-board.admin.posts.form.attachments"
                 }
-              ]
-            }
-          ]
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "id": "attachments_desc",
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-xs text-gray-500 dark:text-gray-400 mb-2"
+                    },
+                    "text": "$t:sirsoft-board.admin.posts.form.attachments_desc|count={{form_meta?.data?.board?.max_file_count ?? 5}}|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}"
+                },
+                {
+                    "id": "attachments_no_permission",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!_computed.isReadOnly && form_meta?.data?.board?.user_abilities?.can_upload !== true}}",
+                    "props": {
+                        "className": "text-xs text-amber-600 dark:text-amber-400 mb-2"
+                    },
+                    "text": "$t:sirsoft-board.admin.posts.form.attachments_no_permission"
+                },
+                {
+                    "type": "composite",
+                    "name": "FileUploader",
+                    "actions": [
+                        {
+                            "comment": "파일을 더하거나 뺀 것도 「변경 있음」으로 친다 — 그래야 본문을 손대지 않고 첨부만 바꿔도 저장 버튼이 열린다. 이미 켜져 있으면 다시 쓰지 않는다",
+                            "type": "change",
+                            "event": "onFilesChange",
+                            "handler": "setState",
+                            "if": "{{!_local.hasChanges}}",
+                            "params": {
+                                "target": "local",
+                                "hasChanges": true
+                            }
+                        },
+                        {
+                            "comment": "업로드 실패 — 저장은 「첨부 올리기 → 본문 보내기」 순서라, 여기서 저장 중 표시를 내려 주지 않으면 버튼이 잠긴 채로 남는다",
+                            "type": "change",
+                            "event": "onUploadError",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "uploadError": "{{$args[0]}}",
+                                        "isSaving": false
+                                    }
+                                },
+                                {
+                                    "handler": "toast",
+                                    "params": {
+                                        "type": "error",
+                                        "message": "{{$args[0]}}",
+                                        "icon": "triangle-exclamation"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "disabled": "{{_computed.isReadOnly || form_meta?.data?.board?.user_abilities?.can_upload !== true}}",
+                        "collection": "post_attachments",
+                        "maxFiles": "{{form_meta?.data?.board?.max_file_count ?? 5}}",
+                        "maxSize": "{{form_meta?.data?.board?.max_file_size ?? 10}}",
+                        "accept": "{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta.data.board.allowed_extensions.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}",
+                        "initialFiles": "{{form_meta?.data?.attachments ?? []}}",
+                        "autoUpload": false,
+                        "uploadTriggerEvent": "upload:board_attachments",
+                        "size": "sm",
+                        "confirmBeforeRemove": true,
+                        "confirmRemoveTitle": "$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_title",
+                        "confirmRemoveMessage": "$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_message",
+                        "uploadParams": {
+                            "temp_key": "{{_local.tempKey}}"
+                        },
+                        "apiEndpoints": {
+                            "upload": "/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments",
+                            "delete": "/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments/:id",
+                            "reorder": "/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments/reorder"
+                        }
+                    }
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

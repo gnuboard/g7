@@ -31,6 +31,7 @@ return [
         'earn' => '적립',
         'partial_cancel' => '부분 취소',
         'payment_complete' => '결제 완료',
+        'deposit_record' => '입금 기록',
         'payment_failed' => '결제 실패',
         'remove' => '제거',
         'reorder' => '순서 변경',
@@ -39,8 +40,16 @@ return [
         'send_email' => '이메일 발송',
         'set_default' => '기본값 설정',
         'status_change' => '상태 변경',
+        'sync_status' => '상태 자동 반영',
+        'status_sync' => '상태 자동 동기화',
+        'manual_paid_effects' => '수동 결제 처리',
         'stock_sync' => '재고 동기화',
         'toggle_active' => '활성 상태 변경',
+        'tax_invoice_stale' => '세금계산서 미처리',
+        'tracking_update' => '운송장 기록·정정',
+        'tracking_deliver' => '송장 도착 처리',
+        'mode_change' => '진행 방식 변경',
+        'stock_restore' => '재고 복구',
         'toggle_status' => '상태 전환',
         'update' => '수정',
         'update_quantity' => '수량 변경',
@@ -53,6 +62,15 @@ return [
         'admin_deduct' => '관리자 차감',
         'extend_expiry' => '유효기간 연장',
         'adjust' => '적립건 수정',
+        'refund_credit' => '환불 지급',
+        // 클레임 (교환/반품/환불/추가결제/첨부)
+        'request' => '신청 접수',
+        'option_status_change' => '상품 단위 상태 변경',
+        'update_amounts' => '금액 수정',
+        'request_update' => '신청 내용 수정',
+        'complete' => '완료',
+        'refund' => '환급',
+        'execute' => '실행',
     ],
 
     'description' => [
@@ -73,6 +91,7 @@ return [
         'order_update' => '주문 수정 (:order_number)',
         'order_delete' => '주문 삭제 (:order_number)',
         'order_payment_complete' => '결제 완료 (:order_number)',
+        'order_deposit_recorded' => '입금 기록 (:order_number)',
         'order_payment_failed' => '결제 실패 (:order_number)',
         'order_cancel' => '주문 전체 취소 (:order_number)',
         'order_partial_cancel' => '주문 부분 취소 (:order_number)',
@@ -86,6 +105,11 @@ return [
         'order_reset_guest_password' => '비회원 조회 비밀번호 재설정 (:order_number)',
         'order_option_status_change' => '주문 옵션 상태 변경 (주문: :order_number)',
         'order_option_bulk_status_change' => '주문 옵션 일괄 상태 변경 (:count건)',
+        'order_option_sync_status' => '주문 상태 동기화에 따른 상품 상태 변경 (주문: :order_number · :count건)',
+        'order_shipping_tracking_update' => '운송장 기록·정정 (상품 ID: :option_id)',
+        'order_tax_invoice_stale' => '취소 후 세금계산서 미처리 (주문: :order_number · :count건)',
+        'order_status_sync' => '주문 상태 자동 변경 — 상품 상태에 맞춰 (:order_number)',
+        'order_manual_paid_effects' => '수동 결제 처리 (:order_number) — 적용: :applied / 적용 안 함: :skipped',
 
         // 쿠폰 관리 (Admin)
         'coupon_index' => '쿠폰 목록 조회',
@@ -105,6 +129,10 @@ return [
         'shipping_policy_toggle_active' => '배송정책 활성 상태 변경 (:policy_name)',
         'shipping_policy_set_default' => '기본 배송정책 설정 (:policy_name)',
         'shipping_policy_bulk_delete' => '배송정책 일괄 삭제 (:count건)',
+        'wishlist_bulk_delete' => '찜 일괄 삭제 (:count건)',
+        'cart_bulk_delete' => '장바구니 일괄 삭제 (:count건)',
+        'user_address_bulk_delete' => '회원 배송지 일괄 삭제 (:count건)',
+        'product_inquiry_bulk_delete' => '상품문의 일괄 삭제 (:count건)',
         'shipping_policy_bulk_toggle_active' => '배송정책 일괄 활성 상태 변경 (:count건)',
 
         // 배송업체 관리 (Admin)
@@ -194,6 +222,12 @@ return [
         'ecommerce_settings_index' => '이커머스 설정 조회',
         'ecommerce_settings_update' => '이커머스 설정 저장 (:categories)',
 
+        // 클레임 사유 카탈로그
+        'claim_reason_create' => '클레임 사유 생성 (:reason_type · :reason_code)',
+        'claim_reason_update' => '클레임 사유 수정 (:reason_type · :reason_code)',
+        'claim_reason_delete' => '클레임 사유 삭제 (:reason_type · :reason_code)',
+        'claim_reason_toggle_status' => '클레임 사유 활성 전환 (:reason_type · :reason_code)',
+
         // 결제 (Admin)
         'payment_refund' => '결제 환불 (주문: :order_number)',
 
@@ -211,17 +245,72 @@ return [
         'user_order_create' => '주문 완료 (#:order_id)',
         'user_order_option_confirm' => '구매확인 (옵션 #:option_id)',
         'mileage_earn' => '마일리지 적립 (:amount)',
+        'mileage_earn_scheduled' => '마일리지 적립 예정 (:amount) — 적립 시점에 지급',
         'mileage_use' => '마일리지 사용 (:amount)',
         'mileage_restore' => '마일리지 복원 (:amount)',
+        'mileage_refund_credit' => '환불금 마일리지 지급 (:amount)',
         'mileage_expire' => '마일리지 소멸 (:amount)',
+        'mileage_withdrawal_expire' => '회원 탈퇴로 마일리지 소멸 (:amount)',
+        'mileage_deletion_expire' => '회원 삭제로 마일리지 소멸 (:amount)',
         'mileage_earn_cancel' => '마일리지 적립 회수 (:amount)',
         'mileage_admin_earn' => '관리자 마일리지 지급 (:amount)',
         'mileage_admin_deduct' => '관리자 마일리지 차감 (:amount)',
         'mileage_extend_expiry' => '마일리지 유효기간 연장 (:days일)',
         'mileage_adjust' => '마일리지 적립건 수정 (:amount)',
+
+        // 클레임 (교환/반품/환불) — 상태 값은 properties 에 남기고 문구에는 식별자만 담는다
+        'claim_exchange_request' => '교환 신청 접수 (:claim_number)',
+        'claim_return_request' => '반품 신청 접수 (:claim_number)',
+        'claim_refund_request' => '환불 신청 접수 (:claim_number)',
+        'claim_cancel_request' => '취소신청서 생성 (:claim_number)',
+        'claim_exchange_status_change' => '교환 신청서 상태 변경 (:claim_number)',
+        'claim_return_status_change' => '반품 신청서 상태 변경 (:claim_number)',
+        'claim_refund_status_change' => '환불 신청서 상태 변경 (:claim_number)',
+        'claim_cancel_status_change' => '취소신청서 상태 변경 (:claim_number)',
+        'claim_exchange_option_status_change' => '교환 신청서 상품 단위 상태 변경 (:claim_number · :count건)',
+        'claim_return_option_status_change' => '반품 신청서 상품 단위 상태 변경 (:claim_number · :count건)',
+        'claim_refund_option_status_change' => '환불 신청서 상품 단위 상태 변경 (:claim_number · :count건)',
+        'claim_cancel_option_status_change' => '취소신청서 상품 단위 상태 변경 (:claim_number · :count건)',
+        'claim_exchange_collection_tracking_update' => '교환 신청서 회수 송장 변경 (:claim_number · 상품 :count건)',
+        'claim_exchange_redelivery_tracking_update' => '교환 신청서 재발송 송장 변경 (:claim_number · 상품 :count건)',
+        'claim_return_collection_tracking_update' => '반품 신청서 회수 송장 변경 (:claim_number · 상품 :count건)',
+        'claim_exchange_collection_tracking_deliver' => '교환 신청서 회수 운송장 도착 처리 (:claim_number · :tracking_number · 상품 :count건)',
+        'claim_exchange_redelivery_tracking_deliver' => '교환 신청서 재발송 운송장 도착 처리 (:claim_number · :tracking_number · 상품 :count건)',
+        'claim_return_collection_tracking_deliver' => '반품 신청서 회수 운송장 도착 처리 (:claim_number · :tracking_number · 상품 :count건)',
+        'claim_exchange_mode_change' => '교환 신청서 진행 방식 변경 (:claim_number)',
+        'claim_exchange_stock_restore' => '교환 신청서 재고 복구 (:claim_number · 상품 :count건 · :quantity개)',
+        'claim_return_stock_restore' => '반품 신청서 재고 복구 (:claim_number · 상품 :count건 · :quantity개)',
+        'claim_exchange_update_amounts' => '교환 신청서 금액 수정 (:claim_number)',
+        'claim_return_update_amounts' => '반품 신청서 금액 수정 (:claim_number)',
+        'claim_refund_update_amounts' => '환불 신청서 금액 수정 (:claim_number)',
+        'claim_exchange_request_update' => '교환 신청 내용 수정 (:claim_number)',
+        'claim_return_request_update' => '반품 신청 내용 수정 (:claim_number)',
+        'claim_refund_request_update' => '환불 신청 내용 수정 (:claim_number)',
+        'claim_exchange_request_update_on_behalf' => '교환 신청 내용 수정 — 운영자가 고객 대신 수정 (:claim_number)',
+        'claim_return_request_update_on_behalf' => '반품 신청 내용 수정 — 운영자가 고객 대신 수정 (:claim_number)',
+        'claim_refund_request_update_on_behalf' => '환불 신청 내용 수정 — 운영자가 고객 대신 수정 (:claim_number)',
+        'claim_refund_execute' => '환불 실행 (:claim_number)',
+        'claim_payment_complete' => '클레임 추가결제 완료 (:payment_number)',
+        'claim_payment_refund' => '클레임 추가결제 환급 (:payment_number)',
+        // 금액을 싣는 새 환급 로그 — 옛 키 문구에 자리표시자를 더하면 금액 없이 남은 과거 로그가 「:amount」 를 드러낸다.
+        'claim_payment_refund_amount' => '클레임 추가결제 환급 (:payment_number, :amount)',
+        'claim_payment_cancel' => '클레임 추가결제 대기 취소 (:payment_number)',
+        'claim_image_upload' => '클레임 첨부 업로드 (:original_name)',
+        'claim_image_delete' => '클레임 첨부 삭제 (:original_name)',
     ],
 
     // ChangeDetector 필드 라벨
+    // 수동 결제 처리 활동 로그의 항목 이름 (Q13·Q26) — 설명 문구의 적용/적용 안 함 목록을 렌더 시점에 번역한다
+    'manual_paid' => [
+        'items' => [
+            'apply_stock_deduction' => '재고 차감',
+            'apply_mileage_deduction' => '사용 마일리지 차감',
+            'record_paid_amount' => '결제금액 기록',
+            'restoration' => '합계·상품 상태 복원',
+        ],
+        'none' => '-',
+    ],
+
     'fields' => [
         // 공통
         'is_active' => '활성 여부',
@@ -300,7 +389,13 @@ return [
         'meta_description' => 'META 설명',
 
         // OrderOption
+        'collection_tracking' => '회수 송장',
+        'redelivery_tracking' => '재발송 송장',
+        'exchange_mode' => '진행 방식',
+        'unreturned_reason' => '미회수 사유',
         'option_status' => '옵션 상태',
+        'carrier_id' => '택배사',
+        'tracking_number' => '운송장번호',
         'quantity' => '수량',
         'cancelled_quantity' => '취소 수량',
 
@@ -316,5 +411,28 @@ return [
         'option_name' => '옵션명',
         'sku' => 'SKU',
         'price_adjustment' => '가격 조정',
+
+        // 클레임 금액 수정 (D18)
+        'claim_shipping_fee' => '클레임 배송비',
+        'total_charge_amount' => '총 청구 금액',
+        'charge_method' => '청구 방식',
+        'refund_amount' => '환불 금액',
+        'refund_points_amount' => '환불 마일리지',
+        'refund_method' => '환불 수단',
+
+        // 클레임 신청 내용 수정 (D13 · S15)
+        'claim_reason' => '사유',
+        'fault_type' => '귀책',
+        'reason_detail' => '상세 사유',
+        'refund_bank' => '환불 계좌',
+        'redelivery_address' => '재발송지',
     ],
+
+    // 변경 값 표시 (값을 싣지 않는 항목)
+    'values' => [
+        'masked_change' => '변경됨 (개인정보라 값은 남기지 않음)',
+    ],
+
+    // 이름을 되찾지 못한 엔티티의 표시 (설명 파라미터 해석 실패 시)
+    'entity_id_fallback' => 'ID: :id',
 ];

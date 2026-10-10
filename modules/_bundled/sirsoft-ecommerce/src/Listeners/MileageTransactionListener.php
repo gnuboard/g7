@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\MileageEarnTriggerEnum;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Exceptions\MileageValidationException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
@@ -14,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
 
 /**
- * 마일리지 거래 리스너 (적립/사용/복원/회수 통합 진입점)
+ * 마일리지 거래 리스너 (적립/사용/복원/환불지급/회수 통합 진입점)
  *
  * 모든 처리는 UserMileageService 에 위임하며, 잔액 캐시 재계산은 Service 내부에서
  * 동일 트랜잭션으로 수행됩니다 (리스너는 캐시를 직접 다루지 않음).
@@ -23,8 +24,11 @@ use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
 class MileageTransactionListener implements HookListenerInterface
 {
     /**
+     * 의존성을 주입받습니다.
+     *
      * @param  UserMileageService  $mileageService  마일리지 서비스
      * @param  EcommerceSettingsService  $settings  환경설정 서비스
+     * @param  OrderOptionRepositoryInterface  $orderOptionRepository  orderOptionRepository 값
      */
     public function __construct(
         private UserMileageService $mileageService,
@@ -45,6 +49,8 @@ class MileageTransactionListener implements HookListenerInterface
             // 뒤에 차감이 돌아 잔액 부족으로 실패해도 주문을 되돌릴 수 없다.
             'sirsoft-ecommerce.mileage.use' => ['method' => 'handleUse', 'priority' => 10, 'sync' => true],
             'sirsoft-ecommerce.mileage.restore' => ['method' => 'handleRestore', 'priority' => 10, 'sync' => true],
+            // 환불 현금분 마일리지 지급 — 금전 훅이라 환불 실행 트랜잭션 안에서 돌아야 한다(D1·D2).
+            'sirsoft-ecommerce.mileage.refund_credit' => ['method' => 'handleRefundCredit', 'priority' => 10, 'sync' => true],
             'sirsoft-ecommerce.order-option.after_confirm' => ['method' => 'handleAfterConfirm', 'priority' => 10],
             'sirsoft-ecommerce.order_option.after_status_change' => ['method' => 'handleAfterStatusChange', 'priority' => 10],
             'sirsoft-ecommerce.order_option.after_bulk_status_change' => ['method' => 'handleAfterBulkStatusChange', 'priority' => 10],
@@ -55,6 +61,7 @@ class MileageTransactionListener implements HookListenerInterface
      * 기본 핸들러 (getSubscribedHooks 의 method 매핑 사용)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -64,34 +71,86 @@ class MileageTransactionListener implements HookListenerInterface
     /**
      * 마일리지 사용 차감 (주문생성 트랜잭션 내) — 실패 시 예외로 주문 롤백
      *
+     * 재활성(취소 주문·상품을 되살림)은 `context.reason=reactivation` 으로 부른다 — 그 거래는 재활성
+     * 표시를 남겨 회수 가능액 계산에서 빠진다(두 번 빼지 않음, Q14). 기존 2인수 구독자는 세 번째 인수를
+     * 무시한다.
+     *
      * @param  int  $usePoints  사용 마일리지
      * @param  Order  $order  주문
+     * @param  array<string, mixed>  $context  호출 맥락 (reason)
+     * @return void 반환값 없음
      */
-    public function handleUse(int $usePoints, Order $order): void
+    public function handleUse(int $usePoints, Order $order, array $context = []): void
     {
         if ($usePoints <= 0 || $order->user_id === null) {
             return;
         }
 
         $currency = $this->mileageService->baseCurrencyForOrder($order);
+
+        if (($context['reason'] ?? null) === 'reactivation') {
+            $this->mileageService->deductForReactivation($order->user_id, $usePoints, $currency, $order);
+
+            return;
+        }
+
         $this->mileageService->deductFifo($order->user_id, $usePoints, $currency, $order);
     }
 
     /**
-     * 사용 복원 (취소/환불) — order_cancel_id 멱등, 신규 lot
+     * 사용 복원 (취소/환불) — 취소는 order_cancel_id, 클레임 환불 실행은 order_refund_id 멱등, 신규 lot
      *
      * @param  float  $amount  복원액
      * @param  Order  $order  주문
-     * @param  int|null  $orderCancelId  취소 레코드 ID
+     * @param  int|null  $orderCancelId  취소 레코드 ID (취소 발 복원 멱등 축)
+     * @param  int|null  $orderRefundId  환불 레코드 ID (클레임 환불 실행 멱등 축 — S6b)
+     * @return void 반환값 없음
      */
-    public function handleRestore(float $amount, Order $order, ?int $orderCancelId = null): void
+    public function handleRestore(float $amount, Order $order, ?int $orderCancelId = null, ?int $orderRefundId = null): void
     {
-        if ($amount <= 0 || $order->user_id === null || $orderCancelId === null) {
+        // 멱등 축(취소 ID 또는 환불 ID)이 하나도 없으면 복원하지 않는다 — 축 없는 복원은
+        // 재시도마다 새 lot 을 발행한다.
+        if ($amount <= 0 || $order->user_id === null || ($orderCancelId === null && $orderRefundId === null)) {
             return;
         }
 
         $currency = $this->mileageService->baseCurrencyForOrder($order);
-        $this->mileageService->restoreForCancel($order->user_id, $order->id, $orderCancelId, $amount, $currency);
+
+        if ($orderCancelId !== null) {
+            $this->mileageService->restoreForCancel($order->user_id, $order->id, $orderCancelId, $amount, $currency);
+
+            return;
+        }
+
+        // 클레임 환불 실행(S6b) — order_refund_id 멱등 축으로 사용 마일리지를 환급한다.
+        $this->mileageService->restoreForRefund($order->user_id, $order->id, $orderRefundId, $amount, $currency);
+    }
+
+    /**
+     * 환불 현금분 마일리지 지급 (클레임 환불 실행 트랜잭션 내) — order_refund_id 멱등, 무기한 lot
+     *
+     * 실패는 삼키지 않는다 — 예외가 환불 실행 전체를 롤백한다(D2).
+     *
+     * @param  float  $amount  지급액 (기준 통화 현금 환불액)
+     * @param  Order  $order  주문
+     * @param  int  $orderRefundId  환불 레코드 ID (멱등 축)
+     * @return void 반환값 없음
+     *
+     * @throws MileageValidationException 비회원 주문 (서버 가드가 앞서 막는다 — 여기까지 오면 계약 위반)
+     */
+    public function handleRefundCredit(float $amount, Order $order, int $orderRefundId): void
+    {
+        if ($amount <= 0) {
+            return;
+        }
+
+        // 조용히 넘기면 돈이 사라진다(refund 274) — 비회원은 지급할 원장이 없으니 실패로 알린다.
+        if ($order->user_id === null) {
+            throw new MileageValidationException(__('sirsoft-ecommerce::exceptions.claim_refund_points_requires_member'));
+        }
+
+        $currency = $this->mileageService->baseCurrencyForOrder($order);
+        $this->mileageService->creditForRefund($order->user_id, $order->id, $orderRefundId, $amount, $currency);
     }
 
     /**
@@ -99,6 +158,7 @@ class MileageTransactionListener implements HookListenerInterface
      *
      * @param  Order  $order  주문
      * @param  OrderOption  $option  주문옵션
+     * @return void 반환값 없음
      */
     public function handleAfterConfirm(Order $order, OrderOption $option): void
     {
@@ -120,6 +180,7 @@ class MileageTransactionListener implements HookListenerInterface
      * @param  OrderOption  $option  주문옵션 (변경 전 원본)
      * @param  OrderStatusEnum  $newStatus  변경된 상태
      * @param  OrderOption|null  $split  분할 레코드
+     * @return void 반환값 없음
      */
     public function handleAfterStatusChange(OrderOption $option, OrderStatusEnum $newStatus, ?OrderOption $split = null): void
     {
@@ -133,6 +194,7 @@ class MileageTransactionListener implements HookListenerInterface
      *
      * @param  array  $results  변경 결과 [{order_option_id, split_order_option_id, ...}]
      * @param  OrderStatusEnum  $newStatus  변경된 상태
+     * @return void 반환값 없음
      */
     public function handleAfterBulkStatusChange(array $results, OrderStatusEnum $newStatus): void
     {
@@ -159,6 +221,7 @@ class MileageTransactionListener implements HookListenerInterface
      *
      * @param  OrderOption  $option  대상 주문옵션
      * @param  OrderStatusEnum  $newStatus  변경된 상태
+     * @return void 반환값 없음
      */
     private function processStatusChange(OrderOption $option, OrderStatusEnum $newStatus): void
     {
@@ -194,6 +257,7 @@ class MileageTransactionListener implements HookListenerInterface
      *
      * @param  Order  $order  주문
      * @param  OrderOption  $option  주문옵션
+     * @return void 반환값 없음
      */
     private function earn(Order $order, OrderOption $option): void
     {
@@ -204,8 +268,12 @@ class MileageTransactionListener implements HookListenerInterface
         try {
             $this->mileageService->earnForOrderOption($order, $option, MileageTransactionTypeEnum::PURCHASE_EARN);
         } catch (\Throwable $e) {
-            // 적립 실패가 상태 전이를 막지 않도록 로깅 후 흡수 (스케줄러가 후속 재시도)
-            Log::warning('마일리지 적립 실패', [
+            // 적립 실패가 상태 전이를 막지 않게 하되 경고 로그로 흘리지 않고 보고한다(F4). 재시도는 스케줄러가 맡는다 —
+            // 적립 대상 조회가 트리거 이후 상태까지 잡으므로(`MileageEarnTriggerEnum::eligibleStatuses()`), 실패 뒤 상품이
+            // 구매확정으로 넘어가도 다음 실행에서 적립된다. 큐 기본값이 sync 드라이버면 다시 던질 경우 이미 커밋된 전이
+            // 요청이 500 으로 끝나므로 던지지 않는다.
+            report($e);
+            Log::error('마일리지 즉시 적립 실패 — 스케줄러가 다시 적립', [
                 'order_id' => $order->id,
                 'order_option_id' => $option->id,
                 'error' => $e->getMessage(),

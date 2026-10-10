@@ -52,6 +52,14 @@ effects:
   - guest_orders_show_response_excludes_admin_memo_user_user_id_promotions_snapshot
   - guest_orders_show_response_includes_mc_subtotal_discount_shipping_total_amount  # 단계 5 그룹 C 보강
   - guest_orders_cancel_estimate_refund_update_shipping_confirm_option_require_token
+  # 주문 생성 경계 (#599 역매핑 — Public\OrderController Feature 가 실제로 재는 것)
+  - guest_lookup_password_min_length_enforced_at_order_creation   # 8자 미만 조회 비밀번호는 422
+  - member_order_stores_null_guest_lookup_password_hash           # 회원 주문은 해시 컬럼 null
+  - non_pg_guest_order_deletes_temp_order_immediately             # 무통장 등 non-PG 는 임시주문 즉시 삭제
+  - member_order_list_api_requires_authentication_401             # 회원 전용 주문목록은 비로그인 401
+  - zero_due_amount_order_completes_without_pg                    # 결제액 0원이면 PG 없이 결제완료
+  - guest_orders_verify_rejects_missing_required_fields_with_422  # verify 필수 필드 누락 422
+  - guest_orders_show_returns_order_with_valid_token              # 유효 토큰이면 상세 200
   # 실패 원인 구분(도메인 422 / 검증 422 / 인프라 500)은 입력 axis 가 아니라 결과 축이므로
   # error_class axis 를 신설하지 않고 effects 로 검증한다 (member-order-change-address.yaml 과 동일 판단).
   # 인프라 500 은 서비스 mock 으로만 유발 가능해 PHPUnit 이 SSoT 이고, 브라우저는 200/422 축만 담당한다.
@@ -128,9 +136,15 @@ effects:
   - order_creation_blocked_with_cart_unavailable_when_restricted_product_in_cart
   # 관리자 비회원 주문 기능 (단계 6)
   - admin_order_list_filters_by_member_type_guest_when_user_id_is_null
+  - admin_order_list_filters_by_member_type_member_when_user_id_is_present
+  - admin_order_list_rejects_unknown_member_type_with_422
   - admin_reset_guest_lookup_password_rejects_member_order_with_422
   - admin_reset_guest_lookup_password_updates_hash_for_guest_order
   - admin_reset_guest_lookup_password_logs_activity
+  - admin_reset_guest_lookup_password_enforces_min_length_8  # 회원가입 정책과 같은 min:8
+  - admin_reset_guest_lookup_password_accepts_letters_only  # 영문+숫자 조합 강제 없음
+  - admin_reset_guest_lookup_password_requires_authentication
+  - admin_reset_guest_lookup_password_revokes_existing_guest_token  # HMAC 입력에 비밀번호 해시 → 재설정 즉시 기존 토큰 무효
   - admin_reset_guest_lookup_password_modal_renders_dark_mode_variants_for_inputs_and_buttons
   # 비회원 알림 트리거 데이터 (단계 7 — 실제 발송은 후속 이슈)
   - order_exposes_orderer_email_and_is_guest_order_for_notification_recipients
@@ -193,9 +207,17 @@ scenarios:
     description: 관리자가 주문 목록에서 비회원 주문을 필터링하고, 비회원 조회 비밀번호를 재설정 (회원 주문은 재설정 거부)
     effects:
       - admin_order_list_filters_by_member_type_guest_when_user_id_is_null
+      - admin_order_list_filters_by_member_type_member_when_user_id_is_present
+      - admin_order_list_rejects_unknown_member_type_with_422
       - admin_reset_guest_lookup_password_rejects_member_order_with_422
       - admin_reset_guest_lookup_password_updates_hash_for_guest_order
       - admin_reset_guest_lookup_password_logs_activity
+      # 재설정 비밀번호 정책은 회원가입과 같은 min:8 이고 영문+숫자 조합을 강제하지 않는다
+      - admin_reset_guest_lookup_password_enforces_min_length_8
+      - admin_reset_guest_lookup_password_accepts_letters_only
+      - admin_reset_guest_lookup_password_requires_authentication
+      # 토큰 HMAC 입력에 비밀번호 해시가 섞여 있어 재설정 즉시 기존 verify 토큰이 무효가 된다(stateless revocation)
+      - admin_reset_guest_lookup_password_revokes_existing_guest_token
 
   - id: guest_order_notification_trigger_data
     description: 비회원 주문 이벤트에서 후속 이메일 발송 이슈가 사용할 주문자 이메일·주문번호 데이터를 확인 가능 (실제 발송은 본 이슈 범위 밖)
@@ -217,7 +239,13 @@ test_files:
   - templates/_bundled/sirsoft-basic/__tests__/layouts/shop-guest-checkout-entry.test.tsx
   - templates/_bundled/sirsoft-basic/__tests__/layouts/shop-guest-order-flow.test.tsx  # 단계 5 그룹 C 신규
   # 모듈 핸들러 단위 (단계 5 그룹 D 후속 — 토큰 분기)
-  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/userCancelOrderHandlers.test.ts
+  # userCancelOrderHandlers.test.ts 는 a86b27bf5 에서 삭제했다 — 그 테스트가 재던 옛 취소 모달
+  # 전용 핸들러(executeUserCancelOrderHandler / estimateUserRefundHandler)가 어느 화면에도
+  # 렌더되지 않는 죽은 코드로 판명돼 함께 지웠기 때문이다. 따라서 위 effects 의
+  # guest_order_show_cancel_handler_branches_to_guest_endpoint_when_token_present 와
+  # guest_order_show_estimate_refund_handler_branches_to_guest_endpoint_when_token_present
+  # 는 지금 어느 테스트도 재지 않는다(취소·환불예상 입구가 클레임 신청 화면으로 옮겨져
+  # 그 분기 자체가 사라졌다). 대체 검증을 세울지 effects 를 접을지는 별건으로 판단할 것.
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/userConfirmOrderHandlers.test.ts
   # E2E
   - tests/Playwright/specs/smoke/guest-order-form.spec.ts  # 단계 5 그룹 C+D

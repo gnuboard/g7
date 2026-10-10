@@ -1,0 +1,45 @@
+<!-- 주문 완료 화면에 나이스페이먼츠 영수증·매출전표 보기를 덧붙이는 조각. 종전에는 주입 스크립트(orderCompleteReceiptInjector)가 주소 정규식으로 화면을 알아보고 파란 버튼 옆에 「영수증 조회」 버튼을 직접 그렸다 — 그 버튼이 열던 매출전표(type=0)를 이 조각의 링크로 옮겼다(#639). -->
+<extension target-layout="shop/order_complete">
+  <inject target-id="order_complete_payment_summary" position="append_child">
+    <!-- 입금이 끝난(paid_at) 나이스페이먼츠 결제에만 보인다 — 가상계좌 입금 대기 주문에는 아직 전표가 없다 -->
+    <div data-ref="nicepay_oc_receipt_block" data-if="{{orderData?.data?.payment?.pg_provider === 'nicepayments' &amp;&amp; orderData?.data?.payment?.transaction_id &amp;&amp; orderData?.data?.payment?.paid_at}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
+      <!-- 간편결제 서비스명 — 원 수단 코드(naverpay 등)를 번역 키로 푼다 -->
+      <div data-ref="nicepay_oc_easy_pay_row" data-if="{{(['naverpay','kakaopay','samsungpay','applepay','payco','skpay','ssgpay','lpay']).includes(_local._npOcEasyPayProvider)}}" class="flex-between mb-2">
+        <span class="text-gray-600 dark:text-gray-400 text-sm">$t:sirsoft-pay_nicepayments.user.easy_pay_label</span>
+        <span class="text-sm font-medium text-gray-900 dark:text-white">{{$t('sirsoft-pay_nicepayments.user.easy_pay_names.' + String(_local._npOcEasyPayProvider ?? '').toUpperCase())}}</span>
+      </div>
+      <!-- 영수증 링크 행 -->
+      <div data-ref="nicepay_oc_receipt_row" class="flex-between">
+        <on event="mount">
+          <!-- 영수증 주소와 간편결제 원 수단은 플러그인 영수증 조회 API 가 준다. 결제사 주소를 조각에 적으면 편집기 저장 게이트(외부 URL 금지)가 거절한다. 회원은 토큰(선택 인증), 비회원은 조회 토큰 헤더로 같은 API 를 부른다. 마운트 동작을 조건(data-if)이 걸린 바깥 블록이 아니라 이 안쪽 행에 두는 이유 — 엔진은 조건이 거짓인 노드에서도 마운트 동작을 돌린다. 바깥 블록에 두면 다른 결제사 주문·입금 대기 주문에도, 주문을 받기 전 첫 렌더에도(주문번호 빈 주소) 조회가 나간다 -->
+          <api-call :auth_required="true" auth_mode="optional" target="/api/plugins/sirsoft-pay_nicepayments/user/orders/{{orderData?.data?.order_number}}/receipt" method="GET">
+            <field name="headers">
+              <field name="X-Guest-Order-Token" value="{{_global.guestOrderToken ?? ''}}"/>
+            </field>
+            <success>
+              <set-state target="local" _npOcPaymentReceiptUrl="{{response.data.payment_receipt_url}}" _npOcSalesSlipUrl="{{response.data.receipt_url}}" _npOcCashReceiptUrl="{{response.data.cash_receipt_url}}" _npOcEasyPayProvider="{{response.data.embedded_pg_provider}}"/>
+            </success>
+          </api-call>
+        </on>
+        <span class="text-gray-600 dark:text-gray-400 text-sm">$t:sirsoft-pay_nicepayments.user.receipt_label</span>
+        <div class="flex items-center gap-3">
+          <!-- 결제 영수증(type=2) -->
+          <a data-ref="nicepay_oc_payment_receipt_link" data-if="{{_local._npOcPaymentReceiptUrl}}" href="{{_local._npOcPaymentReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <icon name="file-text" class="text-sm"/>
+            <span>$t:sirsoft-pay_nicepayments.user.view_receipt</span>
+          </a>
+          <!-- 매출전표(type=0) — 마이페이지 주문 상세의 매출전표 링크와 같은 전표 -->
+          <a data-ref="nicepay_oc_sales_slip_link" data-if="{{_local._npOcSalesSlipUrl}}" href="{{_local._npOcSalesSlipUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <icon name="file-text" class="text-sm"/>
+            <span>$t:sirsoft-pay_nicepayments.user.view_sales_slip</span>
+          </a>
+          <!-- 현금영수증 — 발급된 결제에만 주소가 온다 -->
+          <a data-ref="nicepay_oc_cash_receipt_link" data-if="{{_local._npOcCashReceiptUrl}}" href="{{_local._npOcCashReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-green-600 dark:text-green-400 hover:underline">
+            <icon name="receipt" class="text-sm"/>
+            <span>$t:sirsoft-pay_nicepayments.user.view_cash_receipt</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </inject>
+</extension>

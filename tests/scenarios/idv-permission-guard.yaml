@@ -67,6 +67,19 @@ sub_flows:
       - request_challenge_route_validation_rules_extensible_via_hook_filter
       - verify_challenge_route_validation_rules_extensible_via_hook_filter
       - cancel_form_request_authorize_returns_true_letting_route_middleware_decide
+  - id: public_and_admin_route_access
+    description: |
+      challenge 3종 바깥의 IDV 라우트 접근 경계. 공개 목록(purposes·providers)은 인증 없이 열려 있고,
+      관리자 엔드포인트(/api/admin/identity/*)는 비인증 401 · 일반 회원 403 · 관리자 200 으로 갈린다.
+      challenge 소유자 축이 성립하지 않는 라우트라 위 3축 매트릭스와 곱해지지 않는다.
+    effects:
+      - public_purposes_endpoint_open_without_auth
+      - public_providers_endpoint_open_without_auth
+      - member_gets_403_on_admin_identity_policies_index
+      - member_gets_403_on_admin_identity_logs_index
+      - admin_can_access_admin_identity_policies_index
+      - admin_can_access_admin_identity_logs_index
+      - unauthenticated_admin_identity_endpoints_return_401
 
 effects:
   - guest_can_request_challenge
@@ -98,6 +111,13 @@ effects:
   - request_challenge_route_validation_rules_extensible_via_hook_filter
   - verify_challenge_route_validation_rules_extensible_via_hook_filter
   - cancel_form_request_authorize_returns_true_letting_route_middleware_decide
+  - public_purposes_endpoint_open_without_auth
+  - public_providers_endpoint_open_without_auth
+  - member_gets_403_on_admin_identity_policies_index
+  - member_gets_403_on_admin_identity_logs_index
+  - admin_can_access_admin_identity_policies_index
+  - admin_can_access_admin_identity_logs_index
+  - unauthenticated_admin_identity_endpoints_return_401
 
 test_files:
   - tests/Feature/Api/Identity/PermissionGuardTest.php
@@ -110,5 +130,6 @@ test_files:
 #     MailIdentityProviderDispatchTest 는 IDV "흐름"(콜백·가입 정책·비밀번호 재설정·메일 발송)을
 #     검증하며, 본 매니페스트가 선언한 권한 가드 effect 를 단언하지 않는다.
 #     인접하다는 이유로 test_files 에 두면 "이 파일이 가드를 떠받친다" 는 거짓 근거가 된다.
+#     (ForgotPasswordViaIdentityTest 와 IdentityChallengeFlowTest 의 흐름 단언은 identity-verification-core-flow.yaml 소관)
   - templates/_bundled/sirsoft-basic/__tests__/layouts/identity-challenge-modal.test.tsx
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-identity-challenge-modal.test.tsx

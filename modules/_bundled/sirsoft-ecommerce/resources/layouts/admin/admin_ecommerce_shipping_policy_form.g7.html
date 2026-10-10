@@ -1,0 +1,238 @@
+<!-- 배송정책 등록·수정 (운영자) — 한 레이아웃이 세 진입을 겸한다: 신규(`route.id` 없음) · 수정
+  (`route.id`) · 복사(`query.copy_id`). 셋의 차이는 폼을 무엇으로 채우느냐뿐이라 `<init>` 의
+  초기화 액션 한 곳에서 갈라지고, 그 아래 입력 구획은 진입 종류를 모른 채 `_local.form` 만 본다.
+  정책은 국가별 설정 배열을 품으므로 화면도 국가 탭 하나를 골라 그 항목만 편집한다. -->
+<layout name="admin_ecommerce_shipping_policy_form" version="1.0.0" extends="_admin_base">
+  <meta title="{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.title_edit' : '$t:sirsoft-ecommerce.admin.shipping_policy.title_create'}}"/>
+  <!-- 수정 진입일 때만 원본을 받아 폼에 심는다. 수정 권한이 없으면 응답을 받고도 403 화면으로 돌리는데, 목록 진입 없이 주소만으로 들어오는 경로가 있어 이 자리에서 막아야 한다 -->
+  <data-source id="policy" label_key="$t:sirsoft-ecommerce.editor.data_source.policy" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{route.id}}" method="GET" if="{{!!route.id}}" initLocal="form" :refetchOnMount="true" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+    <field name="errorCondition">
+      <field name="if" value="{{response?.data?.abilities?.can_update === false}}"/>
+      <field name="errorCode" :value="403"/>
+    </field>
+  </data-source>
+  <!-- 복사 진입일 때만 원본을 받는다(신규 경로이므로 `route.id` 가 없을 때로 한정). 원본이 지워졌어도 빈 폼으로 계속 진행하도록 fallback 을 둔다 -->
+  <data-source id="copy_source" label_key="$t:sirsoft-ecommerce.editor.data_source.copy_source" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{query.copy_id}}" method="GET" :auto_fetch="true" :auth_required="true" if="{{!!query?.copy_id &amp;&amp; !route?.id}}" initLocal="form" loading_strategy="blocking">
+    <fallback :data="null"/>
+  </data-source>
+  <!-- 수정 진입일 때만 이 정책의 교환·반품 회수지를 받는다. 폼 본체를 기다리게 하지 않도록 background 로 받고 마운트마다 새로 받는다 — 응답이 편집보다 늦게 와도 아래 success 가 이미 손댄 버퍼를 지킨다 -->
+  <data-source id="claim_settings" label_key="$t:sirsoft-ecommerce.editor.data_source.claim_settings" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies/{{route.id}}/claim-settings" method="GET" if="{{!!route.id}}" :refetchOnMount="true" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <success>
+      <!-- 회수지 편집 버퍼의 시드는 initLocal 이 아니라 응답 시점의 단일 setState 다 — initLocal 은 마운트 후 한 번 더 적용되며, 그 재적용이 명시적 setState 로 기록한 편집(자동바인딩이 아닌 경로)을 되돌린다. 조회가 `background` 라 응답이 편집보다 늦게 올 수 있다 — 이미 손댄 버퍼(dirty)는 덮지 않고 로딩 완료 표식(`_loaded`)만 합친다. 표식을 별도 로컬 키로 두면 입력 change 의 setState 뒤에 초기값으로 되돌아가고(10차 실측), 편집 뒤의 점 경로 쓰기도 붙지 않으므로 객체 전체를 한 번에 쓴다. `_loaded` 는 회수지 저장 허용 조건이다 — 편집 버퍼 초기값과 조회 실패 폴백이 둘 다 `{exchange:null, return:null}` 이라 '못 받았다' 와 '비어 있다' 가 값으로 구분되지 않는데, 저장은 두 회수지를 항상 함께 실어 `null` 이 서버 삭제 계약을 탄다. -->
+      <set-state target="local" claimAddresses="{{({ addresses: (_local.claimAddressesDirty === true ? _local.claimAddresses?.addresses : (response.data?.data ?? response.data)?.addresses) ?? { exchange: null, return: null }, _loaded: true })}}"/>
+    </success>
+    <fallback>
+      <field name="data">
+        <field name="addresses">
+          <field name="exchange" :value="null"/>
+          <field name="return" :value="null"/>
+        </field>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 등록 모드에는 정책 응답이 없어 등록 권한(can_create)·수정 권한(can_update)을 알 곳이 없다 — 목록 응답의 컬렉션 abilities 를 목록 API 최소 단위(per_page=10, 그보다 작으면 422)로 받아 쓴다.
+    회수지 저장(claim-settings PUT)과 API 연결 시험은 수정 권한의 일이라, 등록 권한만 있는 운영자가 정책은 만들고 회수지는 403 으로 남는 부분 실패를 막는다.
+    폼 전체의 읽기 전용 계산값(`isReadOnly`)도 등록·복사 진입에서는 이 응답의 can_create 를 본다 — 등록 권한 없이 주소로 들어와도 입력칸과 [저장]이 함께 잠긴다(수정 화면과 같은 기준).
+    조회 권한이 없어 실패하면 폴백(null)으로 떨어져 잠긴 쪽으로 판정한다. -->
+  <data-source id="policy_abilities" label_key="$t:sirsoft-ecommerce.editor.data_source.policy_abilities" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies" method="GET" if="{{!route.id}}" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <params :per_page="10"/>
+    <fallback :data="null"/>
+  </data-source>
+  <!-- 배송 국가·배송 방식·통화·API 규격이 전부 쇼핑몰 설정에서 온다. 아래 computed 대부분이 이 응답을 선택지로 접는 것이고, 폼 초기화도 국가 목록을 먼저 알아야 해서 blocking 이다 -->
+  <data-source id="ecommerce_settings" label_key="$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking"/>
+  <!-- 지역별 추가배송비 템플릿(도서산간 등). 추가배송비 구획을 펼칠 때만 필요해 자동 조회를 끄고, 검색어가 바뀌면 그때 다시 받는다 -->
+  <data-source id="extra_fee_templates" label_key="$t:sirsoft-ecommerce.editor.data_source.extra_fee_templates" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/extra-fee-templates" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive">
+    <params search="{{_local.templateSearch ?? ''}}" :per_page="20"/>
+  </data-source>
+  <init-local>
+    <field name="form">
+      <field name="name" :value="[]"/>
+      <field name="is_active" :value="true"/>
+      <field name="is_default" :value="false"/>
+      <field name="country_settings" :value="[]"/>
+    </field>
+    <field name="activeCountryTab" :value="0"/>
+    <field name="isSaving" :value="false"/>
+    <field name="errors" :value="null"/>
+    <field name="rangeErrors" :value="[]"/>
+    <field name="showBaseFee" :value="true"/>
+    <field name="showFreeThreshold" :value="false"/>
+    <field name="showRanges" :value="false"/>
+    <field name="showApiSettings" :value="false"/>
+    <field name="showUnitValue" :value="false"/>
+    <field name="templateSearch" value=""/>
+    <field name="selectedTemplateIds" :value="[]"/>
+    <field name="editingTemplate" :value="null"/>
+    <field name="templateForm">
+      <field name="zipcode" value=""/>
+      <field name="fee" :value="3000"/>
+      <field name="region" value=""/>
+      <field name="description" value=""/>
+    </field>
+    <field name="templateFormErrors" :value="[]"/>
+    <field name="claimAddresses">
+      <field name="addresses">
+        <field name="exchange" :value="null"/>
+        <field name="return" :value="null"/>
+      </field>
+      <field name="_loaded" :value="false"/>
+    </field>
+    <field name="claimAddressesDirty" :value="false"/>
+    <field name="savedPolicyId" :value="null"/>
+  </init-local>
+  <computed name="availableCountries">{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active)}}</computed>
+  <computed name="addableCountries">{{(ecommerce_settings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active &amp;&amp; !(_local.form?.country_settings ?? []).some(cs => cs.country_code === c.code))}}</computed>
+  <computed name="addableCountryOptions">{{(_computed.addableCountries ?? []).map(c => ({ value: c.code, label: $localized(c.name) + ' (' + c.code + ')' }))}}</computed>
+  <computed name="shippingMethodOptions">{{(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.ko ?? t.code}))}}</computed>
+  <computed name="chargePolicyOptions">{{[{value: 'free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.free')}, {value: 'fixed', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.fixed')}, {value: 'conditional_free', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.conditional_free')}, {value: 'range_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_amount')}, {value: 'range_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_quantity')}, {value: 'range_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_weight')}, {value: 'range_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume')}, {value: 'range_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.range_volume_weight')}, {value: 'per_quantity', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_quantity')}, {value: 'per_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_weight')}, {value: 'per_volume', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume')}, {value: 'per_volume_weight', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_volume_weight')}, {value: 'per_amount', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.per_amount')}, {value: 'api', label: $t('sirsoft-ecommerce.admin.shipping_policy.enums.charge_policy.api')}]}}</computed>
+  <computed name="currencyOptions">{{(ecommerce_settings?.data?.language_currency?.currencies ?? []).map(c => ({ value: c.code, label: $localized(c.name) }))}}</computed>
+  <computed name="defaultCurrencyCode">{{ecommerce_settings?.data?.language_currency?.default_currency}}</computed>
+  <computed name="defaultCurrencyLabel">{{(() => { const code = ecommerce_settings?.data?.language_currency?.default_currency; const match = (ecommerce_settings?.data?.language_currency?.currencies ?? []).find(c => c.code === code); const name = match ? $localized(match.name) : ''; if (!name) return code; return name.includes(code) ? name : name + ' (' + code + ')'; })()}}</computed>
+  <computed name="apiRequestFieldOptions">{{ecommerce_settings?.data?.shipping?.api_request_fields ?? []}}</computed>
+  <computed name="apiHttpMethodOptions">{{ecommerce_settings?.data?.shipping?.api_http_methods ?? []}}</computed>
+  <computed name="apiAuthTypeOptions">{{ecommerce_settings?.data?.shipping?.api_auth_types ?? []}}</computed>
+  <computed name="apiResponseTypeOptions">{{ecommerce_settings?.data?.shipping?.api_response_types ?? []}}</computed>
+  <computed name="activeCountrySetting">{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]}}</computed>
+  <computed name="rangeUnitLabel">{{(() => { const p = (_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.charge_policy; if (p === 'range_quantity') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_quantity'); if (p === 'range_weight' || p === 'range_volume_weight') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_weight'); if (p === 'range_volume') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_volume'); if (p === 'range_amount') return ecommerce_settings?.data?.language_currency?.default_currency ?? ''; return ''; })()}}</computed>
+  <computed name="perUnitLabel">{{(() => { const p = (_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.charge_policy; if (p === 'per_quantity') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_quantity'); if (p === 'per_weight' || p === 'per_volume_weight') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_weight'); if (p === 'per_volume') return $t('sirsoft-ecommerce.admin.shipping_policy.form.unit_volume'); if (p === 'per_amount') return ecommerce_settings?.data?.language_currency?.default_currency ?? ''; return ''; })()}}</computed>
+  <computed name="activeCountryCode">{{(_local.form?.country_settings ?? [])[_local.activeCountryTab ?? 0]?.country_code ?? ''}}</computed>
+  <computed name="isReadOnly">{{route.id ? policy?.data?.abilities?.can_update !== true : policy_abilities?.data?.abilities?.can_create !== true}}</computed>
+  <computed name="lacksUpdate">{{!!route.id ? policy?.data?.abilities?.can_update !== true : policy_abilities?.data?.abilities?.can_update !== true}}</computed>
+  <permissions>
+    <permission>sirsoft-ecommerce.shipping-policies.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>extra_fee_templates</wait-for>
+  </transition-overlay>
+  <init>
+    <!-- 생성 모드: 배송정책 수정 화면에서 SPA 로 넘어오면 같은 레이아웃이라 엔진이 `_local` 을 비우지 않아 직전 정책의 form(id·이름 등)이 남는다. form=null 로 먼저 지운다(객체 대신 null 로 덮어써 완전 삭제). 복사 진입(copy_id)은 copy_source 의 initLocal 이 init_actions 뒤에 병합되고 initShippingPolicyForm 이 country_settings 를 다시 쓰므로 영향 없음. -->
+    <set-state if="{{!route.id}}" target="local" :form="null"/>
+    <!-- 생성 모드 기본값 복원(레이아웃 state.form 과 동일) — 같은 레이아웃 재진입에서는 state 가 다시 적용되지 않는다. 직전 화면의 필드 오류도 함께 지운다. -->
+    <set-state if="{{!route.id}}" target="local" :errors="null">
+      <field name="form">
+        <field name="name" :value="[]"/>
+        <field name="is_active" :value="true"/>
+        <field name="is_default" :value="false"/>
+        <field name="country_settings" :value="[]"/>
+      </field>
+    </set-state>
+    <set-state target="global" :isTemplateSaving="false" :isTemplateDeleting="false" infiniteScroll="{{({ currentPage: 1, hasMore: true, isLoadingMore: false })}}"/>
+    <action handler="sirsoft-ecommerce.initShippingPolicyForm" isEdit="{{!!route.id}}" isCopy="{{!!query?.copy_id &amp;&amp; !route?.id}}" policy="{{route.id ? policy?.data : copy_source?.data}}" availableCountries="{{_computed.availableCountries}}"/>
+    <set-state if="{{!!query?.copy_id &amp;&amp; !route?.id}}" target="local" :form.is_default="false"/>
+    <!-- 신규 등록에는 서버에 덮어쓸 회수지가 없고 회수지 조회 데이터소스 자체가 돌지 않는다(`if: !!route.id`) — 회수지 저장 허용 플래그를 여기서 세운다. 화면 진입 시점에 한 번 정해지는 값이라 init_actions 가 맞는 자리다 (버튼 액션 체인의 `if` 에서 `route` 를 읽는 형태는 이 화면에서 실측 중 실패가 있었고 원인을 확정하지 못해 쓰지 않았다 — 형제 `admin_ecommerce_product_form` 의 onSuccess 체인은 `!route.itemCode` 를 읽고 출하 중이므로 '체인 if 는 route 를 못 읽는다' 로 일반화하지 말 것). 같은 자리에서 회수지 버퍼·손댐 표식·저장된 정책 id 도 함께 비운다 — 같은 레이아웃 SPA 이동(수정→신규, 수정 A→수정 B)에서는 `_local` 이 남아, 비우지 않으면 신규 폼에 앞 정책의 회수지가 보이고 `savedPolicyId` 때문에 새 정책 POST 가 앞 정책 PUT 으로 나가며, 손댐 표식이 정책 B 의 조회 응답을 막는다. `_loaded` 는 먼저 false 로 되돌리고(수정 진입은 회수지 조회가 도착해야 저장한다) 신규 등록만 바로 아래에서 true 로 세운다. -->
+    <set-state target="local" :savedPolicyId="null" :claimAddressesDirty="false">
+      <field name="claimAddresses">
+        <field name="addresses">
+          <field name="exchange" :value="null"/>
+          <field name="return" :value="null"/>
+        </field>
+        <field name="_loaded" :value="false"/>
+      </field>
+    </set-state>
+    <set-state if="{{!route.id}}" target="local" :claimAddresses._loaded="true"/>
+  </init>
+  <slot name="content">
+    <div data-ref="shipping_policy_form_container" class="admin-page-content">
+      <div data-ref="page_header" class="page-header">
+        <div>
+          <h1 class="page-title">{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.title_edit' : '$t:sirsoft-ecommerce.admin.shipping_policy.title_create'}}</h1>
+          <p class="page-description">$t:sirsoft-ecommerce.admin.shipping_policy.form.description</p>
+        </div>
+      </div>
+      <div data-ref="validation_error_banner" data-if="{{_local.errors}}" class="alert-danger">
+        <icon name="triangle-exclamation" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" size="md"/>
+        <div>
+          <h3 class="text-error-strong">$t:sirsoft-ecommerce.common.validation_error</h3>
+          <ul data-if="{{typeof _local.errors === 'object'}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+            <li class="text-error-soft">{{message}}</li>
+          </ul>
+        </div>
+      </div>
+      <div data-ref="form_sections" data-key="form" data-debounce="300" class="row-stack">
+        <include src="partials/admin_ecommerce_shipping_policy_form/_partial_basic_info.g7.html"/>
+        <include src="partials/admin_ecommerce_shipping_policy_form/_partial_claim_addresses.g7.html"/>
+        <div data-ref="country_settings_wrapper" class="row-stack">
+          <include src="partials/admin_ecommerce_shipping_policy_form/_partial_country_tabs.g7.html"/>
+          <include src="partials/admin_ecommerce_shipping_policy_form/_partial_country_basic_fields.g7.html"/>
+          <include src="partials/admin_ecommerce_shipping_policy_form/_partial_charge_settings.g7.html"/>
+          <include src="partials/admin_ecommerce_shipping_policy_form/_partial_claim_country_fee.g7.html"/>
+          <include src="partials/admin_ecommerce_shipping_policy_form/_partial_extra_fee.g7.html"/>
+        </div>
+        <div data-ref="footer_buttons" class="sticky-footer-buttons-between">
+          <button data-ref="footer_list_button" type="button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors">
+            <on type="click">
+              <!-- 목록으로. 보던 목록 상태를 이고 간다 -->
+              <navigate path="/admin/ecommerce/shipping-policies" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <span>$t:common.list</span>
+          </button>
+          <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || _computed.isReadOnly}}" class="btn btn-primary flex-center gap-1.5">
+            <on type="click">
+              <!-- 저장 — 등록/수정 구분은 `route.id` 유무 하나로 엔드포인트와 메서드를 함께 가른다. 성공하면 목록으로 돌아가므로 폼을 되받아 채울 필요가 없고, 실패하면 서버 오류를 폼 위 배너로 넘긴다 -->
+              <sequence>
+                <set-state target="local" :isSaving="true" :errors="null"/>
+                <!-- savedPolicyId 는 '이 화면에서 방금 만든 정책' 이다. 신규 등록에서 정책 POST 는 성공했는데 뒤이은 회수지 PUT 이 거절되면 화면에 머무는데, route.id 는 여전히 비어 있어 다시 [저장] 을 누르면 같은 정책이 하나 더 생긴다. 첫 성공 시점에 그 id 를 붙잡아 재저장이 PUT 으로 가게 한다. -->
+                <api-call :auth_required="true" target="{{(route.id || _local.savedPolicyId) ? '/api/modules/sirsoft-ecommerce/admin/shipping-policies/' + (route.id || _local.savedPolicyId) : '/api/modules/sirsoft-ecommerce/admin/shipping-policies'}}" method="{{(route.id || _local.savedPolicyId) ? 'PUT' : 'POST'}}" body="{{_local.form}}">
+                  <success>
+                    <!-- 저장 가드는 **체인 끝**에서 푼다. 회수지 요청이 이어지는 경우(dirty+loaded)에는 그 요청의 onSuccess/onError 가 풀고, 이어지지 않는 경우에만 여기서 푼다. 아래 토스트·이동의 `if` 가 같은 술어를 다시 읽어도 두 번 발화하지 않는 것은 실행 순서 때문이 아니라, 외곽 시퀀스가 내부 onSuccess 의 setState 결과를 자기 스냅샷에 반영하지 않기 때문이다(엔진의 시퀀스 스냅샷 격리). 엔진이 내부 상태를 외곽에 전파하도록 바뀌면 성공 경로에서 토스트·이동이 2회가 되므로 그때는 이 구조를 다시 본다. — `savedPolicyId` 는 **요청 주소를 정하는 값이지 '수정이었는가' 의 술어가 아니다.** 여기서 쓴 값은 같은 시퀀스의 뒤 액션 스냅샷에 병합되므로(`ActionDispatcher.handleSequence` 가 `__target:'local'` setState 결과를 `currentState` 에 합친다), 신규 등록에서도 이 줄 다음부터는 언제나 truthy 다. 토스트 문구가 이 값을 읽으면 새로 만든 정책에 '수정되었습니다' 가 나간다 — 그 판정은 `route.id`(이 화면에 무엇을 하러 들어왔는가) 하나로만 한다. -->
+                    <set-state target="local" isSaving="{{_local.claimAddressesDirty === true &amp;&amp; _local.claimAddresses?._loaded === true}}" savedPolicyId="{{route.id || response?.data?.id}}"/>
+                    <!-- 회수지는 본 폼 PUT 이 받지 않는 축이라 별도 엔드포인트로 이어 저장한다. 운영자가 손대지 않았으면 요청 자체를 보내지 않는다. 지우기 판정은 **모든 칸이 비었을 때**만 내린다 — 필수 2칸만 비었다고 null 로 바꾸면 전화·우편번호가 남은 회수지가 확인창 없이 통째로 지워지고(전용 지우기 버튼에는 확인창이 있다), 반대로 전화만 친 상태는 오류 없이 버려진다. 일부만 채워진 입력은 그대로 보내 서버가 무엇이 빠졌는지 422 로 알려준다. -->
+                    <api-call if="{{_local.claimAddressesDirty === true &amp;&amp; _local.claimAddresses?._loaded === true}}" :auth_required="true" target="{{'/api/modules/sirsoft-ecommerce/admin/shipping-policies/' + (route.id || _local.savedPolicyId || response?.data?.id) + '/claim-settings'}}" method="PUT">
+                  <success>
+                        <!-- 회수지까지 끝났으므로 저장 가드를 여기서 푼다 (앞 setState 는 이 요청이 이어질 때 가드를 유지했다). -->
+                        <set-state target="local" :isSaving="false" :claimAddressesDirty="false"/>
+                    <toast type="success" message="{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.messages.updated' : '$t:sirsoft-ecommerce.admin.shipping_policy.messages.created'}}"/>
+                    <navigate path="/admin/ecommerce/shipping-policies" :mergeQuery="true">
+                      <query/>
+                    </navigate>
+                  </success>
+                  <fail>
+                        <!-- 정책은 이미 저장됐고 회수지만 실패했다 — 목록으로 나가면 그 사실이 화면에서 사라지므로 남는다. -->
+                    <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                        <toast type="error" message="{{error.message || '$t:sirsoft-ecommerce.admin.shipping_policy.messages.claim_settings_save_error'}}"/>
+                      </fail>
+                      <field name="body">
+                        <field name="addresses">
+                          <field name="exchange" value="{{[_local.claimAddresses?.addresses?.exchange?.recipient_name, _local.claimAddresses?.addresses?.exchange?.address1, _local.claimAddresses?.addresses?.exchange?.address2, _local.claimAddresses?.addresses?.exchange?.zipcode, _local.claimAddresses?.addresses?.exchange?.phone].some(v => String(v ?? '').trim() !== '') ? _local.claimAddresses.addresses.exchange : null}}"/>
+                          <field name="return" value="{{[_local.claimAddresses?.addresses?.return?.recipient_name, _local.claimAddresses?.addresses?.return?.address1, _local.claimAddresses?.addresses?.return?.address2, _local.claimAddresses?.addresses?.return?.zipcode, _local.claimAddresses?.addresses?.return?.phone].some(v => String(v ?? '').trim() !== '') ? _local.claimAddresses.addresses.return : null}}"/>
+                        </field>
+                      </field>
+                    </api-call>
+                    <!-- 회수지를 손댔는데 조회가 성공하지 못한 경우 — 저장을 보내지 않았음을 알린다 (조용히 건너뛰면 운영자는 저장된 줄 안다). -->
+                    <toast if="{{_local.claimAddressesDirty === true &amp;&amp; _local.claimAddresses?._loaded !== true}}" type="warning" message="$t:sirsoft-ecommerce.admin.shipping_policy.messages.claim_settings_not_loaded"/>
+                    <toast if="{{_local.claimAddressesDirty !== true}}" type="success" message="{{route.id ? '$t:sirsoft-ecommerce.admin.shipping_policy.messages.updated' : '$t:sirsoft-ecommerce.admin.shipping_policy.messages.created'}}"/>
+                    <navigate if="{{_local.claimAddressesDirty !== true}}" path="/admin/ecommerce/shipping-policies" :mergeQuery="true">
+                      <query/>
+                    </navigate>
+                  </success>
+                  <fail>
+                    <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                    <toast type="error" message="{{error.message || '$t:common.validation_error'}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+            <span data-if="{{!_local.isSaving}}">$t:sirsoft-ecommerce.common.save</span>
+            <span data-if="{{_local.isSaving}}">$t:sirsoft-ecommerce.common.saving</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <!-- 추가배송비 템플릿 만들기·고치기 — 정책 저장과 별개로 이 창에서 바로 서버에 반영된다 -->
+  <modal src="partials/admin_ecommerce_shipping_policy_form/_modal_extra_fee_template.g7.html"/>
+</layout>

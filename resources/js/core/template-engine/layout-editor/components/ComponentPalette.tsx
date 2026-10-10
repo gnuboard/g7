@@ -4,7 +4,8 @@
  * '요소 추가' 버튼 또는 외곽 + 버튼 클릭 시 떠 있는 팝업으로 표시.
  *
  * 데이터 흐름:
- *  - 소스: 편집 대상 템플릿의 `components.json` (컴포넌트 매니페스트).
+ *  - 소스: 편집 대상 템플릿의 `components.json` (컴포넌트 매니페스트) + 확장이 팔레트에 등재한
+ *    자기 컴포넌트의 항목(셸이 그 확장 `components.json` 에서 읽어 더한다 — extensionPaletteComponents.ts).
  *  - 필터: 삽입 대상 부모의 `nesting.accepts` 가 있으면 그 안에 든 컴포넌트만.
  *  - 그룹: editorSpec.componentPalette.groups 가 미제공이므로 본 Phase 는 추정
  *    규칙(`bindingType` 이나 컴포넌트 이름 휴리스틱)으로 디자인/DB 분류.
@@ -699,7 +700,6 @@ function pickIconGlyph(entry: ComponentManifestEntry): string {
     FileUploader: '📎',
     AvatarUploader: '📷',
     SocialLoginButtons: '🌐',
-    PostReactions: '❤',
   };
   return map[name] ?? '◻';
 }

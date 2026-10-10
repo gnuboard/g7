@@ -1,0 +1,18 @@
+feature: 미리보기를 제공하지 않는 형식의 미리보기 응답 문구
+
+description: |
+  미리보기는 일반 이미지(JPG·PNG·GIF·WebP)만 띄운다. SVG·TXT 의 미리보기 주소를 열면 404 와 함께
+  「첨부파일이 스토리지에 존재하지 않습니다.」가 나갔다(7.1.0 전수 실측 영역 L, O-L4). 파일은 있으므로
+  사실과 다른 문구다. 상태코드 404 는 유지하고 문구를 「미리보기를 제공하지 않는 파일 형식입니다.」로 바꾼다.
+  이미지인데 파일이 없을 때는 종전 문구를 쓴다.
+
+axes:
+  mime: [non_previewable, jpeg_missing_file]   # non_previewable 은 SVG·TXT 를 한 테스트에서 함께 본다
+  locale: [ko, en]
+
+effects:
+  - non_previewable_type_says_preview_not_supported
+  - missing_image_file_keeps_file_not_found_message
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/User/PreviewNotSupportedMessageTest.php

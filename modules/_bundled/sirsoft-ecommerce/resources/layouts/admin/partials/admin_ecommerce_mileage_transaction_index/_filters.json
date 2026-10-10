@@ -1,551 +1,565 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "마일리지 내역 필터 (검색/유형/통화/기간) — 리뷰/쿠폰/배송정책 공통 규약(card·input·btn-date) 1:1"
-  },
-  "id": "mileage_filter_card",
-  "type": "basic",
-  "name": "Div",
-  "props": {
-    "className": "admin-card mb-6"
-  },
-  "children": [
-    {
-      "id": "search_row",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex flex-wrap items-center gap-3 mb-4"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "text-label-subtle text-sm w-20 flex-shrink-0"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.label_search"
-        },
-        {
-          "type": "composite",
-          "name": "Select",
-          "props": {
-            "name": "searchField",
-            "className": "w-36 text-sm",
-            "value": "{{_local.filter.searchField ?? 'member'}}",
-            "options": [
-              {
-                "value": "member",
-                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.search.field_member"
-              },
-              {
-                "value": "member_id",
-                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.search.field_member_id"
-              },
-              {
-                "value": "email",
-                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.search.field_email"
-              },
-              {
-                "value": "order",
-                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.search.field_order"
-              }
-            ]
-          },
-          "actions": [
-            {
-              "type": "change",
-              "handler": "setState",
-              "params": {
-                "target": "local",
-                "filter": {
-                  "searchField": "{{$event.target.value}}"
-                }
-              }
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-1 min-w-64 relative"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "text",
-                "value": "{{_local.filter.searchKeyword ?? ''}}",
-                "placeholder": "$t:sirsoft-ecommerce.admin.mileage_transactions.search.keyword_placeholder",
-                "className": "input w-full pr-10"
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "filter": {
-                      "searchKeyword": "{{$event.target.value}}"
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "magnifying-glass",
-                "size": "sm",
-                "className": "absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
-              }
-            }
-          ]
-        }
-      ]
+    "comment": "마일리지 내역 검색 조건. 입력하는 동안에는 아무것도 조회하지 않고 값을 `_local.filter` 에만\n  모아 두었다가, [검색]을 눌러야 그 묶음이 한꺼번에 URL 로 나간다 — 그래서 조건을 여럿 바꿔도\n  요청은 한 번이고, 주소를 붙여넣으면 같은 결과가 나온다.\n  URL 이 정본이라 화면 상태와 두 벌이 되지만, 되돌리는 방향은 없다(주소로 들어오면 입력칸이\n  아니라 목록만 그 조건을 반영한다).\n  기간은 직접 고르는 두 칸과 빠른 선택 넷이 **같은 자리를 다툰다** — 날짜를 손으로 고치면 빠른\n  선택 표시가 풀리고, 빠른 선택을 누르면 두 날짜가 덮인다. 그래서 한쪽을 고칠 때 반드시 다른\n  쪽도 함께 쓴다.\n  이동은 `replace` 라 검색을 반복해도 뒤로가기 이력이 쌓이지 않고, 표 본문에만 전환 효과가 걸려\n  검색 중에도 필터 영역은 그대로 남는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "마일리지 내역 필터 (검색/유형/통화/기간) — 리뷰/쿠폰/배송정책 공통 규약(card·input·btn-date) 1:1"
     },
-    {
-      "id": "type_currency_row",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex flex-wrap items-center gap-3 mb-4"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "text-label-subtle text-sm w-20 flex-shrink-0"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.label_type"
-        },
-        {
-          "type": "composite",
-          "name": "Select",
-          "props": {
-            "name": "type",
-            "className": "w-32 text-sm",
-            "value": "{{_local.filter.type ?? ''}}",
-            "options": [
-              {
-                "value": "",
-                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.type_all"
-              },
-              {
-                "value": "earn",
-                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.type_earn"
-              },
-              {
-                "value": "use",
-                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.type_use"
-              },
-              {
-                "value": "expire",
-                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.type_expire"
-              },
-              {
-                "value": "adjust",
-                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.type_adjust"
-              }
-            ]
-          },
-          "actions": [
-            {
-              "type": "change",
-              "handler": "setState",
-              "params": {
-                "target": "local",
-                "filter": {
-                  "type": "{{$event.target.value}}"
-                }
-              }
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "text-label-subtle text-sm flex-shrink-0 ml-2"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.label_currency"
-        },
-        {
-          "type": "composite",
-          "name": "Select",
-          "props": {
-            "name": "currency",
-            "className": "w-32 text-sm",
-            "value": "{{_local.filter.currency ?? ''}}",
-            "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.mileage_transactions.filter.currency_all') }, ...((transactions?.data?.currencies ?? ['KRW']).map(c => ({ value: c, label: c })))]}}"
-          },
-          "actions": [
-            {
-              "type": "change",
-              "handler": "setState",
-              "params": {
-                "target": "local",
-                "filter": {
-                  "currency": "{{$event.target.value}}"
-                }
-              }
-            }
-          ]
-        }
-      ]
+    "id": "mileage_filter_card",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card mb-6"
     },
-    {
-      "id": "date_row",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex flex-wrap items-center gap-3"
-      },
-      "children": [
+    "children": [
         {
-          "type": "basic",
-          "name": "Span",
-          "props": {
-            "className": "text-label-subtle text-sm w-20 flex-shrink-0"
-          },
-          "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.label_date"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex items-center gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "date",
-                "value": "{{_local.filter.startDate ?? ''}}",
-                "className": "input w-36"
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "filter.startDate": "{{$event.target.value}}",
-                    "filter.dateQuick": ""
-                  }
-                }
-              ]
+            "id": "search_row",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-wrap items-center gap-3 mb-4"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "props": {
-                "className": "text-gray-400 dark:text-gray-500"
-              },
-              "text": "~"
-            },
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "date",
-                "value": "{{_local.filter.endDate ?? ''}}",
-                "className": "input w-36"
-              },
-              "actions": [
+            "children": [
                 {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "filter.endDate": "{{$event.target.value}}",
-                    "filter.dateQuick": ""
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex flex-wrap items-center gap-1"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_week",
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "sirsoft-ecommerce.setDateRange",
-                      "params": {
-                        "preset": "week"
-                      }
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-label-subtle text-sm w-20 flex-shrink-0"
                     },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "filter.dateQuick": "{{$prev.preset}}",
-                        "filter.startDate": "{{$prev.startDate}}",
-                        "filter.endDate": "{{$prev.endDate}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_month",
-              "actions": [
+                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.label_search"
+                },
                 {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "sirsoft-ecommerce.setDateRange",
-                      "params": {
-                        "preset": "month"
-                      }
-                    },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "filter.dateQuick": "{{$prev.preset}}",
-                        "filter.startDate": "{{$prev.startDate}}",
-                        "filter.endDate": "{{$prev.endDate}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_3months",
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "sirsoft-ecommerce.setDateRange",
-                      "params": {
-                        "preset": "3months"
-                      }
-                    },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "filter.dateQuick": "{{$prev.preset}}",
-                        "filter.startDate": "{{$prev.startDate}}",
-                        "filter.endDate": "{{$prev.endDate}}"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_all",
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "filter.dateQuick": "all",
-                    "filter.startDate": "",
-                    "filter.endDate": ""
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "filter_actions",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex items-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
-      },
-      "responsive": {
-        "portable": {
-          "props": {
-            "className": "flex flex-col gap-2 border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
-          }
-        }
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-1"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "hidden"
-              }
-            }
-          }
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex items-center justify-center gap-2 flex-1"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "flex gap-2 w-full"
-              }
-            }
-          },
-          "children": [
-            {
-              "id": "search_submit_button",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "btn btn-primary text-sm"
-              },
-              "responsive": {
-                "portable": {
-                  "props": {
-                    "className": "btn btn-primary text-sm flex-1"
-                  }
-                }
-              },
-              "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.search.submit",
-              "actions": [
-                {
-                  "comment": "검색 실행 — 열거한 검색 조건만 덮어쓰고 나머지 목록 상태는 유지한다 (#75).",
-                  "type": "click",
-                  "handler": "navigate",
-                  "params": {
-                    "path": "/admin/ecommerce/mileage-transactions",
-                    "replace": true,
-                    "mergeQuery": true,
-                    "query": {
-                      "search_field": "{{_local.filter.searchField ?? 'member'}}",
-                      "search_keyword": "{{_local.filter.searchKeyword ?? ''}}",
-                      "type": "{{_local.filter.type ?? ''}}",
-                      "currency": "{{_local.filter.currency ?? ''}}",
-                      "start_date": "{{_local.filter.startDate ?? ''}}",
-                      "end_date": "{{_local.filter.endDate ?? ''}}",
-                      "sort": "{{query.sort ?? 'created_at_desc'}}",
-                      "per_page": "{{query.per_page ?? 20}}",
-                      "page": 1
-                    },
-                    "transition_overlay_target": "mileage_transactions_datagrid__body"
-                  }
-                }
-              ]
-            },
-            {
-              "id": "search_reset_button",
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "className": "btn btn-outline text-sm"
-              },
-              "responsive": {
-                "portable": {
-                  "props": {
-                    "className": "btn btn-outline text-sm flex-1"
-                  }
-                }
-              },
-              "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.search.reset",
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "sequence",
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "filter": {
-                          "searchField": "member",
-                          "searchKeyword": "",
-                          "type": "",
-                          "currency": "",
-                          "startDate": "",
-                          "endDate": "",
-                          "dateQuick": ""
+                    "type": "basic",
+                    "name": "Select",
+                    "actions": [
+                        {
+                            "comment": "검색 대상 칸 선택. 옆 입력칸의 뜻만 바꾸고 조회는 하지 않는다 — 실제 조회는 [검색] 버튼이 모든 조건을 한꺼번에 URL 로 보낼 때 일어난다.",
+                            "type": "change",
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "filter": {
+                                    "searchField": "{{$event.target.value}}"
+                                }
+                            }
                         }
-                      }
-                    },
-                    {
-                      "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
-                      "handler": "navigate",
-                      "params": {
-                        "path": "/admin/ecommerce/mileage-transactions",
-                        "replace": true,
-                        "mergeQuery": false,
-                        "transition_overlay_target": "mileage_transactions_datagrid__body"
-                      }
+                    ],
+                    "props": {
+                        "name": "searchField",
+                        "className": "w-36 text-sm",
+                        "value": "{{_local.filter.searchField ?? 'member'}}",
+                        "options": [
+                            {
+                                "value": "member",
+                                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.search.field_member"
+                            },
+                            {
+                                "value": "member_id",
+                                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.search.field_member_id"
+                            },
+                            {
+                                "value": "email",
+                                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.search.field_email"
+                            },
+                            {
+                                "value": "order",
+                                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.search.field_order"
+                            }
+                        ]
                     }
-                  ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1 min-w-64 relative"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "검색어. `change` 라 타이핑 중이 아니라 칸을 벗어날 때 담긴다 — 글자마다 상태를 쓰지 않으려는 선택이고, 엔터로 바로 검색되지도 않는다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter": {
+                                            "searchKeyword": "{{$event.target.value}}"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "value": "{{_local.filter.searchKeyword ?? ''}}",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.mileage_transactions.search.keyword_placeholder",
+                                "className": "input w-full pr-10"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "magnifying-glass",
+                                "size": "sm",
+                                "className": "absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"
+                            }
+                        }
+                    ]
                 }
-              ]
-            }
-          ]
+            ]
         },
         {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-1"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "hidden"
-              }
-            }
-          }
+            "id": "type_currency_row",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-wrap items-center gap-3 mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-label-subtle text-sm w-20 flex-shrink-0"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.label_type"
+                },
+                {
+                    "type": "basic",
+                    "name": "Select",
+                    "actions": [
+                        {
+                            "comment": "거래 유형(적립·사용·소멸·조정). 빈 값이 '전체' 이고, 그 빈 값도 URL 에 그대로 실려 나간다.",
+                            "type": "change",
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "filter": {
+                                    "type": "{{$event.target.value}}"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "name": "type",
+                        "className": "w-32 text-sm",
+                        "value": "{{_local.filter.type ?? ''}}",
+                        "options": [
+                            {
+                                "value": "",
+                                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.type_all"
+                            },
+                            {
+                                "value": "earn",
+                                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.type_earn"
+                            },
+                            {
+                                "value": "use",
+                                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.type_use"
+                            },
+                            {
+                                "value": "expire",
+                                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.type_expire"
+                            },
+                            {
+                                "value": "adjust",
+                                "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.type_adjust"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-label-subtle text-sm flex-shrink-0 ml-2"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.label_currency"
+                },
+                {
+                    "type": "basic",
+                    "name": "Select",
+                    "actions": [
+                        {
+                            "comment": "통화. 선택지가 고정 목록이 아니라 **조회 결과가 알려 준 통화들**(`transactions.data.currencies`)이라, 아직 거래가 없는 통화는 여기 나오지 않는다.",
+                            "type": "change",
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "filter": {
+                                    "currency": "{{$event.target.value}}"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "name": "currency",
+                        "className": "w-32 text-sm",
+                        "value": "{{_local.filter.currency ?? ''}}",
+                        "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.mileage_transactions.filter.currency_all') }, ...((transactions?.data?.currencies ?? ['KRW']).map(c => ({ value: c, label: c })))]}}"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "date_row",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-wrap items-center gap-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-label-subtle text-sm w-20 flex-shrink-0"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.label_date"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "시작일을 손으로 고르면 빠른 선택 표시를 함께 푼다 — 두 방식이 같은 기간을 가리키므로, 지우지 않으면 '최근 1개월' 이 켜진 채 다른 날짜가 보인다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.startDate": "{{$event.target.value}}",
+                                        "filter.dateQuick": ""
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.mileage_transactions.filter.label_date')}}",
+                                "type": "date",
+                                "value": "{{_local.filter.startDate ?? ''}}",
+                                "className": "input w-36"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-gray-400 dark:text-gray-500"
+                            },
+                            "text": "~"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "종료일. 시작일과 같은 이유로 빠른 선택 표시를 푼다. 두 날짜의 앞뒤 관계는 여기서 검사하지 않고 서버가 판단한다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.endDate": "{{$event.target.value}}",
+                                        "filter.dateQuick": ""
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.mileage_transactions.filter.label_date')}}",
+                                "type": "date",
+                                "value": "{{_local.filter.endDate ?? ''}}",
+                                "className": "input w-36"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-wrap items-center gap-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "actions": [
+                                {
+                                    "comment": "빠른 기간 — 날짜 계산은 화면이 하지 않고 모듈 핸들러가 한다. 그 핸들러가 돌려준 값을 바로 다음 액션이 `$prev` 로 받아 세 칸에 옮겨 담는 구조라, 둘의 순서를 바꾸면 빈 값이 들어간다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "sirsoft-ecommerce.setDateRange",
+                                            "params": {
+                                                "preset": "week"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.dateQuick": "{{$prev.preset}}",
+                                                "filter.startDate": "{{$prev.startDate}}",
+                                                "filter.endDate": "{{$prev.endDate}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_week"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "actions": [
+                                {
+                                    "comment": "최근 1개월 — 위 '최근 1주' 와 같은 두 단계이고 넘기는 이름만 다르다.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "sirsoft-ecommerce.setDateRange",
+                                            "params": {
+                                                "preset": "month"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.dateQuick": "{{$prev.preset}}",
+                                                "filter.startDate": "{{$prev.startDate}}",
+                                                "filter.endDate": "{{$prev.endDate}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_month"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "actions": [
+                                {
+                                    "comment": "최근 3개월 — 같은 두 단계.",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "sirsoft-ecommerce.setDateRange",
+                                            "params": {
+                                                "preset": "3months"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter.dateQuick": "{{$prev.preset}}",
+                                                "filter.startDate": "{{$prev.startDate}}",
+                                                "filter.endDate": "{{$prev.endDate}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_3months"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "actions": [
+                                {
+                                    "comment": "전체 기간 — 이것만 핸들러를 거치지 않는다. 계산할 날짜가 없고 두 칸을 비우는 것이 곧 '기간 제한 없음' 이기 때문이다.",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "filter.dateQuick": "all",
+                                        "filter.startDate": "",
+                                        "filter.endDate": ""
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "className": "{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.period_all"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "filter_actions",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "flex flex-col gap-2 border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
+                    }
+                }
+            },
+            "props": {
+                "className": "flex items-center border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "hidden"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "flex-1"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex gap-2 w-full"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "flex items-center justify-center gap-2 flex-1"
+                    },
+                    "children": [
+                        {
+                            "id": "search_submit_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "btn btn-primary text-sm flex-1"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "comment": "검색 실행 — 열거한 검색 조건만 덮어쓰고 나머지 목록 상태는 유지한다 (#75).",
+                                    "type": "click",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/ecommerce/mileage-transactions",
+                                        "replace": true,
+                                        "mergeQuery": true,
+                                        "transition_overlay_target": "mileage_transactions_datagrid__body",
+                                        "query": {
+                                            "search_field": "{{_local.filter.searchField ?? 'member'}}",
+                                            "search_keyword": "{{_local.filter.searchKeyword ?? ''}}",
+                                            "type": "{{_local.filter.type ?? ''}}",
+                                            "currency": "{{_local.filter.currency ?? ''}}",
+                                            "start_date": "{{_local.filter.startDate ?? ''}}",
+                                            "end_date": "{{_local.filter.endDate ?? ''}}",
+                                            "sort": "{{query.sort ?? 'created_at_desc'}}",
+                                            "per_page": "{{query.per_page ?? 20}}",
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-primary text-sm"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.search.submit"
+                        },
+                        {
+                            "comment": "검색 조건 초기화. 폼 상태를 비우고 주소도 함께 비운다 — 초기화는 걸린 조건을 없애는 것이므로 지금 조건과 병합하지 않는다",
+                            "id": "search_reset_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "btn btn-outline text-sm flex-1"
+                                    }
+                                }
+                            },
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "filter": {
+                                                    "searchField": "member",
+                                                    "searchKeyword": "",
+                                                    "type": "",
+                                                    "currency": "",
+                                                    "startDate": "",
+                                                    "endDate": "",
+                                                    "dateQuick": ""
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다.",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/ecommerce/mileage-transactions",
+                                                "replace": true,
+                                                "mergeQuery": false,
+                                                "transition_overlay_target": "mileage_transactions_datagrid__body"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-outline text-sm"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.search.reset"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "hidden"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "flex-1"
+                    }
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

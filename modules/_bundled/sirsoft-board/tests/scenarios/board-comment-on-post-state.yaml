@@ -1,0 +1,18 @@
+feature: 블라인드, 삭제된 게시글에는 댓글을 달 수 없다
+
+description: |
+  요청 경로와 서비스 직접 호출 모두에서 블라인드, 삭제(소프트 삭제 포함)된 게시글에 댓글을 거절하고 게시 중인 글은 허용하는지 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
+
+axes:
+  entity: [board_comment]
+  post_state: [blinded, deleted, soft_deleted, published]
+
+effects:
+  - blinded_post_comment_rejected_422
+  - deleted_post_comment_rejected_422
+  - published_post_comment_allowed
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/CommentPostStateTest.php

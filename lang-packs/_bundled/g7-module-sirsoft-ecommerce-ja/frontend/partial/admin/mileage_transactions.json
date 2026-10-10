@@ -65,6 +65,7 @@
     "search_member": "この会員で検索",
     "view_admin": "管理者情報",
     "none": "-",
+    "deleted_member": "削除された会員",
     "expired": "全額失効",
     "partial_expired": "一部失効",
     "expired_amount": "{{amount}} 失効",
@@ -73,7 +74,6 @@
   "row_action": {
     "expand": "詳細表示",
     "linked": "関連取引",
-    "manual": "手動調整",
     "edit": "理由·期限変更"
   },
   "linked": {

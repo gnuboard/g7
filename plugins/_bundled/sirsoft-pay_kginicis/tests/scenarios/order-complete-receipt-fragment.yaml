@@ -1,0 +1,23 @@
+feature: 주문 완료 화면 — KG이니시스 간편결제 이름과 영수증 버튼을 화면 조각으로 그린다 (#639)
+
+description: |
+  주문 완료 화면의 결제 금액 요약에 간편결제 이름과 영수증(원화 결제 완료) 또는 CBT 결제확인서(엔화, 편의점 입금 대기 포함)
+  버튼을 붙인다. 예전에는 주입 스크립트(orderCompleteReceiptInjector)가 `/shop/orders/…/complete` 주소 글자를 맞추고
+  화면의 파란 버튼을 찾아 그 옆에 끼웠으며, 로그인 토큰을 저장소에서 직접 읽어 주문·영수증을 다시 조회했다.
+
+  이제 조각(user_order_complete_receipt)이 템플릿이 단 id `order_complete_payment_summary` 에 붙고, 이니시스 주문일 때만
+  영수증 API 를 한 번 부른다. 버튼은 받아 둔 응답을 openReceipt 핸들러로 넘긴다(클릭과 같은 틱에서 창을 열어 팝업 차단을 피한다).
+  붙일 자리 id 는 템플릿 소유다 — 템플릿이 그 id 를 달지 않으면 조각은 오류 없이 나타나지 않는다.
+
+axes:
+  case: [anchor, paid_receipt, cbt_confirmation, unpaid, other_pg]
+
+effects:
+  - attaches_to_template_anchor_only
+  - receipt_button_from_api
+  - easy_pay_name_row_from_receipt_api
+  - receipt_hidden_until_paid
+  - hidden_for_other_pg
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/layouts/orderCompleteReceiptFragment.test.tsx

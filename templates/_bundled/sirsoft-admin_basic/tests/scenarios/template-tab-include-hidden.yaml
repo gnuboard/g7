@@ -1,0 +1,21 @@
+feature: admin_basic 템플릿 관리 — 종류 탭 전환과 「숨김 항목 포함」 체크 유지
+
+description: |
+  템플릿 관리는 종류(사용자·관리자)가 주소 경로에 들어가 탭 전환이 다른 주소로의 이동이다. 탭 전환이 쿼리를 넘기지 않아
+  사용자 탭에서 「숨김 항목 포함」을 켠 뒤 관리자 탭으로 가면 체크가 풀리고 숨김 템플릿이 목록에서 빠졌다(7.1.0 O-G3-4).
+  탭 전환은 include_hidden 만 이어 주고, 탭마다 다른 목록인 검색어·쪽은 넘기지 않는다. 모듈·플러그인 목록 안 이동(검색, 쪽)도
+  같은 값을 유지하는지 함께 고정한다.
+
+axes:
+  start: [include_hidden_on, include_hidden_off]
+  transition: [user_to_admin_tab, admin_to_user_tab, checkbox_reads_url, module_plugin_list_moves]
+
+effects:
+  - tab_switch_keeps_include_hidden
+  - tab_switch_drops_search_and_page
+  - tab_switch_without_hidden_adds_nothing
+  - both_tab_checkboxes_read_url
+  - module_plugin_moves_keep_include_hidden
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-template-tab-include-hidden.test.ts

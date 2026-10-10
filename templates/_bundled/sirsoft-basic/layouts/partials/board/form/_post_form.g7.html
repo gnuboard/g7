@@ -1,0 +1,198 @@
+<!-- 글 입력 본체 — 입력값을 폼 자동바인딩이 아니라 _local.form 한 덩어리로 모아 두고 저장할 때 통째로 보낸다(수정 시 서버가 준 기존 값을 그대로 이어받기 위해서다). 첨부는 임시 키(tempKey)로 먼저 올려 두었다가 저장에 그 키를 실어 글에 붙인다. 틀 응답이 오기 전에는 폼 전체를 흐리고 잠근다. -->
+<partial description="게시글 작성/수정 폼">
+  <form id="form" class="{{!form_meta?.data || !form_data?.data ? 'space-y-6 opacity-50 pointer-events-none' : 'space-y-6'}}">
+    <!-- 전체 에러 메시지 박스 -->
+    <div data-if="{{_local.errors &amp;&amp; (typeof _local.errors === 'string' || Object.keys(_local.errors).length > 0)}}" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+      <div class="flex items-start gap-3">
+        <icon name="triangle-exclamation" class="text-red-600 dark:text-red-400 mt-0.5" size="lg"/>
+        <div class="flex-1">
+          <h3 class="text-sm font-semibold text-red-800 dark:text-red-200 mb-2">$t:common.validation_errors</h3>
+          <ul data-each="message in typeof _local.errors === 'string' ? [_local.errors] : Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="list-disc list-inside space-y-1 text-sm text-red-700 dark:text-red-300">
+            <li class="text-sm text-red-700 dark:text-red-300">{{message}}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <!-- 수정 모드일 때 작성자 정보 표시 (Avatar + UserInfo) -->
+    <div data-if="{{route.id &amp;&amp; form_data?.data?.author}}" class="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+      <avatar data-type="composite" author="{{form_data?.data?.author}}" size="md"/>
+      <div>
+        <user-info data-type="composite" userId="{{form_data?.data?.author?.uuid}}" name="{{form_data?.data?.author?.name}}" isGuest="{{!form_data?.data?.author?.uuid}}" :showDropdown="false" :clickable="false" class="text-sm font-medium"/>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:board.created_at: {{form_data?.data?.created_at}}</p>
+      </div>
+    </div>
+    <!-- 게시글 옵션 (공지사항/비밀글) — 공지는 게시판 관리 또는 공지 등록 권한, 비밀글은 게시판 비밀글 모드가 켜진 경우에만 카드가 생긴다 -->
+    <div data-if="{{form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.user_abilities?.can_write_notice || form_meta?.data?.board?.secret_mode === 'enabled' || form_meta?.data?.board?.secret_mode === 'always'}}">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- 공지사항 카드 (게시판 관리 권한 또는 공지 등록 권한 보유자 전용 — 서버도 같은 권한으로 판정한다) -->
+        <label data-if="{{(form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.user_abilities?.can_write_notice) &amp;&amp; !_local.form?.parent_id}}" class="block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <div class="flex items-start gap-3">
+            <input type="checkbox" name="is_notice" class="mt-0.5 w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"/>
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <icon name="bell" size="sm" class="text-blue-600 dark:text-blue-400"/>
+                <span class="text-sm font-semibold text-gray-900 dark:text-white">$t:board.form.is_notice</span>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400">$t:board.form.notice_description</p>
+            </div>
+          </div>
+        </label>
+        <!-- 비밀글 카드 (enabled 모드) -->
+        <label data-if="{{form_meta?.data?.board?.secret_mode === 'enabled'}}" class="block bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <div class="flex items-start gap-3">
+            <input type="checkbox" name="is_secret" class="mt-0.5 w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded focus:ring-amber-500 dark:focus:ring-amber-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"/>
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <icon name="lock" size="sm" class="text-amber-600 dark:text-amber-400"/>
+                <span class="text-sm font-semibold text-gray-900 dark:text-white">$t:board.form.secret_post</span>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400">$t:board.form.secret_description</p>
+            </div>
+          </div>
+        </label>
+        <!-- 비밀글 카드 (always 모드 - 비활성 상태) -->
+        <div data-if="{{form_meta?.data?.board?.secret_mode === 'always'}}" class="bg-gray-100 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 opacity-75">
+          <input type="hidden" name="is_secret" value="true"/>
+          <div class="flex items-start gap-3">
+            <input type="checkbox" :checked="true" :disabled="true" class="mt-0.5 w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 opacity-50 cursor-not-allowed"/>
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <icon name="lock" size="sm" class="text-amber-600 dark:text-amber-400"/>
+                <span class="text-sm font-semibold text-gray-900 dark:text-white">$t:board.form.secret_post</span>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400">$t:board.form.secret_always_description</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 비회원 작성자 정보 입력 (이름/비밀번호) - 신규 작성 시에만 표시 (비로그인 + 수정모드가 아닐 때) -->
+    <div data-if="{{form_meta?.data &amp;&amp; !_global.currentUser?.uuid &amp;&amp; !route.id}}" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <span>$t:board.guest_author_name</span>
+          <span class="text-red-500 ml-1">*</span>
+        </label>
+        <input type="text" name="author_name" placeholder="$t:board.guest_author_name_placeholder" class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.author_name ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"/>
+        <p data-if="{{_local.errors?.author_name}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.author_name?.[0] ?? _local.errors?.author_name}}</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <span>$t:board.guest_password</span>
+          <span class="text-red-500 ml-1">*</span>
+        </label>
+        <input type="password" name="password" placeholder="$t:board.guest_password_placeholder" class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.password ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"/>
+        <p data-if="{{_local.errors?.password}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.password?.[0] ?? _local.errors?.password}}</p>
+      </div>
+    </div>
+    <!-- 카테고리 선택 (카테고리가 있는 게시판만) -->
+    <div data-if="{{form_meta?.data?.board?.categories?.length > 0}}">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:board.form.category</label>
+      <select name="category" value="{{_local.form?.category ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" options="{{[{value: '', label: $t('board.form.select_category')}, ...(form_meta?.data?.board?.categories ?? []).map(c => ({value: c, label: c}))]}}">
+        <on event="change">
+          <!-- 분류 선택 — 값을 담으면서 «고친 것이 있다» 표시도 함께 세운다(그 표시를 이탈 경고가 본다). -->
+          <set-state target="local" :hasChanges="true">
+            <field name="form">
+              <field name="category" value="{{$event.target.value}}"/>
+            </field>
+          </set-state>
+        </on>
+      </select>
+    </div>
+    <!-- 제목 입력 -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <span>$t:board.form.title</span>
+        <span class="text-red-500 ml-1">*</span>
+      </label>
+      <input type="text" name="title" placeholder="$t:board.form.title_placeholder" class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.title ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"/>
+      <p data-if="{{_local.errors?.title}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.title?.[0] ?? _local.errors?.title}}</p>
+    </div>
+    <!-- 내용 에디터 래퍼 (에러 테두리용) — 비회원 비밀글은 비밀번호를 맞힌 뒤 다시 받은 폼 값(검증 토큰이 실려 옴)이 올 때까지 편집기를 띄우지 않는다. 편집기는 처음 세워질 때의 값만 들고 있어, 먼저 뜨면 빈 본문으로 세워지고 입력·저장 시 원문이 지워진다. -->
+    <div data-if="{{!(_local.form?.is_secret &amp;&amp; _local.passwordVerified &amp;&amp; !_local.form?.verification_token)}}" class="{{_local.errors?.content ? '[&amp;_textarea]:!border-red-500 [&amp;_textarea]:dark:!border-red-500 [&amp;_textarea]:focus:!ring-red-500' : ''}}">
+      <!-- 내용 에디터 -->
+      <extension-point name="html_editor" data-ref="content_section" content="{{_local.form?.content ?? ''}}" isHtml="{{(_local.form?.content_mode ?? 'text') === 'html'}}" :rows="15" placeholder="$t:board.form.content_placeholder" label="$t:board.form.content" :showHtmlModeToggle="true">
+        <prop name="name">"content"</prop>
+        <default>
+          <html-editor data-type="composite" name="content" content="{{_local.form?.content ?? ''}}" isHtml="{{(_local.form?.content_mode ?? 'text') === 'html'}}" :rows="15" placeholder="$t:board.form.content_placeholder" label="$t:board.form.content" :showHtmlModeToggle="true">
+            <on type="change" event="onIsHtmlChange">
+              <!-- 편집기의 HTML/일반텍스트 전환 — 본문 글자는 그대로 두고 «어떻게 읽을지»(content_mode)만 바꾼다. 이 값이 상세 화면에서 본문을 HTML 로 풀지 그대로 보일지를 가른다. -->
+              <set-state target="local">
+                <field name="form">
+                  <field name="content_mode" value="{{$args[0].target.checked ? 'html' : 'text'}}"/>
+                </field>
+              </set-state>
+            </on>
+          </html-editor>
+        </default>
+      </extension-point>
+    </div>
+    <!-- 내용 필드 에러 메시지 -->
+    <p data-if="{{_local.errors?.content}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.content?.[0] ?? _local.errors?.content}}</p>
+    <!-- 파일 첨부 (게시판 설정 + 권한 체크) -->
+    <div data-if="{{form_meta?.data?.board?.use_file_upload === true &amp;&amp; form_meta?.data?.board?.user_abilities?.can_upload}}">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <icon name="paperclip" size="sm" class="inline mr-1"/>
+        <span>$t:board.form.attachments</span>
+      </label>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">$t:board.form.attachments_desc|count={{form_meta?.data?.board?.max_file_count ?? 5}}|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}</p>
+      <file-uploader data-type="composite" collection="post_attachments" maxFiles="{{form_meta?.data?.board?.max_file_count ?? 5}}" maxSize="{{form_meta?.data?.board?.max_file_size ?? 10}}" accept="{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta?.data?.board?.allowed_extensions?.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}" initialFiles="{{form_meta?.data?.attachments ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:board_attachments" :confirmBeforeRemove="true" confirmRemoveTitle="$t:board.posts.form.confirm_remove_attachment_title" confirmRemoveMessage="$t:board.posts.form.confirm_remove_attachment_message">
+        <prop name="uploadParams">
+          <field name="temp_key" value="{{_local.tempKey}}"/>
+        </prop>
+        <prop name="apiEndpoints">
+          <field name="upload" value="/api/modules/sirsoft-board/boards/{{route.slug}}/attachments"/>
+          <field name="delete" value="/api/modules/sirsoft-board/boards/{{route.slug}}/attachments/:id"/>
+          <field name="reorder" value="/api/modules/sirsoft-board/boards/{{route.slug}}/attachments/reorder"/>
+        </prop>
+        <on type="change" event="onFilesChange">
+          <!-- 첨부 목록이 바뀜 — 이미 서 있는 표시를 다시 세우지 않도록 조건을 건다(파일을 고를 때마다 상태를 갈아 끼우면 목록이 통째로 다시 그려진다). -->
+          <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="true"/>
+        </on>
+        <on type="change" event="onUploadError">
+          <!-- 첨부 올리기 실패 — 저장 잠금을 반드시 푼다. 저장 버튼이 업로드를 먼저 발화시키므로, 여기서 풀지 않으면 버튼이 잠긴 채 남는다. -->
+          <sequence>
+            <set-state target="local" uploadError="{{$args[0]}}" :isSaving="false"/>
+            <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+          </sequence>
+        </on>
+      </file-uploader>
+    </div>
+    <!-- 버튼 영역 -->
+    <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <!-- 취소 버튼 (등록: 목록, 수정: 상세) -->
+      <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+        <on type="click">
+          <navigate path="{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}" :mergeQuery="true">
+            <query/>
+          </navigate>
+        </on>
+        $t:common.cancel
+      </button>
+      <button type="button" disabled="{{_local?.isSaving}}" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
+        <on type="click">
+          <!-- 저장. 아직 올라가지 않은 첨부를 먼저 올리라고 알린 뒤 글을 보낸다 — 둘을 잇는 것이 임시 키이고, 주소와 방식은 글 번호 유무로 갈린다 -->
+          <sequence>
+            <set-state target="local" :isSaving="true" :errors="null"/>
+            <emit-event event="upload:board_attachments"/>
+            <api-call target="{{route.id ? '/api/modules/sirsoft-board/boards/' + route.slug + '/posts/' + route.id : '/api/modules/sirsoft-board/boards/' + route.slug + '/posts'}}" :auth_required="true" method="{{route.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, { temp_key: _local?.tempKey })}}">
+              <success>
+                <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
+                <toast type="success" message="{{route?.id ? '$t:board.post_updated' : '$t:board.post_created'}}"/>
+                <navigate path="/board/{{route?.slug}}/{{result?.data?.id}}" :mergeQuery="true">
+                  <query/>
+                </navigate>
+              </success>
+              <fail>
+                <set-state target="local" :isSaving="false" errors="{{error?.errors ?? null}}"/>
+                <toast type="error" message="{{error?.message ?? '$t:common.error_occurred'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_local?.isSaving}}" name="spinner" size="sm" class="animate-spin"/>
+        <span>{{_local?.isSaving ? '$t:common.saving' : (route?.id ? '$t:common.save' : '$t:board.form.submit')}}</span>
+      </button>
+    </div>
+  </form>
+</partial>

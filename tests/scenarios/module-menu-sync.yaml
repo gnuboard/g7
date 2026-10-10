@@ -1,0 +1,24 @@
+feature: 모듈 관리자 메뉴 동기화
+
+description: |
+  모듈 설치·재설치·업데이트·제거 시 모듈이 선언한 관리자 메뉴를 동기화한다.
+  운영자가 바꾼 메뉴 이름·순서(user_overrides)와 동적으로 추가된 메뉴는 재설치·업데이트에서 보존하고,
+  제거 시에는 동적 메뉴까지 정리한다. 정적 메뉴 수는 모듈 선언에서 센다(숫자 고정 금지).
+
+axes:
+  lifecycle_event: [install, reinstall, update, uninstall]
+
+effects:
+  - module_install_creates_menus
+  - no_user_overrides_on_fresh_menu_install
+  - user_menu_name_override_preserved_on_reinstall
+  - user_menu_order_override_preserved_on_reinstall
+  - reinstall_updates_unmodified_menus
+  - reinstall_after_uninstall_creates_clean_menus
+  - multiple_user_overrides_preserved_on_reinstall
+  - module_update_preserves_dynamic_menus
+  - module_update_preserves_dynamic_permissions
+  - module_uninstall_removes_all_menus_including_dynamic
+
+test_files:
+  - tests/Feature/Module/ModuleMenuSyncTest.php

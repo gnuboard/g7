@@ -1,0 +1,33 @@
+feature: 확장 정의의 데이터소스 참조 — 자기가 선언한 것만 본다
+
+description: |
+  확장 정의(`resources/extensions/*.json`)의 표현식은 그 파일의 `data_sources[]` 에 선언한
+  데이터소스와, 주입 대상 호스트 레이아웃이 제공하는 데이터소스만 읽을 수 있다. **다른 확장이
+  선언한 id** 를 적으면 그 확장이 설치되지 않은 사이트에서 미정의 참조가 된다.
+
+  표현식 평가는 미정의 참조에 조용히 undefined 를 낸다 — 콘솔 오류도 500 도 없다. 그래서
+  조건에 걸린 노드가 영영 나타나지 않거나(`=== true` 비교라면) 반대로 의도치 않게 나타나고,
+  운영자는 화면만 보고는 이유를 알 수 없다.
+
+  2026-09-17 #599 실측에서 `sirsoft-pay_kginicis` 의 테스트결제 배지가 이 형태였다. 자기는
+  `kginicis_test_map` 하나만 선언하면서 `nicepay_test_map` · `nhnkcp_test_map` 까지 OR 로
+  묶어 봤다. 결과는 두 갈래다 — KG이니시스만 설치한 사이트에서는 두 id 가 미정의였고, 셋 다
+  설치한 사이트에서는 **남의 PG 로 결제한 테스트 주문에도 「KG이니시스」 배지 문구**가 붙었다
+  (배지 text 가 `$t:sirsoft-pay_kginicis.admin.test_mode_badge` 로 고정이기 때문이다).
+
+  검사는 확장 정의 파일 단위의 정적 훑기다. 다만 주입 대상 레이아웃을 확장 정의만으로 확정할
+  수 없어(`target_layout` 이 없는 정의가 있다) 호스트가 주는 이름(`order` · `user` 등)은
+  판정에서 뺀다. 대신 **다른 번들 확장이 소유한 id** 만 위반으로 본다 — 그것은 호스트가 줄 수
+  없는 이름이므로 오탐 없이 이 결함군을 정확히 집는다.
+
+axes:
+  scope:
+    - bundled_extension_definitions
+
+exclusions: []
+
+effects:
+  - extension_definitions_reference_only_their_own_data_sources
+
+test_files:
+  - tests/Unit/Layouts/ExtensionDataSourceDeclarationTest.php

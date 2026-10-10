@@ -13,7 +13,7 @@
 | 스타일 시스템 | - |
 | 다크 모드 전략 | - |
 
-> 단일 파일 · 프리뷰 샘플 6 · 엔드포인트 샘플 3 · 페이지 상태 3
+> 단일 파일 · 프리뷰 샘플 8 · 엔드포인트 샘플 3 · 페이지 상태 10
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->
@@ -31,9 +31,9 @@
 <!-- @generated:editor-spec-blocks START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 블록 | 역할 | 항목 수 | 출처 |
 |---|---|---|---|
-| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 6 | `editor-spec.json (인라인)` |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 8 | `editor-spec.json (인라인)` |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 3 | `editor-spec.json (인라인)` |
-| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 3 | `editor-spec.json (인라인)` |
+| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 10 | `editor-spec.json (인라인)` |
 <!-- @generated:editor-spec-blocks END -->
 
 <!-- @intent START -->
@@ -67,9 +67,9 @@ _이 확장은 `componentPalette` 를 선언하지 않습니다 — 편집기 �
 <!-- @generated:editor-spec-samples START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 자리 | 역할 | 개수 | ID |
 |---|---|---|---|
-| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 6 | `pages` · `page` · `pageData` · `versions` · `termsContent` · `privacyContent` |
+| `sampleData.byDataSourceId` | 레이아웃 `data_sources` ID 로 붙는 프리뷰 응답 | 8 | `attachmentSettings` · `createAbility` · `pages` · `page` · `pageData` · `versions` · `termsContent` · `privacyContent` |
 | `sampleData.byEndpointPattern` | 엔드포인트 패턴으로 붙는 프리뷰 응답 | 3 | `/api/modules/sirsoft-page/pages/terms` · `/api/modules/sirsoft-page/pages/privacy` · `/api/modules/sirsoft-page/pages/*` |
-| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 3 | `/page/:slug` · `*/admin/pages/:id/edit` · `*/admin/pages/:id` |
+| `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 10 | `/page/:slug` · `*/admin/pages/:id/edit` · `*/admin/pages/:id` · `*/admin/pages` · `bulk_publish_modal` · `bulk_unpublish_modal` · `delete_confirm_modal` · `deletePageModal` · `restoreVersionModal` · `versionPreviewModal` |
 
 _이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습니다 (이 확장 또는 번들 템플릿 스펙이 커버)._
 <!-- @generated:editor-spec-samples END -->
@@ -82,6 +82,15 @@ _이 확장 레이아웃의 `data_source` 는 전부 프리뷰 샘플이 붙습�
 
 샘플을 고를 때는 가장 짧은 페이지가 아니라 **가장 많은 요소를 가진 페이지**를 기준으로
 삼습니다.
+
+제목·본문처럼 언어별로 저장되는 값은 화면이 `title?.[언어]` 로 읽으므로, 상태 표본에도
+문자열이 아니라 언어별 맵(`{ "ko": …, "en": … }`)으로 담습니다. 문자열로 담으면 오류 없이
+미리보기에서 빈 칸으로 그려집니다(7.1.0 실측: 버전 미리보기 창의 제목·내용). 코어 가드
+`stateModalSeedCarriesRenderedFields` 가 이 모양을 잡습니다.
+
+첨부 이미지의 미리보기 주소(`preview_url`·`thumbnail`)는 서버에 실제로 있는 파일이 아니므로 표본에 서버 경로를
+적지 않고 인라인 그림(`data:image/svg+xml,…`)을 씁니다. 서버 경로를 적으면 편집기에서 깨진 그림으로 보입니다
+(7.1.0 실측). 코어 가드 `BundledStaticImagePathsExist` 가 잡습니다.
 <!-- @intent END -->
 
 ## 수정 시 동반 의무

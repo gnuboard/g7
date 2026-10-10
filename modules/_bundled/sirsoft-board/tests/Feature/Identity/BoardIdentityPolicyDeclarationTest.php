@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Modules\Sirsoft\Board\Module;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * 게시판 모듈이 module.php::getIdentityPolicies() 로 선언한 정책이
@@ -37,6 +38,7 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
     private const DECLARED_KEYS = [
         'sirsoft-board.post.delete',
         'sirsoft-board.post.blind',
+        'sirsoft-board.post.bulk_action',
         'sirsoft-board.report.bulk_action',
         'sirsoft-board.report.delete',
         'sirsoft-board.post.user_delete',
@@ -60,6 +62,12 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
      *
      * 공통 어설션은 AssertsIdentityPolicyDeclaration trait 에 위임하고,
      * 게시판 도메인 고유 검사(scope=hook, purpose=sensitive_action) 만 추가로 검증한다.
+     *
+     * @scenario stage=sync, source=module
+     *
+     * @effects board_identity_policies_synced_from_module_declaration
+     *
+     * @return void 반환값 없음
      */
     public function test_identity_policies_are_synced_for_module_source(): void
     {
@@ -80,6 +88,12 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
     /**
      * 운영자가 enabled 토글 시 user_overrides 에 'enabled' 가 기록되고,
      * 모듈 재동기화(updateModule 시뮬레이션) 후에도 운영자 값이 보존된다.
+     *
+     * @scenario stage=resync, source=module
+     *
+     * @effects board_identity_policy_user_overrides_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_user_overrides_preserved_on_resync(): void
     {
@@ -92,6 +106,12 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
 
     /**
      * cleanupStalePolicies — 모듈이 정책을 1 개 제거하면 (시뮬레이션) 그 정책이 DB 에서 사라진다.
+     *
+     * @scenario stage=resync, source=module
+     *
+     * @effects board_identity_stale_policies_removed
+     *
+     * @return void 반환값 없음
      */
     public function test_stale_policies_are_cleaned_up(): void
     {
@@ -105,6 +125,12 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
 
     /**
      * 게시판은 신규 purpose 를 등록하지 않는다(코어 sensitive_action 재사용).
+     *
+     * @scenario stage=sync, source=module
+     *
+     * @effects board_identity_declares_no_custom_purposes
+     *
+     * @return void 반환값 없음
      */
     public function test_no_custom_purposes_declared(): void
     {
@@ -122,6 +148,12 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
      * 게시판 self 정책은 자기 글 삭제·자기 댓글 삭제·신고 작성·첫 글 작성 4건이며,
      * admin 정책과 같은 훅 (`*.before_delete` / `*.before_create`) 을 공유하나
      * `applies_to=self` 분기로 일반 사용자에게만 강제된다.
+     *
+     * @scenario stage=sync, source=module, scope=self
+     *
+     * @effects board_identity_self_policies_declared_for_user_domain
+     *
+     * @return void 반환값 없음
      */
     public function test_self_policies_are_declared_for_user_domain(): void
     {
@@ -139,6 +171,8 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
     /**
      * module.php::getIdentityPolicies() 결과를 IdentityPolicySyncHelper 로 동기화.
      * ModuleManager::syncModuleIdentityPolicies() 의 핵심 동작을 그대로 재현.
+     *
+     * @return void 반환값 없음
      */
     private function syncBoardIdentityPolicies(): void
     {
@@ -163,6 +197,12 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
     // Part B-2/B-3 — enforce 매트릭스 + grace 윈도우 (보드 정책 4건은 모두 admin scope)
     // ===========================================================================
 
+    /**
+     * 게시판 정책을 동기화한 뒤 지정한 정책을 켭니다.
+     *
+     * @param  string  $key  정책 키
+     * @return IdentityPolicy 켠 정책
+     */
     private function enabledPolicy(string $key): IdentityPolicy
     {
         $this->syncBoardIdentityPolicies();
@@ -174,11 +214,21 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
         return $policy->fresh();
     }
 
+    /**
+     * 일반 회원을 만듭니다.
+     *
+     * @return User 일반 회원
+     */
     private function regularUser(): User
     {
         return User::factory()->create();
     }
 
+    /**
+     * 역할 시더를 돌리고 슈퍼 관리자를 만들어 관리자 역할을 붙입니다.
+     *
+     * @return User 관리자
+     */
     private function adminUser(): User
     {
         $this->seed(RolePermissionSeeder::class);
@@ -194,7 +244,15 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
         return $admin->fresh();
     }
 
-    /** D2 — admin 정책이 enabled+admin 사용자에게 enforce 발동 */
+    /**
+     * D2 — admin 정책이 enabled+admin 사용자에게 enforce 발동
+     *
+     * @scenario stage=enforce, actor=admin, policy=post_delete
+     *
+     * @effects board_identity_post_delete_enforced_for_admin
+     *
+     * @return void 반환값 없음
+     */
     public function test_post_delete_enforces_for_admin(): void
     {
         $policy = $this->enabledPolicy('sirsoft-board.post.delete');
@@ -204,7 +262,15 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
         $service->enforce($policy, $this->adminUser(), []);
     }
 
-    /** D10 — admin 정책이 일반 사용자 우회 */
+    /**
+     * D10 — admin 정책이 일반 사용자 우회
+     *
+     * @scenario stage=enforce, actor=user, policy=post_blind
+     *
+     * @effects board_identity_admin_policy_skipped_for_regular_user
+     *
+     * @return void 반환값 없음
+     */
     public function test_post_blind_skips_for_regular_user(): void
     {
         $policy = $this->enabledPolicy('sirsoft-board.post.blind');
@@ -214,6 +280,15 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
         $this->assertTrue(true);
     }
 
+    /**
+     * D4 — 신고 일괄 처리 정책이 admin 에게 enforce 발동 (게시글 일괄 처리와 같은 짜임)
+     *
+     * @scenario stage=enforce, actor=admin, policy=report_bulk_action
+     *
+     * @effects board_identity_bulk_action_enforced_for_admin
+     *
+     * @return void 반환값 없음
+     */
     public function test_report_bulk_action_enforces_for_admin(): void
     {
         $policy = $this->enabledPolicy('sirsoft-board.report.bulk_action');
@@ -223,6 +298,15 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
         $service->enforce($policy, $this->adminUser(), []);
     }
 
+    /**
+     * D5 — admin 정책은 일반 사용자에게 발동하지 않는다
+     *
+     * @scenario stage=enforce, actor=user, policy=report_delete
+     *
+     * @effects board_identity_admin_policy_skipped_for_regular_user
+     *
+     * @return void 반환값 없음
+     */
     public function test_report_delete_skips_for_regular_user(): void
     {
         $policy = $this->enabledPolicy('sirsoft-board.report.delete');
@@ -235,8 +319,15 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
     /**
      * 보드 4개 정책 라이프사이클 매트릭스 — Service-level (admin scope, sensitive_action purpose).
      *
-     * @dataProvider boardLifecycleProvider
+     * @scenario stage=enforce, actor=admin, policy=all_declared
+     *
+     * @effects board_identity_policy_lifecycle_verified_per_policy
+     *
+     * @param  string  $policyKey  정책 키
+     * @param  int  $graceMinutes  유예 시간(분)
+     * @return void 반환값 없음
      */
+    #[DataProvider('boardLifecycleProvider')]
     public function test_board_policy_full_service_lifecycle(string $policyKey, int $graceMinutes): void
     {
         $admin = $this->adminUser();
@@ -276,6 +367,11 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
         }
     }
 
+    /**
+     * 게시판 정책 키와 유예 시간(분) 조합을 돌려줍니다.
+     *
+     * @return array<string, array{0: string, 1: int}> 정책 키와 유예 시간
+     */
     public static function boardLifecycleProvider(): array
     {
         return [
@@ -286,6 +382,14 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
         ];
     }
 
+    /**
+     * 지정한 시각에 검증을 마친 본인인증 로그를 만듭니다.
+     *
+     * @param  User  $user  회원
+     * @param  string  $purpose  인증 목적
+     * @param  Carbon  $when  검증 시각
+     * @return void 반환값 없음
+     */
     private function seedVerifiedLog(User $user, string $purpose, Carbon $when): void
     {
         IdentityVerificationLog::create([
@@ -306,7 +410,15 @@ class BoardIdentityPolicyDeclarationTest extends ModuleTestCase
         ]);
     }
 
-    /** D12 — post.delete grace=5 윈도우 내 인증 이력이 있으면 enforce skip */
+    /**
+     * D12 — post.delete grace=5 윈도우 내 인증 이력이 있으면 enforce skip
+     *
+     * @scenario stage=enforce, actor=admin, policy=post_delete
+     *
+     * @effects board_identity_grace_window_skips_enforcement
+     *
+     * @return void 반환값 없음
+     */
     public function test_post_delete_grace_window_skips(): void
     {
         $admin = $this->adminUser();

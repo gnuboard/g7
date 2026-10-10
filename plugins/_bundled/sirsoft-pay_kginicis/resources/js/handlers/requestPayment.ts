@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { toApiClientPath } from '../apiPath';
 import {
     KOREAN_PAYMENT_FORM_ID_PREFIX,
     consumeStandardPaySdkReloadFlag,
@@ -25,15 +26,33 @@ interface PgPaymentData {
     customer_name?: string;
     customer_email?: string;
     customer_phone?: string;
+    /**
+     * 클레임 추가결제일 때만 서버가 싣는 「결제창을 닫으면 돌아갈 신청서 상세」 주소
+     * (`ClaimPaymentRedirect::cancelled`). 있으면 `order_number` 는 결제번호(CP…)다.
+     */
+    claim_cancel_return_url?: string;
+    /**
+     * 가상계좌 주문의 입금 기한(쇼핑몰 자동취소 기한 — ISO 8601, 한국 시각). 결제창에 계좌 만료 시각으로 넘긴다.
+     * 없으면 KG 기본 기한으로 계좌가 열린다.
+     */
+    vbank_due_at?: string;
+}
+
+/**
+ * 주문 입금 기한(ISO 8601, 한국 시각)을 KG 형식 조각(YYYYMMDD · hhmm)으로 나눕니다.
+ *
+ * 서버가 한국 시각(+09:00)으로 싣으므로 글자 자리만 잘라 쓴다 — 브라우저 시간대로 다시 환산하지 않는다.
+ *
+ * @param dueAt 주문 입금 기한
+ * @returns 날짜·시분 조각, 형식이 맞지 않으면 null
+ */
+function splitVbankDueAt(dueAt: string | undefined): { date: string; hhmm: string } | null {
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(dueAt ?? '');
+    return m ? { date: `${m[1]}${m[2]}${m[3]}`, hhmm: `${m[4]}${m[5]}` } : null;
 }
 
 interface RequestPaymentParams {
     pgPaymentData: PgPaymentData;
-    paymentMethod?: string;
-}
-
-interface TemplateLocalState {
-    paymentMethod?: string;
 }
 
 interface ClientConfig {
@@ -100,11 +119,6 @@ interface CbtCheckoutTokenResponse {
 declare global {
     interface Window {
         INIStdPay: any;
-        __templateApp?: {
-            globalState?: {
-                _local?: TemplateLocalState;
-            };
-        };
     }
 }
 
@@ -191,6 +205,52 @@ export function assertTrustedSdkUrl(url: string): void {
         || parsed.protocol !== 'https:'
         || !KNOWN_SDK_HOSTS.includes(parsed.hostname.toLowerCase())
     ) {
+        throw new Error(
+            t('payment.error.sdk_url_untrusted', '결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다.')
+        );
+    }
+}
+
+/**
+ * PG 로 보낼 결과·통보 주소가 서버가 내려준 절대 URL 인지 확인하고 그대로 돌려줍니다.
+ *
+ * 보안: 브라우저의 현재 주소(window.location.origin)로 조립하지 않는다 — 별칭·하위 도메인·포트로
+ * 접속한 사용자의 결제 결과·입금통보가 그 주소로 간다. 서버(client-config)가 사이트 주소로 만든 값만
+ * 쓰고, 상대 경로가 오면(구버전 서버) 결제를 시작하지 않는다.
+ *
+ * @param url 서버가 내려준 주소
+ * @returns 절대 URL
+ * @throws Error http(s) 절대 URL 이 아닌 경우
+ */
+export function requireSiteAbsoluteUrl(url: unknown): string {
+    if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
+        return url;
+    }
+
+    throw new Error(
+        t('payment.error.sdk_url_untrusted', '결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다.')
+    );
+}
+
+/**
+ * 결제 정보를 POST 할 PG 주소가 KG 이니시스 도메인인지 확인합니다.
+ *
+ * 보안: 서버·PG 응답이 준 form action 으로 거래 키·주문자 정보를 POST 한다 — https 이고
+ * `*.inicis.com` 일 때만 제출한다(fail-closed, SDK 주소 검사와 같은 기준).
+ *
+ * @param url 제출 주소
+ * @throws Error 허용 밖 주소인 경우
+ */
+export function assertTrustedPgFormAction(url: unknown): void {
+    let parsed: URL | null = null;
+
+    try {
+        parsed = typeof url === 'string' ? new URL(url) : null;
+    } catch {
+        parsed = null;
+    }
+
+    if (parsed === null || parsed.protocol !== 'https:' || !/(^|\.)inicis\.com$/i.test(parsed.hostname)) {
         throw new Error(
             t('payment.error.sdk_url_untrusted', '결제 모듈 주소가 올바르지 않아 결제를 진행할 수 없습니다.')
         );
@@ -362,7 +422,7 @@ async function requestMobileKoreanPayment(
     const timestamp = String(Math.floor(Date.now()));
 
     const sigJson: { data: MobileSignatureResponse } = await G7Core.api.post(
-        config.callback_urls.mobile_signature,
+        toApiClientPath(config.callback_urls.mobile_signature),
         {
             oid: pgPaymentData.order_number,
             price: pgPaymentData.amount,
@@ -376,8 +436,7 @@ async function requestMobileKoreanPayment(
 
     // 메뉴얼(STEP 2) 표준 응답에는 P_OID 가 없음 — 주문번호를 쿼리스트링으로 echo 받아 회수.
     const nextUrl = appendSelectedPaymentMethod(
-        window.location.origin +
-            config.callback_urls.mobile_callback +
+        requireSiteAbsoluteUrl(config.callback_urls.mobile_callback) +
             '?orderId=' + encodeURIComponent(pgPaymentData.order_number),
         paymentMethod,
     );
@@ -440,10 +499,18 @@ async function requestMobileKoreanPayment(
     // PC 가상계좌는 KG 이니시스 가맹점 어드민의 등록 URL 로 통보되지만, 모바일은
     // 요청에 P_NOTI_URL 을 명시해야 입금통보를 받을 수 있다.
     if (iniPayment === 'VBANK' && ! isEasyPay) {
-        fields.P_NOTI_URL =
-            window.location.origin + config.callback_urls.mobile_vbank_notify;
+        fields.P_NOTI_URL = requireSiteAbsoluteUrl(config.callback_urls.mobile_vbank_notify);
+
+        // 계좌 만료 시각 = 주문 입금 기한(쇼핑몰 자동취소 기한). 넘기지 않으면 KG 기본 기한(10일)으로 열리고
+        // 콜백이 그 값으로 주문 기한을 덮어써 주문서 안내와 어긋난다 (manual.inicis.com/pay/stdpay_m.html).
+        const due = splitVbankDueAt(pgPaymentData.vbank_due_at);
+        if (due) {
+            fields.P_VBANK_DT = due.date;
+            fields.P_VBANK_TM = due.hhmm;
+        }
     }
 
+    assertTrustedPgFormAction(submitUrl);
     markMobilePaymentReturnPending();
     submitForm(
         submitUrl,
@@ -465,7 +532,7 @@ async function requestKoreanPayment(
     const timestamp = String(Math.floor(Date.now()));
 
     const signatureJson: { data: SignatureResponse } = await G7Core.api.post(
-        config.callback_urls.signature,
+        toApiClientPath(config.callback_urls.signature),
         {
             oid: pgPaymentData.order_number,
             price: pgPaymentData.amount,
@@ -494,11 +561,11 @@ async function requestKoreanPayment(
     }
 
     const callbackUrl = appendSelectedPaymentMethod(
-        window.location.origin + config.callback_urls.callback,
+        requireSiteAbsoluteUrl(config.callback_urls.callback),
         paymentMethod,
     );
     // KG 이니시스 공식 closeUrl 페이지에서 결제창만 닫게 하여 체크아웃 SPA를 유지한다.
-    const orderCloseUrl = window.location.origin + config.callback_urls.close;
+    const orderCloseUrl = requireSiteAbsoluteUrl(config.callback_urls.close);
     removeKoreanPaymentForms();
 
     const formId = KOREAN_PAYMENT_FORM_ID_PREFIX + Date.now();
@@ -545,6 +612,13 @@ async function requestKoreanPayment(
             ) {
                 return base ? `${base}:cardonly` : 'cardonly';
             }
+
+            // 가상계좌 계좌 만료 시각 = 주문 입금 기한(쇼핑몰 자동취소 기한) — `vbank(YYYYMMDDhhmm)`
+            // (manual.inicis.com/pay/stdpay_pc.html). 넘기지 않으면 KG 기본 기한으로 열려 주문서 안내와 어긋난다.
+            const due = paymentMethod === 'vbank' ? splitVbankDueAt(pgPaymentData.vbank_due_at) : null;
+            if (due) {
+                return `${base}:vbank(${due.date}${due.hhmm})`;
+            }
             return base;
         })(),
         payViewType:  'overlay',
@@ -571,9 +645,9 @@ async function requestKoreanPayment(
             closeReportUrl: config.callback_urls.close_report,
             oid: pgPaymentData.order_number,
             price: Number(pgPaymentData.amount),
-            buyer_email: pgPaymentData.customer_email ?? '',
-            buyer_phone: pgPaymentData.customer_phone ?? '',
             payment_method: paymentMethod,
+            // 클레임 추가결제면 닫힘을 받은 리스너가 신청서 상세로 돌아간다(EC-455).
+            ...(pgPaymentData.claim_cancel_return_url ? { claimCancelReturnUrl: pgPaymentData.claim_cancel_return_url } : {}),
         });
     }
 
@@ -607,7 +681,7 @@ function buildCbtExtraData(config: ClientConfig, paymentMethod?: string): CbtExt
         ? CBT_PAYMETHODS_BY_PAYMENT_METHOD[paymentMethod]
         : undefined;
     const paymethod = selectedPaymethods ?? base.payment?.paymethod ?? DEFAULT_CBT_PAYMETHODS;
-    const cvsNotifyUrl = window.location.origin + config.callback_urls.cbt_cvs_notify;
+    const cvsNotifyUrl = requireSiteAbsoluteUrl(config.callback_urls.cbt_cvs_notify);
 
     return {
         ...base,
@@ -639,7 +713,7 @@ async function requestCbtPayment(
     const buyerEmail = pgPaymentData.customer_email ?? '';
     const buyerPhone = pgPaymentData.customer_phone ?? '';
     const tokenResponse: { data: CbtCheckoutTokenResponse } = await G7Core.api.post(
-        config.callback_urls.cbt_checkout_token,
+        toApiClientPath(config.callback_urls.cbt_checkout_token),
         {
             oid: pgPaymentData.order_number,
             price: pgPaymentData.amount,
@@ -651,7 +725,7 @@ async function requestCbtPayment(
     const { checkout_token: checkoutToken } = tokenResponse.data;
 
     const hashResponse: { data: CbtHashDataResponse } = await G7Core.api.post(
-        config.callback_urls.cbt_hash_data,
+        toApiClientPath(config.callback_urls.cbt_hash_data),
         {
             oid: pgPaymentData.order_number,
             price: pgPaymentData.amount,
@@ -665,11 +739,11 @@ async function requestCbtPayment(
     const { hash_data: hashData } = hashResponse.data;
 
     const returnUrl =
-        window.location.origin +
-        config.callback_urls.cbt_callback +
+        requireSiteAbsoluteUrl(config.callback_urls.cbt_callback) +
         `?oid=${encodeURIComponent(pgPaymentData.order_number)}` +
         `&selectedPaymentMethod=${encodeURIComponent(paymentMethod ?? 'card')}`;
 
+    assertTrustedPgFormAction(config.callback_urls.cbt_auth_url);
     submitForm(config.callback_urls.cbt_auth_url, {
         cbtType:     'JPPG',
         mid:         japanMid,
@@ -695,22 +769,24 @@ async function requestCbtPayment(
  *   - KRW + PC: INIStdPay 팝업 (표준결제)
  */
 export async function requestPaymentHandler(action: any, _context?: any): Promise<void> {
-    const { pgPaymentData, paymentMethod: paramPaymentMethod } = (action.params || {}) as RequestPaymentParams;
+    const { pgPaymentData } = (action.params || {}) as RequestPaymentParams;
 
     if (!pgPaymentData) {
         return;
     }
 
-    const localState = window.__templateApp?.globalState?._local;
-    // 서버가 저장한 결제수단(payment_method)이 SSoT — 확장 수단이면 확장 ID 가 그대로 온다(#475).
-    const paymentMethod = paramPaymentMethod
-        ?? pgPaymentData.payment_method
-        ?? localState?.paymentMethod
-        ?? 'card';
+    // 결제수단은 액션 인자 하나에서만 읽는다 — 서버가 주문에 저장한 결제수단(pg_payment_data.payment_method)이
+    // 단일 출처이고, 확장 수단이면 확장 ID 가 그대로 온다(#475). 화면 상태를 뒤져 채우면 서버와 다른 수단으로
+    // 결제창을 열 수 있어, 없으면 결제창을 열지 않고 오류로 끝낸다.
+    const paymentMethod = typeof pgPaymentData.payment_method === 'string' ? pgPaymentData.payment_method : '';
 
     const G7Core = (window as any).G7Core;
 
     try {
+        if (paymentMethod === '') {
+            throw new Error('KG Inicis payment method is missing from pg_payment_data.');
+        }
+
         const configJson = await G7Core.api.get('/modules/sirsoft-ecommerce/payments/client-config/kginicis');
 
         if (!configJson.data) {
@@ -718,6 +794,8 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
         }
 
         const config: ClientConfig = configJson.data;
+        // 결제 통화도 액션 인자(서버가 주문 스냅샷 환율로 환산한 청구 통화)만 본다. 화면의 표시 통화
+        // (`_global.preferredCurrency`)는 주문 뒤에 바뀔 수 있어 청구 금액(amount)과 짝이 맞지 않을 수 있다.
         const currency = normalizePaymentCurrency(pgPaymentData.currency);
         const isJpy = currency === 'JPY';
         const isKrw = currency === 'KRW';

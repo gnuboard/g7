@@ -1,4 +1,5 @@
 {
+    "comment": "점검 모드(`php artisan down`)일 때의 안내 화면. 에러 코드는 503 이지만 원인이 장애가 아니라\n  운영자의 의도이므로 `errors/503` 과 문구·아이콘을 분리했다.\n  나가는 버튼을 두지 않는다 — 점검 중에는 어느 관리자 화면으로 보내도 같은 자리로 돌아온다.",
     "version": "1.0.0",
     "layout_name": "errors/maintenance",
     "extends": "_admin_base",
@@ -22,7 +23,7 @@
                         "name": "Icon",
                         "props": {
                             "name": "gear",
-                            "className": "w-24 h-24 text-blue-500 dark:text-blue-400 mb-6 animate-spin"
+                            "className": "text-8xl text-blue-500 dark:text-blue-400 mb-6 animate-spin"
                         }
                     },
                     {

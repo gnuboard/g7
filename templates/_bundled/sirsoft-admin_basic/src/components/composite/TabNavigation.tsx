@@ -14,7 +14,29 @@ export interface Tab {
   iconName?: IconName;
   disabled?: boolean;
   badge?: string | number;
+  /**
+   * 표시 조건. 레이아웃의 `if="{{...}}"` 가 평가된 값이며, 키가 있고 값이 거짓(false·undefined·null·빈 문자열·0)이면
+   * 탭을 그리지 않는다 — 노드의 `if` 와 같은 뜻이다(`{{route?.id}}` 처럼 거짓이 undefined 로 오는 식도 숨는다).
+   * 확장이 끼워 넣는 탭은 이동할 본문과 같은 조건을 달아, 본문이 없을 때 갈 곳 없는 빈 탭이 남지 않게 한다.
+   */
+  if?: unknown;
 }
+
+/**
+ * 표시 조건이 거짓이라 그리지 않는 탭인지 판정합니다.
+ *
+ * @param tab 탭 정의
+ * @returns 숨김이면 true
+ */
+const isHiddenTab = (tab?: Tab): boolean => !!tab && Object.prototype.hasOwnProperty.call(tab, 'if') && !tab.if;
+
+/**
+ * 키보드 이동·초점 대상에서 빠지는 탭인지 판정합니다(숨김 또는 비활성).
+ *
+ * @param tab 탭 정의
+ * @returns 이동 대상이 아니면 true
+ */
+const isUnavailableTab = (tab?: Tab): boolean => !tab || !!tab.disabled || isHiddenTab(tab);
 
 export interface TabNavigationProps {
   tabs: Tab[];
@@ -114,16 +136,16 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       // 비활성 탭을 건너뛰며 순환한다.
       for (let i = 1; i <= tabs.length; i += 1) {
         const candidate = (currentIndex + step * i + tabs.length * i) % tabs.length;
-        if (!tabs[candidate]?.disabled) {
+        if (!isUnavailableTab(tabs[candidate])) {
           nextIndex = candidate;
           break;
         }
       }
     } else if (e.key === 'Home') {
-      nextIndex = tabs.findIndex((tab) => !tab.disabled);
+      nextIndex = tabs.findIndex((tab) => !isUnavailableTab(tab));
     } else if (e.key === 'End') {
       for (let i = tabs.length - 1; i >= 0; i -= 1) {
-        if (!tabs[i]?.disabled) {
+        if (!isUnavailableTab(tabs[i])) {
           nextIndex = i;
           break;
         }
@@ -161,7 +183,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
         <Select
           value={activeTabId !== undefined ? String(activeTabId) : ''}
           onChange={handleSelectChange}
-          options={tabs.map((tab) => ({
+          options={tabs.filter((tab) => !isHiddenTab(tab)).map((tab) => ({
             value: String(tab.id),
             label: tab.badge !== undefined ? `${tab.label} (${tab.badge})` : tab.label,
             disabled: tab.disabled,
@@ -208,8 +230,9 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   // 데스크톱: 탭 버튼 단일 렌더
   // 활성 탭이 없으면(초기 렌더 등) 첫 활성화 가능 탭이 Tab 키 초점을 받는다 — roving tabindex 에서
   // 초점 받을 탭이 하나도 없으면 탭 목록 전체가 키보드로 진입 불가해진다.
-  const activeIndex = tabs.findIndex((tab) => tab.id === activeTabId);
-  const focusableIndex = activeIndex >= 0 ? activeIndex : tabs.findIndex((tab) => !tab.disabled);
+  // 숨김 탭은 그리지 않되 원래 순번(편집기 `props.tabs.<i>` 경로)을 지키려고 배열을 걸러내지 않고 그리는 자리에서 건너뛴다.
+  const activeIndex = tabs.findIndex((tab) => tab.id === activeTabId && !isHiddenTab(tab));
+  const focusableIndex = activeIndex >= 0 ? activeIndex : tabs.findIndex((tab) => !isUnavailableTab(tab));
 
   return (
     <Nav
@@ -219,7 +242,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       aria-orientation="horizontal"
       id={id} {...editorAttrs}
     >
-      {tabs.map((tab, tabIndex) => (
+      {tabs.map((tab, tabIndex) => isHiddenTab(tab) ? null : (
         <Button
           key={tab.id}
           ref={(el) => {

@@ -1,180 +1,180 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "Product Notice Template Delete Confirmation Modal"
-  },
-  "id": "delete_confirm_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.delete.title",
-    "size": "medium"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-primary text-base"
-              },
-              "text": "{{$localized(_global.modal_data?.templateName)}}{{$t('sirsoft-ecommerce.admin.product_notice_template.modals.delete.message_suffix')}}"
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-sm text-red-600 dark:text-red-400 font-medium"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.delete.warning"
-            }
-          ],
-          "props": {
-          }
-        }
-      ]
+    "comment": "상품 공지 템플릿 삭제 확인 창. 지울 대상은 여는 쪽이 `_global.modal_data` 에 담아 준 이름·id 다.\n  삭제 후 목록을 다시 부르기 전에 **무한 스크롤 상태를 처음으로 되돌린다** — 이 목록은 쪽을 이어\n  붙이며 쌓이는 구조라, 되돌리지 않으면 재조회가 2쪽부터 이어 붙어 첫 쪽이 사라진다.\n  이어서 선택을 비우고 패널을 빈 상태로 되돌린다(지운 항목이 선택된 채 남으면 빈 상세가 뜬다).",
+    "meta": {
+        "is_partial": true,
+        "description": "Product Notice Template Delete Confirmation Modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
+    "id": "delete_confirm_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.delete.title",
+        "size": "medium"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:common.cancel"
-            }
-          ]
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-primary text-base"
+                            },
+                            "text": "{{$localized(_global.modal_data?.templateName)}}{{$t('sirsoft-ecommerce.admin.product_notice_template.modals.delete.message_suffix')}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-red-600 dark:text-red-400 font-medium"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.delete.warning"
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_local.isDeleting}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "local",
-                    "isDeleting": true
-                  }
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/modules/sirsoft-ecommerce/admin/product-notice-templates/{{_global.modal_data.templateId}}",
-                  "params": {
-                    "method": "DELETE"
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "isDeleting": false
-                      }
-                    },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "infiniteScroll": {
-                          "currentPage": 1,
-                          "hasMore": true,
-                          "isLoadingMore": false
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "삭제 실행. 성공 갈래가 무한 스크롤 상태를 되돌린 뒤 목록을 다시 부르고, 마지막에 선택을 비운다. 이 순서를 바꾸면 지운 항목이 잠깐 다시 보이거나 첫 쪽이 빈다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "isDeleting": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/product-notice-templates/{{_global.modal_data.templateId}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "DELETE"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "isDeleting": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "infiniteScroll": {
+                                                    "currentPage": 1,
+                                                    "hasMore": true,
+                                                    "isLoadingMore": false
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "templates"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "panelMode": "empty",
+                                                "selectedTemplateId": null,
+                                                "selectedTemplate": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-ecommerce.admin.product_notice_template.messages.deleted"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "isDeleting": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
                         }
-                      }
+                    ],
+                    "props": {
+                        "className": "px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_local.isDeleting}}"
                     },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "templates"
-                      }
-                    },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "panelMode": "empty",
-                        "selectedTemplateId": null,
-                        "selectedTemplate": null
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:sirsoft-ecommerce.admin.product_notice_template.messages.deleted"
-                      }
-                    },
-                    {
-                      "handler": "closeModal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "isDeleting": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message}}"
-                      }
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!_local.isDeleting}}",
+                            "text": "$t:common.delete"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.isDeleting}}",
+                            "text": "$t:common.loading"
+                        }
+                    ]
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{!_local.isDeleting}}",
-              "text": "$t:common.delete"
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_local.isDeleting}}",
-              "text": "$t:common.loading"
-            }
-          ]
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

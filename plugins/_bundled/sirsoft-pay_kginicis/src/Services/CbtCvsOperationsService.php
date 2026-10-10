@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Services;
 
+use App\Support\SiteUrl;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
@@ -44,6 +46,13 @@ class CbtCvsOperationsService
         'currencyCd',
     ];
 
+    /**
+     * CBT 편의점결제 운영 서비스를 생성합니다.
+     *
+     * @param  OrderProcessingService  $orderService  주문 결제 상태 전환 서비스
+     * @param  KgInicisApiService  $apiService  KG 이니시스 API 서비스
+     * @param  CbtCvsOperationsRepositoryInterface  $repository  주문·결제 조회·잠금·갱신 저장소
+     */
     public function __construct(
         private readonly OrderProcessingService $orderService,
         private readonly KgInicisApiService $apiService,
@@ -131,6 +140,22 @@ class CbtCvsOperationsService
                 $this->logReplayDetected($tid, $orderId, 'CBT CVS notify');
 
                 return $this->notifyResult('OK', 'ignored', 'already_paid');
+            }
+
+            // 취소된 주문의 입금통보는 받지 않는다 (코어 P4 와 같은 가드).
+            //
+            // 고객이 취소한 뒤에 편의점에 입금해도 통보는 도착한다. 통과시키면 `CANCELLED`
+            // 주문이 결제완료로 되살아나 재고·마일리지가 재차감된다. 아래 결제상태 가드만으로는
+            // 부족하다 — 미입금 취소가 결제행을 `waiting_deposit` 그대로 두던 시절의 행이 그
+            // 가드를 통과한다. 입금된 돈은 환불 절차로 돌려주어야 하는 별개 사건이다.
+            if ($order->order_status === OrderStatusEnum::CANCELLED) {
+                $this->storeNotifyHistory($payment, $existingMeta, $payload, 'ignored', 'order_cancelled', $source, $remoteIp);
+                Log::warning('KG Inicis CBT CVS: order is cancelled', [
+                    'order_id' => $orderId,
+                    'tid' => $tid,
+                ]);
+
+                return $this->notifyResult('OK', 'ignored', 'order_cancelled');
             }
 
             if (! $this->paymentStatusEquals($payment->payment_status, PaymentStatusEnum::WAITING_DEPOSIT)) {
@@ -318,7 +343,7 @@ class CbtCvsOperationsService
             'last_notify_result' => (string) ($meta['cvs_last_notify_result'] ?? ''),
             'last_notify_reason' => (string) ($meta['cvs_last_notify_reason'] ?? ''),
             'notify_history' => array_slice($this->normalizeHistory($meta['cvs_notify_history'] ?? []), 0, 10),
-            'notify_url' => url('/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify'),
+            'notify_url' => SiteUrl::absolute('/plugins/sirsoft-pay_kginicis/payment/cbt/cvs-notify'),
             'can_simulate_notify' => $isCbtCvs && $isWaitingDeposit && (bool) ($meta['is_test_mode'] ?? false),
             'can_mark_expired' => $isCbtCvs && $isWaitingDeposit && $isExpiredByTime,
             'last_recheck_at' => (string) ($meta['cvs_last_recheck_at'] ?? ''),
@@ -474,6 +499,12 @@ class CbtCvsOperationsService
         ];
     }
 
+    /**
+     * 관리자 운영 작업 대상인 CBT 편의점결제 주문·결제·메타를 조회합니다.
+     *
+     * @param  string  $orderNumber  주문번호
+     * @return array<string, mixed> 성공 시 ok=true 와 order·payment·meta, 실패 시 ok=false 와 message_key·status
+     */
     private function operationContext(string $orderNumber): array
     {
         $order = $this->findOrder($orderNumber);
@@ -500,6 +531,14 @@ class CbtCvsOperationsService
         ];
     }
 
+    /**
+     * 운영 작업 실패 결과 배열을 만듭니다.
+     *
+     * @param  string  $messageKey  실패 사유 다국어 키
+     * @param  int  $status  HTTP 상태 코드
+     * @param  array<string, mixed>  $context  결과에 함께 실을 문맥 (order·payment·meta 등)
+     * @return array<string, mixed> ok=false 와 message_key·status 를 담은 결과
+     */
     private function operationError(string $messageKey, int $status, array $context = []): array
     {
         return array_merge([
@@ -509,11 +548,25 @@ class CbtCvsOperationsService
         ], $context);
     }
 
+    /**
+     * 결제 정보를 함께 불러온 주문을 조회합니다.
+     *
+     * @param  string  $orderNumber  주문번호
+     * @return Order|null 주문 (없으면 null)
+     */
     private function findOrder(string $orderNumber): ?Order
     {
         return $this->repository->findOrderWithPayment($orderNumber);
     }
 
+    /**
+     * 입금통보 처리 결과 배열을 만듭니다.
+     *
+     * @param  string  $body  KG 이니시스에 돌려줄 응답 본문 (`OK` 또는 `FAIL`)
+     * @param  string  $status  처리 결과 구분 (confirmed·ignored·failed 등)
+     * @param  string  $reason  결과 사유 코드
+     * @return array{body: string, status: string, reason: string} 입금통보 처리 결과
+     */
     private function notifyResult(string $body, string $status, string $reason): array
     {
         return [
@@ -523,6 +576,18 @@ class CbtCvsOperationsService
         ];
     }
 
+    /**
+     * 결제 행을 잠근 뒤 입금통보 수신 이력을 결제 메타에 추가 저장합니다.
+     *
+     * @param  OrderPayment  $payment  대상 결제
+     * @param  array<string, mixed>  $existingMeta  잠금 행을 읽지 못했을 때 쓸 기존 결제 메타
+     * @param  array<string, mixed>  $payload  입금통보 payload
+     * @param  string  $result  처리 결과 구분
+     * @param  string  $reason  결과 사유 코드
+     * @param  string  $source  수신 경로 구분
+     * @param  string|null  $remoteIp  통보 발신 IP
+     * @return array<string, mixed> 이력이 추가된 결제 메타
+     */
     private function storeNotifyHistory(
         OrderPayment $payment,
         array $existingMeta,
@@ -547,6 +612,19 @@ class CbtCvsOperationsService
         return $updatedMeta;
     }
 
+    /**
+     * 입금통보 수신 이력 한 건을 결제 메타 앞쪽에 덧붙이고 최근 통보 요약을 갱신합니다.
+     *
+     * 이력은 최근 HISTORY_LIMIT 건만 남긴다.
+     *
+     * @param  array<string, mixed>  $existingMeta  기존 결제 메타
+     * @param  array<string, mixed>  $payload  입금통보 payload
+     * @param  string  $result  처리 결과 구분
+     * @param  string  $reason  결과 사유 코드
+     * @param  string  $source  수신 경로 구분
+     * @param  string|null  $remoteIp  통보 발신 IP
+     * @return array<string, mixed> 이력이 추가된 결제 메타
+     */
     private function appendNotifyHistory(
         array $existingMeta,
         array $payload,
@@ -580,11 +658,24 @@ class CbtCvsOperationsService
         ]);
     }
 
+    /**
+     * 결제 메타를 저장합니다.
+     *
+     * @param  OrderPayment  $payment  대상 결제
+     * @param  array<string, mixed>  $meta  저장할 결제 메타
+     * @return void 반환값 없음
+     */
     private function savePaymentMeta(OrderPayment $payment, array $meta): void
     {
         $this->repository->updatePayment($payment, ['payment_meta' => $meta]);
     }
 
+    /**
+     * 저장된 입금통보 이력에서 배열 항목만 남겨 목록으로 정리합니다.
+     *
+     * @param  mixed  $history  결제 메타의 이력 값
+     * @return array<int, array<string, mixed>> 정리된 이력 목록 (배열이 아니면 빈 배열)
+     */
     private function normalizeHistory(mixed $history): array
     {
         if (! is_array($history)) {
@@ -594,6 +685,12 @@ class CbtCvsOperationsService
         return array_values(array_filter($history, static fn ($item): bool => is_array($item)));
     }
 
+    /**
+     * 결제 메타가 일본 CBT 편의점결제 건인지 판정합니다.
+     *
+     * @param  array<string, mixed>  $meta  결제 메타
+     * @return bool CBT 이면서 결제수단이 CVS 이면 true
+     */
     private function isCbtCvsMeta(array $meta): bool
     {
         return ($meta['is_cbt'] ?? false) === true
@@ -622,6 +719,15 @@ class CbtCvsOperationsService
         return $paymentTermAt instanceof CarbonImmutable && $paymentTermAt->isPast();
     }
 
+    /**
+     * 편의점 입금통보 금액과 대조할 기대 청구액을 구합니다.
+     *
+     * 결제 메타의 발급 금액이 있으면 그 값을, 없으면 결제 통화 기준 주문 청구액을 쓴다.
+     *
+     * @param  Order  $order  대상 주문
+     * @param  array<string, mixed>  $paymentMeta  결제 메타
+     * @return int|null 기대 청구액 (구할 수 없으면 null)
+     */
     private function resolveExpectedCvsAmount(Order $order, array $paymentMeta): ?int
     {
         $metaAmount = (int) ($paymentMeta['cvs_amount'] ?? 0);
@@ -636,6 +742,12 @@ class CbtCvsOperationsService
         ]);
     }
 
+    /**
+     * CBT 응답의 일시 문자열(숫자 14자리 YmdHis, 구분자 허용)을 일시 객체로 바꿉니다.
+     *
+     * @param  string|null  $value  CBT 일시 문자열
+     * @return CarbonImmutable|null 일시 (형식이 맞지 않으면 null)
+     */
     private function parseCbtDateTime(?string $value): ?CarbonImmutable
     {
         $compact = preg_replace('/\D+/', '', (string) $value);
@@ -650,11 +762,24 @@ class CbtCvsOperationsService
         }
     }
 
+    /**
+     * 결제 상태가 기대 상태와 같은지 판정합니다(Enum·문자열 모두 허용).
+     *
+     * @param  mixed  $status  결제 상태 (PaymentStatusEnum 또는 문자열)
+     * @param  PaymentStatusEnum  $expected  기대 결제 상태
+     * @return bool 같으면 true
+     */
     private function paymentStatusEquals(mixed $status, PaymentStatusEnum $expected): bool
     {
         return $this->paymentStatusValue($status) === $expected->value;
     }
 
+    /**
+     * 결제 상태를 문자열 값으로 바꿉니다.
+     *
+     * @param  mixed  $status  결제 상태 (PaymentStatusEnum 또는 문자열)
+     * @return string 결제 상태 값
+     */
     private function paymentStatusValue(mixed $status): string
     {
         if ($status instanceof PaymentStatusEnum) {
@@ -664,6 +789,12 @@ class CbtCvsOperationsService
         return (string) $status;
     }
 
+    /**
+     * BackedEnum 이면 그 값을, 아니면 문자열 변환 값을 돌려줍니다.
+     *
+     * @param  mixed  $value  Enum 또는 스칼라 값
+     * @return string 문자열 값
+     */
     private function enumValue(mixed $value): string
     {
         if ($value instanceof \BackedEnum) {

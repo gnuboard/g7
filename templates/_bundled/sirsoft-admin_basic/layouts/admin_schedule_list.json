@@ -1,276 +1,291 @@
 {
-  "version": "1.0.0",
-  "layout_name": "admin_schedule_list",
-  "permissions": [
-    "core.schedules.read"
-  ],
-  "extends": "_admin_base",
-  "meta": {
-    "title": "$t:admin.schedules.page_title",
-    "description": "$t:admin.schedules.page_description"
-  },
-  "state": {
-    "searchQuery": "",
-    "searchType": ""
-  },
-  "transition_overlay": {
-    "wait_for": [
-      "schedules"
+    "comment": "예약 작업(스케줄) 관리. 목록 표는 조각(`_tab_schedules`)이 갖고 있고 여기에는 뼈대와 창 다섯이 있다.\n  등록·수정이 별도 화면이 아니라 **한 폼 창**이다 — 대상과 편집 여부를 전역에 담아 그 창이 겸한다.\n  탭이 둘이지만 큐 탭은 아직 잠겨 있다(`:disabled`) — 자리만 잡아 둔 상태다.",
+    "version": "1.0.0",
+    "layout_name": "admin_schedule_list",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.schedules.page_title",
+        "description": "$t:admin.schedules.page_description"
+    },
+    "data_sources": [
+        {
+            "id": "schedules",
+            "label_key": "$t:editor.data_source.schedules",
+            "type": "api",
+            "endpoint": "/api/admin/schedules",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "page": "{{query.page ?? 1}}",
+                "per_page": "{{query.per_page ?? 20}}",
+                "search": "{{query.search}}",
+                "type": "{{query.type}}",
+                "frequency": "{{query.frequency}}",
+                "status": "{{query.status}}",
+                "last_result": "{{query.last_result}}",
+                "without_overlapping": "{{query.without_overlapping}}",
+                "run_in_maintenance": "{{query.run_in_maintenance}}",
+                "created_from": "{{query.created_from}}",
+                "created_to": "{{query.created_to}}",
+                "sort_by": "{{query.sort_by ?? 'created_at'}}",
+                "sort_order": "{{query.sort_order ?? 'desc'}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 20,
+                        "total": 0,
+                        "has_more_pages": false
+                    }
+                }
+            },
+            "comment": "예약 작업 목록. 조건 열둘을 전부 `query.*` 에서 읽는다(필터는 표 조각이 갖고 있다)."
+        }
     ],
-    "target": "schedules_tab_content",
-    "fallback_target": "right_content_area"
-  },
-  "init_actions": [
-    {
-      "handler": "setState",
-      "params": {
-        "target": "global",
-        "_local": {
-          "searchQuery": "{{query.search || ''}}",
-          "searchType": "{{query.search_type || ''}}"
-        }
-      }
-    }
-  ],
-  "data_sources": [
-    {
-      "id": "schedules",
-      "label_key": "$t:editor.data_source.schedules",
-      "type": "api",
-      "endpoint": "/api/admin/schedules",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "params": {
-        "page": "{{query.page ?? 1}}",
-        "per_page": "{{query.per_page ?? 20}}",
-        "search": "{{query.search}}",
-        "type": "{{query.type}}",
-        "frequency": "{{query.frequency}}",
-        "status": "{{query.status}}",
-        "last_result": "{{query.last_result}}",
-        "without_overlapping": "{{query.without_overlapping}}",
-        "run_in_maintenance": "{{query.run_in_maintenance}}",
-        "created_from": "{{query.created_from}}",
-        "created_to": "{{query.created_to}}",
-        "sort_by": "{{query.sort_by ?? 'created_at'}}",
-        "sort_order": "{{query.sort_order ?? 'desc'}}"
-      },
-      "fallback": {
-        "data": {
-          "data": [],
-          "current_page": 1,
-          "last_page": 1,
-          "per_page": 20,
-          "total": 0
-        }
-      }
-    }
-  ],
-  "named_actions": {
-    "searchSchedules": {
-      "handler": "navigate",
-      "params": {
-        "path": "/admin/schedules",
-        "mergeQuery": true,
-        "query": {
-          "search": "{{_local.searchQuery || undefined}}",
-          "search_type": "{{_local.searchType || undefined}}",
-          "page": 1
-        },
-        "replace": true,
-        "transition_overlay_target": "schedules_data_grid__body"
-      }
-    }
-  },
-  "slots": {
-    "content": [
-      {
-        "id": "schedule_list_content",
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "admin-page-content"
-        },
-        "responsive": {
-          "portable": {
-            "props": {
-              "className": "admin-page-content-compact"
+    "initLocal": {
+        "searchQuery": "",
+        "searchType": ""
+    },
+    "permissions": [
+        "core.schedules.read"
+    ],
+    "transition_overlay": {
+        "target": "schedules_tab_content",
+        "fallback_target": "right_content_area",
+        "wait_for": [
+            "schedules"
+        ]
+    },
+    "named_actions": {
+        "searchSchedules": {
+            "comment": "검색 실행 — 표 조각의 검색창이 부른다. 빈 값은 쿼리에서 빼고 페이지를 1로 되돌리며,\n       나머지 필터는 유지한다(`mergeQuery`). 대기 표시는 표 본문에만 건다.",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/schedules",
+                "mergeQuery": true,
+                "replace": true,
+                "transition_overlay_target": "schedules_data_grid__body",
+                "query": {
+                    "search": "{{_local.searchQuery || undefined}}",
+                    "search_type": "{{_local.searchType || undefined}}",
+                    "page": 1
+                }
             }
-          }
-        },
-        "children": [
-          {
-            "id": "page_header",
-            "type": "composite",
-            "name": "PageHeader",
-            "props": {
-              "title": "$t:admin.schedules.title",
-              "description": "$t:admin.schedules.description"
-            },
-            "children": [
-              {
-                "id": "refresh_button",
-                "type": "composite",
-                "name": "IconButton",
-                "props": {
-                  "iconName": "refresh",
-                  "variant": "outline",
-                  "size": "md"
-                },
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "navigate",
-                    "params": {
-                      "path": "{{route.path}}",
-                      "mergeQuery": true,
-                      "query": {}
-                    }
-                  }
-                ]
-              },
-              {
-                "id": "add_schedule_button",
+        }
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "searchQuery": "{{query.search || ''}}",
+                    "searchType": "{{query.search_type || ''}}"
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "schedule_list_content",
                 "type": "basic",
-                "name": "Button",
-                "props": {
-                  "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors"
-                },
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "sequence",
-                    "actions": [
-                      {
-                        "handler": "setState",
-                        "params": {
-                          "target": "global",
-                          "selectedSchedule": null,
-                          "isEditMode": false,
-                          "scheduleForm": {
-                            "type": "artisan",
-                            "frequency": "daily",
-                            "without_overlapping": true,
-                            "run_in_maintenance": false,
-                            "is_active": true
-                          }
+                "name": "Div",
+                "responsive": {
+                    "portable": {
+                        "props": {
+                            "className": "admin-page-content-compact"
                         }
-                      },
-                      {
-                        "handler": "openModal",
-                        "target": "schedule_form_modal"
-                      }
-                    ]
-                  }
-                ],
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "plus",
-                      "size": "md"
                     }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "text": "$t:admin.schedules.register_schedule"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "id": "tab_navigation_wrapper",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "sticky-tab-nav"
-            },
-            "children": [
-              {
-                "id": "tab_navigation",
-                "type": "composite",
-                "name": "TabNavigation",
+                },
                 "props": {
-                  "tabs": [
+                    "className": "admin-page-content"
+                },
+                "children": [
                     {
-                      "id": "schedules",
-                      "label": "$t:admin.schedules.tabs.schedules",
-                      "iconName": "clock"
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:admin.schedules.title",
+                            "description": "$t:admin.schedules.description"
+                        },
+                        "children": [
+                            {
+                                "id": "refresh_button",
+                                "type": "composite",
+                                "name": "IconButton",
+                                "actions": [
+                                    {
+                                        "comment": "새로고침 겸 조건 초기화. 경로를 고정하지 않고 **지금 있는 경로 그대로** 다시 밟는다 —\n                 탭이 둘이라 목적지를 박아 두면 큐 탭에서 눌렀을 때 다른 탭으로 튄다.",
+                                        "type": "click",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "{{route.path}}",
+                                            "mergeQuery": true,
+                                            "query": {}
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "iconName": "refresh",
+                                    "variant": "outline",
+                                    "size": "md"
+                                }
+                            },
+                            {
+                                "id": "add_schedule_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "새 예약 — 폼 창을 등록 모드로 연다. 대상을 **비우고** 여는 것이 핵심이다.\n                 그 창은 수정과 겸용이라, 안 비우면 직전에 고친 예약의 값이 새 등록에 실린다.",
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "selectedSchedule": null,
+                                                    "isEditMode": false,
+                                                    "scheduleForm": {
+                                                        "type": "artisan",
+                                                        "frequency": "daily",
+                                                        "without_overlapping": true,
+                                                        "run_in_maintenance": false,
+                                                        "is_active": true
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "schedule_form_modal"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{schedules?.data?.abilities?.can_create !== true}}"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "plus",
+                                            "size": "md"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:admin.schedules.register_schedule"
+                                    }
+                                ]
+                            }
+                        ]
                     },
                     {
-                      "id": "queue",
-                      "label": "$t:admin.schedules.tabs.queue",
-                      "iconName": "bar-chart-2",
-                      "disabled": true
+                        "id": "tab_navigation_wrapper",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "sticky-tab-nav"
+                        },
+                        "children": [
+                            {
+                                "id": "tab_navigation",
+                                "type": "composite",
+                                "name": "TabNavigation",
+                                "actions": [
+                                    {
+                                        "comment": "탭 전환 — 탭이 **URL 경로**라 이동이다. 기본 탭만 경로 뒤가 비고 나머지는 이름이 붙는다.\n                 마지막 스크롤은 목록 아래쪽에 머문 화면을 위로 되돌린다.",
+                                        "type": "change",
+                                        "event": "onTabChange",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/schedules{{$args[0] === 'schedules' ? '' : '/' + $args[0]}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "scrollIntoView",
+                                                "params": {
+                                                    "selector": "#main_content",
+                                                    "behavior": "instant",
+                                                    "block": "start",
+                                                    "waitForElement": true,
+                                                    "timeout": 1000
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "activeTabId": "{{route.path === '/admin/schedules/queue' ? 'queue' : 'schedules'}}",
+                                    "variant": "default",
+                                    "tabs": [
+                                        {
+                                            "id": "schedules",
+                                            "label": "$t:admin.schedules.tabs.schedules",
+                                            "iconName": "clock"
+                                        },
+                                        {
+                                            "id": "queue",
+                                            "label": "$t:admin.schedules.tabs.queue",
+                                            "iconName": "chart-column",
+                                            "disabled": true
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "schedules_tab_content",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "tab-content"
+                        },
+                        "children": [
+                            {
+                                "partial": "partials/admin_schedule_list/_tab_schedules.json"
+                            }
+                        ]
                     }
-                  ],
-                  "activeTabId": "{{route.path === '/admin/schedules/queue' ? 'queue' : 'schedules'}}",
-                  "variant": "default"
-                },
-                "actions": [
-                  {
-                    "event": "onTabChange",
-                    "type": "change",
-                    "handler": "sequence",
-                    "actions": [
-                      {
-                        "handler": "navigate",
-                        "params": {
-                          "path": "/admin/schedules{{$args[0] === 'schedules' ? '' : '/' + $args[0]}}"
-                        }
-                      },
-                      {
-                        "handler": "scrollIntoView",
-                        "params": {
-                          "selector": "#main_content",
-                          "behavior": "instant",
-                          "block": "start",
-                          "waitForElement": true,
-                          "timeout": 1000
-                        }
-                      }
-                    ]
-                  }
                 ]
-              }
-            ]
-          },
-          {
-            "id": "schedules_tab_content",
-            "type": "basic",
-            "name": "Div",
-            "children": [
-              {
-                "partial": "partials/admin_schedule_list/_tab_schedules.json"
-              }
-            ],
-            "props": {
-              "className": "tab-content"
             }
-          }
         ]
-      }
+    },
+    "modals": [
+        {
+            "comment": "등록·수정 겸용 폼 창. 어느 쪽인지는 전역 `isEditMode` 와 `selectedSchedule` 로 정해진다.",
+            "partial": "partials/admin_schedule_list/_modal_form.json"
+        },
+        {
+            "comment": "삭제 확인 창 — 표 행 메뉴가 연다.",
+            "partial": "partials/admin_schedule_list/_modal_delete.json"
+        },
+        {
+            "comment": "즉시 실행 확인 창. 예약 시각과 무관하게 지금 한 번 돌리는 것이라 확인을 받는다.",
+            "partial": "partials/admin_schedule_list/_modal_run.json"
+        },
+        {
+            "comment": "실행 이력 창(성공·실패와 출력) — 조회 전용이다.",
+            "partial": "partials/admin_schedule_list/_modal_history.json"
+        },
+        {
+            "comment": "복제 창. 등록 폼을 다시 쓰지 않고 별도 창을 둔 것은, 복제는 이름만 바꿔 바로 만드는 동작이라\n       입력 항목이 훨씬 적기 때문이다.",
+            "partial": "partials/admin_schedule_list/_modal_duplicate.json"
+        }
     ]
-  },
-  "modals": [
-    {
-      "partial": "partials/admin_schedule_list/_modal_form.json"
-    },
-    {
-      "partial": "partials/admin_schedule_list/_modal_delete.json"
-    },
-    {
-      "partial": "partials/admin_schedule_list/_modal_run.json"
-    },
-    {
-      "partial": "partials/admin_schedule_list/_modal_history.json"
-    },
-    {
-      "partial": "partials/admin_schedule_list/_modal_duplicate.json"
-    }
-  ]
 }

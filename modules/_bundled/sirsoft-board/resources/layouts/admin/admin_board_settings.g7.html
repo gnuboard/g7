@@ -1,0 +1,352 @@
+<!-- 게시판 모듈 전역 설정. 탭이 여덟이고 데이터소스가 열둘인데, 설정 본체(`settings`)와 버튼으로만 여는 명단(`privacyTargets`) 말고는 전부 `if` 로 자기 탭에서만 읽는다 — 한 화면에 다 걸어 두면 열지도 않은 탭 때문에 진입이 느려진다. 어느 탭인지는 URL 의 `tab` 이 먼저이고 없으면 전역 값, 그것도 없으면 `general` 이다 -->
+<layout name="admin_board_settings" version="1.0.0" extends="_admin_base">
+  <meta _e2e_allow="e2e:allow F6 정정 — 죽은 state 키 3개(알림 정의 페이지 번호)를 initLocal 로 옮긴 것뿐(2026-09-17 저작 트랙 게이트), 값·화면 동작 동일" title="$t:sirsoft-board.admin.settings.title" description="$t:sirsoft-board.admin.settings.description"/>
+  <!-- 설정 본체 — 유일하게 탭 조건 없이 항상 읽고 `_local.form` 을 채운다(모든 탭이 이 한 폼을 나눠 쓴다).
+       blocking 이라 설정을 다 받기 전에는 입력칸을 그리지 않는다 — 받기 전에 칸을 고치면 도착한 값(initLocal)이
+       그 입력을 말없이 덮어써 사용자가 고친 값이 사라졌다(7.1.0 실측 K3 O-K3T-5). 게시판 생성·수정 화면과 같은 방식이다 -->
+  <data-source id="settings" label_key="$t:sirsoft-board.editor.data_source.settings" type="api" endpoint="/api/modules/sirsoft-board/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking" initLocal="form" :refetchOnMount="true">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 개인정보 보유기간 대상 건수 — 「개인정보 보유기간」 탭의 대상 행 뱃지가 읽는다. 저장된 설정 기준이라 저장 성공 뒤 다시 읽는다. 꺼진 축도 서버가 센다(꺼짐은 `ip_enabled`·`guest_enabled` 로 구분) — null 은 응답을 받기 전 fallback 뿐이다 -->
+  <data-source id="boardPrivacyRetentionPreview" label_key="$t:sirsoft-board.editor.data_source.boardPrivacyRetentionPreview" type="api" endpoint="/api/modules/sirsoft-board/admin/settings/privacy-retention-preview" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'privacy_retention'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="ip" :value="null"/>
+        <field name="guest" :value="null"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 개인정보 조치 직권 실행 상태 — 「지금 실행」 버튼과 상태 줄(처리 대기/처리 중 · 마지막 결과)이 쓴다(코어 직권 실행 API).
+       진행 중이면 3초마다 다시 받고 끝나면 멈춘다. 진행 중일 때 받은 서버 시각(`checked_at`)을 다음 조회의 `since` 로
+       돌려보내 그 뒤에 끝난 작업이 있으면(`finished_since`) 대상 건수를 다시 받는다 — 판정을 응답값으로만 하는 까닭은
+       직전에 넣은 전역 값이 이 성공 핸들러에서 낡은 값으로 읽히기 때문이다(코어 환경설정 개인정보 탭과 같은 방식). -->
+  <data-source id="privacyManualRuns" label_key="$t:sirsoft-board.editor.data_source.privacyManualRuns" type="api" endpoint="/api/admin/privacy/manual-runs" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'privacy_retention'}}" :auto_fetch="true" :auth_required="true">
+    <params targets="retention:sirsoft-board.ip,retention:sirsoft-board.guest" since="{{_global.privacyRunWatchSince ?? ''}}"/>
+    <fallback>
+      <field name="data">
+        <field name="targets" :value="{}"/>
+        <field name="has_active" :value="false"/>
+        <field name="finished_since" :value="false"/>
+      </field>
+    </fallback>
+    <success>
+      <set-state if="{{response?.data?.data?.has_active === true}}" target="global" privacyRunWatchSince="{{response?.data?.data?.checked_at}}"/>
+      <start-interval if="{{response?.data?.data?.has_active === true}}" id="privacy_manual_run_poll" :intervalMs="3000">
+        <actions>
+          <refetch-data-source dataSourceId="privacyManualRuns"/>
+        </actions>
+      </start-interval>
+      <stop-interval if="{{response?.data?.data?.has_active !== true}}" id="privacy_manual_run_poll"/>
+      <refetch-data-source if="{{response?.data?.data?.has_active !== true &amp;&amp; response?.data?.data?.finished_since === true}}" dataSourceId="boardPrivacyRetentionPreview"/>
+      <set-state if="{{response?.data?.data?.has_active !== true}}" target="global" :privacyRunWatchSince="null"/>
+    </success>
+  </data-source>
+  <!-- 개인정보 보유기간 대상 창 — 작성 IP·비회원 두 축이 함께 쓴다. 여는 버튼이 목록 경로를 `_global.privacyTargets.path` 에
+       넣고 다시 받은 뒤 연다. 명단은 코어 공통 대상 목록 API 가 두 핸들러를 식별자로 찾아 내려준다. -->
+  <data-source id="privacyTargets" label_key="$t:sirsoft-board.editor.data_source.privacyTargets" type="api" endpoint="/api/admin/privacy/{{_global.privacyTargets?.path ?? 'retention-targets/sirsoft-board.ip'}}" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive">
+    <params :per_page="20"/>
+  </data-source>
+  <!-- 「기본값」 탭의 게시판 선택지 — 셀렉트 하나를 채우는 용도라 페이지를 나누지 않고 필요한 두 칸만 받는다 -->
+  <data-source id="boards_list" label_key="$t:sirsoft-board.editor.data_source.boards_list" type="api" endpoint="/api/modules/sirsoft-board/admin/boards?per_page=999&amp;fields=id,title" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'basic_defaults'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+      </field>
+    </fallback>
+    <!-- 실패의 종류를 남긴다 — fallback 은 abilities 없는 빈 목록이라 이것이 없으면 서버 오류(5xx)도 일괄 지정 카드에
+         「권한 없음」 이유로 보였다(7.1.0 S2 #8). 403 만 권한 없음, 그 밖의 실패는 「불러오지 못함」. 다시 성공하면 computed 가 abilities 를 먼저 본다 -->
+    <error-handling>
+      <on-code code="403">
+        <set-state target="local" bulkMembersBoardsError="forbidden"/>
+      </on-code>
+      <default>
+        <set-state target="local" bulkMembersBoardsError="failed"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 역할 선택지 — 「기본값」과 「신고 정책」 두 탭이 함께 쓴다(새 게시판의 기본 권한 · 신고를 다룰 수 있는 역할). 활성 역할만 받는다 -->
+  <data-source id="roles" label_key="$t:sirsoft-board.editor.data_source.roles" type="api" endpoint="/api/admin/roles/active" method="GET" if="{{['basic_defaults', 'report_policy'].includes(query.tab || _global.activeBoardSettingsTab || 'general')}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 게시판 유형 목록 — 「기본값」 탭에서 고르고, 같은 탭의 유형 관리 모달이 이 목록을 고쳐 쓴다 -->
+  <data-source id="board_types" label_key="$t:sirsoft-board.editor.data_source.board_types" type="api" endpoint="/api/modules/sirsoft-board/admin/board-types" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'basic_defaults'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 이 모듈이 발행하는 알림 정의들 — 코어 알림 표에서 게시판 것만 골라 받는다. 목록이 길어 페이지를 나누고, 그 쪽수·총건수를 `_merge: deep` 으로 지역 상태에 얹어 아래 페이저가 읽는다. 「알림 정의」와 「신고 정책」 두 탭이 함께 쓴다 -->
+  <data-source id="boardNotificationDefinitions" label_key="$t:sirsoft-board.editor.data_source.boardNotificationDefinitions" type="api" endpoint="/api/admin/notification-definitions?extension_type=module&amp;extension_identifier=sirsoft-board" method="GET" if="{{['notification_definitions', 'report_policy'].includes(query.tab || _global.activeBoardSettingsTab || 'general')}}" :auto_fetch="true" :auth_required="true">
+    <params page="{{query.page || 1}}" per_page="{{query.per_page || 20}}" search="{{query.search}}" search_type="{{query.search_type}}" template_channel="{{query.channel ?? 'mail'}}"/>
+    <init-local>
+      <field name="_merge" value="deep"/>
+      <field name="notificationDefinitionCurrentPage" value="pagination.current_page"/>
+      <field name="notificationDefinitionTotalPages" value="pagination.last_page"/>
+      <field name="notificationDefinitionTotalItems" value="pagination.total"/>
+    </init-local>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 알림 정의 편집에서 고를 발송 채널 — 코어가 주는 값이라 게시판 쪽 사정과 무관하게 비어 올 수 있고, 그때는 빈 배열로 떨어진다 -->
+  <data-source id="availableChannels" label_key="$t:sirsoft-board.editor.data_source.availableChannels" type="api" endpoint="/api/admin/notification-channels" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'notification_definitions'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="channels" :value="[]"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 본인인증 정책 목록 — 코어 표에서 게시판 몫(`source_identifier`)만 게시판 모듈 경로로 받는다. 이 경로는 게시판 권한
+       (`identity.policies.read`, 쓰기·abilities 는 `.update`)으로 동작한다 — 코어 경로는 코어 권한을 요구해 게시판 권한이 아무 효과가 없었다.
+       서버가 출처를 게시판으로 고정하므로 `source_identifier` 는 표지일 뿐이다. 이 탭의 검색·범위·목적 필터와 쪽수가 전부 URL 에서 온다 -->
+  <data-source id="boardIdentityPolicies" label_key="$t:sirsoft-board.editor.data_source.boardIdentityPolicies" type="api" endpoint="/api/modules/sirsoft-board/admin/identity-policies" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}" :auto_fetch="true" :auth_required="true">
+    <params source_identifier="sirsoft-board" scope="{{query.scope ?? ''}}" purpose="{{query.purpose ?? ''}}" search="{{query.search ?? ''}}" page="{{query.page || 1}}" per_page="{{query.per_page || 10}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="meta" :value="{}"/>
+      </field>
+    </fallback>
+    <!-- 조회 권한이 없으면(403) 표지를 남긴다 — fallback 은 abilities 없는 빈 목록이라 이것이 없으면 「등록된 정책 없음」으로 보인다.
+         다시 성공하면 computed 가 abilities 를 먼저 본다 -->
+    <error-handling>
+      <on-code code="403">
+        <set-state target="local" identityPoliciesLoadError="forbidden"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 본인인증을 요구할 수 있는 «목적» 목록 — 정책 폼의 선택지이자 목록 필터의 선택지다. 이 목록은 게시판 것만이 아니라 코어가 아는 전부다 -->
+  <data-source id="boardIdentityPurposes" label_key="$t:sirsoft-board.editor.data_source.boardIdentityPurposes" type="api" endpoint="/api/identity/purposes" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <!-- 설치된 본인인증 제공자 — 정책에 어느 수단을 붙일지 고를 때 쓴다. 하나도 없으면 정책을 만들어도 실제로 인증을 걸 수단이 없다.
+       권한이 필요 없는 공개 목록에서 받는다(폼은 id·이름만 쓴다) — 코어 관리자 목록은 코어 권한을 요구해, 게시판 권한만 가진 운영자의 선택지가 비었다 -->
+  <data-source id="identityProviders" label_key="$t:sirsoft-board.editor.data_source.identityProviders" type="api" endpoint="/api/identity/providers" method="GET" if="{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'identity_policies'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data" :value="[]"/>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="editingDefinition" :value="null"/>
+    <field name="editingTemplate" :value="null"/>
+    <field name="editingRecipients" :value="[]"/>
+    <field name="editLang" value="ko"/>
+    <field name="previewData" :value="null"/>
+    <field name="notificationDefinitionFilter">
+      <field name="search" value=""/>
+      <field name="searchType" value="all"/>
+    </field>
+    <field name="expandedNotificationDefinitionIds" :value="[]"/>
+    <field name="expandedNotifications" :value="{}"/>
+    <field name="templateErrors" :value="null"/>
+    <field name="isSaving" :value="false"/>
+    <field name="recipientRoleSearchResults" :value="[]"/>
+    <field name="recipientUserSearchResults" :value="[]"/>
+    <field name="isAddingReactionType" :value="false"/>
+    <field name="reactionTypeForm" :value="null"/>
+    <field name="reactionTypeFormErrors" :value="null"/>
+    <field name="notificationDefinitionCurrentPage" :value="1"/>
+    <field name="notificationDefinitionTotalPages" :value="1"/>
+    <field name="notificationDefinitionTotalItems" :value="0"/>
+  </init-local>
+  <computed name="isReadOnly">{{!!settings?.data &amp;&amp; settings?.data?.abilities?.can_update !== true}}</computed>
+  <computed name="canBulkApply">{{settings?.data?.abilities?.can_bulk_apply === true}}</computed>
+  <computed name="canManageBoardTypes">{{settings?.data?.abilities?.can_manage_board_types === true}}</computed>
+  <computed name="canClearSeoCache">{{settings?.data?.abilities?.can_clear_seo_cache === true}}</computed>
+  <computed name="bulkMembersLocked">{{boards_list?.data?.abilities?.can_update !== true}}</computed>
+  <computed name="bulkMembersNoPermission">{{boards_list?.data?.abilities ? boards_list.data.abilities.can_update !== true : _local.bulkMembersBoardsError === 'forbidden'}}</computed>
+  <computed name="bulkMembersLoadFailed">{{!boards_list?.data?.abilities &amp;&amp; _local.bulkMembersBoardsError === 'failed'}}</computed>
+  <computed name="isNotificationReadOnly">{{boardNotificationDefinitions?.data?.abilities?.can_update !== true}}</computed>
+  <computed name="identityPoliciesNoReadPermission">{{!boardIdentityPolicies?.data?.abilities &amp;&amp; _local.identityPoliciesLoadError === 'forbidden'}}</computed>
+  <computed name="isIdentityPolicyReadOnly">{{boardIdentityPolicies?.data?.abilities?.can_update !== true}}</computed>
+  <computed name="boardOptions">{{(() => { const boards = boards_list?.data?.data ?? []; return boards.map(b => ({ value: b.id, label: b.name })); })()}}</computed>
+  <computed name="adminPermissions">{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => key.startsWith('admin.'))}}</computed>
+  <computed name="userPermissions">{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => !key.startsWith('admin.'))}}</computed>
+  <computed name="roleOptions">{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}</computed>
+  <computed name="adminPermKeys">{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => key.startsWith('admin.')).map(([key]) => key)}}</computed>
+  <computed name="userPermKeys">{{Object.entries(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(([key]) => !key.startsWith('admin.')).map(([key]) => key)}}</computed>
+  <computed name="allAdminChecked">{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).length > 0 &amp;&amp; Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}</computed>
+  <computed name="allUserChecked">{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).length > 0 &amp;&amp; Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}</computed>
+  <permissions>
+    <permission>sirsoft-board.settings.read</permission>
+  </permissions>
+  <transition-overlay target="tab_content" fallback-target="right_content_area">
+    <wait-for>settings</wait-for>
+    <wait-for>boardPrivacyRetentionPreview</wait-for>
+    <wait-for>privacyManualRuns</wait-for>
+    <wait-for>boards_list</wait-for>
+    <wait-for>roles</wait-for>
+    <wait-for>board_types</wait-for>
+    <wait-for>boardNotificationDefinitions</wait-for>
+    <wait-for>notification_channels</wait-for>
+    <wait-for>boardIdentityPolicies</wait-for>
+  </transition-overlay>
+  <init>
+    <set-state target="_local" notificationDefinitionCurrentPage="{{+(query.page || 1)}}"/>
+  </init>
+  <slot name="content">
+    <div data-ref="settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+      <div data-ref="page_header_wrapper">
+        <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-board.admin.settings.title" description="$t:sirsoft-board.admin.settings.description"/>
+      </div>
+      <div data-ref="sticky_header" class="sticky-section-header">
+        <div data-ref="header_content">
+          <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
+            <icon name="lock" size="lg" class="text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+            <span class="text-warning-soft">$t:sirsoft-board.admin.settings.read_only_message</span>
+          </div>
+          <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeBoardSettingsTab || query.tab || 'general'}}" variant="default">
+            <prop name="tabs">
+              <item id="general" label="$t:sirsoft-board.admin.settings.tabs.general"/>
+              <item id="basic_defaults" label="$t:sirsoft-board.admin.settings.tabs.basic_defaults"/>
+              <item id="report_policy" label="$t:sirsoft-board.admin.settings.tabs.report_policy"/>
+              <item id="spam_security" label="$t:sirsoft-board.admin.settings.tabs.spam_security"/>
+              <item id="seo" label="$t:sirsoft-board.admin.settings.tabs.seo"/>
+              <item id="notification_definitions" label="$t:sirsoft-board.admin.settings.tabs.notification_definitions"/>
+              <item id="identity_policies" label="$t:sirsoft-board.admin.settings.tabs.identity_policies"/>
+              <item id="privacy_retention" label="$t:sirsoft-board.admin.settings.tabs.privacy_retention"/>
+            </prop>
+            <on type="change" event="onTabChange">
+              <!-- 저장하지 않은 변경이 있으면 바로 옮기지 않고 확인 창을 연다 — 저장은 지금 탭의 구획만 보내고, 탭을 옮기면 설정을 다시 받아 고친 값이 저장된 값으로 돌아가기 때문이다(말없이 사라지지 않게) -->
+              <conditions>
+                <when if="{{_local.hasChanges === true &amp;&amp; $args[0] !== (_global.activeBoardSettingsTab || query.tab || 'general')}}">
+                  <set-state target="global" pendingBoardSettingsTab="{{$args[0]}}"/>
+                  <open-modal target="modal_board_settings_unsaved_tab"/>
+                </when>
+                <else>
+                  <!-- 탭 갈아타기 — 앞 탭에서 난 검증 오류를 먼저 지우고(다른 탭의 붉은 문구가 따라다니지 않도록), 어느 탭인지를 전역과 URL 양쪽에 남긴다. `replace` 라 탭 전환이 뒤로가기 이력에 쌓이지 않는다. 마지막으로 본문 머리로 스크롤을 되돌린다 -->
+                  <sequence>
+                    <set-state target="local" :errors="null"/>
+                    <set-state target="global" activeBoardSettingsTab="{{$args[0]}}" :boardBulkMembers="null"/>
+                    <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
+                    <navigate path="/admin/boards/settings" :replace="true">
+                      <query tab="{{$args[0]}}"/>
+                    </navigate>
+                    <scroll-into-view selector="#tab_content" behavior="instant" block="start" :waitForElement="true" :timeout="1000"/>
+                  </sequence>
+                </else>
+              </conditions>
+            </on>
+          </tab-navigation>
+        </div>
+        <tab-navigation-scroll data-type="composite" data-ref="sub_tab_navigation" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}" class="sub-tab-nav" sectionIdPrefix="" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
+          <prop name="tabs">
+            <item id="basic" label="$t:sirsoft-board.admin.settings.board_settings_tabs.basic"/>
+            <item id="permissions" label="$t:sirsoft-board.admin.settings.board_settings_tabs.permissions"/>
+            <item id="list" label="$t:sirsoft-board.admin.settings.board_settings_tabs.list"/>
+            <item id="post" label="$t:sirsoft-board.admin.settings.board_settings_tabs.post"/>
+            <item id="reply" label="$t:sirsoft-board.admin.settings.board_settings_tabs.reply"/>
+            <item id="comment" label="$t:sirsoft-board.admin.settings.board_settings_tabs.comment"/>
+            <item id="attachment" label="$t:sirsoft-board.admin.settings.board_settings_tabs.attachment"/>
+            <item id="notification" label="$t:sirsoft-board.admin.settings.board_settings_tabs.notification"/>
+            <item id="bulk_apply" label="$t:sirsoft-board.admin.settings.board_settings_tabs.bulk_apply"/>
+            <item id="bulk_members" label="$t:sirsoft-board.admin.settings.board_settings_tabs.bulk_members"/>
+          </prop>
+        </tab-navigation-scroll>
+      </div>
+      <div data-ref="tab_content" class="tab-content">
+        <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger items-start mb-6">
+          <div class="flex items-start gap-3">
+            <icon name="triangle-exclamation" class="text-xl leading-5 text-red-600 dark:text-red-400 flex-shrink-0"/>
+            <div>
+              <h3 class="text-error-strong">$t:sirsoft-board.admin.settings.validation_error</h3>
+              <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>
+              <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+                <li class="text-error-soft">{{message}}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <include src="partials/admin_board_settings/_tab_general.g7.html"/>
+        <include src="partials/admin_board_settings/_tab_board_settings_basic.g7.html"/>
+        <include src="partials/admin_board_settings/_tab_board_settings_permissions.g7.html"/>
+        <include src="partials/admin_board_settings/_tab_board_settings_list.g7.html"/>
+        <include src="partials/admin_board_settings/_tab_board_settings_post.g7.html"/>
+        <include src="partials/admin_board_settings/_tab_board_settings_reply.g7.html"/>
+        <include src="partials/admin_board_settings/_tab_board_settings_comment.g7.html"/>
+        <include src="partials/admin_board_settings/_tab_board_settings_attachment.g7.html"/>
+        <include src="partials/admin_board_settings/_tab_board_settings_notification.g7.html"/>
+        <include src="partials/admin_board_settings/_tab_board_settings_bulk_apply.g7.html"/>
+        <include src="partials/admin_board_settings/_section_bulk_members.g7.html"/>
+        <include src="partials/admin_board_settings/_tab_report_policy.g7.html"/>
+        <include src="partials/admin_board_settings/_tab_spam_security.g7.html"/>
+        <include src="partials/admin_board_settings/_tab_seo.g7.html"/>
+        <include src="partials/admin_board_settings/_tab_notification_definitions.g7.html"/>
+        <include src="partials/admin_board_settings/_tab_identity_policies.g7.html"/>
+        <include src="partials/admin_board_settings/_tab_privacy_retention.g7.html"/>
+        <div data-ref="footer_buttons" data-if="{{!_computed.isReadOnly}}" class="sticky-footer-buttons">
+          <div data-if="{{_local.hasChanges}}" class="flex-center gap-1.5 text-sm text-amber-600 dark:text-amber-400 mr-auto">
+            <icon name="circle-dot" size="xs"/>
+            <span>$t:sirsoft-board.admin.settings.unsaved_changes</span>
+          </div>
+          <button data-ref="footer_cancel_button" type="button" class="btn btn-secondary text-sm">
+            <on type="click">
+              <navigate path="/admin"/>
+            </on>
+            <span>$t:common.cancel</span>
+          </button>
+          <!-- 설정 본체(settings)를 받기 전에는 잠근다 — 입력칸이 먼저 그려져 받기 전에 칸 하나를 고치면 그 칸만 실린 본문이 나가고,
+               서버는 그 구획을 통째로 갈아 써 기본 권한·금지어·스위치 기본값이 지워졌다(7.1.0 실측 K3) -->
+          <button data-ref="footer_save_button" type="button" disabled="{{_computed.isReadOnly || !settings?.data || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5 text-sm">
+            <on type="click">
+              <!-- 저장 — 폼 전체가 아니라 «지금 탭이 소유한 구획만» 골라 보낸다(`_tab` 이 서버에 어느 구획인지 알린다). 한 폼을 여러 탭이 나눠 쓰므로 통째로 보내면 열어 보지도 않은 탭의 값이 함께 덮어써진다 -->
+              <sequence>
+                <set-state target="local" :isSaving="true" :errors="null"/>
+                <api-call target="/api/modules/sirsoft-board/admin/settings" :auth_required="true" method="PUT" body="{{(function() { const tab = _global.activeBoardSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'general') { return { _tab: 'general', display: form.display || {}, attachment_settings: form.attachment_settings || {} }; } if (tab === 'privacy_retention') { return { _tab: 'privacy_retention', privacy_retention: form.privacy_retention || {} }; } if (tab === 'report_policy') { return { _tab: 'report_policy', report_policy: form.report_policy || {}, spam_security: form.spam_security || {}, report_permissions: form.report_permissions || {} }; } if (tab === 'spam_security') { return { _tab: 'spam_security', spam_security: form.spam_security || {} }; } if (tab === 'seo') { return { _tab: 'seo', seo: form.seo || {} }; } if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: 'basic_defaults', basic_defaults: form.basic_defaults || {}, notifications: form.notifications || {} }; })()}}">
+                  <success>
+                    <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                    <refetch-data-source dataSourceId="settings"/>
+                    <refetch-data-source dataSourceId="boards_list"/>
+                    <refetch-data-source dataSourceId="roles"/>
+                    <refetch-data-source dataSourceId="board_types"/>
+                    <refetch-data-source dataSourceId="boardPrivacyRetentionPreview"/>
+                    <toast type="success" message="$t:sirsoft-board.admin.settings.save_success"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                    <toast type="error" message="{{error.message ?? '$t:sirsoft-board.admin.settings.save_error'}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{_local.isSaving}}" name="spinner" size="sm" :spin="true"/>
+            <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+            <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <!-- 여기 정한 기본값을 이미 있는 게시판들에 소급 적용하는 창 -->
+  <modal src="partials/admin_board_settings/_bulk_apply_modal.g7.html"/>
+  <!-- 게시판 관리자·스텝 일괄 지정 확인 창 — 「기본값」 탭 맨 아래 카드의 「적용」 이 연다 -->
+  <modal src="partials/admin_board_settings/_modal_bulk_members_confirm.g7.html"/>
+  <!-- 게시판 유형을 더하고 고치는 창 — 게시판 생성 폼과 같은 조각을 나눠 쓴다(유형을 다루는 자리가 둘이지만 규칙은 하나여야 한다) -->
+  <modal src="partials/admin_board_form/_board_type_manage_modal.g7.html"/>
+  <!-- 알림 문안 편집 — 채널·언어별 제목과 본문을 고친다 -->
+  <modal src="partials/admin_board_settings/_modal_notification_template_edit.g7.html"/>
+  <!-- 알림 문안 미리보기 — 보내지 않고 치환 결과만 확인한다 -->
+  <modal src="partials/admin_board_settings/_modal_notification_template_preview.g7.html"/>
+  <!-- 알림 정의를 처음 상태로 되돌리는 확인 창 — 고쳐 둔 문안이 사라지므로 확인을 받는다 -->
+  <modal src="partials/admin_board_settings/_modal_notification_definition_reset.g7.html"/>
+  <!-- 본인인증 정책을 만들고 고치는 폼 -->
+  <modal src="partials/admin_board_settings/_modal_identity_policy_form.g7.html"/>
+  <!-- 본인인증 정책 삭제 확인 -->
+  <modal src="partials/admin_board_settings/_modal_identity_policy_delete.g7.html"/>
+  <!-- 개인정보 보유기간 대상 창(일반 탭 보유기간 카드) — 작성 IP·비회원 두 축이 함께 쓴다. -->
+  <modal src="partials/admin_board_settings/_modal_privacy_targets.g7.html"/>
+  <!-- 개인정보 보유기간 직권 실행 확인 창(일반 탭 — 작성 IP·비회원 글 두 대상이 함께 쓴다). -->
+  <modal src="partials/admin_board_settings/_modal_privacy_run.g7.html"/>
+  <!-- 저장하지 않은 변경이 있을 때 탭 전환 확인 창 — 탭 전환은 설정을 다시 받아 고친 값을 저장된 값으로 되돌린다 -->
+  <modal src="partials/admin_board_settings/_modal_unsaved_tab_switch.g7.html"/>
+</layout>

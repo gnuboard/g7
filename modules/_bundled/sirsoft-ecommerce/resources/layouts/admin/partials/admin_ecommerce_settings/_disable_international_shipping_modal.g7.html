@@ -1,0 +1,46 @@
+<!-- 쇼핑몰 설정 — 해외배송 끄기 확인 창. 끄면 이미 설정해 둔 국가·권역 값이 의미를 잃으므로
+  되묻는다. 이 조각은 묻기만 하고 실제 반영은 부르는 쪽(배송 탭)이 한다. -->
+<partial description="해외배송 비활성화 확인 모달">
+  <modal data-type="composite" data-ref="disable_international_shipping_modal" title="$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.title" size="md">
+    <div>
+      <!-- 경고 메시지 -->
+      <div class="alert-warning">
+        <icon name="triangle-exclamation" class="text-amber-500 dark:text-amber-400 text-lg mt-0.5 shrink-0"/>
+        <span class="text-warning-soft">$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.message</span>
+      </div>
+      <!-- 버튼 영역 -->
+      <div class="flex justify-end gap-2">
+        <!-- 취소 버튼 -->
+        <button type="button" class="btn btn-secondary">
+          <on type="click">
+            <!-- 해외배송을 끈 지점이 배송가능국가 추가 폼도 함께 내렸다(그 폼이 도달 불가가 되기 때문). [취소] 는 그 결정을 되돌리는 경로이므로 입력 중이던 국가도 함께 되살린다 — 되살리지 않으면 "끄지 않겠다" 를 고른 운영자의 입력이 안내 없이 사라진다. -->
+            <set-state target="$parent._local" isAddingCountry="{{$parent._local.disableIntlWasAddingCountry === true}}" newCountry="{{$parent._local.disableIntlCountryBuffer}}" :disableIntlWasAddingCountry="false" :disableIntlCountryBuffer="null">
+              <field name="form">
+                <field name="shipping">
+                  <field name="international_shipping_enabled" :value="true"/>
+                </field>
+              </field>
+            </set-state>
+            <close-modal/>
+          </on>
+          <span>$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.cancel</span>
+        </button>
+        <!-- 확인 버튼 — 해외배송 비활성화 + 외국 국가 비활성화 -->
+        <button type="button" class="btn btn-danger">
+          <on type="click">
+            <set-state target="$parent._local" :hasChanges="true" :disableIntlWasAddingCountry="false" :disableIntlCountryBuffer="null">
+              <field name="form">
+                <field name="shipping">
+                  <field name="international_shipping_enabled" :value="false"/>
+                  <field name="available_countries" value="{{($parent._local.form?.shipping?.available_countries ?? []).map(c => c.code === ($parent._local.form?.shipping?.default_country ?? 'KR') ? c : {...c, is_active: false})}}"/>
+                </field>
+              </field>
+            </set-state>
+            <close-modal id="disable_international_shipping_modal"/>
+          </on>
+          <span>$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.confirm</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

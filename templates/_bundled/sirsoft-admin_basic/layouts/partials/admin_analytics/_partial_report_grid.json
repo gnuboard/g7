@@ -1,0 +1,505 @@
+{
+    "comment": "리포트 화면 공통 표(페이지·유입·환경·지역·행동·봇). 데이터소스 `analytics_report` 하나를 읽고,\n  검색어·정렬·쪽 번호는 전부 질의(`q`·`sort`·`page`·`per_page`)라 새로고침·주소 공유에 그대로 살아난다.\n  정렬은 방문·조회 두 축만 고른다 — 이탈률·체류는 합산 뒤 파생이라 집계 행에 그 열이 없어 정렬 대상이\n  아니다. 서버는 진입·이탈 수로도 정렬하지만 그 값은 진입·이탈 탭에서 방문과 늘 같고 다른 탭에서는 늘 0 이라\n  열로도 정렬로도 두지 않는다(두면 인기 페이지마다 「진입 0·이탈 0」이라는 거짓이 보인다 — CSV 에는 남는다).\n  부가 열(`extra`)은 차원이 스스로 싣는 값이라 있을 때만 그린다.\n  화면은 `_local.periodPath` 를 채워 이 조각의 이동이 자기 주소로 가게 한다.\n  표는 받아오는 동안 흐려 둔다 — 기간·탭·쪽을 바꾸면 새 표가 올 때까지 옛 행이 서 있다가 툭 바뀐다.\n  이 조각을 쓰는 리포트 화면 전부(페이지·유입·환경·지역·행동·봇)가 같은 소스를 읽어 여기 한 번이면 된다.\n  e2e:allow 이번 변경(받아오는 동안 표를 흐림 · 실패 시 설정 폼이 빈 값으로 섬)은 화면 14면 전수를\n  모집단으로 파생해 재는 `analyticsStateBranches.test.ts` 가 잠근다 — 되돌리면 blur 6면·fallback 1건이 red 다.\n  브라우저 spec 은 그 라운드의 범위를 화면 결함 2건으로 한정한 결정에 따라 뒤로 미뤘다(S3 라운드 1).",
+    "meta": {
+        "is_partial": true,
+        "description": "방문자 통계 리포트 공통 표 — 검색·정렬·쪽·부가 열·빈 상태"
+    },
+    "id": "analytics_report_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "admin-card"
+    },
+    "children": [
+        {
+            "id": "report_toolbar",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-between flex-wrap gap-3 mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "relative flex-1 min-w-[200px]"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "fa-solid fa-search",
+                                "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
+                            }
+                        },
+                        {
+                            "id": "report_search",
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "라벨 부분 검색. Enter 로만 보낸다 — 타이핑마다 다녀오면 표가 깜박인다.",
+                                    "type": "keydown",
+                                    "key": "Enter",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{_local.periodPath}}",
+                                        "mergeQuery": true,
+                                        "replace": true,
+                                        "query": {
+                                            "q": "{{$event.target.value || undefined}}",
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "analytics_report_q",
+                                "type": "text",
+                                "placeholder": "$t:admin.analytics.common.search_placeholder",
+                                "className": "input pl-10",
+                                "value": "{{query.q || ''}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "id": "report_sort",
+                            "type": "basic",
+                            "name": "Select",
+                            "if": "{{!['visit_duration', 'visit_pages'].includes(_computed.reportName)}}",
+                            "actions": [
+                                {
+                                    "comment": "정렬 바꾸기 — 기본값(방문)은 주소에서 지워 짧게 두고, 조회로 바꿀 때만 `sort` 를 싣는다. 순서가 바뀌면 앞서 보던\n                 쪽 번호는 의미가 없어 1쪽으로 돌린다.",
+                                    "type": "change",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{_local.periodPath}}",
+                                        "mergeQuery": true,
+                                        "replace": true,
+                                        "query": {
+                                            "sort": "{{$event.target.value === 'visits' ? undefined : $event.target.value}}",
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "analytics_report_sort",
+                                "className": "w-32",
+                                "value": "{{query.sort || 'visits'}}",
+                                "aria-label": "$t:admin.analytics.common.sort_label",
+                                "options": [
+                                    {
+                                        "value": "visits",
+                                        "label": "$t:admin.analytics.common.visits"
+                                    },
+                                    {
+                                        "value": "hits",
+                                        "label": "$t:admin.analytics.common.hits"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "comment": "구간 리포트(체류시간·본 페이지 수)는 서버가 구간 순서로 전부 돌려주므로 정렬·쪽 크기 선택을 감춘다.\n          한 쪽 행 수의 기본은 설정 「상세 TOP N」이다 — 화면은 주소에 `per_page` 가 없으면 보내지 않고 서버가\n          설정값으로 채운다. 그래서 선택란은 응답이 알려 준 쪽 크기를 보이고, 그 값이 고정 선택지에 없으면 더한다.",
+                            "id": "report_per_page",
+                            "type": "basic",
+                            "name": "Select",
+                            "if": "{{!['visit_duration', 'visit_pages'].includes(_computed.reportName)}}",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{_local.periodPath}}",
+                                        "mergeQuery": true,
+                                        "replace": true,
+                                        "query": {
+                                            "per_page": "{{$event.target.value}}",
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "analytics_report_per_page",
+                                "className": "w-20",
+                                "value": "{{String(query.per_page || analytics_report?.data?.pagination?.per_page || 25)}}",
+                                "options": "{{((n, base) => (base.includes(n) ? base : base.concat([n]).sort((a, b) => a - b)).map((v) => Object.fromEntries([['value', String(v)], ['label', String(v)]])))(Number(query.per_page || analytics_report?.data?.pagination?.per_page) || 25, [10, 25, 50, 100]) ?? []}}",
+                                "aria-label": "$t:admin.analytics.common.per_page"
+                            }
+                        },
+                        {
+                            "comment": "검색 조건 초기화 — 검색어·정렬만 걷는다. 한 쪽 행 수는 보기 설정이라 남기고, 기간은 기간 바의\n          초기화가 따로 맡는다. 이미 기본이면 잠근다.",
+                            "id": "report_filter_reset",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{_local.periodPath}}",
+                                        "mergeQuery": true,
+                                        "replace": true,
+                                        "query": {
+                                            "q": "{{undefined}}",
+                                            "sort": "{{undefined}}",
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary flex-center gap-1.5",
+                                "disabled": "{{!query.q && !query.sort}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "rotate-left",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.reset"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "report_table_wrap",
+            "type": "basic",
+            "name": "Div",
+            "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": "analytics_report"
+            },
+            "props": {
+                "className": "overflow-x-auto"
+            },
+            "children": [
+                {
+                    "comment": "열은 차원이 답할 수 있는 것만 보인다. 행동 차원(검색어·다운로드·외부 링크·전환·확장)은 방문이 아니라\n        행동을 세므로 이탈률·체류·방문당 페이지가 0·0:00·1 로만 채워진다 — 보이면 읽는 사람을 속인다. 부가 열은\n        값을 싣는 차원(검색어의 결과 없음·전환 금액·확장)에만 둔다. 화면은 `_computed.reportName` 을 채운다.\n        0건이면 표(빈 문구·쪽 번호 「1」)를 숨기고 아래 빈 화면 안내 하나만 남긴다 — 둘 다 그리면 「선택 기간에 기록이\n        없습니다」가 두 번 보였다(#682 S4 라운드 8). 불러오는 동안은 표 뼈대를 그대로 둔다.",
+                    "id": "analytics_report_grid",
+                    "type": "composite",
+                    "name": "DataGrid",
+                    "if": "{{analytics_report?.loading || (analytics_report?.data?.data ?? []).length > 0}}",
+                    "actions": [
+                        {
+                            "comment": "쪽 이동 — 주소를 갈아 끼워 다시 받는다. 돌아온 목록이 곧 화면이다.",
+                            "type": "action",
+                            "event": "onPageChange",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "{{_local.periodPath}}",
+                                "mergeQuery": true,
+                                "replace": true,
+                                "query": {
+                                    "page": "{{$args[0]}}"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "visibleColumns": "{{(function(r) { const name = String(r ?? ''); const ext = name.startsWith('ext:'); const action = ext || ['site_search', 'download', 'outlink', 'goal', 'search_tab', 'event_name'].includes(name); const extra = ext || ['site_search', 'goal'].includes(name); return ['label_display', 'visits', 'hits'].concat(action ? [] : ['bounce_rate', 'avg_time', 'pages_per_visit'], extra ? ['extra'] : [], ['trend']); })(_computed.reportName)}}",
+                        "data": "{{analytics_report?.data?.data ?? []}}",
+                        "pagination": true,
+                        "serverSidePagination": true,
+                        "serverCurrentPage": "{{+(query.page || 1)}}",
+                        "serverTotalPages": null,
+                        "serverHasMorePages": "{{analytics_report?.data?.pagination?.has_more ?? false}}",
+                        "pageSize": "{{+(query.per_page || 25)}}",
+                        "alwaysShowPagination": true,
+                        "idField": "label",
+                        "selectable": false,
+                        "sortable": false,
+                        "emptyMessage": "$t:admin.analytics.common.empty_title",
+                        "columns": [
+                            {
+                                "field": "label_display",
+                                "header": "$t:admin.analytics.common.label",
+                                "cellChildren": [
+                                    {
+                                        "comment": "라벨을 눌러 한 단계 더 들어가는 화면은 `_local.labelDrilldownKey` 를 채운다. 지금은\n              유입 경로>유입 사이트 하나가 쓴다 — 도메인 행을 누르면 그 도메인의 전체 유입 주소가 열린다.\n              질의 키(`host`)는 `<query>` 가 정적 이름만 받아 여기 박아 두고, 켤지 말지만 화면이 정한다.\n              켜지 않은 화면은 종전대로 글자다(#682 라운드 4, 검수 지적 ⑥).",
+                                        "id": "report_label_link",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "if": "{{_local.labelDrilldownKey === 'host'}}",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "{{_local.periodPath}}",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "host": "{{row.label ?? ''}}",
+                                                        "page": 1
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "text-link whitespace-normal break-all text-left",
+                                            "title": "{{row.label ?? ''}}"
+                                        },
+                                        "text": "{{row.label_display ?? row.label ?? '-'}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{_local.labelDrilldownKey !== 'host'}}",
+                                        "props": {
+                                            "className": "text-heading whitespace-normal break-all",
+                                            "title": "{{row.label ?? ''}}"
+                                        },
+                                        "text": "{{row.label_display ?? row.label ?? '-'}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "visits",
+                                "header": "$t:admin.analytics.common.visits",
+                                "width": "90px",
+                                "align": "right",
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-body"
+                                        },
+                                        "text": "{{(row.visits ?? 0) | number}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "hits",
+                                "header": "$t:admin.analytics.common.hits",
+                                "width": "90px",
+                                "align": "right",
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-body"
+                                        },
+                                        "text": "{{(row.hits ?? 0) | number}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "bounce_rate",
+                                "header": "$t:admin.analytics.common.bounce_rate",
+                                "width": "90px",
+                                "align": "right",
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-label"
+                                        },
+                                        "text": "{{row.bounce_rate ?? 0}}%"
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "avg_time",
+                                "header": "$t:admin.analytics.common.avg_time",
+                                "width": "100px",
+                                "align": "right",
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-label"
+                                        },
+                                        "text": "{{Math.floor((row.avg_time ?? 0) / 60)}}:{{String((row.avg_time ?? 0) % 60).padStart(2, '0')}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "pages_per_visit",
+                                "header": "$t:admin.analytics.common.pages_per_visit",
+                                "width": "90px",
+                                "align": "right",
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-label"
+                                        },
+                                        "text": "{{row.pages_per_visit ?? 0}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "extra",
+                                "header": "$t:admin.analytics.common.extra",
+                                "width": "120px",
+                                "align": "right",
+                                "cellChildren": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{row.extra?.no_result !== undefined}}",
+                                        "props": {
+                                            "className": "text-label",
+                                            "title": "$t:admin.analytics.actions.no_result"
+                                        },
+                                        "text": "{{$t('admin.analytics.actions.no_result')}}: {{(row.extra?.no_result ?? 0) | number}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{row.extra?.revenue_cents !== undefined}}",
+                                        "props": {
+                                            "className": "text-label",
+                                            "title": "$t:admin.analytics.actions.revenue"
+                                        },
+                                        "text": "{{$t('admin.analytics.actions.revenue')}}: {{(Number(row.extra?.revenue_cents ?? 0) / 100) | number}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{row.extra?.no_result === undefined && row.extra?.revenue_cents === undefined}}",
+                                        "props": {
+                                            "className": "text-gray-400 dark:text-gray-500"
+                                        },
+                                        "text": "-"
+                                    }
+                                ]
+                            },
+                            {
+                                "field": "trend",
+                                "header": "",
+                                "width": "56px",
+                                "align": "center",
+                                "cellChildren": [
+                                    {
+                                        "comment": "행 끝 추이 아이콘 — 목록은 기간 합계만 말하므로 「이 항목이 언제부터 늘었나」는 줄마다 추이를 그려야 보인다.\n              누르면 그 행의 저장 라벨(`row.label`)과 지금 리포트 이름을 전역에 담고 추이 창을 연다 — 창의 데이터소스가 그 값에\n              매여 따라 받는다. 라벨 칸의 기존 클릭(유입 사이트 → 유입 주소 펼침)과 따로 논다.",
+                                        "id": "row_trend_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "analyticsRowTrend": {
+                                                                "report": "{{_computed.reportName}}",
+                                                                "label": "{{row.label ?? ''}}",
+                                                                "label_display": "{{row.label_display ?? row.label ?? ''}}"
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "analytics_row_trend"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "analytics_row_trend_modal"
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn-icon",
+                                            "aria-label": "$t:admin.analytics.row_trend.open",
+                                            "title": "$t:admin.analytics.row_trend.open"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "chart-line",
+                                                    "size": "sm"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "id": "report_empty",
+            "type": "composite",
+            "name": "EmptyState",
+            "if": "{{!analytics_report?.loading && (analytics_report?.data?.data ?? []).length === 0}}",
+            "props": {
+                "iconName": "folder-open",
+                "title": "$t:admin.analytics.common.empty_title",
+                "description": "{{_computed.reportEmptyHint ?? $t('admin.analytics.common.empty_description')}}",
+                "className": "py-10"
+            }
+        },
+        {
+            "comment": "빈 표에서 「수집 상태는 진단에서」를 읽고도 그 자리에서 갈 수 없으면 안내가 반쪽이다\n         (계획서 §4.11 리포트 와이어프레임의 `[진단]`). 이 조각을 쓰는 화면은 전부 조회 권한이라\n         목적지가 막다른 길이 되지 않는다 — 그래도 최고 관리자·권한 보유자만 그려 규약을 지킨다.",
+            "id": "report_empty_actions",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!analytics_report?.loading && (analytics_report?.data?.data ?? []).length === 0 && ((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read'))}}",
+            "props": {
+                "className": "flex justify-center pb-10"
+            },
+            "children": [
+                {
+                    "id": "report_empty_diagnostics_link",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/analytics/diagnostics"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary"
+                    },
+                    "text": "$t:admin.analytics.common.empty_diagnostics_link"
+                }
+            ]
+        }
+    ]
+}

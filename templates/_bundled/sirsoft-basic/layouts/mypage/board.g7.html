@@ -1,0 +1,82 @@
+<!-- 마이페이지 «게시판 활동» 탭 — 내가 쓴 글·댓글·반응·신고를 하위 탭으로 나눠 본다. 이 탭의
+     조건들이 `_global` 에 사는 이유는 하위 탭을 오갈 때 각자의 검색·쪽수가 남아 있어야 하기
+     때문이다.
+
+     「내 반응」의 선택 배열(`myReactionsSelectedIds`)도 여기 있다. 확인 창은 목록 조각과 **다른
+     지역 스코프**에 살아서, 지역 상태로 두면 창이 비워도 목록 위 선택 바가 「2개 선택」인 채로
+     남는다(2026-09-15 브라우저 실측: 일괄 해제 후 행 7→5·체크 0개인데 바는 그대로). 관리자
+     반응 관리 화면이 전역을 쓰는 것과 같은 이유다. -->
+<layout name="mypage/board" version="1.0.0" extends="_user_base">
+  <!-- 글·댓글·받은 좋아요 요약 숫자. 목록보다 먼저 보이는 값이라 따로 받는다 -->
+  <data-source id="myActivityStats" label_key="$t:editor.data_source.myActivityStats" type="api" endpoint="/api/modules/sirsoft-board/me/activity-stats" method="GET" :auto_fetch="true" :auth_required="true" :lazy="true" :blur_until_loaded="true"/>
+  <!-- 내가 쓴 글. 첫 하위 탭이라 바로 받는다(`auto_fetch`) -->
+  <data-source id="myPosts" label_key="$t:editor.data_source.myPosts" type="api" endpoint="/api/modules/sirsoft-board/me/board-activities?page={{_global.myPostsPage ?? 1}}&amp;board_slug={{_global.myPostsBoard ?? ''}}&amp;search={{_global.myPostsSearchApplied ?? ''}}&amp;search_field={{_global.myPostsSearchField ?? 'title_content'}}&amp;sort={{_global.myPostsSort ?? 'latest'}}&amp;activity_type=authored&amp;per_page=10" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" :lazy="true" :blur_until_loaded="true"/>
+  <!-- 내가 쓴 댓글 — `auto_fetch=false` 다. 두 번째 하위 탭이라 그 탭을 실제로 열 때 처음 받는다 -->
+  <data-source id="myComments" label_key="$t:editor.data_source.myComments" type="api" endpoint="/api/modules/sirsoft-board/me/my-comments?page={{_global.myCommentsPage ?? 1}}&amp;board_slug={{_global.myCommentsBoard ?? ''}}&amp;search={{_global.myCommentsSearchApplied ?? ''}}&amp;search_field={{_global.myCommentsSearchField ?? 'content'}}&amp;sort={{_global.myCommentsSort ?? 'latest'}}&amp;per_page=10" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive" :lazy="true" :blur_until_loaded="true"/>
+  <!-- 내가 남긴 반응 — 세 번째 하위 탭이라 그 탭을 실제로 열 때 처음 받는다 -->
+  <data-source id="myReactions" label_key="$t:editor.data_source.myReactions" type="api" endpoint="/api/modules/sirsoft-board/me/reactions?page={{_global.myReactionsPage ?? 1}}&amp;board_slug={{_global.myReactionsBoard ?? ''}}&amp;search={{_global.myReactionsSearchApplied ?? ''}}&amp;search_field={{_global.myReactionsSearchField ?? 'title_content'}}&amp;reaction_type_id={{_global.myReactionsTypeId ?? ''}}&amp;target_type={{_global.myReactionsTargetType ?? ''}}&amp;sort={{_global.myReactionsSort ?? 'latest'}}&amp;per_page=10" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive" :lazy="true" :blur_until_loaded="true"/>
+  <!-- 내가 넣은 신고 — 네 번째 하위 탭. 같은 이유로 열 때 받는다 -->
+  <data-source id="myReports" label_key="$t:editor.data_source.myReports" type="api" endpoint="/api/modules/sirsoft-board/me/reports?page={{_global.myReportsPage ?? 1}}&amp;board_slug={{_global.myReportsBoard ?? ''}}&amp;search={{_global.myReportsSearchApplied ?? ''}}&amp;search_field={{_global.myReportsSearchField ?? 'title_content'}}&amp;status={{_global.myReportsStatus ?? ''}}&amp;target_type={{_global.myReportsTargetType ?? ''}}&amp;sort={{_global.myReportsSort ?? 'latest'}}&amp;per_page=10" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive" :lazy="true" :blur_until_loaded="true"/>
+  <init-global>
+    <field name="boardActivitySubTab" value="my-posts"/>
+    <field name="myPostsPage" :value="1"/>
+    <field name="myPostsBoard" value=""/>
+    <field name="myPostsSearch" value=""/>
+    <field name="myPostsSearchApplied" value=""/>
+    <field name="myPostsSearchField" value="title_content"/>
+    <field name="myPostsSort" value="latest"/>
+    <field name="myCommentsPage" :value="1"/>
+    <field name="myCommentsSearchField" value="content"/>
+    <field name="myCommentsBoard" value=""/>
+    <field name="myCommentsSearch" value=""/>
+    <field name="myCommentsSearchApplied" value=""/>
+    <field name="myCommentsSort" value="latest"/>
+    <field name="myReactionsPage" :value="1"/>
+    <field name="myReactionsBoard" value=""/>
+    <field name="myReactionsSearch" value=""/>
+    <field name="myReactionsSearchApplied" value=""/>
+    <field name="myReactionsSearchField" value="title_content"/>
+    <field name="myReactionsTypeId" value=""/>
+    <field name="myReactionsTargetType" value=""/>
+    <field name="myReactionsSort" value="latest"/>
+    <field name="myReportsPage" :value="1"/>
+    <field name="myReportsBoard" value=""/>
+    <field name="myReportsSearch" value=""/>
+    <field name="myReportsSearchApplied" value=""/>
+    <field name="myReportsSearchField" value="title_content"/>
+    <field name="myReportsStatus" value=""/>
+    <field name="myReportsTargetType" value=""/>
+    <field name="myReportsSort" value="latest"/>
+    <field name="myReactionsSelectedIds" :value="[]"/>
+  </init-global>
+  <computed name="currentTab">board</computed>
+  <permissions/>
+  <transition-overlay enabled style="spinner" target="mypage_tab_content" fallback-target="main_content_area">
+    <spinner component="PageLoading"/>
+  </transition-overlay>
+  <slot name="content">
+    <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <container data-type="layout" class="py-8">
+        <responsive on="portable" class="py-4"/>
+        <!-- 페이지 제목 -->
+        <div class="flex items-center gap-2 mb-6">
+          <icon name="user" size="xl" class="text-gray-900 dark:text-white"/>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">$t:mypage.title</h1>
+        </div>
+        <!-- 탭 네비게이션 -->
+        <include src="partials/mypage/_tab_navigation.g7.html"/>
+        <!-- 탭 컨텐츠 영역 (스켈레톤 타겟) -->
+        <div data-ref="mypage_tab_content">
+          <!-- 게시판 활동 -->
+          <include src="partials/mypage/board/_list.g7.html"/>
+        </div>
+      </container>
+    </div>
+  </slot>
+  <!-- 「내 반응」·「내 신고」 탭이 여는 확인 창들. 여러 행이 돌려 쓰므로 대상은 전역 상태로 건넨다 -->
+  <modal src="partials/mypage/board/_modal_reaction_delete.g7.html"/>
+  <!-- 선택 반응 일괄 해제 확인 -->
+  <modal src="partials/mypage/board/_modal_reaction_bulk_delete.g7.html"/>
+  <!-- 대기 중 신고 취소 확인 -->
+  <modal src="partials/mypage/board/_modal_report_cancel.g7.html"/>
+</layout>

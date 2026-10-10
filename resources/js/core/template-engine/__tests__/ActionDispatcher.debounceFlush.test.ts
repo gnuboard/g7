@@ -73,10 +73,20 @@ describe('ActionDispatcher - debounce flush', () => {
   } as unknown as Event);
 
   describe('flushPendingDebounceTimers', () => {
+    /**
+     * @scenario pending_debounce=none, trigger=explicit_flush
+     *
+     * @effects flush_with_no_pending_does_nothing
+     */
     it('대기 중인 debounce 액션이 없으면 아무것도 실행하지 않아야 함', () => {
       expect(() => dispatcher.flushPendingDebounceTimers()).not.toThrow();
     });
 
+    /**
+     * @scenario pending_debounce=single, trigger=explicit_flush
+     *
+     * @effects flush_runs_pending_trailing_immediately
+     */
     it('대기 중인 trailing debounce 액션을 즉시 실행해야 함', () => {
       const executedHandlers: string[] = [];
 
@@ -112,6 +122,11 @@ describe('ActionDispatcher - debounce flush', () => {
       expect(executedHandlers[0]).toBe('trackableHandler');
     });
 
+    /**
+     * @scenario pending_debounce=single, trigger=explicit_flush
+     *
+     * @effects flush_clears_timer_so_it_does_not_run_twice
+     */
     it('flush 후 타이머가 정리되어 중복 실행되지 않아야 함', () => {
       const executionCount = { value: 0 };
 
@@ -142,6 +157,11 @@ describe('ActionDispatcher - debounce flush', () => {
       expect(executionCount.value).toBe(1);
     });
 
+    /**
+     * @scenario pending_debounce=multiple, trigger=explicit_flush
+     *
+     * @effects flush_runs_every_pending_action
+     */
     it('여러 개의 대기 중인 debounce 액션을 모두 flush해야 함', () => {
       const executed: string[] = [];
 
@@ -183,6 +203,11 @@ describe('ActionDispatcher - debounce flush', () => {
       expect(executed).toContain('B');
     });
 
+    /**
+     * @scenario pending_debounce=single, trigger=explicit_flush
+     *
+     * @effects flush_handles_leading_plus_trailing_mode
+     */
     it('leading+trailing 모드에서 trailing flush가 정상 동작해야 함', () => {
       const executionCount = { value: 0 };
 
@@ -218,6 +243,11 @@ describe('ActionDispatcher - debounce flush', () => {
   });
 
   describe('bindActionsToProps에서 자동 flush', () => {
+    /**
+     * @scenario pending_debounce=single, trigger=non_debounced_action
+     *
+     * @effects non_debounced_action_flushes_pending_first
+     */
     it('비디바운스 액션 실행 시 대기 중인 debounce 액션이 먼저 flush되어야 함', () => {
       /**
        * 핵심 시나리오:
@@ -264,6 +294,11 @@ describe('ActionDispatcher - debounce flush', () => {
       expect(executionOrder[1]).toBe('immediateAction');
     });
 
+    /**
+     * @scenario pending_debounce=none, trigger=non_debounced_action
+     *
+     * @effects non_debounced_action_runs_alone_when_nothing_pending
+     */
     it('대기 중인 debounce 액션이 없으면 비디바운스 액션만 실행해야 함', () => {
       const executionOrder: string[] = [];
 
@@ -288,6 +323,11 @@ describe('ActionDispatcher - debounce flush', () => {
       expect(executionOrder[0]).toBe('immediateAction');
     });
 
+    /**
+     * @scenario pending_debounce=none, trigger=timer_expiry
+     *
+     * @effects expired_timer_leaves_nothing_to_flush
+     */
     it('debounce 타이머 만료 후에는 flush 대상이 없어야 함', () => {
       const executionCount = { value: 0 };
 
@@ -330,6 +370,11 @@ describe('ActionDispatcher - debounce flush', () => {
   });
 
   describe('clearDebounceTimers와 flusher 정리', () => {
+    /**
+     * @scenario pending_debounce=single, trigger=explicit_flush
+     *
+     * @effects clearing_timers_also_clears_flushers
+     */
     it('clearDebounceTimers 호출 시 flusher도 함께 정리되어야 함', () => {
       const executionCount = { value: 0 };
 
@@ -363,6 +408,11 @@ describe('ActionDispatcher - debounce flush', () => {
       expect(executionCount.value).toBe(0);
     });
 
+    /**
+     * @scenario pending_debounce=multiple, trigger=explicit_flush
+     *
+     * @effects clearing_by_component_id_clears_only_that_flusher
+     */
     it('componentId 기반 clearDebounceTimers가 해당 flusher만 정리해야 함', () => {
       const executed: string[] = [];
 
@@ -405,6 +455,11 @@ describe('ActionDispatcher - debounce flush', () => {
   });
 
   describe('debounce 연속 입력 시 최신 값으로 flush', () => {
+    /**
+     * @scenario pending_debounce=single, trigger=explicit_flush
+     *
+     * @effects repeated_input_flushes_with_the_last_value
+     */
     it('여러 번 입력 후 flush 시 마지막 값으로 실행되어야 함', () => {
       const capturedValues: string[] = [];
 
@@ -458,6 +513,11 @@ describe('ActionDispatcher - debounce flush', () => {
       _changedKeys: changedKeys,
     } as unknown as Event);
 
+    /**
+     * @scenario pending_debounce=single, trigger=timer_expiry
+     *
+     * @effects changed_keys_preserves_earlier_locale_edits
+     */
     it('_changedKeys가 있으면 디바운스 중 이전 로케일 변경분이 유지됨', () => {
       const capturedValues: Record<string, string>[] = [];
 
@@ -503,6 +563,11 @@ describe('ActionDispatcher - debounce flush', () => {
       expect(capturedValues[0]).toEqual({ ko: '빨강', en: 'red' });
     });
 
+    /**
+     * @scenario pending_debounce=single, trigger=timer_expiry
+     *
+     * @effects without_changed_keys_the_last_value_wins
+     */
     it('_changedKeys가 없으면 기존 동작 유지 (마지막 값 사용)', () => {
       const capturedValues: string[] = [];
 
@@ -535,6 +600,11 @@ describe('ActionDispatcher - debounce flush', () => {
       expect(capturedValues[0]).toBe('abcd'); // 마지막 값
     });
 
+    /**
+     * @scenario pending_debounce=single, trigger=timer_expiry
+     *
+     * @effects changed_keys_accumulator_is_cleared_after_completion
+     */
     it('_changedKeys 디바운스 완료 후 누적값이 정리됨', () => {
       const capturedValues: Record<string, string>[] = [];
 
@@ -572,6 +642,11 @@ describe('ActionDispatcher - debounce flush', () => {
       expect(capturedValues[1]).toEqual({ ko: '', en: '값2' });
     });
 
+    /**
+     * @scenario pending_debounce=single, trigger=explicit_flush
+     *
+     * @effects changed_keys_merge_applies_on_flush_too
+     */
     it('flush 시에도 _changedKeys 병합이 적용됨', () => {
       const capturedValues: Record<string, string>[] = [];
 
@@ -617,6 +692,11 @@ describe('ActionDispatcher - debounce flush', () => {
       _changedKeys: changedKeys,
     });
 
+    /**
+     * @scenario pending_debounce=single, trigger=timer_expiry
+     *
+     * @effects plain_object_event_preserves_changed_keys
+     */
     it('plain object 이벤트에서도 _changedKeys가 보존되어 디바운스 병합됨', () => {
       const capturedValues: Record<string, string>[] = [];
 
@@ -660,6 +740,11 @@ describe('ActionDispatcher - debounce flush', () => {
       expect(capturedValues[0]).toEqual({ ko: '빨강', en: 'red' });
     });
 
+    /**
+     * @scenario pending_debounce=single, trigger=explicit_flush
+     *
+     * @effects plain_object_event_changed_keys_merge_on_flush
+     */
     it('plain object 이벤트 flush 시에도 _changedKeys 병합 적용', () => {
       const capturedValues: Record<string, string>[] = [];
 
@@ -694,7 +779,91 @@ describe('ActionDispatcher - debounce flush', () => {
     });
   });
 
+  describe('flush 이후 데이터 문맥 (#476 — 타이핑 직후 저장)', () => {
+    afterEach(() => {
+      delete (window as any).G7Core;
+    });
+
+    /**
+     * @scenario pending_debounce=single, trigger=non_debounced_action
+     *
+     * @effects action_inside_debounce_window_reads_global_after_flush
+     */
+    it('디바운스 창 안에서 눌린 비디바운스 액션이 flush 뒤의 _global 을 읽어야 함', () => {
+      /**
+       * 재현 시나리오 (레이아웃 코드 편집기):
+       *  1. HTML 편집기 onChange (debounce: 300) → 편집 버퍼를 `_global.editorMarkup` 에 담는다
+       *  2. 사용자가 300ms 이내에 [저장] 클릭 → 저장 액션은 비디바운스
+       *  3. flush 는 store 를 갱신하지만 `dataContext` 는 렌더 시점 스냅샷이라, 저장 본문이
+       *     **직전 버퍼**로 나간다. 응답은 200 이라 화면에는 성공으로 보인다.
+       *
+       * 수정 후: flush 가 실제로 돌았으면 문맥의 `_global` 을 store 값으로 덮어 최신 버퍼가 나간다.
+       */
+      const globalStore: Record<string, any> = { editorMarkup: '<layout/>' };
+
+      (window as any).G7Core = { state: { get: () => ({ ...globalStore }) } };
+
+      dispatcher.registerHandler('writeBuffer', (action, context) => {
+        globalStore.editorMarkup = context?.data?.$event?.target?.value ?? '';
+      });
+
+      let sentBody: string | undefined;
+      dispatcher.registerHandler('save', (action, context) => {
+        sentBody = context?.data?._global?.editorMarkup;
+      });
+
+      const boundProps = dispatcher.bindActionsToProps(
+        {
+          id: 'code-editor',
+          actions: [
+            { type: 'change' as const, handler: 'writeBuffer', debounce: 300 },
+            { type: 'click' as const, handler: 'save' },
+          ],
+        },
+        // 렌더 시점 스냅샷 — 타이핑 이전 값이다.
+        { _global: { editorMarkup: '<layout/>' } }
+      );
+
+      boundProps.onChange(createMockChangeEvent('<layout name="edited"/>'));
+      expect(globalStore.editorMarkup).toBe('<layout/>');
+
+      vi.advanceTimersByTime(100);
+      boundProps.onClick(createClickEvent());
+
+      expect(globalStore.editorMarkup).toBe('<layout name="edited"/>');
+      expect(sentBody).toBe('<layout name="edited"/>');
+    });
+
+    /**
+     * @scenario pending_debounce=none, trigger=non_debounced_action
+     *
+     * @effects context_is_reused_untouched_when_nothing_was_flushed
+     */
+    it('대기 중인 디바운스가 없으면 렌더 시점 문맥을 그대로 쓴다 (불필요한 재조립 없음)', () => {
+      (window as any).G7Core = { state: { get: () => ({ editorMarkup: 'store-value' }) } };
+
+      let seen: string | undefined;
+      dispatcher.registerHandler('readOnly', (action, context) => {
+        seen = context?.data?._global?.editorMarkup;
+      });
+
+      const boundProps = dispatcher.bindActionsToProps(
+        { id: 'plain', actions: [{ type: 'click' as const, handler: 'readOnly' }] },
+        { _global: { editorMarkup: 'snapshot-value' } }
+      );
+
+      boundProps.onClick(createClickEvent());
+
+      expect(seen).toBe('snapshot-value');
+    });
+  });
+
   describe('실제 시나리오: 옵션 입력 후 즉시 버튼 클릭', () => {
+    /**
+     * @scenario pending_debounce=single, trigger=non_debounced_action
+     *
+     * @effects debounced_handler_runs_before_non_debounced_one
+     */
     it('debounce된 핸들러가 비디바운스 핸들러보다 먼저 실행되어 최신 state를 보장해야 함', () => {
       /**
        * 실제 버그 재현 시나리오:

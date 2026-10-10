@@ -1,0 +1,52 @@
+<!-- 상품 폼 — 언어 추가 창. 상품명·설명을 어느 언어로 더 입력할지 고른다. 아직 고른 언어를 폼에
+  붙이는 배선이 없어 어느 버튼을 눌러도 창만 닫히고, 선택지도 이 자리에 손으로 적혀 있다
+  (쇼핑몰 설정의 사용 언어를 읽어 세우는 것이 정본이다). -->
+<partial description="Product Create - Add Language Modal">
+  <modal data-type="composite" data-ref="modal_add_language" title="$t:sirsoft-ecommerce.admin.product.create.modal.add_language.title" size="md">
+    <div class="grid grid-cols-2 gap-3">
+      <button data-ref="lang_btn_ko" type="button" class="flex-center flex-col justify-center py-4 px-6 rounded-lg bg-blue-600 dark:bg-blue-500 text-white">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span class="text-base font-medium">한국어</span>
+        <span class="text-sm opacity-80 mt-0.5">KO</span>
+      </button>
+      <button data-ref="lang_btn_en" type="button" class="admin-card">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <div class="row-stack">
+          <span class="text-base font-medium">English</span>
+          <span class="text-label-subtle mt-0.5">EN</span>
+        </div>
+      </button>
+      <button data-ref="lang_btn_ja" type="button" class="admin-card">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <div class="row-stack">
+          <span class="text-base font-medium">日本語</span>
+          <span class="text-label-subtle mt-0.5">JP</span>
+        </div>
+      </button>
+      <button data-ref="lang_btn_zh_cn" type="button" class="admin-card">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <div class="row-stack">
+          <span class="text-base font-medium">中文(简体)</span>
+          <span class="text-label-subtle mt-0.5">CN</span>
+        </div>
+      </button>
+      <button data-ref="lang_btn_zh_tw" type="button" class="admin-card">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <div class="row-stack">
+          <span class="text-base font-medium">中文(繁體)</span>
+          <span class="text-label-subtle mt-0.5">TW</span>
+        </div>
+      </button>
+    </div>
+  </modal>
+</partial>

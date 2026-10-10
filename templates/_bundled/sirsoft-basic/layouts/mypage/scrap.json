@@ -1,0 +1,127 @@
+{
+    "comment": "마이페이지 스크랩 탭 — 내 스크랩을 검색하고 선택 해제한다. 조회 조건은 URL 이 아니라 로컬 상태(scrapPage·scrapSearch·scrapSearchField)에 있어 데이터소스 URL 에 직접 보간한다",
+    "version": "1.0.0",
+    "layout_name": "mypage/scrap",
+    "extends": "_user_base",
+    "data_sources": [
+        {
+            "id": "scrap",
+            "label_key": "$t:editor.data_source.scrap",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-board/me/scraps?page={{_local.scrapPage ?? 1}}&search={{_local.scrapSearchApplied ?? ''}}&search_field={{_local.scrapSearchField ?? 'title_content'}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "comment": "내 스크랩 목록 — 페이지·검색어·검색 대상을 로컬 상태에서 읽어 URL 에 보간한다. 검색·쪽 이동은 refetch 로 다시 받는다"
+        }
+    ],
+    "computed": {
+        "currentTab": "scrap"
+    },
+    "permissions": [],
+    "transition_overlay": {
+        "enabled": true,
+        "style": "spinner",
+        "target": "mypage_tab_content",
+        "fallback_target": "main_content_area",
+        "spinner": {
+            "component": "PageLoading"
+        }
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "scrapPage": 1,
+                "scrapSearch": "",
+                "scrapSearchApplied": "",
+                "scrapSearchField": "title_content",
+                "scrapSelectedIds": []
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "min-h-screen bg-gray-50 dark:bg-gray-900"
+                },
+                "children": [
+                    {
+                        "type": "layout",
+                        "name": "Container",
+                        "responsive": {
+                            "portable": {
+                                "props": {
+                                    "className": "py-4"
+                                }
+                            }
+                        },
+                        "props": {
+                            "className": "py-8"
+                        },
+                        "children": [
+                            {
+                                "comment": "페이지 제목",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex items-center gap-2 mb-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "user",
+                                            "size": "xl",
+                                            "className": "text-gray-900 dark:text-white"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                        },
+                                        "text": "$t:mypage.title"
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "탭 네비게이션",
+                                "partial": "partials/mypage/_tab_navigation.json"
+                            },
+                            {
+                                "comment": "탭 컨텐츠 영역 (스켈레톤 타겟)",
+                                "id": "mypage_tab_content",
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "comment": "스크랩 목록",
+                                        "partial": "partials/mypage/scrap/_list.json"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "comment": "스크랩 단건 해제 확인",
+            "partial": "partials/mypage/scrap/_modal_scrap_delete.json"
+        },
+        {
+            "comment": "선택 스크랩 일괄 해제 확인",
+            "partial": "partials/mypage/scrap/_modal_scrap_bulk_delete.json"
+        }
+    ]
+}

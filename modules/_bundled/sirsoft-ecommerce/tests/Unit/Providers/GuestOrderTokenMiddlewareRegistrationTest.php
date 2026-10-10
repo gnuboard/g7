@@ -90,6 +90,10 @@ class GuestOrderTokenMiddlewareRegistrationTest extends ModuleTestCase
      * 비회원 주문 라우트 전수가 `보호 ∪ 명시적 면제` 로 완전 분류되는지.
      *
      * 라우트 테이블에서 모집단을 파생시키므로 새 라우트가 늘면 자동으로 검사 대상이 된다.
+     *
+     * @scenario claim_type=exchange, entry=without_token, screen=detail
+     *
+     * @effects guest_claim_routes_are_token_protected
      */
     public function test_all_guest_order_action_routes_are_token_protected(): void
     {

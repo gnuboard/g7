@@ -5,6 +5,8 @@
     "template": "템플릿"
   },
   "alerts": {
+    "language_pack_install_failed": "함께 고른 언어팩을 설치하지 못했습니다({{names}}): {{reason}}",
+    "language_pack_awaiting_host": "함께 고른 언어팩({{names}})은 이 확장이 꺼져 있어 꺼진 채 설치했습니다. 확장을 켜면 함께 켜집니다.",
     "incompatible_deactivated": "{{type}} \"{{name}}\" 자동 비활성화됨",
     "incompatible_message": "필요 버전: {{required}}, 현재 설치됨: {{installed}}",
     "recovered_title": "{{type}} \"{{name}}\" 다시 호환 가능",
@@ -13,12 +15,14 @@
     "dismissed": "알림을 닫았습니다.",
     "auto_deactivated_listed": "자동 비활성화된 확장 목록입니다.",
     "recover_action": "다시 활성화",
-    "dismiss_action": "알림 닫기"
+    "dismiss_action": "알림 닫기",
+    "open_action": "열기",
+    "layout_include_skipped": "찾을 수 없는 조각 참조 {{count}}건을 빈 자리로 두었습니다. 서버 로그 또는 php artisan layout:check-installed 로 확인하세요."
   },
   "badges": {
     "incompatible": "코어 업그레이드 필요",
     "incompatible_tooltip": "코어 {{required}} 이상 필요 (현재: {{installed}})",
-    "incompatible_sr": "{{name}} 은(는) 코어 {{required}} 이상이 필요하지만 현재 {{installed}} 가 설치되어 있어 업데이트할 수 없습니다."
+    "incompatible_sr": "{{name}} 업데이트에는 코어 {{required}} 이상이 필요해 업데이트할 수 없습니다. (현재 코어: {{installed}})"
   },
   "banner": {
     "title": "코어 호환성 문제로 자동 비활성화된 확장이 있습니다",
@@ -28,11 +32,30 @@
   },
   "update_modal": {
     "compat_warning_title": "코어 버전 호환성 경고",
-    "compat_warning_message": "이 {{type}} 은(는) 코어 {{required}} 이상이 필요합니다. (현재: {{installed}})",
+    "compat_warning_message": "이 {{type}}에 필요한 코어 버전: {{required}} (현재: {{installed}})",
     "compat_guide_link": "코어 업그레이드 가이드 보기",
     "force_label": "경고를 무시하고 강제 업데이트 (권장하지 않음)",
     "rebuild_search_index_title": "검색 인덱스",
     "rebuild_search_index_label": "업데이트 후 색인이 누락된 검색 인덱스를 재생성",
     "rebuild_search_index_desc": "재생성 중에는 대상 인덱스가 잠기거나 다시 색인됩니다. 운영 중인 사이트라면 체크하지 말고, 유지보수 시간에 별도로 수행하세요."
+  },
+  "view_mode": {
+    "toggle_label": "보기 방식",
+    "gallery": "갤러리 보기",
+    "list": "목록 보기",
+    "gallery_aria": "갤러리로 보기",
+    "list_aria": "목록으로 보기"
+  },
+  "card": {
+    "open_detail": "{{name}} 상세 보기"
+  },
+  "icon": {
+    "alt": "{{name}} 아이콘",
+    "locale_badge_sr": "{{locale}} 언어팩"
+  },
+  "manifest_preview": {
+    "icon_present": "아이콘 포함: {{path}}",
+    "icon_missing": "아이콘이 없어 기본 아이콘으로 표시됩니다.",
+    "icon_invalid": "아이콘이 규격에 맞지 않아 기본 아이콘으로 표시됩니다."
   }
 }

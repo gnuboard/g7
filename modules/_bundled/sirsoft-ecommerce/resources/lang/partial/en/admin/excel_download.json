@@ -26,6 +26,7 @@
     "total_count": "Total {{count}}",
     "sort_by": "Request Date (Latest)",
     "per_page": "{{count}} items",
+    "per_page_one": "{{count}} item",
     "columns": {
       "no": "No.",
       "category": "Category",
@@ -47,7 +48,6 @@
   "modal": {
     "download_history": {
       "title": "Download History",
-      "description": "View the download history of this file",
       "file_content": "File Content",
       "category": "Category",
       "status": "Status",
@@ -55,8 +55,10 @@
       "expire_date": "Expire Date",
       "total_download": "Total Downloads",
       "download_count": "{{count}} times",
+      "download_count_one": "{{count}} time",
       "history_title": "Download History",
       "history_count": "{{count}} records",
+      "history_count_one": "{{count}} record",
       "confirm": "Confirm"
     }
   },

@@ -1,0 +1,124 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 7×2×7×4×3×2 전개는 대부분 같은 판정을 반복한다. 회귀 핵심은 test_files 의 정적·렌더 테스트가 축별 대표 변종으로 덮고, 브라우저로만 만들 수 있는 변종은 exclusions 에 사유와 함께 뺐다.
+feature: 확장 목록 목록/갤러리 토글 + 확장 아이콘
+
+description: |
+  관리자 확장 관리 4화면(모듈·플러그인·템플릿·언어팩)의 보기 전환과 카드 아이콘을 잠근다.
+
+  ## 왜 정적으로 고정하는가
+
+  세 가지가 **눈으로 확인되지 않는다**.
+
+  1. **기본 보기의 방향.** 저장값이 없을 때 갤러리로 떨어지는지는 화면에서 저장 키를 지워
+     봐야 드러난다. 삼항의 else 가지가 뒤집혀도 저장값이 있는 동안에는 정상으로 보인다.
+  2. **저장 성공 여부.** GDPR 저장 인터셉터는 허용목록 밖 키를 예외 없이 버린다 — 저장에
+     실패해도 그 세션에서는 보기가 유지되므로, 새로고침 전까지 실패가 보이지 않는다.
+  3. **배치와 아이콘의 결합.** 아이콘만 키우고 컨테이너를 가로 배치로 두면 남는 폭이 없어
+     이름·설명이 세로로 한 글자씩 끊긴다(실측 2026-09-15). 카드 하나만 보면 "글자가 좀
+     이상한" 정도라 데이터가 적은 화면에서는 결함으로 읽히지 않는다.
+  4. **보기 분기가 카드 안에서는 평가되지 않는다.** CardGrid 의 카드 셀은 반복 렌더
+     하위 트리라 렌더 컨텍스트가 `{row, $value, index}` 뿐이고 `_global` 이 없다
+     (CardGrid.tsx 의 renderCellChildren). 카드 안에 쓴 `_global.extensionViewMode`
+     조건은 **조용히 한쪽 가지로 고정**되므로, 갤러리로 바꿔도 목록 배치가 남는 것을
+     화면만 봐서는 원인을 짚을 수 없다. 그래서 보기 분기는 카드 안이 아니라
+     `ExtensionCardGrid` 의 `viewMode` prop 으로 옮겼고, 두 보기가 서로 다른 DOM 을
+     그리는지를 여기서 잠근다.
+  5. **열 수가 간격을 빼고 나뉘는지.** 폭을 최소 카드 폭으로 그냥 나누면 열 사이 간격이
+     없는 셈이 되어 실제 카드가 최소 폭보다 좁아진다(1232px 에서 5열·카드 234px).
+     화면에서는 "조금 좁네" 로만 보인다.
+
+  ## 축
+
+  `screen` 이 7개인 이유는 언어팩 본문 조각 하나를 **세 호스트가 감싸기** 때문이다 —
+  확장 상세에서 들어오는 경로와 환경설정 탭이 같은 조각을 쓰므로 한 곳을 고치면 셋이 함께
+  바뀌지만, 감싸는 쪽의 init 이 빠지면 그 경로만 보기가 복원되지 않는다.
+
+  `icon_state` 의 `lp_*` 변종은 언어팩 전용이다. 언어팩은 대개 자기 아이콘이 없어 대상
+  확장(또는 코어)의 그림을 빌려 쓰고 거기에 로케일 배지를 얹는다. 국기는 쓰지 않는다.
+
+axes:
+  screen: [modules, plugins, templates_user, templates_admin, language_packs, ext_language_packs, settings_language_packs_tab]
+  view: [gallery, list]
+  icon_state: [present, absent, broken_url, lp_manifest, lp_target_composite, lp_core_composite, lp_glyph_composite]
+  install_state: [active, inactive, uninstalled, pending]
+  device: [desktop_1440, tablet_834, mobile_390]
+  theme: [light, dark]
+
+exclusions:
+  - { icon_state: lp_manifest, screen: modules, reason: "lp_* 합성 변종은 언어팩 화면 전용 — 비언어팩 4화면 × 4변종은 같은 행이 된다" }
+  - { icon_state: lp_target_composite, screen: modules, reason: "위와 같음" }
+  - { icon_state: lp_core_composite, screen: modules, reason: "위와 같음" }
+  - { icon_state: lp_glyph_composite, screen: modules, reason: "위와 같음" }
+  - { install_state: pending, reason: "installing/updating 전이 상태는 서버 상태 조작이 필요해 Chrome MCP 실측 전용(§10 T8-29)" }
+  - { icon_state: broken_url, reason: "404 는 네트워크 차단으로만 재현되므로 Chrome MCP 실측 전용(§10 T8-30)" }
+  - { device: tablet_834, reason: "ExtensionCardGrid 가 컨테이너 실측 폭으로 열 수를 정하므로 폭별 판정은 ExtensionCardGrid.test.tsx 가 대표 폭 7종으로 덮는다. 실제 뷰포트에서의 사이드바 개폐 결합은 브라우저 실측(§10 T8-1~24)" }
+  - { device: mobile_390, reason: "위와 같음" }
+  - { theme: dark, reason: "다크 대비는 렌더 결과가 아니라 CSS 변수 축이라 브라우저 실측 전용(§10 T8-1~24)" }
+
+effects:
+  - toggle_resyncs_to_server_value_on_refetch
+  # 숨김 항목 포함 체크는 바꾼 값으로 곧바로 다시 받는다 — 따로 둔 두 change 처리는 한 박자 늦은 값을 보냈다(#703).
+  - hidden_toggle_refetch_uses_new_value
+  # 체크박스는 PC 에서 검색칸 바로 왼쪽(간격 16px), 모바일에서 보기 전환 바로 오른쪽에 붙고 보기 전환 상자는
+  # 버튼 높이 그대로다(7.1.0 출시 전 점검 — Playwright P11 이 잰다).
+  - hidden_toggle_next_to_search_on_desktop
+  - view_toggle_box_fits_buttons_on_mobile
+  - default_is_gallery
+  - toggle_persists_to_local_storage
+  - persisted_value_read_back_after_write
+  # 저장은 브라우저가 하고 복원은 부팅 때 일어난다 — 쓰기 직후 되읽기(위 효과)가 성공해도
+  # 새로고침 뒤 복원이 깨질 수 있어 별개 축이다(Playwright P2 가 잰다).
+  - persisted_value_restored_on_reload
+  - preference_shared_across_screens
+  - grid_columns_follow_view_mode
+  - gallery_and_list_render_separate_dom
+  - columns_follow_container_width
+  - columns_subtract_gap_before_dividing
+  - columns_respect_max_columns
+  - gallery_card_stacks_vertically
+  - list_card_keeps_current_layout
+  - gallery_meta_splits_vendor_and_dependencies
+  - card_name_is_left_aligned
+  - control_buttons_do_not_wrap_per_character
+  - icon_box_is_square
+  - broken_icon_is_scoped_to_one_card
+  - callbacks_return_source_row
+  # 카드 본문(아이콘+이름)을 누르면 상세 창이 열린다 — 더보기 메뉴의 view_detail 과 같은
+  # 모달·API 를 쓰되 진입 지점이 다르므로 액션 패리티와 별개 축이다(V6 · Playwright P6).
+  - card_body_opens_detail_modal
+  - icon_rendered_from_icon_url
+  - fallback_glyph_when_icon_absent
+  - fallback_glyph_when_icon_broken
+  - language_pack_composite_badge
+  - gallery_actions_parity_with_list
+  # 보기 전환은 배치만 바꾼다 — 설치·업데이트·토글·더보기의 잠금 조건에 보기가 섞이면
+  # 한쪽 보기에서만 권한이 풀리거나 버튼이 사라진다(계획 §8.4).
+  - permission_gates_unchanged
+  - gdpr_allowlist_contains_key
+  # 상세·설치·업데이트·삭제 확인 창 전량(모집단은 조각 디렉터리에서 파생)에 아이콘이 붙는다.
+  - modal_headers_show_icon
+  # 상세 창 아이콘 대체 글·언어팩 배지 낭독명·업데이트 창 호환 경고·미리보기 「아이콘 포함」 문구가 키 원문으로
+  # 남지 않는다 — `$t:defer:` 는 반복 서브트리 안에서만 해소되므로 반복 밖에는 두지 않는다.
+  - extension_texts_resolve_outside_iteration
+  # 상세 창은 분류 이름 아래 개별 권한을 그린다(응답 모양은 코어 매니페스트 plugin-info-permissions-shape.yaml).
+  - plugin_detail_permissions_render_by_category
+
+sub_flows:
+  - id: manifest_preview_icon
+    description: |
+      수동 설치 미리보기 서랍은 목록과 달리 그림 URL 이 없다 — 추출한 파일을 검사 직후
+      지우기 때문이다. 그래서 아이콘의 유무·규격 위반을 **문구로만** 알린다.
+      설치를 막지는 않는다(규격 밖 아이콘은 유형 글리프로 대체된다).
+    effects:
+      - preview_shows_icon_presence
+      - preview_shows_icon_warning
+      # 새 파일을 고르면 직전 파일의 판정을 비운다 — 검사 전 새 파일 이름 아래 앞 결과가 남지 않게
+      - preview_clears_previous_result_on_file_change
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ExtensionCardGrid.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-view-mode.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-view-mode-gdpr-allowlist.test.ts
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-extension-view-mode.spec.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin_template_list.i18n_keys.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-text-resolution.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-plugin-detail-permissions.test.tsx

@@ -3,6 +3,7 @@
   "title_edit": "게시판 수정",
   "description": "게시판 설정을 관리합니다",
   "read_only_message": "보기 권한만 있습니다. 수정이 필요한 경우 관리자에게 문의하세요.",
+  "create_read_only_message": "게시판 생성 권한이 없어 읽기 전용으로 표시됩니다.",
   "validation_error": "입력 정보를 확인해주세요.",
   "add_category": "분류 추가",
   "tabs": {
@@ -23,6 +24,9 @@
     "use_comment": "댓글 사용",
     "use_reply": "답변글 사용",
     "use_report": "신고 사용",
+    "use_scrap": "스크랩 사용",
+    "use_reaction": "반응 사용",
+    "active_reaction_types": "사용할 반응 유형 선택",
     "secret_mode": "비밀글 모드",
     "order_by": {
       "label": "정렬 기준",
@@ -136,7 +140,10 @@
       "channels_label": "알림 채널",
       "channel_mail": "이메일",
       "channel_database": "사이트 알림"
-    }
+    },
+    "use_comment_reaction": "댓글 반응 사용",
+    "manage_reaction_types": "유형 관리",
+    "manage_reaction_types_no_permission": "반응 유형을 관리하려면 게시판 환경설정 수정 권한이 필요합니다."
   },
   "placeholders": {
     "name": "예: 공지사항",
@@ -154,7 +161,10 @@
     "use_comment": "활성화하면 댓글 관련 세부 설정(길이, 깊이, 정렬)을 지정할 수 있습니다.",
     "use_reply": "활성화하면 답변글 최대 깊이를 설정할 수 있습니다.",
     "use_report": "부적절한 게시글/댓글 신고 기능을 활성화합니다",
-    "type": "게시판 유형은 환경설정 > 기본설정에서 관리할 수 있습니다."
+    "use_scrap": "회원이 게시글을 개인 보관함에 저장하는 스크랩 기능을 활성화합니다",
+    "use_reaction": "게시글에 추천/비추천 등 반응을 남기는 기능을 활성화합니다",
+    "type": "게시판 유형은 환경설정 > 기본설정에서 관리할 수 있습니다.",
+    "use_comment_reaction": "댓글에도 반응 버튼을 답니다. 「반응 사용」을 켠 게시판에서만 동작합니다."
   },
   "options": {
     "secret_mode": {
@@ -166,6 +176,7 @@
   "permissions": {
     "managers_title": "게시판 관리자",
     "managers_description": "게시판의 모든 권한을 가진 관리자를 지정합니다.",
+    "members_assign_denied": "기본 권한 설정에 포함되지 않은 계정은 새 게시판에 본인만 관리자로 지정할 수 있습니다. 그대로 저장하면 본인이 이 게시판의 관리자가 됩니다. 다른 관리자·스텝은 게시판을 만든 뒤 게시판 수정 화면에서 지정하세요(게시판 수정 권한이 필요합니다).",
     "managers_select_button": "관리자 선택",
     "manager_email_placeholder": "관리자 이메일 입력",
     "search_manager": "조회",
@@ -176,7 +187,7 @@
     "no_users_found_search": "사용자를 찾을 수 없습니다",
     "user_search_failed": "사용자 조회에 실패했습니다",
     "users_found_with_limit": "{{count}}명의 사용자를 찾았습니다 (최대 20명까지 표시)",
-    "user_added": "{{name}}이(가) 추가되었습니다",
+    "user_added": "{{name}} 님을 추가했습니다",
     "no_search_results": "검색 결과가 없습니다",
     "selected_managers": "선택된 관리자",
     "select_managers": "관리자 선택",

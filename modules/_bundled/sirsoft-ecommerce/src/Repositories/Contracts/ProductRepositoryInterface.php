@@ -4,7 +4,6 @@ namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
 use App\Support\Query\BoundedCount;
 use App\Support\Query\BoundedPage;
-use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\Product;

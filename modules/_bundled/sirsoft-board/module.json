@@ -5,17 +5,32 @@
         "ko": "게시판",
         "en": "Board"
     },
-    "version": "1.1.2",
+    "version": "1.2.0",
     "license": "MIT",
     "description": {
         "ko": "게시판 관리를 위한 모듈",
         "en": "Module for board management"
     },
-    "g7_version": ">=7.0.10",
+    "g7_version": ">=7.1.0",
     "dependencies": {
         "modules": {},
         "plugins": {}
     },
     "github_url": "https://github.com/gnuboard/g7-module-sirsoft-board",
-    "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-board/blob/main/CHANGELOG.md"
+    "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-board/blob/main/CHANGELOG.md",
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/module.iife.js"
+        },
+        "css": {
+            "entry": "resources/css/main.css",
+            "output": "dist/css/module.css"
+        },
+        "handlers": true
+    },
+    "loading": {
+        "strategy": "global",
+        "priority": 100
+    }
 }

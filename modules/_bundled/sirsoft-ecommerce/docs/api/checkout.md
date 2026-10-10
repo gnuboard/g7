@@ -73,6 +73,7 @@ HTTP/1.1 200
 - **라우트명**: `api.modules.sirsoft-ecommerce.checkout.show`
 - **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CheckoutController@show`
 - **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근)
+- **권한 메모(1.3.0)**: 응답 `abilities.can_order`(= `sirsoft-ecommerce.user-orders.create`) — [결제하기] 잠금 키.
 
 **요청 파라미터**
 
@@ -112,6 +113,7 @@ _단건 응답: `data` 객체의 필드 (`CheckoutDataService::buildResponseData
 | has_unshippable_items | boolean | `false` | 선택된 배송국가로 배송 불가한 상품이 1개라도 있으면 `true` (주문하기 차단 플래그) |
 | selected_shipping_country | string | `KR` | 현재 선택된 배송 국가 코드 |
 | free_shipping | object | `{...}` | 무료배송 기준액 정보 (아래 "free_shipping" 표) |
+| allowed_payment_methods | string[] | `["card","dbank"]` | 결제 통화에서 고를 수 있는 결제수단 id (#639). 결제수단 화이트리스트를 필터 훅 `sirsoft-ecommerce.checkout.filter_payment_methods_for_currency` 로 거른 결과이고, 템플릿이 결제수단 버튼을 이 목록으로 거른다. 주문 생성 검증(`POST /user/orders` 의 `payment_method`)과 같은 판정이다 |
 | unavailable_items | array | `[]` | 구매 불가 상품 목록 (존재할 때만 포함) |
 | has_stock_issue | boolean | `false` | 구매 불가 사유에 재고 부족이 포함되면 `true` (`unavailable_items` 존재 시에만 포함) |
 | has_status_issue | boolean | `false` | 구매 불가 사유에 판매 상태 문제가 포함되면 `true` (`unavailable_items` 존재 시에만 포함) |
@@ -327,6 +329,7 @@ _단건 응답: `data` 객체의 필드 (`CheckoutDataService::buildResponseData
         "validation_errors": [],
         "has_unshippable_items": false,
         "selected_shipping_country": "KR",
+        "allowed_payment_methods": ["card", "vbank", "dbank"],
         "free_shipping": {
             "enabled": false,
             "threshold_base": 0,
@@ -440,6 +443,7 @@ _단건 응답: `data` 객체의 필드 (`CheckoutController@store` 가 직접 �
 | --- | --- | --- |
 | 400 | Bad Request | 장바구니가 비어 있음. 메시지: `장바구니가 비어있습니다.` |
 | 422 | Unprocessable Entity | 보유 잔액을 초과하는 마일리지 사용 요청 (`error.code: mileage_exceeds_balance`). 메시지: `주문서 생성에 실패했습니다.` |
+| 422 | Unprocessable Entity | 바로 구매(`direct_items`) 항목이 지정한 옵션이 그 상품에 없음 (`error.code: option_not_found`), 또는 옵션을 지정하지 않았는데 판매 중인 옵션이 하나도 없는 상품 (`error.code: no_purchasable_option`). 메시지: `지금은 구매할 수 있는 옵션이 없는 상품입니다.` 등 사유별 문구 |
 | 500 | Internal Server Error | 임시 주문 생성 중 예외 발생. 메시지: `주문서 생성에 실패했습니다.` |
 
 <!-- @generated:end -->
@@ -510,6 +514,7 @@ _단건 응답: `data` 객체의 필드. GET `/api/modules/sirsoft-ecommerce/che
 | has_unshippable_items | boolean | `false` | 선택된 배송국가로 배송 불가한 상품 존재 여부 |
 | selected_shipping_country | string | `KR` | 현재 선택된 배송 국가 코드 |
 | free_shipping | object | `{...}` | 무료배송 기준액 정보 (`enabled` / `threshold_base` / `threshold_multi_currency` / `remaining_base` / `remaining_multi_currency`) |
+| allowed_payment_methods | string[] | `["card","dbank"]` | 결제 통화에서 고를 수 있는 결제수단 id (조회 응답과 같은 판정, #639) |
 
 **응답 예시**
 
@@ -562,6 +567,7 @@ _단건 응답: `data` 객체의 필드. GET `/api/modules/sirsoft-ecommerce/che
         "validation_errors": [],
         "has_unshippable_items": false,
         "selected_shipping_country": "KR",
+        "allowed_payment_methods": ["card", "vbank", "dbank"],
         "free_shipping": {
             "enabled": false,
             "threshold_base": 0,

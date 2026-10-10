@@ -184,6 +184,67 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
     }
 
     /**
+     * 환불 자동 승인은 **카드 계열만** 선언한다 (코어 P16·P17 능력 키).
+     *
+     * 카드·간편결제는 토스 결제취소 API 가 그 자리에서 환불하므로 사람의 개입이 없다. 반면
+     * 가상계좌·계좌이체·휴대폰은 고객 환불계좌를 받아 사람이 확인해야 끝난다 — `true` 로
+     * 선언하면 코어가 신청서를 완료까지 보내고 고객에게 "환불 완료" 알림이 가는데 돈은 아직
+     * 나가지 않은 상태가 된다.
+     *
+     * 선언 자체를 빠뜨리면 반대 방향의 조용한 손해가 난다(코어 기본값 false) — 카드 간편결제
+     * 환불이 전부 운영자 승인 대기로 쌓인다. 그래서 두 방향을 함께 잠근다.
+     *
+     * @scenario order_sheet_mode=true, payment_method=toss_card
+     *
+     * @effects only_card_backed_methods_declare_auto_approve_refund
+     */
+    public function test_only_card_backed_methods_declare_auto_approve_refund(): void
+    {
+        $this->mockSettings([
+            'order_sheet_mode' => true,
+            'method_card' => true,
+            'method_virtual_account' => true,
+            'method_transfer' => true,
+            'method_mobile_phone' => true,
+            'method_tosspay' => true,
+            'method_kakaopay' => true,
+            'method_naverpay' => true,
+            'method_payco' => true,
+            'method_samsungpay' => true,
+        ]);
+
+        $injected = collect($this->listener->injectTossMethods($this->builtinMethods()))
+            ->filter(fn ($m) => str_starts_with($m['id'] ?? '', 'toss_'))
+            ->keyBy('id');
+
+        $this->assertGreaterThan(0, $injected->count(), '토스 결제수단이 주입되지 않았다');
+
+        $expected = [
+            'toss_card' => true,
+            'toss_tosspay' => true,
+            'toss_kakaopay' => true,
+            'toss_naverpay' => true,
+            'toss_payco' => true,
+            'toss_samsungpay' => true,
+            'toss_virtual_account' => false,
+            'toss_transfer' => false,
+            'toss_mobile_phone' => false,
+        ];
+
+        foreach ($expected as $id => $shouldAutoApprove) {
+            $this->assertArrayHasKey($id, $injected, "{$id} 가 주입되지 않았다");
+
+            $this->assertSame(
+                $shouldAutoApprove,
+                $injected[$id]['defaults']['auto_approve_refund'] ?? null,
+                $shouldAutoApprove
+                    ? "{$id}: PG 즉시 환불 수단인데 auto_approve_refund 를 선언하지 않았다 — 환불이 승인 대기로 쌓인다"
+                    : "{$id}: 사람이 송금해야 하는 수단인데 auto_approve_refund 를 선언했다 — 돈이 나가기 전에 환불완료가 찍힌다",
+            );
+        }
+    }
+
+    /**
      * 간편결제 수단은 브랜드 마크를 선언해야 한다.
      *
      * 회귀 배경: 토스 수단만 brand_mark 를 선언하지 않아, 이커머스 병합부가

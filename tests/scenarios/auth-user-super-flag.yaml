@@ -1,0 +1,17 @@
+feature: 로그인 사용자 응답의 최고관리자 여부 (UserResource::toAuthArray)
+
+description: |
+  관리자 목록 화면(모듈·플러그인·템플릿)의 「숨김 포함」 토글은 최고관리자에게만 보이도록 되어 있지만,
+  조건이 읽는 값(is_super)을 로그인 사용자 응답이 주지 않아 최고관리자에게도 나타나지 않았다
+  (#703 브라우저 실측 — 화면이 받는 값을 서버가 주지 않는 어긋남). 로그인 사용자 본인 응답에만 싣는다.
+
+  축 account 는 요청한 로그인 사용자의 등급이다. 한 테스트가 최고관리자·일반 관리자를 차례로 확인한다.
+
+axes:
+  account: [super_admin]
+
+effects:
+  - auth_user_exposes_own_super_flag
+
+test_files:
+  - tests/Feature/Api/Admin/AuthUserSuperFlagTest.php

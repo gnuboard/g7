@@ -144,18 +144,63 @@ describe('executeCancelOrderHandler — 항상 items 전송 (백엔드 FULL 승�
         expect(body.items.find((i: any) => i.order_option_id === 102)).toBeUndefined();
     });
 
-    it('cancel_pg / refund_priority 는 body 에 그대로 포함된다', async () => {
+    /**
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects frontend_sends_auto_advance_refund_not_cancel_pg
+     */
+    it('auto_advance_refund / refund_priority 는 body 에 그대로 포함된다', async () => {
         mockOrderDataSource = {
             data: { options: [{ id: 100, quantity: 2, option_status: 'payment_complete' }] },
         };
         mockLocalState.cancelItems = [{ id: 100, quantity: 2, cancel_quantity: 1 }];
-        mockLocalState.cancelPg = false;
+        mockLocalState.autoAdvanceRefund = true;
         mockLocalState.refundPriority = 'points_first';
 
         const body = await runCancel();
 
-        expect(body.cancel_pg).toBe(false);
+        expect(body.auto_advance_refund).toBe(true);
         expect(body.refund_priority).toBe('points_first');
+    });
+
+    /**
+     * P2 회귀 잠금 (#599 후속) — `cancel_pg` 는 더 이상 전송하지 않는다.
+     *
+     * 끈 채로 카드 취소를 하면 PG 를 부르지 않고도 환불이 완료로 찍혀, **고객 카드는 그대로인데
+     * 장부만 환불완료**가 됐다. 키가 되살아나면 그 경로도 함께 돌아온다.
+     *
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects frontend_sends_auto_advance_refund_not_cancel_pg
+     */
+    it('cancel_pg 는 더 이상 body 에 실리지 않는다 (P2)', async () => {
+        mockOrderDataSource = {
+            data: { options: [{ id: 100, quantity: 2, option_status: 'payment_complete' }] },
+        };
+        mockLocalState.cancelItems = [{ id: 100, quantity: 2, cancel_quantity: 1 }];
+
+        const body = await runCancel();
+
+        expect(body).not.toHaveProperty('cancel_pg');
+    });
+
+    /**
+     * D7 — "환불까지 한 번에 처리" 는 **기본 꺼짐**이다. 관리자 [주문취소]는 환불신청서를 만들
+     * 뿐이고, 금액확인 → 승인 → 환불완료는 운영자가 하나씩 밟는 것이 기본 운영이다.
+     *
+     * @scenario item_selection=single_full, payment_state=card_paid
+     *
+     * @effects frontend_auto_advance_defaults_to_off
+     */
+    it('자동 전이는 지정하지 않으면 꺼진 채로 전송된다 (D7)', async () => {
+        mockOrderDataSource = {
+            data: { options: [{ id: 100, quantity: 2, option_status: 'payment_complete' }] },
+        };
+        mockLocalState.cancelItems = [{ id: 100, quantity: 2, cancel_quantity: 1 }];
+
+        const body = await runCancel();
+
+        expect(body.auto_advance_refund).toBe(false);
     });
 
     describe('환불 계좌 (#454 S3)', () => {

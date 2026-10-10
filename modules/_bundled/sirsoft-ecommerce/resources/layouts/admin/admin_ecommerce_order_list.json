@@ -1,36 +1,164 @@
 {
+    "comment": "주문 목록 (운영자) — 이 모듈에서 조회 조건이 가장 많은 화면이다. 스물두 개 조건을 전부 URL 쿼리에\n  싣고, 자주 쓰는 조합은 「검색 프리셋」으로 서버에 저장해 두었다가 불러 쓴다. 어떤 필터를 펼쳐\n  둘지와 어떤 열을 보일지는 운영자마다 달라 각각 사용자 설정과 로컬 저장소에서 따로 불러온다.",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_order_list",
-    "permissions": [
-        "sirsoft-ecommerce.orders.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:sirsoft-ecommerce.admin.order.title",
         "description": "$t:sirsoft-ecommerce.admin.order.description"
     },
-    "computed": {
-        "filterSearchField": "{{_local.filter.searchField ?? query.search_field ?? 'all'}}",
-        "filterSearchKeyword": "{{_local.filter.searchKeyword ?? query.search_keyword ?? ''}}",
-        "filterDateType": "{{_local.filter.dateType ?? query.date_type ?? 'ordered_at'}}",
-        "filterStartDate": "{{_local.filter.startDate ?? query.start_date ?? ''}}",
-        "filterEndDate": "{{_local.filter.endDate ?? query.end_date ?? ''}}",
-        "filterMinPrice": "{{_local.filter.minPrice ?? query.min_amount ?? ''}}",
-        "filterMaxPrice": "{{_local.filter.maxPrice ?? query.max_amount ?? ''}}",
-        "filterCategoryId": "{{_local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1 || query.category4 || query.category3 || query.category2 || query.category1 || ''}}",
-        "category1Options": "{{[{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).filter(c => c.depth === 0).map(c => ({ value: String(c.id), label: c.localized_name })))]}}",
-        "category2Options": "{{_local.filter.category1 ? [{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}",
-        "category3Options": "{{_local.filter.category2 ? [{ value: '', label: '$t:common.all' }, ...(((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}",
-        "category4Options": "{{_local.filter.category3 ? [{ value: '', label: '$t:common.all' }, ...((((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).find(c => String(c.id) === _local.filter.category3)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}",
-        "availableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries || []).filter(c => c.is_active).map(c => ({ code: c.code.toLowerCase(), name: c.name?.[$locale] ?? c.name?.[_global.locale] ?? c.name?.ko ?? c.code }))}}",
-        "availablePaymentMethods": "{{(ecommerce_settings?.data?.order_settings?.payment_methods || []).filter(m => m.is_active).map(m => ({ id: m.id, name: m._cached_name?.[$locale] ?? m._cached_name?.[_global.locale] ?? m._cached_name?.ko ?? m.id }))}}",
-        "filterShippingPolicy": "{{_local.filter.shippingPolicy ?? query.shipping_policy_id ?? ''}}",
-        "shippingPolicyOptions": "{{[{ value: '', label: '$t:common.all' }, ...((shipping_policies?.data || []).map(sp => ({ value: String(sp.value), label: sp.label })))]}}",
-        "filterMinShippingFee": "{{_local.filter.minShippingFee ?? query.min_shipping_amount ?? ''}}",
-        "filterMaxShippingFee": "{{_local.filter.maxShippingFee ?? query.max_shipping_amount ?? ''}}",
-        "shippingTypeOptions": "{{(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.[_global.locale] ?? t.name?.ko ?? t.code}))}}"
-    },
-    "state": {
+    "data_sources": [
+        {
+            "id": "orders",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.orders",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/orders",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "sort_by": "{{query.sort_by || 'ordered_at'}}",
+                "sort_order": "{{query.sort_order || 'desc'}}",
+                "search_field": "{{query.search_field}}",
+                "search_keyword": "{{query.search_keyword}}",
+                "date_type": "{{query.date_type}}",
+                "start_date": "{{query.start_date}}",
+                "end_date": "{{query.end_date}}",
+                "date_basis": "{{query.date_basis === 'site' ? 'site' : ''}}",
+                "order_status": "{{query['order_status[]']}}",
+                "shipping_type": "{{query['shipping_type[]']}}",
+                "payment_method": "{{query['payment_method[]']}}",
+                "category_id": "{{query.category4 || query.category3 || query.category2 || query.category1}}",
+                "min_amount": "{{query.min_amount}}",
+                "max_amount": "{{query.max_amount}}",
+                "country_codes": "{{query['country_codes[]']}}",
+                "order_device": "{{query['order_device[]']}}",
+                "shipping_policy_id": "{{query.shipping_policy_id}}",
+                "min_shipping_amount": "{{query.min_shipping_amount}}",
+                "max_shipping_amount": "{{query.max_shipping_amount}}",
+                "orderer_uuid": "{{query.orderer_uuid}}",
+                "member_type": "{{query.member_type}}",
+                "claim_presence": "{{query.claim_presence}}",
+                "claim_exchange_statuses": "{{query['claim_exchange_statuses[]']}}",
+                "claim_return_statuses": "{{query['claim_return_statuses[]']}}",
+                "claim_refund_statuses": "{{query['claim_refund_statuses[]']}}",
+                "claim_cancel_types": "{{query['claim_cancel_types[]']}}",
+                "claim_fault_types": "{{query['claim_fault_types[]']}}",
+                "claim_requested_from": "{{query.claim_requested_from && query.claim_requested_to && query.claim_requested_from > query.claim_requested_to ? query.claim_requested_to : query.claim_requested_from}}",
+                "claim_requested_to": "{{query.claim_requested_from && query.claim_requested_to && query.claim_requested_from > query.claim_requested_to ? query.claim_requested_from : query.claim_requested_to}}"
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다. 분류는 4단계 중 가장 깊이 고른 것 하나만 서버로 넘긴다 클레임 신청일 구간은 시작이 끝보다 뒤면 두 값을 바꿔 보낸다 — 북마크·수기 편집으로 뒤집힌 구간이 URL 에 들어오면 서버가 422 를 내고 목록 전체가 오류 화면이 되는데, 그 URL 은 새로고침해도 그대로라 빠져나올 길이 없다. 날짜 기준(date_basis)도 같은 까닭으로 정해진 값(site)만 싣고 그 밖은 빼서 보는 사람의 하루로 연다 — 진입 시 필터 상태 복원과 같은 판정이다."
+        },
+        {
+            "id": "categories",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.categories",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/categories",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "params": {
+                "hierarchical": "1"
+            },
+            "errorHandling": {
+                "403": {
+                    "comment": "분류는 상품 권한 게이트다 — 주문 조회 권한만 가진 운영자에게는 403 이 정상 응답이라 전파를 끊는다. 억제하지 않으면 진입할 때마다 「해당 권한이 없습니다」 알림이 뜬다(S3-D6). 비면 분류 필터 선택지만 빈다.",
+                    "handler": "suppress"
+                }
+            },
+            "comment": "분류 필터의 4단 선택지. 계층 전체를 한 번에 받아 두고 아래 computed 가 단계별로 잘라 쓴다 — 단계를 고를 때마다 서버를 부르지 않기 위해서다"
+        },
+        {
+            "id": "ecommerce_settings",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "errorHandling": {
+                "403": {
+                    "comment": "쇼핑몰 설정은 설정 권한 게이트다 — 주문 조회 권한만 가진 운영자에게는 403 이 정상 응답이다(S3-D6). 비면 국가·결제수단·배송방식 선택지만 빈다.",
+                    "handler": "suppress"
+                }
+            },
+            "comment": "국가·결제수단·배송방식 필터의 선택지가 쇼핑몰 설정에서 온다(사용 중인 것만 세운다). 목록 표시를 막지 않도록 뒤늦게 받는다"
+        },
+        {
+            "id": "active_carriers",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.active_carriers",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "errorHandling": {
+                "403": {
+                    "comment": "택배사 목록은 설정 권한 게이트다 — 주문 조회 권한만 가진 운영자에게는 403 이 정상 응답이다(S3-D6). 그 운영자는 일괄처리를 할 수 없으므로 선택지가 비어도 잃는 것이 없다.",
+                    "handler": "suppress"
+                }
+            },
+            "comment": "일괄 운송장 입력에서 고를 택배사 — 목록 조회가 아니라 아래 일괄처리 구획이 쓴다"
+        },
+        {
+            "id": "shipping_policies",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.shipping_policies",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-policies/active",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "errorHandling": {
+                "403": {
+                    "comment": "배송정책 목록은 배송정책 권한 게이트다 — 주문 조회 권한만 가진 운영자에게는 403 이 정상 응답이다(S3-D6). 비면 배송정책 필터 선택지만 빈다.",
+                    "handler": "suppress"
+                }
+            },
+            "comment": "배송정책 필터 선택지 — 사용 중인 것만 받는다"
+        },
+        {
+            "id": "presets",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.presets",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/presets",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "params": {
+                "target_screen": "orders"
+            },
+            "errorHandling": {
+                "403": {
+                    "comment": "프리셋은 상품·클레임·주문 조회 권한 중 하나로 열린다(S3-D6) — 그래도 403 이면 프리셋 칩만 비우고 목록은 그대로 쓴다.",
+                    "handler": "suppress"
+                }
+            },
+            "comment": "이 화면에 저장해 둔 검색 프리셋. 프리셋은 화면마다 따로 관리되므로 대상 화면을 지정해 받는다"
+        }
+    ],
+    "initLocal": {
         "showDetailFilter": false,
         "isEditMode": false,
         "filter": {
@@ -40,6 +168,7 @@
             "dateType": "ordered_at",
             "startDate": "",
             "endDate": "",
+            "dateBasis": "",
             "dateQuick": "",
             "orderStatus": [],
             "deliveryMethods": [],
@@ -54,7 +183,15 @@
             "devices": [],
             "shippingPolicy": "",
             "minShippingFee": "",
-            "maxShippingFee": ""
+            "maxShippingFee": "",
+            "claimPresence": "",
+            "claimExchangeStatuses": [],
+            "claimReturnStatuses": [],
+            "claimRefundStatuses": [],
+            "claimCancelTypes": [],
+            "claimFaultTypes": [],
+            "claimRequestedFrom": "",
+            "claimRequestedTo": ""
         },
         "ordererSearchResults": [],
         "selectedItems": [],
@@ -82,143 +219,113 @@
             "payment_method",
             "delivery_method",
             "country",
-            "device"
+            "device",
+            "claim"
         ],
         "visibleFilters": [
             "searchField",
             "searchKeyword",
             "date",
-            "orderStatus"
+            "orderStatus",
+            "claim"
         ]
     },
+    "computed": {
+        "filterSearchField": "{{_local.filter.searchField ?? query.search_field ?? 'all'}}",
+        "filterSearchKeyword": "{{_local.filter.searchKeyword ?? query.search_keyword ?? ''}}",
+        "filterDateType": "{{_local.filter.dateType ?? query.date_type ?? 'ordered_at'}}",
+        "filterStartDate": "{{_local.filter.startDate ?? query.start_date ?? ''}}",
+        "filterEndDate": "{{_local.filter.endDate ?? query.end_date ?? ''}}",
+        "filterMinPrice": "{{_local.filter.minPrice ?? query.min_amount ?? ''}}",
+        "filterMaxPrice": "{{_local.filter.maxPrice ?? query.max_amount ?? ''}}",
+        "filterCategoryId": "{{_local.filter.category4 || _local.filter.category3 || _local.filter.category2 || _local.filter.category1 || query.category4 || query.category3 || query.category2 || query.category1 || ''}}",
+        "category1Options": "{{[{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).filter(c => c.depth === 0).map(c => ({ value: String(c.id), label: c.localized_name })))]}}",
+        "category2Options": "{{_local.filter.category1 ? [{ value: '', label: '$t:common.all' }, ...((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}",
+        "category3Options": "{{_local.filter.category2 ? [{ value: '', label: '$t:common.all' }, ...(((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}",
+        "category4Options": "{{_local.filter.category3 ? [{ value: '', label: '$t:common.all' }, ...((((categories?.data?.data || []).find(c => String(c.id) === _local.filter.category1)?.children || []).find(c => String(c.id) === _local.filter.category2)?.children || []).find(c => String(c.id) === _local.filter.category3)?.children || []).map(c => ({ value: String(c.id), label: c.localized_name }))] : []}}",
+        "availableCountries": "{{(ecommerce_settings?.data?.shipping?.available_countries || []).filter(c => c.is_active).map(c => ({ code: c.code.toLowerCase(), name: c.name?.[$locale] ?? c.name?.ko ?? c.code }))}}",
+        "availablePaymentMethods": "{{(ecommerce_settings?.data?.order_settings?.payment_methods || []).filter(m => m.is_active).map(m => ({ id: m.id, name: m._cached_name?.[$locale] ?? m._cached_name?.ko ?? m.id }))}}",
+        "filterShippingPolicy": "{{_local.filter.shippingPolicy ?? query.shipping_policy_id ?? ''}}",
+        "shippingPolicyOptions": "{{[{ value: '', label: '$t:common.all' }, ...((shipping_policies?.data || []).map(sp => ({ value: String(sp.value), label: sp.label })))]}}",
+        "filterMinShippingFee": "{{_local.filter.minShippingFee ?? query.min_shipping_amount ?? ''}}",
+        "filterMaxShippingFee": "{{_local.filter.maxShippingFee ?? query.max_shipping_amount ?? ''}}",
+        "shippingTypeOptions": "{{(ecommerce_settings?.data?.shipping?.types ?? []).filter(t => t.is_active).map(t => ({value: t.code, label: t.name?.[$locale] ?? t.name?.ko ?? t.code}))}}"
+    },
+    "permissions": [
+        "sirsoft-ecommerce.orders.read"
+    ],
     "transition_overlay": {
         "wait_for": [
             "orders"
         ]
     },
-    "data_sources": [
-        {
-            "id": "orders",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.orders",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/orders",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "progressive",
+    "named_actions": {
+        "searchOrders": {
+            "comment": "필터 적용 — 필터 조각·프리셋 적용·초기화가 이 액션 하나를 공유한다. 빈 값은 null 로 떨어뜨려 주소에 남기지 않고(그래야 프리셋을 갈아탈 때 이전 조건이 안 붙어 있는다), 조건이 바뀌었으니 쪽수는 1로 되돌린다. date_basis 는 날짜를 어느 하루로 거르는지다 — 대시보드 「오늘」 배지로 열면 site(배지가 센 사이트 표준시의 하루)이고, 날짜 종류·시작일·종료일·빠른 기간·프리셋·초기화가 상태(dateBasis)를 비워 보는 사람의 하루로 돌아간다. 날짜와 무관한 조건만 바꿔 검색하면 그대로 남는다",
+            "handler": "navigate",
             "params": {
-                "page": "{{query.page || 1}}",
-                "per_page": "{{query.per_page || 20}}",
-                "sort_by": "{{query.sort_by || 'ordered_at'}}",
-                "sort_order": "{{query.sort_order || 'desc'}}",
-                "search_field": "{{query.search_field}}",
-                "search_keyword": "{{query.search_keyword}}",
-                "date_type": "{{query.date_type}}",
-                "start_date": "{{query.start_date}}",
-                "end_date": "{{query.end_date}}",
-                "order_status": "{{query['order_status[]']}}",
-                "shipping_type": "{{query['shipping_type[]']}}",
-                "payment_method": "{{query['payment_method[]']}}",
-                "category_id": "{{query.category4 || query.category3 || query.category2 || query.category1}}",
-                "min_amount": "{{query.min_amount}}",
-                "max_amount": "{{query.max_amount}}",
-                "country_codes": "{{query['country_codes[]']}}",
-                "order_device": "{{query['order_device[]']}}",
-                "shipping_policy_id": "{{query.shipping_policy_id}}",
-                "min_shipping_amount": "{{query.min_shipping_amount}}",
-                "max_shipping_amount": "{{query.max_shipping_amount}}",
-                "orderer_uuid": "{{query.orderer_uuid}}",
-                "member_type": "{{query.member_type}}"
-            },
-            "errorHandling": {
-                "403": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
-                },
-                "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                "path": "/admin/ecommerce/orders",
+                "replace": true,
+                "mergeQuery": true,
+                "transition_overlay_target": "order_datagrid__body",
+                "query": {
+                    "page": 1,
+                    "search_field": "{{_local.filter.searchField !== 'all' ? _local.filter.searchField : null}}",
+                    "search_keyword": "{{_local.filter.searchKeyword || null}}",
+                    "date_type": "{{_local.filter.dateType}}",
+                    "start_date": "{{_local.filter.startDate || null}}",
+                    "end_date": "{{_local.filter.endDate || null}}",
+                    "date_basis": "{{_local.filter.dateBasis || null}}",
+                    "order_status[]": "{{(_local.filter.orderStatus || []).length > 0 ? _local.filter.orderStatus : null}}",
+                    "shipping_type[]": "{{(_local.filter.deliveryMethods || []).length > 0 ? _local.filter.deliveryMethods : null}}",
+                    "payment_method[]": "{{(_local.filter.paymentMethods || []).length > 0 ? _local.filter.paymentMethods : null}}",
+                    "category1": "{{_local.filter.category1 || null}}",
+                    "category2": "{{_local.filter.category2 || null}}",
+                    "category3": "{{_local.filter.category3 || null}}",
+                    "category4": "{{_local.filter.category4 || null}}",
+                    "min_amount": "{{_local.filter.minPrice || null}}",
+                    "max_amount": "{{_local.filter.maxPrice || null}}",
+                    "country_codes[]": "{{(_local.filter.countries || []).length > 0 ? _local.filter.countries : null}}",
+                    "order_device[]": "{{(_local.filter.devices || []).length > 0 ? _local.filter.devices : null}}",
+                    "shipping_policy_id": "{{_local.filter.shippingPolicy || null}}",
+                    "min_shipping_amount": "{{_local.filter.minShippingFee || null}}",
+                    "max_shipping_amount": "{{_local.filter.maxShippingFee || null}}",
+                    "orderer_uuid": "{{_local.filter.ordererUuid || null}}",
+                    "member_type": "{{_local.filter.memberType || null}}",
+                    "claim_presence": "{{_local.filter.claimPresence || null}}",
+                    "claim_exchange_statuses[]": "{{(_local.filter.claimExchangeStatuses || []).length > 0 ? _local.filter.claimExchangeStatuses : null}}",
+                    "claim_return_statuses[]": "{{(_local.filter.claimReturnStatuses || []).length > 0 ? _local.filter.claimReturnStatuses : null}}",
+                    "claim_refund_statuses[]": "{{(_local.filter.claimRefundStatuses || []).length > 0 ? _local.filter.claimRefundStatuses : null}}",
+                    "claim_cancel_types[]": "{{(_local.filter.claimCancelTypes || []).length > 0 ? _local.filter.claimCancelTypes : null}}",
+                    "claim_fault_types[]": "{{(_local.filter.claimFaultTypes || []).length > 0 ? _local.filter.claimFaultTypes : null}}",
+                    "claim_requested_from": "{{(_local.filter.claimRequestedFrom && _local.filter.claimRequestedTo && _local.filter.claimRequestedFrom > _local.filter.claimRequestedTo ? _local.filter.claimRequestedTo : _local.filter.claimRequestedFrom) || null}}",
+                    "claim_requested_to": "{{(_local.filter.claimRequestedTo && _local.filter.claimRequestedFrom && _local.filter.claimRequestedFrom > _local.filter.claimRequestedTo ? _local.filter.claimRequestedFrom : _local.filter.claimRequestedTo) || null}}"
                 }
             }
-        },
-        {
-            "id": "categories",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.categories",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/categories",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "background",
-            "params": {
-                "hierarchical": "1"
-            }
-        },
-        {
-            "id": "ecommerce_settings",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.ecommerce_settings",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/settings",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "background"
-        },
-        {
-            "id": "active_carriers",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.active_carriers",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-carriers/active",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "background"
-        },
-        {
-            "id": "shipping_policies",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.shipping_policies",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/shipping-policies/active",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "background"
-        },
-        {
-            "id": "presets",
-            "label_key": "$t:sirsoft-ecommerce.editor.data_source.presets",
-            "type": "api",
-            "endpoint": "/api/modules/sirsoft-ecommerce/admin/presets",
-            "method": "GET",
-            "auto_fetch": true,
-            "auth_required": true,
-            "loading_strategy": "background",
-            "params": {
-                "target_screen": "orders"
-            }
         }
-    ],
+    },
     "init_actions": [
         {
-            "handler": "loadFromLocalStorage",
+            "comment": "저장값이 **없는** 브라우저의 초기 컬럼 묶음. ColumnSelector 의 defaultColumns(_partial_filter_section.json)와 state.visibleColumns 세 곳이 같은 값이어야 한다 — DataGrid 는 required 를 보지 않고 visibleColumns 에 있는 field 만 그리므로, 여기 목록이 컬럼 field 와 어긋나면 그 컬럼은 신규 운영자에게만 조용히 사라진다. claim 은 기본 표시 컬럼이다(확정). 다만 표시 여부를 이 목록'만'이 정하는 것은 아니다 — ColumnSelector 는 브라우저 저장값(g7_columns_*)이 있으면 그것을 우선하고 신규 **정적** 컬럼을 자동으로 더하지 않는다(자동 포함은 dynamicColumns 전용). 그래서 컬럼 선택을 한 번이라도 만진 기존 운영자에게 claim 컬럼은 뜨지 않는다 — 기존 저장값을 건드리지 않는 것이 확정(7차 Q1)이므로 마이그레이션을 두지 않는다. 그리고 DataGrid 의 컬럼 12개 중 no 는 이 4출처 어디에도 없어 렌더되지 않는다(HEAD 선재, S16 소유). 표시 컬럼은 관리자 회원마다 갈린다(#639 ⑩) — 저장 키에 회원 uuid 를 넣는 핸들러(sirsoft-ecommerce.loadVisibleColumns)로 읽고, 회원 구분 없던 옛 키(g7_order_visible_columns)는 그 핸들러가 지운다. 레이아웃이 공용 키를 직접 읽으면 같은 브라우저의 다른 관리자 설정이 실린다.",
+            "handler": "sirsoft-ecommerce.loadVisibleColumns",
             "params": {
-                "key": "g7_order_visible_columns",
-                "stateKey": "visibleColumns",
-                "defaultValue": [
-                    "order_date",
+                "defaultColumns": [
+                    "ordered_at",
                     "order_number",
-                    "order_status",
-                    "order_amount",
                     "product",
+                    "order_amount",
+                    "order_status",
                     "orderer",
                     "payment_method",
                     "delivery_method",
-                    "country"
+                    "country",
+                    "device",
+                    "claim"
                 ]
+            },
+            "resultTo": {
+                "target": "_local",
+                "key": "visibleColumns"
             }
         },
         {
@@ -232,6 +339,7 @@
                         "dateType": "{{query.date_type || 'ordered_at'}}",
                         "startDate": "{{query.start_date || ''}}",
                         "endDate": "{{query.end_date || ''}}",
+                        "dateBasis": "{{query.date_basis === 'site' ? 'site' : ''}}",
                         "orderStatus": "{{query['order_status[]'] || []}}",
                         "deliveryMethods": "{{query['shipping_type[]'] || []}}",
                         "paymentMethods": "{{query['payment_method[]'] || []}}",
@@ -248,31 +356,37 @@
                         "maxShippingFee": "{{query.max_shipping_amount || ''}}",
                         "selectedPreset": "{{query.preset_id || ''}}",
                         "ordererUuid": "{{query.orderer_uuid || ''}}",
-                        "memberType": "{{query.member_type || ''}}"
+                        "memberType": "{{query.member_type || ''}}",
+                        "claimPresence": "{{query.claim_presence || ''}}",
+                        "claimExchangeStatuses": "{{query['claim_exchange_statuses[]'] || []}}",
+                        "claimReturnStatuses": "{{query['claim_return_statuses[]'] || []}}",
+                        "claimRefundStatuses": "{{query['claim_refund_statuses[]'] || []}}",
+                        "claimCancelTypes": "{{query['claim_cancel_types[]'] || []}}",
+                        "claimFaultTypes": "{{query['claim_fault_types[]'] || []}}",
+                        "claimRequestedFrom": "{{query.claim_requested_from || ''}}",
+                        "claimRequestedTo": "{{query.claim_requested_to || ''}}"
                     }
                 }
             }
         },
         {
             "handler": "apiCall",
+            "target": "/api/admin/users/search",
             "if": "{{!!query.orderer_uuid}}",
             "auth_required": true,
-            "target": "/api/admin/users/search",
             "params": {
                 "method": "GET",
                 "query": {
                     "uuid": "{{query.orderer_uuid}}"
                 }
             },
-            "onSuccess": [
-                {
-                    "handler": "setState",
-                    "params": {
-                        "target": "local",
-                        "ordererSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
-                    }
+            "onSuccess": {
+                "handler": "setState",
+                "params": {
+                    "target": "local",
+                    "ordererSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
                 }
-            ]
+            }
         },
         {
             "handler": "sirsoft-ecommerce.loadVisibleFilters",
@@ -282,7 +396,8 @@
                     "searchField",
                     "searchKeyword",
                     "date",
-                    "orderStatus"
+                    "orderStatus",
+                    "claim"
                 ]
             },
             "resultTo": {
@@ -291,41 +406,6 @@
             }
         }
     ],
-    "named_actions": {
-        "searchOrders": {
-            "handler": "navigate",
-            "params": {
-                "path": "/admin/ecommerce/orders",
-                "replace": true,
-                "mergeQuery": true,
-                "query": {
-                    "page": 1,
-                    "search_field": "{{_local.filter.searchField !== 'all' ? _local.filter.searchField : null}}",
-                    "search_keyword": "{{_local.filter.searchKeyword || null}}",
-                    "date_type": "{{_local.filter.dateType}}",
-                    "start_date": "{{_local.filter.startDate || null}}",
-                    "end_date": "{{_local.filter.endDate || null}}",
-                    "order_status[]": "{{(_local.filter.orderStatus || []).length > 0 ? _local.filter.orderStatus : null}}",
-                    "shipping_type[]": "{{(_local.filter.deliveryMethods || []).length > 0 ? _local.filter.deliveryMethods : null}}",
-                    "payment_method[]": "{{(_local.filter.paymentMethods || []).length > 0 ? _local.filter.paymentMethods : null}}",
-                    "category1": "{{_local.filter.category1 || null}}",
-                    "category2": "{{_local.filter.category2 || null}}",
-                    "category3": "{{_local.filter.category3 || null}}",
-                    "category4": "{{_local.filter.category4 || null}}",
-                    "min_amount": "{{_local.filter.minPrice || null}}",
-                    "max_amount": "{{_local.filter.maxPrice || null}}",
-                    "country_codes[]": "{{(_local.filter.countries || []).length > 0 ? _local.filter.countries : null}}",
-                    "order_device[]": "{{(_local.filter.devices || []).length > 0 ? _local.filter.devices : null}}",
-                    "shipping_policy_id": "{{_local.filter.shippingPolicy || null}}",
-                    "min_shipping_amount": "{{_local.filter.minShippingFee || null}}",
-                    "max_shipping_amount": "{{_local.filter.maxShippingFee || null}}",
-                    "orderer_uuid": "{{_local.filter.ordererUuid || null}}",
-                    "member_type": "{{_local.filter.memberType || null}}"
-                },
-                "transition_overlay_target": "order_datagrid__body"
-            }
-        }
-    },
     "slots": {
         "content": [
             {
@@ -337,10 +417,10 @@
                 },
                 "children": [
                     {
+                        "comment": "H-001 ~ H-004",
                         "id": "page_header",
                         "type": "basic",
                         "name": "Div",
-                        "comment": "H-001 ~ H-004",
                         "props": {
                             "className": "page-header"
                         },
@@ -353,20 +433,28 @@
                                 },
                                 "children": [
                                     {
+                                        "comment": "MB-001 모바일 뒤로가기 버튼",
                                         "id": "mb_001_back_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "comment": "MB-001 모바일 뒤로가기 버튼",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "btn btn-ghost btn-square hidden"
-                                        },
                                         "responsive": {
                                             "portable": {
                                                 "props": {
-                                                    "className": "btn btn-ghost btn-square flex"
+                                                    "className": "btn-icon flex"
                                                 }
                                             }
+                                        },
+                                        "actions": [
+                                            {
+                                                "comment": "브라우저 히스토리 뒤로가기 — navigate 는 path 를 주소로 해석하므로 \"back\" 을 주면 /back 으로 이동한다",
+                                                "type": "click",
+                                                "handler": "navigateBack"
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn-icon hidden",
+                                            "aria-label": "$t:common.back"
                                         },
                                         "children": [
                                             {
@@ -374,15 +462,8 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "arrow-left",
-                                                    "className": "w-5 h-5"
+                                                    "className": "text-xl"
                                                 }
-                                            }
-                                        ],
-                                        "actions": [
-                                            {
-                                                "comment": "브라우저 히스토리 뒤로가기 — navigate 는 path 를 주소로 해석하므로 \"back\" 을 주면 /back 으로 이동한다",
-                                                "type": "click",
-                                                "handler": "navigateBack"
                                             }
                                         ]
                                     },
@@ -391,20 +472,20 @@
                                         "name": "Div",
                                         "children": [
                                             {
+                                                "comment": "H-002",
                                                 "id": "h_002_page_title",
                                                 "type": "basic",
                                                 "name": "H1",
-                                                "comment": "H-002",
                                                 "props": {
                                                     "className": "page-title"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.order.title"
                                             },
                                             {
+                                                "comment": "H-003",
                                                 "id": "h_003_page_description",
                                                 "type": "basic",
                                                 "name": "P",
-                                                "comment": "H-003",
                                                 "props": {
                                                     "className": "page-description"
                                                 },
@@ -422,24 +503,10 @@
                                 },
                                 "children": [
                                     {
+                                        "comment": "H-004",
                                         "id": "h_004_refresh_button",
                                         "type": "basic",
                                         "name": "Button",
-                                        "comment": "H-004",
-                                        "props": {
-                                            "type": "button",
-                                            "className": "btn btn-icon"
-                                        },
-                                        "children": [
-                                            {
-                                                "type": "basic",
-                                                "name": "Icon",
-                                                "props": {
-                                                    "name": "refresh-cw",
-                                                    "className": "w-5 h-5"
-                                                }
-                                            }
-                                        ],
                                         "actions": [
                                             {
                                                 "comment": "새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지와 걸어둔 필터 20여 종을 유지한다 (#75).",
@@ -451,6 +518,22 @@
                                                     "query": {}
                                                 }
                                             }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-icon",
+                                            "aria-label": "$t:common.refresh",
+                                            "title": "$t:common.refresh"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "arrows-rotate",
+                                                    "className": "text-xl"
+                                                }
+                                            }
                                         ]
                                     }
                                 ]
@@ -458,13 +541,10 @@
                         ]
                     },
                     {
+                        "comment": "MB-010, MB-011",
                         "id": "mobile_top_actions",
                         "type": "basic",
                         "name": "Div",
-                        "comment": "MB-010, MB-011",
-                        "props": {
-                            "className": "hidden"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
@@ -472,31 +552,15 @@
                                 }
                             }
                         },
+                        "props": {
+                            "className": "hidden"
+                        },
                         "children": [
                             {
+                                "comment": "MB-010",
                                 "id": "mb_010_search_edit_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "comment": "MB-010",
-                                "props": {
-                                    "type": "button",
-                                    "className": "btn btn-outline flex-1"
-                                },
-                                "children": [
-                                    {
-                                        "type": "basic",
-                                        "name": "Icon",
-                                        "props": {
-                                            "name": "settings",
-                                            "className": "w-4 h-4"
-                                        }
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "text": "$t:sirsoft-ecommerce.admin.order.search.edit_search"
-                                    }
-                                ],
                                 "actions": [
                                     {
                                         "type": "click",
@@ -506,13 +570,39 @@
                                             "isEditMode": "{{!_local.isEditMode}}"
                                         }
                                     }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-outline flex-1"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "gear",
+                                            "className": "text-base"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-ecommerce.admin.order.search.edit_search"
+                                    }
                                 ]
                             },
                             {
+                                "comment": "MB-011",
                                 "id": "mb_011_preset_manage_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "comment": "MB-011",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "openModal",
+                                        "target": "modal_preset_manage"
+                                    }
+                                ],
                                 "props": {
                                     "type": "button",
                                     "className": "btn btn-outline flex-1"
@@ -523,20 +613,13 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "list",
-                                            "className": "w-4 h-4"
+                                            "className": "text-base"
                                         }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "text": "$t:sirsoft-ecommerce.admin.order.search.preset_manage"
-                                    }
-                                ],
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "openModal",
-                                        "target": "modal_preset_manage"
                                     }
                                 ]
                             }
@@ -567,21 +650,27 @@
     },
     "modals": [
         {
+            "comment": "선택한 주문들의 상태·운송장을 한꺼번에 바꾸기 전 확인",
             "partial": "partials/admin_ecommerce_order_list/_modal_bulk_confirm.json"
         },
         {
+            "comment": "검색 프리셋 관리 — 저장해 둔 조건 묶음의 목록을 보고 고르거나 지운다",
             "partial": "partials/admin_ecommerce_order_list/_modal_preset_manage.json"
         },
         {
+            "comment": "지금 걸린 조건을 새 프리셋으로 저장",
             "partial": "partials/admin_ecommerce_order_list/_modal_preset_save.json"
         },
         {
+            "comment": "프리셋 이름 바꾸기",
             "partial": "partials/admin_ecommerce_order_list/_modal_preset_edit.json"
         },
         {
+            "comment": "프리셋 삭제 확인",
             "partial": "partials/admin_ecommerce_order_list/_modal_preset_delete_confirm.json"
         },
         {
+            "comment": "엑셀 내려받기 — 검색 결과 전체와 선택 건 중 무엇을 뽑을지 고른다",
             "partial": "partials/admin_ecommerce_order_list/_modal_excel_download.json"
         }
     ]

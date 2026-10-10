@@ -72,6 +72,8 @@ effects:
   - manual_run_ignores_toggle
   # 관리 API
   - admin_index_lists_uploads
+  # 업로드일 필터는 보는 사람의 시간대 하루로 자른다(UTC 하루면 한국 새벽 업로드가 그날 필터에서 빠진다 — 7.1.0 영역 C 후속)
+  - admin_index_date_filter_follows_viewer_day
   - admin_index_column_pruning
   - admin_index_referenced_badge
   - admin_index_unreferenced_filter
@@ -119,6 +121,7 @@ sub_flows:
     description: 관리 화면이 쓰는 조회·단건 삭제·일괄 삭제 API 와 권한 경계
     effects:
       - admin_index_lists_uploads
+      - admin_index_date_filter_follows_viewer_day
       - admin_index_referenced_badge
       - admin_index_unreferenced_filter
       - admin_index_scan_window_limited

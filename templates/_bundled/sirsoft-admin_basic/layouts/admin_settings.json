@@ -1,1001 +1,1361 @@
 {
-  "version": "1.0.0",
-  "layout_name": "admin_settings",
-  "permissions": [
-    "core.settings.read"
-  ],
-  "extends": "_admin_base",
-  "meta": {
-    "title": "$t:admin.settings.page_title",
-    "description": "$t:admin.settings.page_description"
-  },
-  "computed": {
-    "isReadOnly": "{{!!_global.settingsAbilities && !(_global.settingsAbilities?.can_update ?? false)}}",
-    "envLocked": "{{_local.form?._meta?.env_locked ?? null}}"
-  },
-  "transition_overlay": {
-    "target": "settings_tab_content",
-    "fallback_target": "right_content_area",
-    "wait_for": [
-      "settings",
-      "systemInfo",
-      "appKey",
-      "notificationDefinitions",
-      "availableChannels",
-      "identityProviders",
-      "identityPurposes",
-      "identityMessages",
-      "adminIdentityPolicies",
-      "policies",
-      "language_packs",
-      "sitemap_status",
-      "staticCacheStatus"
-    ]
-  },
-  "data_sources": [
-    {
-      "id": "language_packs",
-      "label_key": "$t:editor.data_source.language_packs",
-      "type": "api",
-      "endpoint": "/api/admin/language-packs",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'language_packs'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "params": {
-        "page": "{{query.page}}",
-        "per_page": "{{query.per_page ?? 10}}",
-        "scope": "{{_local.filterScope || query.scope}}",
-        "target_identifier": "{{_local.filterTarget || query.target_identifier}}",
-        "locale": "{{query.locale}}",
-        "status": "{{query.status}}",
-        "search": "{{query.search}}",
-        "exclude_protected": "{{query.exclude_protected ?? '1'}}"
-      },
-      "fallback": {
-        "data": {
-          "data": [],
-          "meta": {
-            "total": 0,
-            "active": 0,
-            "installed": 0,
-            "inactive": 0,
-            "error": 0
-          },
-          "abilities": {}
-        }
-      }
+    "comment": "환경설정 — 이 템플릿에서 가장 넓은 화면이다. 탭 11개의 본문이 모두 조각 파일로 나뉘어 있고\n  여기에는 **소스·탭 뼈대·공용 저장 버튼·창 스물넷**만 있다.\n\n  두 가지가 이 화면의 뼈대를 정한다.\n  ⑴ **탭마다 필요한 소스만 받는다** — 소스 대부분에 `if=\"지금 이 탭인가\"` 가 걸려 있어, 설정 화면에\n     들어왔다고 시스템 정보·언어팩·인증 정책을 한꺼번에 부르지 않는다. 그래서 같은 판정식\n     (`query.tab || _global.activeSettingsTab || 'general'`)이 여러 소스에 반복해 적혀 있다.\n  ⑵ **저장은 지금 보고 있는 탭 것만 보낸다** — 폼은 `_local.form` 한 덩어리지만 요청 본문은 그중\n     현재 탭 몫만 잘라 담는다(아래 저장 버튼). 한 번에 전부 보내면 안 본 탭의 값까지 덮어쓴다.\n\n  언어팩 탭은 조각·창을 **언어팩 관리 화면 것을 그대로 빌려 쓴다** — 아래 창 목록 앞쪽 일곱이 그것이다.",
+    "version": "1.0.0",
+    "layout_name": "admin_settings",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:admin.settings.page_title",
+        "description": "$t:admin.settings.page_description"
     },
-    {
-      "id": "language_pack_detail",
-      "label_key": "$t:editor.data_source.language_pack_detail",
-      "type": "api",
-      "endpoint": "/api/admin/language-packs/{{_local.detailId}}",
-      "method": "GET",
-      "auto_fetch": false,
-      "auth_required": true,
-      "depends_on": [
-        "_local.detailId"
-      ]
-    },
-    {
-      "id": "language_pack_changelog",
-      "label_key": "$t:editor.data_source.language_pack_changelog",
-      "type": "api",
-      "endpoint": "/api/admin/language-packs/{{_local.detailId}}/changelog",
-      "method": "GET",
-      "auto_fetch": false,
-      "auth_required": true,
-      "depends_on": [
-        "_local.detailId"
-      ]
-    },
-    {
-      "id": "settings",
-      "label_key": "$t:editor.data_source.settings",
-      "type": "api",
-      "endpoint": "/api/admin/settings",
-      "method": "GET",
-      "auto_fetch": true,
-      "auth_required": true,
-      "initLocal": {
-        "form": "{{data}}",
-        "originalDrivers": "drivers"
-      },
-      "initGlobal": {
-        "settingsAbilities": "abilities"
-      },
-      "refetchOnMount": true,
-      "fallback": {
-        "data": []
-      }
-    },
-    {
-      "id": "systemInfo",
-      "label_key": "$t:editor.data_source.systemInfo",
-      "type": "api",
-      "endpoint": "/api/admin/settings/system-info",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'info'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "fallback": {
-        "data": {
-          "php_version": "-",
-          "laravel_version": "-",
-          "database_type": "-",
-          "server_software": "-"
-        }
-      }
-    },
-    {
-      "id": "staticCacheStatus",
-      "label_key": "$t:editor.data_source.staticCacheStatus",
-      "type": "api",
-      "endpoint": "/api/admin/settings/static-cache",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'general'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "fallback": {
-        "data": {
-          "enabled": true,
-          "publishable": false,
-          "environment": null,
-          "version": 0,
-          "published": false,
-          "files": 0,
-          "published_at": null,
-          "tree_writable": null,
-          "process_user": null,
-          "failure": null,
-          "retained_versions": []
-        }
-      }
-    },
-    {
-      "id": "trustedProxy",
-      "label_key": "$t:editor.data_source.trustedProxy",
-      "type": "api",
-      "endpoint": "/api/admin/settings/trusted-proxy",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'advanced'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "fallback": {
-        "data": {
-          "forwarded_headers": [],
-          "trusted_configured": false,
-          "configured_proxies": null,
-          "is_secure": null,
-          "client_ip": null,
-          "remote_addr": null,
-          "status": "not_applicable"
-        }
-      }
-    },
-    {
-      "id": "appKey",
-      "label_key": "$t:editor.data_source.appKey",
-      "type": "api",
-      "endpoint": "/api/admin/settings/app-key",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'security'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "fallback": {
-        "data": {
-          "key": "-"
-        }
-      }
-    },
-    {
-      "id": "notificationDefinitions",
-      "label_key": "$t:editor.data_source.notificationDefinitions",
-      "type": "api",
-      "endpoint": "/api/admin/notification-definitions",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'notification_definitions'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "params": {
-        "page": "{{query.page || 1}}",
-        "per_page": "{{query.per_page || 20}}",
-        "search": "{{query.search}}",
-        "search_type": "{{query.search_type}}",
-        "extension_identifier": "core",
-        "template_channel": "{{query.channel ?? 'mail'}}"
-      },
-      "fallback": {
-        "data": {
-          "data": [],
-          "pagination": []
-        }
-      }
-    },
-    {
-      "id": "availableChannels",
-      "label_key": "$t:editor.data_source.availableChannels",
-      "type": "api",
-      "endpoint": "/api/admin/notification-channels",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'notification_definitions'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "fallback": {
-        "data": []
-      }
-    },
-    {
-      "id": "identityProviders",
-      "label_key": "$t:editor.data_source.identityProviders",
-      "type": "api",
-      "endpoint": "/api/admin/identity/providers",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "fallback": {
-        "data": []
-      }
-    },
-    {
-      "id": "identityPurposes",
-      "label_key": "$t:editor.data_source.identityPurposes",
-      "type": "api",
-      "endpoint": "/api/identity/purposes",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}",
-      "auto_fetch": true,
-      "fallback": {
-        "data": []
-      }
-    },
-    {
-      "id": "identityMessages",
-      "label_key": "$t:editor.data_source.identityMessages",
-      "type": "api",
-      "endpoint": "/api/admin/identity/messages/definitions",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "params": {
-        "page": "{{query.messages_page || 1}}",
-        "per_page": "{{query.messages_per_page || 20}}",
-        "sort_by": "id",
-        "sort_order": "asc"
-      },
-      "fallback": {
-        "data": {
-          "data": []
-        }
-      }
-    },
-    {
-      "id": "adminIdentityPolicies",
-      "label_key": "$t:editor.data_source.adminIdentityPolicies",
-      "type": "api",
-      "endpoint": "/api/admin/identity/policies",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "params": {
-        "source_type": "admin",
-        "per_page": 100
-      },
-      "fallback": {
-        "data": {
-          "data": []
-        }
-      }
-    },
-    {
-      "id": "policies",
-      "label_key": "$t:editor.data_source.policies",
-      "type": "api",
-      "endpoint": "/api/admin/identity/policies",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "params": {
-        "scope": "{{query.scope}}",
-        "purpose": "{{query.purpose}}",
-        "source_type": "{{query.source_type}}",
-        "enabled": "{{query.enabled}}",
-        "search": "{{query.search}}",
-        "page": "{{query.page || 1}}",
-        "per_page": "{{query.per_page || 10}}"
-      },
-      "fallback": {
-        "data": {
-          "data": [],
-          "meta": {}
-        }
-      }
-    },
-    {
-      "id": "sitemap_status",
-      "label_key": "$t:editor.data_source.sitemap_status",
-      "type": "api",
-      "endpoint": "/api/admin/seo/sitemap/status",
-      "method": "GET",
-      "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'seo'}}",
-      "auto_fetch": true,
-      "auth_required": true,
-      "fallback": {
-        "data": {
-          "last_updated_at": null,
-          "progress": null,
-          "realtime_enabled": false
-        }
-      },
-      "onSuccess": [
+    "data_sources": [
         {
-          "handler": "startInterval",
-          "if": "{{response?.data?.data?.realtime_enabled !== true && ['queued','running','writing'].includes(response?.data?.data?.progress?.status ?? '')}}",
-          "params": {
-            "id": "sitemap_progress_poll",
-            "intervalMs": 3000,
-            "actions": [
-              {
-                "handler": "refetchDataSource",
-                "params": {
-                  "dataSourceId": "sitemap_status"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "handler": "stopInterval",
-          "if": "{{['completed','failed'].includes(response?.data?.data?.progress?.status ?? '')}}",
-          "params": {
-            "id": "sitemap_progress_poll"
-          }
-        }
-      ]
-    },
-    {
-      "id": "sitemap_progress_ws",
-      "label_key": "$t:editor.data_source.sitemap_progress_ws",
-      "type": "websocket",
-      "channel": "core.admin.seo.sitemap",
-      "event": "sitemap.progress.updated",
-      "channel_type": "private",
-      "target_source": "sitemap_status"
-    }
-  ],
-  "slots": {
-    "content": [
-      {
-        "id": "settings_content",
-        "type": "basic",
-        "name": "Div",
-        "dataKey": "form",
-        "trackChanges": true,
-        "props": {
-          "className": "admin-page-content-responsive"
-        },
-        "children": [
-          {
-            "id": "page_header",
-            "type": "composite",
-            "name": "PageHeader",
-            "props": {
-              "title": "$t:admin.settings.page_title"
+            "id": "language_packs",
+            "label_key": "$t:editor.data_source.language_packs",
+            "type": "api",
+            "endpoint": "/api/admin/language-packs",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'language_packs'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "page": "{{query.page}}",
+                "per_page": "{{query.per_page ?? 10}}",
+                "scope": "{{_local.filterScope || query.scope}}",
+                "target_identifier": "{{_local.filterTarget || query.target_identifier}}",
+                "locale": "{{query.locale}}",
+                "status": "{{query.status}}",
+                "search": "{{query.search}}",
+                "exclude_protected": "{{query.exclude_protected ?? '1'}}"
             },
-            "children": [
-              {
-                "id": "refresh_button",
-                "type": "basic",
-                "name": "Button",
-                "props": {
-                  "type": "button",
-                  "className": "btn-icon"
-                },
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "refetchDataSource",
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "meta": {
+                        "total": 0,
+                        "active": 0,
+                        "installed": 0,
+                        "inactive": 0,
+                        "error": 0
+                    },
+                    "abilities": {}
+                }
+            },
+            "comment": "언어팩 목록 — 언어팩 탭에서만 받는다(빌려 온 조각이 이 id 를 그대로 읽는다)."
+        },
+        {
+            "id": "language_pack_detail",
+            "label_key": "$t:editor.data_source.language_pack_detail",
+            "type": "api",
+            "endpoint": "/api/admin/language-packs/{{_local.detailId}}",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "depends_on": [
+                "_local.detailId"
+            ],
+            "comment": "언어팩 상세 — 상세 창이 열릴 때만 따라 받는다(`_local.detailId` 에 매여 있다)."
+        },
+        {
+            "id": "language_pack_changelog",
+            "label_key": "$t:editor.data_source.language_pack_changelog",
+            "type": "api",
+            "endpoint": "/api/admin/language-packs/{{_local.detailId}}/changelog",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "depends_on": [
+                "_local.detailId"
+            ],
+            "comment": "그 언어팩의 변경 이력 — 위 상세와 같은 값에 매여 함께 따라온다."
+        },
+        {
+            "id": "settings",
+            "label_key": "$t:editor.data_source.settings",
+            "type": "api",
+            "endpoint": "/api/admin/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "initLocal": {
+                "form": "{{data}}",
+                "originalDrivers": "drivers"
+            },
+            "initGlobal": {
+                "settingsAbilities": "abilities"
+            },
+            "fallback": {
+                "data": []
+            },
+            "comment": "설정값 전체 — **탭 조건이 없는 유일한 소스**다(어느 탭에서도 폼의 뿌리이므로).\n       응답을 `_local.form` 으로 풀어 편집 대상으로 삼고, 드라이버 원본값은 따로 남긴다\n       (드라이버 탭이 \"바뀐 항목만 연결 시험을 다시 요구\" 하려면 처음 값이 있어야 한다).\n       권한은 전역으로 올려 조각들이 각자 읽는다."
+        },
+        {
+            "id": "systemInfo",
+            "label_key": "$t:editor.data_source.systemInfo",
+            "type": "api",
+            "endpoint": "/api/admin/settings/system-info",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'info'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "php_version": "-",
+                    "laravel_version": "-",
+                    "database_type": "-",
+                    "server_software": "-"
+                }
+            },
+            "comment": "서버·프레임워크 정보 — 정보 탭에서만 받는다(읽기 전용이라 저장 대상이 아니다)."
+        },
+        {
+            "id": "staticCacheStatus",
+            "label_key": "$t:editor.data_source.staticCacheStatus",
+            "type": "api",
+            "endpoint": "/api/admin/settings/static-cache",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'general'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "enabled": true,
+                    "publishable": false,
+                    "environment": null,
+                    "version": 0,
+                    "published": false,
+                    "files": 0,
+                    "published_at": null,
+                    "tree_writable": null,
+                    "process_user": null,
+                    "failure": null,
+                    "retained_versions": []
+                }
+            },
+            "comment": "초기 화면 정적 파일 상태 — 일반 탭에서만 받는다. 게시가 켜져 있는지·지금 게시할 수 있는 환경인지·\n    현재 버전·파일 수·마지막 게시 시각·최근 실패·게시 프로세스의 실행 계정을 서버가 판정해 돌려준다.\n    응답이 없으면 fallback 의 publishable=false 로 떨어져 「지금 다시 만들기」 버튼이 잠긴 채 그려진다 —\n    상태를 모르는 채로 재게시를 누르게 두지 않기 위해서다."
+        },
+        {
+            "id": "trustedProxy",
+            "label_key": "$t:editor.data_source.trustedProxy",
+            "type": "api",
+            "endpoint": "/api/admin/settings/trusted-proxy",
+            "method": "GET",
+            "if": "{{['advanced', 'security'].includes(query.tab || _global.activeSettingsTab || 'general')}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "forwarded_headers": [],
+                    "trusted_configured": false,
+                    "configured_proxies": null,
+                    "is_secure": null,
+                    "client_ip": null,
+                    "remote_addr": null,
+                    "status": "not_applicable"
+                }
+            },
+            "comment": "리버스 프록시 진단 — 고급 탭과 보안 탭에서 받는다. 신뢰 프록시 설정 여부와 이 요청이 지나온 전달 헤더·클라이언트 IP 를 서버가 판정해 돌려주고, 응답이 없으면 fallback 의 status=not_applicable 로 「진단 불가」를 그린다.\n       보안 탭의 접근 제한 카드는 이 값으로 현재 접속 IP 를 보여 주고 프록시 경고를 띄운다 — 저장 검증이 자기 잠금을 판정할 때 쓰는 IP 와 같은 해석(신뢰 프록시 반영)이라, 화면에 보이는 IP 를 넣으면 그 검증을 통과한다."
+        },
+        {
+            "id": "privacyPreview",
+            "label_key": "$t:editor.data_source.privacyPreview",
+            "type": "api",
+            "endpoint": "/api/admin/settings/privacy-preview",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'privacy'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "retention": null,
+                    "dormant": null
+                }
+            },
+            "comment": "개인정보 탭의 대상 건수 뱃지 — 커맨드의 `--dry-run` 과 같은 조건식을 지나므로\n       화면 숫자와 실제 처리 건수가 어긋나지 않는다. 기능이 꺼져 있어도 건수를 보여 준다(#636)."
+        },
+        {
+            "id": "privacyManualRuns",
+            "label_key": "$t:editor.data_source.privacyManualRuns",
+            "type": "api",
+            "endpoint": "/api/admin/privacy/manual-runs",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'privacy'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "targets": "retention:user-withdrawn,dormant:pre_notice,dormant:convert,dormant:withdraw_notice,dormant:withdraw",
+                "since": "{{_global.privacyRunWatchSince ?? ''}}"
+            },
+            "fallback": {
+                "data": {
+                    "targets": {},
+                    "has_active": false,
+                    "finished_since": false
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active === true}}",
                     "params": {
-                      "dataSourceId": "settings"
-                    }
-                  }
-                ],
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "refresh",
-                      "className": "text-xl"
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "id": "readonly_banner",
-            "type": "basic",
-            "name": "Div",
-            "if": "{{_computed.isReadOnly}}",
-            "props": {
-              "className": "alert-warning"
-            },
-            "children": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "flex-center gap-3"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "lock",
-                      "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
-                    }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "P",
-                    "props": {
-                      "className": "text-warning-soft"
-                    },
-                    "text": "$t:admin.settings.readonly_notice"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "id": "env_priority_banner",
-            "type": "basic",
-            "name": "Div",
-            "if": "{{_local.form?._meta?.env_priority_enabled === true}}",
-            "props": {
-              "className": "alert-info"
-            },
-            "children": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "flex-center gap-3"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "props": {
-                      "name": "lock",
-                      "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"
-                    }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "P",
-                    "props": {
-                      "className": "text-info-soft"
-                    },
-                    "text": "$t:admin.settings.env_locked_notice"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "id": "sticky_header",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "sticky-tab-nav-responsive"
-            },
-            "children": [
-          {
-            "id": "tab_navigation",
-            "type": "composite",
-            "name": "TabNavigation",
-            "props": {
-              "className": "sticky-tab-nav-responsive",
-              "tabs": [
-                {
-                  "id": "general",
-                  "label": "$t:admin.settings.tabs.general"
-                },
-                {
-                  "id": "mail",
-                  "label": "$t:admin.settings.tabs.mail"
-                },
-                {
-                  "id": "upload",
-                  "label": "$t:admin.settings.tabs.upload"
-                },
-                {
-                  "id": "seo",
-                  "label": "$t:admin.settings.tabs.seo"
-                },
-                {
-                  "id": "security",
-                  "label": "$t:admin.settings.tabs.security"
-                },
-                {
-                  "id": "drivers",
-                  "label": "$t:admin.settings.tabs.drivers"
-                },
-                {
-                  "id": "advanced",
-                  "label": "$t:admin.settings.tabs.advanced"
-                },
-                {
-                  "id": "notification_definitions",
-                  "label": "$t:admin.settings.tabs.notification_definitions"
-                },
-                {
-                  "id": "language_packs",
-                  "label": "$t:admin.settings.tabs.language_packs"
-                },
-                {
-                  "id": "identity",
-                  "label": "$t:admin.settings.tabs.identity"
-                },
-                {
-                  "id": "info",
-                  "label": "$t:admin.settings.tabs.info"
-                }
-              ],
-              "activeTabId": "{{_global.activeSettingsTab || query.tab || 'general'}}",
-              "variant": "default"
-            },
-            "actions": [
-              {
-                "event": "onTabChange",
-                "type": "change",
-                "handler": "sequence",
-                "params": {
-                  "actions": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "local",
-                        "errors": null
-                      }
-                    },
-                    {
-                      "handler": "setState",
-                      "params": {
                         "target": "global",
-                        "activeSettingsTab": "{{$args[0]}}"
-                      }
-                    },
-                    {
-                      "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
-                      "handler": "navigate",
-                      "params": {
-                        "path": "/admin/settings",
-                        "query": {
-                          "tab": "{{$args[0]}}"
-                        },
-                        "replace": true
-                      }
+                        "privacyRunWatchSince": "{{response?.data?.data?.checked_at}}"
                     }
-                  ]
+                },
+                {
+                    "handler": "startInterval",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "id": "privacy_manual_run_poll",
+                        "intervalMs": 3000,
+                        "actions": [
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "privacyManualRuns"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "handler": "stopInterval",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "id": "privacy_manual_run_poll"
+                    }
+                },
+                {
+                    "handler": "refetchDataSource",
+                    "if": "{{response?.data?.data?.has_active !== true && response?.data?.data?.finished_since === true}}",
+                    "params": {
+                        "dataSourceId": "privacyPreview"
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "target": "global",
+                        "privacyRunWatchSince": null
+                    }
                 }
-              }
-            ]
-          },
-          {
-            "id": "identity_sub_tab_navigation",
-            "type": "composite",
-            "name": "TabNavigationScroll",
-            "if": "{{(_global.activeSettingsTab || query.tab) === 'identity'}}",
-            "props": {
-              "tabs": [
-                {
-                  "id": "basic",
-                  "label": "$t:admin.settings.identity.sub_tabs.basic"
-                },
-                {
-                  "id": "providers",
-                  "label": "$t:admin.settings.identity.sub_tabs.providers"
-                },
-                {
-                  "id": "policies",
-                  "label": "$t:admin.settings.identity.sub_tabs.policies"
-                },
-                {
-                  "id": "messages",
-                  "label": "$t:admin.settings.identity.sub_tabs.messages"
+            ],
+            "comment": "개인정보 조치 직권 실행 상태 — 카드의 「지금 실행」 버튼과 상태 줄(처리 대기/처리 중 · 마지막 결과)이 쓴다.\n       접수된 작업이 끝나지 않았으면(`has_active`) 3초마다 다시 받고, 끝나면 멈춘다(사이트맵 상태와 같은 방식).\n       진행 중일 때 받은 서버 시각(`checked_at`)을 다음 조회의 `since` 로 돌려보내고, 그 뒤에 끝난 작업이 있으면\n       (`finished_since`) 대상 건수를 다시 받는다 — 처리된 만큼 줄어든 숫자가 보여야 결과를 확인할 수 있다.\n       판정을 응답값으로만 하는 까닭: 직전에 넣은 전역 값은 이 성공 핸들러에서 낡은 값으로 읽힌다(엔진 제약,\n       인터벌 캡처와 같은 결). 파라미터는 조회 시점에 평가되므로 `since` 는 최신 값이 나간다.\n       권한이 없는 대상은 서버가 `can_run=false` 로 가린다."
+        },
+        {
+            "id": "privacyTargets",
+            "label_key": "$t:editor.data_source.privacyTargets",
+            "type": "api",
+            "endpoint": "/api/admin/privacy/{{_global.privacyTargets?.path ?? 'retention-targets/user-withdrawn'}}",
+            "method": "GET",
+            "auto_fetch": false,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "per_page": 20
+            },
+            "comment": "개인정보 조치 대상 명단 창 — 여는 버튼이 목록 경로(보유기간 핸들러·휴면 단계)를 `_global.privacyTargets.path` 에\n       넣고 다시 받은 뒤 창을 연다. 스스로 조회하지 않고, 다음 쪽은 창의 스크롤이 이어 붙인다."
+        },
+        {
+            "id": "passwordExpiryPreview",
+            "label_key": "$t:editor.data_source.passwordExpiryPreview",
+            "type": "api",
+            "endpoint": "/api/admin/settings/password-expiry-preview",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'security'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": null
+            },
+            "comment": "비밀번호 만료 대상 건수 뱃지(보안 탭, #736) — 배치·명단과 같은 조건식이라 화면 숫자와 처리 건수가 어긋나지 않는다.\n       만료가 꺼져 있어도 저장값으로 센다(켜기 전에 규모를 보는 자리). `enabled` 는 저장된 값이라 「지금 실행」 잠금에 쓴다."
+        },
+        {
+            "id": "passwordExpiryManualRuns",
+            "label_key": "$t:editor.data_source.passwordExpiryManualRuns",
+            "type": "api",
+            "endpoint": "/api/admin/privacy/manual-runs",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'security'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "targets": "password_expiry:notice,password_expiry:expire",
+                "since": "{{_global.passwordExpiryRunWatchSince ?? ''}}"
+            },
+            "fallback": {
+                "data": {
+                    "targets": {},
+                    "has_active": false,
+                    "finished_since": false
                 }
-              ],
-              "className": "sub-tab-nav",
-              "sectionIdPrefix": "identity_section_",
-              "enableScrollSpy": true,
-              "scrollContainerId": "right_content_area",
-              "scrollSpyOffset": 180,
-              "scrollOffset": 180
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "target": "global",
+                        "passwordExpiryRunWatchSince": "{{response?.data?.data?.checked_at}}"
+                    }
+                },
+                {
+                    "handler": "startInterval",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "id": "password_expiry_manual_run_poll",
+                        "intervalMs": 3000,
+                        "actions": [
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "passwordExpiryManualRuns"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "handler": "stopInterval",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "id": "password_expiry_manual_run_poll"
+                    }
+                },
+                {
+                    "handler": "refetchDataSource",
+                    "if": "{{response?.data?.data?.has_active !== true && response?.data?.data?.finished_since === true}}",
+                    "params": {
+                        "dataSourceId": "passwordExpiryPreview"
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "target": "global",
+                        "passwordExpiryRunWatchSince": null
+                    }
+                }
+            ],
+            "comment": "비밀번호 만료 직권 실행 상태(보안 탭) — 개인정보 탭 `privacyManualRuns` 와 같은 방식이다. 접수된 작업이 끝나지 않았으면\n       3초마다 다시 받고, 끝나면 멈추고 건수를 다시 받는다. 판정은 응답값으로만 한다(직전에 넣은 전역 값은 이 성공 핸들러에서\n       낡은 값으로 읽힌다). 권한이 없는 대상은 서버가 `can_run=false` 로 가린다."
+        },
+        {
+            "id": "appKey",
+            "label_key": "$t:editor.data_source.appKey",
+            "type": "api",
+            "endpoint": "/api/admin/settings/app-key",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'security'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "key": "-"
+                }
+            },
+            "comment": "애플리케이션 키 — 보안 탭에서만 받는다. 값이 민감해 그 탭을 실제로 열기 전에는 부르지 않는다."
+        },
+        {
+            "id": "notificationDefinitions",
+            "label_key": "$t:editor.data_source.notificationDefinitions",
+            "type": "api",
+            "endpoint": "/api/admin/notification-definitions",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'notification_definitions'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "search": "{{query.search}}",
+                "search_type": "{{query.search_type}}",
+                "extension_type": "core",
+                "category": "{{query.category}}",
+                "template_channel": "{{query.channel ?? 'mail'}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": []
+                }
+            },
+            "comment": "알림 정의 목록 — 알림 정의 탭 전용. `extension_type=\"core\"` 로 **코어 소유 정의만** 받는다 — 코어 선언(core)과\n       운영자가 추가한 본인인증 정책 문구(admin)가 함께 들어온다. 확장이 들인 정의는 그 확장의 설정 화면 몫이다.\n       `category` 는 분류 칩 값(빈 값=전체, general=일반 알림, identity=본인인증)이다."
+        },
+        {
+            "id": "availableChannels",
+            "label_key": "$t:editor.data_source.availableChannels",
+            "type": "api",
+            "endpoint": "/api/admin/notification-channels",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'notification_definitions'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": []
+            },
+            "comment": "알림 채널 목록 — 정의마다 어느 채널로 보낼지 고르는 선택지다(같은 탭에서만 받는다)."
+        },
+        {
+            "id": "identityProviders",
+            "label_key": "$t:editor.data_source.identityProviders",
+            "type": "api",
+            "endpoint": "/api/admin/identity/providers",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": []
+            },
+            "comment": "본인인증 제공자 목록 — 아래 넷과 함께 인증 탭에서만 받는다."
+        },
+        {
+            "id": "identityPurposes",
+            "label_key": "$t:editor.data_source.identityPurposes",
+            "type": "api",
+            "endpoint": "/api/identity/purposes",
+            "method": "GET",
+            "if": "{{['identity', 'notification_definitions'].includes(query.tab || _global.activeSettingsTab || 'general')}}",
+            "auto_fetch": true,
+            "fallback": {
+                "data": []
+            },
+            "comment": "인증 목적 목록 — 정책 선택지와 알림 설정의 본인인증 카드 배지(목적 이름)가 함께 쓴다.\n       **이 화면에서 유일하게 인증 없이 부르는 소스**다(목적 정의는 공개 값이다)."
+        },
+        {
+            "id": "identityPolicyDefinitions",
+            "label_key": "$t:editor.data_source.identityPolicyDefinitions",
+            "type": "api",
+            "endpoint": "/api/admin/notification-definitions",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'notification_definitions'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "extension_type": "core",
+                "category": "identity",
+                "per_page": 100
+            },
+            "fallback": {
+                "data": {
+                    "data": []
+                }
+            },
+            "comment": "본인인증 정책별 문구가 이미 있는 정책 — 「정책별 문구 추가」 창이 선택지에서 빼는 데만 쓴다(알림 설정 탭).\n       서버의 중복 판정(type `identity.policy.{정책 키}`)과 같은 기준이다. 위 `notificationDefinitions` 는 분류·페이지가\n       걸려 있어 그것으로 거르면 다른 페이지의 정의가 빠진다. 운영자 정책 목록과 같은 한도(100건)로 한 번에 받는다."
+        },
+        {
+            "id": "adminIdentityPolicies",
+            "label_key": "$t:editor.data_source.adminIdentityPolicies",
+            "type": "api",
+            "endpoint": "/api/admin/identity/policies",
+            "method": "GET",
+            "if": "{{['identity', 'notification_definitions'].includes(query.tab || _global.activeSettingsTab || 'general')}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "source_type": "admin",
+                "per_page": 100
+            },
+            "fallback": {
+                "data": {
+                    "data": []
+                }
+            },
+            "comment": "관리자 화면용 인증 정책만 따로 받는다(기본 하위 탭과 알림 설정 탭의 「정책별 문구 추가」 창이 쓴다).\n       아래 `policies` 와 **같은 주소를 다른 조건으로** 부르는 것이라, 둘을 합치면 한쪽 필터가\n       다른 쪽 목록을 흔든다. 100건까지 한 번에 받아 페이지를 두지 않는다."
+        },
+        {
+            "id": "policies",
+            "label_key": "$t:editor.data_source.policies",
+            "type": "api",
+            "endpoint": "/api/admin/identity/policies",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'identity'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "scope": "{{query.scope}}",
+                "purpose": "{{query.purpose}}",
+                "source_type": "{{query.source_type}}",
+                "enabled": "{{query.enabled}}",
+                "search": "{{query.search}}",
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 10}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "meta": {}
+                }
+            },
+            "comment": "인증 정책 전체 목록(정책 하위 탭) — 위와 달리 화면에서 건 필터·페이지를 쿼리에서 읽는다."
+        },
+        {
+            "id": "sitemap_status",
+            "label_key": "$t:editor.data_source.sitemap_status",
+            "type": "api",
+            "endpoint": "/api/admin/seo/sitemap/status",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'seo'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "last_updated_at": null,
+                    "progress": null,
+                    "realtime_enabled": false
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "startInterval",
+                    "if": "{{response?.data?.data?.realtime_enabled !== true && ['queued','running','writing'].includes(response?.data?.data?.progress?.status ?? '')}}",
+                    "params": {
+                        "id": "sitemap_progress_poll",
+                        "intervalMs": 3000,
+                        "actions": [
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "sitemap_status"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "handler": "stopInterval",
+                    "if": "{{['completed','failed'].includes(response?.data?.data?.progress?.status ?? '')}}",
+                    "params": {
+                        "id": "sitemap_progress_poll"
+                    }
+                }
+            ],
+            "comment": "사이트맵 생성 상태. SEO 탭을 보고 있을 때만 부른다 — 다른 탭에서는 쓰지 않는 값이라 매번 조회하면 화면 진입만 느려진다"
+        },
+        {
+            "id": "sitemap_progress_ws",
+            "label_key": "$t:editor.data_source.sitemap_progress_ws",
+            "type": "websocket",
+            "channel": "core.admin.seo.sitemap",
+            "event": "sitemap.progress.updated",
+            "channel_type": "private",
+            "target_source": "sitemap_status",
+            "comment": "사이트맵 생성 진행률. 생성은 오래 걸려 응답을 기다릴 수 없으므로 웹소켓으로 진행 상황을 받아 위 상태 소스에 흘려 넣는다"
+        }
+    ],
+    "initLocal": {
+        "driverTestResults": {},
+        "editingDefinition": null,
+        "editingTemplate": null,
+        "editLang": "ko",
+        "previewData": null,
+        "isSaving": false,
+        "templateErrors": null,
+        "checkingCoreUpdate": false,
+        "coreUpdateInfo": null,
+        "coreChangelog": null,
+        "loadingChangelog": false,
+        "policyForm": null,
+        "policyErrors": null,
+        "policyIsNew": true,
+        "policyIsSaving": false
+    },
+    "computed": {
+        "isReadOnly": "{{_global.settingsAbilities?.can_update !== true}}",
+        "envLocked": "{{_local.form?._meta?.env_locked ?? null}}",
+        "errorsWithoutIpRules": "{{(function() { const e = _local.errors; if (!e || typeof e !== 'object') return e ?? null; const rest = Object.entries(e).filter(([k]) => !k.startsWith('security.ip_restriction_rules')); return rest.length > 0 ? Object.fromEntries(rest) : null; })()}}",
+        "ipRestrictionEnabled": "{{!!_local.form?.security?.ip_restriction_enabled && _local.form?.security?.ip_restriction_enabled !== '0' && _local.form?.security?.ip_restriction_enabled !== 'false'}}"
+    },
+    "permissions": [
+        "core.settings.read"
+    ],
+    "transition_overlay": {
+        "target": "settings_tab_content",
+        "fallback_target": "right_content_area",
+        "wait_for": [
+            "settings",
+            "systemInfo",
+            "appKey",
+            "notificationDefinitions",
+            "availableChannels",
+            "identityProviders",
+            "identityPurposes",
+            "identityPolicyDefinitions",
+            "adminIdentityPolicies",
+            "policies",
+            "language_packs",
+            "sitemap_status",
+            "staticCacheStatus",
+            "trustedProxy",
+            "privacyPreview",
+            "privacyManualRuns",
+            "passwordExpiryPreview",
+            "passwordExpiryManualRuns"
+        ]
+    },
+    "init_actions": [
+        {
+            "comment": "확장 목록 보기 방식(갤러리/목록) 복원 — 4화면이 같은 키를 공유한다.\n         저장값이 없거나 깨졌으면 갤러리다(기본 보기). GDPR 허용목록에 등재된 키라\n         functional 미동의 상태에서도 살아남는다.",
+            "handler": "loadFromLocalStorage",
+            "params": {
+                "key": "g7_view_mode_extensions",
+                "defaultValue": "gallery"
+            },
+            "resultTo": {
+                "target": "_global",
+                "key": "extensionViewMode"
             }
-          }
-            ]
-          },
-          {
-            "id": "settings_tab_content",
-            "type": "basic",
-            "name": "Div",
-            "children": [
-              {
-                "id": "validation_error",
+        },
+        {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "filterScope": "{{query.scope || ''}}",
+                "filterStatus": "{{query.status || ''}}",
+                "filterLocale": "{{query.locale || ''}}",
+                "filterSearch": "{{query.search || ''}}",
+                "filterTarget": "",
+                "scopeLocked": false,
+                "notificationDefinitionFilter": {
+                    "search": "{{query.search || ''}}",
+                    "searchType": "{{query.search_type || 'all'}}"
+                }
+            }
+        },
+        {
+            "comment": "주소의 탭 키가 아래 탭 바에 없으면(저장 묶음 이름 `notifications`·오래된 즐겨찾기 등) 탭 본문 게이트가 모두\n         거짓이라 본문이 통째로 빈다. 기본 탭으로 바꿔 연다 — 목록은 탭 바와 같아야 한다(회귀 테스트가 대조한다).",
+            "handler": "setState",
+            "if": "{{!!query.tab && !['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'info'].includes(query.tab)}}",
+            "params": {
+                "target": "global",
+                "activeSettingsTab": "general"
+            }
+        },
+        {
+            "comment": "audit:allow layout-list-context-navigate-merge-query 알 수 없는 탭 키 정정 — 그 탭의 목록 쿼리는 의미가 없어 물려받지 않는다(탭 전환과 같은 규칙).",
+            "handler": "navigate",
+            "if": "{{!!query.tab && !['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'info'].includes(query.tab)}}",
+            "params": {
+                "path": "/admin/settings",
+                "replace": true,
+                "query": {
+                    "tab": "general"
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "settings_content",
                 "type": "basic",
                 "name": "Div",
-                "if": "{{_local.errors}}",
+                "dataKey": "form",
+                "trackChanges": true,
                 "props": {
-                  "className": "alert-danger"
+                    "className": "admin-page-content-responsive"
                 },
                 "children": [
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                      "className": "flex gap-3"
-                    },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Icon",
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
                         "props": {
-                          "name": "triangle-exclamation",
-                          "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
-                        }
-                      },
-                      {
+                            "title": "$t:admin.settings.page_title"
+                        },
+                        "children": [
+                            {
+                                "id": "refresh_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "settings"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn-icon",
+                                    "aria-label": "$t:common.refresh",
+                                    "title": "$t:common.refresh"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "refresh",
+                                            "className": "text-xl"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "readonly_banner",
                         "type": "basic",
                         "name": "Div",
+                        "if": "{{!!_global.settingsAbilities && _global.settingsAbilities.can_update !== true}}",
+                        "props": {
+                            "className": "alert-warning"
+                        },
                         "children": [
-                          {
-                            "type": "basic",
-                            "name": "H3",
-                            "props": {
-                              "className": "text-error-strong"
-                            },
-                            "text": "$t:admin.settings.validation_error"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "P",
-                            "if": "{{typeof _local.errors === 'string'}}",
-                            "props": {
-                              "className": "text-error-soft mt-2"
-                            },
-                            "text": "{{_local.errors}}"
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Ul",
-                            "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
-                            "props": {
-                              "className": "mt-2 list-disc list-inside space-y-1"
-                            },
-                            "iteration": {
-                              "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
-                              "item_var": "message"
-                            },
-                            "children": [
-                              {
+                            {
                                 "type": "basic",
-                                "name": "Li",
+                                "name": "Div",
                                 "props": {
-                                  "className": "text-error-soft"
+                                    "className": "flex-center gap-3"
                                 },
-                                "text": "{{message}}"
-                              }
-                            ]
-                          }
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "lock",
+                                            "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-warning-soft"
+                                        },
+                                        "text": "$t:admin.settings.readonly_notice"
+                                    }
+                                ]
+                            }
                         ]
-                      }
-                    ]
-                  }
+                    },
+                    {
+                        "id": "env_priority_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.form?._meta?.env_priority_enabled === true}}",
+                        "props": {
+                            "className": "alert-info"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "lock",
+                                            "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-info-soft"
+                                        },
+                                        "text": "$t:admin.settings.env_locked_notice"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "sticky_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "sticky-tab-nav-responsive"
+                        },
+                        "children": [
+                            {
+                                "id": "tab_navigation",
+                                "type": "composite",
+                                "name": "TabNavigation",
+                                "actions": [
+                                    {
+                                        "comment": "저장하지 않은 변경이 있으면 바로 옮기지 않고 확인 창을 연다 — 저장은 지금 탭의 구획만 보내고,\n                 탭을 옮기면 설정을 다시 받아 고친 값이 저장된 값으로 돌아가기 때문이다(말없이 사라지지 않게)",
+                                        "type": "change",
+                                        "event": "onTabChange",
+                                        "handler": "conditions",
+                                        "conditions": [
+                                            {
+                                                "if": "{{_local.hasChanges === true && $args[0] !== (_global.activeSettingsTab || query.tab || 'general')}}",
+                                                "then": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "pendingSettingsTab": "{{$args[0]}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "modal_settings_unsaved_tab"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "then": {
+                                                    "comment": "탭 전환 — 검증 오류를 **먼저 지운다**(다른 탭의 오류가 새 탭 머리에 남아 있으면\n                     그 탭이 잘못된 것으로 읽힌다). 전역과 URL 둘 다에 탭을 남기는 이유는, 전역은 소스의\n                     `if` 판정이 즉시 읽고 URL 은 새로고침·링크 공유를 위해 필요하기 때문이다.",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "errors": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "activeSettingsTab": "{{$args[0]}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
+                                                            "handler": "navigate",
+                                                            "params": {
+                                                                "path": "/admin/settings",
+                                                                "replace": true,
+                                                                "query": {
+                                                                    "tab": "{{$args[0]}}"
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "className": "sticky-tab-nav-responsive",
+                                    "activeTabId": "{{_global.activeSettingsTab || query.tab || 'general'}}",
+                                    "variant": "default",
+                                    "tabs": [
+                                        {
+                                            "id": "general",
+                                            "label": "$t:admin.settings.tabs.general"
+                                        },
+                                        {
+                                            "id": "mail",
+                                            "label": "$t:admin.settings.tabs.mail"
+                                        },
+                                        {
+                                            "id": "upload",
+                                            "label": "$t:admin.settings.tabs.upload"
+                                        },
+                                        {
+                                            "id": "seo",
+                                            "label": "$t:admin.settings.tabs.seo"
+                                        },
+                                        {
+                                            "id": "security",
+                                            "label": "$t:admin.settings.tabs.security"
+                                        },
+                                        {
+                                            "id": "drivers",
+                                            "label": "$t:admin.settings.tabs.drivers"
+                                        },
+                                        {
+                                            "id": "advanced",
+                                            "label": "$t:admin.settings.tabs.advanced"
+                                        },
+                                        {
+                                            "id": "notification_definitions",
+                                            "label": "$t:admin.settings.tabs.notification_definitions"
+                                        },
+                                        {
+                                            "id": "language_packs",
+                                            "label": "$t:admin.settings.tabs.language_packs"
+                                        },
+                                        {
+                                            "id": "identity",
+                                            "label": "$t:admin.settings.tabs.identity"
+                                        },
+                                        {
+                                            "id": "privacy",
+                                            "label": "$t:admin.settings.tabs.privacy"
+                                        },
+                                        {
+                                            "id": "info",
+                                            "label": "$t:admin.settings.tabs.info"
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "id": "identity_sub_tab_navigation",
+                                "type": "composite",
+                                "name": "TabNavigationScroll",
+                                "if": "{{(_global.activeSettingsTab || query.tab) === 'identity'}}",
+                                "props": {
+                                    "className": "sub-tab-nav",
+                                    "sectionIdPrefix": "identity_section_",
+                                    "enableScrollSpy": true,
+                                    "scrollContainerId": "right_content_area",
+                                    "scrollSpyOffset": 180,
+                                    "scrollOffset": 180,
+                                    "tabs": [
+                                        {
+                                            "id": "basic",
+                                            "label": "$t:admin.settings.identity.sub_tabs.basic"
+                                        },
+                                        {
+                                            "id": "providers",
+                                            "label": "$t:admin.settings.identity.sub_tabs.providers"
+                                        },
+                                        {
+                                            "id": "policies",
+                                            "label": "$t:admin.settings.identity.sub_tabs.policies"
+                                        },
+                                        {
+                                            "id": "messages",
+                                            "label": "$t:admin.settings.identity.sub_tabs.messages"
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "settings_tab_content",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "tab-content"
+                        },
+                        "children": [
+                            {
+                                "id": "validation_error",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{_local.errors}}",
+                                "props": {
+                                    "className": "alert-danger"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "triangle-exclamation",
+                                                    "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "H3",
+                                                        "props": {
+                                                            "className": "text-error-strong"
+                                                        },
+                                                        "text": "$t:admin.settings.validation_error"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{typeof _local.errors === 'string'}}",
+                                                        "props": {
+                                                            "className": "text-error-soft mt-2"
+                                                        },
+                                                        "text": "{{_local.errors}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Ul",
+                                                        "if": "{{typeof _local.errors === 'object' && Object.keys(_local.errors).length > 0}}",
+                                                        "iteration": {
+                                                            "source": "Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])",
+                                                            "item_var": "message"
+                                                        },
+                                                        "props": {
+                                                            "className": "mt-2 list-disc list-inside space-y-1"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Li",
+                                                                "props": {
+                                                                    "className": "text-error-soft"
+                                                                },
+                                                                "text": "{{message}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "partial": "partials/admin_settings/_tab_general.json"
+                            },
+                            {
+                                "partial": "partials/admin_settings/_tab_mail.json"
+                            },
+                            {
+                                "partial": "partials/admin_settings/_tab_upload.json"
+                            },
+                            {
+                                "partial": "partials/admin_settings/_tab_seo.json"
+                            },
+                            {
+                                "partial": "partials/admin_settings/_tab_security.json"
+                            },
+                            {
+                                "partial": "partials/admin_settings/_tab_drivers.json"
+                            },
+                            {
+                                "partial": "partials/admin_settings/_tab_advanced.json"
+                            },
+                            {
+                                "partial": "partials/admin_settings/_tab_notification_definitions.json"
+                            },
+                            {
+                                "partial": "partials/admin_settings/_tab_language_packs.json"
+                            },
+                            {
+                                "partial": "partials/admin_settings/_tab_identity.json"
+                            },
+                            {
+                                "partial": "partials/admin_settings/_tab_privacy.json"
+                            },
+                            {
+                                "partial": "partials/admin_settings/_tab_info.json"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "footer_buttons",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{!_computed.isReadOnly && (_global.activeSettingsTab || query.tab || 'general') !== 'info' && (_global.activeSettingsTab || query.tab || 'general') !== 'language_packs'}}",
+                        "props": {
+                            "className": "sticky-footer-buttons"
+                        },
+                        "children": [
+                            {
+                                "id": "cancel_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "settings"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "className": "btn btn-secondary"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.cancel"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "save_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "저장 — **지금 보고 있는 탭 몫만** 잘라 보낸다(한꺼번에 보내면 안 본 탭까지 덮어쓴다).\n                 알림 정의 탭만 예외로 다른 이름(`notifications`)의 묶음을 만든다 — 탭 이름과 저장 키가\n                 다른 유일한 자리다.\n                 맨 앞의 이벤트들은 아직 올라가지 않은 파일을 먼저 올리라는 신호다(일반 탭 로고, SEO 탭 기본 공유 이미지) —\n                 각 업로더가 받아 처리하므로 여기서 파일을 다루지 않는다. 「저장할 때 올리는」 업로더(autoUpload=false)를\n                 새로 붙이면 그 신호를 여기 함께 보내야 한다 — 빠뜨리면 새 파일을 골라 저장해도 업로드 요청이 0건이고\n                 오류 표시도 없다(#639 ⑨, 기본 공유 이미지가 그랬다).\n                 성공 뒤 설정을 다시 받는 것은 서버가 정규화한 값으로 폼을 되맞추기 위함이다.\n                 개인정보 탭이면 대상 건수도 다시 받는다 — 저장한 기간으로 센 숫자가 즉시 보여야 방금 켠 기능이\n                 처리할 규모를 옛 숫자로 오독하지 않는다(#636 브라우저 실측으로 잡은 결함, 이커머스 탭과 같은 방식).\n                 알림 설정 탭에서 메일 채널을 켜짐 → 꺼짐으로 바꿔 저장하면 바로 저장하지 않고 확인 창을 띄운다 —\n                 본인인증·관리자 2단계 인증 메일도 이 토글을 따라 멈추기 때문이다(TOTP 미등록 관리자는 로그인 불가).\n                 창은 이 화면 상태를 못 읽으므로 저장할 채널 목록을 전역에 담아 넘긴다. 그 밖의 저장은 그대로다.\n                 보안 탭이면 비밀번호 만료 대상 건수를 다시 받는다 — 만료를 켜고 저장하면 시작일·건수·「지금 실행」 잠금이 저장값으로 바뀐다(#736).",
+                                        "type": "click",
+                                        "handler": "switch",
+                                        "params": {
+                                            "value": "{{((_global.activeSettingsTab || query.tab) === 'notification_definitions' && (settings?.data?.notifications?.channels ?? []).find(c => c.id === 'mail')?.is_active !== false && (_local.form?.notifications?.channels ?? []).find(c => c.id === 'mail')?.is_active === false) ? 'confirm_mail_off' : 'save'}}"
+                                        },
+                                        "cases": {
+                                            "confirm_mail_off": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "notification_channel_off_modal": {
+                                                                "channels": "{{_local.form?.notifications?.channels ?? []}}",
+                                                                "isSaving": false
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "modal_notification_channel_off_confirm"
+                                                    }
+                                                ]
+                                            },
+                                            "save": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "emitEvent",
+                                                        "params": {
+                                                            "event": "upload:site_logo"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "emitEvent",
+                                                        "params": {
+                                                            "event": "upload:og_image_default"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": true,
+                                                            "errors": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "target": "/api/admin/settings",
+                                                        "auth_required": true,
+                                                        "params": {
+                                                            "method": "POST",
+                                                            "body": "{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: tab, [tab]: form[tab] || {} }; })()}}"
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isSaving": false,
+                                                                    "hasChanges": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "settings": "{{result.data.settings}}",
+                                                                    "uploadSettings": "{{result.data.settings.upload}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "success",
+                                                                    "message": "$t:admin.settings.save_success"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "settings"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "if": "{{(_global.activeSettingsTab || query.tab) === 'privacy'}}",
+                                                                "params": {
+                                                                    "dataSourceId": "privacyPreview"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "if": "{{(_global.activeSettingsTab || query.tab) === 'security'}}",
+                                                                "params": {
+                                                                    "dataSourceId": "passwordExpiryPreview"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isSaving": false,
+                                                                    "errors": "{{error.errors}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message ?? '$t:admin.settings.save_error'}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "disabled": "{{!_local.hasChanges || _local.isSaving || ((_global.activeSettingsTab || query.tab) === 'drivers' && (((_local.form?.drivers?.storage_driver === 's3' || _local.form?.drivers?.public_asset_disk === 's3') && !_local.driverTestResults?.s3?.success && ((_local.form?.drivers?.storage_driver || '') !== (_local.originalDrivers?.storage_driver || '') || (_local.form?.drivers?.s3_bucket || '') !== (_local.originalDrivers?.s3_bucket || '') || (_local.form?.drivers?.s3_region || '') !== (_local.originalDrivers?.s3_region || '') || (_local.form?.drivers?.s3_access_key || '') !== (_local.originalDrivers?.s3_access_key || '') || (_local.form?.drivers?.s3_secret_key || '') !== (_local.originalDrivers?.s3_secret_key || '') || (_local.form?.drivers?.s3_endpoint || '') !== (_local.originalDrivers?.s3_endpoint || '') || Boolean(_local.form?.drivers?.s3_use_path_style) !== Boolean(_local.originalDrivers?.s3_use_path_style))) || (_local.form?.drivers?.cache_driver === 'redis' && !_local.driverTestResults?.redis?.success && ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.cache_driver === 'memcached' && !_local.driverTestResults?.memcached?.success && ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.memcached_host || '') !== (_local.originalDrivers?.memcached_host || '') || String(_local.form?.drivers?.memcached_port ?? '') !== String(_local.originalDrivers?.memcached_port ?? ''))) || (_local.form?.drivers?.session_driver === 'redis' && !_local.driverTestResults?.redis?.success && ((_local.form?.drivers?.session_driver || '') !== (_local.originalDrivers?.session_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.queue_driver === 'redis' && !_local.driverTestResults?.redis?.success && ((_local.form?.drivers?.queue_driver || '') !== (_local.originalDrivers?.queue_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.websocket_enabled && !_local.driverTestResults?.websocket?.success && (Boolean(_local.form?.drivers?.websocket_enabled) !== Boolean(_local.originalDrivers?.websocket_enabled) || (_local.form?.drivers?.websocket_host || '') !== (_local.originalDrivers?.websocket_host || '') || String(_local.form?.drivers?.websocket_port ?? '') !== String(_local.originalDrivers?.websocket_port ?? '') || (_local.form?.drivers?.websocket_scheme || '') !== (_local.originalDrivers?.websocket_scheme || '')))))}}",
+                                    "className": "btn btn-primary flex-center gap-1.5"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{_local.isSaving}}",
+                                        "props": {
+                                            "name": "spinner",
+                                            "className": "spinner-sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!_local.isSaving}}",
+                                        "text": "$t:common.save"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{_local.isSaving}}",
+                                        "text": "$t:common.saving"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
                 ]
-              },
-              {
-                "partial": "partials/admin_settings/_tab_general.json"
-              },
-              {
-                "partial": "partials/admin_settings/_tab_mail.json"
-              },
-              {
-                "partial": "partials/admin_settings/_tab_upload.json"
-              },
-              {
-                "partial": "partials/admin_settings/_tab_seo.json"
-              },
-              {
-                "partial": "partials/admin_settings/_tab_security.json"
-              },
-              {
-                "partial": "partials/admin_settings/_tab_drivers.json"
-              },
-              {
-                "partial": "partials/admin_settings/_tab_advanced.json"
-              },
-              {
-                "partial": "partials/admin_settings/_tab_notification_definitions.json"
-              },
-              {
-                "partial": "partials/admin_settings/_tab_language_packs.json"
-              },
-              {
-                "partial": "partials/admin_settings/_tab_identity.json"
-              },
-              {
-                "partial": "partials/admin_settings/_tab_info.json"
-              }
-            ],
-            "props": {
-              "className": "tab-content"
             }
-          },
-          {
-            "id": "footer_buttons",
-            "type": "basic",
-            "name": "Div",
-            "if": "{{!_computed.isReadOnly && (_global.activeSettingsTab || query.tab || 'general') !== 'info' && (_global.activeSettingsTab || query.tab || 'general') !== 'language_packs'}}",
-            "props": {
-              "className": "sticky-footer-buttons"
-            },
-            "children": [
-              {
-                "id": "cancel_button",
-                "type": "basic",
-                "name": "Button",
-                "props": {
-                  "className": "btn btn-secondary"
-                },
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "refetchDataSource",
-                    "params": {
-                      "dataSourceId": "settings"
-                    }
-                  }
-                ],
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "text": "$t:common.cancel"
-                  }
-                ]
-              },
-              {
-                "id": "save_button",
-                "type": "basic",
-                "name": "Button",
-                "props": {
-                  "disabled": "{{!_local.hasChanges || _local.isSaving || ((_global.activeSettingsTab || query.tab) === 'drivers' && (((_local.form?.drivers?.storage_driver === 's3' || _local.form?.drivers?.public_asset_disk === 's3') && !_local.driverTestResults?.s3?.success && ((_local.form?.drivers?.storage_driver || '') !== (_local.originalDrivers?.storage_driver || '') || (_local.form?.drivers?.s3_bucket || '') !== (_local.originalDrivers?.s3_bucket || '') || (_local.form?.drivers?.s3_region || '') !== (_local.originalDrivers?.s3_region || '') || (_local.form?.drivers?.s3_access_key || '') !== (_local.originalDrivers?.s3_access_key || '') || (_local.form?.drivers?.s3_secret_key || '') !== (_local.originalDrivers?.s3_secret_key || '') || (_local.form?.drivers?.s3_endpoint || '') !== (_local.originalDrivers?.s3_endpoint || '') || Boolean(_local.form?.drivers?.s3_use_path_style) !== Boolean(_local.originalDrivers?.s3_use_path_style))) || (_local.form?.drivers?.cache_driver === 'redis' && !_local.driverTestResults?.redis?.success && ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.cache_driver === 'memcached' && !_local.driverTestResults?.memcached?.success && ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.memcached_host || '') !== (_local.originalDrivers?.memcached_host || '') || String(_local.form?.drivers?.memcached_port ?? '') !== String(_local.originalDrivers?.memcached_port ?? ''))) || (_local.form?.drivers?.session_driver === 'redis' && !_local.driverTestResults?.redis?.success && ((_local.form?.drivers?.session_driver || '') !== (_local.originalDrivers?.session_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.queue_driver === 'redis' && !_local.driverTestResults?.redis?.success && ((_local.form?.drivers?.queue_driver || '') !== (_local.originalDrivers?.queue_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.websocket_enabled && !_local.driverTestResults?.websocket?.success && (Boolean(_local.form?.drivers?.websocket_enabled) !== Boolean(_local.originalDrivers?.websocket_enabled) || (_local.form?.drivers?.websocket_host || '') !== (_local.originalDrivers?.websocket_host || '') || String(_local.form?.drivers?.websocket_port ?? '') !== String(_local.originalDrivers?.websocket_port ?? '') || (_local.form?.drivers?.websocket_scheme || '') !== (_local.originalDrivers?.websocket_scheme || '')))))}}",
-                  "className": "btn btn-primary flex-center gap-1.5"
-                },
-                "actions": [
-                  {
-                    "type": "click",
-                    "handler": "sequence",
-                    "params": {
-                      "actions": [
-                        {
-                          "handler": "emitEvent",
-                          "params": {
-                            "event": "upload:site_logo"
-                          }
-                        },
-                        {
-                          "handler": "setState",
-                          "params": {
-                            "target": "local",
-                            "isSaving": true,
-                            "errors": null
-                          }
-                        },
-                        {
-                          "handler": "apiCall",
-                          "auth_required": true,
-                          "target": "/api/admin/settings",
-                          "params": {
-                            "method": "POST",
-                            "body": "{{(function() { const tab = _global.activeSettingsTab || query.tab || 'general'; const form = _local.form || {}; if (tab === 'notification_definitions') { return { _tab: 'notifications', notifications: { channels: form.notifications?.channels || [] } }; } return { _tab: tab, [tab]: form[tab] || {} }; })()}}"
-                          },
-                          "onSuccess": [
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "isSaving": false,
-                                "hasChanges": false
-                              }
-                            },
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "global",
-                                "settings": "{{result.data.settings}}",
-                                "uploadSettings": "{{result.data.settings.upload}}"
-                              }
-                            },
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "success",
-                                "message": "$t:admin.settings.save_success"
-                              }
-                            },
-                            {
-                              "handler": "refetchDataSource",
-                              "params": {
-                                "dataSourceId": "settings"
-                              }
-                            }
-                          ],
-                          "onError": [
-                            {
-                              "handler": "setState",
-                              "params": {
-                                "target": "local",
-                                "isSaving": false,
-                                "errors": "{{error.errors}}"
-                              }
-                            },
-                            {
-                              "handler": "toast",
-                              "params": {
-                                "type": "error",
-                                "message": "{{error.message ?? '$t:admin.settings.save_error'}}"
-                              }
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  }
-                ],
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Icon",
-                    "if": "{{_local.isSaving}}",
-                    "props": {
-                      "name": "spinner",
-                      "className": "spinner-sm"
-                    }
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "if": "{{!_local.isSaving}}",
-                    "text": "$t:common.save"
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "if": "{{_local.isSaving}}",
-                    "text": "$t:common.saving"
-                  }
-                ]
-              }
-            ]
-          }
         ]
-      }
-    ]
-  },
-  "modals": [
-    {
-      "partial": "partials/admin_language_pack_list/_modal_install.json"
     },
-    {
-      "partial": "partials/admin_language_pack_list/_modal_install_bundled.json"
-    },
-    {
-      "partial": "partials/admin_language_pack_list/_modal_detail.json"
-    },
-    {
-      "partial": "partials/admin_language_pack_list/_modal_update.json"
-    },
-    {
-      "partial": "partials/admin_language_pack_list/_modal_uninstall.json"
-    },
-    {
-      "partial": "partials/admin_language_pack_list/_modal_refresh_cache.json"
-    },
-    {
-      "partial": "partials/admin_language_pack_list/_drawer_manifest_preview.json"
-    },
-    {
-      "partial": "partials/admin_settings/_modal_password_confirm.json"
-    },
-    {
-      "partial": "partials/admin_settings/_modal_cache_delete.json"
-    },
-    {
-      "partial": "partials/admin_settings/_modal_static_cache_republish.json"
-    },
-    {
-      "partial": "partials/admin_settings/_modal_notification_template_form.json"
-    },
-    {
-      "partial": "partials/admin_settings/_modal_notification_template_preview.json"
-    },
-    {
-      "partial": "partials/admin_settings/_modal_notification_definition_reset.json"
-    },
-    {
-      "partial": "partials/admin_settings/_modal_core_update_result.json"
-    },
-    {
-      "partial": "partials/admin_settings/_modal_core_changelog.json"
-    },
-    {
-      "partial": "partials/admin_settings/_modal_core_update_guide.json"
-    },
-    {
-      "partial": "partials/admin_settings/_modal_identity_policy_form.json"
-    },
-    {
-      "partial": "partials/admin_settings/_modal_identity_policy_delete.json"
-    },
-    {
-      "partial": "partials/admin_settings/_modal_identity_message_template_form.json"
-    },
-    {
-      "partial": "partials/admin_settings/_modal_identity_message_template_preview.json"
-    },
-    {
-      "partial": "partials/admin_settings/_modal_identity_message_definition_add.json"
-    },
-    {
-      "partial": "partials/admin_settings/_modal_identity_message_definition_delete.json"
-    },
-    {
-      "partial": "partials/admin_settings/_modal_identity_message_definition_reset.json"
-    }
-  ],
-  "initLocal": {
-    "driverTestResults": {},
-    "editingDefinition": null,
-    "editingTemplate": null,
-    "editLang": "ko",
-    "previewData": null,
-    "isSaving": false,
-    "templateErrors": null,
-    "checkingCoreUpdate": false,
-    "coreUpdateInfo": null,
-    "coreChangelog": null,
-    "loadingChangelog": false,
-    "policyForm": null,
-    "policyErrors": null,
-    "policyIsNew": true,
-    "policyIsSaving": false
-  },
-  "init_actions": [
-    {
-      "handler": "setState",
-      "params": {
-        "target": "local",
-        "notificationDefinitionFilter": {
-          "search": "{{query.search || ''}}",
-          "searchType": "{{query.search_type || 'all'}}"
+    "modals": [
+        {
+            "comment": "언어팩 설치 창.\n       여기부터 여덟은 **언어팩 관리 화면 소유 조각을 그대로 빌려 온 것**이다 — 언어팩 탭이 그 화면의\n       목록 조각을 쓰므로 창도 같은 것이어야 동작이 이어진다(사본을 두면 한쪽만 고쳐져 갈린다).",
+            "partial": "partials/admin_language_pack_list/_modal_install.json"
         },
-        "filterScope": "{{query.scope || ''}}",
-        "filterStatus": "{{query.status || ''}}",
-        "filterLocale": "{{query.locale || ''}}",
-        "filterSearch": "{{query.search || ''}}",
-        "filterTarget": "",
-        "scopeLocked": false
-      }
-    }
-  ]
+        {
+            "comment": "번들 언어팩 설치 창.",
+            "partial": "partials/admin_language_pack_list/_modal_install_bundled.json"
+        },
+        {
+            "comment": "언어팩 상세 창.",
+            "partial": "partials/admin_language_pack_list/_modal_detail.json"
+        },
+        {
+            "comment": "언어팩 업데이트 확인 창.",
+            "partial": "partials/admin_language_pack_list/_modal_update.json"
+        },
+        {
+            "comment": "언어팩 삭제 확인 창.",
+            "partial": "partials/admin_language_pack_list/_modal_uninstall.json"
+        },
+        {
+            "comment": "번역 캐시 다시 굽기 확인 창.",
+            "partial": "partials/admin_language_pack_list/_modal_refresh_cache.json"
+        },
+        {
+            "comment": "같은 로케일 자리를 두 언어팩이 다툴 때 어느 쪽을 쓸지 고르는 창. 목록 조각의 스위치가 409 에서 이 창을\n       여는데 여기만 빠져 있어, 이 탭에서는 충돌 때 아무 창도 뜨지 않았다(#703 실측).",
+            "partial": "partials/admin_language_pack_list/_modal_slot_conflict.json"
+        },
+        {
+            "comment": "언어팩 매니페스트 원문 서랍.",
+            "partial": "partials/admin_language_pack_list/_drawer_manifest_preview.json"
+        },
+        {
+            "comment": "비밀번호 재확인 창 — 민감한 값(앱 키 등)을 보거나 바꾸기 전에 본인을 다시 묻는다.",
+            "partial": "partials/admin_settings/_modal_password_confirm.json"
+        },
+        {
+            "comment": "캐시 비우기 확인 창(고급 탭).",
+            "partial": "partials/admin_settings/_modal_cache_delete.json"
+        },
+        {
+            "comment": "초기 화면 정적 파일 재게시 확인 창 — 전체 재생성이라 누르기 전에 한 번 묻는다.",
+            "partial": "partials/admin_settings/_modal_static_cache_republish.json"
+        },
+        {
+            "comment": "알림 템플릿 편집 창 — 정의 하나의 채널별 본문을 고친다.",
+            "partial": "partials/admin_settings/_modal_notification_template_form.json"
+        },
+        {
+            "comment": "알림 템플릿 미리보기 창 — 치환값을 넣어 실제 발송 모습을 보여 준다.",
+            "partial": "partials/admin_settings/_modal_notification_template_preview.json"
+        },
+        {
+            "comment": "알림 정의를 기본값으로 되돌리는 확인 창(고친 내용이 사라진다).",
+            "partial": "partials/admin_settings/_modal_notification_definition_reset.json"
+        },
+        {
+            "comment": "본인인증 정책별 문구 추가 창(알림 설정 > 분류 「본인인증」) — 운영자 정책에 전용 문구를 붙인다.",
+            "partial": "partials/admin_settings/_modal_notification_identity_definition_add.json"
+        },
+        {
+            "comment": "본인인증 정책별 문구 삭제 확인 창(위에서 추가한 문구를 되돌리는 짝이다).",
+            "partial": "partials/admin_settings/_modal_notification_identity_definition_delete.json"
+        },
+        {
+            "comment": "메일 채널 끄기 확인 창 — 본인인증·2단계 인증 메일도 멈춘다는 경고를 보이고 저장 여부를 묻는다.",
+            "partial": "partials/admin_settings/_modal_notification_channel_off_confirm.json"
+        },
+        {
+            "comment": "코어 업데이트 결과 창 — 실행 뒤 성공/실패와 로그를 보여 준다.",
+            "partial": "partials/admin_settings/_modal_core_update_result.json"
+        },
+        {
+            "comment": "코어 변경 이력 창 — 업데이트 전에 무엇이 바뀌는지 확인하는 자리다.",
+            "partial": "partials/admin_settings/_modal_core_changelog.json"
+        },
+        {
+            "comment": "코어 업데이트 안내 창. **확장 화면 셋(모듈·플러그인·템플릿)이 이 조각을 함께 쓴다** —\n       자동 비활성 배너의 안내 링크가 여는 것이 이것이다.",
+            "partial": "partials/admin_settings/_modal_core_update_guide.json"
+        },
+        {
+            "comment": "IP 접근 제한 규칙 추가·편집 겸용 창(보안 탭) — 서버에 저장하지 않고 설정 폼의 규칙 배열만 고친다.",
+            "partial": "partials/admin_settings/_modal_ip_restriction_rule_form.json"
+        },
+        {
+            "comment": "인증 정책 등록·수정 겸용 창.",
+            "partial": "partials/admin_settings/_modal_identity_policy_form.json"
+        },
+        {
+            "comment": "인증 정책 삭제 확인 창.",
+            "partial": "partials/admin_settings/_modal_identity_policy_delete.json"
+        },
+        {
+            "comment": "개인정보 조치 대상 명단 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다.",
+            "partial": "partials/admin_settings/_modal_privacy_targets.json"
+        },
+        {
+            "comment": "개인정보 조치 직권 실행 확인 창(개인정보 탭) — 탈퇴 잔여정보 파기와 휴면 네 단계가 함께 쓴다.",
+            "partial": "partials/admin_settings/_modal_privacy_run.json"
+        },
+        {
+            "comment": "비밀번호 만료 직권 실행 확인 창(보안 탭) — 사전 안내·만료 처리 두 단계가 함께 쓴다. 명단 창은 위 개인정보 명단 창을 돌려 쓴다.",
+            "partial": "partials/admin_settings/_modal_password_expiry_run.json"
+        },
+        {
+            "comment": "저장하지 않은 변경이 있을 때 탭 전환 확인 창 — 탭 전환은 설정을 다시 받아 고친 값을 저장된 값으로 되돌린다",
+            "partial": "partials/admin_settings/_modal_unsaved_tab_switch.json"
+        }
+    ]
 }

@@ -1,0 +1,125 @@
+<!-- 목록에 없는 모듈을 들이는 창 — 압축 파일 업로드와 GitHub 주소 두 갈래를 탭으로 가른다.
+  **탭 하나가 주소·전송 형식·요청 본문 셋을 함께 정한다**(아래 설치 버튼) — 갈래마다 API 가 다르다.
+  오류를 두 단으로 보여 준다. 위쪽 붉은 상자는 전체 메시지, 각 입력칸 아래는 그 필드 오류다.
+  탭을 옮기거나 값을 고치면 오류를 지운다 — 다른 갈래의 실패가 남아 있으면 이번 입력의 문제로 읽힌다.
+  설치 창(`_modal_install`)과 달리 의존·언어팩을 고르는 자리가 없다(무엇이 들었는지 아직 모른다). -->
+<partial description="모듈 수동 설치 모달" editor_label="$t:admin.modal_label.admin_module_list.module_manual_install_modal">
+  <modal data-type="composite" data-ref="module_manual_install_modal" title="$t:admin.modules.modals.manual_install_title" size="medium">
+    <p class="text-secondary mb-4">$t:admin.modules.modals.manual_install_description</p>
+    <div class="mb-4">
+      <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-md">
+        <on event="onClick">
+          <open-modal target="module_manifest_preview_drawer"/>
+        </on>
+        <icon name="fas fa-eye" size="sm"/>
+        <span>$t:admin.modules.actions.preview_manifest</span>
+      </button>
+    </div>
+    <div data-if="{{_global.moduleInstallError}}" class="alert-danger">
+      <div class="form-error-xs">
+        <icon name="triangle-exclamation" class="text-red-500 mt-0.5" size="sm"/>
+        <div>
+          <p class="text-error-strong">{{_global.moduleInstallError}}</p>
+          <p data-if="{{_global.moduleInstallErrors?.error}}" class="text-error-soft mt-1 whitespace-pre-line">{{_global.moduleInstallErrors.error}}</p>
+        </div>
+      </div>
+    </div>
+    <tab-navigation data-type="composite" data-ref="module_install_tabs" activeTabId="{{_global.moduleInstallTab || 'file_upload'}}" variant="underline">
+      <prop name="tabs">
+        <item id="file_upload" label="$t:admin.modules.tabs.file_upload" iconName="upload"/>
+        <item id="github" label="$t:admin.modules.tabs.github" iconName="code-branch"/>
+      </prop>
+      <on type="change" event="onTabChange">
+        <!-- 갈래 전환 — 오류를 함께 지운다(다른 갈래의 실패를 끌고 가지 않는다).
+             입력값은 지우지 않아 탭을 오가도 고른 파일·주소가 남는다. -->
+        <set-state target="global" moduleInstallTab="{{$args[0]}}" :moduleInstallError="null" :moduleInstallErrors="null"/>
+      </on>
+    </tab-navigation>
+    <div data-ref="module_file_upload_tab" data-if="{{!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload'}}" class="mt-4 space-y-4">
+      <div>
+        <label class="form-label">$t:admin.modules.tabs.file_label</label>
+        <file-input accept=".zip" class="{{_global.moduleInstallErrors?.file ? 'w-full border-red-500 dark:border-red-500' : 'w-full'}}" buttonText="$t:common.browse" placeholder="$t:admin.modules.tabs.no_file_selected">
+          <on type="change">
+            <!-- 파일 선택 — 객체와 이름을 나눠 담는다(이름은 표시용, 객체는 요청 본문용).
+                 새 파일을 고르는 것은 지난 실패를 지우는 신호이기도 하다. -->
+            <set-state target="global" moduleUploadFile="{{$event.target.value}}" moduleUploadFileName="{{$event.target.value?.name}}" :moduleInstallError="null" :moduleInstallErrors="null"/>
+          </on>
+        </file-input>
+        <span data-if="{{_global.moduleInstallErrors?.file}}" class="form-error-xs mt-1">{{Array.isArray(_global.moduleInstallErrors?.file) ? _global.moduleInstallErrors.file[0] : _global.moduleInstallErrors?.file}}</span>
+      </div>
+      <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+        <div class="flex-start gap-2">
+          <icon name="info-circle" class="text-blue-500 mt-0.5" size="sm"/>
+          <div>
+            <p class="text-info-soft">$t:admin.modules.tabs.file_requirements</p>
+            <p class="mt-1 text-sm font-mono text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block">module.json</p>
+            <p class="mt-1 text-info-soft">$t:admin.modules.tabs.file_structure_hint</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="module_github_tab" data-if="{{_global.moduleInstallTab === 'github'}}" class="mt-4 space-y-4">
+      <div>
+        <label class="form-label">$t:admin.modules.tabs.github_url_label</label>
+        <input type="url" placeholder="https://github.com/username/module-name" value="{{_global.moduleGithubUrl ?? ''}}" class="input {{_global.moduleInstallErrors?.github_url ? 'input-error' : ''}}">
+          <on type="change">
+            <!-- 저장소 주소 입력 — 파일 선택과 같은 이유로 지난 오류를 함께 지운다. -->
+            <set-state target="global" moduleGithubUrl="{{$event.target.value}}" :moduleInstallError="null" :moduleInstallErrors="null"/>
+          </on>
+        </input>
+        <span data-if="{{_global.moduleInstallErrors?.github_url}}" class="form-error-xs mt-1">{{Array.isArray(_global.moduleInstallErrors?.github_url) ? _global.moduleInstallErrors.github_url[0] : _global.moduleInstallErrors?.github_url}}</span>
+        <p class="text-tertiary">$t:admin.modules.tabs.github_url_hint</p>
+      </div>
+      <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+        <div class="flex-start gap-2">
+          <icon name="info-circle" class="text-blue-500 mt-0.5" size="sm"/>
+          <div>
+            <p class="text-info-soft">$t:admin.modules.tabs.github_requirements</p>
+            <p class="mt-1 text-sm font-mono text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-1 rounded inline-block">module.json</p>
+            <p class="mt-1 text-info-soft">$t:admin.modules.tabs.github_public_only</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isModuleManualInstalling}}">
+        <on type="click">
+          <!-- 취소 — 입력·오류·탭을 처음 상태로 되돌린다. 창을 다시 열었을 때 지난번 파일이
+               남아 있으면 실수로 그것을 설치하게 된다. -->
+          <sequence>
+            <set-state target="global" :moduleUploadFile="null" :moduleUploadFileName="null" :moduleGithubUrl="null" :moduleInstallError="null" :moduleInstallErrors="null" moduleInstallTab="file_upload"/>
+            <close-modal/>
+          </sequence>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isModuleManualInstalling || ((!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? !_global.moduleUploadFile : !_global.moduleGithubUrl)}}">
+        <on type="click">
+          <!-- 설치 실행 — 갈래에 따라 주소·전송 형식·본문이 함께 갈린다(파일은 multipart, 주소는 JSON).
+               성공 시 입력을 전부 비우고 목록·메뉴·확장 번들을 갱신한다.
+               실패는 토스트가 아니라 **창 안에 남긴다** — 입력을 고쳐 바로 다시 시도하는 자리라
+               창을 닫아 버리면 처음부터 다시 채워야 한다. -->
+          <sequence>
+            <set-state target="global" :isModuleManualInstalling="true" :moduleInstallError="null" :moduleInstallErrors="null"/>
+            <api-call :auth_required="true" target="{{(!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? '/api/admin/modules/install-from-file' : '/api/admin/modules/install-from-github'}}" method="POST" contentType="{{(!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? 'multipart/form-data' : 'application/json'}}" body="{{(!_global.moduleInstallTab || _global.moduleInstallTab === 'file_upload') ? { file: _global.moduleUploadFile } : { github_url: _global.moduleGithubUrl }}}">
+              <success>
+                <set-state target="global" :isModuleManualInstalling="false" :moduleUploadFile="null" :moduleUploadFileName="null" :moduleGithubUrl="null" :moduleInstallError="null" :moduleInstallErrors="null" moduleInstallTab="file_upload"/>
+                <toast type="success" message="$t:admin.modules.install_success"/>
+                <refetch-data-source dataSourceId="modules"/>
+                <refetch-data-source dataSourceId="admin_menu"/>
+                <reload-extensions/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :isModuleManualInstalling="false" moduleInstallError="{{error.message}}" moduleInstallErrors="{{error.errors}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{!_global.isModuleManualInstalling}}" name="download" size="sm"/>
+        <icon data-if="{{_global.isModuleManualInstalling}}" name="spinner" class="animate-spin" size="sm"/>
+        <span>{{_global.isModuleManualInstalling ? '$t:admin.modules.installing' : '$t:admin.modules.actions.install'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

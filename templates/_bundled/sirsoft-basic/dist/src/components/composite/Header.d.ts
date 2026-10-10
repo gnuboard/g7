@@ -47,6 +47,14 @@ interface HeaderProps {
     notificationLoading?: boolean;
     /** "안 읽은 알림만" 필터 상태 */
     notificationUnreadOnly?: boolean;
+    /**
+     * 알림 읽음 처리 권한 — false 면 [모두 읽음] 숨김·닫을 때 읽음 처리 생략.
+     * 기본값 true(NotificationCenter 와 같음): 권한이 없으면 레이아웃이 abilities 를 읽어 false 를 명시한다.
+     * 값이 오지 않는 경우(루트 레이아웃을 keep 으로 업데이트해 바인딩이 없는 사이트)에 기능을 숨기지 않으며, 최종 방어선은 서버 403.
+     */
+    notificationCanUpdate?: boolean;
+    /** 알림 삭제 권한 — false 면 [모두 삭제]·개별 삭제 숨김. 기본값 true(위와 같은 이유) */
+    notificationCanDelete?: boolean;
     /** 알림 드롭다운 제목 */
     notificationTitleText?: string;
     /** 알림 없음 텍스트 */

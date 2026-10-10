@@ -1,0 +1,51 @@
+<!-- 구매 확정 창 — 확정하면 취소·반품 기간이 닫히고 적립금이 지급된다. 되돌릴 수 없어 얼마가 적립되는지
+     보여 준 뒤 확인을 받는다. 확정 대상은 주문 전체가 아니라 **항목 하나**다(`$parent._local.confirmTarget`). -->
+<partial editor_label="$t:user.modal_label.mypage_orders.modal_confirm_purchase" description="구매확정 모달 - 상품 정보 + 적립 포인트 + 경고 문구 + 확인/취소 버튼">
+  <modal data-type="composite" data-ref="modal_confirm_purchase" width="480px" title="$t:mypage.order_detail.confirm_modal.title">
+    <div class="p-5 space-y-5">
+      <!-- 상품 정보 -->
+      <div class="flex gap-3">
+        <div class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
+          <img data-if="{{$parent._local.confirmTarget?.thumbnail_url}}" src="{{$parent._local.confirmTarget?.thumbnail_url ?? ''}}" alt="{{$parent._local.confirmTarget?.product_name ?? ''}}" class="w-full h-full object-cover"/>
+          <div data-if="{{!$parent._local.confirmTarget?.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
+            <icon name="image" size="lg" class="text-gray-400 dark:text-gray-500"/>
+          </div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">{{$parent._local.confirmTarget?.product_name ?? ''}}</p>
+          <p data-if="{{$parent._local.confirmTarget?.option_name}}" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">$t:mypage.order_detail.confirm_modal.option_label: {{$parent._local.confirmTarget?.option_name ?? ''}}</p>
+        </div>
+      </div>
+      <!-- 적립 예정 포인트 -->
+      <div data-if="{{($parent._local.confirmTarget?.subtotal_earned_points_amount ?? 0) > 0}}" class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+        <div class="flex items-center gap-2">
+          <icon name="gift" class="text-base text-blue-600 dark:text-blue-400"/>
+          <span class="text-sm font-medium text-blue-700 dark:text-blue-300">$t:mypage.order_detail.confirm_modal.earned_points</span>
+        </div>
+        <p class="text-lg font-bold text-blue-700 dark:text-blue-300 mt-1 ml-6">{{$parent._local.confirmTarget?.subtotal_earned_points_amount_formatted ?? ''}}</p>
+      </div>
+      <!-- 경고 문구 -->
+      <div class="flex items-start gap-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3">
+        <icon name="triangle-exclamation" class="text-base text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5"/>
+        <span class="text-sm text-yellow-700 dark:text-yellow-300">$t:mypage.order_detail.confirm_modal.warning</span>
+      </div>
+      <!-- 버튼 영역 -->
+      <div class="flex gap-3 pt-2">
+        <button type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+          <on type="click">
+            <close-modal target="modal_confirm_purchase"/>
+          </on>
+          $t:common.cancel
+        </button>
+        <button type="button" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_local.isConfirming === true}}">
+          <on type="click">
+            <!-- 확정 실행 — 대상 주문·항목 id 는 창을 연 쪽이 부모 상태에 세워 준 값을 읽는다 -->
+            <action handler="sirsoft-ecommerce.confirmOrderOption" orderId="{{$parent._local.confirmTarget?.orderId ?? ''}}" optionId="{{$parent._local.confirmTarget?.id ?? ''}}"/>
+          </on>
+          <icon data-if="{{_local.isConfirming}}" name="spinner" class="animate-spin" size="sm"/>
+          <span>{{_local.isConfirming ? '$t:common.processing' : '$t:mypage.order_detail.confirm_modal.confirm_button'}}</span>
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

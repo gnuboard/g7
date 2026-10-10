@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use Modules\Sirsoft\Ecommerce\Enums\ClaimReasonTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\Brand;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
@@ -79,11 +80,40 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
             str_starts_with($keySuffix, 'product_image_') => $this->resolveProductNameFromImage($params, $properties),
             in_array($keySuffix, ['product_create', 'product_update', 'product_delete', 'product_stock_sync']) => $this->resolveEntityName($params, $properties, 'product_name', Product::class, 'product_id'),
             $keySuffix === 'product_review_create' => $this->resolveProductNameFromReview($params, $properties),
+            str_starts_with($keySuffix, 'claim_reason_') => $this->resolveClaimReasonType($params),
+            $keySuffix === 'order_manual_paid_effects' => $this->resolveManualPaidItems($params, $properties),
             $keySuffix === 'coupon_use' => $this->resolveCouponNames($params, $properties),
             $keySuffix === 'coupon_restore' => $this->resolveCouponNamesFromIssues($params, $properties),
             in_array($keySuffix, ['coupon_create', 'coupon_update', 'coupon_delete', 'coupon_show', 'coupon_direct_issue', 'coupon_issue_cancel']) => $this->resolveEntityName($params, $properties, 'coupon_name', Coupon::class, 'coupon_id'),
             default => $params,
         };
+    }
+
+    /**
+     * 수동 결제 처리 로그의 적용/적용 안 함 항목을 표시 시점 로케일로 번역합니다. (Q13·Q26)
+     *
+     * 항목 키(`apply_stock_deduction` 등)만 properties 에 남기고 이름은 렌더 시점에 번역한다 — 기록
+     * 시점 로케일로 문장을 박제하면 다른 언어로 보는 운영자에게 원문이 섞여 보인다.
+     *
+     * @param  array  $params  description_params
+     * @param  array  $properties  활동 로그 properties (applied·skipped)
+     * @return array 해석된 params
+     */
+    private function resolveManualPaidItems(array $params, array $properties): array
+    {
+        $render = static function (array $keys): string {
+            $names = array_map(
+                static fn (string $key) => __('sirsoft-ecommerce::activity_log.manual_paid.items.'.$key),
+                array_values(array_filter($keys, 'is_string')),
+            );
+
+            return $names === [] ? __('sirsoft-ecommerce::activity_log.manual_paid.none') : implode(', ', $names);
+        };
+
+        $params['applied'] = $render((array) ($properties['applied'] ?? []));
+        $params['skipped'] = $render((array) ($properties['skipped'] ?? []));
+
+        return $params;
     }
 
     /**
@@ -119,7 +149,7 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
             if ($entity && isset($entity->name)) {
                 $params[$paramKey] = $this->resolveI18nName($entity->name);
             } else {
-                $params[$paramKey] = "ID: {$id}";
+                $params[$paramKey] = $this->entityIdFallback((string) $id);
             }
         }
 
@@ -153,7 +183,7 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
             if ($image?->product) {
                 $params['product_name'] = $this->resolveI18nName($image->product->name);
             } else {
-                $params['product_name'] = "ID: {$imageId}";
+                $params['product_name'] = $this->entityIdFallback((string) $imageId);
             }
         }
 
@@ -215,7 +245,7 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
             ->filter()
             ->implode(', ');
 
-        $params['coupon_name'] = $names ?: ('ID: '.implode(', ', $couponIds));
+        $params['coupon_name'] = $names ?: $this->entityIdFallback(implode(', ', $couponIds));
 
         return $params;
     }
@@ -246,9 +276,47 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
             ->unique()
             ->implode(', ');
 
-        $params['coupon_name'] = $names ?: ('ID: '.implode(', ', $issueIds));
+        $params['coupon_name'] = $names ?: $this->entityIdFallback(implode(', ', $issueIds));
 
         return $params;
+    }
+
+    /**
+     * 클레임 사유 로그의 유형(`:reason_type`)을 표시 시점 로케일의 라벨로 해석합니다.
+     *
+     * 기록 시점에는 원시 값(`refund`/`exchange`/`return`)만 저장한다 — 라벨을 박제하면 기록한
+     * 운영자의 언어로 굳어 다른 언어 화면에서도 그 문구가 보인다(코어 규정: description_params
+     * 에 표시용 이름 저장 금지). 모르는 값이면 원시 값을 그대로 둔다.
+     *
+     * @param  array  $params  description_params
+     * @return array 해석된 params
+     */
+    private function resolveClaimReasonType(array $params): array
+    {
+        $raw = $params['reason_type'] ?? null;
+
+        if (! is_string($raw) || $raw === '') {
+            return $params;
+        }
+
+        $type = ClaimReasonTypeEnum::tryFrom($raw);
+
+        if ($type !== null) {
+            $params['reason_type'] = $type->label();
+        }
+
+        return $params;
+    }
+
+    /**
+     * 이름을 되찾지 못한 엔티티를 ID 로 표기합니다. (표시 시점 로케일)
+     *
+     * @param  string  $id  엔티티 ID (여러 개면 쉼표로 이은 문자열)
+     * @return string 표기 문자열
+     */
+    private function entityIdFallback(string $id): string
+    {
+        return __('sirsoft-ecommerce::activity_log.entity_id_fallback', ['id' => $id]);
     }
 
     /**

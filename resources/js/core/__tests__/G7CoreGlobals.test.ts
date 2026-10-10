@@ -146,6 +146,8 @@ describe('G7CoreGlobals - initializeG7CoreGlobals()', () => {
     vi.clearAllMocks();
   });
 
+  // @scenario surface=namespace
+  // @effects g7core_namespace_is_created_with_react_globals
   it('G7Core 네임스페이스를 생성해야 함', () => {
     const deps = createMockDependencies();
     initializeG7CoreGlobals(deps);
@@ -153,6 +155,8 @@ describe('G7CoreGlobals - initializeG7CoreGlobals()', () => {
     expect((window as any).G7Core).toBeDefined();
   });
 
+  // @scenario surface=namespace
+  // @effects g7core_namespace_is_created_with_react_globals
   it('React 전역 객체를 노출해야 함', () => {
     const deps = createMockDependencies();
     initializeG7CoreGlobals(deps);
@@ -162,6 +166,8 @@ describe('G7CoreGlobals - initializeG7CoreGlobals()', () => {
     expect((window as any).ReactJSXRuntime).toBeDefined();
   });
 
+  // @scenario surface=namespace
+  // @effects g7core_namespace_is_created_with_react_globals
   it('ReactDOM.unstable_batchedUpdates 폴리필을 제공해야 함', () => {
     const deps = createMockDependencies();
     initializeG7CoreGlobals(deps);
@@ -173,6 +179,8 @@ describe('G7CoreGlobals - initializeG7CoreGlobals()', () => {
   });
 
   // @since engine-v1.51.0 — 편집기 lazy 번들 공유용 코어 런타임 표면
+  // @scenario surface=namespace
+  // @effects runtime_surface_is_exposed_and_idempotent
   it('window.G7Core.__runtime 에 코어 런타임 표면을 노출해야 함', () => {
     const deps = createMockDependencies();
     initializeG7CoreGlobals(deps);
@@ -206,6 +214,8 @@ describe('G7CoreGlobals - initializeG7CoreGlobals()', () => {
     }
   });
 
+  // @scenario surface=namespace
+  // @effects runtime_surface_is_exposed_and_idempotent
   it('__runtime 을 중복 초기화해도 멱등해야 함(동일 참조 유지)', () => {
     const deps = createMockDependencies();
     initializeG7CoreGlobals(deps);
@@ -233,6 +243,8 @@ describe('G7CoreGlobals - componentEvent API', () => {
     G7Core.componentEvent?.clear();
   });
 
+  // @scenario surface=events
+  // @effects component_event_subscribe_and_emit_round_trip
   it('이벤트를 구독하고 발생시킬 수 있어야 함', async () => {
     const callback = vi.fn();
     G7Core.componentEvent.on('test:event', callback);
@@ -242,6 +254,8 @@ describe('G7CoreGlobals - componentEvent API', () => {
     expect(callback).toHaveBeenCalledWith({ data: 'test' });
   });
 
+  // @scenario surface=events
+  // @effects component_event_unsubscribe_and_clear_remove_listeners
   it('구독 해제가 작동해야 함', async () => {
     const callback = vi.fn();
     const unsubscribe = G7Core.componentEvent.on('test:event', callback);
@@ -252,6 +266,8 @@ describe('G7CoreGlobals - componentEvent API', () => {
     expect(callback).not.toHaveBeenCalled();
   });
 
+  // @scenario surface=events
+  // @effects component_event_subscribe_and_emit_round_trip
   it('여러 리스너를 등록할 수 있어야 함', async () => {
     const callback1 = vi.fn();
     const callback2 = vi.fn();
@@ -265,6 +281,8 @@ describe('G7CoreGlobals - componentEvent API', () => {
     expect(callback2).toHaveBeenCalled();
   });
 
+  // @scenario surface=events
+  // @effects component_event_subscribe_and_emit_round_trip
   it('emit이 모든 리스너의 결과를 반환해야 함', async () => {
     G7Core.componentEvent.on('test:event', () => 'result1');
     G7Core.componentEvent.on('test:event', () => 'result2');
@@ -274,12 +292,16 @@ describe('G7CoreGlobals - componentEvent API', () => {
     expect(results).toEqual(['result1', 'result2']);
   });
 
+  // @scenario surface=events
+  // @effects component_event_subscribe_and_emit_round_trip
   it('리스너가 없으면 빈 배열을 반환해야 함', async () => {
     const results = await G7Core.componentEvent.emit('nonexistent:event');
 
     expect(results).toEqual([]);
   });
 
+  // @scenario surface=events
+  // @effects component_event_unsubscribe_and_clear_remove_listeners
   it('off로 특정 이벤트의 모든 리스너를 제거해야 함', async () => {
     const callback = vi.fn();
     G7Core.componentEvent.on('test:event', callback);
@@ -290,6 +312,8 @@ describe('G7CoreGlobals - componentEvent API', () => {
     expect(callback).not.toHaveBeenCalled();
   });
 
+  // @scenario surface=events
+  // @effects component_event_unsubscribe_and_clear_remove_listeners
   it('clear로 모든 이벤트 리스너를 제거해야 함', async () => {
     const callback1 = vi.fn();
     const callback2 = vi.fn();
@@ -306,6 +330,8 @@ describe('G7CoreGlobals - componentEvent API', () => {
     expect(callback2).not.toHaveBeenCalled();
   });
 
+  // @scenario surface=events
+  // @effects component_event_subscribe_and_emit_round_trip
   it('async 콜백을 지원해야 함', async () => {
     const asyncCallback = vi.fn(async () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
@@ -318,6 +344,8 @@ describe('G7CoreGlobals - componentEvent API', () => {
     expect(results).toEqual(['async result']);
   });
 
+  // @scenario surface=events
+  // @effects component_event_listener_error_does_not_break_siblings
   it('리스너 에러 시 다른 리스너에 영향을 주지 않고 에러를 throw해야 함', async () => {
     const errorCallback = vi.fn(() => {
       throw new Error('Listener error');
@@ -354,6 +382,8 @@ describe('G7CoreGlobals - state API', () => {
     delete (window as any).__templateApp;
   });
 
+  // @scenario surface=state
+  // @effects state_api_reads_writes_and_subscribes_global_state
   it('state.get()이 현재 상태를 반환해야 함', () => {
     const state = G7Core.state.get();
 
@@ -361,6 +391,8 @@ describe('G7CoreGlobals - state API', () => {
     expect(mockTemplateApp.getGlobalState).toHaveBeenCalled();
   });
 
+  // @scenario surface=state
+  // @effects state_api_reads_writes_and_subscribes_global_state
   it('state.set()이 상태를 업데이트해야 함', () => {
     G7Core.state.set({ newKey: 'newValue' });
 
@@ -376,6 +408,8 @@ describe('G7CoreGlobals - state API', () => {
     );
   });
 
+  // @scenario surface=state
+  // @effects state_api_reads_writes_and_subscribes_global_state
   it('state.update()가 함수형 업데이트를 지원해야 함', () => {
     G7Core.state.update((prev: any) => ({ ...prev, count: prev.count + 1 }));
 
@@ -385,6 +419,8 @@ describe('G7CoreGlobals - state API', () => {
     });
   });
 
+  // @scenario surface=state
+  // @effects state_api_reads_writes_and_subscribes_global_state
   it('state.subscribe()가 상태 변경을 구독해야 함', () => {
     const listener = vi.fn();
     G7Core.state.subscribe(listener);
@@ -392,6 +428,8 @@ describe('G7CoreGlobals - state API', () => {
     expect(mockTemplateApp.onGlobalStateChange).toHaveBeenCalledWith(listener);
   });
 
+  // @scenario surface=state
+  // @effects state_api_exposes_data_sources
   it('state.getDataSource()가 데이터 소스를 반환해야 함', () => {
     const dataSource = G7Core.state.getDataSource('users');
 
@@ -399,6 +437,8 @@ describe('G7CoreGlobals - state API', () => {
     expect(dataSource).toEqual({ id: 'users', data: [] });
   });
 
+  // @scenario surface=state
+  // @effects state_api_degrades_safely_without_template_app
   it('TemplateApp이 없으면 state.get()이 빈 객체를 반환해야 함', () => {
     delete (window as any).__templateApp;
 
@@ -407,6 +447,8 @@ describe('G7CoreGlobals - state API', () => {
     expect(state).toEqual({});
   });
 
+  // @scenario surface=state
+  // @effects state_api_degrades_safely_without_template_app
   it('TemplateApp이 없으면 state.set()이 에러 없이 실행되어야 함', () => {
     delete (window as any).__templateApp;
 
@@ -443,6 +485,8 @@ describe('G7CoreGlobals - toast API', () => {
     delete (window as any).__templateApp;
   });
 
+  // @scenario surface=ui
+  // @effects toast_api_dispatches_typed_toast_actions
   it('toast.show()가 toast 액션을 dispatch해야 함', () => {
     G7Core.toast.show('Test message', { type: 'success', duration: 3000 });
 
@@ -456,6 +500,8 @@ describe('G7CoreGlobals - toast API', () => {
     });
   });
 
+  // @scenario surface=ui
+  // @effects toast_api_dispatches_typed_toast_actions
   it('toast.success()가 success 타입으로 dispatch해야 함', () => {
     G7Core.toast.success('Success message');
 
@@ -468,6 +514,8 @@ describe('G7CoreGlobals - toast API', () => {
     });
   });
 
+  // @scenario surface=ui
+  // @effects toast_api_dispatches_typed_toast_actions
   it('toast.error()가 error 타입으로 dispatch해야 함', () => {
     G7Core.toast.error('Error message', 5000);
 
@@ -481,6 +529,8 @@ describe('G7CoreGlobals - toast API', () => {
     });
   });
 
+  // @scenario surface=ui
+  // @effects toast_api_dispatches_typed_toast_actions
   it('toast.warning()이 warning 타입으로 dispatch해야 함', () => {
     G7Core.toast.warning('Warning message');
 
@@ -493,6 +543,8 @@ describe('G7CoreGlobals - toast API', () => {
     });
   });
 
+  // @scenario surface=ui
+  // @effects toast_api_dispatches_typed_toast_actions
   it('toast.info()가 info 타입으로 dispatch해야 함', () => {
     G7Core.toast.info('Info message');
 
@@ -505,6 +557,8 @@ describe('G7CoreGlobals - toast API', () => {
     });
   });
 
+  // @scenario surface=ui
+  // @effects toast_show_defaults_to_info
   it('toast.show() 기본 타입은 info여야 함', () => {
     G7Core.toast.show('Default type message');
 
@@ -550,6 +604,8 @@ describe('G7CoreGlobals - modal API', () => {
     delete (window as any).__templateApp;
   });
 
+  // @scenario surface=ui
+  // @effects modal_api_dispatches_open_close_actions
   it('modal.open()이 openModal 액션을 dispatch해야 함', () => {
     G7Core.modal.open('test-modal');
 
@@ -559,6 +615,8 @@ describe('G7CoreGlobals - modal API', () => {
     });
   });
 
+  // @scenario surface=ui
+  // @effects modal_api_dispatches_open_close_actions
   it('modal.close()가 closeModal 액션을 dispatch해야 함', () => {
     G7Core.modal.close('test-modal');
 
@@ -568,6 +626,8 @@ describe('G7CoreGlobals - modal API', () => {
     });
   });
 
+  // @scenario surface=ui
+  // @effects modal_api_dispatches_open_close_actions
   it('modal.close()가 target 없이 호출될 수 있어야 함', () => {
     G7Core.modal.close();
 
@@ -576,6 +636,8 @@ describe('G7CoreGlobals - modal API', () => {
     });
   });
 
+  // @scenario surface=ui
+  // @effects modal_api_dispatches_open_close_actions
   it('modal.closeAll()이 closeAllModals 액션을 dispatch해야 함', () => {
     G7Core.modal.closeAll();
 
@@ -584,16 +646,36 @@ describe('G7CoreGlobals - modal API', () => {
     });
   });
 
+  // @scenario surface=ui
+  // @effects modal_api_reports_open_state_and_stack
   it('modal.isOpen()이 모달 열림 상태를 반환해야 함', () => {
     expect(G7Core.modal.isOpen('modal-1')).toBe(true);
     expect(G7Core.modal.isOpen('modal-2')).toBe(true);
     expect(G7Core.modal.isOpen('modal-3')).toBe(false);
   });
 
+  // @scenario surface=ui
+  // @effects modal_api_reports_open_state_and_stack
   it('modal.getStack()이 모달 스택을 반환해야 함', () => {
     const stack = G7Core.modal.getStack();
 
     expect(stack).toEqual(['modal-1', 'modal-2']);
+  });
+
+  // 실제 `TemplateApp.getGlobalState()` 는 `_global` 의 **내용물**을 바로 돌려준다(감싸는 `_global` 키 없음).
+  // 위 목은 `{ _global: {...} }` 로 감싸 실제와 달라, 화면에서는 isOpen 이 늘 false·getStack 이 늘 [] 였다(#712 실측).
+  // @scenario surface=ui
+  // @effects modal_api_reports_open_state_and_stack
+  it('실제 전역 상태 모양(_global 내용물)에서도 열린 창과 스택을 돌려준다', () => {
+    (window as any).__templateApp.getGlobalState = vi.fn(() => ({
+      sidebarOpen: true,
+      activeModal: 'module_force_activate_modal',
+      modalStack: ['module_force_activate_modal'],
+    }));
+
+    expect(G7Core.modal.isOpen('module_force_activate_modal')).toBe(true);
+    expect(G7Core.modal.isOpen('other_modal')).toBe(false);
+    expect(G7Core.modal.getStack()).toEqual(['module_force_activate_modal']);
   });
 });
 
@@ -620,24 +702,32 @@ describe('G7CoreGlobals - locale API', () => {
     delete (window as any).__templateApp;
   });
 
+  // @scenario surface=ui
+  // @effects locale_api_reads_supported_and_changes_locale
   it('locale.current()가 현재 로케일을 반환해야 함', () => {
     const locale = G7Core.locale.current();
 
     expect(locale).toBe('ko');
   });
 
+  // @scenario surface=ui
+  // @effects locale_api_reads_supported_and_changes_locale
   it('locale.supported()가 지원 로케일 목록을 반환해야 함', () => {
     const locales = G7Core.locale.supported();
 
     expect(locales).toEqual(['ko', 'en']);
   });
 
+  // @scenario surface=ui
+  // @effects locale_api_reads_supported_and_changes_locale
   it('locale.change()가 로케일을 변경해야 함', async () => {
     await G7Core.locale.change('en');
 
     expect(mockTemplateApp.changeLocale).toHaveBeenCalledWith('en');
   });
 
+  // @scenario surface=ui
+  // @effects locale_api_falls_back_to_ko_without_template_app
   it('TemplateApp이 없으면 locale.current()가 기본값 ko를 반환해야 함', () => {
     delete (window as any).__templateApp;
 
@@ -677,6 +767,8 @@ describe('G7CoreGlobals - plugin API', () => {
     delete (window as any).G7Config;
   });
 
+  // @scenario surface=settings
+  // @effects plugin_settings_are_readable_by_key_and_in_bulk
   it('plugin.getSettings()가 플러그인 전체 설정을 반환해야 함', () => {
     const settings = G7Core.plugin.getSettings('sirsoft-daum_postcode');
 
@@ -687,18 +779,24 @@ describe('G7CoreGlobals - plugin API', () => {
     });
   });
 
+  // @scenario surface=settings
+  // @effects plugin_settings_are_readable_by_key_and_in_bulk
   it('plugin.get()이 특정 설정 값을 반환해야 함', () => {
     const displayMode = G7Core.plugin.get('sirsoft-daum_postcode', 'display_mode');
 
     expect(displayMode).toBe('layer');
   });
 
+  // @scenario surface=settings
+  // @effects plugin_settings_support_default_values
   it('plugin.get()이 기본값을 지원해야 함', () => {
     const nonExistent = G7Core.plugin.get('sirsoft-daum_postcode', 'non_existent', 'default');
 
     expect(nonExistent).toBe('default');
   });
 
+  // @scenario surface=settings
+  // @effects plugin_settings_are_readable_by_key_and_in_bulk
   it('plugin.getAll()이 모든 플러그인 설정을 반환해야 함', () => {
     const allPlugins = G7Core.plugin.getAll();
 
@@ -706,12 +804,16 @@ describe('G7CoreGlobals - plugin API', () => {
     expect(allPlugins).toHaveProperty('sirsoft-analytics');
   });
 
+  // @scenario surface=settings
+  // @effects plugin_settings_missing_sources_return_empty
   it('존재하지 않는 플러그인은 undefined를 반환해야 함', () => {
     const settings = G7Core.plugin.getSettings('non-existent-plugin');
 
     expect(settings).toBeUndefined();
   });
 
+  // @scenario surface=settings
+  // @effects plugin_settings_missing_sources_return_empty
   it('G7Config가 없으면 빈 객체를 반환해야 함', () => {
     delete (window as any).G7Config;
 
@@ -751,6 +853,8 @@ describe('G7CoreGlobals - module API', () => {
     delete (window as any).G7Config;
   });
 
+  // @scenario surface=settings
+  // @effects module_settings_are_readable_by_key_and_in_bulk
   it('module.getSettings()가 모듈 전체 설정을 반환해야 함', () => {
     const settings = G7Core.module.getSettings('sirsoft-ecommerce');
 
@@ -761,18 +865,24 @@ describe('G7CoreGlobals - module API', () => {
     });
   });
 
+  // @scenario surface=settings
+  // @effects module_settings_are_readable_by_key_and_in_bulk
   it('module.get()이 특정 설정 값을 반환해야 함', () => {
     const currency = G7Core.module.get('sirsoft-ecommerce', 'default_currency');
 
     expect(currency).toBe('KRW');
   });
 
+  // @scenario surface=settings
+  // @effects module_settings_support_default_values
   it('module.get()이 기본값을 지원해야 함', () => {
     const nonExistent = G7Core.module.get('sirsoft-ecommerce', 'non_existent', 'USD');
 
     expect(nonExistent).toBe('USD');
   });
 
+  // @scenario surface=settings
+  // @effects module_settings_are_readable_by_key_and_in_bulk
   it('module.getAll()이 모든 모듈 설정을 반환해야 함', () => {
     const allModules = G7Core.module.getAll();
 
@@ -802,12 +912,16 @@ describe('G7CoreGlobals - navigation API', () => {
     G7Core = (window as any).G7Core;
   });
 
+  // @scenario surface=ui
+  // @effects navigation_api_reports_pending_and_notifies_on_complete
   it('navigation.isPending()이 전환 상태를 반환해야 함', () => {
     mockTransitionManager.getIsPending.mockReturnValue(true);
 
     expect(G7Core.navigation.isPending()).toBe(true);
   });
 
+  // @scenario surface=ui
+  // @effects navigation_api_reports_pending_and_notifies_on_complete
   it('navigation.onComplete()가 전환 완료 시 콜백을 실행해야 함', () => {
     let subscribeCallback: (isPending: boolean) => void;
     mockTransitionManager.subscribe.mockImplementation((cb: any) => {
@@ -825,6 +939,8 @@ describe('G7CoreGlobals - navigation API', () => {
     expect(callback).toHaveBeenCalled();
   });
 
+  // @scenario surface=ui
+  // @effects navigation_api_reports_pending_and_notifies_on_complete
   it('navigation.onComplete()가 구독 해제 함수를 반환해야 함', () => {
     const unsubscribe = vi.fn();
     mockTransitionManager.subscribe.mockReturnValue(unsubscribe);
@@ -857,6 +973,8 @@ describe('G7CoreGlobals - websocket API', () => {
     G7Core = (window as any).G7Core;
   });
 
+  // @scenario surface=ui
+  // @effects websocket_api_subscribes_and_tears_down_channels
   it('websocket.subscribe()가 채널을 구독해야 함', () => {
     const callback = vi.fn();
     const key = G7Core.websocket.subscribe('admin.dashboard', 'stats.updated', callback);
@@ -870,28 +988,38 @@ describe('G7CoreGlobals - websocket API', () => {
     expect(key).toBe('subscription-key');
   });
 
+  // @scenario surface=ui
+  // @effects websocket_api_subscribes_and_tears_down_channels
   it('websocket.unsubscribe()가 구독을 해제해야 함', () => {
     G7Core.websocket.unsubscribe('subscription-key');
 
     expect(mockWebSocketManager.unsubscribe).toHaveBeenCalledWith('subscription-key');
   });
 
+  // @scenario surface=ui
+  // @effects websocket_api_subscribes_and_tears_down_channels
   it('websocket.leaveChannel()이 채널을 떠나야 함', () => {
     G7Core.websocket.leaveChannel('admin.dashboard');
 
     expect(mockWebSocketManager.leaveChannel).toHaveBeenCalledWith('admin.dashboard');
   });
 
+  // @scenario surface=ui
+  // @effects websocket_api_subscribes_and_tears_down_channels
   it('websocket.disconnect()가 연결을 종료해야 함', () => {
     G7Core.websocket.disconnect();
 
     expect(mockWebSocketManager.disconnect).toHaveBeenCalled();
   });
 
+  // @scenario surface=ui
+  // @effects websocket_api_reports_initialization_and_subscription_count
   it('websocket.isInitialized()가 초기화 상태를 반환해야 함', () => {
     expect(G7Core.websocket.isInitialized()).toBe(true);
   });
 
+  // @scenario surface=ui
+  // @effects websocket_api_reports_initialization_and_subscription_count
   it('websocket.getSubscriptionCount()가 구독 수를 반환해야 함', () => {
     expect(G7Core.websocket.getSubscriptionCount()).toBe(3);
   });
@@ -907,16 +1035,22 @@ describe('G7CoreGlobals - style API', () => {
     G7Core = (window as any).G7Core;
   });
 
+  // @scenario surface=namespace
+  // @effects style_helpers_are_exposed
   it('style.mergeClasses가 노출되어야 함', () => {
     expect(G7Core.style.mergeClasses).toBeDefined();
     expect(typeof G7Core.style.mergeClasses).toBe('function');
   });
 
+  // @scenario surface=namespace
+  // @effects style_helpers_are_exposed
   it('style.conditionalClass가 노출되어야 함', () => {
     expect(G7Core.style.conditionalClass).toBeDefined();
     expect(typeof G7Core.style.conditionalClass).toBe('function');
   });
 
+  // @scenario surface=namespace
+  // @effects style_helpers_are_exposed
   it('style.joinClasses가 노출되어야 함', () => {
     expect(G7Core.style.joinClasses).toBeDefined();
     expect(typeof G7Core.style.joinClasses).toBe('function');
@@ -933,16 +1067,22 @@ describe('G7CoreGlobals - translation API', () => {
     G7Core = (window as any).G7Core;
   });
 
+  // @scenario surface=namespace
+  // @effects translation_api_exposes_hook_and_translates_with_params
   it('useTranslation 훅이 노출되어야 함', () => {
     expect(G7Core.useTranslation).toBeDefined();
   });
 
+  // @scenario surface=namespace
+  // @effects translation_api_exposes_hook_and_translates_with_params
   it('t() 함수가 번역을 수행해야 함', () => {
     const result = G7Core.t('common.confirm');
 
     expect(result).toBe('translated:common.confirm');
   });
 
+  // @scenario surface=namespace
+  // @effects translation_api_exposes_hook_and_translates_with_params
   it('t() 함수가 파라미터를 지원해야 함', () => {
     const deps = createMockDependencies();
     const mockTranslate = vi.fn((key: string, _ctx: any, params?: string) => {
@@ -998,6 +1138,8 @@ describe('G7CoreGlobals - dispatch API', () => {
     delete (window as any).__templateApp;
   });
 
+  // @scenario surface=events
+  // @effects dispatch_runs_actions_through_the_dispatcher
   it('dispatch()가 액션을 실행해야 함', async () => {
     const action = { handler: 'testHandler', params: { key: 'value' } };
     const result = await G7Core.dispatch(action);
@@ -1014,6 +1156,8 @@ describe('G7CoreGlobals - dispatch API', () => {
     expect(result).toEqual({ success: true, data: 'result' });
   });
 
+  // @scenario surface=events
+  // @effects dispatch_returns_failure_when_engine_pieces_are_missing
   it('TemplateApp이 없으면 실패 결과를 반환해야 함', async () => {
     delete (window as any).__templateApp;
 
@@ -1023,6 +1167,8 @@ describe('G7CoreGlobals - dispatch API', () => {
     expect(result.error).toBeInstanceOf(Error);
   });
 
+  // @scenario surface=events
+  // @effects dispatch_returns_failure_when_engine_pieces_are_missing
   it('ActionDispatcher가 없으면 실패 결과를 반환해야 함', async () => {
     (window as any).__templateApp.getActionDispatcher = vi.fn(() => null);
 
@@ -1031,6 +1177,8 @@ describe('G7CoreGlobals - dispatch API', () => {
     expect(result.success).toBe(false);
   });
 
+  // @scenario surface=events
+  // @effects dispatch_returns_failure_when_engine_pieces_are_missing
   it('액션 실행 중 에러 발생 시 실패 결과를 반환해야 함', async () => {
     mockActionDispatcher.dispatchAction.mockRejectedValue(new Error('Action failed'));
 
@@ -1051,6 +1199,8 @@ describe('G7CoreGlobals - helper APIs', () => {
     G7Core = (window as any).G7Core;
   });
 
+  // @scenario surface=namespace
+  // @effects helper_apis_are_exposed
   it('이벤트 헬퍼 함수들이 노출되어야 함', () => {
     expect(G7Core.createChangeEvent).toBeDefined();
     expect(G7Core.createClickEvent).toBeDefined();
@@ -1058,16 +1208,22 @@ describe('G7CoreGlobals - helper APIs', () => {
     expect(G7Core.createKeyboardEvent).toBeDefined();
   });
 
+  // @scenario surface=namespace
+  // @effects helper_apis_are_exposed
   it('renderItemChildren이 노출되어야 함', () => {
     expect(G7Core.renderItemChildren).toBeDefined();
     expect(typeof G7Core.renderItemChildren).toBe('function');
   });
 
+  // @scenario surface=namespace
+  // @effects helper_apis_are_exposed
   it('getComponentMap이 노출되어야 함', () => {
     expect(G7Core.getComponentMap).toBeDefined();
     expect(typeof G7Core.getComponentMap).toBe('function');
   });
 
+  // @scenario surface=namespace
+  // @effects helper_apis_are_exposed
   it('getComponentMap이 컴포넌트 맵을 반환해야 함', () => {
     const componentMap = G7Core.getComponentMap();
 
@@ -1086,26 +1242,38 @@ describe('G7CoreGlobals - core APIs', () => {
     G7Core = (window as any).G7Core;
   });
 
+  // @scenario surface=namespace
+  // @effects core_singletons_and_hooks_are_exposed
   it('AuthManager가 노출되어야 함', () => {
     expect(G7Core.AuthManager).toBeDefined();
   });
 
+  // @scenario surface=namespace
+  // @effects core_singletons_and_hooks_are_exposed
   it('api 클라이언트가 노출되어야 함', () => {
     expect(G7Core.api).toBeDefined();
   });
 
+  // @scenario surface=namespace
+  // @effects core_singletons_and_hooks_are_exposed
   it('TransitionManager가 노출되어야 함', () => {
     expect(G7Core.TransitionManager).toBeDefined();
   });
 
+  // @scenario surface=namespace
+  // @effects core_singletons_and_hooks_are_exposed
   it('useTransitionState 훅이 노출되어야 함', () => {
     expect(G7Core.useTransitionState).toBeDefined();
   });
 
+  // @scenario surface=namespace
+  // @effects core_singletons_and_hooks_are_exposed
   it('ResponsiveManager가 노출되어야 함', () => {
     expect(G7Core.ResponsiveManager).toBeDefined();
   });
 
+  // @scenario surface=namespace
+  // @effects core_singletons_and_hooks_are_exposed
   it('useResponsive 훅이 노출되어야 함', () => {
     expect(G7Core.useResponsive).toBeDefined();
   });
@@ -1156,6 +1324,8 @@ describe('G7CoreGlobals - renderItemChildren 상태 주입 회귀 테스트', ()
    * 해결: 전역 상태를 자동으로 컨텍스트에 병합
    */
   describe('[TS-DATAGRID-2] cellChildren 전역 상태 자동 병합', () => {
+    // @scenario surface=state
+    // @effects render_item_children_merges_global_local_and_computed
     it('renderItemChildren 호출 시 _global, _local, _computed가 컨텍스트에 병합되어야 함', () => {
       const children = [{ id: 'test', type: 'basic', name: 'Button' }];
       // _local, _computed를 itemContext에서 전달
@@ -1185,6 +1355,8 @@ describe('G7CoreGlobals - renderItemChildren 상태 주입 회귀 테스트', ()
       expect(passedContext.item).toEqual({ id: 1, name: '상품A' });
     });
 
+    // @scenario surface=state
+    // @effects render_item_children_lets_item_context_win_over_global_local
     it('itemContext에 이미 _local이 있으면 itemContext 값이 우선되어야 함', () => {
       const children = [{ id: 'test', type: 'basic', name: 'Button' }];
       const itemContext = {
@@ -1241,9 +1413,14 @@ describe('G7CoreGlobals - renderExpandContent 회귀 테스트', () => {
     };
 
     // TemplateApp mock
+    // `getGlobalState()` 는 `_global` 의 **내용물을 평평하게** 돌려준다
+    // (`TemplateApp.getGlobalState()` → `{ ...this.globalState }`). `_local`·`_computed` 는
+    // 그 안의 한 키다 — 같은 파일 1138행이 이미 그 규약을 쓴다. 종전 `{_global:…}` 래퍼는
+    // `renderExpandContent` 가 `state.get()?._global` 로 읽던 시절의 잔재라,
+    // engine-v1.70.0 이 그 경로를 정본에 맞추자 `_global.user` 가 undefined 가 됐다.
     (window as any).__templateApp = {
       getGlobalState: vi.fn(() => ({
-        _global: { user: { id: 1 } },
+        user: { id: 1 },
         _local: { selectedIds: [100, 200], count: 5 },
         _computed: {},
       })),
@@ -1290,6 +1467,8 @@ describe('G7CoreGlobals - renderExpandContent 회귀 테스트', () => {
    * 해결: stateRef.current를 우선 사용하여 항상 최신 상태 참조
    */
   describe('[TS-CLOSURE-EXPAND-1] stateRef를 통한 최신 _local 상태 참조', () => {
+    // @scenario surface=state
+    // @effects expand_content_prefers_state_ref_over_captured_state
     it('stateRef.current가 componentContext.state보다 우선 사용되어야 함', () => {
       const children = [{ id: 'expand-btn', type: 'basic', name: 'Button' }];
       const row = { id: 1, name: '상품A' };
@@ -1314,6 +1493,8 @@ describe('G7CoreGlobals - renderExpandContent 회귀 테스트', () => {
       expect(passedContext._local.selectedIds).toEqual([1, 2, 3, 4]);
     });
 
+    // @scenario surface=state
+    // @effects expand_content_prefers_state_ref_over_captured_state
     it('stateRef가 없으면 componentContext.state를 사용해야 함 (하위 호환성)', () => {
       const children = [{ id: 'expand-btn', type: 'basic', name: 'Button' }];
       const row = { id: 1 };
@@ -1346,6 +1527,8 @@ describe('G7CoreGlobals - renderExpandContent 회귀 테스트', () => {
    * 해결: 단일 바인딩({{expr}})은 evaluateExpression으로 원본 타입 유지
    */
   describe('[TS-CLOSURE-EXPAND-2] expandContext 표현식 타입 보존', () => {
+    // @scenario surface=state
+    // @effects expand_context_single_binding_keeps_its_type
     it('단일 바인딩 표현식은 원본 타입(배열)을 유지해야 함', () => {
       const children = [{ id: 'expand-checkbox', type: 'basic', name: 'Checkbox' }];
       const row = { id: 1 };
@@ -1375,6 +1558,8 @@ describe('G7CoreGlobals - renderExpandContent 회귀 테스트', () => {
       expect(passedContext.selectedIds).toEqual([100, 200]);
     });
 
+    // @scenario surface=state
+    // @effects expand_context_mixed_expression_is_interpolated
     it('혼합 표현식은 resolveBindings로 문자열 보간되어야 함', () => {
       const children = [{ id: 'expand-text', type: 'basic', name: 'Text' }];
       const row = { id: 1 };
@@ -1411,6 +1596,8 @@ describe('G7CoreGlobals - renderExpandContent 회귀 테스트', () => {
    * 해결: 전역 상태를 최종 컨텍스트에 자동 병합
    */
   describe('[TS-DATAGRID-STATE-1] expandChildren 전역 상태 접근', () => {
+    // @scenario surface=state
+    // @effects expand_children_context_carries_global_local_and_computed
     it('expandChildren 컨텍스트에 _global, _local, _computed가 포함되어야 함', () => {
       const children = [{ id: 'expand-info', type: 'basic', name: 'Text' }];
       const row = { id: 1, name: '상품A' };
@@ -1484,11 +1671,15 @@ describe('G7Core.state.getIsolated/setIsolated API', () => {
   });
 
   describe('getIsolated', () => {
+    // @scenario surface=state
+    // @effects isolated_state_is_read_from_registry_or_action_context
     it('should return null when scopeId does not exist', () => {
       const result = G7Core.state.getIsolated('non-existent');
       expect(result).toBeNull();
     });
 
+    // @scenario surface=state
+    // @effects isolated_state_is_read_from_registry_or_action_context
     it('should return state from registry when scopeId exists', () => {
       (window as any).__g7IsolatedStates = {
         'category-selector': {
@@ -1501,6 +1692,8 @@ describe('G7Core.state.getIsolated/setIsolated API', () => {
       expect(result).toEqual({ step: 2, selectedItems: [1, 2, 3] });
     });
 
+    // @scenario surface=state
+    // @effects isolated_state_is_read_from_registry_or_action_context
     it('should return state from actionContext when scopeId is not provided', () => {
       (window as any).__g7ActionContext = {
         isolatedContext: {
@@ -1513,6 +1706,8 @@ describe('G7Core.state.getIsolated/setIsolated API', () => {
       expect(result).toEqual({ currentStep: 1 });
     });
 
+    // @scenario surface=state
+    // @effects isolated_state_is_read_from_registry_or_action_context
     it('should return null when no scopeId and no actionContext', () => {
       (window as any).__g7ActionContext = null;
 
@@ -1522,6 +1717,8 @@ describe('G7Core.state.getIsolated/setIsolated API', () => {
   });
 
   describe('setIsolated', () => {
+    // @scenario surface=state
+    // @effects isolated_state_writes_reach_registry_and_action_context
     it('should update isolated state via registry when scopeId is provided', () => {
       const mockMergeState = vi.fn();
       (window as any).__g7IsolatedStates = {
@@ -1536,6 +1733,8 @@ describe('G7Core.state.getIsolated/setIsolated API', () => {
       expect(mockMergeState).toHaveBeenCalledWith({ step: 2 }, 'deep');
     });
 
+    // @scenario surface=state
+    // @effects isolated_state_writes_reach_registry_and_action_context
     it('should update isolated state via actionContext when scopeId is not provided', () => {
       const mockMergeState = vi.fn();
       (window as any).__g7ActionContext = {
@@ -1550,6 +1749,8 @@ describe('G7Core.state.getIsolated/setIsolated API', () => {
       expect(mockMergeState).toHaveBeenCalledWith({ step: 3 }, 'deep');
     });
 
+    // @scenario surface=state
+    // @effects isolated_state_writes_expand_dot_notation
     it('should handle dot notation in updates', () => {
       const mockMergeState = vi.fn();
       (window as any).__g7IsolatedStates = {
@@ -1570,6 +1771,8 @@ describe('G7Core.state.getIsolated/setIsolated API', () => {
       );
     });
 
+    // @scenario surface=state
+    // @effects isolated_state_writes_warn_when_no_scope_is_resolvable
     it('should log warning when scopeId does not exist', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -1581,6 +1784,8 @@ describe('G7Core.state.getIsolated/setIsolated API', () => {
       warnSpy.mockRestore();
     });
 
+    // @scenario surface=state
+    // @effects isolated_state_writes_warn_when_no_scope_is_resolvable
     it('should log warning when no actionContext available', () => {
       (window as any).__g7ActionContext = null;
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -1619,6 +1824,8 @@ describe('G7CoreGlobals - 자산 API', () => {
    * @scenario asset_class=vendored
    * @effects runtime_asset_served_same_origin
    */
+  // @scenario surface=assets
+  // @effects extension_asset_urls_are_same_origin_and_composable
   it('확장 타입별 자산 URL 생성기를 노출한다', () => {
     expect(typeof G7Core.asset.template).toBe('function');
     expect(typeof G7Core.asset.module).toBe('function');
@@ -1627,6 +1834,8 @@ describe('G7CoreGlobals - 자산 API', () => {
     expect(typeof G7Core.asset.convertToCurrentMode).toBe('function');
   });
 
+  // @scenario surface=assets
+  // @effects extension_asset_urls_are_same_origin_and_composable
   it('플러그인 자산 URL 은 same-origin API 경로다', () => {
     const url = G7Core.asset.plugin('sirsoft-ckeditor5', 'dist/vendor/ckeditor5/43.3.1/ckeditor5.umd.js');
 
@@ -1634,6 +1843,8 @@ describe('G7CoreGlobals - 자산 API', () => {
     expect(url).not.toMatch(/^https?:/);
   });
 
+  // @scenario surface=assets
+  // @effects extension_asset_urls_are_same_origin_and_composable
   it('템플릿 자산 URL 은 dist/ 를 포함하지 않는다 (서버가 자동 부가)', () => {
     const url = G7Core.asset.template('sirsoft-basic', 'vendor/font-awesome/6.4.0/css/all.inlined.css');
 
@@ -1641,6 +1852,8 @@ describe('G7CoreGlobals - 자산 API', () => {
     expect(url).not.toContain('/dist/');
   });
 
+  // @scenario surface=assets
+  // @effects extension_asset_urls_are_same_origin_and_composable
   it('디렉토리 URL 은 뒤에 파일 경로를 이어 붙일 수 있는 형태다 (AMD 로더용)', () => {
     const dir = G7Core.asset.templateDir('sirsoft-admin_basic', 'vendor/monaco-editor/0.54.0/vs');
 
@@ -1648,6 +1861,35 @@ describe('G7CoreGlobals - 자산 API', () => {
     expect(dir).not.toContain('?file=');
   });
 
+  // 확장자를 가로채는 서버(정적 게시본 없음)에서는 경로 형식이 404 다 — Monaco 가 영영 textarea 로 떨어진다.
+  // file 쿼리 뒤에 AMD 로더가 `/editor/editor.main` 을 이어 붙이면 그대로 한 파일의 file 값이 되고,
+  // 경로부에는 확장자가 남지 않는다. 로더는 쿼리가 있으면 `.js` 를 붙이지 않으므로 서버가 그것을 메운다.
+  // @scenario surface=assets
+  // @effects amd_directory_url_uses_file_query_in_extensionless_mode
+  it('확장자 없는 모드에서 정적 게시본이 없으면 디렉토리 URL 도 file 쿼리 형태다', () => {
+    (window as any).G7Config = { assetUrlMode: 'extensionless' };
+
+    const dir = G7Core.asset.templateDir('sirsoft-admin_basic', 'vendor/monaco-editor/0.56.0/vs');
+
+    expect(dir).toBe('/api/templates/assets/sirsoft-admin_basic?file=vendor/monaco-editor/0.56.0/vs');
+    expect(`${dir}/loader.js`.split('?')[0]).not.toMatch(/\.js$/);
+  });
+
+  // 정적 게시본은 웹서버가 직접 서빙하는 실제 디렉토리라 상대 경로 해석까지 성립한다 — 확장자 없는 모드여도
+  // `?file=` 디렉토리보다 먼저 고른다(순서가 뒤집히면 정적 게시본이 있는 사이트도 PHP 를 거친다).
+  // @scenario surface=assets
+  // @effects amd_directory_url_uses_file_query_in_extensionless_mode
+  it('확장자 없는 모드여도 정적 게시본이 있으면 디렉토리 URL 은 정적 게시 경로다', () => {
+    (window as any).G7Config = { assetUrlMode: 'extensionless', staticBase: '/build/ext/7' };
+
+    const dir = G7Core.asset.templateDir('sirsoft-admin_basic', 'vendor/monaco-editor/0.56.0/vs');
+
+    expect(dir).toBe('/build/ext/7/templates/sirsoft-admin_basic/assets/vendor/monaco-editor/0.56.0/vs');
+    expect(dir).not.toContain('?file=');
+  });
+
+  // @scenario surface=assets
+  // @effects asset_retry_loader_is_exposed
   it('재시도 로더를 함께 노출한다 (확장이 자기 자산을 직접 로드할 때)', () => {
     expect(typeof G7Core.asset.loadScript).toBe('function');
     expect(typeof G7Core.asset.loadStylesheet).toBe('function');
@@ -1657,12 +1899,16 @@ describe('G7CoreGlobals - 자산 API', () => {
     /**
      * @effects untrusted_external_script_blocked
      */
+    // @scenario surface=security
+    // @effects load_script_gate_rejects_untrusted_origins
     it('미신뢰 외부 URL 은 reject 된다', async () => {
       await expect(G7Core.asset.loadScript('https://cdn.evil.com/x.js')).rejects.toThrow(
         /Blocked untrusted script src/
       );
     });
 
+    // @scenario surface=security
+    // @effects load_script_gate_rejects_untrusted_origins
     it('authority 우회 형태도 reject 된다', async () => {
       await expect(G7Core.asset.loadScript('/\\/evil.com/x.js')).rejects.toThrow(
         /Blocked untrusted script src/
@@ -1672,6 +1918,8 @@ describe('G7CoreGlobals - 자산 API', () => {
     /**
      * @effects trusted_script_host_allowlist_wired
      */
+    // @scenario surface=security
+    // @effects load_script_gate_allows_same_origin_and_declared_hosts
     it('same-origin 경로와 선언된 신뢰 호스트는 게이트를 통과한다', () => {
       (window as any).G7Config.trustedScriptHosts = ['t1.daumcdn.net'];
 
@@ -1688,6 +1936,8 @@ describe('G7CoreGlobals - 자산 API', () => {
       vi.restoreAllMocks();
     });
 
+    // @scenario surface=security
+    // @effects load_script_gate_exposes_its_predicate_as_a_seam
     it('판정 함수를 공개 seam 으로 노출한다 (로더를 못 쓰는 주입용)', () => {
       expect(typeof G7Core.asset.isAllowedScriptSrc).toBe('function');
     });
@@ -1697,6 +1947,8 @@ describe('G7CoreGlobals - 자산 API', () => {
    * @scenario asset_class=vendored, outcome=failed
    * @effects failed_asset_shows_retry_notice
    */
+  // @scenario surface=assets
+  // @effects asset_failure_notice_api_is_exposed
   it('자산 실패 안내 API 를 노출한다', () => {
     expect(typeof G7Core.assets.notifyFailure).toBe('function');
     expect(typeof G7Core.assets.clearFailure).toBe('function');

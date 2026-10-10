@@ -1,0 +1,1530 @@
+{
+    "meta": {
+        "is_partial": true,
+        "description": "클레임 신청서 - 요약 카드 안 주문금액 비교(전/후) 접이식 섹션 + 환불 요약 + 환불 불가 안내",
+        "editor_label": "$t:user.modal_label.mypage_claims.apply_comparison"
+    },
+    "comment": "옛 주문 취소 모달의 주문금액 비교표를 세 유형(취소·환불 / 반품 / 교환) 신청서로 옮긴 것이다(#599 후속 P1·P2). 값은 전부 서버 미리보기 adjustment 가 정한다 — 스냅샷 행은 서버 formatted 를 직독하고 화면은 포맷·합산하지 않는다. 후열은 전열과 다를 때만 강조색이다(옛 모달 규칙). 교환의 후열은 서버가 옵션 치환으로 재계산한 값이며 row_substituted 가 그 근거를 보인다(P5).\nP6 — PC 는 펼침, 모바일(portable 0~1023px)은 접힘으로 연다. 초기값은 핸들러(initClaimApply/initClaimEdit)가 G7Core.ResponsiveManager.matches('portable') 로 세우고, 토글 뒤 상태는 화면을 떠날 때까지 유지된다(새로고침하면 디바이스 기본값으로 돌아간다 — 설계값). _global.isPortable 은 어느 런타임도 세우지 않는 값이라 쓰지 않는다.\nP3-① — adjustment.cancel_blocked 면 사유 + 안내를 이 자리에 남기고 환불 요약을 숨긴다. 표는 그대로 둔다(왜 막혔는지 후열이 말한다). 제출 잠금은 요약 카드의 버튼과 submitClaim 진입 가드가 함께 맡는다.",
+    "id": "claim_apply_comparison",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_local.claimEstimateLoading === true || !!_local.claimEstimate?.adjustment?.original_snapshot || (_local.claimEditMode === true && !_local.claimEstimate && !_local.claimEstimateError)}}",
+    "props": {
+        "className": "pt-3 border-t border-gray-200 dark:border-gray-700"
+    },
+    "children": [
+        {
+            "comment": "헤더 — 제목 + 접기/펼치기 토글(aria-expanded · aria-controls)",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex items-center justify-between gap-2 mb-2"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H4",
+                    "props": {
+                        "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:claim.apply.comparison.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "sirsoft-ecommerce.toggleClaimComparison"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white underline-offset-2 hover:underline",
+                        "aria-expanded": "{{_local.claimComparisonOpen === true}}",
+                        "aria-controls": "claim-comparison-body",
+                        "data-testid": "claim-comparison-toggle"
+                    },
+                    "text": "{{_local.claimComparisonOpen === true ? $t('claim.apply.comparison.collapse') : $t('claim.apply.comparison.expand')}}"
+                }
+            ]
+        },
+        {
+            "comment": "계산 중 — 스피너 1줄",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_local.claimEstimateLoading === true}}",
+            "props": {
+                "className": "flex items-center gap-2 py-2 text-xs text-gray-500 dark:text-gray-400"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "spinner",
+                        "className": "animate-spin text-sm"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": ""
+                    },
+                    "text": "$t:claim.apply.estimate_loading"
+                }
+            ]
+        },
+        {
+            "comment": "수정 화면 — 미리보기를 강제하지 않으므로 아직 계산 전이면 안내 한 줄",
+            "type": "basic",
+            "name": "P",
+            "if": "{{_local.claimEstimateLoading !== true && !_local.claimEstimate && _local.claimEditMode === true}}",
+            "props": {
+                "className": "text-xs text-gray-400 dark:text-gray-500"
+            },
+            "text": "$t:claim.apply.comparison.empty_hint"
+        },
+        {
+            "comment": "본문 — 접힘 상태에서는 렌더하지 않는다(토글이 열 때만).",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_local.claimComparisonOpen === true && _local.claimEstimateLoading !== true && !!_local.claimEstimate?.adjustment?.original_snapshot}}",
+            "props": {
+                "id": "claim-comparison-body",
+                "className": "space-y-3"
+            },
+            "children": [
+                {
+                    "comment": "주문금액 비교표 (§4-1 1~16행) — 금액은 서버 formatted 직독, 후열은 전열과 다를 때만 강조색. 클라이언트 포맷·합산 금지.",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "text-xs"
+                    },
+                    "children": [
+                        {
+                            "comment": "표 머리글 — 열 라벨은 유형별 키(취소 전/후 · 환불 전/후 · 반품 전/후 · 교환 전/후)",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-3 pb-1 mb-1 border-b border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-[11px] font-semibold text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:claim.apply.comparison.col_item"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-[11px] font-semibold text-gray-500 dark:text-gray-400 text-right"
+                                    },
+                                    "text": "{{_local.claimType === 'exchange' ? $t('claim.apply.comparison.col_before_exchange') : (_local.claimType === 'return' ? $t('claim.apply.comparison.col_before_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.comparison.col_before_cancel') : $t('claim.apply.comparison.col_before_refund')))}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-[11px] font-semibold text-gray-500 dark:text-gray-400 text-right"
+                                    },
+                                    "text": "{{_local.claimType === 'exchange' ? $t('claim.apply.comparison.col_after_exchange') : (_local.claimType === 'return' ? $t('claim.apply.comparison.col_after_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.comparison.col_after_cancel') : $t('claim.apply.comparison.col_after_refund')))}}"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row_item_count — item_count",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                                "data-row": "item_count"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.row_item_count"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.item_count ?? 0)}}$t:claim.apply.comparison.unit_count"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.item_count ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.item_count ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}"
+                                            },
+                                            "text": "{{(_local.claimEstimate?.adjustment?.recalculated_snapshot?.item_count ?? 0)}}$t:claim.apply.comparison.unit_count"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row_list_price — total_list_price_amount",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                                "data-row": "total_list_price_amount"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.row_list_price"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_list_price_amount ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{!!_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_total_list_price_amount_formatted}}",
+                                            "props": {
+                                                "className": "mt-0.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "iteration": {
+                                                        "source": "{{Object.entries(_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                        "item_var": "mc"
+                                                    },
+                                                    "props": {
+                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500 block"
+                                                    },
+                                                    "text": "{{mc[1]}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_list_price_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_list_price_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}"
+                                            },
+                                            "text": "{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_list_price_amount ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{!!_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted}}",
+                                            "props": {
+                                                "className": "mt-0.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "iteration": {
+                                                        "source": "{{Object.entries(_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_total_list_price_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                        "item_var": "mc"
+                                                    },
+                                                    "props": {
+                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500 block"
+                                                    },
+                                                    "text": "{{mc[1]}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row_subtotal — subtotal_amount",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                                "data-row": "subtotal_amount"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.row_subtotal"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.subtotal_amount ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{!!_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_subtotal_amount_formatted}}",
+                                            "props": {
+                                                "className": "mt-0.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "iteration": {
+                                                        "source": "{{Object.entries(_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                        "item_var": "mc"
+                                                    },
+                                                    "props": {
+                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500 block"
+                                                    },
+                                                    "text": "{{mc[1]}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.subtotal_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.subtotal_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}"
+                                            },
+                                            "text": "{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.subtotal_amount ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{!!_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted}}",
+                                            "props": {
+                                                "className": "mt-0.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "iteration": {
+                                                        "source": "{{Object.entries(_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_subtotal_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                        "item_var": "mc"
+                                                    },
+                                                    "props": {
+                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500 block"
+                                                    },
+                                                    "text": "{{mc[1]}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row_product_coupon — total_product_coupon_discount_amount",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                                "data-row": "total_product_coupon_discount_amount"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.row_product_coupon"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_product_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_product_coupon_discount_amount ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_product_coupon_discount_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_product_coupon_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}"
+                                            },
+                                            "text": "{{(_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_product_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_product_coupon_discount_amount ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row_order_coupon — total_order_coupon_discount_amount",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                                "data-row": "total_order_coupon_discount_amount"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.row_order_coupon"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_order_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_order_coupon_discount_amount ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_order_coupon_discount_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_order_coupon_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}"
+                                            },
+                                            "text": "{{(_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_order_coupon_discount_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_order_coupon_discount_amount ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row_code_discount — total_code_discount_amount",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                                "data-row": "total_code_discount_amount"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.row_code_discount"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_code_discount_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_code_discount_amount ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_code_discount_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_code_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}"
+                                            },
+                                            "text": "{{(_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_code_discount_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_code_discount_amount ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row_shipping_coupon — shipping_discount_amount",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                                "data-row": "shipping_discount_amount"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.row_shipping_coupon"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.shipping_discount_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.shipping_discount_amount ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.shipping_discount_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.shipping_discount_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}"
+                                            },
+                                            "text": "{{(_local.claimEstimate?.adjustment?.recalculated_snapshot?.shipping_discount_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.shipping_discount_amount ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row_base_shipping — base_shipping_amount",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                                "data-row": "base_shipping_amount"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.row_base_shipping"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.base_shipping_amount ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.base_shipping_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.base_shipping_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}"
+                                            },
+                                            "text": "{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.base_shipping_amount ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row_extra_shipping — extra_shipping_amount",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                                "data-row": "extra_shipping_amount"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.row_extra_shipping"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.extra_shipping_amount ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.extra_shipping_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.extra_shipping_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}"
+                                            },
+                                            "text": "{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.extra_shipping_amount ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row_points_used — total_points_used_amount",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                                "data-row": "total_points_used_amount"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.row_points_used"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_points_used_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_points_used_amount ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_points_used_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_points_used_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}"
+                                            },
+                                            "text": "{{(_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_points_used_amount ?? 0) > 0 ? '-' : ''}}{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_points_used_amount ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row_taxable — total_tax_amount",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                                "data-row": "total_tax_amount"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.row_taxable"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_tax_amount ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_tax_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_tax_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}"
+                                            },
+                                            "text": "{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_tax_amount ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row_vat — total_vat_amount",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                                "data-row": "total_vat_amount"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.row_vat"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_vat_amount ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_vat_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_vat_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}"
+                                            },
+                                            "text": "{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_vat_amount ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row_total_paid — total_paid_amount",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                                "data-row": "total_paid_amount"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400 break-keep font-semibold"
+                                    },
+                                    "text": "$t:claim.apply.comparison.row_total_paid"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white font-semibold"
+                                            },
+                                            "text": "{{_local.claimEstimate?.adjustment?.original_snapshot?.formatted?.total_paid_amount ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{!!_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_total_paid_amount_formatted}}",
+                                            "props": {
+                                                "className": "mt-0.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "iteration": {
+                                                        "source": "{{Object.entries(_local.claimEstimate?.adjustment?.mc_original_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                        "item_var": "mc"
+                                                    },
+                                                    "props": {
+                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500 block"
+                                                    },
+                                                    "text": "{{mc[1]}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_paid_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_paid_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white font-semibold'}}"
+                                            },
+                                            "text": "{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.formatted?.total_paid_amount ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{!!_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted}}",
+                                            "props": {
+                                                "className": "mt-0.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "iteration": {
+                                                        "source": "{{Object.entries(_local.claimEstimate?.adjustment?.mc_recalculated_snapshot?.mc_total_paid_amount_formatted ?? {}).filter(([code]) => code !== (_local.claimEstimate?.adjustment?.original_snapshot?.base_currency ?? _global.preferredCurrency ?? _global.defaultCurrency))}}",
+                                                        "item_var": "mc"
+                                                    },
+                                                    "props": {
+                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500 block"
+                                                    },
+                                                    "text": "{{mc[1]}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row_earned_points — total_earned_points_amount. 단위 표기(P)는 서버 `total_earned_points_amount_formatted` 가 정본이다(주문 리소스와 같은 formatEarnedPoints). 화면의 `toLocaleString() + 'P'` 는 그 필드를 싣지 않는 옛 응답·스냅샷을 위한 폴백일 뿐이다.",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                                "data-row": "total_earned_points_amount"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.row_earned_points"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{_local.claimEstimate?.adjustment?.original_snapshot?.total_earned_points_amount_formatted ?? ((_local.claimEstimate?.adjustment?.original_snapshot?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{(_local.claimEstimate?.adjustment?.original_snapshot?.total_earned_points_amount ?? 0) !== (_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_earned_points_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-white'}}"
+                                            },
+                                            "text": "{{_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_earned_points_amount_formatted ?? ((_local.claimEstimate?.adjustment?.recalculated_snapshot?.total_earned_points_amount ?? 0).toLocaleString() + 'P')}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row_coupons — 적용 쿠폰 목록(쿠폰명 · 할인액). 전/후 모두 비면 행을 세우지 않는다.",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_local.claimEstimate?.adjustment?.original_coupons ?? []).length > 0 || (_local.claimEstimate?.adjustment?.recalculated_coupons ?? []).length > 0}}",
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-3 gap-y-1 py-0.5",
+                                "data-row": "coupons"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.row_coupons"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "iteration": {
+                                                "source": "{{_local.claimEstimate?.adjustment?.original_coupons ?? []}}",
+                                                "item_var": "coupon"
+                                            },
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white block break-keep"
+                                            },
+                                            "text": "{{coupon.name ?? ''}} {{coupon.discount_amount_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "iteration": {
+                                                "source": "{{_local.claimEstimate?.adjustment?.recalculated_coupons ?? []}}",
+                                                "item_var": "coupon"
+                                            },
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white block break-keep"
+                                            },
+                                            "text": "{{coupon.name ?? ''}} {{coupon.discount_amount_formatted ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "row_substituted — 교환만. 치환 근거 행(상품별 old→new). 서버 substituted_items 를 그대로 옮긴다.",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.claimType === 'exchange' && (_local.claimEstimateFormatted?.substituted_items ?? []).length > 0}}",
+                            "props": {
+                                "className": "pt-1 mt-1 border-t border-dashed border-gray-200 dark:border-gray-700",
+                                "data-row": "substituted"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400 break-keep block mb-0.5"
+                                    },
+                                    "text": "$t:claim.apply.comparison.row_substituted"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{_local.claimEstimateFormatted?.substituted_items ?? []}}",
+                                        "item_var": "row"
+                                    },
+                                    "props": {
+                                        "className": "flex flex-wrap items-baseline justify-between gap-x-2",
+                                        "data-substituted-item": "{{row.order_option_id}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white min-w-0 break-keep"
+                                            },
+                                            "text": "{{row.option_label ?? ''}} × {{row.quantity ?? 0}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-900 dark:text-white whitespace-nowrap"
+                                            },
+                                            "text": "{{row.unit_price_formatted ?? ''}} → {{row.new_unit_price_formatted ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "환불 불가 (P3-①) — 재계산 환불액이 0원 아래로 내려가는 조합. 미리보기 거절 블록과 같은 마크업.",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.claimEstimate?.adjustment?.cancel_blocked === true}}",
+                    "props": {
+                        "className": "flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800",
+                        "data-testid": "claim-comparison-blocked"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-exclamation",
+                                "className": "text-base text-red-600 dark:text-red-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "min-w-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm text-red-700 dark:text-red-300"
+                                    },
+                                    "text": "{{_local.claimEstimate?.adjustment?.cancel_blocked_reason ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-xs text-red-600 dark:text-red-400 mt-1"
+                                    },
+                                    "text": "$t:claim.apply.comparison.blocked_hint"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "환불 요약 — 최종 환불 예정액(현금·마일리지 분해) · 잔여 잔액 2행(P3-④) · 복원 쿠폰(P3-②). 교환은 저가 교환(refund_product_amount > 0)일 때만. 환불 불가면 숨긴다.",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.claimEstimate?.adjustment?.cancel_blocked !== true && (_local.claimType !== 'exchange' || (_local.claimEstimate?.refund_product_amount ?? 0) > 0)}}",
+                    "props": {
+                        "className": "pt-2 border-t-2 border-gray-300 dark:border-gray-600 space-y-1",
+                        "data-testid": "claim-comparison-refund-summary"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-baseline justify-between gap-2 text-sm font-semibold"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-900 dark:text-white"
+                                    },
+                                    "text": "$t:claim.apply.comparison.refund_summary_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-red-600 dark:text-red-400 text-base block"
+                                            },
+                                            "text": "{{_local.claimEstimate?.adjustment?.refund_formatted?.base?.refund_total ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "{{_local.claimEstimateFormatted?.mc_refund_total ?? []}}",
+                                                "item_var": "mc"
+                                            },
+                                            "props": {
+                                                "className": "flex flex-wrap gap-x-2 justify-end"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                                                    },
+                                                    "text": "{{mc.formatted ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "현금 환불분",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-baseline justify-between gap-2 text-xs",
+                                "data-line": "refund_cash"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.refund_cash"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "{{_local.claimEstimateFormatted?.refund_cash ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "{{_local.claimEstimateFormatted?.mc_refund_cash ?? []}}",
+                                                "item_var": "mc"
+                                            },
+                                            "props": {
+                                                "className": "flex flex-wrap gap-x-2 justify-end"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                                                    },
+                                                    "text": "{{mc.formatted ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "마일리지 환불분 — 마일리지를 쓴 주문에서만. 사용 마일리지를 차감하지 않은 주문(수동 결제완료에서 「마일리지 차감」을 끈 주문 등)은 그 마일리지를 돌려주지 않아 몫이 0 인데(Q15), 줄을 숨기면 마일리지를 썼는데 왜 안 돌아오는지 알 수 없다 — 「0원 (차감되지 않은 마일리지)」로 이유와 함께 세운다.",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_local.claimEstimate?.adjustment?.refund_points_amount ?? 0) > 0 || order?.data?.points_not_deducted === true}}",
+                            "props": {
+                                "className": "flex items-baseline justify-between gap-2 text-xs",
+                                "data-line": "refund_points"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.refund_points"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "{{order?.data?.points_not_deducted === true ? '$t:claim.apply.comparison.refund_points_not_deducted' : (_local.claimEstimateFormatted?.refund_points ?? '')}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "{{_local.claimEstimateFormatted?.mc_refund_points ?? []}}",
+                                                "item_var": "mc"
+                                            },
+                                            "props": {
+                                                "className": "flex flex-wrap gap-x-2 justify-end"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                                                    },
+                                                    "text": "{{mc.formatted ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "환불 후 잔여 결제 잔액",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-baseline justify-between gap-2 text-xs",
+                                "data-line": "remaining_pg"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.remaining_pg"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "{{_local.claimEstimateFormatted?.remaining_pg_balance ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "{{_local.claimEstimateFormatted?.mc_remaining_pg_balance ?? []}}",
+                                                "item_var": "mc"
+                                            },
+                                            "props": {
+                                                "className": "flex flex-wrap gap-x-2 justify-end"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                                                    },
+                                                    "text": "{{mc.formatted ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "환불 후 잔여 마일리지",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-baseline justify-between gap-2 text-xs",
+                                "data-line": "remaining_points"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.remaining_points"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-right"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "{{_local.claimEstimateFormatted?.remaining_points_balance ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "{{_local.claimEstimateFormatted?.mc_remaining_points_balance ?? []}}",
+                                                "item_var": "mc"
+                                            },
+                                            "props": {
+                                                "className": "flex flex-wrap gap-x-2 justify-end"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                                                    },
+                                                    "text": "{{mc.formatted ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "복원 쿠폰 (P3-②) — 없으면 블록 생략",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_local.claimEstimate?.adjustment?.restored_coupons ?? []).length > 0}}",
+                            "props": {
+                                "className": "pt-2 border-t border-gray-200 dark:border-gray-700",
+                                "data-testid": "claim-comparison-restored-coupons"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-xs font-medium text-gray-600 dark:text-gray-400 block mb-1 break-keep"
+                                    },
+                                    "text": "$t:claim.apply.comparison.restored_coupons_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{_local.claimEstimate?.adjustment?.restored_coupons ?? []}}",
+                                        "item_var": "coupon"
+                                    },
+                                    "props": {
+                                        "className": "flex justify-between gap-2 text-xs py-0.5"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-600 dark:text-gray-400 break-keep"
+                                            },
+                                            "text": "{{coupon.coupon_name ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                            },
+                                            "text": "{{coupon.discount_amount_formatted ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-xs text-gray-400 dark:text-gray-500 mt-1"
+                                    },
+                                    "text": "$t:claim.apply.comparison.restored_coupons_notice"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

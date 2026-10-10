@@ -1,0 +1,16 @@
+feature: 파일 업로더 — 0바이트 파일 선검사 (사용자·관리자 템플릿)
+
+description: |
+  0바이트 파일을 고르면 목록에 그대로 들어갔다가 제출 때 서버 422 로 늦게 막혔다(7.1.0 잔여 관측 O-N7 → R-20).
+  두 템플릿의 업로더 훅(`useFileUploader`)이 고르는 순간 0바이트 파일을 목록에서 빼고 파일 이름을 넣은
+  번역 문구로 그 자리에서 알린다. 관리자 템플릿의 크기 초과 안내도 같은 번역 경로를 탄다.
+
+axes:
+  template: [user_basic, admin_basic]
+
+effects:
+  - empty_file_rejected_before_submit
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/FileUploaderEmptyFile.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/FileUploaderEmptyFile.test.ts

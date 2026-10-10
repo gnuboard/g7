@@ -14,6 +14,10 @@ import React, { createContext, useContext, useEffect, useMemo, useReducer } from
 import { trackEditorState } from './devtools/editorTrackers';
 import type { EditorAccessError } from './types/editorErrors';
 import type { EditorStateItemSpec } from './spec/specTypes';
+import { resolveNextActiveStateId } from './utils/matchStateScope';
+import { DEFAULT_PREVIEW_CUSTOM_WIDTH } from './spec/deviceList';
+
+export { DEFAULT_PREVIEW_CUSTOM_WIDTH };
 
 /**
  * 라우트 트리 접힘 상태 영속화 키 (localStorage). 편집 세션/새로고침/템플릿 전환
@@ -174,6 +178,26 @@ export interface LayoutEditorState {
    */
   activeStateId: string | null;
   /**
+   * 마지막으로 유효했던 활성 상태 id — 모드 전환 중 목록이 잠깐 비어도 남는 기억.
+   *
+   * 반복 항목·모달 편집을 드나들면 scope 가 재도출되는데, 그 사이 한 프레임 동안
+   * 매칭 목록이 빈 배열이 되는 구간이 있다(호스트 path 가 아직 확정되기 전). 그때
+   * `activeStateId` 가 null 로 지워지면 목록이 돌아와도 되살릴 근거가 없어 기본 상태로
+   * 풀리고, 저작자는 고른 화면으로 돌아오지 못한다. 이 필드는 그 구간을 건너뛰기 위한
+   * 것이라 **비우지 않는다**(다른 상태를 고르면 그때 덮인다).
+   */
+  lastActiveStateId: string | null;
+  /**
+   * `activeStateId` 가 속한 scope 키(`kind|match`) — 기억을 화면 단위로 한정하는 꼬리표.
+   *
+   * 상태 id 는 화면마다 재사용된다(번들 실측: `modal_filled` 하나가 170개 scope). id 만
+   * 대조해 되살리면 A 화면에서 고른 `validation_failed` 가 B 화면에서도 「목록에 있다」는
+   * 이유로 살아나 B 가 기본 상태로 열리지 않는다. scope 키를 함께 보면 그 오인을 막는다.
+   */
+  activeStateScopeKey: string | null;
+  /** `lastActiveStateId` 가 속한 scope 키 — 목록이 빈 구간을 건너뛴 뒤의 대조에 쓴다. */
+  lastActiveStateScopeKey: string | null;
+  /**
    * 레이아웃 이름 → 현재(최신) 저장 버전 번호.
    * useEditorRoutes 가 편집기 routes 응답의 `layout_versions` 로 일괄 셋팅하고,
    * 저장/버전 복원 성공 시 SET_LAYOUT_VERSION 으로 해당 레이아웃만 동기화한다.
@@ -210,7 +234,13 @@ export type LayoutEditorAction =
   | { type: 'SET_PREVIEW_COLOR_SCHEME'; scheme: PreviewColorScheme }
   | { type: 'TOGGLE_PALETTE' }
   | { type: 'SET_PALETTE_OPEN'; open: boolean }
-  | { type: 'SET_AVAILABLE_STATES'; states: EditorStateItemSpec[]; activeStateId: string | null }
+  | {
+      type: 'SET_AVAILABLE_STATES';
+      states: EditorStateItemSpec[];
+      activeStateId: string | null;
+      /** 이 목록이 도출된 scope 키(`kind|match`). 기억을 화면 단위로 한정하는 데 쓴다. */
+      scopeKey: string | null;
+    }
   | { type: 'SET_ACTIVE_STATE'; activeStateId: string | null }
   | { type: 'SET_LAYOUT_VERSIONS'; versions: Record<string, number> }
   | { type: 'SET_LAYOUT_VERSION'; layoutName: string; version: number }
@@ -231,12 +261,15 @@ function createInitialState(templateIdentifier: string, locale: string): LayoutE
     locale,
     previewDevice: 'desktop',
     previewZoom: 1,
-    previewCustomWidth: 1024,
+    previewCustomWidth: DEFAULT_PREVIEW_CUSTOM_WIDTH,
     previewColorScheme: 'light',
     history: { canUndo: false, canRedo: false },
     isPaletteOpen: false,
     availableStates: [],
     activeStateId: null,
+    lastActiveStateId: null,
+    activeStateScopeKey: null,
+    lastActiveStateScopeKey: null,
     layoutVersions: {},
     extensionVersions: {},
   };
@@ -366,10 +399,38 @@ export function layoutEditorReducer(state: LayoutEditorState, action: LayoutEdit
       return { ...state, isPaletteOpen: !state.isPaletteOpen };
     case 'SET_PALETTE_OPEN':
       return { ...state, isPaletteOpen: action.open };
-    case 'SET_AVAILABLE_STATES':
-      return { ...state, availableStates: action.states, activeStateId: action.activeStateId };
+    case 'SET_AVAILABLE_STATES': {
+      // 직전 선택(또는 목록이 잠깐 비는 구간을 건너뛴 마지막 기억)이 **같은 scope 의 것이고**
+      // 새 목록에도 있으면 그대로 이어 간다 — 아니면 호출자가 계산한 기본 상태로 간다.
+      // 판정식은 resolveNextActiveStateId 가 SSoT 다(여기서 다시 구현하지 않는다).
+      const next = resolveNextActiveStateId(
+        action.states,
+        {
+          scopeKey: state.activeStateId ? state.activeStateScopeKey : state.lastActiveStateScopeKey,
+          id: state.activeStateId ?? state.lastActiveStateId,
+        },
+        action.scopeKey,
+      );
+      return {
+        ...state,
+        availableStates: action.states,
+        activeStateId: next,
+        activeStateScopeKey: action.scopeKey,
+        // 기억은 비우지 않는다 — 목록이 빈 구간에도 남아 복귀 시 되살린다.
+        // 단 scope 키도 함께 남겨야 「같은 화면인가」를 뒤에서 판정할 수 있다.
+        lastActiveStateId: next ?? state.lastActiveStateId,
+        lastActiveStateScopeKey: next ? action.scopeKey : state.lastActiveStateScopeKey,
+      };
+    }
     case 'SET_ACTIVE_STATE':
-      return { ...state, activeStateId: action.activeStateId };
+      return {
+        ...state,
+        activeStateId: action.activeStateId,
+        lastActiveStateId: action.activeStateId ?? state.lastActiveStateId,
+        lastActiveStateScopeKey: action.activeStateId
+          ? state.activeStateScopeKey
+          : state.lastActiveStateScopeKey,
+      };
     case 'SET_LAYOUT_VERSIONS':
       // 편집기 routes 응답의 레이아웃별 최신 버전 맵 일괄 셋팅.
       return { ...state, layoutVersions: action.versions };
@@ -412,7 +473,7 @@ function reducerWithStateScopeReset(
   ) {
     const needsStateReset = next.availableStates.length > 0 || next.activeStateId !== null;
     if (needsStateReset) {
-      return { ...next, availableStates: [], activeStateId: null };
+      return { ...next, availableStates: [], activeStateId: null, activeStateScopeKey: null };
     }
   }
   return next;

@@ -1,35 +1,12 @@
 {
+    "comment": "플러그인 관리 화면. `admin_module_list` 와 **같은 구조의 쌍둥이**다 — 주소(`/api/admin/plugins`),\n  문구, 전역 키(`selectedPlugin` 등)만 다르고 상태 갈래·409 처리·확인 창 구성은 그대로다.\n  한쪽 배선을 고치면 다른 쪽도 같이 봐야 한다.\n  모듈에 없는 항목이 하나 있다 — 더보기 메뉴의 **설정 화면 이동**. 플러그인은 자기 설정 레이아웃을\n  가질 수 있어서, 그 경로를 서버가 `settings_route` 로 실어 준다.",
     "version": "1.0.0",
     "layout_name": "admin_plugin_list",
-    "permissions": [
-        "core.plugins.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "$t:admin.plugins.page_title",
         "description": "$t:admin.plugins.page_description"
     },
-    "state": {
-        "searchQuery": "",
-        "showHidden": false
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "plugins",
-            "auto_deactivated_banner"
-        ]
-    },
-    "init_actions": [
-        {
-            "handler": "setState",
-            "params": {
-                "target": "global",
-                "_local": {
-                    "searchQuery": "{{query.search || ''}}"
-                }
-            }
-        }
-    ],
     "data_sources": [
         {
             "id": "plugins",
@@ -44,7 +21,7 @@
                 "per_page": "{{query.per_page || 12}}",
                 "search": "{{query.search}}",
                 "status": "{{query.status}}",
-                "include_hidden": "{{_local.showHidden ? 1 : 0}}"
+                "include_hidden": "{{query.include_hidden === '1' ? 1 : 0}}"
             },
             "fallback": {
                 "data": {
@@ -56,7 +33,8 @@
                         "total": 0
                     }
                 }
-            }
+            },
+            "comment": "플러그인 목록. 모듈 화면과 같이 검색·페이지·숨김 포함 여부를 모두 URL 에서 읽는다."
         },
         {
             "id": "auto_deactivated_banner",
@@ -74,6 +52,42 @@
                         "templates": []
                     },
                     "current_core_version": ""
+                }
+            },
+            "comment": "코어 버전이 올라 자동 비활성된 확장 알림. 모듈 화면과 **같은 API** 를 부르고 여기서는\n       응답의 `plugins` 만 읽는다."
+        }
+    ],
+    "initLocal": {
+        "searchQuery": ""
+    },
+    "permissions": [
+        "core.plugins.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "plugins",
+            "auto_deactivated_banner"
+        ]
+    },
+    "init_actions": [
+        {
+            "comment": "확장 목록 보기 방식(갤러리/목록) 복원 — 4화면이 같은 키를 공유한다.\n         저장값이 없거나 깨졌으면 갤러리다(기본 보기). GDPR 허용목록에 등재된 키라\n         functional 미동의 상태에서도 살아남는다.",
+            "handler": "loadFromLocalStorage",
+            "params": {
+                "key": "g7_view_mode_extensions",
+                "defaultValue": "gallery"
+            },
+            "resultTo": {
+                "target": "_global",
+                "key": "extensionViewMode"
+            }
+        },
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "searchQuery": "{{query.search || ''}}"
                 }
             }
         }
@@ -101,11 +115,6 @@
                                 "id": "refresh_button",
                                 "type": "composite",
                                 "name": "IconButton",
-                                "props": {
-                                    "iconName": "refresh",
-                                    "variant": "outline",
-                                    "size": "md"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -114,17 +123,17 @@
                                             "dataSourceId": "plugins"
                                         }
                                     }
-                                ]
+                                ],
+                                "props": {
+                                    "iconName": "refresh",
+                                    "variant": "outline",
+                                    "size": "md"
+                                }
                             },
                             {
                                 "id": "check_updates_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "flex-center gap-2 px-4 h-10 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                    "disabled": "{{_global.isCheckingUpdates || plugins?.data?.abilities?.can_install !== true}}",
-                                    "type": "button"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
@@ -134,6 +143,7 @@
                                 },
                                 "actions": [
                                     {
+                                        "comment": "업데이트 확인 — 서버가 저장소를 훑어 최신 버전을 갱신하므로 끝나면 목록을 다시 받는다.\n                 발견 건수에 따라 문구가 갈린다(모듈 화면과 같은 형태).",
                                         "type": "click",
                                         "handler": "sequence",
                                         "actions": [
@@ -146,8 +156,8 @@
                                             },
                                             {
                                                 "handler": "apiCall",
-                                                "auth_required": true,
                                                 "target": "/api/admin/plugins/check-updates",
+                                                "auth_required": true,
                                                 "params": {
                                                     "method": "POST"
                                                 },
@@ -193,6 +203,11 @@
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "className": "flex-center gap-2 px-4 h-10 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{_global.isCheckingUpdates || plugins?.data?.abilities?.can_install !== true}}",
+                                    "type": "button"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -224,10 +239,6 @@
                                 "id": "manual_install_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "flex-center gap-2 px-4 h-10 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                    "disabled": "{{plugins?.data?.abilities?.can_install !== true}}"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
@@ -242,6 +253,10 @@
                                         "target": "plugin_manual_install_modal"
                                     }
                                 ],
+                                "props": {
+                                    "className": "flex-center gap-2 px-4 h-10 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{plugins?.data?.abilities?.can_install !== true}}"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -263,15 +278,15 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "if": "{{false}}",
-                                "props": {
-                                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
-                                },
                                 "responsive": {
                                     "portable": {
                                         "props": {
                                             "className": "hidden"
                                         }
                                     }
+                                },
+                                "props": {
+                                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                                 },
                                 "children": [
                                     {
@@ -295,9 +310,6 @@
                         "id": "mobile_action_buttons",
                         "type": "basic",
                         "name": "Div",
-                        "props": {
-                            "className": "hidden"
-                        },
                         "responsive": {
                             "portable": {
                                 "props": {
@@ -305,15 +317,14 @@
                                 }
                             }
                         },
+                        "props": {
+                            "className": "hidden"
+                        },
                         "children": [
                             {
                                 "id": "mobile_manual_install_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "className": "flex-center flex-1 justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                    "disabled": "{{plugins?.data?.abilities?.can_install !== true}}"
-                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -321,6 +332,10 @@
                                         "target": "plugin_manual_install_modal"
                                     }
                                 ],
+                                "props": {
+                                    "className": "flex-center flex-1 justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{plugins?.data?.abilities?.can_install !== true}}"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -374,10 +389,11 @@
                         },
                         "children": [
                             {
+                                "comment": "`alert-warning` 이 가로 flex 라 w-full 이 없으면 이 줄이 내용 폭으로 줄어\n          닫기 버튼이 본문에 달라붙는다.",
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-start justify-between gap-4"
+                                    "className": "flex-start justify-between gap-4 w-full"
                                 },
                                 "children": [
                                     {
@@ -439,39 +455,36 @@
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Button",
+                                                                        "actions": [
+                                                                            {
+                                                                                "comment": "배너에서 이 줄만 지운다(플러그인은 비활성 상태 그대로다).",
+                                                                                "type": "click",
+                                                                                "handler": "apiCall",
+                                                                                "target": "/api/admin/extensions/plugin/{{banner_item.identifier}}/dismiss",
+                                                                                "auth_required": true,
+                                                                                "params": {
+                                                                                    "method": "POST"
+                                                                                },
+                                                                                "onSuccess": {
+                                                                                    "handler": "refetchDataSource",
+                                                                                    "params": {
+                                                                                        "dataSourceId": "auto_deactivated_banner"
+                                                                                    }
+                                                                                },
+                                                                                "onError": {
+                                                                                    "handler": "toast",
+                                                                                    "params": {
+                                                                                        "type": "error",
+                                                                                        "message": "{{error.message}}"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        ],
                                                                         "props": {
                                                                             "type": "button",
                                                                             "className": "text-warning-soft hover:underline",
                                                                             "aria-label": "$t:extensions.banner.dismiss"
                                                                         },
-                                                                        "actions": [
-                                                                            {
-                                                                                "type": "click",
-                                                                                "handler": "apiCall",
-                                                                                "auth_required": true,
-                                                                                "target": "/api/admin/extensions/plugin/{{banner_item.identifier}}/dismiss",
-                                                                                "params": {
-                                                                                    "method": "POST"
-                                                                                },
-                                                                                "onSuccess": [
-                                                                                    {
-                                                                                        "handler": "refetchDataSource",
-                                                                                        "params": {
-                                                                                            "dataSourceId": "auto_deactivated_banner"
-                                                                                        }
-                                                                                    }
-                                                                                ],
-                                                                                "onError": [
-                                                                                    {
-                                                                                        "handler": "toast",
-                                                                                        "params": {
-                                                                                            "type": "error",
-                                                                                            "message": "{{error.message}}"
-                                                                                        }
-                                                                                    }
-                                                                                ]
-                                                                            }
-                                                                        ],
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
@@ -497,10 +510,6 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Button",
-                                                                "props": {
-                                                                    "type": "button",
-                                                                    "className": "inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-amber-500 dark:border-amber-400 bg-white dark:bg-gray-800 text-warning-soft hover:bg-amber-50 dark:hover:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:ring-offset-2 transition-colors cursor-pointer"
-                                                                },
                                                                 "actions": [
                                                                     {
                                                                         "type": "click",
@@ -508,12 +517,16 @@
                                                                         "target": "core_update_guide_modal"
                                                                     }
                                                                 ],
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "className": "inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-amber-500 dark:border-amber-400 bg-white dark:bg-gray-800 text-warning-soft hover:bg-amber-50 dark:hover:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:ring-offset-2 transition-colors cursor-pointer"
+                                                                },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Icon",
                                                                         "props": {
-                                                                            "name": "arrow-up-circle",
+                                                                            "name": "circle-arrow-up",
                                                                             "size": "xs"
                                                                         }
                                                                     },
@@ -539,21 +552,175 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-center justify-end gap-4 mb-6"
-                        },
-                        "responsive": {
-                            "portable": {
-                                "props": {
-                                    "className": "mb-6 row-stack"
-                                }
-                            }
+                            "className": "flex flex-wrap items-center gap-x-4 gap-y-3 mb-6"
                         },
                         "children": [
                             {
+                                "comment": "갤러리/목록 보기 전환 — 4화면이 같은 저장 키를 공유한다.\n             icon-button 은 aria-pressed·title 을 흘려보내지 않으므로(IconButton.tsx)\n             button 둘로 된 세그먼트로 만든다. 모든 폭에서 보인다(responsive 숨김 없음).\n             `mr-auto` 가 체크박스와 검색을 오른쪽으로 민다. 모바일은 `mr-auto` 를 빼고 줄바꿈으로 체크박스가 보기 전환 옆에 온다.",
+                                "id": "view_mode_toggle",
+                                "type": "basic",
+                                "name": "Div",
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "inline-flex shrink-0 rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden"
+                                        }
+                                    }
+                                },
+                                "props": {
+                                    "role": "group",
+                                    "aria-label": "$t:extensions.view_mode.toggle_label",
+                                    "className": "inline-flex shrink-0 mr-auto rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden"
+                                },
+                                "children": [
+                                    {
+                                        "id": "view_mode_gallery",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "classMap": {
+                                            "key": "{{_global.extensionViewMode ?? 'gallery'}}",
+                                            "variants": {
+                                                "list": "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                            },
+                                            "default": "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                                        },
+                                        "actions": [
+                                            {
+                                                "comment": "리터럴 값을 저장한 뒤 곧바로 되읽어 성공을 확인한다(AGENTS.md §5).\n                   GDPR 저장 인터셉터는 허용목록 밖 키를 예외 없이 버리므로, 되읽은 값이\n                   비면 이번 세션 동안만 보기가 유지되고 새로고침하면 기본값으로 돌아간다.",
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "extensionViewMode": "gallery"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "saveToLocalStorage",
+                                                        "params": {
+                                                            "key": "g7_view_mode_extensions",
+                                                            "value": "gallery"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "loadFromLocalStorage",
+                                                        "params": {
+                                                            "key": "g7_view_mode_extensions",
+                                                            "defaultValue": ""
+                                                        },
+                                                        "resultTo": {
+                                                            "target": "_global",
+                                                            "key": "extensionViewModePersisted"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "aria-pressed": "{{(_global.extensionViewMode ?? 'gallery') !== 'list'}}",
+                                            "title": "$t:extensions.view_mode.gallery",
+                                            "className": "px-3 h-10 transition-colors"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "th-large",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "sr-only"
+                                                },
+                                                "text": "$t:extensions.view_mode.gallery_aria"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "view_mode_list",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "classMap": {
+                                            "key": "{{_global.extensionViewMode ?? 'gallery'}}",
+                                            "variants": {
+                                                "list": "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                                            },
+                                            "default": "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                        },
+                                        "actions": [
+                                            {
+                                                "comment": "갤러리 버튼과 같은 순서 — 리터럴 `list` 를 저장한 뒤 곧바로 되읽어 성공을 확인한다(AGENTS.md §5).\n                   GDPR 저장 인터셉터는 허용목록 밖 키를 예외 없이 버리므로, 되읽은 값이 비면 이번 세션 동안만\n                   목록 보기가 유지되고 새로고침하면 기본값(갤러리)으로 돌아간다.",
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "extensionViewMode": "list"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "saveToLocalStorage",
+                                                        "params": {
+                                                            "key": "g7_view_mode_extensions",
+                                                            "value": "list"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "loadFromLocalStorage",
+                                                        "params": {
+                                                            "key": "g7_view_mode_extensions",
+                                                            "defaultValue": ""
+                                                        },
+                                                        "resultTo": {
+                                                            "target": "_global",
+                                                            "key": "extensionViewModePersisted"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "aria-pressed": "{{(_global.extensionViewMode ?? 'gallery') === 'list'}}",
+                                            "title": "$t:extensions.view_mode.list",
+                                            "className": "px-3 h-10 transition-colors"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "list",
+                                                    "size": "sm"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "sr-only"
+                                                },
+                                                "text": "$t:extensions.view_mode.list_aria"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "최고관리자 전용 — 관리자 로그인 응답(current_user)의 is_super 를 읽는다. 없는 이름(currentUser)을 읽어 최고관리자에게도 안 보이던 문제(#703 실측).",
                                 "id": "include_hidden_toggle",
                                 "type": "basic",
                                 "name": "Label",
-                                "if": "{{currentUser?.is_super === true}}",
+                                "if": "{{current_user?.data?.is_super === true}}",
                                 "props": {
                                     "className": "flex-center gap-2 text-body cursor-pointer select-none"
                                 },
@@ -561,27 +728,26 @@
                                     {
                                         "type": "basic",
                                         "name": "Input",
-                                        "props": {
-                                            "type": "checkbox",
-                                            "checked": "{{_local.showHidden === true}}",
-                                            "className": "w-4 h-4 rounded text-blue-600 dark:text-blue-400 dark:focus:ring-blue-400"
-                                        },
                                         "actions": [
                                             {
+                                                "comment": "숨김 포함 여부는 다른 필터처럼 주소에 싣는다 — 화면 상태(_local)에 두면 페이지를 넘길 때 풀려, 체크는 켜진 채 숨김을 뺀 목록을 받았다(#703 실측). 주소를 바꾸면 목록을 다시 받으므로 따로 재조회하지 않는다",
                                                 "type": "change",
-                                                "handler": "setState",
+                                                "handler": "navigate",
                                                 "params": {
-                                                    "showHidden": "{{!_local.showHidden}}"
-                                                }
-                                            },
-                                            {
-                                                "type": "change",
-                                                "handler": "refetchDataSource",
-                                                "params": {
-                                                    "dataSourceId": "plugins"
+                                                    "path": "/admin/plugins",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "include_hidden": "{{$event.target.checked ? '1' : undefined}}",
+                                                        "page": 1
+                                                    }
                                                 }
                                             }
-                                        ]
+                                        ],
+                                        "props": {
+                                            "type": "checkbox",
+                                            "checked": "{{query.include_hidden === '1'}}",
+                                            "className": "w-4 h-4 rounded text-blue-600 dark:text-blue-400 dark:focus:ring-blue-400"
+                                        }
                                     },
                                     {
                                         "type": "basic",
@@ -591,14 +757,10 @@
                                 ]
                             },
                             {
-                                "id": "search_bar",
-                                "type": "composite",
-                                "name": "SearchBar",
-                                "props": {
-                                    "placeholder": "$t:admin.plugins.search_placeholder",
-                                    "value": "{{_local.searchQuery || ''}}",
-                                    "className": "w-64"
-                                },
+                                "comment": "너비는 이 래퍼가 맡는다 — SearchBar 는 받은 class 를 안쪽 input 에만 걸고 바깥 div 는 내용 폭이라, 한 줄 flex 툴바에서 늘어나지 않는다. 모바일은 전폭으로 다음 줄에 내려간다.",
+                                "id": "search_bar_box",
+                                "type": "basic",
+                                "name": "Div",
                                 "responsive": {
                                     "portable": {
                                         "props": {
@@ -606,24 +768,40 @@
                                         }
                                     }
                                 },
-                                "actions": [
+                                "props": {
+                                    "className": "w-64"
+                                },
+                                "children": [
                                     {
-                                        "type": "change",
-                                        "handler": "setState",
-                                        "params": {
-                                            "searchQuery": "{{$event.target.value}}"
-                                        }
-                                    },
-                                    {
-                                        "type": "submit",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/plugins",
-                                            "mergeQuery": true,
-                                            "query": {
-                                                "search": "{{_local.searchQuery || undefined}}",
-                                                "page": 1
+                                        "id": "search_bar",
+                                        "type": "composite",
+                                        "name": "SearchBar",
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "searchQuery": "{{$event.target.value}}"
+                                                }
+                                            },
+                                            {
+                                                "comment": "검색 실행 — 빈 검색어는 쿼리에서 빼고 페이지를 1로 되돌린다. `mergeQuery` 를 켜지\n                   않아 상태 필터도 함께 떨어진다(모듈 화면과 같다).",
+                                                "type": "submit",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/plugins",
+                                                    "mergeQuery": true,
+                                                    "query": {
+                                                        "search": "{{_local.searchQuery || undefined}}",
+                                                        "page": 1
+                                                    }
+                                                }
                                             }
+                                        ],
+                                        "props": {
+                                            "placeholder": "$t:admin.plugins.search_placeholder",
+                                            "value": "{{_local.searchQuery || ''}}",
+                                            "className": "w-full"
                                         }
                                     }
                                 ]
@@ -639,783 +817,420 @@
                         },
                         "children": [
                             {
+                                "comment": "확장 목록 — 갤러리(카드)와 목록(행)은 서로 다른 DOM 이다.\n             한 트리에 두 모드를 겹쳐 놓고 클래스만 바꾸던 앞선 방식은 성립하지 않았다:\n             카드 셀의 렌더 컨텍스트에는 `_global` 이 없어 카드 안쪽에서는 보기 상태를\n             볼 수 없다. 그래서 보기 분기는 `viewMode` prop 으로 컴포넌트에 넘기고,\n             행 → 카드 데이터 변환은 여기 prop 식에서 한다(`_global` 이 보이는 자리다).\n             각 항목은 `row` 에 원본 행을 싣고, 콜백은 그 행을 `$args` 로 되돌려 준다\n             (data-grid 의 onRowAction 과 같은 형태). 열 수는 컴포넌트가 컨테이너 실측\n             폭으로 정한다 — 사이드바 개폐까지 따라간다.\n             버튼 잠금은 서버가 거절하는 상태와 맞춘다: 코어 요구 버전 미충족(`core_compatible=false`)이면\n             설치와 켜기를, 설치·삭제·업데이트가 진행 중이면 스위치·삭제·업데이트를 잠근다(둘 다 서버 422).",
                                 "id": "plugin_card_grid",
                                 "type": "composite",
-                                "name": "CardGrid",
+                                "name": "ExtensionCardGrid",
                                 "blur_until_loaded": true,
-                                "props": {
-                                    "data": "{{plugins?.data?.data ?? []}}",
-                                    "gridColumns": 1,
-                                    "gap": 4,
-                                    "idField": "identifier",
-                                    "pagination": true,
-                                    "alwaysShowPagination": true,
-                                    "serverSidePagination": true,
-                                    "serverCurrentPage": "{{plugins?.data?.pagination?.current_page ?? 1}}",
-                                    "serverTotalPages": "{{plugins?.data?.pagination?.last_page ?? null}}",
-                                    "serverHasMorePages": "{{plugins?.data?.pagination?.has_more_pages ?? false}}",
-                                    "cardClassName": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative",
-                                    "cardColumns": [
-                                        {
-                                            "id": "plugin_content",
-                                            "cellChildren": [
-                                                {
-                                                    "type": "basic",
-                                                    "name": "Div",
-                                                    "props": {
-                                                        "className": "flex items-start gap-4"
-                                                    },
-                                                    "children": [
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Div",
-                                                            "props": {
-                                                                "className": "flex-shrink-0 w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center"
-                                                            },
-                                                            "children": [
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Icon",
-                                                                    "props": {
-                                                                        "name": "puzzle-piece",
-                                                                        "className": "text-2xl text-gray-600 dark:text-gray-400"
-                                                                    }
-                                                                }
-                                                            ]
-                                                        },
-                                                        {
-                                                            "type": "basic",
-                                                            "name": "Div",
-                                                            "props": {
-                                                                "className": "flex-1 min-w-0 flex items-start justify-between gap-4"
-                                                            },
-                                                            "responsive": {
-                                                                "portable": {
-                                                                    "props": {
-                                                                        "className": "flex-1 min-w-0 row-stack"
-                                                                    }
-                                                                }
-                                                            },
-                                                            "children": [
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Div",
-                                                                    "props": {
-                                                                        "className": "flex-1 min-w-0"
-                                                                    },
-                                                                    "children": [
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Div",
-                                                                            "props": {
-                                                                                "className": "flex-center gap-2 flex-wrap"
-                                                                            },
-                                                                            "children": [
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "props": {
-                                                                                        "className": "font-semibold text-gray-900 dark:text-white"
-                                                                                    },
-                                                                                    "text": "{{row.name}}"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "props": {
-                                                                                        "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
-                                                                                    },
-                                                                                    "text": "v{{row.version}}"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "if": "{{row.status === 'active'}}",
-                                                                                    "props": {
-                                                                                        "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded"
-                                                                                    },
-                                                                                    "text": "$t:admin.plugins.status.active"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "if": "{{row.status == 'inactive'}}",
-                                                                                    "props": {
-                                                                                        "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
-                                                                                    },
-                                                                                    "text": "$t:admin.plugins.status.inactive"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "if": "{{row.status == 'uninstalled'}}",
-                                                                                    "props": {
-                                                                                        "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded"
-                                                                                    },
-                                                                                    "text": "$t:admin.plugins.status.not_installed"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "if": "{{row.status == 'installing'}}",
-                                                                                    "props": {
-                                                                                        "className": "px-2 py-0.5 text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400 rounded"
-                                                                                    },
-                                                                                    "text": "$t:admin.plugins.status.installing"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "if": "{{row.status == 'uninstalling'}}",
-                                                                                    "props": {
-                                                                                        "className": "px-2 py-0.5 text-xs bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-400 rounded"
-                                                                                    },
-                                                                                    "text": "$t:admin.plugins.status.uninstalling"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "if": "{{row.status == 'updating'}}",
-                                                                                    "props": {
-                                                                                        "className": "px-2 py-0.5 text-xs bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-400 rounded"
-                                                                                    },
-                                                                                    "text": "$t:admin.plugins.status.updating"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "if": "{{row.update_available && row.status != 'updating' && row.status != 'uninstalled'}}",
-                                                                                    "props": {
-                                                                                        "className": "px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded"
-                                                                                    },
-                                                                                    "text": "$t:admin.plugins.update_available"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "if": "{{row.update_available && row.latest_version && row.status != 'updating' && row.status != 'uninstalled'}}",
-                                                                                    "props": {
-                                                                                        "className": "text-tertiary"
-                                                                                    },
-                                                                                    "text": "$t:defer:admin.plugins.version_available|version={{row.latest_version ?? ''}}"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "if": "{{row.is_compatible === false}}",
-                                                                                    "props": {
-                                                                                        "className": "px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded inline-flex items-center gap-1",
-                                                                                        "title": "$t:defer:extensions.badges.incompatible_tooltip|required={{row.required_core_version ?? row.incompatible_required_version ?? ''}}|installed={{row.current_core_version ?? ''}}",
-                                                                                        "aria-describedby": "compat_sr_{{row.identifier}}"
-                                                                                    },
-                                                                                    "children": [
-                                                                                        {
-                                                                                            "type": "basic",
-                                                                                            "name": "Icon",
-                                                                                            "props": {
-                                                                                                "name": "exclamation-triangle",
-                                                                                                "size": "xs"
-                                                                                            }
-                                                                                        },
-                                                                                        {
-                                                                                            "type": "basic",
-                                                                                            "name": "Span",
-                                                                                            "text": "$t:extensions.badges.incompatible"
-                                                                                        }
-                                                                                    ]
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "if": "{{row.is_compatible === false}}",
-                                                                                    "props": {
-                                                                                        "id": "compat_sr_{{row.identifier}}",
-                                                                                        "className": "sr-only"
-                                                                                    },
-                                                                                    "text": "$t:defer:extensions.badges.incompatible_sr|name={{row.name ?? row.identifier ?? ''}}|required={{row.required_core_version ?? row.incompatible_required_version ?? ''}}|installed={{row.current_core_version ?? ''}}"
-                                                                                }
-                                                                            ]
-                                                                        },
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "P",
-                                                                            "props": {
-                                                                                "className": "mt-1 text-label"
-                                                                            },
-                                                                            "text": "{{row.description}}"
-                                                                        },
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Div",
-                                                                            "props": {
-                                                                                "className": "mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500"
-                                                                            },
-                                                                            "responsive": {
-                                                                                "portable": {
-                                                                                    "props": {
-                                                                                        "className": "mt-2 flex flex-col items-start gap-1 text-xs text-gray-500 dark:text-gray-500"
-                                                                                    }
-                                                                                }
-                                                                            },
-                                                                            "children": [
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "text": "$t:defer:admin.plugins.vendor|vendor={{row.vendor}}"
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Div",
-                                                                                    "if": "{{row.dependencies && row.dependencies.length > 0}}",
-                                                                                    "props": {
-                                                                                        "className": "flex items-center gap-1 flex-wrap"
-                                                                                    },
-                                                                                    "children": [
-                                                                                        {
-                                                                                            "type": "basic",
-                                                                                            "name": "Span",
-                                                                                            "text": "$t:admin.plugins.dependencies_label"
-                                                                                        },
-                                                                                        {
-                                                                                            "type": "basic",
-                                                                                            "name": "Div",
-                                                                                            "props": {
-                                                                                                "className": "inline"
-                                                                                            },
-                                                                                            "iteration": {
-                                                                                                "source": "{{row.dependencies}}",
-                                                                                                "item_var": "dep",
-                                                                                                "index_var": "depIndex"
-                                                                                            },
-                                                                                            "children": [
-                                                                                                {
-                                                                                                    "type": "basic",
-                                                                                                    "name": "Span",
-                                                                                                    "props": {
-                                                                                                        "className": "inline-flex items-center gap-1"
-                                                                                                    },
-                                                                                                    "children": [
-                                                                                                        {
-                                                                                                            "type": "basic",
-                                                                                                            "name": "Icon",
-                                                                                                            "if": "{{dep.type === 'module'}}",
-                                                                                                            "props": {
-                                                                                                                "name": "cube",
-                                                                                                                "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"
-                                                                                                            }
-                                                                                                        },
-                                                                                                        {
-                                                                                                            "type": "basic",
-                                                                                                            "name": "Icon",
-                                                                                                            "if": "{{dep.type === 'plugin'}}",
-                                                                                                            "props": {
-                                                                                                                "name": "puzzle-piece",
-                                                                                                                "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0"
-                                                                                                            }
-                                                                                                        },
-                                                                                                        {
-                                                                                                            "type": "basic",
-                                                                                                            "name": "Span",
-                                                                                                            "text": "{{dep.name}}"
-                                                                                                        }
-                                                                                                    ]
-                                                                                                },
-                                                                                                {
-                                                                                                    "type": "basic",
-                                                                                                    "name": "Span",
-                                                                                                    "if": "{{depIndex < row.dependencies.length - 1}}",
-                                                                                                    "text": ",",
-                                                                                                    "props": {
-                                                                                                        "className": "ml-0 mr-1"
-                                                                                                    }
-                                                                                                }
-                                                                                            ]
-                                                                                        }
-                                                                                    ]
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "if": "{{!row.dependencies || row.dependencies.length === 0}}",
-                                                                                    "text": "$t:admin.plugins.no_dependencies"
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                },
-                                                                {
-                                                                    "type": "basic",
-                                                                    "name": "Div",
-                                                                    "props": {
-                                                                        "className": "flex items-center gap-3 shrink-0"
-                                                                    },
-                                                                    "children": [
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Button",
-                                                                            "if": "{{row.status == 'uninstalled'}}",
-                                                                            "props": {
-                                                                                "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                                                                "disabled": "{{row.abilities?.can_install !== true}}"
-                                                                            },
-                                                                            "responsive": {
-                                                                                "portable": {
-                                                                                    "props": {
-                                                                                        "className": "flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors w-full"
-                                                                                    }
-                                                                                }
-                                                                            },
-                                                                            "actions": [
-                                                                                {
-                                                                                    "type": "click",
-                                                                                    "handler": "sequence",
-                                                                                    "actions": [
-                                                                                        {
-                                                                                            "handler": "setState",
-                                                                                            "params": {
-                                                                                                "target": "global",
-                                                                                                "selectedPlugin": "{{row}}"
-                                                                                            }
-                                                                                        },
-                                                                                        {
-                                                                                            "handler": "openModal",
-                                                                                            "target": "plugin_install_modal"
-                                                                                        }
-                                                                                    ]
-                                                                                }
-                                                                            ],
-                                                                            "children": [
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Icon",
-                                                                                    "props": {
-                                                                                        "name": "download",
-                                                                                        "className": "text-base"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "text": "$t:admin.plugins.actions.install"
-                                                                                }
-                                                                            ]
-                                                                        },
-                                                                        {
-                                                                            "id": "update_button",
-                                                                            "type": "basic",
-                                                                            "name": "Button",
-                                                                            "if": "{{row.update_available && row.status != 'updating' && row.status != 'uninstalled'}}",
-                                                                            "props": {
-                                                                                "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                                                                "type": "button",
-                                                                                "disabled": "{{row.abilities?.can_install !== true || row.is_compatible === false}}",
-                                                                                "title": "{{row.is_compatible === false ? '$t:defer:extensions.badges.incompatible_tooltip|required=' + (row.required_core_version ?? row.incompatible_required_version ?? '') + '|installed=' + (row.current_core_version ?? '') : ''}}",
-                                                                                "aria-describedby": "{{row.is_compatible === false ? 'compat_sr_' + row.identifier : ''}}"
-                                                                            },
-                                                                            "actions": [
-                                                                                {
-                                                                                    "type": "click",
-                                                                                    "handler": "sequence",
-                                                                                    "actions": [
-                                                                                        {
-                                                                                            "handler": "setState",
-                                                                                            "params": {
-                                                                                                "target": "global",
-                                                                                                "selectedPlugin": "{{row}}",
-                                                                                                "pluginLayoutStrategy": "overwrite",
-                                                                                                "hasModifiedPluginLayouts": false,
-                                                                                                "modifiedPluginLayoutsCount": 0,
-                                                                                                "modifiedPluginLayouts": [],
-                                                                                                "modifiedPluginLayoutsCheckFailed": false,
-                                                                                                "pluginRebuildSearchIndex": false
-                                                                                            }
-                                                                                        },
-                                                                                        {
-                                                                                            "handler": "apiCall",
-                                                                                            "auth_required": true,
-                                                                                            "target": "/api/admin/plugins/{{row.identifier}}/check-modified-layouts",
-                                                                                            "params": {
-                                                                                                "method": "GET"
-                                                                                            },
-                                                                                            "onSuccess": [
-                                                                                                {
-                                                                                                    "handler": "setState",
-                                                                                                    "params": {
-                                                                                                        "target": "global",
-                                                                                                        "hasModifiedPluginLayouts": "{{response.data?.has_modified_layouts ?? false}}",
-                                                                                                        "modifiedPluginLayoutsCount": "{{response.data?.modified_count ?? 0}}",
-                                                                                                        "modifiedPluginLayouts": "{{response.data?.modified_layouts ?? []}}",
-                                                                                                        "modifiedPluginLayoutsCheckFailed": false
-                                                                                                    }
-                                                                                                }
-                                                                                            ],
-                                                                                            "onError": [
-                                                                                                {
-                                                                                                    "handler": "setState",
-                                                                                                    "params": {
-                                                                                                        "target": "global",
-                                                                                                        "modifiedPluginLayoutsCheckFailed": true
-                                                                                                    }
-                                                                                                }
-                                                                                            ]
-                                                                                        },
-                                                                                        {
-                                                                                            "handler": "apiCall",
-                                                                                            "auth_required": true,
-                                                                                            "target": "/api/admin/plugins/{{row.identifier}}/changelog?source={{row.update_source ?? 'bundled'}}&from_version={{row.version}}&to_version={{row.latest_version}}",
-                                                                                            "params": {
-                                                                                                "method": "GET"
-                                                                                            },
-                                                                                            "onSuccess": [
-                                                                                                {
-                                                                                                    "handler": "setState",
-                                                                                                    "params": {
-                                                                                                        "target": "global",
-                                                                                                        "updateChangelog": "{{response.data.changelog ?? []}}"
-                                                                                                    }
-                                                                                                },
-                                                                                                {
-                                                                                                    "handler": "setState",
-                                                                                                    "params": {
-                                                                                                        "target": "global",
-                                                                                                        "pluginUpdateError": null
-                                                                                                    }
-                                                                                                },
-                                                                                                {
-                                                                                                    "handler": "openModal",
-                                                                                                    "target": "plugin_update_modal"
-                                                                                                }
-                                                                                            ],
-                                                                                            "onError": [
-                                                                                                {
-                                                                                                    "handler": "setState",
-                                                                                                    "params": {
-                                                                                                        "target": "global",
-                                                                                                        "updateChangelog": [],
-                                                                                                        "pluginUpdateError": null
-                                                                                                    }
-                                                                                                },
-                                                                                                {
-                                                                                                    "handler": "openModal",
-                                                                                                    "target": "plugin_update_modal"
-                                                                                                }
-                                                                                            ]
-                                                                                        }
-                                                                                    ]
-                                                                                }
-                                                                            ],
-                                                                            "children": [
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Icon",
-                                                                                    "props": {
-                                                                                        "name": "refresh",
-                                                                                        "className": "text-base"
-                                                                                    }
-                                                                                },
-                                                                                {
-                                                                                    "type": "basic",
-                                                                                    "name": "Span",
-                                                                                    "text": "$t:admin.plugins.actions.update"
-                                                                                }
-                                                                            ]
-                                                                        },
-                                                                        {
-                                                                            "type": "composite",
-                                                                            "name": "Toggle",
-                                                                            "if": "{{row.status != 'uninstalled'}}",
-                                                                            "props": {
-                                                                                "checked": "{{row.status == 'active'}}",
-                                                                                "disabled": "{{row.abilities?.can_activate !== true}}",
-                                                                                "size": "sm",
-                                                                                "className": ""
-                                                                            },
-                                                                            "responsive": {
-                                                                                "portable": {
-                                                                                    "props": {
-                                                                                        "className": "absolute right-4 top-1/2 -translate-y-1/2"
-                                                                                    }
-                                                                                }
-                                                                            },
-                                                                            "actions": [
-                                                                                {
-                                                                                    "type": "change",
-                                                                                    "handler": "apiCall",
-                                                                                    "auth_required": true,
-                                                                                    "target": "{{$event.target.checked ? '/api/admin/plugins/activate' : '/api/admin/plugins/deactivate'}}",
-                                                                                    "params": {
-                                                                                        "method": "POST",
-                                                                                        "body": {
-                                                                                            "plugin_name": "{{row.identifier}}"
-                                                                                        }
-                                                                                    },
-                                                                                    "onSuccess": [
-                                                                                        {
-                                                                                            "handler": "parallel",
-                                                                                            "actions": [
-                                                                                                {
-                                                                                                    "handler": "toast",
-                                                                                                    "params": {
-                                                                                                        "type": "success",
-                                                                                                        "message": "{{$event.target.checked ? '$t:admin.plugins.activate_success' : '$t:admin.plugins.deactivate_success'}}"
-                                                                                                    }
-                                                                                                },
-                                                                                                {
-                                                                                                    "handler": "refetchDataSource",
-                                                                                                    "params": {
-                                                                                                        "dataSourceId": "plugins"
-                                                                                                    }
-                                                                                                },
-                                                                                                {
-                                                                                                    "handler": "refetchDataSource",
-                                                                                                    "params": {
-                                                                                                        "dataSourceId": "admin_menu"
-                                                                                                    }
-                                                                                                },
-                                                                                                {
-                                                                                                    "handler": "reloadExtensions",
-                                                                                                    "params": {
-                                                                                                        "pluginInfo": "{{result}}",
-                                                                                                        "action": "{{$event.target.checked ? 'add' : 'remove'}}"
-                                                                                                    }
-                                                                                                }
-                                                                                            ]
-                                                                                        }
-                                                                                    ],
-                                                                                    "errorHandling": {
-                                                                                        "409": {
-                                                                                            "handler": "sequence",
-                                                                                            "actions": [
-                                                                                                {
-                                                                                                    "handler": "setState",
-                                                                                                    "params": {
-                                                                                                        "target": "global",
-                                                                                                        "selectedPlugin": "{{row}}",
-                                                                                                        "deactivateWarningData": "{{error.errors?.dependent_templates ? error.errors : null}}",
-                                                                                                        "activateWarningData": "{{error.errors?.missing_modules || error.errors?.missing_plugins ? error.errors : null}}"
-                                                                                                    }
-                                                                                                },
-                                                                                                {
-                                                                                                    "handler": "openModal",
-                                                                                                    "target": "{{error.errors?.dependent_templates || error.errors?.dependent_modules || error.errors?.dependent_plugins ? 'plugin_force_deactivate_modal' : 'plugin_force_activate_modal'}}"
-                                                                                                }
-                                                                                            ]
-                                                                                        }
-                                                                                    },
-                                                                                    "onError": [
-                                                                                        {
-                                                                                            "handler": "sequence",
-                                                                                            "actions": [
-                                                                                                {
-                                                                                                    "handler": "toast",
-                                                                                                    "params": {
-                                                                                                        "type": "error",
-                                                                                                        "message": "{{error.message}}"
-                                                                                                    }
-                                                                                                },
-                                                                                                {
-                                                                                                    "handler": "refetchDataSource",
-                                                                                                    "params": {
-                                                                                                        "dataSourceId": "plugins"
-                                                                                                    }
-                                                                                                }
-                                                                                            ]
-                                                                                        }
-                                                                                    ]
-                                                                                }
-                                                                            ]
-                                                                        },
-                                                                        {
-                                                                            "type": "basic",
-                                                                            "name": "Div",
-                                                                            "props": {
-                                                                                "className": ""
-                                                                            },
-                                                                            "responsive": {
-                                                                                "portable": {
-                                                                                    "props": {
-                                                                                        "className": "absolute right-0 top-0"
-                                                                                    }
-                                                                                }
-                                                                            },
-                                                                            "children": [
-                                                                                {
-                                                                                    "type": "composite",
-                                                                                    "name": "ActionMenu",
-                                                                                    "props": {
-                                                                                        "triggerLabel": "",
-                                                                                        "items": [
-                                                                                            {
-                                                                                                "id": "settings",
-                                                                                                "label": "$t:admin.plugins.actions.settings",
-                                                                                                "iconName": "cog",
-                                                                                                "disabled": "{{!row.has_settings || row.status !== 'active' || row.abilities?.can_activate !== true}}"
-                                                                                            },
-                                                                                            {
-                                                                                                "id": "refresh_layouts",
-                                                                                                "label": "$t:admin.plugins.actions.refresh_layouts",
-                                                                                                "iconName": "refresh",
-                                                                                                "disabled": "{{row.status !== 'active' || row.abilities?.can_activate !== true}}"
-                                                                                            },
-                                                                                            {
-                                                                                                "id": "manage_language_packs",
-                                                                                                "label": "$t:admin.language_packs.actions.manage",
-                                                                                                "iconName": "language",
-                                                                                                "disabled": "{{row.status !== 'active'}}"
-                                                                                            },
-                                                                                            {
-                                                                                                "id": "view_detail",
-                                                                                                "label": "$t:admin.plugins.actions.view_detail",
-                                                                                                "iconName": "info-circle"
-                                                                                            },
-                                                                                            {
-                                                                                                "id": "uninstall",
-                                                                                                "label": "$t:admin.plugins.actions.uninstall",
-                                                                                                "iconName": "trash",
-                                                                                                "variant": "danger",
-                                                                                                "disabled": "{{row.status == 'uninstalled' || row.status == 'uninstalling' || row.status == 'installing' || row.abilities?.can_uninstall !== true}}"
-                                                                                            }
-                                                                                        ]
-                                                                                    },
-                                                                                    "actions": [
-                                                                                        {
-                                                                                            "event": "onItemClick",
-                                                                                            "type": "action",
-                                                                                            "handler": "switch",
-                                                                                            "cases": {
-                                                                                                "settings": {
-                                                                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 플러그인 설정 화면으로 이동 — 목적지는 각 플러그인이 선언한 임의 경로로, 플러그인 목록 클러스터 밖이다.",
-                                                                                                    "handler": "navigate",
-                                                                                                    "params": {
-                                                                                                        "path": "{{row.settings_route}}"
-                                                                                                    }
-                                                                                                },
-                                                                                                "refresh_layouts": {
-                                                                                                    "handler": "sequence",
-                                                                                                    "actions": [
-                                                                                                        {
-                                                                                                            "handler": "setState",
-                                                                                                            "params": {
-                                                                                                                "target": "global",
-                                                                                                                "selectedPlugin": "{{row}}"
-                                                                                                            }
-                                                                                                        },
-                                                                                                        {
-                                                                                                            "handler": "openModal",
-                                                                                                            "target": "plugin_refresh_layouts_modal"
-                                                                                                        }
-                                                                                                    ]
-                                                                                                },
-                                                                                                "manage_language_packs": {
-                                                                                                    "handler": "navigate",
-                                                                                                    "params": {
-                                                                                                        "path": "/admin/plugins/{{row.identifier}}/language-packs",
-                                                                                                        "mergeQuery": true,
-                                                                                                        "query": {}
-                                                                                                    }
-                                                                                                },
-                                                                                                "view_detail": {
-                                                                                                    "handler": "sequence",
-                                                                                                    "actions": [
-                                                                                                        {
-                                                                                                            "handler": "setState",
-                                                                                                            "params": {
-                                                                                                                "target": "global",
-                                                                                                                "selectedPlugin": "{{row}}"
-                                                                                                            }
-                                                                                                        },
-                                                                                                        {
-                                                                                                            "handler": "apiCall",
-                                                                                                            "auth_required": true,
-                                                                                                            "target": "/api/admin/plugins/{{row.identifier}}/changelog",
-                                                                                                            "params": {
-                                                                                                                "method": "GET"
-                                                                                                            },
-                                                                                                            "onSuccess": [
-                                                                                                                {
-                                                                                                                    "handler": "setState",
-                                                                                                                    "params": {
-                                                                                                                        "target": "global",
-                                                                                                                        "pluginChangelog": "{{response.data.changelog ?? []}}"
-                                                                                                                    }
-                                                                                                                },
-                                                                                                                {
-                                                                                                                    "handler": "openModal",
-                                                                                                                    "target": "plugin_detail_modal"
-                                                                                                                }
-                                                                                                            ],
-                                                                                                            "onError": [
-                                                                                                                {
-                                                                                                                    "handler": "setState",
-                                                                                                                    "params": {
-                                                                                                                        "target": "global",
-                                                                                                                        "pluginChangelog": []
-                                                                                                                    }
-                                                                                                                },
-                                                                                                                {
-                                                                                                                    "handler": "openModal",
-                                                                                                                    "target": "plugin_detail_modal"
-                                                                                                                }
-                                                                                                            ]
-                                                                                                        }
-                                                                                                    ]
-                                                                                                },
-                                                                                                "uninstall": {
-                                                                                                    "handler": "sequence",
-                                                                                                    "actions": [
-                                                                                                        {
-                                                                                                            "handler": "setState",
-                                                                                                            "params": {
-                                                                                                                "target": "global",
-                                                                                                                "selectedPlugin": "{{row}}",
-                                                                                                                "deletePluginData": false,
-                                                                                                                "pluginUninstallInfo": null,
-                                                                                                                "pluginUninstallBackups": null
-                                                                                                            }
-                                                                                                        },
-                                                                                                        {
-                                                                                                            "handler": "openModal",
-                                                                                                            "target": "plugin_uninstall_modal"
-                                                                                                        },
-                                                                                                        {
-                                                                                                            "handler": "apiCall",
-                                                                                                            "auth_required": true,
-                                                                                                            "target": "/api/admin/plugins/{{row.identifier}}/uninstall-info",
-                                                                                                            "params": {
-                                                                                                                "method": "GET"
-                                                                                                            },
-                                                                                                            "onSuccess": [
-                                                                                                                {
-                                                                                                                    "handler": "setState",
-                                                                                                                    "params": {
-                                                                                                                        "target": "global",
-                                                                                                                        "pluginUninstallInfo": "{{response.data}}"
-                                                                                                                    }
-                                                                                                                }
-                                                                                                            ]
-                                                                                                        }
-                                                                                                    ]
-                                                                                                }
-                                                                                            }
-                                                                                        }
-                                                                                    ]
-                                                                                }
-                                                                            ]
-                                                                        }
-                                                                    ]
-                                                                }
-                                                            ]
-                                                        }
-                                                    ]
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                },
                                 "actions": [
                                     {
-                                        "event": "onPageChange",
+                                        "comment": "카드 본문 클릭 — 상세 창을 연다. 대상 행을 전역에 먼저 담고 연다(창은 그 전역만 본다).",
+                                        "type": "action",
+                                        "event": "onItemClick",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "selectedPlugin": "{{$args[0]}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "target": "/api/admin/plugins/{{$args[0].identifier}}/changelog",
+                                                "auth_required": true,
+                                                "params": {
+                                                    "method": "GET"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "pluginChangelog": "{{response.data.changelog ?? []}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "plugin_detail_modal"
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "pluginChangelog": []
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "plugin_detail_modal"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "활성/비활성 토글 — 주소를 스위치 방향으로 가르고, 성공하면 목록·사이드바 메뉴를\n                 함께 다시 받고 프론트의 확장 번들도 갱신한다. 실패해도 목록을 다시 받아\n                 스위치를 서버 값으로 되맞춘다. 409(의존 충돌)는 강제 창으로 넘긴다.",
+                                        "type": "action",
+                                        "event": "onToggle",
+                                        "handler": "apiCall",
+                                        "target": "{{$args[0] ? '/api/admin/plugins/activate' : '/api/admin/plugins/deactivate'}}",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "POST",
+                                            "body": {
+                                                "plugin_name": "{{$args[1].identifier}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "parallel",
+                                                "actions": [
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "{{$args[0] ? '$t:admin.plugins.activate_success' : '$t:admin.plugins.deactivate_success'}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "comment": "7.0 JSON 레이아웃의 깨진 조각 참조는 활성화를 막지 않고 빈 자리로 등록된다 — 몇 건인지 경고로 알린다.",
+                                                        "handler": "toast",
+                                                        "if": "{{(response?.data?.layout_warnings?.length ?? 0) > 0}}",
+                                                        "params": {
+                                                            "type": "warning",
+                                                            "message": "$t:extensions.alerts.layout_include_skipped|count={{response?.data?.layout_warnings?.length ?? 0}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "plugins"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "admin_menu"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "reloadExtensions",
+                                                        "params": {
+                                                            "pluginInfo": "{{result.data?.plugin ?? result}}",
+                                                            "action": "{{$args[0] ? 'add' : 'remove'}}"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "comment": "확장을 다시 켜면 서버가 그 확장과 함께 꺼졌던 언어팩 목록(`pending_language_packs`)을 실어 준다 —\n                     서버는 목록을 건넨 뒤 지우므로 여기서 묻지 않으면 되살릴 기회가 사라진다. 일괄 활성은\n                     언어팩 관리 권한이 있어야 서버가 받으므로 그 권한이 없으면 창을 열지 않는다.",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "reactivateLanguagePacksData": "{{(response.data?.pending_language_packs ?? [])}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "plugin_reactivate_language_packs_modal",
+                                                "if": "{{!!$args[0] && (response.data?.pending_language_packs ?? []).length > 0 && (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.language_packs.manage')}}"
+                                            }
+                                        ],
+                                        "onError": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "서버가 거절하면 값이 그대로 돌아와 스위치가 스스로 되돌아가지 못한다 — 재동기 신호를 올린다.",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "extensionToggleResync": "{{(_global.extensionToggleResync ?? 0) + 1}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "plugins"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "errorHandling": {
+                                            "409": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "comment": "409 는 fail 을 거치지 않으므로 여기서도 목록을 다시 받는다 — 강제 창을 취소하면 확장은 그대로인데\n                       누른 스위치만 꺼진(켜진) 채 남던 문제(#703 실측).",
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "plugins"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "extensionToggleResync": "{{(_global.extensionToggleResync ?? 0) + 1}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "selectedPlugin": "{{$args[1]}}",
+                                                            "deactivateWarningData": "{{error.errors?.dependent_templates ? error.errors : null}}",
+                                                            "activateWarningData": "{{error.errors?.missing_modules || error.errors?.missing_plugins ? error.errors : null}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "{{error.errors?.dependent_templates || error.errors?.dependent_modules || error.errors?.dependent_plugins ? 'plugin_force_deactivate_modal' : 'plugin_force_activate_modal'}}"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "comment": "주 버튼 — 미설치면 설치 창, 그 밖에는 업데이트 창이다(버튼 자체가 그 둘로만 생긴다).\n                 업데이트는 손으로 고친 레이아웃 여부와 이번 버전의 변경 이력을 미리 물어 둔다.\n                 전역값을 기본으로 되돌리고 시작하는 것은 직전 플러그인의 결과가 남아 있기 때문이다.",
+                                        "type": "action",
+                                        "event": "onPrimaryAction",
+                                        "handler": "switch",
+                                        "params": {
+                                            "value": "{{$args[0].status === 'uninstalled' ? 'install' : 'update'}}"
+                                        },
+                                        "cases": {
+                                            "install": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "selectedPlugin": "{{$args[0]}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "plugin_install_modal"
+                                                    }
+                                                ]
+                                            },
+                                            "update": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "selectedPlugin": "{{$args[0]}}",
+                                                            "pluginLayoutStrategy": "overwrite",
+                                                            "pluginForceUpdate": false,
+                                                            "hasModifiedPluginLayouts": false,
+                                                            "modifiedPluginLayoutsCount": 0,
+                                                            "modifiedPluginLayouts": [],
+                                                            "modifiedPluginLayoutsCheckFailed": false,
+                                                            "pluginRebuildSearchIndex": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "target": "/api/admin/plugins/{{$args[0].identifier}}/check-modified-layouts",
+                                                        "auth_required": true,
+                                                        "params": {
+                                                            "method": "GET"
+                                                        },
+                                                        "onSuccess": {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "hasModifiedPluginLayouts": "{{response.data?.has_modified_layouts ?? false}}",
+                                                                "modifiedPluginLayoutsCount": "{{response.data?.modified_count ?? 0}}",
+                                                                "modifiedPluginLayouts": "{{response.data?.modified_layouts ?? []}}",
+                                                                "modifiedPluginLayoutsCheckFailed": false
+                                                            }
+                                                        },
+                                                        "onError": {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "modifiedPluginLayoutsCheckFailed": true
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "target": "/api/admin/plugins/{{$args[0].identifier}}/changelog?source={{$args[0].update_source ?? 'bundled'}}&from_version={{$args[0].version}}&to_version={{$args[0].latest_version}}",
+                                                        "auth_required": true,
+                                                        "params": {
+                                                            "method": "GET"
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "updateChangelog": "{{response.data.changelog ?? []}}",
+                                                                    "pluginUpdateError": null
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "openModal",
+                                                                "target": "plugin_update_modal"
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "updateChangelog": [],
+                                                                    "pluginUpdateError": null
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "openModal",
+                                                                "target": "plugin_update_modal"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "comment": "카드 더보기 메뉴. 목적지는 서버가 실어 준 `settings_route` 를 그대로 쓴다\n                 (플러그인마다 다르므로 여기서 조립하지 않는다). 삭제는 창을 먼저 열고\n                 안내 정보를 뒤이어 받는다.",
+                                        "type": "action",
+                                        "event": "onAction",
+                                        "handler": "switch",
+                                        "cases": {
+                                            "settings": {
+                                                "comment": "audit:allow layout-list-context-navigate-merge-query 플러그인 설정 화면으로 이동 — 목적지는 각 플러그인이 선언한 임의 경로로, 플러그인 목록 클러스터 밖이다.",
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "{{$args[1].settings_route}}"
+                                                }
+                                            },
+                                            "refresh_layouts": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "selectedPlugin": "{{$args[1]}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "plugin_refresh_layouts_modal"
+                                                    }
+                                                ]
+                                            },
+                                            "manage_language_packs": {
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/plugins/{{$args[1].identifier}}/language-packs",
+                                                    "mergeQuery": true,
+                                                    "query": {}
+                                                }
+                                            },
+                                            "view_detail": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "selectedPlugin": "{{$args[1]}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "target": "/api/admin/plugins/{{$args[1].identifier}}/changelog",
+                                                        "auth_required": true,
+                                                        "params": {
+                                                            "method": "GET"
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "pluginChangelog": "{{response.data.changelog ?? []}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "openModal",
+                                                                "target": "plugin_detail_modal"
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "pluginChangelog": []
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "openModal",
+                                                                "target": "plugin_detail_modal"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            "uninstall": {
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "selectedPlugin": "{{$args[1]}}",
+                                                            "deletePluginData": false,
+                                                            "pluginUninstallInfo": null,
+                                                            "pluginUninstallBackups": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "plugin_uninstall_modal"
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "target": "/api/admin/plugins/{{$args[1].identifier}}/uninstall-info",
+                                                        "auth_required": true,
+                                                        "params": {
+                                                            "method": "GET"
+                                                        },
+                                                        "onSuccess": {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "pluginUninstallInfo": "{{response.data}}"
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "comment": "페이지 이동 — 검색·상태 필터는 유지한다.",
                                         "type": "change",
+                                        "event": "onPageChange",
                                         "handler": "navigate",
                                         "params": {
                                             "path": "/admin/plugins",
@@ -1425,7 +1240,20 @@
                                             }
                                         }
                                     }
-                                ]
+                                ],
+                                "props": {
+                                    "viewMode": "{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}",
+                                    "minCardWidth": 250,
+                                    "maxColumns": 5,
+                                    "resyncKey": "{{_global.extensionToggleResync ?? 0}}",
+                                    "loading": "{{plugins?.loading ?? false}}",
+                                    "pagination": true,
+                                    "alwaysShowPagination": true,
+                                    "currentPage": "{{plugins?.data?.pagination?.current_page ?? 1}}",
+                                    "totalPages": "{{plugins?.data?.pagination?.last_page ?? null}}",
+                                    "hasMorePages": "{{plugins?.data?.pagination?.has_more_pages ?? false}}",
+                                    "items": "{{(plugins?.data?.data ?? []).map(p => ({\n          id: p.identifier,\n          row: p,\n          name: p.name ?? p.identifier,\n          version: p.version,\n          description: p.description ?? '',\n          vendor: p.vendor,\n          iconUrl: p.icon_url,\n          fallbackIcon: 'puzzle-piece',\n          dependencies: (p.dependencies ?? []).map(d => ({ type: d.type, name: d.name || d.identifier })),\n          badges: [\n            ...(p.status === 'active' ? [{ label: '$t:admin.plugins.status.active', tone: 'success' }] : []),\n            ...(p.status === 'inactive' ? [{ label: '$t:admin.plugins.status.inactive', tone: 'neutral' }] : []),\n            ...(p.status === 'uninstalled' ? [{ label: '$t:admin.plugins.status.not_installed', tone: 'info' }] : []),\n            ...(p.status === 'installing' ? [{ label: '$t:admin.plugins.status.installing', tone: 'warning' }] : []),\n            ...(p.status === 'uninstalling' ? [{ label: '$t:admin.plugins.status.uninstalling', tone: 'warning' }] : []),\n            ...(p.status === 'updating' ? [{ label: '$t:admin.plugins.status.updating', tone: 'accent' }] : []),\n            ...(p.update_available && p.status !== 'updating' && p.status !== 'uninstalled' ? [{ label: '$t:admin.plugins.update_available', tone: 'danger' }] : []),\n            ...(p.is_compatible === false || p.core_compatible === false ? [{ label: '$t:extensions.badges.incompatible', tone: 'warning', icon: 'exclamation-triangle' }] : [])\n          ],\n          toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.abilities?.can_activate !== true || ['installing', 'uninstalling', 'updating'].includes(p.status) || (p.status !== 'active' && p.core_compatible === false), label: p.name ?? p.identifier } : null,\n          primaryAction: p.status === 'uninstalled'\n            ? { label: '$t:admin.plugins.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true || p.core_compatible === false }\n            : (p.update_available && !['installing', 'uninstalling', 'updating'].includes(p.status) ? { label: '$t:admin.plugins.actions.update', icon: 'refresh', variant: 'outline', disabled: p.abilities?.can_install !== true } : null),\n          actions: [\n            { id: 'settings', label: '$t:admin.plugins.actions.settings', iconName: 'cog', disabled: !p.has_settings || p.status !== 'active' || p.abilities?.can_update !== true },\n            { id: 'refresh_layouts', label: '$t:admin.plugins.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },\n            { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', disabled: p.status !== 'active' || plugins?.data?.abilities?.can_view_language_packs !== true },\n            { id: 'view_detail', label: '$t:admin.plugins.actions.view_detail', iconName: 'info-circle' },\n            { id: 'uninstall', label: '$t:admin.plugins.actions.uninstall', iconName: 'trash', variant: 'danger', disabled: p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_uninstall !== true }\n          ]\n        }))}}"
+                                }
                             },
                             {
                                 "id": "pagination_info",
@@ -1450,36 +1278,51 @@
     },
     "modals": [
         {
+            "comment": "상세 보기 창(설명·의존·변경 이력).\n       아래 창들은 모두 전역 `selectedPlugin` 하나를 대상으로 읽는다 — 여는 쪽이 그 값을 채우고 연다.\n       모듈 화면의 같은 이름 조각과 짝을 이루는 별도 파일이다(대상 종류가 달라 사본을 둔다).",
             "partial": "partials/admin_plugin_list/_modal_detail.json"
         },
         {
+            "comment": "설치 확인 창 — 미설치 카드의 설치 버튼이 연다.",
             "partial": "partials/admin_plugin_list/_modal_install.json"
         },
         {
+            "comment": "매니페스트 원문을 보는 서랍. 수동 설치 창이 검사한 결과를 펼쳐 보여 준다.",
             "partial": "partials/admin_plugin_list/_drawer_manifest_preview.json"
         },
         {
+            "comment": "삭제 확인 창. 함께 지워지는 것을 받아 보여 주고 데이터 삭제 여부를 따로 묻는다.",
             "partial": "partials/admin_plugin_list/_modal_uninstall.json"
         },
         {
+            "comment": "압축 파일로 직접 설치하는 창 — 목록에 없는 플러그인을 들이는 유일한 경로다.",
             "partial": "partials/admin_plugin_list/_modal_manual_install.json"
         },
         {
+            "comment": "레이아웃 다시 심기 확인 창(활성 플러그인만).",
             "partial": "partials/admin_plugin_list/_modal_refresh_layouts.json"
         },
         {
+            "comment": "강제 비활성 창 — 이 플러그인에 의존하는 쪽이 있을 때(409) 열린다.",
             "partial": "partials/admin_plugin_list/_modal_force_deactivate.json"
         },
         {
+            "comment": "강제 활성 창 — 이 플러그인이 필요로 하는 쪽이 없을 때(409) 열린다. 위와 방향이 반대다.",
             "partial": "partials/admin_plugin_list/_modal_force_activate.json"
         },
         {
+            "comment": "업데이트 창. 변경 이력과 함께, 고친 레이아웃이 있으면 덮어쓸지 남길지 묻는다.",
             "partial": "partials/admin_plugin_list/_modal_update.json"
         },
         {
+            "comment": "언어팩 되살리기 창 — 플러그인을 다시 켰을 때 함께 꺼졌던 언어팩이 있으면 활성 성공 갈래가 연다.",
+            "partial": "partials/admin_plugin_list/_modal_reactivate_language_packs.json"
+        },
+        {
+            "comment": "라이선스 고지 창 — 상세 창에서 이어 연다.",
             "partial": "partials/admin_plugin_list/_modal_extension_license.json"
         },
         {
+            "comment": "코어 업데이트 안내 창. 자동 비활성 배너의 안내 링크가 연다 — 모듈 화면과 **같은 조각을 공유**한다\n       (설정 화면 소유이고, 안내 내용이 확장 종류와 무관하다).",
             "partial": "partials/admin_settings/_modal_core_update_guide.json"
         }
     ]

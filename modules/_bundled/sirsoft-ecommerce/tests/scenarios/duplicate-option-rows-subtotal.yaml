@@ -1,0 +1,61 @@
+feature: 같은 상품옵션이 여러 주문행으로 와도 각 행이 모두 더해진다
+
+description: |
+  한 주문에 같은 상품옵션이 여러 행으로 남는 것은 정상이다.
+
+    교환 수량 분할   — 2개 중 1개만 교환하면 원 행이 쪼개져 같은 옵션 두 행이 된다
+    반품 수량 분할   — 같은 구조
+    per-line 상태 분할 — 일부 수량만 다른 상태로 옮길 때
+    같은 옵션 재구매  — 한 주문에 같은 옵션을 두 줄로 담는 경우
+
+  취소·환불 재계산은 주문의 **살아 있는 행**을 그대로 아이템으로 넘기므로, 같은
+  `product_option_id` 가 두 번 이상 올 수 있다.
+
+  종전에는 `calculateItemSubtotals()` 가 옵션별 소계를 `[product_option_id => …]` 에
+  **대입**해 뒤 행이 앞 행을 덮어썼다. 두 행 중 하나가 통째로 사라지므로
+  **그 행을 빼도 합계가 변하지 않았고**, 환불 미리보기가 "빼기 전 − 뺀 뒤" 차액을
+  환불액으로 삼는 탓에 `refund_amount = 0` 이 나왔다 — 정당한 환불이 막힌다.
+
+  실측(#599 통합실측 세션3 · 주문 106): 교환 수량분할로 텀블러가 두 행(각 28,000)이 된 뒤
+  살아 있는 4행 합계가 252,000 이어야 하는데 219,000 으로 계산됐다(한 행 28,000 증발).
+  텀블러를 빼도 합계가 219,000 그대로여서 환불액이 0 이었다.
+
+  계약: 같은 `product_option_id` 를 가진 아이템이 여러 개 오면 **수량과 소계를 누적**한다.
+  반환 키 구조(`[product_option_id => …]`)는 바꾸지 않는다 — 쿠폰 안분·마일리지·과세 분류·
+  배송정책 그룹이 이 키로 결과를 되찾기 때문이다.
+
+  닫힌 행(취소·교환 완료)은 호출자(`OrderAdjustmentService::buildRecalcInput()`)가 아이템에서
+  빼고 넘기므로 누적이 과다 계상으로 이어지지 않는다. 계산 층은 행의 닫힘 여부를 알지 못하며,
+  알 필요도 없다 — 그 판정은 조정 층의 책임이다.
+
+axes:
+  duplicate_shape:
+    - two_rows_same_quantity      # 같은 옵션 2행, 수량 동일
+    - two_rows_different_quantity # 같은 옵션 2행, 수량 상이
+  verify_stage:
+    - summed_subtotal   # 합계가 두 행의 합인가
+    - removal_delta     # 한 행을 빼면 그만큼 줄어드는가
+    - shipping_group_amount  # 배송정책 그룹 금액이 키 금액을 한 번만 세는가 (S-Q26-c 엔진)
+    - shipping_share         # 같은 키 라인의 배송비 몫이 누적되는가
+    - fixed_mileage          # 정액 적립이 키 전체 수량에 곱해지는가
+
+exclusions:
+  - { duplicate_shape: two_rows_different_quantity, verify_stage: removal_delta,
+      reason: "제거 델타는 수량 동일 형태로 충분히 잠긴다 — 수량 상이는 합산식 자체(수량 무시 구현 방지)를 겨냥한다" }
+  - { duplicate_shape: two_rows_different_quantity, verify_stage: shipping_group_amount,
+      reason: "그룹 금액 이중 합산은 라인 수와 무관하게 키 금액을 라인마다 더하는 결함이다 — 수량 동일 형태로 잠긴다" }
+  - { duplicate_shape: two_rows_different_quantity, verify_stage: shipping_share,
+      reason: "몫 누적은 대입/누적의 차이라 수량과 무관하다 — 수량 동일 형태로 잠긴다" }
+  - { duplicate_shape: two_rows_same_quantity, verify_stage: fixed_mileage,
+      reason: "정액 적립 결함은 마지막 라인 수량만 곱하는 것이라 수량이 달라야 드러난다 — 수량 상이 형태가 소유" }
+
+effects:
+  - duplicate_option_rows_are_summed   # 같은 옵션 여러 행 누적 · 제외 시 그만큼 감소 · 수량 상이 합산
+  # #747 C3b (S-Q26-c 엔진 측) — 같은 키 라인이 둘이면 키 금액을 라인마다 더해 그룹 금액이 두 배가 되던 결함,
+  # 안분 결과를 키에 대입해 앞 라인 몫이 사라지던 결함, 정액 적립이 마지막 라인 수량만 곱하던 결함.
+  - same_option_lines_count_once_in_shipping_group_amount
+  - same_option_lines_shipping_share_accumulates
+  - fixed_mileage_uses_total_quantity_of_same_option_lines
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCalculationServiceTest.php

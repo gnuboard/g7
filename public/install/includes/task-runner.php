@@ -12,6 +12,7 @@ require_once __DIR__.'/config.php';
 require_once __DIR__.'/functions.php';
 require_once __DIR__.'/installer-state.php';
 require_once __DIR__.'/installer-runtime.php';
+require_once __DIR__.'/installer-ownership.php';
 require_once __DIR__.'/progress-emitter.php';
 require_once __DIR__.'/../api/rollback-functions.php';
 
@@ -957,6 +958,24 @@ if (! function_exists('cleanupExistingTablesSSE')) {
             return ['success' => true];
         }
 
+        // 파괴 작업 직전 재검증 — 이 함수는 세션이 없는 워커에서도 돈다. 소유 게이트를 통과한
+        // install-process 가 서명한 계획이고, 그 요청이 삭제 확인 토큰을 소비했을 때만 DROP 한다.
+        // 조건이 깨졌으면 조용히 건너뛰지 않고 실패시킨다 — 건너뛰면 migrate 가 1050(테이블 존재)로
+        // 실패해 원인이 가려진다. 재시도는 install-process 재서명을 거친다.
+        $planVerdict = installer_plan_verify($state, readInstallerRuntime());
+        $dropConfirmed = is_array($state['drop_confirm'] ?? null) && ! empty($state['drop_confirm']['consumed']);
+        if ($planVerdict !== 'ok' || ! $dropConfirmed) {
+            $reason = $planVerdict !== 'ok' ? $planVerdict : 'drop_not_confirmed';
+            addLog('[db_cleanup] 설치 계획 검증 실패 — DROP 미실행: '.$reason);
+
+            return [
+                'success' => false,
+                'message' => lang('error_install_plan_unverified'),
+                'message_key' => 'error_install_plan_unverified',
+                'detail' => $reason,
+            ];
+        }
+
         // state.config 에는 DB 비밀번호가 기록되지 않으므로(이슈 #465) runtime.php 에서
         // 자격증명을 복원한다. db_cleanup 은 env_update 이후 실행되어 runtime 이 항상 존재.
         $config = hydrateDbSecretsFromRuntime($state['config'] ?? []);
@@ -1619,6 +1638,39 @@ if (! function_exists('optimizeConfigCacheSSE')) {
     }
 }
 
+if (! function_exists('optimizeRouteCacheSSE')) {
+    /**
+     * 설치 완료 직후 라우트 캐시를 최초 생성한다 (#599).
+     *
+     * complete_flag 이후에 실행되어야 한다 — `RouteCacheHelper::rebuild()` 는
+     * `installer_completed` 가 서기 전이면 `route:clear` 만 하고 재생성을 건너뛰므로
+     * (불완전한 부팅을 캐시에 박제하지 않으려는 의도된 설계), 설치 도중의 확장
+     * install·activate 가 부른 rebuild 는 전부 clear 로 끝난다. 그리고 완료 플래그
+     * 이후에는 재생성 트리거가 확장 라이프사이클에만 묶여 있어 이 지점이 없으면
+     * **아무도 굽지 않는다** — 설치가 라우트 캐시 꺼진 상태로 종료된다.
+     *
+     * 웹은 캐시가 없어도 정상 동작하지만(매 요청 라우트 파일 스캔 — 느릴 뿐),
+     * `php artisan test` 는 죽는다: artisan 은 `test` 명령일 때 확장 오토로드 등록을
+     * 건너뛰면서 중복 방지 상수는 정의하므로 CoreServiceProvider 의 등록까지 막히는데,
+     * 캐시가 있으면 부모 부팅이 라우트 파일을 아예 실행하지 않아 무해하고 비어 있으면
+     * 라우트 파일이 실행되며 확장 클래스를 만나 "Class ... not found" 로 터진다.
+     *
+     * best_effort — 실패해도 설치 자체는 완료 처리한다(비캐시 부팅은 정상 동작).
+     *
+     * @return array 태스크 실행 결과
+     */
+    function optimizeRouteCacheSSE(): array
+    {
+        return executeArtisanCommandSSE(
+            artisanCommand: 'route:cache',
+            taskId: 'route_cache',
+            taskNameKey: 'task_route_cache',
+            successMsgKey: 'log_route_cache_success',
+            errorMsgKey: 'error_route_cache_failed'
+        );
+    }
+}
+
 if (! function_exists('publishStaticCacheSSE')) {
     /**
      * 설치 완료 직후 부트스트랩 리소스 정적 게시(bake)를 최초 수행한다 (#122).
@@ -1923,6 +1975,12 @@ if (! function_exists('runInstallationTasks')) {
             // complete_flag(installer_completed=true) 이후에 config 캐시를 최초 생성해야
             // 설치가 config:cache 켜진 상태로 시작한다. best_effort — 실패해도 설치는 완료.
             $tasks[] = ['id' => 'config_cache', 'function' => 'optimizeConfigCacheSSE', 'best_effort' => true];
+            // 라우트 캐시도 complete_flag 이후에 최초 생성한다 — 설치 도중 확장 install·
+            // activate 가 부른 RouteCacheHelper::rebuild() 는 installer_completed 가 서기
+            // 전이라 clear 만 하고 재생성을 건너뛰고, 완료 후에는 재생성 트리거가 확장
+            // 라이프사이클에만 묶여 있어 이 지점이 없으면 아무도 굽지 않는다.
+            // best_effort — 실패해도 설치는 완료(비캐시 부팅은 느릴 뿐 정상).
+            $tasks[] = ['id' => 'route_cache', 'function' => 'optimizeRouteCacheSSE', 'best_effort' => true];
             // 부트스트랩 리소스 정적 게시(bake) 최초 수행 — 없으면 첫 방문자가
             // 자가 치유(1회 API 폴백)를 겪는다. best_effort — 실패해도 설치는 완료.
             $tasks[] = ['id' => 'static_publish', 'function' => 'publishStaticCacheSSE', 'best_effort' => true];

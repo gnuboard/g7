@@ -1,0 +1,45 @@
+feature: 본인인증 저장소 조회 계약 (정책 우선순위, 활성 확장 범위, 검증 로그 만료)
+
+description: |
+  본인인증 정책 저장소가 정책을 우선순위 순으로 돌려주고 비활성 확장이 등록한 정책을 빼는지, 검증 로그 저장소가 만료된 검증 토큰을 찾지 않는지 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
+  축 lookup 은 조회 경로(범위와 대상으로 정책 찾기, 경로 범위 색인, 검증 토큰 찾기), record_condition 은 저장된 행의 상태다.
+  정책 조회 두 경로는 같은 정렬 절(priority 내림, id 오름)과 같은 활성 확장 필터를 쓴다.
+
+axes:
+  lookup: [scope_target, route_index, verified_token]
+  record_condition: [priority_differs, priority_tied, core_or_admin_source, active_extension, inactive_extension, reactivated_extension,
+                     unexpired_token, expired_token, token_without_expiry, consumed_token, other_purpose_token]
+
+exclusions:
+  - { lookup: [scope_target, route_index], record_condition: [unexpired_token, expired_token, token_without_expiry, consumed_token, other_purpose_token],
+      reason: "정책 조회는 검증 로그를 읽지 않아 토큰 상태가 입력으로 들어가지 않는다." }
+  - { lookup: verified_token, record_condition: [priority_differs, priority_tied, core_or_admin_source, active_extension, inactive_extension, reactivated_extension],
+      reason: "검증 토큰 조회는 정책 행을 읽지 않아 정책 우선순위와 출처 확장 상태가 입력으로 들어가지 않는다." }
+  - { lookup: route_index, record_condition: [priority_differs, core_or_admin_source],
+      reason: "경로 색인은 scope_target 조회와 같은 정렬 절과 출처 필터를 써서 우선순위 차이와 코어, 관리자 출처 판정이 따로 갈리지 않는다." }
+
+effects:
+  - higher_priority_comes_first
+  - tied_priority_is_ordered_deterministically_by_id
+  - route_scope_index_is_ordered_deterministically
+  - hook_scope_includes_active_module_policy
+  - hook_scope_excludes_inactive_module_policy
+  - hook_scope_reincludes_policy_after_reactivation
+  - hook_scope_excludes_inactive_plugin_policy
+  - hook_scope_always_includes_core_and_admin_policies
+  - route_scope_includes_active_module_policy
+  - route_scope_excludes_inactive_module_policy
+  - route_scope_reincludes_policy_after_reactivation
+  - unexpired_verified_token_is_returned
+  - expired_verified_token_is_not_returned
+  - expiry_boundary_is_closed_strictly
+  - token_without_expiry_is_not_returned
+  - consumed_token_is_not_returned
+  - token_with_other_purpose_is_not_returned
+
+test_files:
+  - tests/Unit/Repositories/IdentityPolicyRepositoryPriorityOrderTest.php
+  - tests/Unit/Repositories/IdentityPolicyRepositoryActiveExtensionScopeTest.php
+  - tests/Unit/Repositories/IdentityVerificationLogRepositoryTest.php

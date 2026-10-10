@@ -1,0 +1,29 @@
+feature: 정렬 허용 컬럼과 검증 게이트의 정합 — 통과한 정렬이 조용히 기본값으로 되돌아가지 않는다
+
+description: |
+  목록 정렬의 허용 값은 요청을 실제로 거절하는 FormRequest(`sort_by` 규칙)가 정하고, Repository 의
+  정렬 허용 목록(`resolveSortSpec` / `resolveSortSpecWithRelated` 인자)은 그 아래 안전망이다.
+  안전망이 게이트보다 좁으면 검증을 통과한 정렬이 422 도 로그도 없이 기본 정렬로 되돌아가
+  "정렬 버튼이 안 먹는다" 로만 관측된다.
+
+  이 계약은 두 검사로 선다.
+    - call_site_mapping: 저장소를 스캔해 찾은 모든 호출처가 호출처→요청 매핑에 등록돼 있고,
+      매핑에만 남은 낡은 항목이 없는지. 매핑이 빠지면 그 저장소는 대조 자체에 도달하지 못한다.
+    - whitelist_covers_gate: 매핑된 쌍마다 저장소 허용 목록이 게이트 허용 값을 모두 덮는지
+      (상수 참조·관계 정렬 맵의 최상위 키 포함).
+
+axes:
+  contract_check: [call_site_mapping, whitelist_covers_gate]
+
+effects:
+  - every_call_site_mapped
+  - stale_gate_map_entry_rejected
+  - repo_whitelist_covers_gate
+
+test_files:
+  - tests/Unit/Repositories/Concerns/SortableColumnsGateContractTest.php
+  - tests/Unit/Repositories/SortWhitelistGateParityTest.php
+
+notes: |
+  테스트 클래스 주석의 `@scenario case=...` 는 이 매니페스트가 생기기 전의 파일 단위 표기다.
+  칸 커버리지는 테스트 메서드별 `contract_check` 마킹이 담당한다(설계 결정 2026-09-26).

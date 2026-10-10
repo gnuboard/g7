@@ -2,8 +2,14 @@
 
 namespace Modules\Sirsoft\Board\Tests\Feature\Seo;
 
+use App\Enums\ExtensionStatus;
 use App\Extension\TemplateManager;
+use App\Models\Module;
+use App\Models\Permission;
+use App\Models\Plugin;
+use App\Models\Role;
 use App\Seo\SeoCacheManager;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Models\Board;
@@ -43,23 +49,23 @@ class PostSeoOgImageRenderingTest extends ModuleTestCase
                 true
             )['version'] ?? '1.0.0';
 
-            \App\Models\Module::updateOrCreate(
+            Module::updateOrCreate(
                 ['identifier' => $id],
                 [
                     'vendor' => $vendor,
                     'name' => ['ko' => $ko, 'en' => $en],
-                    'status' => \App\Enums\ExtensionStatus::Active->value,
+                    'status' => ExtensionStatus::Active->value,
                     'version' => $manifestVersion,
                     'config' => [],
                 ]
             );
         }
-        \App\Models\Plugin::firstOrCreate(
+        Plugin::firstOrCreate(
             ['identifier' => 'sirsoft-daum_postcode'],
             [
                 'vendor' => 'sirsoft',
                 'name' => ['ko' => '다음 우편번호', 'en' => 'Daum Postcode'],
-                'status' => \App\Enums\ExtensionStatus::Active->value,
+                'status' => ExtensionStatus::Active->value,
                 'version' => '1.0.0',
                 'config' => [],
             ]
@@ -67,14 +73,23 @@ class PostSeoOgImageRenderingTest extends ModuleTestCase
 
         // 템플릿 활성화
         $tm = app(TemplateManager::class);
-        try { $tm->installTemplate('sirsoft-basic'); } catch (\Throwable) {}
-        try { $tm->activateTemplate('sirsoft-basic'); } catch (\Throwable) {}
+        try {
+            $tm->installTemplate('sirsoft-basic');
+        } catch (\Throwable) {
+        }
+        try {
+            $tm->activateTemplate('sirsoft-basic');
+        } catch (\Throwable) {
+        }
 
         // SEO 캐시 격리
-        try { app(SeoCacheManager::class)->clearAll(); } catch (\Throwable) {}
+        try {
+            app(SeoCacheManager::class)->clearAll();
+        } catch (\Throwable) {
+        }
 
         // Http facade redirect — DataSourceResolver 가 호출하는 외부 HTTP 를 같은 process 의 internal kernel 로
-        Http::fake(function (\Illuminate\Http\Client\Request $request) {
+        Http::fake(function (Request $request) {
             $url = $request->url();
             $path = parse_url($url, PHP_URL_PATH);
             $query = parse_url($url, PHP_URL_QUERY);
@@ -101,11 +116,11 @@ class PostSeoOgImageRenderingTest extends ModuleTestCase
         ]);
 
         // guest role 에 board posts read 권한 부여 — 봇/비로그인이 게시글 SEO 받을 수 있도록
-        $readPerm = \App\Models\Permission::firstOrCreate(
+        $readPerm = Permission::firstOrCreate(
             ['identifier' => "sirsoft-board.{$board->slug}.posts.read"],
             ['name' => ['ko' => '게시글 조회', 'en' => 'Read Posts'], 'type' => 'user']
         );
-        \App\Models\Role::where('identifier', 'guest')->first()->permissions()->syncWithoutDetaching([$readPerm->id]);
+        Role::where('identifier', 'guest')->first()->permissions()->syncWithoutDetaching([$readPerm->id]);
 
         $post = Post::create([
             'board_id' => $board->id,

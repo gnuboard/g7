@@ -45,7 +45,7 @@ export interface PageHeaderProps {
 /**
  * PageHeader 컴포넌트
  *
- * 페이지 헤더 - admin_dashboard.json의 page_header 스타일과 동일
+ * 페이지 헤더 - admin_dashboard.g7.html의 page_header 스타일과 동일
  * 배경색 없음, flex items-center justify-between mb-6 레이아웃
  *
  * @example

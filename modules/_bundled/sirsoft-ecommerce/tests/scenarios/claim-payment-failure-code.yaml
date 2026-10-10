@@ -1,0 +1,44 @@
+# 시나리오 매니페스트 — 클레임 추가결제 실패 코드 변환 (#599 3차 실측 F-5)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: claim_payment_failure_code_conversion
+
+description: >-
+  `ClaimPaymentCallback::errorCode()` 가 만든 값은 그대로 신청서 상세 주소의 `?error=` 가 되고
+  유저 템플릿이 「실패 코드 {code}」 배너로 그린다. PG 원문 메시지는 상점 MID·PG 내부 상태를
+  담을 수 있어 의도적으로 화면에 싣지 않으므로, **이 코드가 구매자가 받는 유일한 실패
+  식별자**이자 고객센터가 건을 특정하는 값이다.
+
+  변환 규칙은 둘이다. PG 가 준 코드는 예외의 치환 파라미터로 오고(`paymentFailed($code)`),
+  모듈이 스스로 내린 판정은 파라미터 없이 예외 키로만 온다(`paymentAmountMismatch()` →
+  `amount_mismatch`). 키만 읽으면 앞의 경우가 상수 `failed` 로 접혀 서로 다른 PG 거절이 전부
+  같은 토큰이 된다(2026-09-22 실측: 결제행에는 `PG_API_ERROR` 와 한국어 사유가 남았는데 화면은
+  「실패 코드 failed」였다).
+
+  이 값은 배너에 그대로 그려지므로 코드 모양이 아닌 값은 받지 않는다 — PG 가 코드 자리에
+  문장·태그·줄바꿈을 담아 보내면 그것이 구매자가 읽는 문구가 된다. 원문 메시지를 싣지 않기로
+  한 이유가 그대로 적용된다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/ClaimPaymentCallbackTest.php
+
+coverage_strategy: pairwise
+
+axes:
+  reason_origin:
+    - pg_parameter     # PG 가 준 코드가 치환 파라미터에 실려 온 경우
+    - module_verdict   # 모듈이 내린 판정 — 파라미터 없이 키 조각이 곧 사유
+  value_shape:
+    - code_shaped      # 영숫자·`_`·`.`·`-` 로만 된 식별자
+    - free_text        # 문장·태그·빈 문자열 등 코드로 볼 수 없는 값
+
+exclusions:
+  - { reason_origin: module_verdict, value_shape: free_text, reason: "모듈 판정 경로는 파라미터를 싣지 않아 값 모양 축이 성립하지 않는다 — 항상 키 조각을 쓴다" }
+
+effects:
+  - claim_payment_error_code_prefers_exception_parameter
+  - claim_payment_error_code_falls_back_to_key_fragment
+  - claim_payment_error_code_rejects_non_code_shaped_values
+
+validation:
+  audit_rule: test-scenario-coverage

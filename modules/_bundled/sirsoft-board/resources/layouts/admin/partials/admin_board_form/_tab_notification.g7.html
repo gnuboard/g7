@@ -1,0 +1,26 @@
+<!-- 게시판 폼 「알림」 탭 — 이 게시판에서 무슨 일이 났을 때 누구에게 알릴지 두 갈래만 정한다(새 글이 올라오면 관리자에게 · 답글·댓글이 달리면 글쓴이에게). 어느 채널로 보낼지는 여기가 아니라 모듈 설정의 알림 정의가 정한다 -->
+<partial description="Board Form - Notification Tab Content">
+  <div data-ref="section_notification_card" class="admin-card">
+    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
+      <variant when="readonly">opacity-60</variant>
+      <variant when="normal"></variant>
+    </class-map>
+    <h3 data-ref="section_notification" class="card-title">$t:sirsoft-board.admin.form.tabs.notification</h3>
+    <div data-ref="section_notification_fields" class="row-stack">
+      <div data-ref="notify_author_toggle" class="flex-start justify-between">
+        <div class="flex-1">
+          <label class="text-heading">$t:sirsoft-board.admin.form.fields.notify_author.label</label>
+          <p class="form-hint">$t:sirsoft-board.admin.form.fields.notify_author.description</p>
+        </div>
+        <toggle data-type="composite" name="notify_author" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+      </div>
+      <div data-ref="notify_admin_on_post_toggle" class="flex-start justify-between">
+        <div class="flex-1">
+          <label class="text-heading">$t:sirsoft-board.admin.form.fields.notify_admin_on_post.label</label>
+          <p class="form-hint">$t:sirsoft-board.admin.form.fields.notify_admin_on_post.description</p>
+        </div>
+        <toggle data-type="composite" name="notify_admin_on_post" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+      </div>
+    </div>
+  </div>
+</partial>

@@ -1,944 +1,819 @@
 {
-  "layout_name": "tab_admin",
-  "id": "tab_admin",
-  "type": "basic",
-  "name": "Div",
-  "if": "{{route.type === 'admin'}}",
-  "children": [
-    {
-      "id": "section_header",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex-start justify-between gap-4 mb-6"
-      },
-      "responsive": {
-        "portable": {
-          "props": {
-            "className": "row-stack mb-6"
-          }
-        }
-      },
-      "children": [
+    "comment": "템플릿 목록의 **관리자용 탭** 본문(카드 목록). `_tab_user` 와 짝이고, 둘 다 부모 화면\n  (`admin_template_list`)이 함께 심어 두면 자기 종류일 때만(`route.type`) 그려진다 —\n  탭을 옮기면 URL 경로가 바뀌므로 이 조건 하나로 갈린다.\n  창은 모두 부모가 갖고 있고 여기서는 전역에 대상을 담아 열기만 한다.\n  이 탭에만 있는 것이 하나 있다 — **레이아웃 편집기로 나가는 버튼**(활성 관리자 템플릿 전용).",
+    "meta": {
+        "is_partial": true
+    },
+    "layout_name": "tab_admin",
+    "id": "tab_admin",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{route.type === 'admin'}}",
+    "children": [
         {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "H2",
-              "props": {
-                "className": "section-heading"
-              },
-              "text": "$t:admin.templates.admin_section.title"
+            "id": "section_header",
+            "type": "basic",
+            "name": "Div",
+            "responsive": {
+                "portable": {
+                    "props": {
+                        "className": "row-stack mb-6"
+                    }
+                }
             },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "mt-1 text-label-subtle"
-              },
-              "text": "$t:admin.templates.admin_section.description"
-            }
-          ]
+            "props": {
+                "className": "flex-start justify-between gap-4 mb-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H2",
+                            "props": {
+                                "className": "section-heading"
+                            },
+                            "text": "$t:admin.templates.admin_section.title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "mt-1 text-label-subtle"
+                            },
+                            "text": "$t:admin.templates.admin_section.description"
+                        }
+                    ]
+                },
+                {
+                    "id": "toolbar_group",
+                    "type": "basic",
+                    "name": "Div",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex flex-wrap items-center gap-x-4 gap-y-3 w-full"
+                            }
+                        }
+                    },
+                    "props": {
+                        "className": "flex-center gap-4 shrink-0"
+                    },
+                    "children": [
+                        {
+                            "comment": "갤러리/목록 보기 전환 — 4화면이 같은 저장 키를 공유한다.\n             icon-button 은 aria-pressed·title 을 흘려보내지 않으므로(IconButton.tsx)\n             button 둘로 된 세그먼트로 만든다. 모든 폭에서 보인다(responsive 숨김 없음).",
+                            "id": "tpl_admin_view_mode_toggle",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "role": "group",
+                                "aria-label": "$t:extensions.view_mode.toggle_label",
+                                "className": "inline-flex shrink-0 rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden"
+                            },
+                            "children": [
+                                {
+                                    "id": "tpl_admin_view_mode_gallery",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "classMap": {
+                                        "key": "{{_global.extensionViewMode ?? 'gallery'}}",
+                                        "variants": {
+                                            "list": "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                        },
+                                        "default": "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                                    },
+                                    "actions": [
+                                        {
+                                            "comment": "리터럴 값을 저장한 뒤 곧바로 되읽어 성공을 확인한다(AGENTS.md §5).\n                   GDPR 저장 인터셉터는 허용목록 밖 키를 예외 없이 버리므로, 되읽은 값이\n                   비면 이번 세션 동안만 보기가 유지되고 새로고침하면 기본값으로 돌아간다.",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "extensionViewMode": "gallery"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "saveToLocalStorage",
+                                                    "params": {
+                                                        "key": "g7_view_mode_extensions",
+                                                        "value": "gallery"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "loadFromLocalStorage",
+                                                    "params": {
+                                                        "key": "g7_view_mode_extensions",
+                                                        "defaultValue": ""
+                                                    },
+                                                    "resultTo": {
+                                                        "target": "_global",
+                                                        "key": "extensionViewModePersisted"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "aria-pressed": "{{(_global.extensionViewMode ?? 'gallery') !== 'list'}}",
+                                        "title": "$t:extensions.view_mode.gallery",
+                                        "className": "px-3 h-10 transition-colors"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "th-large",
+                                                "size": "sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "sr-only"
+                                            },
+                                            "text": "$t:extensions.view_mode.gallery_aria"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "tpl_admin_view_mode_list",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "classMap": {
+                                        "key": "{{_global.extensionViewMode ?? 'gallery'}}",
+                                        "variants": {
+                                            "list": "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                                        },
+                                        "default": "bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                                    },
+                                    "actions": [
+                                        {
+                                            "comment": "갤러리 버튼과 같은 순서 — 리터럴 `list` 를 저장한 뒤 곧바로 되읽어 성공을 확인한다(AGENTS.md §5).\n                   GDPR 저장 인터셉터는 허용목록 밖 키를 예외 없이 버리므로, 되읽은 값이 비면 이번 세션 동안만\n                   목록 보기가 유지되고 새로고침하면 기본값(갤러리)으로 돌아간다.",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "extensionViewMode": "list"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "saveToLocalStorage",
+                                                    "params": {
+                                                        "key": "g7_view_mode_extensions",
+                                                        "value": "list"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "loadFromLocalStorage",
+                                                    "params": {
+                                                        "key": "g7_view_mode_extensions",
+                                                        "defaultValue": ""
+                                                    },
+                                                    "resultTo": {
+                                                        "target": "_global",
+                                                        "key": "extensionViewModePersisted"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "aria-pressed": "{{(_global.extensionViewMode ?? 'gallery') === 'list'}}",
+                                        "title": "$t:extensions.view_mode.list",
+                                        "className": "px-3 h-10 transition-colors"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "list",
+                                                "size": "sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "sr-only"
+                                            },
+                                            "text": "$t:extensions.view_mode.list_aria"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "최고관리자 전용 — 관리자 로그인 응답(current_user)의 is_super 를 읽는다. 없는 이름(currentUser)을 읽어 최고관리자에게도 안 보이던 문제(#703 실측).\n             탭 위 별도 줄에 있던 것을 모듈·플러그인 화면처럼 툴바 안(보기 전환과 검색 사이)으로 옮겼다.",
+                            "id": "tpl_admin_include_hidden_toggle",
+                            "type": "basic",
+                            "name": "Label",
+                            "if": "{{current_user?.data?.is_super === true}}",
+                            "props": {
+                                "className": "flex-center gap-2 text-body cursor-pointer select-none"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "숨김 포함 여부는 다른 필터처럼 주소에 싣는다 — 화면 상태(_local)에 두면 페이지를 넘길 때 풀려, 체크는 켜진 채 숨김을 뺀 목록을 받았다(#703 실측). 주소를 바꾸면 목록을 다시 받으므로 따로 재조회하지 않는다",
+                                            "type": "change",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/templates/admin",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "include_hidden": "{{$event.target.checked ? '1' : undefined}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "checkbox",
+                                        "checked": "{{query.include_hidden === '1'}}",
+                                        "className": "w-4 h-4 rounded text-blue-600 dark:text-blue-400 dark:focus:ring-blue-400"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.templates.include_hidden"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "너비는 이 래퍼가 맡는다 — SearchBar 는 받은 class 를 안쪽 input 에만 걸고 바깥 div 는 내용 폭이라, 한 줄 flex 툴바에서 늘어나지 않는다. 모바일은 전폭으로 다음 줄에 내려간다.",
+                            "id": "search_bar_box",
+                            "type": "basic",
+                            "name": "Div",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "w-full"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "w-64"
+                            },
+                            "children": [
+                                {
+                                    "id": "search_bar",
+                                    "type": "composite",
+                                    "name": "SearchBar",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "searchQuery": "{{$event.target.value}}"
+                                            }
+                                        },
+                                        {
+                                            "comment": "검색은 조건을 바꾸는 액션이지 리셋이 아니다 — 검색어와 페이지만 새로 정하고 사용자가 고른 표시 개수는 그대로 둔다 (#75).",
+                                            "type": "submit",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/templates/admin",
+                                                "mergeQuery": true,
+                                                "query": {
+                                                    "search": "{{_local.searchQuery || undefined}}",
+                                                    "page": ""
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "placeholder": "$t:admin.templates.search_placeholder",
+                                        "value": "{{_local.searchQuery || ''}}",
+                                        "className": "w-full"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "id": "search_bar",
-          "type": "composite",
-          "name": "SearchBar",
-          "props": {
-            "placeholder": "$t:admin.templates.search_placeholder",
-            "value": "{{_local.searchQuery || ''}}",
-            "className": "w-64"
-          },
-          "responsive": {
-            "portable": {
-              "props": {
-                "className": "w-full"
-              }
-            }
-          },
-          "actions": [
-            {
-              "type": "change",
-              "handler": "setState",
-              "params": {
-                "searchQuery": "{{$event.target.value}}"
-              }
+            "id": "content_area",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
             },
-            {
-              "comment": "검색은 조건을 바꾸는 액션이지 리셋이 아니다 — 검색어와 페이지만 새로 정하고 사용자가 고른 표시 개수는 그대로 둔다 (#75).",
-              "type": "submit",
-              "handler": "navigate",
-              "params": {
-                "path": "/admin/templates/admin",
-                "mergeQuery": true,
-                "query": {
-                  "search": "{{_local.searchQuery || undefined}}",
-                  "page": ""
-                }
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "content_area",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "admin-card"
-      },
-      "children": [
-        {
-          "id": "template_card_grid",
-          "type": "composite",
-          "name": "CardGrid",
-          "blur_until_loaded": true,
-          "props": {
-            "data": "{{templates?.data?.data ?? []}}",
-            "gridColumns": 1,
-            "gap": 4,
-            "idField": "identifier",
-            "pagination": true,
-            "alwaysShowPagination": true,
-            "serverSidePagination": true,
-            "serverCurrentPage": "{{templates?.data?.pagination?.current_page ?? 1}}",
-            "serverTotalPages": "{{templates?.data?.pagination?.last_page ?? null}}",
-            "serverHasMorePages": "{{templates?.data?.pagination?.has_more_pages ?? false}}",
-            "cardClassName": "border border-gray-200 dark:border-gray-700 rounded-lg p-4 relative",
-            "cardColumns": [
-              {
-                "id": "template_content",
-                "cellChildren": [
-                  {
+            "children": [
+                {
+                    "comment": "확장 목록 — 갤러리(카드)와 목록(행)은 서로 다른 DOM 이다.\n           보기 분기는 `viewMode` prop 으로 컴포넌트에 넘긴다: 카드 셀의 렌더 컨텍스트에는\n           `_global` 이 없어 카드 안쪽에서는 보기 상태를 볼 수 없기 때문이다.\n           템플릿은 버튼이 둘이다 — 원문 편집(보조)과 시각 편집(주). 미설치면 그 자리에\n           설치 버튼 하나만 온다. 열 수는 컴포넌트가 컨테이너 실측 폭으로 정한다.\n           코어 요구 버전 미충족(`core_compatible=false`)이면 설치와 켜기를 잠근다 — 서버가 422 로 거절한다.",
+                    "id": "template_card_grid",
+                    "type": "composite",
+                    "name": "ExtensionCardGrid",
+                    "blur_until_loaded": true,
+                    "actions": [
+                        {
+                            "comment": "카드 본문 클릭 — 상세 창을 연다. 대상 행을 전역에 먼저 담고 연다(창은 그 전역만 본다).",
+                            "type": "action",
+                            "event": "onItemClick",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "selectedTemplate": "{{$args[0]}}"
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/templates/{{$args[0].identifier}}/changelog",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "GET"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "templateChangelog": "{{response.data.changelog ?? []}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "template_detail_modal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "templateChangelog": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "template_detail_modal"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "활성/비활성은 곧바로 부르지 않고 확인 창을 연다 — 템플릿을 바꾸면 사이트 전면이\n               한꺼번에 바뀌므로 되물어야 한다(모듈·플러그인과 다른 점이다).\n               스위치는 창이 답을 받을 때까지 서버 값에 둔다 — 창을 닫아도 누른 쪽으로 뒤집힌 채 남지 않게\n               재동기 신호를 올린다(#703 실측). 확인하면 목록을 다시 받아 새 값으로 넘어간다.",
+                            "type": "action",
+                            "event": "onToggle",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "extensionToggleResync": "{{(_global.extensionToggleResync ?? 0) + 1}}"
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "selectedTemplate": "{{$args[1]}}"
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "{{$args[1].status === 'active' ? 'template_deactivate_modal' : 'template_activate_modal'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "보조 버튼은 둘 중 하나로만 생긴다 — 올릴 판이 있으면 업데이트, 아니면 원문 편집.\n               원문 편집은 같은 창에서 연다(지금 보는 관리자 화면과 겹치지 않는다).\n               업데이트는 손으로 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다.",
+                            "type": "action",
+                            "event": "onSecondaryAction",
+                            "handler": "switch",
+                            "params": {
+                                "value": "{{$args[0].update_available && $args[0].status !== 'uninstalled' ? 'update' : 'edit_code'}}"
+                            },
+                            "cases": {
+                                "edit_code": {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/templates/{{$args[0].identifier}}/edit",
+                                        "mergeQuery": true,
+                                        "query": {}
+                                    }
+                                },
+                                "update": {
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedTemplate": "{{$args[0]}}",
+                                                "templateLayoutStrategy": "overwrite",
+                                                "templateForceUpdate": false,
+                                                "hasModifiedTemplateLayouts": false,
+                                                "modifiedTemplateLayoutsCount": 0,
+                                                "modifiedTemplateLayouts": [],
+                                                "modifiedTemplateLayoutsCheckFailed": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/templates/{{$args[0].identifier}}/check-modified-layouts",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "GET"
+                                            },
+                                            "onSuccess": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "hasModifiedTemplateLayouts": "{{response.data?.has_modified_layouts ?? false}}",
+                                                    "modifiedTemplateLayoutsCount": "{{response.data?.modified_count ?? 0}}",
+                                                    "modifiedTemplateLayouts": "{{response.data?.modified_layouts ?? []}}",
+                                                    "modifiedTemplateLayoutsCheckFailed": false
+                                                }
+                                            },
+                                            "onError": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "modifiedTemplateLayoutsCheckFailed": true
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/templates/{{$args[0].identifier}}/changelog?source={{$args[0].update_source ?? 'bundled'}}&from_version={{$args[0].version}}&to_version={{$args[0].latest_version}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "GET"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "updateChangelog": "{{response.data.changelog ?? []}}",
+                                                        "templateUpdateError": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "template_update_modal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "updateChangelog": [],
+                                                        "templateUpdateError": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "template_update_modal"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "comment": "미설치면 설치 창, 활성이면 시각 편집기다(버튼 자체가 그 둘로만 생긴다).\n               시각 편집기는 새 창으로 연다 — 편집하며 결과를 보려면 원래 화면이 남아 있어야 한다.",
+                            "type": "action",
+                            "event": "onPrimaryAction",
+                            "handler": "switch",
+                            "params": {
+                                "value": "{{$args[0].status === 'uninstalled' ? 'install' : 'edit'}}"
+                            },
+                            "cases": {
+                                "install": {
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedTemplate": "{{$args[0]}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "template_install_modal"
+                                        }
+                                    ]
+                                },
+                                "edit": {
+                                    "handler": "openWindow",
+                                    "params": {
+                                        "path": "/admin/layout-editor/{{$args[0].identifier}}",
+                                        "target": "_blank"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "comment": "카드 더보기 메뉴. 업데이트는 손으로 고친 레이아웃 여부와 변경 이력을 미리 물어 두고,\n               삭제는 창을 먼저 열고 안내 정보를 뒤이어 받는다.",
+                            "type": "action",
+                            "event": "onAction",
+                            "handler": "switch",
+                            "cases": {
+                                "view_detail": {
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedTemplate": "{{$args[1]}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/templates/{{$args[1].identifier}}/changelog",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "GET"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "templateChangelog": "{{response.data.changelog ?? []}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "template_detail_modal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "templateChangelog": []
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "template_detail_modal"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "update": {
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedTemplate": "{{$args[1]}}",
+                                                "templateLayoutStrategy": "overwrite",
+                                                "templateForceUpdate": false,
+                                                "hasModifiedTemplateLayouts": false,
+                                                "modifiedTemplateLayoutsCount": 0,
+                                                "modifiedTemplateLayouts": [],
+                                                "modifiedTemplateLayoutsCheckFailed": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/templates/{{$args[1].identifier}}/check-modified-layouts",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "GET"
+                                            },
+                                            "onSuccess": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "hasModifiedTemplateLayouts": "{{response.data?.has_modified_layouts ?? false}}",
+                                                    "modifiedTemplateLayoutsCount": "{{response.data?.modified_count ?? 0}}",
+                                                    "modifiedTemplateLayouts": "{{response.data?.modified_layouts ?? []}}",
+                                                    "modifiedTemplateLayoutsCheckFailed": false
+                                                }
+                                            },
+                                            "onError": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "modifiedTemplateLayoutsCheckFailed": true
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/templates/{{$args[1].identifier}}/changelog?source={{$args[1].update_source ?? 'bundled'}}&from_version={{$args[1].version}}&to_version={{$args[1].latest_version}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "GET"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "updateChangelog": "{{response.data.changelog ?? []}}",
+                                                        "templateUpdateError": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "template_update_modal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "updateChangelog": [],
+                                                        "templateUpdateError": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "template_update_modal"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "refresh_layouts": {
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedTemplate": "{{$args[1]}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "template_refresh_layouts_modal"
+                                        }
+                                    ]
+                                },
+                                "manage_language_packs": {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/templates/{{$args[1].identifier}}/language-packs",
+                                        "mergeQuery": true,
+                                        "query": {}
+                                    }
+                                },
+                                "uninstall": {
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedTemplate": "{{$args[1]}}",
+                                                "templateUninstallInfo": null,
+                                                "templateUninstallBackups": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "template_uninstall_modal"
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/templates/{{$args[1].identifier}}/uninstall-info",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "GET"
+                                            },
+                                            "onSuccess": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "templateUninstallInfo": "{{response.data}}"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "comment": "페이지 이동 — 검색은 유지하고, 목적지에는 자기 탭 경로를 박아 둔다.",
+                            "type": "change",
+                            "event": "onPageChange",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/templates/admin",
+                                "mergeQuery": true,
+                                "query": {
+                                    "page": "{{$args[0]}}"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "viewMode": "{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}",
+                        "minCardWidth": 250,
+                        "maxColumns": 5,
+                        "resyncKey": "{{_global.extensionToggleResync ?? 0}}",
+                        "loading": "{{templates?.loading ?? false}}",
+                        "pagination": true,
+                        "alwaysShowPagination": true,
+                        "currentPage": "{{templates?.data?.pagination?.current_page ?? 1}}",
+                        "totalPages": "{{templates?.data?.pagination?.last_page ?? null}}",
+                        "hasMorePages": "{{templates?.data?.pagination?.has_more_pages ?? false}}",
+                        "items": "{{(templates?.data?.data ?? []).map(p => ({\n        id: p.identifier,\n        row: p,\n        name: p.name ?? p.identifier,\n        version: p.version,\n        description: p.description ?? '',\n        vendor: p.vendor,\n        iconUrl: p.icon_url,\n        fallbackIcon: 'cog',\n        dependencies: [\n          ...((p.dependencies?.modules ?? []).map(d => ({ type: 'module', name: d.name || d.identifier || d }))),\n          ...((p.dependencies?.plugins ?? []).map(d => ({ type: 'plugin', name: d.name || d.identifier || d })))\n        ],\n        badges: [\n          ...(p.status === 'active' ? [{ label: '$t:admin.templates.status.active', tone: 'success' }] : []),\n          ...(p.status === 'inactive' ? [{ label: '$t:admin.templates.status.inactive', tone: 'neutral' }] : []),\n          ...(p.status === 'uninstalled' ? [{ label: '$t:admin.templates.status.not_installed', tone: 'info' }] : []),\n          ...(p.update_available && p.status !== 'uninstalled' ? [{ label: '$t:admin.templates.update_available', tone: 'danger' }] : []),\n          ...(p.is_compatible === false || p.core_compatible === false ? [{ label: '$t:extensions.badges.incompatible', tone: 'warning', icon: 'exclamation-triangle' }] : [])\n        ],\n        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.status === 'active' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_activate !== true || p.core_compatible === false, label: p.name ?? p.identifier } : null,\n        secondaryAction: p.update_available && p.status !== 'uninstalled'\n          ? { label: '$t:admin.templates.actions.update', icon: 'refresh', disabled: ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true }\n          : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_code', icon: 'code', disabled: p.abilities?.can_edit_layouts !== true } : null),\n        primaryAction: p.status === 'uninstalled'\n          ? { label: '$t:admin.templates.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true || p.core_compatible === false }\n          : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_layout_visual', icon: 'edit', variant: 'solid', disabled: p.abilities?.can_edit_layouts !== true } : null),\n        actions: [\n          { id: 'view_detail', label: '$t:admin.templates.actions.view_detail', iconName: 'info-circle' },\n          { id: 'update', label: '$t:admin.templates.actions.update', iconName: 'refresh', disabled: !p.update_available || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true },\n          { id: 'refresh_layouts', label: '$t:admin.templates.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },\n          { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', disabled: p.status !== 'active' || templates?.data?.abilities?.can_view_language_packs !== true },\n          { id: 'uninstall', label: '$t:admin.templates.actions.uninstall', iconName: 'trash', variant: 'danger', disabled: p.status === 'active' || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_uninstall !== true }\n        ]\n      }))}}"
+                    }
+                },
+                {
+                    "id": "pagination_info",
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                      "className": "flex items-start gap-4"
+                        "className": "mt-4 text-label text-center"
                     },
                     "children": [
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "flex-shrink-0 text-5xl bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center"
-                        },
-                        "children": [
-                          {
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.templates.pagination_info|total={{templates?.data?.pagination?.total ?? 0}}|from={{((templates?.data?.pagination?.current_page ?? 1) - 1) * (templates?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((templates?.data?.pagination?.current_page ?? 1) * (templates?.data?.pagination?.per_page ?? 12), templates?.data?.pagination?.total ?? 0)}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "info_message",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "alert-info"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start gap-3"
+                    },
+                    "children": [
+                        {
                             "type": "basic",
                             "name": "Icon",
                             "props": {
-                              "name": "cog",
-                              "className": "text-2xl text-gray-600 dark:text-gray-400"
+                                "name": "info-circle",
+                                "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
                             }
-                          }
-                        ]
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                          "className": "flex-1 min-w-0 flex items-start justify-between gap-4"
                         },
-                        "responsive": {
-                          "portable": {
-                            "props": {
-                              "className": "flex-1 min-w-0 row-stack"
-                            }
-                          }
-                        },
-                        "children": [
-                          {
+                        {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                              "className": "flex-1 min-w-0"
-                            },
                             "children": [
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": "flex-center gap-2 flex-wrap"
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "font-medium text-blue-900 dark:text-blue-100"
+                                    },
+                                    "text": "$t:admin.templates.info.title"
                                 },
-                                "children": [
-                                  {
+                                {
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "P",
                                     "props": {
-                                      "className": "font-semibold text-gray-900 dark:text-white"
+                                        "className": "mt-1 text-info-soft"
                                     },
-                                    "text": "{{row.name}}"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.status === 'active'}}",
-                                    "props": {
-                                      "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded"
-                                    },
-                                    "text": "$t:admin.templates.status.active"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.status === 'inactive'}}",
-                                    "props": {
-                                      "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
-                                    },
-                                    "text": "$t:admin.templates.status.inactive"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.status === 'uninstalled'}}",
-                                    "props": {
-                                      "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded"
-                                    },
-                                    "text": "$t:admin.templates.status.not_installed"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                      "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
-                                    },
-                                    "text": "v{{row.version}}"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.update_available && row.status !== 'uninstalled'}}",
-                                    "props": {
-                                      "className": "px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded"
-                                    },
-                                    "text": "$t:admin.templates.status.update_available"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.update_available && row.latest_version && row.status !== 'uninstalled'}}",
-                                    "props": {
-                                      "className": "text-tertiary"
-                                    },
-                                    "text": "$t:defer:admin.templates.version_available|version={{row.latest_version ?? ''}}"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.is_compatible === false}}",
-                                    "props": {
-                                      "className": "px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 rounded inline-flex items-center gap-1",
-                                      "title": "$t:defer:extensions.badges.incompatible_tooltip|required={{row.required_core_version ?? row.incompatible_required_version ?? ''}}|installed={{row.current_core_version ?? ''}}",
-                                      "aria-describedby": "compat_sr_{{row.identifier}}"
-                                    },
-                                    "children": [
-                                      {
-                                        "type": "basic",
-                                        "name": "Icon",
-                                        "props": {
-                                          "name": "exclamation-triangle",
-                                          "size": "xs"
-                                        }
-                                      },
-                                      {
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "text": "$t:extensions.badges.incompatible"
-                                      }
-                                    ]
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{row.is_compatible === false}}",
-                                    "props": {
-                                      "id": "compat_sr_{{row.identifier}}",
-                                      "className": "sr-only"
-                                    },
-                                    "text": "$t:defer:extensions.badges.incompatible_sr|name={{row.name ?? row.identifier ?? ''}}|required={{row.required_core_version ?? row.incompatible_required_version ?? ''}}|installed={{row.current_core_version ?? ''}}"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "if": "{{row.dependencies_met === false}}",
-                                    "props": {
-                                      "className": "flex items-center gap-1 px-2 py-0.5 text-xs bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-400 rounded"
-                                    },
-                                    "children": [
-                                      {
-                                        "type": "basic",
-                                        "name": "Icon",
-                                        "props": {
-                                          "name": "exclamation-triangle",
-                                          "className": "text-xs"
-                                        }
-                                      },
-                                      {
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "text": "$t:admin.templates.dependencies_warning"
-                                      }
-                                    ]
-                                  }
-                                ]
-                              },
-                              {
-                                "type": "basic",
-                                "name": "P",
-                                "props": {
-                                  "className": "mt-1 text-label"
-                                },
-                                "text": "{{row.description}}"
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": "mt-2 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500"
-                                },
-                                "responsive": {
-                                  "portable": {
-                                    "props": {
-                                      "className": "mt-2 flex flex-col items-start gap-1 text-xs text-gray-500 dark:text-gray-500"
-                                    }
-                                  }
-                                },
-                                "children": [
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:defer:admin.templates.vendor|vendor={{row.vendor}}"
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "if": "{{(row.dependencies?.modules && row.dependencies.modules.length > 0) || (row.dependencies?.plugins && row.dependencies.plugins.length > 0)}}",
-                                    "props": {
-                                      "className": "flex items-center gap-1 flex-wrap"
-                                    },
-                                    "children": [
-                                      {
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "text": "$t:admin.templates.dependencies_label"
-                                      },
-                                      {
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "iteration": {
-                                          "source": "{{[...(row.dependencies?.modules || []), ...(row.dependencies?.plugins || [])]}}",
-                                          "item_var": "dep",
-                                          "index_var": "depIndex"
-                                        },
-                                        "children": [
-                                          {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                              "className": "inline-flex items-center gap-0.5 align-middle"
-                                            },
-                                            "children": [
-                                              {
-                                                "type": "basic",
-                                                "name": "Icon",
-                                                "if": "{{dep.type === 'module'}}",
-                                                "props": {
-                                                  "name": "cube",
-                                                  "className": "text-sm text-gray-500 dark:text-gray-400"
-                                                }
-                                              },
-                                              {
-                                                "type": "basic",
-                                                "name": "Icon",
-                                                "if": "{{dep.type === 'plugin'}}",
-                                                "props": {
-                                                  "name": "puzzle-piece",
-                                                  "className": "text-sm text-gray-500 dark:text-gray-400"
-                                                }
-                                              },
-                                              {
-                                                "type": "basic",
-                                                "name": "Span",
-                                                "text": "{{dep.name}}"
-                                              }
-                                            ]
-                                          },
-                                          {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "if": "{{depIndex < [...(row.dependencies?.modules || []), ...(row.dependencies?.plugins || [])].length - 1}}",
-                                            "text": ",",
-                                            "props": {
-                                              "className": "ml-0 mr-1"
-                                            }
-                                          }
-                                        ]
-                                      }
-                                    ]
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "if": "{{(!row.dependencies?.modules || row.dependencies.modules.length === 0) && (!row.dependencies?.plugins || row.dependencies.plugins.length === 0)}}",
-                                    "text": "$t:admin.templates.no_dependencies"
-                                  }
-                                ]
-                              }
+                                    "text": "$t:admin.templates.info.description"
+                                }
                             ]
-                          },
-                          {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                              "className": "flex items-center gap-3 shrink-0"
-                            },
-                            "children": [
-                              {
-                                "id": "edit_layouts_button",
-                                "type": "basic",
-                                "name": "Button",
-                                "if": "{{row.status === 'active'}}",
-                                "props": {
-                                  "className": "flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                  "disabled": "{{row.abilities?.can_edit_layouts === false}}"
-                                },
-                                "responsive": {
-                                  "portable": {
-                                    "props": {
-                                      "className": "flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm transition-colors w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                                    }
-                                  }
-                                },
-                                "actions": [
-                                  {
-                                    "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                      "path": "/admin/templates/{{row.identifier}}/edit",
-                                      "mergeQuery": true,
-                                      "query": {}
-                                    }
-                                  }
-                                ],
-                                "children": [
-                                  {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "props": {
-                                      "name": "code",
-                                      "className": "text-base"
-                                    }
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:admin.templates.actions.edit_code"
-                                  }
-                                ]
-                              },
-                              {
-                                "id": "layout_editor_button",
-                                "type": "basic",
-                                "name": "Button",
-                                "if": "{{row.status === 'active'}}",
-                                "props": {
-                                  "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                  "disabled": "{{row.abilities?.can_edit_layouts === false}}"
-                                },
-                                "responsive": {
-                                  "portable": {
-                                    "props": {
-                                      "className": "flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                                    }
-                                  }
-                                },
-                                "actions": [
-                                  {
-                                    "type": "click",
-                                    "handler": "openWindow",
-                                    "params": {
-                                      "path": "/admin/layout-editor/{{row.identifier}}",
-                                      "target": "_blank"
-                                    }
-                                  }
-                                ],
-                                "children": [
-                                  {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "props": {
-                                      "name": "edit",
-                                      "className": "text-base"
-                                    }
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:admin.templates.actions.edit_layout_visual"
-                                  }
-                                ]
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Button",
-                                "if": "{{row.status === 'uninstalled'}}",
-                                "props": {
-                                  "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                  "disabled": "{{row.abilities?.can_install !== true}}"
-                                },
-                                "responsive": {
-                                  "portable": {
-                                    "props": {
-                                      "className": "flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm transition-colors w-full"
-                                    }
-                                  }
-                                },
-                                "actions": [
-                                  {
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                      {
-                                        "handler": "setState",
-                                        "params": {
-                                          "target": "global",
-                                          "selectedTemplate": "{{row}}"
-                                        }
-                                      },
-                                      {
-                                        "handler": "openModal",
-                                        "target": "template_install_modal"
-                                      }
-                                    ]
-                                  }
-                                ],
-                                "children": [
-                                  {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "props": {
-                                      "name": "download",
-                                      "className": "text-base"
-                                    }
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:admin.templates.actions.install"
-                                  }
-                                ]
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Button",
-                                "if": "{{row.update_available && row.status !== 'uninstalled'}}",
-                                "props": {
-                                  "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-                                  "type": "button",
-                                  "disabled": "{{row.abilities?.can_install !== true || row.is_compatible === false}}",
-                                  "title": "{{row.is_compatible === false ? '$t:defer:extensions.badges.incompatible_tooltip|required=' + (row.required_core_version ?? row.incompatible_required_version ?? '') + '|installed=' + (row.current_core_version ?? '') : ''}}",
-                                  "aria-describedby": "{{row.is_compatible === false ? 'compat_sr_' + row.identifier : ''}}"
-                                },
-                                "actions": [
-                                  {
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                      {
-                                        "handler": "setState",
-                                        "params": {
-                                          "target": "global",
-                                          "selectedTemplate": "{{row}}",
-                                          "templateLayoutStrategy": "overwrite",
-                                          "hasModifiedTemplateLayouts": false,
-                                          "modifiedTemplateLayoutsCount": 0,
-                                          "modifiedTemplateLayouts": [],
-                                          "modifiedTemplateLayoutsCheckFailed": false
-                                        }
-                                      },
-                                      {
-                                        "handler": "apiCall",
-                                        "auth_required": true,
-                                        "target": "/api/admin/templates/{{row.identifier}}/check-modified-layouts",
-                                        "params": {
-                                          "method": "GET"
-                                        },
-                                        "onSuccess": [
-                                          {
-                                            "handler": "setState",
-                                            "params": {
-                                              "target": "global",
-                                              "hasModifiedTemplateLayouts": "{{response.data?.has_modified_layouts ?? false}}",
-                                              "modifiedTemplateLayoutsCount": "{{response.data?.modified_count ?? 0}}",
-                                              "modifiedTemplateLayouts": "{{response.data?.modified_layouts ?? []}}",
-                                              "modifiedTemplateLayoutsCheckFailed": false
-                                            }
-                                          }
-                                        ],
-                                        "onError": [
-                                          {
-                                            "handler": "setState",
-                                            "params": {
-                                              "target": "global",
-                                              "modifiedTemplateLayoutsCheckFailed": true
-                                            }
-                                          }
-                                        ]
-                                      },
-                                      {
-                                        "handler": "apiCall",
-                                        "auth_required": true,
-                                        "target": "/api/admin/templates/{{row.identifier}}/changelog?source={{row.update_source ?? 'bundled'}}&from_version={{row.version}}&to_version={{row.latest_version}}",
-                                        "params": {
-                                          "method": "GET"
-                                        },
-                                        "onSuccess": [
-                                          {
-                                            "handler": "setState",
-                                            "params": {
-                                              "target": "global",
-                                              "updateChangelog": "{{response.data.changelog ?? []}}"
-                                            }
-                                          },
-                                          {
-                                            "handler": "setState",
-                                            "params": {
-                                              "target": "global",
-                                              "templateUpdateError": null
-                                            }
-                                          },
-                                          {
-                                            "handler": "openModal",
-                                            "target": "template_update_modal"
-                                          }
-                                        ],
-                                        "onError": [
-                                          {
-                                            "handler": "setState",
-                                            "params": {
-                                              "target": "global",
-                                              "updateChangelog": [],
-                                              "templateUpdateError": null
-                                            }
-                                          },
-                                          {
-                                            "handler": "openModal",
-                                            "target": "template_update_modal"
-                                          }
-                                        ]
-                                      }
-                                    ]
-                                  }
-                                ],
-                                "children": [
-                                  {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "props": {
-                                      "name": "refresh",
-                                      "className": "text-base"
-                                    }
-                                  },
-                                  {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:admin.templates.actions.update"
-                                  }
-                                ]
-                              },
-                              {
-                                "type": "composite",
-                                "name": "Toggle",
-                                "if": "{{row.status !== 'uninstalled'}}",
-                                "props": {
-                                  "checked": "{{row.status === 'active'}}",
-                                  "disabled": "{{row.status === 'active' || row.abilities?.can_activate !== true}}",
-                                  "size": "sm",
-                                  "className": ""
-                                },
-                                "responsive": {
-                                  "portable": {
-                                    "props": {
-                                      "className": "absolute right-4 top-1/2 -translate-y-1/2"
-                                    }
-                                  }
-                                },
-                                "actions": [
-                                  {
-                                    "type": "change",
-                                    "handler": "sequence",
-                                    "actions": [
-                                      {
-                                        "handler": "setState",
-                                        "params": {
-                                          "target": "global",
-                                          "selectedTemplate": "{{row}}"
-                                        }
-                                      },
-                                      {
-                                        "handler": "openModal",
-                                        "target": "{{row.status === 'active' ? 'template_deactivate_modal' : 'template_activate_modal'}}"
-                                      }
-                                    ]
-                                  }
-                                ]
-                              },
-                              {
-                                "type": "basic",
-                                "name": "Div",
-                                "props": {
-                                  "className": ""
-                                },
-                                "responsive": {
-                                  "portable": {
-                                    "props": {
-                                      "className": "absolute right-0 top-0"
-                                    }
-                                  }
-                                },
-                                "children": [
-                                  {
-                                    "type": "composite",
-                                    "name": "ActionMenu",
-                                    "props": {
-                                      "triggerLabel": "",
-                                      "items": [
-                                        {
-                                          "id": "view_detail",
-                                          "label": "$t:admin.templates.actions.view_detail",
-                                          "iconName": "info-circle"
-                                        },
-                                        {
-                                          "id": "refresh_layouts",
-                                          "label": "$t:admin.templates.actions.refresh_layouts",
-                                          "iconName": "refresh",
-                                          "disabled": "{{row.status !== 'active' || row.abilities?.can_activate !== true}}"
-                                        },
-                                        {
-                                          "id": "manage_language_packs",
-                                          "label": "$t:admin.language_packs.actions.manage",
-                                          "iconName": "language",
-                                          "disabled": "{{row.status !== 'active'}}"
-                                        },
-                                        {
-                                          "id": "uninstall",
-                                          "label": "$t:admin.templates.actions.uninstall",
-                                          "iconName": "trash",
-                                          "variant": "danger",
-                                          "disabled": "{{row.status === 'active' || row.status === 'uninstalled' || row.abilities?.can_uninstall !== true}}"
-                                        }
-                                      ]
-                                    },
-                                    "actions": [
-                                      {
-                                        "event": "onItemClick",
-                                        "type": "action",
-                                        "handler": "switch",
-                                        "cases": {
-                                          "view_detail": {
-                                            "handler": "sequence",
-                                            "actions": [
-                                              {
-                                                "handler": "setState",
-                                                "params": {
-                                                  "target": "global",
-                                                  "selectedTemplate": "{{row}}"
-                                                }
-                                              },
-                                              {
-                                                "handler": "apiCall",
-                                                "auth_required": true,
-                                                "target": "/api/admin/templates/{{row.identifier}}/changelog",
-                                                "params": {
-                                                  "method": "GET"
-                                                },
-                                                "onSuccess": [
-                                                  {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                      "target": "global",
-                                                      "templateChangelog": "{{response.data.changelog ?? []}}"
-                                                    }
-                                                  },
-                                                  {
-                                                    "handler": "openModal",
-                                                    "target": "template_detail_modal"
-                                                  }
-                                                ],
-                                                "onError": [
-                                                  {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                      "target": "global",
-                                                      "templateChangelog": []
-                                                    }
-                                                  },
-                                                  {
-                                                    "handler": "openModal",
-                                                    "target": "template_detail_modal"
-                                                  }
-                                                ]
-                                              }
-                                            ]
-                                          },
-                                          "refresh_layouts": {
-                                            "handler": "sequence",
-                                            "actions": [
-                                              {
-                                                "handler": "setState",
-                                                "params": {
-                                                  "target": "global",
-                                                  "selectedTemplate": "{{row}}"
-                                                }
-                                              },
-                                              {
-                                                "handler": "openModal",
-                                                "target": "template_refresh_layouts_modal"
-                                              }
-                                            ]
-                                          },
-                                          "manage_language_packs": {
-                                            "handler": "navigate",
-                                            "params": {
-                                              "path": "/admin/templates/{{row.identifier}}/language-packs",
-                                              "mergeQuery": true,
-                                              "query": {}
-                                            }
-                                          },
-                                          "uninstall": {
-                                            "handler": "sequence",
-                                            "actions": [
-                                              {
-                                                "handler": "setState",
-                                                "params": {
-                                                  "target": "global",
-                                                  "selectedTemplate": "{{row}}",
-                                                  "templateUninstallInfo": null,
-                                                  "templateUninstallBackups": null
-                                                }
-                                              },
-                                              {
-                                                "handler": "openModal",
-                                                "target": "template_uninstall_modal"
-                                              },
-                                              {
-                                                "handler": "apiCall",
-                                                "auth_required": true,
-                                                "target": "/api/admin/templates/{{row.identifier}}/uninstall-info",
-                                                "params": {
-                                                  "method": "GET"
-                                                },
-                                                "onSuccess": [
-                                                  {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                      "target": "global",
-                                                      "templateUninstallInfo": "{{response.data}}"
-                                                    }
-                                                  }
-                                                ]
-                                              }
-                                            ]
-                                          }
-                                        }
-                                      }
-                                    ]
-                                  }
-                                ]
-                              }
-                            ]
-                          }
-                        ]
-                      }
+                        }
                     ]
-                  }
-                ]
-              }
+                }
             ]
-          },
-          "actions": [
-            {
-              "event": "onPageChange",
-              "type": "change",
-              "handler": "navigate",
-              "params": {
-                "path": "/admin/templates/admin",
-                "mergeQuery": true,
-                "query": {
-                  "page": "{{$args[0]}}"
-                }
-              }
-            }
-          ]
-        },
-        {
-          "id": "pagination_info",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "mt-4 text-label text-center"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:admin.templates.pagination_info|total={{templates?.data?.pagination?.total ?? 0}}|from={{((templates?.data?.pagination?.current_page ?? 1) - 1) * (templates?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((templates?.data?.pagination?.current_page ?? 1) * (templates?.data?.pagination?.per_page ?? 12), templates?.data?.pagination?.total ?? 0)}}"
-            }
-          ]
         }
-      ]
-    },
-    {
-      "id": "info_message",
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "alert-info"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-start gap-3"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "info-circle",
-                "className": "text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "font-medium text-blue-900 dark:text-blue-100"
-                  },
-                  "text": "$t:admin.templates.info.title"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "mt-1 text-info-soft"
-                  },
-                  "text": "$t:admin.templates.info.description"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
+    ]
 }

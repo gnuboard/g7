@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
@@ -28,6 +29,11 @@ class AttachmentUploadPolicyTest extends TestCase
 
     private User $user;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,8 +43,13 @@ class AttachmentUploadPolicyTest extends TestCase
     }
 
     /**
-     * @test
+     * 설정된 최대 용량을 초과하면 422 로 차단된다.
+     *
+     * @effects over_limit_upload_returns_422
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 설정된_최대_용량을_초과하면_422_로_차단된다(): void
     {
         // 기본값(10240KB)과 다른 값을 주입해야 폴백과의 우연한 일치를 피할 수 있다
@@ -52,8 +63,13 @@ class AttachmentUploadPolicyTest extends TestCase
     }
 
     /**
-     * @test
+     * 설정된 최대 용량 이내는 통과한다.
+     *
+     * @effects within_limit_upload_succeeds
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 설정된_최대_용량_이내는_통과한다(): void
     {
         config(['attachment.max_file_size' => 100]);
@@ -66,8 +82,13 @@ class AttachmentUploadPolicyTest extends TestCase
     }
 
     /**
-     * @test
+     * 허용되지 않는 확장자는 422 로 차단된다.
+     *
+     * @effects disallowed_extension_returns_422
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 허용되지_않는_확장자는_422_로_차단된다(): void
     {
         config(['attachment.allowed_extensions' => ['png', 'pdf']]);
@@ -80,8 +101,13 @@ class AttachmentUploadPolicyTest extends TestCase
     }
 
     /**
-     * @test
+     * 허용된 확장자는 통과한다.
+     *
+     * @effects allowed_extension_succeeds
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 허용된_확장자는_통과한다(): void
     {
         config(['attachment.allowed_extensions' => ['png', 'pdf']]);
@@ -94,8 +120,13 @@ class AttachmentUploadPolicyTest extends TestCase
     }
 
     /**
-     * @test
+     * 허용 확장자 목록이 비면 제한하지 않는다.
+     *
+     * @effects empty_allowed_list_disables_extension_restriction
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 허용_확장자_목록이_비면_제한하지_않는다(): void
     {
         // 운영 중 예상치 못한 확장자로 업로드가 막히는 상황의 탈출구
@@ -109,8 +140,13 @@ class AttachmentUploadPolicyTest extends TestCase
     }
 
     /**
-     * @test
+     * 확장 훅으로 허용 확장자를 조정할 수 있다.
+     *
+     * @effects hook_can_extend_allowed_extensions
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 확장_훅으로_허용_확장자를_조정할_수_있다(): void
     {
         config(['attachment.allowed_extensions' => ['png']]);
@@ -128,8 +164,13 @@ class AttachmentUploadPolicyTest extends TestCase
     }
 
     /**
-     * @test
+     * 일괄 업로드도 동일한 정책을 적용한다.
+     *
+     * @effects batch_upload_applies_same_policy
+     *
+     * @return void 반환값 없음
      */
+    #[Test]
     public function 일괄_업로드도_동일한_정책을_적용한다(): void
     {
         config(['attachment.allowed_extensions' => ['png']]);

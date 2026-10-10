@@ -1,0 +1,219 @@
+<!-- 상품 폼 — 활동로그 구획(수정 진입에만 선다). 이 상품에 언제 누가 무엇을 바꿨는지 남는다.
+  기록이 많아 쪽 나눔·정렬을 서버에 맡기므로, 화면에서 값을 바꾸면 목록을 다시 받는다.
+  넓은 화면은 표, 좁은 화면은 카드로 같은 내용을 두 벌 세운다. -->
+<partial description="Product Form - Activity Log Section (Edit Mode Only)">
+  <div data-ref="activity_log" class="admin-card-accordion">
+    <div class="card-header">
+      <on type="click">
+        <!-- 구획 접기/펼치기 -->
+        <set-state target="local" ui.activityLogExpanded="{{!_local.ui.activityLogExpanded}}"/>
+      </on>
+      <icon name="history" class="text-gray-500 dark:text-gray-400"/>
+      <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.activity_log</span>
+      <span data-if="{{activity_logs.data?.meta?.total}}" class="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full">{{activity_logs.data?.meta?.total}}</span>
+      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{_local.ui.activityLogExpanded !== false ? 'rotate-180' : ''}}"/>
+    </div>
+    <div data-ref="activity_log_body" data-if="{{_local.ui.activityLogExpanded !== false}}" class="row-stack">
+      <div data-ref="activity_log_filters" class="flex-between flex-wrap gap-4 p-4 border-b border-gray-200 dark:border-gray-700">
+        <responsive on="portable" class="row-stack p-4 border-b border-gray-200 dark:border-gray-700"/>
+        <div class="text-label-subtle">$t:sirsoft-ecommerce.admin.product.activity_log.total_count|count={{activity_logs.data?.meta?.total ?? 0}}</div>
+        <div class="flex-center gap-4">
+          <responsive on="portable" class="row-stack w-full"/>
+          <div class="flex-center gap-2">
+            <responsive on="portable" class="flex-center gap-2 w-full"/>
+            <label class="text-label whitespace-nowrap">$t:sirsoft-ecommerce.admin.product.activity_log.sort_order</label>
+            <select name="activity_log_sort" value="{{_local.ui.activityLogSort ?? 'desc'}}" class="w-32">
+              <responsive on="portable" class="flex-1"/>
+              <options>
+                <option value="desc">$t:sirsoft-ecommerce.admin.product.activity_log.sort.latest</option>
+                <option value="asc">$t:sirsoft-ecommerce.admin.product.activity_log.sort.oldest</option>
+              </options>
+              <on type="change">
+                <!-- 정렬은 화면에서 뒤집지 않고 서버에서 다시 받는다 — 지금 쪽에 실린 것만 뒤집으면 앞뒤 쪽의 기록이 뒤섞인다 -->
+                <sequence>
+                  <set-state target="local" ui.activityLogSort="{{$event.target.value}}"/>
+                  <refetch-data-source dataSourceId="activity_logs"/>
+                </sequence>
+              </on>
+            </select>
+          </div>
+          <div class="flex-center gap-2">
+            <responsive on="portable" class="flex-center gap-2 w-full"/>
+            <label class="text-label whitespace-nowrap">$t:sirsoft-ecommerce.admin.product.activity_log.per_page</label>
+            <select name="activity_log_per_page" value="{{_local.ui.activityLogPerPage ?? 10}}" class="w-20">
+              <responsive on="portable" class="flex-1"/>
+              <options>
+                <option :value="10">10</option>
+                <option :value="20">20</option>
+                <option :value="50">50</option>
+              </options>
+              <on type="change">
+                <!-- 한 쪽에 담을 건수. 쪽 크기가 달라지면 현재 쪽 번호는 뜻을 잃으므로 1쪽으로 되돌린 뒤 다시 받는다 -->
+                <sequence>
+                  <set-state target="local" ui.activityLogPerPage="{{Number($event.target.value)}}" :ui.logsPage="1"/>
+                  <refetch-data-source dataSourceId="activity_logs"/>
+                </sequence>
+              </on>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div data-ref="activity_log_table_pc" class="overflow-x-auto">
+        <responsive on="portable" data-if="{{false}}"/>
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-gray-200 dark:border-gray-700">
+              <th class="text-table-header px-4 py-3 text-left w-44">$t:sirsoft-ecommerce.admin.product.activity_log.columns.datetime</th>
+              <th class="text-table-header px-4 py-3 text-left w-36">$t:sirsoft-ecommerce.admin.product.activity_log.columns.actor</th>
+              <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.product.activity_log.columns.description</th>
+            </tr>
+          </thead>
+          <tbody class="divider-list">
+            <tr data-ref="activity_log_row_{{logIdx}}" data-each="log, logIdx in {{activity_logs?.data?.data ?? []}}" class="hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800/50">
+              <td class="px-4 py-3 text-label-subtle whitespace-nowrap">{{log.created_at}}</td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <action-menu data-type="composite" data-if="{{!!log.user?.uuid}}" position="left">
+                  <prop name="items">
+                    <item id="view_member" label="$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member" iconName="user"/>
+                  </prop>
+                  <on event="onItemClick">
+                    <!-- 기록을 남긴 사람이 회원일 때만 이름이 메뉴가 된다 — 고르면 회원 상세를 새 창으로 연다(편집 중이던 상품 폼을 잃지 않기 위해서다) -->
+                    <switch>
+                      <case when="view_member">
+                        <open-window path="/admin/users/{{log.user.uuid}}"/>
+                      </case>
+                    </switch>
+                  </on>
+                  <div class="flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
+                    <div class="flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
+                      <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.actor_name ?? 'S').charAt(0).toUpperCase()}}</span>
+                    </div>
+                    <span class="text-primary text-sm">{{log.actor_name ?? ''}}</span>
+                  </div>
+                </action-menu>
+                <div data-if="{{!log.user?.uuid}}" class="flex-center gap-2">
+                  <div class="flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
+                    <span class="text-xs font-medium text-gray-600 dark:text-gray-300">S</span>
+                  </div>
+                  <span class="text-primary text-sm">{{log.actor_name ?? '$t:sirsoft-ecommerce.admin.product.activity_log.system'}}</span>
+                </div>
+              </td>
+              <td class="px-4 py-3 text-body">
+                <span>{{log.localized_description ?? ''}}</span>
+                <div data-if="{{log.changes &amp;&amp; log.changes.length > 0}}" class="toggle-group mt-2">
+                  <div class="text-tertiary bg-gray-50 dark:bg-gray-800 px-3 py-1.5 font-medium flex gap-4">
+                    <span class="flex-1">$t:sirsoft-ecommerce.admin.product.activity_log.changes.field</span>
+                    <span class="w-28 text-center">$t:sirsoft-ecommerce.admin.product.activity_log.changes.before</span>
+                    <span class="w-28 text-center">$t:sirsoft-ecommerce.admin.product.activity_log.changes.after</span>
+                  </div>
+                  <div data-each="change, changeIdx in {{log.changes ?? []}}" class="px-3 py-1.5 text-xs flex gap-4 border-t border-gray-100 dark:border-gray-700">
+                    <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
+                    <span class="w-28 text-center text-red-600 dark:text-red-400">{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
+                    <span class="w-28 text-center text-green-600 dark:text-green-400">{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
+                  </div>
+                </div>
+                <div data-if="{{log.bulk_changes &amp;&amp; log.bulk_changes.length > 0}}" class="mt-2 space-y-2">
+                  <div data-each="group, groupIdx in {{log.bulk_changes ?? []}}" class="toggle-group">
+                    <div class="text-tertiary bg-gray-50 dark:bg-gray-800 px-3 py-1.5 font-medium flex gap-4">
+                      <span class="font-semibold text-gray-700 dark:text-gray-300 mr-auto">ID: {{group.model_id}}</span>
+                      <span class="w-28 text-center">$t:sirsoft-ecommerce.admin.product.activity_log.changes.before</span>
+                      <span class="w-28 text-center">$t:sirsoft-ecommerce.admin.product.activity_log.changes.after</span>
+                    </div>
+                    <div data-each="change, changeIdx in {{group.changes ?? []}}" class="px-3 py-1.5 text-xs flex gap-4 border-t border-gray-100 dark:border-gray-700">
+                      <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
+                      <span class="w-28 text-center text-red-600 dark:text-red-400">{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
+                      <span class="w-28 text-center text-green-600 dark:text-green-400">{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr data-ref="activity_log_empty" data-if="{{(activity_logs.data?.data ?? []).length === 0}}">
+              <td :colSpan="3" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+                <icon name="clipboard-list" class="text-3xl mx-auto mb-2 text-gray-300 dark:text-gray-600"/>
+                <p>$t:sirsoft-ecommerce.admin.product.activity_log.empty</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div data-ref="activity_log_cards_mobile" class="divider-list">
+        <responsive on="desktop" data-if="{{false}}"/>
+        <div data-ref="activity_log_card_item_{{logIdx}}" data-each="log, logIdx in {{activity_logs?.data?.data ?? []}}" class="p-4">
+          <div class="flex-between mb-2">
+            <div class="flex-center gap-2">
+              <action-menu data-type="composite" data-if="{{!!log.user?.uuid}}" position="left">
+                <prop name="items">
+                  <item id="view_member" label="$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member" iconName="user"/>
+                </prop>
+                <on event="onItemClick">
+                  <!-- 좁은 화면 카드에서도 같다 — 회원 상세를 새 창으로 연다 -->
+                  <switch>
+                    <case when="view_member">
+                      <open-window path="/admin/users/{{log.user.uuid}}"/>
+                    </case>
+                  </switch>
+                </on>
+                <div class="flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
+                  <div class="flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
+                    <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.actor_name ?? 'S').charAt(0).toUpperCase()}}</span>
+                  </div>
+                  <span class="text-heading">{{log.actor_name ?? ''}}</span>
+                </div>
+              </action-menu>
+              <div data-if="{{!log.user?.uuid}}" class="flex-center gap-2">
+                <div class="flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
+                  <span class="text-xs font-medium text-gray-600 dark:text-gray-300">S</span>
+                </div>
+                <span class="text-heading">{{log.actor_name ?? '$t:sirsoft-ecommerce.admin.product.activity_log.system'}}</span>
+              </div>
+            </div>
+            <span class="text-tertiary">{{log.created_at}}</span>
+          </div>
+          <p class="text-body mb-2">{{log.localized_description ?? ''}}</p>
+          <div data-if="{{log.changes &amp;&amp; log.changes.length > 0}}" class="toggle-group">
+            <div class="text-tertiary bg-gray-50 dark:bg-gray-800 px-3 py-1.5 font-medium flex gap-3">
+              <span class="flex-1">$t:sirsoft-ecommerce.admin.product.activity_log.changes.field</span>
+              <span class="w-20 text-center">$t:sirsoft-ecommerce.admin.product.activity_log.changes.before</span>
+              <span class="w-20 text-center">$t:sirsoft-ecommerce.admin.product.activity_log.changes.after</span>
+            </div>
+            <div data-each="change, changeIdx in {{log.changes ?? []}}" class="px-3 py-1.5 text-xs flex gap-3 border-t border-gray-100 dark:border-gray-700">
+              <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
+              <span class="w-20 text-center text-red-600 dark:text-red-400">{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
+              <span class="w-20 text-center text-green-600 dark:text-green-400">{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
+            </div>
+          </div>
+          <div data-if="{{log.bulk_changes &amp;&amp; log.bulk_changes.length > 0}}">
+            <div data-each="group, groupIdx in {{log.bulk_changes ?? []}}" class="toggle-group">
+              <div class="text-tertiary bg-gray-50 dark:bg-gray-800 px-3 py-1.5 font-medium flex gap-3">
+                <span class="font-semibold text-gray-700 dark:text-gray-300 mr-auto">ID: {{group.model_id}}</span>
+                <span class="w-20 text-center">$t:sirsoft-ecommerce.admin.product.activity_log.changes.before</span>
+                <span class="w-20 text-center">$t:sirsoft-ecommerce.admin.product.activity_log.changes.after</span>
+              </div>
+              <div data-each="change, changeIdx in {{group.changes ?? []}}" class="px-3 py-1.5 text-xs flex gap-3 border-t border-gray-100 dark:border-gray-700">
+                <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
+                <span class="w-20 text-center text-red-600 dark:text-red-400">{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
+                <span class="w-20 text-center text-green-600 dark:text-green-400">{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-ref="activity_log_empty_mobile" data-if="{{(activity_logs.data?.data ?? []).length === 0}}" class="p-8 text-center text-gray-500 dark:text-gray-400">
+          <icon name="clipboard-list" class="text-3xl mx-auto mb-2 text-gray-300 dark:text-gray-600"/>
+          <p>$t:sirsoft-ecommerce.admin.product.activity_log.empty</p>
+        </div>
+      </div>
+      <div data-ref="activity_log_pagination" class="flex justify-center p-4">
+        <pagination data-type="composite" currentPage="{{activity_logs.data?.meta?.current_page ?? 1}}" totalPages="{{activity_logs.data?.meta?.last_page ?? null}}" hasMorePages="{{activity_logs.data?.meta?.has_more_pages ?? false}}" :showFirstLast="true">
+          <on event="onPageChange">
+            <!-- 쪽 넘김 — 쪽 번호를 폼 상태에 담으면 데이터소스가 그 값을 읽어 다시 받는다 -->
+            <sequence>
+              <set-state target="local" ui.logsPage="{{$args[0]}}"/>
+              <refetch-data-source dataSourceId="activity_logs"/>
+            </sequence>
+          </on>
+        </pagination>
+      </div>
+    </div>
+  </div>
+</partial>

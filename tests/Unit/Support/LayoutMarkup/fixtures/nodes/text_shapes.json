@@ -1,0 +1,46 @@
+{
+  "type": "basic",
+  "name": "Div",
+  "props": {
+    "className": "wrap"
+  },
+  "children": [
+    {
+      "type": "basic",
+      "name": "Span",
+      "text": ""
+    },
+    {
+      "type": "basic",
+      "name": "Th",
+      "props": {
+        "className": "w-20"
+      },
+      "text": ""
+    },
+    {
+      "type": "basic",
+      "name": "Span",
+      "text": " $t:auth.agree_required"
+    },
+    {
+      "type": "basic",
+      "name": "Span",
+      "text": " — {{v.description ?? ''}}"
+    },
+    {
+      "type": "basic",
+      "name": "Div",
+      "text": "2025-10-27\n14:20:00"
+    },
+    {
+      "type": "basic",
+      "name": "Span"
+    },
+    {
+      "type": "basic",
+      "name": "Span",
+      "text": "여러 줄로 작성해도 인덴트는 값에 들어가지 않는다"
+    }
+  ]
+}

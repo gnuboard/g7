@@ -1,21 +1,11 @@
 {
+    "comment": "관리자 페이지 작성·수정 화면 — route.id 유무가 모드를 가르고, 읽기 전용 여부는 서버가 준 abilities 로 정한다",
     "version": "1.0.0",
     "layout_name": "admin_page_form",
-    "permissions": [
-        "sirsoft-page.pages.read"
-    ],
     "extends": "_admin_base",
     "meta": {
         "title": "{{route?.id ? '$t:sirsoft-page.admin.page.form.page_title_edit' : '$t:sirsoft-page.admin.page.form.page_title_create'}}",
         "description": "{{route?.id ? '$t:sirsoft-page.admin.page.form.page_description_edit' : '$t:sirsoft-page.admin.page.form.page_description_create'}}"
-    },
-    "computed": {
-        "isReadOnly": "{{!!route?.id && pageData?.data?.abilities?.can_update !== true}}"
-    },
-    "transition_overlay": {
-        "wait_for": [
-            "pageData"
-        ]
     },
     "data_sources": [
         {
@@ -39,14 +29,57 @@
             },
             "fallback": {
                 "data": null
-            }
+            },
+            "comment": "수정 모드에서만 기존 값을 받아 폼 초기값으로 넣는다(initLocal=form). 화면에 다시 들어올 때마다 새로 받으므로(refetchOnMount) 다른 창에서 바뀐 내용을 덮어쓰지 않는다"
+        },
+        {
+            "id": "attachmentSettings",
+            "label_key": "$t:sirsoft-page.editor.data_source.attachmentSettings",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-page/admin/attachments/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": null
+            },
+            "comment": "첨부 상한·허용 형식. 신규 작성 화면에는 읽을 상세가 없어 이 조회가 유일한 출처다 — 화면이 리터럴로 적으면 운영자가 설정을 바꿔도 화면만 옛 값으로 남고, 서버가 거절할 때까지 아무 안내가 없다."
+        },
+        {
+            "id": "createAbility",
+            "label_key": "$t:sirsoft-page.editor.data_source.createAbility",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-page/admin/pages",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "if": "{{!route?.id}}",
+            "params": {
+                "per_page": 1
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "등록 모드 전용 — 등록 권한 확인만이 목적이라 1건만 받는다. 등록 전용 권한 조회 API 가 없어 목록 응답의 `abilities.can_create` 를 쓴다(역할 등록 화면과 같은 방식). 주소로 바로 들어온 읽기 전용 관리자에게 입력 가능한 폼을 열어 두지 않기 위함이다. 읽기 전용(isReadOnly)은 수정 모드면 그 페이지의 `can_update`, 등록 모드면 이 응답의 `can_create` 가 true 가 아닐 때다"
         }
     ],
+    "computed": {
+        "isReadOnly": "{{route?.id ? pageData?.data?.abilities?.can_update !== true : createAbility?.data?.abilities?.can_create !== true}}"
+    },
+    "permissions": [
+        "sirsoft-page.pages.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "pageData",
+            "createAbility"
+        ]
+    },
     "init_actions": [
         {
             "comment": "생성 모드: 직전 페이지(수정)에서 같은 레이아웃을 재사용하므로 _local.form 잔존을 먼저 제거 (form=null → deep merge 가 객체 대신 null 로 덮어써 이전 id/title/attachments 완전 삭제)",
-            "if": "{{!route?.id}}",
             "handler": "setState",
+            "if": "{{!route?.id}}",
             "params": {
                 "target": "local",
                 "form": null
@@ -54,10 +87,16 @@
         },
         {
             "comment": "생성 모드에서 폼 기본값 초기화 (published는 Select fallback과 동기화). 수정→등록 전환 시 이전 슬러그 검증 상태(slugChecked/slugAvailable 등)도 함께 리셋",
-            "if": "{{!route?.id}}",
             "handler": "setState",
+            "if": "{{!route?.id}}",
             "params": {
                 "target": "local",
+                "slugChecked": false,
+                "slugAvailable": false,
+                "slugChecking": false,
+                "slugError": null,
+                "errors": null,
+                "hasChanges": false,
                 "form": {
                     "slug": "{{query.slug ?? ''}}",
                     "title": {},
@@ -66,19 +105,13 @@
                     "content_mode": "html",
                     "seo_meta": null,
                     "attachments": []
-                },
-                "slugChecked": false,
-                "slugAvailable": false,
-                "slugChecking": false,
-                "slugError": null,
-                "errors": null,
-                "hasChanges": false
+                }
             }
         },
         {
             "comment": "수정 모드에서 폼 로드 시 현재 슬러그는 유효하므로 slugChecked 초기화",
-            "if": "{{!!route?.id}}",
             "handler": "setState",
+            "if": "{{!!route?.id}}",
             "params": {
                 "target": "local",
                 "slugChecked": true,
@@ -90,7 +123,7 @@
             "handler": "setState",
             "params": {
                 "target": "local",
-                "tempKey": "{{('temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9))}}"
+                "tempKey": "{{$uuid()}}"
             }
         }
     ],
@@ -100,8 +133,8 @@
                 "id": "page_form_content",
                 "type": "basic",
                 "name": "Div",
-                "blur_until_loaded": true,
                 "dataKey": "form",
+                "blur_until_loaded": true,
                 "props": {
                     "className": "admin-page-content-responsive-fluid"
                 },
@@ -225,7 +258,7 @@
                                 "props": {
                                     "className": "text-warning-soft"
                                 },
-                                "text": "$t:sirsoft-page.admin.page.form.read_only_message"
+                                "text": "{{route?.id ? '$t:sirsoft-page.admin.page.form.read_only_message' : '$t:sirsoft-page.admin.page.form.read_only_message_create'}}"
                             }
                         ]
                     },
@@ -317,15 +350,9 @@
                                                                 "id": "slug_input",
                                                                 "type": "basic",
                                                                 "name": "Input",
-                                                                "props": {
-                                                                    "type": "text",
-                                                                    "placeholder": "$t:sirsoft-page.admin.page.form.fields.slug_placeholder",
-                                                                    "value": "{{_local.form?.slug ?? ''}}",
-                                                                    "disabled": "{{_computed.isReadOnly}}",
-                                                                    "className": "{{_local.slugChecked ? (_local.slugAvailable ? 'flex-1 px-3 py-2 border-2 border-green-500 dark:border-green-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm') : _local.errors?.slug ? 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
-                                                                },
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "슬러그를 고치면 앞서 받은 중복확인 결과를 무효로 되돌린다 — 확인한 값과 저장할 값이 어긋나는 것을 막는다",
                                                                         "type": "change",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -337,20 +364,23 @@
                                                                             "slugError": ""
                                                                         }
                                                                     }
-                                                                ]
+                                                                ],
+                                                                "props": {
+                                                                    "type": "text",
+                                                                    "placeholder": "$t:sirsoft-page.admin.page.form.fields.slug_placeholder",
+                                                                    "value": "{{_local.form?.slug ?? ''}}",
+                                                                    "disabled": "{{_computed.isReadOnly}}",
+                                                                    "className": "{{_local.slugChecked ? (_local.slugAvailable ? 'flex-1 px-3 py-2 border-2 border-green-500 dark:border-green-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm') : _local.errors?.slug ? 'flex-1 px-3 py-2 border-2 border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm' : 'flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm'}}"
+                                                                }
                                                             },
                                                             {
                                                                 "id": "slug_check_button",
                                                                 "type": "basic",
                                                                 "name": "Button",
                                                                 "if": "{{!_computed.isReadOnly}}",
-                                                                "props": {
-                                                                    "type": "button",
-                                                                    "disabled": "{{_local.slugChecking || !_local.form?.slug}}",
-                                                                    "className": "{{_local.slugChecking ? 'px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rounded-lg whitespace-nowrap cursor-not-allowed' : 'px-3 py-2 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 whitespace-nowrap'}}"
-                                                                },
                                                                 "actions": [
                                                                     {
+                                                                        "comment": "슬러그 중복확인 — 확인 중 플래그로 버튼을 잠근 뒤 조회하고, 결과를 입력 테두리 색으로 되돌려 준다",
                                                                         "type": "click",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -365,8 +395,8 @@
                                                                             },
                                                                             {
                                                                                 "handler": "apiCall",
-                                                                                "auth_required": true,
                                                                                 "target": "/api/modules/sirsoft-page/admin/pages/check-slug",
+                                                                                "auth_required": true,
                                                                                 "params": {
                                                                                     "method": "POST",
                                                                                     "body": {
@@ -374,34 +404,35 @@
                                                                                         "exclude_id": "{{route?.id}}"
                                                                                     }
                                                                                 },
-                                                                                "onSuccess": [
-                                                                                    {
-                                                                                        "handler": "setState",
-                                                                                        "params": {
-                                                                                            "target": "local",
-                                                                                            "slugChecking": false,
-                                                                                            "slugChecked": true,
-                                                                                            "slugAvailable": "{{!response.data?.exists}}",
-                                                                                            "slugError": ""
-                                                                                        }
+                                                                                "onSuccess": {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "slugChecking": false,
+                                                                                        "slugChecked": true,
+                                                                                        "slugAvailable": "{{!response.data?.exists}}",
+                                                                                        "slugError": ""
                                                                                     }
-                                                                                ],
-                                                                                "onError": [
-                                                                                    {
-                                                                                        "handler": "setState",
-                                                                                        "params": {
-                                                                                            "target": "local",
-                                                                                            "slugChecking": false,
-                                                                                            "slugChecked": true,
-                                                                                            "slugAvailable": false,
-                                                                                            "slugError": "{{error.errors?.slug?.[0] ?? error.message ?? ''}}"
-                                                                                        }
+                                                                                },
+                                                                                "onError": {
+                                                                                    "handler": "setState",
+                                                                                    "params": {
+                                                                                        "target": "local",
+                                                                                        "slugChecking": false,
+                                                                                        "slugChecked": true,
+                                                                                        "slugAvailable": false,
+                                                                                        "slugError": "{{error.errors?.slug?.[0] ?? error.message ?? ''}}"
                                                                                     }
-                                                                                ]
+                                                                                }
                                                                             }
                                                                         ]
                                                                     }
                                                                 ],
+                                                                "props": {
+                                                                    "type": "button",
+                                                                    "disabled": "{{_local.slugChecking || !_local.form?.slug}}",
+                                                                    "className": "{{_local.slugChecking ? 'px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rounded-lg whitespace-nowrap cursor-not-allowed' : 'px-3 py-2 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 whitespace-nowrap'}}"
+                                                                },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
@@ -495,25 +526,11 @@
                                                     },
                                                     {
                                                         "id": "published_select",
-                                                        "type": "composite",
+                                                        "type": "basic",
                                                         "name": "Select",
-                                                        "props": {
-                                                            "value": "{{String(_local.form?.published ?? false)}}",
-                                                            "disabled": "{{_computed.isReadOnly}}",
-                                                            "className": "",
-                                                            "options": [
-                                                                {
-                                                                    "label": "$t:sirsoft-page.admin.page.published_status.published",
-                                                                    "value": "true"
-                                                                },
-                                                                {
-                                                                    "label": "$t:sirsoft-page.admin.page.published_status.unpublished",
-                                                                    "value": "false"
-                                                                }
-                                                            ]
-                                                        },
                                                         "actions": [
                                                             {
+                                                                "comment": "게시 여부 — select 는 문자열만 주므로 저장 전에 불리언으로 되돌린다",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -521,7 +538,22 @@
                                                                     "form.published": "{{$event.target.value === 'true'}}"
                                                                 }
                                                             }
-                                                        ]
+                                                        ],
+                                                        "props": {
+                                                            "value": "{{String(_local.form?.published ?? false)}}",
+                                                            "disabled": "{{_computed.isReadOnly}}",
+                                                            "className": "",
+                                                            "options": [
+                                                                {
+                                                                    "value": "true",
+                                                                    "label": "$t:sirsoft-page.admin.page.published_status.published"
+                                                                },
+                                                                {
+                                                                    "value": "false",
+                                                                    "label": "$t:sirsoft-page.admin.page.published_status.unpublished"
+                                                                }
+                                                            ]
+                                                        }
                                                     }
                                                 ]
                                             }
@@ -558,6 +590,17 @@
                                                 "id": "title_input",
                                                 "type": "composite",
                                                 "name": "MultilingualInput",
+                                                "actions": [
+                                                    {
+                                                        "comment": "제목은 로케일별 객체 그대로 담는다(다국어 입력 컴포넌트가 통째로 준다)",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "form.title": "{{$event.target.value}}"
+                                                        }
+                                                    }
+                                                ],
                                                 "props": {
                                                     "name": "title",
                                                     "value": "{{_local.form?.title ?? {}}}",
@@ -566,17 +609,7 @@
                                                     "disabled": "{{_computed.isReadOnly}}",
                                                     "layout": "tabs",
                                                     "error": "{{_local.errors?.['title.ko']?.[0] ?? _local.errors?.title?.[0] ?? ''}}"
-                                                },
-                                                "actions": [
-                                                    {
-                                                        "type": "change",
-                                                        "handler": "setState",
-                                                        "params": {
-                                                            "target": "local",
-                                                            "form.title": "{{$event.target.value}}"
-                                                        }
-                                                    }
-                                                ]
+                                                }
                                             }
                                         ]
                                     },
@@ -608,34 +641,28 @@
                                                 ]
                                             },
                                             {
+                                                "comment": "편집기는 처음 그려질 때의 읽기 전용 여부로 굳는다. 그래서 수정 모드는 기존 값이 온 뒤, 등록 모드는 등록 권한 확인이 끝난 뒤에 그린다 — 먼저 그리면 권한 있는 관리자에게도 잠긴 편집기가 남는다",
                                                 "id": "content_editor",
                                                 "type": "extension_point",
                                                 "name": "html_editor",
-                                                "if": "{{!route?.id || _local.form?.content !== undefined}}",
+                                                "if": "{{route?.id ? _local.form?.content !== undefined : createAbility !== undefined}}",
                                                 "props": {
-                                                    "name": "content",
                                                     "multilingual": true,
                                                     "value": "{{_local.form?.content}}",
                                                     "isHtml": "{{_local.form?.content_mode === 'html'}}",
                                                     "disabled": "{{_computed.isReadOnly}}",
+                                                    "readOnly": "{{_computed.isReadOnly}}",
                                                     "rows": 15,
-                                                    "placeholder": "$t:sirsoft-page.admin.page.form.fields.content"
+                                                    "placeholder": "$t:sirsoft-page.admin.page.form.fields.content",
+                                                    "name": "content"
                                                 },
                                                 "default": [
                                                     {
                                                         "type": "composite",
                                                         "name": "HtmlEditor",
-                                                        "props": {
-                                                            "name": "content",
-                                                            "multilingual": true,
-                                                            "value": "{{_local.form?.content}}",
-                                                            "isHtml": "{{_local.form?.content_mode === 'html'}}",
-                                                            "disabled": "{{_computed.isReadOnly}}",
-                                                            "rows": 15,
-                                                            "placeholder": "$t:sirsoft-page.admin.page.form.fields.content"
-                                                        },
                                                         "actions": [
                                                             {
+                                                                "comment": "본문 — 편집기 교체 여부와 무관하게 폼 상태 한 곳으로만 모은다",
                                                                 "type": "change",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -644,6 +671,7 @@
                                                                 }
                                                             },
                                                             {
+                                                                "comment": "HTML/텍스트 모드 전환 — 본문과 함께 저장돼 상세·목록의 렌더 방식을 정한다",
                                                                 "type": "isHtmlChange",
                                                                 "handler": "setState",
                                                                 "params": {
@@ -651,7 +679,17 @@
                                                                     "form.content_mode": "{{$event.target.checked ? 'html' : 'text'}}"
                                                                 }
                                                             }
-                                                        ]
+                                                        ],
+                                                        "props": {
+                                                            "name": "content",
+                                                            "multilingual": true,
+                                                            "value": "{{_local.form?.content}}",
+                                                            "isHtml": "{{_local.form?.content_mode === 'html'}}",
+                                                            "disabled": "{{_computed.isReadOnly}}",
+                                                            "readOnly": "{{_computed.isReadOnly}}",
+                                                            "rows": 15,
+                                                            "placeholder": "$t:sirsoft-page.admin.page.form.fields.content"
+                                                        }
                                                     }
                                                 ]
                                             },
@@ -671,6 +709,7 @@
                         ]
                     },
                     {
+                        "comment": "첨부 업로더 — 개수·용량·형식은 리터럴이 아니라 서버 검증(UploadPageAttachmentRequest)과 같은 값을 읽는다.\n        같은 값이어야 화면이 서버가 받는 파일을 먼저 거절하거나 서버가 거절할 파일을 받는 어긋남이 없다.",
                         "id": "section_attachments",
                         "type": "basic",
                         "name": "Div",
@@ -705,31 +744,10 @@
                                 ]
                             },
                             {
+                                "comment": "한도는 서버 공개 설정(publicLimits)을 그대로 따른다. 개수 상한이 없으면(max_count=null, 제한 없음)\n             maxFiles 를 비워(undefined) 컴포넌트 기본값을 쓰게 한다 — `?? 5` 로 받으면 \"제한 없음\" 이 5개 상한이 된다.\n             허용 형식이 비면(accept='') 빈 accept 가 파일 선택창에서 모든 형식을 열므로 기본 목록으로 떨어뜨린다(`||`).",
                                 "id": "file_uploader",
                                 "type": "composite",
                                 "name": "FileUploader",
-                                "props": {
-                                    "collection": "page_attachments",
-                                    "maxFiles": 5,
-                                    "maxSize": 10,
-                                    "accept": ".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip",
-                                    "initialFiles": "{{_local.form?.attachments ?? []}}",
-                                    "autoUpload": false,
-                                    "uploadTriggerEvent": "upload:page_attachments",
-                                    "disabled": "{{_computed.isReadOnly}}",
-                                    "compact": true,
-                                    "confirmBeforeRemove": true,
-                                    "confirmRemoveTitle": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_title",
-                                    "confirmRemoveMessage": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_message",
-                                    "uploadParams": {
-                                        "temp_key": "{{_local.tempKey}}"
-                                    },
-                                    "apiEndpoints": {
-                                        "upload": "/api/modules/sirsoft-page/admin/attachments",
-                                        "delete": "/api/modules/sirsoft-page/admin/attachments/:id",
-                                        "reorder": "{{route?.id ? '/api/modules/sirsoft-page/admin/attachments/reorder' : ''}}"
-                                    }
-                                },
                                 "actions": [
                                     {
                                         "comment": "업로드 완료 시 form.attachments 에 누적 (수정 모드만 - 생성 모드는 저장 시 temp_key 로 연결)",
@@ -767,7 +785,28 @@
                                             "message": "{{$args[0]}}"
                                         }
                                     }
-                                ]
+                                ],
+                                "props": {
+                                    "collection": "page_attachments",
+                                    "maxFiles": "{{attachmentSettings?.data?.max_count ?? undefined}}",
+                                    "maxSize": "{{attachmentSettings?.data?.max_size_mb ?? 10}}",
+                                    "accept": "{{attachmentSettings?.data?.accept || '.jpg,.jpeg,.png,.gif,.webp,.pdf,.zip'}}",
+                                    "initialFiles": "{{_local.form?.attachments ?? []}}",
+                                    "autoUpload": false,
+                                    "uploadTriggerEvent": "upload:page_attachments",
+                                    "disabled": "{{_computed.isReadOnly}}",
+                                    "confirmBeforeRemove": true,
+                                    "confirmRemoveTitle": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_title",
+                                    "confirmRemoveMessage": "$t:sirsoft-page.admin.page.form.confirm_remove_attachment_message",
+                                    "uploadParams": {
+                                        "temp_key": "{{_local.tempKey}}"
+                                    },
+                                    "apiEndpoints": {
+                                        "upload": "/api/modules/sirsoft-page/admin/attachments",
+                                        "delete": "/api/modules/sirsoft-page/admin/attachments/:id",
+                                        "reorder": "{{route?.id ? '/api/modules/sirsoft-page/admin/attachments/reorder' : ''}}"
+                                    }
+                                }
                             }
                         ]
                     },
@@ -835,15 +874,9 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Input",
-                                                "props": {
-                                                    "type": "text",
-                                                    "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_title_placeholder",
-                                                    "value": "{{_local.form?.seo_meta?.title ?? ''}}",
-                                                    "disabled": "{{_computed.isReadOnly}}",
-                                                    "className": ""
-                                                },
                                                 "actions": [
                                                     {
+                                                        "comment": "SEO 제목 — 비워 두면 페이지 제목이 대신 쓰인다",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -851,7 +884,14 @@
                                                             "form.seo_meta.title": "{{$event.target.value}}"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "text",
+                                                    "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_title_placeholder",
+                                                    "value": "{{_local.form?.seo_meta?.title ?? ''}}",
+                                                    "disabled": "{{_computed.isReadOnly}}",
+                                                    "className": ""
+                                                }
                                             }
                                         ]
                                     },
@@ -877,15 +917,9 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Textarea",
-                                                "props": {
-                                                    "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_description_placeholder",
-                                                    "value": "{{_local.form?.seo_meta?.description ?? ''}}",
-                                                    "disabled": "{{_computed.isReadOnly}}",
-                                                    "rows": 3,
-                                                    "className": ""
-                                                },
                                                 "actions": [
                                                     {
+                                                        "comment": "SEO 설명",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -893,7 +927,14 @@
                                                             "form.seo_meta.description": "{{$event.target.value}}"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_description_placeholder",
+                                                    "value": "{{_local.form?.seo_meta?.description ?? ''}}",
+                                                    "disabled": "{{_computed.isReadOnly}}",
+                                                    "rows": 3,
+                                                    "className": ""
+                                                }
                                             }
                                         ]
                                     },
@@ -919,15 +960,9 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Input",
-                                                "props": {
-                                                    "type": "text",
-                                                    "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_keywords_placeholder",
-                                                    "value": "{{_local.form?.seo_meta?.keywords ?? ''}}",
-                                                    "disabled": "{{_computed.isReadOnly}}",
-                                                    "className": ""
-                                                },
                                                 "actions": [
                                                     {
+                                                        "comment": "SEO 키워드",
                                                         "type": "change",
                                                         "handler": "setState",
                                                         "params": {
@@ -935,7 +970,14 @@
                                                             "form.seo_meta.keywords": "{{$event.target.value}}"
                                                         }
                                                     }
-                                                ]
+                                                ],
+                                                "props": {
+                                                    "type": "text",
+                                                    "placeholder": "$t:sirsoft-page.admin.page.form.seo.seo_keywords_placeholder",
+                                                    "value": "{{_local.form?.seo_meta?.keywords ?? ''}}",
+                                                    "disabled": "{{_computed.isReadOnly}}",
+                                                    "className": ""
+                                                }
                                             }
                                         ]
                                     }
@@ -955,13 +997,9 @@
                                 "id": "footer_cancel_button",
                                 "type": "basic",
                                 "name": "Button",
-                                "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary",
-                                    "data-testid": "page-form-cancel"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "취소. 수정 중이면 그 페이지 상세로, 새로 만드는 중이면 목록으로 돌아간다. 어느 쪽이든 목록 상태를 이고 가므로 목록까지 되짚어 나가도 보던 자리가 남는다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
@@ -971,6 +1009,11 @@
                                         }
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-secondary",
+                                    "data-testid": "page-form-cancel"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
@@ -984,13 +1027,9 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "if": "{{!_computed.isReadOnly}}",
-                                "props": {
-                                    "type": "button",
-                                    "disabled": "{{_local.saving}}",
-                                    "className": "btn btn-primary flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                                },
                                 "actions": [
                                     {
+                                        "comment": "저장 — 슬러그 중복확인을 통과했는지 먼저 보고, 통과하지 못했으면 서버에 보내지 않고 그 필드에 오류를 세운다",
                                         "type": "click",
                                         "handler": "conditions",
                                         "conditions": [
@@ -1038,8 +1077,8 @@
                                                     },
                                                     {
                                                         "handler": "apiCall",
-                                                        "auth_required": true,
                                                         "target": "{{route?.id ? '/api/modules/sirsoft-page/admin/pages/' + route?.id : '/api/modules/sirsoft-page/admin/pages'}}",
+                                                        "auth_required": true,
                                                         "params": {
                                                             "method": "{{route?.id ? 'PUT' : 'POST'}}",
                                                             "body": "{{Object.assign({}, _local.form, { temp_key: _local.tempKey })}}"
@@ -1091,6 +1130,11 @@
                                         ]
                                     }
                                 ],
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{_local.saving}}",
+                                    "className": "btn btn-primary flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",

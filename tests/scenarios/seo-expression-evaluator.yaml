@@ -1,0 +1,147 @@
+feature: SEO 표현식 평가기 — 봇 화면이 브라우저 평가기와 같은 값을 그린다
+
+description: |
+  봇(검색·미리보기 크롤러)에게 내려가는 HTML 은 서버의 PHP 평가기(`App\Seo\ExpressionEvaluator`)가
+  레이아웃 표현식을 풀어 만든다. 사람이 보는 화면은 같은 식을 브라우저 평가기가 푼다. 두 결과가
+  다르면 같은 주소가 봇에게만 다르게 보이므로, 이 매니페스트는 PHP 평가기가 **자바스크립트 의미론을
+  그대로 재현하는지** 를 행동 단위로 잠근다 — 경로 해석, 연산자, 인스턴스·정적·전역 함수, 리터럴,
+  번역 토큰, 파이프, SEO 덮어쓰기(seo_overrides).
+
+  축은 둘이다.
+    - entry_point: 문자열로 그리는 `evaluate()` 와 원본 값을 돌려주는 `evaluateRaw()`.
+      `evaluateRaw()` 는 확장 주입 props 처럼 값의 타입이 의미를 갖는 자리에 쓰인다 — 배열·불리언이
+      문자열로 뭉개지면 레이아웃이 선언한 판정이 뒤집힌다.
+    - expression_form: 입력 문자열이 어떤 모양인가. 전체가 `{{식}}` 하나인 단일 바인딩, 문장 속에
+      박힌 바인딩, `$t:` 로 시작하는 번역 키, 바인딩 없는 평문(인라인 `$t:` 토큰 포함).
+      `evaluate()` 는 이 모양에 따라 번역 해석·바인딩 치환·인라인 토큰 치환으로 갈라진다.
+
+axes:
+  entry_point: [evaluate, evaluate_raw]
+  expression_form: [single_binding, embedded_binding, translation_key, plain_text]
+
+exclusions:
+  - { entry_point: evaluate_raw, expression_form: [translation_key, plain_text],
+      reason: "evaluateRaw() 는 입력이 단일 {{}} 바인딩이 아니면 그대로 evaluate() 에 넘긴다 — 번역 키·평문은 evaluate 칸이 같은 코드 경로를 대표하고, 위임 자체는 evaluate_raw × embedded_binding 칸이 잠근다" }
+
+effects:
+  # 경로 해석
+  - encode_uri_component_keeps_js_unreserved_marks
+  - encode_uri_component_percent_encodes_multibyte
+  - dot_path_resolves_nested_value
+  - optional_chaining_yields_value_or_empty
+  - null_coalescing_falls_back_only_on_missing_or_null
+  - array_index_access_resolves_or_renders_empty
+  - missing_path_renders_empty_string
+  - scalar_values_rendered_as_strings
+  - text_without_binding_passes_through
+  - localized_object_picks_current_then_fallback_locale
+  - translation_prefix_resolves_key
+  # 비교·논리
+  - comparison_operators_render_true_or_false
+  - comparison_with_missing_left_path_renders_empty
+  - logical_or_returns_operand_value
+  - logical_and_returns_operand_value
+  - negation_inverts_truthiness
+  - compound_logical_condition_evaluated
+  - null_strict_comparison_follows_js_semantics
+  - parenthesized_fallback_then_compared
+  # 대괄호 접근
+  - bracket_accessor_resolves_literal_and_context_keys
+  - bracket_accessor_honours_null_coalescing
+  # 번역 ($t:, $t:defer:, $t(), $localized())
+  - inline_translation_token_resolved_in_text
+  - unknown_inline_translation_renders_empty
+  - defer_translation_prefix_resolves_like_t
+  - translation_params_resolve_bound_expressions
+  - translation_literal_or_absent_params_accepted
+  - translation_placeholders_replaced_in_both_formats
+  - translation_count_selects_plural_variant
+  - t_function_call_translates_key
+  - t_function_missing_key_renders_empty
+  - localized_function_follows_locale_fallback_chain
+  - localized_function_passes_non_array_through
+  # 미지원 식 후처리
+  - unsupported_expression_renders_empty_without_orphan_operator
+  # 실제 레이아웃 식
+  - product_price_layout_expressions_render
+  - collection_display_layout_expressions_render
+  # length 가상 프로퍼티
+  - length_virtual_property_counts_arrays_and_strings
+  - length_combines_with_comparison_and_logic
+  - missing_path_length_renders_empty
+  # 배열 인스턴스 메서드
+  - array_join_uses_given_or_comma_separator
+  - array_reshaping_methods_match_js
+  - array_search_methods_match_js
+  - array_callback_methods_apply_arrow_function
+  # 문자열 인스턴스 메서드
+  - string_split_returns_array
+  - string_case_and_trim_methods_match_js
+  - string_search_methods_match_js
+  - string_replace_first_vs_all
+  - string_slicing_methods_support_negative_index
+  - string_padding_and_repeat_match_js
+  # 숫자·정적·전역 함수
+  - number_formatting_methods_match_js
+  - object_keys_and_values_enumerated
+  - math_functions_compute_like_js
+  - array_is_array_discriminates_arrays
+  - json_stringify_serializes_value
+  - number_static_predicates_answer_like_js
+  - global_conversion_functions_match_js
+  - method_chain_applies_left_to_right
+  # 리터럴·스프레드·괄호 하위 식
+  - numeric_literal_not_read_as_path
+  - null_coalescing_falls_back_to_numeric_literal
+  - array_literal_includes_answers_membership
+  - negated_array_literal_includes_selects_board_type_branch
+  - object_literal_parsed_with_scalar_and_path_values
+  - object_spread_and_dynamic_key_build_object
+  - array_spread_merges_elements
+  - parenthesized_subexpression_supports_member_access
+  # 산술
+  - arithmetic_add_subtract_on_path_values
+  - arithmetic_after_null_coalescing
+  - non_numeric_arithmetic_renders_empty
+  - arithmetic_multiply_divide_modulo
+  - division_or_modulo_by_zero_yields_zero
+  # 삼항
+  - ternary_selects_branch_by_truthiness
+  - nested_ternary_is_right_associative
+  - ternary_condition_accepts_comparison_and_logic
+  # evaluateRaw — 원본 값 반환
+  - raw_single_binding_returns_original_type
+  - raw_non_single_binding_returns_interpolated_string
+  - raw_nested_object_literal_stays_single_binding
+  - raw_missing_path_returns_null
+  - raw_comparison_and_logic_return_boolean
+  - raw_or_and_ternary_keep_operand_value
+  - raw_pipe_keeps_value_type
+  # SEO 덮어쓰기 (seo_overrides)
+  - seo_override_wildcard_fills_bracket_access
+  - seo_override_exact_or_global_path_returns_value
+  - seo_override_never_replaces_existing_value
+  - seo_override_absent_leaves_evaluation_unchanged
+  - seo_override_keeps_comment_depth_conditions
+  - seo_override_array_matches_any_listed_value
+  - seo_override_array_takes_priority_over_context
+  # 파이프
+  - pipe_formats_number_and_date
+  - pipe_transforms_text
+  - pipe_joins_defaults_and_localizes
+  - pipe_chain_applies_in_order
+  - pipe_combines_with_null_coalescing_base
+  - double_bar_or_not_mistaken_for_pipe
+  - unknown_pipe_passes_value_through
+  - pipe_applies_inside_embedded_text
+
+test_files:
+  - tests/Unit/Seo/ExpressionEvaluatorTest.php
+
+notes: |
+  테스트 250건 전부가 `@effects` 를 갖고, 평가 호출이 모두 한 칸(같은 진입점·같은 입력 모양)에
+  속하는 249건은 `@scenario` 도 갖는다. 나머지 1건(`test_real_world_discount_price_condition`)은
+  단일 바인딩과 문장 속 바인딩(`{{rate}}%`)을 한 테스트에서 함께 평가하므로 칸을 하나로 적지 않는다.
+
+  브라우저 평가기 쪽의 같은 식 동작과 샌드박스 차단은 `layout-expression-sandbox` 매니페스트가
+  맡는다. 이 매니페스트는 서버 평가기 단독의 해석 결과만 본다(설계 결정 2026-09-26).

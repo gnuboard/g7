@@ -1,0 +1,589 @@
+{
+    "comment": "e2e:allow 2026-09-21 회원 배송지 화면 전면 재작성 — Playwright spec 대신 **작성자가 직접 브라우저로 관통 실측**했다(로그인 → 회원 2명 다중선택 → 28건→10건 → 「이 회원으로 검색」 10건→5건, 콘솔 오류 0). 전용 시드(저장 배송지를 가진 회원 다수 + manage 권한 운영자)가 필요해 기존 admin spec 의 시드로는 세울 수 없고, 그 시드 신설은 별도 과제다. 구조 회귀는 레이아웃 계약 테스트 18건이 막는다.\n\n  회원 배송지 목록 — 결과 표. 좁은 화면(768px 미만)에서는 DataGrid 가 스스로 카드 보기로 바꿔\n  그리므로 목록을 따로 두 벌 두지 않는다. 예전에 있던 별도 카드 블록은 아무도 채우지 않는\n  `_global.isPortable` 에 묶여 한 번도 보이지 않아 걷어냈다(2026-10-04 결정 3).\n\n  정렬·페이지·페이지당 개수는 전부 URL query 로 나간다. 행마다 무엇을 할 수 있는지는 서버가 준\n  `abilities.can_manage` 가 정한다 — 화면이 임의로 판단하지 않는다.\n\n  회원 이름은 **곧바로 떠나지 않고 메뉴를 연다**. 지우려고 조건을 세워 둔 목록에서 한 칸 잘못\n  누르면 그 조건을 다시 세워야 하기 때문이다(게시판 스크랩·반응 관리와 같은 규약):\n  「회원 정보」는 새 창, 「이 회원으로 검색」은 같은 창에서 회원 조건만 갈아끼운다.",
+    "meta": {
+        "is_partial": true,
+        "description": "User Address List - DataGrid Section with Bulk Delete"
+    },
+    "id": "address_datagrid_section",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "mt-6"
+    },
+    "children": [
+        {
+            "id": "bulk_action_bar",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-body font-medium whitespace-nowrap"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.user_addresses.table.selected_count|count={{(_local.selectedItems || []).length}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1"
+                    }
+                },
+                {
+                    "id": "bulk_delete_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "고른 행을 _global 로 옮겨 담고 확인 창을 연다 — 창은 별도 컨텍스트라 이 목록의 _local 을 보지 못한다",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "bulkSelectedItems": "{{_local.selectedItems}}"
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "modal_addresses_bulk_delete"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "data-testid": "admin-addresses-bulk-delete",
+                        "type": "button",
+                        "className": "px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{!(_local.selectedItems || []).length || _computed.canManage !== true}}"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.user_addresses.bulk.delete"
+                }
+            ]
+        },
+        {
+            "id": "table_header_bar",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-between flex-wrap gap-3 mb-4"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-label"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.user_addresses.table.total_count|count={{addresses?.data?.pagination?.total || 0}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-center gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "정렬이 바뀌면 같은 체크가 다른 행을 가리키므로 선택을 먼저 비운다. 쪽수도 1로 되돌린다",
+                                    "type": "change",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "selectedItems": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/ecommerce/user-addresses",
+                                                "replace": true,
+                                                "mergeQuery": true,
+                                                "transition_overlay_target": "pc_data_table__body",
+                                                "query": {
+                                                    "sort": "{{$event.target.value}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "name": "sort",
+                                "className": "w-40",
+                                "value": "{{query.sort || 'created_at_desc'}}",
+                                "options": [
+                                    {
+                                        "value": "created_at_desc",
+                                        "label": "$t:sirsoft-ecommerce.admin.user_addresses.sort.created_at_desc"
+                                    },
+                                    {
+                                        "value": "created_at_asc",
+                                        "label": "$t:sirsoft-ecommerce.admin.user_addresses.sort.created_at_asc"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "페이지당 개수 — 행 집합이 바뀌므로 선택을 비우고 1쪽으로",
+                                    "type": "change",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "selectedItems": []
+                                            }
+                                        },
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/ecommerce/user-addresses",
+                                                "replace": true,
+                                                "mergeQuery": true,
+                                                "transition_overlay_target": "pc_data_table__body",
+                                                "query": {
+                                                    "per_page": "{{$event.target.value}}",
+                                                    "page": 1
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "name": "perPage",
+                                "className": "w-20",
+                                "value": "{{query.per_page || '20'}}",
+                                "options": [
+                                    {
+                                        "value": "10",
+                                        "label": "10"
+                                    },
+                                    {
+                                        "value": "20",
+                                        "label": "20"
+                                    },
+                                    {
+                                        "value": "50",
+                                        "label": "50"
+                                    },
+                                    {
+                                        "value": "100",
+                                        "label": "100"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "행 메뉴의 회원 항목은 회원 없는 배송지(member null)에서 비활성이다 — 회원 없는 배송지의 「회원 정보」 는 `/admin/users/undefined` 로, 「이 회원으로 검색」 은 `user_uuids[]=[undefined]` → 422 → 본문 전체 오류로 이어졌다. 행마다 다른 조건은 `disabledField`(행 데이터 경로, 값이 falsy 면 비활성)로 적고, 삭제는 관리 권한으로 막는다.",
+            "id": "pc_data_table",
+            "type": "composite",
+            "name": "DataGrid",
+            "blur_until_loaded": true,
+            "actions": [
+                {
+                    "comment": "쪽 이동 — 화면에 없는 행이 선택된 채로 일괄 삭제에 실리지 않도록 선택을 비운다",
+                    "type": "change",
+                    "event": "onPageChange",
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "_local",
+                                "selectedItems": []
+                            }
+                        },
+                        {
+                            "handler": "navigate",
+                            "params": {
+                                "path": "/admin/ecommerce/user-addresses",
+                                "replace": true,
+                                "mergeQuery": true,
+                                "transition_overlay_target": "pc_data_table__body",
+                                "query": {
+                                    "page": "{{$args[0]}}"
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "체크한 배송지. 일괄 삭제 버튼과 확인 창이 이 목록을 읽는다",
+                    "event": "onSelectionChange",
+                    "handler": "setState",
+                    "params": {
+                        "target": "_local",
+                        "selectedItems": "{{$args[0]}}"
+                    }
+                },
+                {
+                    "comment": "목록 행 작업 버튼 — 작업 종류에 따라 분기한다(작업 메뉴와 같은 동작)",
+                    "event": "onRowAction",
+                    "handler": "switch",
+                    "cases": {
+                        "view_member": {
+                            "handler": "openWindow",
+                            "params": {
+                                "path": "/admin/users/{{$args[1]?.member?.uuid}}"
+                            }
+                        },
+                        "search_member": {
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "_local",
+                                        "filter.memberUuids": "{{[$args[1]?.member?.uuid]}}",
+                                        "filter.memberOptions": "{{[{ value: $args[1]?.member?.uuid, label: $args[1]?.member?.name, description: $args[1]?.member?.email }]}}",
+                                        "selectedItems": []
+                                    }
+                                },
+                                {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/ecommerce/user-addresses",
+                                        "mergeQuery": true,
+                                        "replace": true,
+                                        "transition_overlay_target": "pc_data_table__body",
+                                        "query": {
+                                            "user_uuid": "",
+                                            "user_uuids[]": "{{[$args[1]?.member?.uuid]}}",
+                                            "page": 1
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        "delete": {
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "deleteTarget": {
+                                            "id": "{{$args[1].id}}",
+                                            "recipient_name": "{{$args[1].recipient_name}}",
+                                            "member_name": "{{$args[1].member?.name}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "openModal",
+                                    "target": "modal_addresses_delete"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ],
+            "props": {
+                "data": "{{addresses?.data?.data || []}}",
+                "pagination": true,
+                "serverSidePagination": true,
+                "serverCurrentPage": "{{addresses?.data?.pagination?.current_page ?? 1}}",
+                "serverTotalPages": "{{addresses?.data?.pagination?.last_page ?? null}}",
+                "serverHasMorePages": "{{addresses?.data?.pagination?.has_more_pages ?? false}}",
+                "pageSize": "{{+(query.per_page || 20)}}",
+                "alwaysShowPagination": true,
+                "selectable": "{{_computed.canManage === true}}",
+                "selectionScope": "page",
+                "selectedIds": "{{_local.selectedItems || []}}",
+                "idField": "id",
+                "visibleColumns": "{{_local.visibleColumns}}",
+                "selectedCountText": "",
+                "emptyMessage": "$t:sirsoft-ecommerce.admin.user_addresses.table.empty",
+                "actionsColumnHeader": "$t:common.actions",
+                "rowActions": [
+                    {
+                        "id": "view_member",
+                        "label": "$t:sirsoft-ecommerce.admin.user_addresses.actions.view_member",
+                        "iconName": "fa-regular fa-user",
+                        "disabledField": "member.uuid"
+                    },
+                    {
+                        "id": "search_member",
+                        "label": "$t:sirsoft-ecommerce.admin.user_addresses.actions.search_member",
+                        "iconName": "fa-solid fa-magnifying-glass",
+                        "disabledField": "member.uuid"
+                    },
+                    {
+                        "id": "divider",
+                        "divider": true
+                    },
+                    {
+                        "id": "delete",
+                        "label": "$t:sirsoft-ecommerce.admin.user_addresses.actions.delete",
+                        "iconName": "fa-regular fa-trash-can",
+                        "variant": "danger",
+                        "disabled": "{{_computed.canManage !== true}}"
+                    }
+                ],
+                "columns": [
+                    {
+                        "field": "checkbox",
+                        "header": "",
+                        "width": "40px",
+                        "selectable": true
+                    },
+                    {
+                        "field": "created_at",
+                        "header": "$t:sirsoft-ecommerce.admin.user_addresses.columns.created_at",
+                        "width": "150px",
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "whitespace-nowrap"
+                                },
+                                "text": "{{row.created_at}}"
+                            }
+                        ]
+                    },
+                    {
+                        "field": "member",
+                        "header": "$t:sirsoft-ecommerce.admin.user_addresses.columns.member",
+                        "width": "200px",
+                        "cellChildren": [
+                            {
+                                "type": "composite",
+                                "name": "ActionMenu",
+                                "if": "{{!!row.member?.uuid}}",
+                                "actions": [
+                                    {
+                                        "comment": "배송지 행의 작업 메뉴 — 고른 항목(회원 보기 등)에 따라 분기한다",
+                                        "event": "onItemClick",
+                                        "handler": "switch",
+                                        "cases": {
+                                            "view_member": {
+                                                "handler": "openWindow",
+                                                "params": {
+                                                    "path": "/admin/users/{{row.member?.uuid}}"
+                                                }
+                                            },
+                                            "search_member": {
+                                                "comment": "손에 든 회원 한정도 이 한 명으로 맞춘다 — URL 만 갈면 필터 칸이 이전 선택을 든 채로 남는다",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "_local",
+                                                            "filter.memberUuids": "{{[row.member?.uuid]}}",
+                                                            "filter.memberOptions": "{{[{ value: row.member?.uuid, label: row.member?.name, description: row.member?.email }]}}",
+                                                            "selectedItems": []
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/user-addresses",
+                                                            "mergeQuery": true,
+                                                            "replace": true,
+                                                            "transition_overlay_target": "pc_data_table__body",
+                                                            "query": {
+                                                                "user_uuid": "",
+                                                                "user_uuids[]": "{{[row.member?.uuid]}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "position": "right",
+                                    "items": [
+                                        {
+                                            "id": "view_member",
+                                            "label": "$t:sirsoft-ecommerce.admin.user_addresses.actions.view_member",
+                                            "iconName": "user"
+                                        },
+                                        {
+                                            "id": "search_member",
+                                            "label": "$t:sirsoft-ecommerce.admin.user_addresses.actions.search_member",
+                                            "iconName": "magnifying-glass"
+                                        }
+                                    ]
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "fa-regular fa-user",
+                                                    "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "min-w-0 flex-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "font-medium text-gray-900 dark:text-gray-100 truncate block"
+                                                        },
+                                                        "text": "{{row.member?.name}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{!!row.member?.email}}",
+                                                        "props": {
+                                                            "className": "text-tertiary truncate block"
+                                                        },
+                                                        "text": "({{row.member?.email}})"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!row.member?.uuid}}",
+                                "props": {
+                                    "className": "flex-center gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "composite",
+                                        "name": "Badge",
+                                        "props": {
+                                            "color": "gray",
+                                            "text": "$t:sirsoft-ecommerce.admin.user_addresses.badges.guest",
+                                            "size": "sm"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "composite",
+                                "name": "Badge",
+                                "if": "{{row.member?.is_withdrawn}}",
+                                "props": {
+                                    "color": "gray",
+                                    "text": "$t:sirsoft-ecommerce.admin.user_addresses.badges.withdrawn",
+                                    "size": "sm"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "field": "recipient",
+                        "header": "$t:sirsoft-ecommerce.admin.user_addresses.columns.recipient",
+                        "width": "140px",
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "font-medium"
+                                        },
+                                        "text": "{{row.recipient_name}}"
+                                    },
+                                    {
+                                        "type": "composite",
+                                        "name": "Badge",
+                                        "if": "{{row.is_default}}",
+                                        "props": {
+                                            "color": "blue",
+                                            "text": "$t:sirsoft-ecommerce.admin.user_addresses.badges.is_default",
+                                            "size": "sm"
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "if": "{{!!row.label}}",
+                                "props": {
+                                    "className": "text-tertiary block truncate"
+                                },
+                                "text": "{{row.label}}"
+                            }
+                        ]
+                    },
+                    {
+                        "field": "contact",
+                        "header": "$t:sirsoft-ecommerce.admin.user_addresses.columns.contact",
+                        "width": "140px",
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "whitespace-nowrap"
+                                },
+                                "text": "{{row.recipient_phone ?? '-'}}"
+                            }
+                        ]
+                    },
+                    {
+                        "field": "address_summary",
+                        "header": "$t:sirsoft-ecommerce.admin.user_addresses.columns.address",
+                        "cellChildren": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{row.address_summary}}"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

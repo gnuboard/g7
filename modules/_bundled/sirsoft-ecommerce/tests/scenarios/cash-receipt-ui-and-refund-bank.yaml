@@ -1,13 +1,13 @@
-# audit:allow test-scenario-coverage reason: 14축 full cross product 691만 조합 — 전개 상한 초과.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: 14축 full cross product 691만 조합 — 전개 상한 초과.
 #   test_files 실재 검사는 이 면제와 무관하게 항상 수행된다(끄려면 `:test-files` 접미사).
-#   실제 커버는 아래 effects 69건과 test_files 12개가 담당한다. S2 가 이월한 E2E axis 를 본 매니페스트에서 채운다.
+#   실제 커버는 아래 effects 89건과 test_files 13개가 담당한다. S2 가 이월한 E2E axis 를 본 매니페스트에서 채운다.
 feature: 현금영수증 신청/발급 UI · 환불계좌 수집
 
 description: |
   S1(인프라)·S2(API·자동발급) 위에 사람이 조작하는 표면을 얹는다. 그 전까지는 구매자가 신청할 곳도,
   관리자가 발급을 볼 곳도 없었다.
 
-  발견한 구조적 구멍(S3 착수 시 실측): 주문 생성 POST body 는 템플릿 소유 파일(_checkout_summary.json)의
+  발견한 구조적 구멍(S3 착수 시 실측): 주문 생성 POST body 는 템플릿 소유 파일(_checkout_summary.g7.html)의
   리터럴 객체다. 슬롯에 주입된 모듈 폼이 _local 에 값을 써도 그 body 에 실릴 방법이 없다 —
   결제 버튼에 id 가 없어 overlay 로 타겟할 수 없고, inject_props 는 컴포넌트 props 전용이라
   actions[].params.body 에 도달하지 못한다. 그대로 두면 구매자가 신청해도 주문에 아무 기록이 남지 않는다.
@@ -19,7 +19,7 @@ description: |
       validated() 가 떨궜다. 관리자가 저장해도 아무 일도 일어나지 않았다.
     · payment 응답에 cash_receipt_provider 가 없어, 주문상세 현금영수증 카드가 영원히 렌더될 수 없었다.
     · payment 응답에 refund_bank_* 4키가 없어, 취소 모달이 주문 시 입력된 계좌를 프리필할 수 없었다.
-    · _payment.json 루트에 id 가 없어 KG 플러그인의 overlay 주입(세금내역·영수증 링크·에스크로 버튼)이
+    · _payment.g7.html 루트에 id 가 없어 KG 플러그인의 overlay 주입(세금내역·영수증 링크·에스크로 버튼)이
       조용히 no-op 이었다. 본 이슈가 부수 복구한다(R1).
 
   실서버(Playwright MCP) 실측에서만 드러난 결함 — 유닛 테스트는 전부 green 이었다:
@@ -95,10 +95,13 @@ axes:
     - partial_bank_only       # 은행만
     - partial_missing_holder  # 예금주 누락
 
-  refund_bank_requirement:    # 필수 여부 판정 (D13)
+  refund_bank_requirement:    # 필수 여부 판정 (D13 · #599 후속 P9·N10)
     - vbank_paid_required     # 가상계좌 + 입금완료 → 필수 (미입력 422)
     - vbank_waiting_optional  # 가상계좌 + 입금 전 → 선택
-    - dbank_optional          # 무통장 → 선택 (관리자 수동 이체 참조)
+    - dbank_required          # 무통장 → **필수**. 사람이 송금해야 하므로 계좌 없이 승인되면
+                              # 운영자가 송금 대상을 모르는 환불을 떠안는다 (P9)
+    - nothing_to_refund_skip  # 돌려줄 돈이 없으면 수단과 무관하게 묻지 않는다 — 요구하면
+                              # 미입금 주문을 영영 취소할 수 없다 (N10, 브라우저 실측)
     - card_hidden             # 카드·간편결제 → 필드 자체 숨김
 
   shipping_fee_tax_policy:    # 배송비 과세 3정책 (D3) — 백엔드 Enum 과 값 일치
@@ -134,9 +137,11 @@ effects:
   - checkout_extra_payload_can_override_keys      # spread 가 뒤 → 확장은 자기 도메인 키만 쓴다(계약)
 
   # 체크아웃 신청 폼 (W-1)
+  - checkout_form_appended_to_cash_receipt_slot   # 모듈 폼은 템플릿 슬롯 확장점(shop_checkout_cash_receipt_slot)에 append 로 주입
   - checkout_slot_renders_only_inside_dbank_block # 슬롯이 dbank 블록 내부 → 별도 if 불필요
   - checkout_slot_hidden_when_provider_unset      # 프로바이더 미설정 시 DOM 카운트 0
   - checkout_fields_mount_on_request_toggle       # 신청 체크 시 0 → 3 필드
+  - checkout_request_toggle_off_clears_payload    # 신청 해제가 확장 칸을 shallow 병합으로 비워 주문 본문에서 신청·식별번호가 빠진다
   - checkout_purpose_switch_resets_invalid_identifier  # 소득공제 전환 시 business → phone 리셋
   - checkout_identifier_type_options_by_purpose   # 소득공제 2종 / 지출증빙 3종
   - checkout_identifier_cleared_on_type_change    # 발급수단 변경 시 번호 초기화
@@ -167,9 +172,14 @@ effects:
   - mypage_card_state_machine_five_states
   - mypage_issue_uses_member_or_guest_endpoint    # user/orders/{id} vs guest/orders/{orderNumber}
   - mypage_no_cancel_or_reissue_action_for_user   # 관리자 전용 액션 부재
+  - mypage_issue_modal_registered_in_modals_section  # 발급 모달은 modals 섹션 등록 (인라인 Modal 금지)
+  - card_kept_when_provider_unset_but_history_exists  # A3 UI 표면 — 프로바이더 미설정이어도 발급/시도 이력이 있으면 카드 유지 (유저·관리자 공통)
 
   # 관리자 주문상세 (W-3)
   - admin_card_renders_in_payment_iteration_context
+  - admin_card_hidden_when_no_provider_and_no_history  # 프로바이더 미설정 + 이력 0건이면 관리자 카드도 미렌더
+  - admin_issue_modal_identifier_type_options_by_purpose  # 관리자 발급 모달도 소득공제 2종 / 지출증빙 3종
+  - admin_issue_modal_submit_disabled_without_identifier  # 식별번호가 비면 발급 버튼 비활성
   - admin_issue_cancel_reissue_actions_present
   - admin_reissue_visible_only_on_failed_history
   - admin_issue_modal_setstate_before_closemodal  # 순서 역전 시 상태 잔존
@@ -182,11 +192,25 @@ effects:
   - cancel_refund_bank_visible_only_for_vbank_dbank
   - cancel_refund_bank_required_for_paid_vbank_422
   - cancel_refund_bank_optional_before_deposit
-  - cancel_refund_bank_optional_for_dbank
+  - cancel_refund_bank_required_for_dbank_with_money   # P9 — 사람이 송금하는 수단은 계좌 필수
+  - cancel_refund_bank_skipped_when_nothing_to_refund  # N10 — 0원이면 묻지 않는다
+  - cancel_refund_bank_hidden_when_nothing_to_refund   # N10 — 화면도 같은 축으로 감춘다
+  - cancel_refund_bank_visible_for_recorded_deposit_before_payment  # S3-D7 — 입금을 기록만 한 결제 전 주문은 서버 판정으로 노출
+  - cancel_refund_bank_empty_list_points_to_settings   # N7 — 은행 미등록이면 설정 자리를 지목
   - cancel_refund_bank_partial_input_rejected_422
-  - cancel_refund_bank_persisted_to_payment_row   # 환불 실행 전에 컬럼 갱신
+  - cancel_refund_bank_recorded_on_the_claim_row  # 접수는 **신청서 행**에 적는다 — 결제행은
+                                                 # 환불을 실행하는 시점에 갱신된다(#599 후속).
+                                                 # 접수만으로 결제행을 덮으면 계좌가 다른 두
+                                                 # 신청서 중 나중 접수가 앞선 송금 대상을 바꾼다
   - cancel_refund_bank_omitted_when_untouched     # 미입력 시 키 미전송 → 주문 시 계좌 보존
   - cancel_refund_bank_prefilled_from_order       # 주문 시 입력값 프리필
+  - cancel_refund_bank_fields_stored_in_handler_keys  # 3필드가 cancelOrderHandlers 가 읽는 _local.refundBank* 키에 기록
+
+  # 취소 뒤 세금계산서 (P15) — 취소·재발급 자동화는 범위 밖이라 **누락을 드러내는** 것이 역할이다
+  - order_detail_flags_a_stale_tax_invoice_after_cancellation  # 판정은 적재된 관계에서만 한다
+                                                 # (Resource 재쿼리는 목록에서 행 수만큼의 N+1).
+                                                 # 그래서 상세 조회의 eager load 와 짝이며, 그
+                                                 # 짝이 깨지면 배지만 조용히 사라진다
 
   # 환경설정 (W-5)
   - settings_cash_receipt_provider_persisted      # rules 누락 시 validated() 가 떨궈 저장 무효
@@ -197,6 +221,9 @@ effects:
   - settings_cash_receipt_self_issue_persisted
   - settings_self_issue_default_off               # D14
   - settings_available_providers_exposed          # 후보 목록 응답 포함
+  - settings_cash_receipt_card_in_order_settings_tab  # 현금영수증 카드가 주문설정 탭에 존재
+  - settings_provider_select_falls_back_to_notice_without_candidates  # 후보 0건이면 Select 대신 안내
+  - settings_shipping_fee_tax_default_proportional  # 배송비 과세 미저장 시 기본값 안분
 
   # 응답 표면
   - payment_resource_exposes_cash_receipt_provider  # 없으면 카드가 영원히 미렌더
@@ -219,12 +246,17 @@ effects:
   - new_ui_has_no_tailwind_breakpoint             # md:/lg: 로 마크업 구조 분기 금지
   - portable_override_applies_below_1024_on_render  # 실렌더: 세로 스택 전환 (F5)
   - portable_override_absent_at_1024_on_render      # 실렌더: 1024px 부터 base 복귀
+  - new_ui_icon_size_via_prop                     # 신설 UI 의 Icon 크기는 size prop (w-N/h-N 클래스 금지)
 
   # 데이터 위생 (감사 지적 C8, 프로젝트 결정 2026-07-10)
   - cash_receipt_request_not_persisted_for_non_dbank  # 발급 불가 주문에 암호문 미보관
 
   # 자진발급 설정 안내 (감사 지적 W-5)
   - self_issue_links_to_nts_mandatory_industry_guide  # 의무발행 업종 판단 경로 제공
+  # 자진발급 동작 — 미신청 주문도 입금완료 시 국세청 지정번호(0100001234)로 소득공제 발급
+  - self_issue_on_auto_issues_income_receipt_with_nts_number
+  # 관리자 발급 경로도 체크아웃과 같은 용도×식별번호 규칙을 따른다 (지출증빙+자진발급번호 · 소득공제+사업자번호 거부)
+  - admin_issue_rejects_invalid_purpose_identifier_combination_422
 
   # 부수 복구
   - kg_user_order_show_injection_restored         # order_payment_info_panel id 부여 (R1)
@@ -251,3 +283,5 @@ test_files:
 
   # E2E (S2 이월분)
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/checkout-cash-receipt.spec.ts
+  # E2E 발급 생애주기 — 카드 상태머신(입금 전·발급 가능)·유저 사후 발급·자진발급을 실 PG 로 밟는다
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/cash-receipt-lifecycle.spec.ts

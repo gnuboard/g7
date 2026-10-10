@@ -1,0 +1,75 @@
+<!-- 클레임 목록 — 일괄 상태 변경 확인 창(교환·반품·환불 탭). 유형·바꿀 상태와 라벨·대상 id 는 목록의 선택 상태를 직접 보지 않고, [일괄 적용] 핸들러가 창을 열기 전에 채워 둔 `_global.claimBulkConfirmData` 에서 읽는다. -->
+<partial description="Claim List - Bulk Status Confirm Modal (S8b)">
+  <modal data-type="composite" data-ref="modal_claim_bulk_confirm" title="$t:sirsoft-ecommerce.admin.claim.bulk.confirm_title" size="md">
+    <div class="space-y-3">
+      <p data-ref="cbc_001_message" class="text-label">$t:sirsoft-ecommerce.admin.claim.bulk.confirm_message|count={{(_global.claimBulkConfirmData?.ids ?? []).length}}</p>
+      <div class="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-2">
+        <div class="flex-center text-sm">
+          <span class="text-gray-500 dark:text-gray-400 w-28 flex-shrink-0">$t:sirsoft-ecommerce.admin.claim.bulk.confirm_type_label</span>
+          <span data-ref="cbc_002_type_value" class="font-semibold text-gray-900 dark:text-gray-100">{{({'exchange':'$t:sirsoft-ecommerce.admin.claim.subtab.exchange','return':'$t:sirsoft-ecommerce.admin.claim.subtab.return','refund':'$t:sirsoft-ecommerce.admin.claim.subtab.refund'})[_global.claimBulkConfirmData?.claimType] ?? _global.claimBulkConfirmData?.claimType}}</span>
+        </div>
+        <div class="flex-center text-sm">
+          <span class="text-gray-500 dark:text-gray-400 w-28 flex-shrink-0">$t:sirsoft-ecommerce.admin.claim.bulk.confirm_status_label</span>
+          <!-- 라벨은 핸들러가 어휘 표에서 골라 실어 준다 — 모달이 유형×상태 조합을 다시 표로 들고 있으면 Enum 이 늘 때 두 벌이 조용히 낡는다. -->
+          <span data-ref="cbc_003_status_value" class="font-semibold text-gray-900 dark:text-gray-100">{{_global.claimBulkConfirmData?.statusLabel ?? _global.claimBulkConfirmData?.status}}</span>
+        </div>
+        <div class="flex-center text-sm">
+          <span class="text-gray-500 dark:text-gray-400 w-28 flex-shrink-0">$t:sirsoft-ecommerce.admin.claim.bulk.confirm_count_label</span>
+          <span data-ref="cbc_004_count_value" class="font-semibold text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.claim.bulk.confirm_count_value|count={{(_global.claimBulkConfirmData?.ids ?? []).length}}</span>
+        </div>
+        <!-- 반려면 고른 신청서 전부에 들어갈 사유를 한 번 더 보여 준다 — 구매자 화면에 그대로 나가는 문구다. -->
+        <div data-if="{{_global.claimBulkConfirmData?.status === 'rejected'}}" class="flex items-start text-sm">
+          <span class="text-gray-500 dark:text-gray-400 w-28 flex-shrink-0">$t:sirsoft-ecommerce.admin.claim.detail.reason.reject_reason_label</span>
+          <span data-ref="cbc_007_reject_reason_value" class="font-semibold text-gray-900 dark:text-gray-100 whitespace-pre-line break-all">{{_global.claimBulkConfirmData?.rejectReason ?? ''}}</span>
+        </div>
+      </div>
+      <!-- 회수중·발송중이면 신청서마다 택배사·운송장을 받는다 (#599 후속 운영 결정) — 송장은 신청서마다 달라 한 쌍을 여러 건에 나눠 쓸 수 없다. 저장된 송장은 핸들러가 미리 채운다. 한 건이라도 비면 [변경] 이 잠긴다(서버도 422). 선택지는 목록 응답이 나른다 — 배송사 엔드포인트는 `settings.read` 게이트다. -->
+      <div data-ref="cbc_008_trackings" data-if="{{(_global.claimBulkConfirmData?.trackings ?? []).length > 0}}" class="space-y-2">
+        <p data-ref="cbc_009_tracking_hint" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_incomplete</p>
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-200 dark:divide-gray-700">
+          <div data-each="trackRow, trackIdx in {{_global.claimBulkConfirmData?.trackings ?? []}}" class="flex-center flex-wrap gap-2 p-3">
+            <span class="text-sm text-gray-900 dark:text-gray-100 flex-1 min-w-[8rem] truncate">{{[trackRow.claim_number, trackRow.requester_name].filter(Boolean).join(' · ')}}</span>
+            <select name="bulkTrackingCarrier" class="w-32 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{trackRow.carrier_id ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder'), disabled: true }].concat(_global.claimBulkConfirmData?.carriers ?? [])}}">
+              <on type="change">
+                <!-- 일괄 처리 확인 창에서 신청서별 택배사를 고치면 그 행의 송장 정보에 바로 반영한다 -->
+                <action handler="sirsoft-ecommerce.updateClaimBulkTracking" claimId="{{trackRow.id}}" field="carrier_id" value="{{$event.target.value}}"/>
+              </on>
+            </select>
+            <input type="text" name="bulkTrackingNumber" :maxLength="50" class="w-40 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder" value="{{trackRow.tracking_number ?? ''}}">
+              <on type="change">
+                <!-- 신청서별 송장번호 입력을 그 행의 송장 정보에 바로 반영한다 -->
+                <action handler="sirsoft-ecommerce.updateClaimBulkTracking" claimId="{{trackRow.id}}" field="tracking_number" value="{{$event.target.value}}"/>
+              </on>
+            </input>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button data-ref="cbc_005_cancel_button" type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isProcessing}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:sirsoft-ecommerce.admin.claim.bulk.confirm_cancel</span>
+      </button>
+      <!-- [변경] — 고른 신청서를 한꺼번에 전이한다. 부분 성공 계약이라 게이트에 막힌 건은 건너뛰고 성공·결제 요청으로 돌려진 건·건너뛴 건을 나눠 알린 뒤, 목록의 선택과 상태 셀렉트를 비우고 목록을 다시 부른다. -->
+      <button data-ref="cbc_006_apply_button" type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.claimBulkConfirmData?.status || (_global.claimBulkConfirmData?.ids ?? []).length === 0 || _global.isProcessing || (_global.claimBulkConfirmData?.trackings ?? []).some(r => !r.carrier_id || !(r.tracking_number ?? '').trim())}}">
+        <on type="click">
+          <set-state target="global" :isProcessing="true"/>
+          <!-- onError 는 진행 상태만 되돌린다 — 사유 토스트는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). 여기서 한 번 더 띄우면 같은 문구가 두 번 뜬다. -->
+          <action handler="sirsoft-ecommerce.executeClaimBulkAction">
+            <success>
+              <set-state target="global" :isProcessing="false"/>
+              <close-modal/>
+            </success>
+            <fail>
+              <set-state target="global" :isProcessing="false"/>
+            </fail>
+          </action>
+        </on>
+        <icon data-if="{{_global.isProcessing}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isProcessing ? '$t:common.processing' : '$t:sirsoft-ecommerce.admin.claim.bulk.confirm_apply'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

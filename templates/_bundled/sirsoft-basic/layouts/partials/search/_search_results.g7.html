@@ -1,0 +1,73 @@
+<!-- 결과 본문 갈래 — 고른 탭에 따라 종류별 조각 중 무엇을 보일지 고른다. 전체 탭이면 종류마다 앞의 몇 건만 미리 보이고, 특정 탭이면 그 종류만 쪽 넘김과 함께 펼친다. -->
+<partial description="검색 결과 표시">
+  <div data-if="{{query?.q &amp;&amp; searchResults?.data}}">
+    <!-- 전체 탭: 섹션별 그룹핑 -->
+    <div data-if="{{(query?.type ?? 'all') === 'all' &amp;&amp; (searchResults?.data?.total ?? 0) > 0}}" class="space-y-6">
+      <include src="partials/search/posts/_section.g7.html"/>
+      <include src="partials/search/products/_section.g7.html"/>
+      <include src="partials/search/pages/_section.g7.html"/>
+    </div>
+    <!-- 게시글 탭 - 결과 있을 때 -->
+    <div data-if="{{query?.type === 'posts' &amp;&amp; (searchResults?.data?.posts_count ?? 0) > 0}}">
+      <include src="partials/search/posts/_list.g7.html"/>
+    </div>
+    <!-- 게시글 탭 - 결과 없을 때 (검색 실패는 결과 없음이 아니다 — categories_failed 로 구분, 키 부재(구버전 코어)는 종전 렌더 유지) -->
+    <div data-if="{{query?.type === 'posts' &amp;&amp; (searchResults?.data?.posts_count ?? 0) === 0 &amp;&amp; !(searchResults?.data?.categories_failed?.posts ?? false)}}" class="py-16 text-center">
+      <div class="mb-5 text-gray-300 dark:text-gray-600">
+        <icon name="file-text" size="4x"/>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">$t:search.empty.posts</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400">$t:search.empty.suggestion</p>
+    </div>
+    <!-- 게시글 탭 - 검색 실패 -->
+    <div data-if="{{query?.type === 'posts' &amp;&amp; (searchResults?.data?.categories_failed?.posts ?? false)}}" class="py-16 text-center">
+      <div class="mb-5 text-red-300 dark:text-red-500/60">
+        <icon name="triangle-exclamation" size="4x"/>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">$t:search.failed.title</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400">$t:search.failed.suggestion</p>
+    </div>
+    <!-- 상품 탭 - 결과 있을 때 -->
+    <div data-if="{{query?.type === 'products' &amp;&amp; (searchResults?.data?.products_count ?? 0) > 0}}" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      <div data-each="product in {{searchResults.data.products ?? []}}">
+        <include src="partials/search/products/_item_card.g7.html"/>
+      </div>
+    </div>
+    <!-- 상품 탭 - 결과 없을 때 (검색 실패는 결과 없음이 아니다 — categories_failed 로 구분, 키 부재(구버전 코어)는 종전 렌더 유지) -->
+    <div data-if="{{query?.type === 'products' &amp;&amp; (searchResults?.data?.products_count ?? 0) === 0 &amp;&amp; !(searchResults?.data?.categories_failed?.products ?? false)}}" class="py-16 text-center">
+      <div class="mb-5 text-gray-300 dark:text-gray-600">
+        <icon name="shopping-bag" size="4x"/>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">$t:search.empty.products</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400">$t:search.empty.suggestion</p>
+    </div>
+    <!-- 상품 탭 - 검색 실패 -->
+    <div data-if="{{query?.type === 'products' &amp;&amp; (searchResults?.data?.categories_failed?.products ?? false)}}" class="py-16 text-center">
+      <div class="mb-5 text-red-300 dark:text-red-500/60">
+        <icon name="triangle-exclamation" size="4x"/>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">$t:search.failed.title</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400">$t:search.failed.suggestion</p>
+    </div>
+    <!-- 페이지 탭 - 결과 있을 때 -->
+    <div data-if="{{query?.type === 'pages' &amp;&amp; (searchResults?.data?.pages_count ?? 0) > 0}}">
+      <include src="partials/search/pages/_section.g7.html"/>
+    </div>
+    <!-- 페이지 탭 - 결과 없을 때 (검색 실패는 결과 없음이 아니다 — categories_failed 로 구분, 키 부재(구버전 코어)는 종전 렌더 유지) -->
+    <div data-if="{{query?.type === 'pages' &amp;&amp; (searchResults?.data?.pages_count ?? 0) === 0 &amp;&amp; !(searchResults?.data?.categories_failed?.pages ?? false)}}" class="py-16 text-center">
+      <div class="mb-5 text-gray-300 dark:text-gray-600">
+        <icon name="file-alt" size="4x"/>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">$t:search.empty.pages</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400">$t:search.empty.suggestion</p>
+    </div>
+    <!-- 페이지 탭 - 검색 실패 -->
+    <div data-if="{{query?.type === 'pages' &amp;&amp; (searchResults?.data?.categories_failed?.pages ?? false)}}" class="py-16 text-center">
+      <div class="mb-5 text-red-300 dark:text-red-500/60">
+        <icon name="triangle-exclamation" size="4x"/>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">$t:search.failed.title</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400">$t:search.failed.suggestion</p>
+    </div>
+  </div>
+</partial>

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->text('name')->comment('상품명 (다국어 JSON: {ko: "...", en: "..."})');
             $table->string('product_code', 50)->comment('상품코드');
             $table->string('sales_product_code', 50)->nullable()->comment('판매자 상품코드 (사용자 입력용)');
-            $table->string('sku', 100)->nullable()->comment('SKU');
+            $table->string('sku', 100)->nullable()->comment('재고 관리 코드 (SKU)');
             $table->unsignedBigInteger('brand_id')->nullable()->comment('브랜드 ID');
             $table->unsignedBigInteger('list_price')->default(0)->comment('정가 (원)');
             $table->unsignedBigInteger('selling_price')->default(0)->comment('판매가 (원)');
@@ -59,13 +59,19 @@ return new class extends Migration
         });
 
         if (DB::getDriverName() === 'mysql') {
-            DB::statement("ALTER TABLE `".DB::getTablePrefix()."ecommerce_products` COMMENT '상품 정보'");
+            DB::statement('ALTER TABLE `'.DB::getTablePrefix()."ecommerce_products` COMMENT '상품 정보'");
         }
 
         // brand_id FK (brands table created in 000003)
-        Schema::table('ecommerce_products', function (Blueprint $table) {
-            $table->foreign('brand_id')->references('id')->on('ecommerce_brands')->nullOnDelete();
-        });
+        // 이름이 드라이버·프리픽스에 따라 달라질 수 있어 컬럼으로 존재를 판정한다.
+        $hasBrandForeignKey = collect(Schema::getForeignKeys('ecommerce_products'))
+            ->contains(fn ($foreignKey) => in_array('brand_id', $foreignKey['columns'] ?? [], true));
+
+        if (! $hasBrandForeignKey) {
+            Schema::table('ecommerce_products', function (Blueprint $table) {
+                $table->foreign('brand_id')->references('id')->on('ecommerce_brands')->nullOnDelete();
+            });
+        }
     }
 
     /**

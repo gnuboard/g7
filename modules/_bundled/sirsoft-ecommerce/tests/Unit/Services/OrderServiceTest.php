@@ -9,11 +9,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
+use Mockery\MockInterface;
+use Modules\Sirsoft\Ecommerce\DTO\ManualPaidEffectsReport;
+use Modules\Sirsoft\Ecommerce\DTO\ManualPaidOptions;
+use Modules\Sirsoft\Ecommerce\DTO\ManualPaidTransition;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\UserAddressRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
+use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Modules\Sirsoft\Ecommerce\Services\OrderService;
 use Modules\Sirsoft\Ecommerce\Services\StockService;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
@@ -27,6 +33,18 @@ class OrderServiceTest extends ModuleTestCase
 
     protected $mockRepository;
 
+    /**
+     * 결제 처리 서비스 대역 (수동 결제 처리 효과)
+     *
+     * @var MockInterface
+     */
+    protected $mockProcessing;
+
+    /**
+     * 주문 리포지토리 목과 실제 재고·첨부 서비스를 주입해 주문 서비스를 준비하고, 옵션 상태 동기화 전후 조회와 신청 상품 행 정리 호출은 기본 허용으로 둔다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,15 +53,33 @@ class OrderServiceTest extends ModuleTestCase
         Queue::fake();
 
         $this->mockRepository = Mockery::mock(OrderRepositoryInterface::class);
+        // 상품 상태 동기화의 전/후 읽기와 주문 삭제의 신청 상품 행 정리는 각 테스트가 따로
+        // 단언하지 않는 한 허용만 한다(전/후 없음 → 동기화 훅 미발행).
+        $this->mockRepository->shouldReceive('collectOptionStatusSyncChanges')->andReturn([])->byDefault();
+        $this->mockRepository->shouldReceive('deleteClaimItemRows')->andReturn(0)->byDefault();
         $mockUserAddressRepository = Mockery::mock(UserAddressRepositoryInterface::class);
+
+        // 수동 결제 처리 세 항목(Q13)은 잠근 주문 행을 DB 에서 다시 읽는다 — 저장소를 목으로 둔 이 단위
+        // 테스트에서는 그 단계를 대역으로 바꾼다(그 동작은 ManualPaidTransitionEffectsTest 가 실제 경로로 잰다).
+        $this->mockProcessing = Mockery::mock(OrderProcessingService::class);
+        $this->mockProcessing->shouldReceive('applyManualPaidTransitionEffects')
+            ->andReturnUsing(fn ($order, ManualPaidTransition $t, ManualPaidOptions $o) => ManualPaidEffectsReport::none($t, $o))
+            ->byDefault();
 
         $this->service = new OrderService(
             $this->mockRepository,
             $mockUserAddressRepository,
-            app(StockService::class)
+            app(StockService::class),
+            app(ClaimAttachmentService::class),
+            $this->mockProcessing,
         );
     }
 
+    /**
+     * Mockery 기대값을 검증·정리한 뒤 부모 정리를 수행한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -54,6 +90,15 @@ class OrderServiceTest extends ModuleTestCase
     // getList() 테스트
     // ========================================
 
+    /**
+     * 주문 목록 조회가 필터와 요청한 per_page 를 리포지토리에 그대로 넘기고 페이지네이터를 가공 없이 돌려주는지 확인한다.
+     *
+     * @scenario area=read
+     *
+     * @effects order_list_passes_filters_and_per_page
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_list_returns_paginated_orders(): void
     {
         // Given: Repository가 페이지네이션 결과 반환
@@ -73,6 +118,15 @@ class OrderServiceTest extends ModuleTestCase
         $this->assertSame($mockPaginator, $result);
     }
 
+    /**
+     * per_page 를 주지 않으면 기본값 20 으로 주문 목록을 조회하는지 확인한다.
+     *
+     * @scenario area=read
+     *
+     * @effects order_list_defaults_per_page_to_20
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_list_uses_default_per_page(): void
     {
         // Given: per_page 미지정
@@ -96,6 +150,15 @@ class OrderServiceTest extends ModuleTestCase
     // getDetail() 테스트
     // ========================================
 
+    /**
+     * 주문 상세 조회가 관계를 함께 적재하는 findWithRelations 로 주문을 찾아 그대로 돌려주는지 확인한다.
+     *
+     * @scenario area=read
+     *
+     * @effects order_detail_loads_with_relations
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_detail_returns_order_with_relations(): void
     {
         // Given: Repository가 주문 반환
@@ -114,6 +177,15 @@ class OrderServiceTest extends ModuleTestCase
         $this->assertEquals($order, $result);
     }
 
+    /**
+     * 없는 주문 ID 를 조회하면 예외 없이 null 을 돌려주는지 확인한다.
+     *
+     * @scenario area=read
+     *
+     * @effects order_detail_returns_null_when_missing
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_detail_returns_null_for_nonexistent_order(): void
     {
         // Given: Repository가 null 반환
@@ -134,6 +206,15 @@ class OrderServiceTest extends ModuleTestCase
     // getStatistics() 테스트
     // ========================================
 
+    /**
+     * 주문 통계 조회가 리포지토리 집계 배열을 가공 없이 그대로 돌려주는지 확인한다.
+     *
+     * @scenario area=read
+     *
+     * @effects order_statistics_passthrough
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_statistics_returns_statistics_array(): void
     {
         // Given: Repository가 통계 반환
@@ -159,6 +240,15 @@ class OrderServiceTest extends ModuleTestCase
     // update() 테스트
     // ========================================
 
+    /**
+     * 결제대기 주문을 결제완료로 수정하면 수정된 주문을 돌려주고, 주문상품옵션 상태도 같은 상태로 한 번 일괄 동기화하는지 확인한다.
+     *
+     * @scenario area=status_sync
+     *
+     * @effects order_update_returns_updated_order, status_change_syncs_option_status
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_modifies_order(): void
     {
         // Given: 주문 존재
@@ -189,6 +279,12 @@ class OrderServiceTest extends ModuleTestCase
 
     /**
      * D7 — 해외(US) 주소 수정 시 intl 컬럼이 채워지고 국내 컬럼은 초기화되어야 한다.
+     *
+     * @scenario area=address
+     *
+     * @effects intl_address_update_clears_kr_columns
+     *
+     * @return void 반환값 없음
      */
     public function test_update_maps_intl_address_and_clears_kr_columns(): void
     {
@@ -232,6 +328,12 @@ class OrderServiceTest extends ModuleTestCase
 
     /**
      * D7 — 국내(KR) 주소 수정 시 KR 컬럼이 채워지고 해외 컬럼은 초기화되어야 한다.
+     *
+     * @scenario area=address
+     *
+     * @effects kr_address_update_clears_intl_columns
+     *
+     * @return void 반환값 없음
      */
     public function test_update_maps_kr_address_and_clears_intl_columns(): void
     {
@@ -269,6 +371,15 @@ class OrderServiceTest extends ModuleTestCase
         $this->assertNull($captured['intl_postal_code']);
     }
 
+    /**
+     * 주문 상태가 바뀌면 그 주문의 옵션 상태를 같은 값으로 일괄 변경하도록 리포지토리를 한 번 호출하는지 확인한다.
+     *
+     * @scenario area=status_sync
+     *
+     * @effects status_change_syncs_option_status
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_syncs_option_status_when_order_status_changes(): void
     {
         // Given: 결제대기 주문을 결제완료로 변경
@@ -292,6 +403,15 @@ class OrderServiceTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $result->order_status);
     }
 
+    /**
+     * 요청에 order_status 가 없는 수정(메모만 변경)은 옵션 상태 일괄 변경을 호출하지 않는지 확인한다.
+     *
+     * @scenario area=status_sync
+     *
+     * @effects status_unchanged_update_skips_option_sync
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_does_not_sync_options_when_status_unchanged(): void
     {
         // Given: 상태 변경 없이 배송 메모만 수정
@@ -311,6 +431,15 @@ class OrderServiceTest extends ModuleTestCase
         $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $result->order_status);
     }
 
+    /**
+     * 취소 상태로의 수정은 옵션 라이프사이클을 취소 서비스에 맡기므로 옵션 상태 일괄 변경을 호출하지 않는지 확인한다.
+     *
+     * @scenario area=status_sync
+     *
+     * @effects cancelled_update_skips_option_sync
+     *
+     * @return void 반환값 없음
+     */
     public function test_update_does_not_sync_options_for_cancelled_status(): void
     {
         // Given: 주문을 취소 상태로 변경 (옵션 라이프사이클은 취소 서비스가 담당)
@@ -334,6 +463,15 @@ class OrderServiceTest extends ModuleTestCase
     // delete() 테스트
     // ========================================
 
+    /**
+     * 주문 삭제가 세금계산서·배송·주소·결제·주문옵션 관계를 각각 한 번씩 지운 뒤 리포지토리 삭제 결과(true)를 돌려주는지 확인한다.
+     *
+     * @scenario area=delete
+     *
+     * @effects order_delete_removes_all_relations
+     *
+     * @return void 반환값 없음
+     */
     public function test_delete_removes_order(): void
     {
         // Given: 주문 존재 (관계 메서드 mock)
@@ -379,6 +517,15 @@ class OrderServiceTest extends ModuleTestCase
     // bulkUpdate() 테스트
     // ========================================
 
+    /**
+     * 일괄 상태 변경이 스냅샷을 잡고 주문·옵션 상태를 함께 바꾸며, 스코프 재적용과 전이 알림용 조회를 정확히 두 번만 하고 요청·처리 건수를 돌려주는지 확인한다.
+     *
+     * @scenario area=bulk
+     *
+     * @effects bulk_status_update_syncs_options_and_counts
+     *
+     * @return void 반환값 없음
+     */
     public function test_bulk_update_processes_multiple_orders(): void
     {
         // Given: 여러 주문 ID와 상태
@@ -425,6 +572,15 @@ class OrderServiceTest extends ModuleTestCase
         $this->assertEquals(3, $result['requested_count']);
     }
 
+    /**
+     * 일괄 배송정보 변경이 택배사·송장번호를 리포지토리에 넘기고 스코프 재적용 조회를 한 번만 한 뒤 처리 건수를 돌려주는지 확인한다.
+     *
+     * @scenario area=bulk
+     *
+     * @effects bulk_shipping_update_delegates_carrier_and_tracking
+     *
+     * @return void 반환값 없음
+     */
     public function test_bulk_update_with_shipping_info(): void
     {
         // Given: 배송 정보 변경
@@ -466,6 +622,15 @@ class OrderServiceTest extends ModuleTestCase
     // getByOrderNumber() 테스트
     // ========================================
 
+    /**
+     * 주문번호로 조회하면 리포지토리 findByOrderNumber 결과를 그대로 돌려주는지 확인한다.
+     *
+     * @scenario area=read
+     *
+     * @effects order_lookup_by_order_number
+     *
+     * @return void 반환값 없음
+     */
     public function test_get_by_order_number_returns_order(): void
     {
         // Given: 주문번호로 조회
@@ -494,6 +659,8 @@ class OrderServiceTest extends ModuleTestCase
      * @scenario transition_path=update, target_status=shipping, previous_status=different, order_count=single
      *
      * @effects update_fires_after_status_change_on_transition
+     *
+     * @return void 반환값 없음
      */
     public function test_update_fires_after_status_change_on_transition(): void
     {
@@ -526,6 +693,8 @@ class OrderServiceTest extends ModuleTestCase
      * @scenario transition_path=update, target_status=shipping, previous_status=same_as_target, order_count=single
      *
      * @effects no_fire_when_status_unchanged_in_bulk
+     *
+     * @return void 반환값 없음
      */
     public function test_update_does_not_fire_when_status_unchanged(): void
     {
@@ -557,6 +726,8 @@ class OrderServiceTest extends ModuleTestCase
      * @scenario policy=approve, enabled=on, actor=admin, verified_state=unverified
      *
      * @effects admin_update_pg_fires_approve
+     *
+     * @return void 반환값 없음
      */
     public function test_update_to_payment_complete_fires_idv_approve_for_non_dbank(): void
     {
@@ -596,6 +767,8 @@ class OrderServiceTest extends ModuleTestCase
      * @scenario policy=confirm_deposit, enabled=on, actor=admin, verified_state=unverified
      *
      * @effects admin_update_dbank_fires_confirm_deposit, dbank_update_does_not_fire_approve
+     *
+     * @return void 반환값 없음
      */
     public function test_update_to_payment_complete_fires_confirm_deposit_for_dbank(): void
     {
@@ -635,6 +808,8 @@ class OrderServiceTest extends ModuleTestCase
      * @scenario policy=approve, enabled=on, actor=admin, verified_state=unverified
      *
      * @effects bulk_update_fires_approve_once
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_update_fires_idv_approve_once(): void
     {

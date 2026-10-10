@@ -1,0 +1,52 @@
+feature: claim_resource_secondary_currency
+
+description: |
+  신청서 응답의 보조 통화 줄은 **바로 위 기준 통화 줄과 같은 값의 다른 표기**여야 한다.
+
+  화면의 금액 줄은 두 단으로 선다 — 기준 통화(`*_formatted`) 한 줄 밑에 나머지 통화를 병기한다.
+  두 줄이 어긋나도 **둘 다 정상 서식이라 응답에도 화면에도 흔적이 남지 않는다.** 그래서 이
+  계약은 눈으로 보아 발견되지 않고, 오직 "어느 필드를 읽는가" 를 고정해야만 지켜진다.
+
+  이 스위트가 고정하는 축:
+    - **합계 축** — 기준 줄이 합계(환불 총액 = 현금 + 마일리지)면 보조 통화도 합계여야 한다.
+      한쪽만 읽으면 두 줄이 서로 다른 금액이 되는데 서식은 멀쩡하다.
+    - **분기 축** — 유형마다 읽는 필드가 갈린다(교환·반품은 `mc_claim_shipping_fee`,
+      환불은 `mc_refund_shipping_amount`). 컬럼이 있는데 리소스가 노출하지 않으면
+      그 유형에서만 외화 줄이 통째로 사라진다.
+    - **서식 축(S3-D14)** — 서버가 합산해 만든 맵은 `{KRW: 3000, USD: 3}` 맨숫자다.
+      `formatStoredMultiCurrency()` 를 통과시키지 않으면 `.formatted` 가 없고, 화면은
+      `[1]?.formatted ?? [1]` 로 폴백해 **기호도 자릿수도 없는 `3` `345` 를 그린다** —
+      형제 줄이 `$6.00 ¥690` 인데 이 줄만 맨숫자가 되지만 오류가 아니다.
+    - **부재 축** — 근거가 없으면 빈 배열이다. 없는 값을 만들어 내지 않는다.
+
+  서식을 입히는 주체는 **화면이 아니라 리소스**다. DB 스냅샷이 맨숫자인 것은 정상이고,
+  판별해야 할 것은 응답의 `mc_*` 가 `{amount, formatted}` 객체인지 맨숫자인지다.
+
+axes:
+  claim_type: [exchange, refund, cancel]
+  amount_source: [stored_map, server_summed]
+  evidence: [present, absent]
+
+exclusions:
+  - { claim_type: cancel, amount_source: server_summed, reason: "취소는 연결된 환불 신청서의 저장 맵을 승계할 뿐 스스로 합산하지 않는다" }
+  - { claim_type: refund, amount_source: server_summed, reason: "환불의 합계(현금+마일리지)는 저장된 두 맵을 더한 것이라 상품 차액 합산 경로를 타지 않는다" }
+  # 교환의 보조 통화는 신청 상품 행의 `mc_price_difference` 를 서버가 합산해 만든다 —
+  # 신청서 자신이 든 저장 맵을 읽는 경로가 없다.
+  - { claim_type: exchange, amount_source: stored_map, reason: "교환 차액은 저장 맵이 아니라 상품 행 합산으로만 만들어진다(sumSignedItemPriceDifferences)" }
+
+effects:
+  # ── 합계 축 (P0) ──
+  - refund_secondary_currency_is_sum_of_cash_and_points
+  - refund_sum_falls_back_to_cash_without_points
+  # ── 분기 축 (P0) ──
+  - refund_exposes_shipping_refund_secondary_currency
+  - cancel_carries_linked_refund_secondary_currency
+  # ── 서식 축 (P0 · S3-D14) ──
+  # 맨숫자로 내보내면 화면이 폴백해 기호 없는 숫자를 그린다 — 오류 없이 조용히 어긋난다.
+  - exchange_price_difference_secondary_currency_is_formatted
+  # ── 부재 축 (P1) ──
+  - secondary_currency_is_empty_when_nothing_was_stored
+
+test_files:
+  # 리소스 — 환불/취소/교환 보조 통화 계약 전수 (합계·분기·서식·부재)
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Resources/ClaimResourceRefundMultiCurrencyTest.php

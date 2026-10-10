@@ -76,9 +76,24 @@ function readGlobal(key: string): string | undefined {
 }
 
 /**
+ * 원화 접두·접미 번역을 읽는다 — 이커머스 모듈 번역 키(`sirsoft-ecommerce.currency.krw_prefix`·`krw_suffix`).
+ *
+ * 빈 문자열도 유효한 번역 값이다(ko 접두·en 접미는 비어 있다). 번역이 없어 키가 그대로 돌아오면 null.
+ *
+ * @param part 'prefix' | 'suffix'
+ * @return 번역 값 (없으면 null)
+ */
+function krwAffix(part: 'prefix' | 'suffix'): string | null {
+  const key = `sirsoft-ecommerce.currency.krw_${part}`;
+  const value = (window as any).G7Core?.t?.(key);
+
+  return typeof value === 'string' && value !== key ? value : null;
+}
+
+/**
  * 숫자 값을 통화 형식으로 포맷팅합니다.
  *
- * 원화 계열(₩/원)은 금액 뒤에 "원", 그 외는 기호를 앞에 붙입니다
+ * 원화 계열(₩/원)은 보는 언어의 접두·접미(ko 「원」 뒤·en 「₩」 앞·ja 「ウォン」 뒤), 그 외는 기호를 앞에 붙입니다
  * (백엔드 messages.currency.prefix/suffix 와 동일한 표기 규칙).
  *
  * @param action - 액션 정의 (`params.value` / `params.currencyCode` / `params.locale`)
@@ -123,7 +138,17 @@ export function formatCurrencyHandler(
     return `${formatted} ${code}`;
   }
 
+  // 원화 계열(₩/원)은 보는 사람의 언어 접두·접미를 따른다 — 서버(`formatPrice`)·이커머스 공용 formatCurrency 와 같은
+  // 번역 키다. 고정 「원」이면 영어 화면에서 서버 금액(₩5,000)과 화면 계산 금액(5,000원)이 섞인다(S3-D23 결함군).
+  // 번역을 읽지 못하면 종전 표기(금액 뒤 「원」)로 돌아간다.
   if (code === 'KRW' || symbol === '₩' || symbol === '원') {
+    const prefix = krwAffix('prefix');
+    const suffix = krwAffix('suffix');
+
+    if (prefix !== null || suffix !== null) {
+      return `${prefix ?? ''}${formatted}${suffix ?? ''}`;
+    }
+
     return `${formatted}원`;
   }
 

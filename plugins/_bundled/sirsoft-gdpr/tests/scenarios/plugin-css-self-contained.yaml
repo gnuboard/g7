@@ -1,0 +1,17 @@
+feature: GDPR 환경설정 — 관리자 템플릿 CSS 에 없는 유틸리티를 플러그인 자기 CSS 접두 클래스로
+
+description: |
+  관리자 템플릿은 자기 layouts/ 만 훑어 CSS 를 만들어 이 플러그인 레이아웃에만 있는 유틸리티(다크 모드 짝·포커스·호버·임의값)는
+  규칙이 생성되지 않았다. 확장마다 자기 CSS 를 싣고(resources/css/banner.css → dist/css/plugin.css) 접두 클래스(gdpr-*)로 정의한다(2026-10-09 결정).
+
+axes:
+  element: [layout, plugin_css, asset_pipeline]
+
+effects:
+  - no_ungenerated_utilities_in_layout       # 레이아웃에 규칙 없는 유틸리티가 남지 않는다
+  - prefixed_classes_defined_in_plugin_css   # 쓰는 접두 클래스는 플러그인 CSS 에 정의돼 있다
+  - css_is_self_contained                    # 플러그인 CSS 는 자기 접두 선택자만 정의한다
+  - css_asset_declared_and_built             # manifest 선언과 빌드 산출물
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/pluginCssSelfContained.test.ts

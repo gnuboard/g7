@@ -236,6 +236,7 @@
     "permissions": {
       "managers_title": "掲示板管理者",
       "managers_description": "掲示板の全権限を持つ管理者を指定します。",
+      "members_assign_denied": "基本権限設定に含まれていないアカウントは、新しい掲示板の管理者に本人のみ指定できます。このまま保存すると本人がこの掲示板の管理者になります。他の管理者・スタッフは掲示板の作成後に掲示板の編集画面で指定してください（掲示板の編集権限が必要です）。",
       "managers_select_button": "管理者を選択",
       "manager_email_placeholder": "管理者メールアドレスを入力",
       "search_manager": "閲覧",
@@ -593,8 +594,8 @@
       "guest_password_verify_message": "非会員の投稿を編集するにはパスワードを入力してください。",
       "password_placeholder": "パスワードを入力してください",
       "password_incorrect": "パスワードが一致しません。",
-      "show_replies": "返信 {{count}}件を表示",
-      "hide_replies": "返信を非表示",
+      "show_replies": "返信コメント {{count}}件を表示",
+      "hide_replies": "返信コメントを非表示",
       "reply_blocked_blinded_post": "非表示処理された投稿には返信を作成できません。",
       "reply_blocked_deleted_post": "削除された投稿には返信を作成できません。",
       "user_info": "ユーザー情報",
@@ -849,7 +850,8 @@
       "comment": "コメント",
       "attachment": "添付ファイル",
       "notification": "通知",
-      "bulk_apply": "一括適用"
+      "bulk_apply": "一括適用",
+      "bulk_members": "管理者・スタッフ一括指定"
     },
     "sections": {
       "general": "基本設定",
@@ -1054,7 +1056,8 @@
         "comments.write": "コメント作成/編集/削除",
         "attachments.upload": "ファイルアップロード/削除",
         "attachments.download": "ファイルダウンロード",
-        "manager": "掲示板管理"
+        "manager": "掲示板管理",
+        "posts.write-notice": "お知らせ登録"
       }
     },
     "notification_channels": {
@@ -1175,6 +1178,34 @@
       "save_and_apply_info": "確認時に現在のタブの設定全体が保存され、チェックされた項目のみ選択した掲示板に一括適用されます。",
       "save_error": "設定の保存に失敗しました。一括適用を中止します。",
       "permission_notice": "選択した権限項目は掲示板の既存のロールを現在の設定値で置き換えます。ただし、該当掲示板の管理者(manager)·スタッフ(step)ロールは設定値のままです。"
+    },
+    "bulk_members": {
+      "title": "掲示板管理者・スタッフ一括指定",
+      "description": "複数の掲示板の管理者またはスタッフに会員をまとめて追加・削除します。",
+      "target_label": "対象掲示板",
+      "target_all": "すべての掲示板",
+      "target_selected": "選択した掲示板",
+      "boards_count": "掲示板{{count}}件",
+      "type_label": "区分",
+      "type_manager": "管理者",
+      "type_step": "スタッフ",
+      "users_label": "会員",
+      "mode_label": "操作",
+      "mode_add": "追加",
+      "mode_remove": "削除",
+      "hint": "管理者が0名になる掲示板は削除の対象から除外されます。",
+      "apply": "適用",
+      "confirm_title": "掲示板管理者・スタッフ一括指定",
+      "confirm_add_manager": "選択した会員を掲示板管理者に追加します。",
+      "confirm_add_step": "選択した会員を掲示板スタッフに追加します。",
+      "confirm_remove_manager": "選択した会員を掲示板管理者から削除します。",
+      "confirm_remove_step": "選択した会員を掲示板スタッフから削除します。",
+      "result_summary": "掲示板{{updated}}件変更、{{skipped}}件除外、変化なし{{unchanged}}件",
+      "reason_last_manager": "管理者が0名になる",
+      "reason_scope": "管理権限の範囲外",
+      "reason_not_grantable": "このロールを付与できない掲示板（権限不足）",
+      "no_permission": "管理者・スタッフを一括指定するには掲示板の編集権限が必要です。",
+      "failed": "掲示板管理者・スタッフの一括指定に失敗しました。"
     }
   },
   "board_types": {

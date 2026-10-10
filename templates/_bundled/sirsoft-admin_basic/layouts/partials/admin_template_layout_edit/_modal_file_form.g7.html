@@ -1,0 +1,101 @@
+<!-- 파일·폴더 이름을 받는 창. 세 가지 일을 한 창이 맡는다 — **새 파일 · 새 폴더 · 이름변경**.
+  셋의 입력이 "경로 모양 문자열 하나" 로 같고, 이름 규칙(영문·숫자·밑줄·붙임표와 폴더 구분 슬래시)도
+  같기 때문이다. 창을 셋으로 나누면 그 규칙 안내가 세 벌이 되고, 한쪽만 고쳐진 상태가 남는다.
+  무엇을 하는 창인지는 `_global.fileFormMode` 가 정한다.
+
+  **새 폴더는 서버를 부르지 않는다.** 폴더는 실체가 아니라 파일 이름의 `/` 일 뿐이라(결정 D-2),
+  만드는 순간에는 트리에만 얹히고(`pendingFolders`) 그 안에 파일이 저장될 때 비로소 굳는다. -->
+<partial name="modal_file_form" editor_label="$t:admin.modal_label.admin_template_layout_edit.file_form_modal">
+  <modal data-type="composite" data-ref="file_form_modal" size="small" title="{{_global.fileFormMode === 'rename' ? '$t:admin.templates.layout_edit.file.rename_title' : (_global.fileFormMode === 'create_folder' ? '$t:admin.templates.layout_edit.file.new_folder_title' : '$t:admin.templates.layout_edit.file.new_file_title')}}">
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">$t:admin.templates.layout_edit.file.name_hint</p>
+
+    <form-field data-type="composite" label="$t:admin.templates.layout_edit.file.name_label" :required="true">
+      <input type="text" value="{{_global.fileFormName ?? ''}}" placeholder="$t:admin.templates.layout_edit.file.name_placeholder" autoComplete="off" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <on type="change">
+          <!-- 서버가 다시 판정하므로 여기 검사는 **버튼을 잠그는 용도**다. 규칙을 어긴 이름으로
+               왕복해 422 를 받는 것보다, 누르기 전에 알려 주는 편이 낫다. -->
+          <set-state target="global" fileFormName="{{$event.target.value}}" :fileFormError="null"/>
+        </on>
+      </input>
+    </form-field>
+
+    <!-- 서버가 거절한 사유 — 이름 규칙 위반·중복은 여기로 온다. -->
+    <div data-if="{{!!_global.fileFormError}}" role="alert" class="mt-3 p-3 rounded-lg border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-sm">
+      <span>{{_global.fileFormError}}</span>
+    </div>
+
+    <div class="mt-6 flex items-center justify-end gap-2">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-colors">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+
+      <!-- 새 폴더 — 서버 왕복 없이 트리에만 얹는다. -->
+      <button data-if="{{_global.fileFormMode === 'create_folder'}}" type="button" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm font-medium transition-colors disabled:opacity-50" disabled="{{!_global.fileFormName}}" data-testid="file-form-submit-folder">
+        <on type="click">
+          <sequence>
+            <set-state target="global" pendingFolders="{{[...(_global.pendingFolders ?? []), _global.fileFormName].filter((v, i, a) => a.indexOf(v) === i)}}"/>
+            <close-modal/>
+            <toast type="success" message="$t:admin.templates.layout_edit.file.folder_created"/>
+          </sequence>
+        </on>
+        <icon name="fa-solid fa-folder-plus" size="sm"/>
+        <span>$t:admin.templates.layout_edit.file.create</span>
+      </button>
+
+      <!-- 새 파일 — 본문을 비워 보내면 서버가 곧바로 컴파일되는 최소 골격을 넣어 준다.
+           `fileFormContent` 가 실려 있으면 «없는 파일 살리기» 다 — 복원한 편집분을 그대로 새 이름에 옮긴다. -->
+      <button data-if="{{_global.fileFormMode === 'create_file'}}" type="button" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm font-medium transition-colors disabled:opacity-50" disabled="{{!_global.fileFormName}}" data-testid="file-form-submit-file">
+        <on type="click">
+          <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layouts" method="POST">
+            <success>
+              <close-modal/>
+              <toast type="success" message="$t:admin.templates.layout_edit.file.created"/>
+              <!-- 만든 파일을 곧바로 연다 — 만들어 놓고 찾아 들어가게 하지 않는다. 가상 폴더는
+                   이제 실체가 생겼으므로 목록에서 뺀다(트리가 파일에서 폴더를 다시 만든다). -->
+              <set-state target="global" selectedNodeKind="layout" selectedLayoutName="{{response.data.name}}" :selectedExtensionId="null" :markupCompileError="null" :jsonViewStale="true" pendingFolders="{{(_global.pendingFolders ?? []).filter(p => !String(response.data.name).startsWith(p + '/'))}}"/>
+              <!-- «없는 파일 살리기» 였으면 그 탭과 초안을 거두게 한다 — 남기면 이미 살린 편집분을 다음 진입에서 또 묻는다. -->
+              <set-state if="{{!!_global.fileFormRescueFrom}}" target="global" retiredFileKey="{{_global.fileFormRescueFrom}}" :fileFormRescueFrom="null"/>
+              <refetch-data-source dataSourceId="layout_files"/>
+              <refetch-data-source dataSourceId="current_layout"/>
+            </success>
+            <fail>
+              <set-state target="global" fileFormError="{{error.message}}"/>
+            </fail>
+            <body name="{{_global.fileFormName}}" content="{{_global.fileFormContent ?? ''}}"/>
+          </api-call>
+        </on>
+        <icon name="fa-solid fa-plus" size="sm"/>
+        <span>$t:admin.templates.layout_edit.file.create</span>
+      </button>
+
+      <!-- 이름변경 — 같은 행의 `name` 을 옮기므로 판본 이력이 그대로 승계된다. -->
+      <button data-if="{{_global.fileFormMode === 'rename'}}" type="button" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 text-sm font-medium transition-colors disabled:opacity-50" disabled="{{!_global.fileFormName || _global.fileFormName === _global.fileFormTarget}}" data-testid="file-form-submit-rename">
+        <on type="click">
+          <!-- 잠금 번호는 **대상 파일**의 것이다 — 트리에서 열려 있지 않은 파일을 바꿀 때 열린 파일의 번호를 보내면
+               가짜 충돌(409 「다른 사용자가 먼저 저장했습니다」)이 난다. 대상이 열린 파일이면 상세의 최신값을 쓴다. -->
+          <api-call :auth_required="true" target="/api/admin/templates/{{route.identifier}}/layouts/{{_global.fileFormTarget}}/rename" method="PATCH">
+            <success>
+              <close-modal/>
+              <toast type="success" message="$t:admin.templates.layout_edit.file.renamed"/>
+              <set-state target="global" selectedNodeKind="layout" selectedLayoutName="{{response.data.name}}" :markupCompileError="null" :jsonViewStale="true"/>
+              <!-- 옛 이름 탭을 거둔다 — 남기면 「없는 파일」 탭이 새 이름 탭과 나란히 남는다. 저장하지 않은 편집이 있는
+                   탭은 두어 편집분을 말없이 버리지 않는다(그 탭은 「새 이름으로 저장」 으로 살릴 수 있다). -->
+              <set-state if="{{!(_global.dirtyFileKeys ?? []).includes('layout:' + _global.fileFormTarget)}}" target="global" retiredFileKey="layout:{{_global.fileFormTarget}}"/>
+              <refetch-data-source dataSourceId="layout_files"/>
+              <refetch-data-source dataSourceId="current_layout"/>
+            </success>
+            <fail>
+              <set-state target="global" fileFormError="{{error.message}}"/>
+            </fail>
+            <body new_name="{{_global.fileFormName}}" expected_lock_version="{{current_layout?.data?.name === _global.fileFormTarget ? (current_layout?.data?.lock_version ?? 0) : ((layout_files?.data ?? []).find(f => f.name === _global.fileFormTarget)?.lock_version ?? 0)}}"/>
+          </api-call>
+        </on>
+        <icon name="fa-solid fa-pen" size="sm"/>
+        <span>$t:admin.templates.layout_edit.file.rename</span>
+      </button>
+    </div>
+  </modal>
+</partial>

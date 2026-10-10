@@ -82,8 +82,8 @@ async function seedCheckout(page: Page): Promise<void> {
       await fetch('/api/modules/sirsoft-ecommerce/cart/all', { method: 'DELETE', headers });
 
       // 상품마다 옵션 구성이 다르므로 상세를 읽어 판매 가능한 첫 옵션을 그대로 쓴다.
-      // option_values_localized 는 서버가 현재 로케일로 평탄화해 내려준 맵이며,
-      // CartService::bulkAddToCart 가 비교하는 형태와 동일하다.
+      // 담기 계약은 옵션 ID 다(`items.*.product_option_id`). 옵션 값 맵은 받지 않는 필드라
+      // 보내면 옵션 미지정으로 처리돼 상품의 첫 옵션(재고 무관)이 담긴다.
       let added: Response | null = null;
       let lastBody = '';
       for (const candidate of candidates) {
@@ -93,11 +93,11 @@ async function seedCheckout(page: Page): Promise<void> {
         ).then((r) => r.json());
 
         const options = (detail?.data?.options ?? []) as Array<{
-          option_values_localized?: Record<string, string>;
+          id?: number;
           stock_quantity?: number;
         }>;
         // 재고가 없는 옵션을 고르면 주문 생성이 422 로 막혀 검증 대상에 닿지도 못한다.
-        const usable = options.find((o) => (o.stock_quantity ?? 0) > 0);
+        const usable = options.find((o) => typeof o.id === 'number' && (o.stock_quantity ?? 0) > 0);
         if (!usable) continue;
 
         const res = await fetch('/api/modules/sirsoft-ecommerce/cart', {
@@ -107,7 +107,7 @@ async function seedCheckout(page: Page): Promise<void> {
             product_id: candidate.id,
             items: [
               {
-                option_values: usable.option_values_localized ?? {},
+                product_option_id: usable.id,
                 quantity: 1,
               },
             ],
@@ -229,6 +229,13 @@ test.describe('체크아웃 현금영수증 신청 폼 (무통장 슬롯 주입)
     await seedCheckout(page);
   });
 
+  /**
+   * 현금영수증 슬롯은 무통장 블록 안에서만 렌더된다.
+   *
+   * @scenario surface=checkout, payment_method=dbank
+   *
+   * @effects checkout_slot_renders_only_inside_dbank_block
+   */
   test('무통장 선택 시에만 현금영수증 슬롯이 렌더된다 (다른 결제수단에서는 0개)', async ({ page }) => {
     await gotoCheckout(page);
 
@@ -258,7 +265,7 @@ test.describe('체크아웃 현금영수증 신청 폼 (무통장 슬롯 주입)
   // A3 — 저장값은 남아 있는데 그 프로바이더를 제공하는 확장이 없으면 미설정과 동일하게 다뤄야 한다.
   // 공개 응답이 raw 값을 그대로 내보내면 신청 폼이 계속 렌더되고, 신청하면 구독자 없는 훅을
   // 호출해 발급 실패로만 조용히 기록된다.
-  // @scenario cash-receipt-ui-and-refund-bank provider_state=dead
+  // @scenario cash-receipt-ui-and-refund-bank, provider_state=dead
   // @effects dead_cash_receipt_provider_normalized_in_public, checkout_slot_hidden_when_provider_unset
   test('공개 결제설정의 현금영수증 프로바이더는 등록된 확장이 있을 때만 실린다', async ({ page }) => {
     const settings = await page.evaluate(async () => {
@@ -268,7 +275,10 @@ test.describe('체크아웃 현금영수증 신청 폼 (무통장 슬롯 주입)
       return response.json();
     });
 
-    const provider = settings?.data?.cash_receipt_provider ?? null;
+    // 공개 응답은 결제 설정을 `order_settings` 아래에 싣는다 — 체크아웃 조각이 읽는 경로와 같다.
+    // 최상위에서 읽으면 발급사가 설정돼 있어도 항상 null 이라, 발급사 미설정 환경에서만
+    // 우연히 통과하고 설정된 환경에서는 "슬롯이 없어야 한다" 로 뒤집힌다.
+    const provider = settings?.data?.order_settings?.cash_receipt_provider ?? null;
 
     // 화면 렌더와 공개 응답이 같은 판정을 공유해야 한다 — 한쪽만 살아 있으면 폼은 뜨는데
     // 신청은 실패하는 상태가 된다.
@@ -288,6 +298,13 @@ test.describe('체크아웃 현금영수증 신청 폼 (무통장 슬롯 주입)
     }
   });
 
+  /**
+   * 신청 체크 전에는 입력 필드가 없고 체크하면 마운트된다.
+   *
+   * @scenario surface=checkout, payment_method=dbank
+   *
+   * @effects checkout_fields_mount_on_request_toggle
+   */
   test('신청 체크 전에는 입력 필드가 없고, 체크하면 마운트된다', async ({ page }) => {
     await gotoCheckout(page);
     await selectDbank(page);
@@ -307,6 +324,13 @@ test.describe('체크아웃 현금영수증 신청 폼 (무통장 슬롯 주입)
     await expect(page.locator(FIELDS)).toHaveCount(0);
   });
 
+  /**
+   * 용도에 따라 발급수단 선택지가 달라진다.
+   *
+   * @scenario surface=checkout, receipt_type=expense, identifier_type=business
+   *
+   * @effects checkout_identifier_type_options_by_purpose
+   */
   test('용도에 따라 발급수단 선택지가 달라진다 — 지출증빙에만 사업자등록번호', async ({ page }) => {
     await gotoCheckout(page);
     await selectDbank(page);
@@ -329,6 +353,13 @@ test.describe('체크아웃 현금영수증 신청 폼 (무통장 슬롯 주입)
     ]);
   });
 
+  /**
+   * 소득공제로 전환하면 쓸 수 없게 된 사업자등록번호 선택이 리셋된다.
+   *
+   * @scenario surface=checkout, receipt_type=income, identifier_type=business
+   *
+   * @effects checkout_purpose_switch_resets_invalid_identifier
+   */
   test('지출증빙+사업자등록번호에서 소득공제로 전환하면 발급수단과 번호가 리셋된다', async ({ page }) => {
     await gotoCheckout(page);
     await selectDbank(page);
@@ -347,6 +378,13 @@ test.describe('체크아웃 현금영수증 신청 폼 (무통장 슬롯 주입)
     await expect(page.locator(IDENTIFIER)).toHaveValue('');
   });
 
+  /**
+   * 결제수단을 바꾸면 슬롯이 소유한 현금영수증 입력이 초기화된다.
+   *
+   * @scenario surface=checkout, payment_method=vbank
+   *
+   * @effects checkout_state_reset_on_payment_method_change
+   */
   test('결제수단을 바꾸면 현금영수증 입력이 초기화된다 (이전 수단 값 잔류 금지)', async ({ page }) => {
     // 회귀: 결제수단 버튼이 _local.paymentMethod 만 바꾸고 슬롯이 소유한 _local
     // (checkoutExtraPayload / refundBank*) 은 비우지 않아, 무통장에서 현금영수증을 입력한 뒤
@@ -379,6 +417,13 @@ test.describe('체크아웃 현금영수증 신청 폼 (무통장 슬롯 주입)
     await expect(page.locator(FIELDS)).toHaveCount(0);
   });
 
+  /**
+   * 발급수단을 바꾸면 이전에 입력한 번호가 비워진다.
+   *
+   * @scenario surface=checkout, identifier_type=card
+   *
+   * @effects checkout_identifier_cleared_on_type_change
+   */
   test('발급수단을 바꾸면 이전에 입력한 번호가 비워진다', async ({ page }) => {
     await gotoCheckout(page);
     await selectDbank(page);
@@ -391,6 +436,13 @@ test.describe('체크아웃 현금영수증 신청 폼 (무통장 슬롯 주입)
     await expect(page.locator(IDENTIFIER)).toHaveValue('');
   });
 
+  /**
+   * 반응형은 portable 단일 오버라이드로만 분기한다.
+   *
+   * @scenario surface=checkout, responsive=portable
+   *
+   * @effects new_ui_uses_portable_only, new_ui_has_no_tailwind_breakpoint
+   */
   test('반응형은 portable 단일 오버라이드로만 분기한다 (md:/lg: 브레이크포인트 없음)', async ({ page }) => {
     await gotoCheckout(page);
     await selectDbank(page);

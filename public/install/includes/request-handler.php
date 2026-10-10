@@ -8,6 +8,8 @@ use App\Support\PrivilegedDatabaseAccounts;
  * 모든 POST 요청 및 비즈니스 로직을 처리합니다.
  */
 
+require_once __DIR__.'/installer-ownership.php';
+
 /**
  * 설치 흐름 검증 및 리다이렉트
  *
@@ -99,6 +101,8 @@ function handleStep0Post(): void
  */
 function handleStep1Post(string $currentLang, ?string &$error = null): void
 {
+    // lang() 은 전역 번역 테이블을 읽는다 — 지역 변수에 담으면 화면 오류가 번역 키 원문으로 나간다.
+    global $translations;
     $translations = loadTranslations($currentLang);
 
     if (! isset($_POST['agree']) || $_POST['agree'] !== '1') {
@@ -156,9 +160,18 @@ function validateDbUsername(string $username, string $field, array &$errors): vo
  */
 function handleStep3Post(string $currentLang, array &$formData, array &$errors): void
 {
+    // lang() 은 전역 번역 테이블을 읽는다 — 지역 변수에 담으면 화면 오류가 번역 키 원문으로 나간다.
+    global $translations;
     $translations = loadTranslations($currentLang);
 
+    // Step 3 저장은 소유권을 최초로 주장하고 state.config 를 바꾸는 상태변경이다.
+    // 조기 반환하지 않는다 — 필드 오류도 함께 보여주고, 저장은 오류가 하나도 없을 때만 일어난다.
+    if (! installer_csrf_is_valid(installer_request_csrf_token())) {
+        $errors['csrf'] = lang('error_csrf_invalid');
+    }
+
     $formData = array_merge($formData, $_POST);
+    unset($formData['csrf_token']);
     $formData['use_read_db'] = isset($_POST['use_read_db']) ? true : false;
 
     // Write DB 검증
@@ -255,8 +268,12 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
             continue;
         }
 
-        $scheme = strtolower((string) parse_url($urlValue, PHP_URL_SCHEME));
-        if (! filter_var($urlValue, FILTER_VALIDATE_URL) || ! in_array($scheme, ['http', 'https'], true)) {
+        // FILTER_VALIDATE_URL 은 호스트명의 밑줄(예: g7_3.dev)을 거부하므로 쓰지 않는다 —
+        // 로컬 개발 도메인에 흔한 형태라 스킴·호스트 존재와 공백 부재만 확인한다.
+        $parts = parse_url($urlValue);
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host = (string) ($parts['host'] ?? '');
+        if (! in_array($scheme, ['http', 'https'], true) || $host === '' || preg_match('/\s/', $urlValue)) {
             $errors[$urlField] = lang('error_env_value_invalid_url', ['value' => $urlValue]);
         }
     }
@@ -274,31 +291,66 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
         }
     }
 
-    // DB 테스트 완료 확인
-    if (empty($errors) && ! isset($_SESSION['db_write_tested'])) {
-        $errors['db_test'] = lang('error_db_not_tested');
-    }
+    // DB 테스트 완료 확인 — 통과 기록(`=== true`)과 함께, 이 세션이 검사한 연결설정과
+    // 지금 제출한 연결설정이 같은지 지문으로 대조한다. 실패 기록·미검사·검사 후 설정 변경은 모두 거부.
+    if (empty($errors)) {
+        $connections = installer_step3_db_connections($formData);
+        $testStatus = installer_db_test_status('write', $connections['write']);
 
-    if (empty($errors) && ! empty($formData['use_read_db']) && ! isset($_SESSION['db_read_tested'])) {
-        $errors['db_test'] = lang('error_db_not_tested');
+        if ($testStatus === 'ok' && $connections['read'] !== null) {
+            $testStatus = installer_db_test_status('read', $connections['read']);
+        }
+
+        if ($testStatus !== 'ok') {
+            $errors['db_test'] = lang($testStatus === 'changed' ? 'error_db_config_changed' : 'error_db_not_tested');
+        }
     }
 
     // 검증 통과 시 다음 단계로 이동
     if (empty($errors)) {
+        $state = getInstallationState();
+        $generation = (int) ($state['generation'] ?? 0);
+        $isFirstClaim = ! installer_state_is_claimed($state);
+
+        // 이미 다른 세션이 소유한 설치면 덮어쓰지 않는다 (index.php 가 비소유 세션을 잠그는 것의 이중 방어).
+        if (! $isFirstClaim && ! installer_session_is_owner($state)) {
+            $errors['ownership'] = lang('error_ownership_conflict');
+
+            return;
+        }
+
+        // state.json 에는 비밀(DB/관리자 비밀번호) 을 저장하지 않는다 (이슈 #465).
+        // read 필드 정리(이슈 #63 2단계 방어) 도 sanitizeConfigForState 가 함께 수행.
+        $state['config'] = sanitizeConfigForState($formData);
+        $state['installation_status'] = 'ready';
+        $state['current_step'] = 4;
+        $state['step_status'][3] = 'completed';
+        // 기존 테이블 삭제 확인은 이 세션의 DB 테스트가 발급한 것만 설치 계획에 싣는다.
+        $state['drop_confirm'] = is_array($_SESSION['drop_confirm'] ?? null) ? $_SESSION['drop_confirm'] : null;
+
+        if ($isFirstClaim) {
+            // 소유자가 없던 설치에 남은 runtime.php 는 이전 시도(다른 세션)의 비밀이다 —
+            // 새 소유자의 설치에 섞이지 않도록 폐기한다 (자격증명 혼합 차단).
+            require_once __DIR__.'/installer-runtime.php';
+            deleteInstallerRuntime();
+            $state = installer_claim_owner($state);
+        }
+
+        if (! saveInstallationStateCas($state, $generation)) {
+            $errors['state'] = lang('error_state_conflict');
+
+            return;
+        }
+
+        if ($isFirstClaim) {
+            addLog(lang('log_ownership_claimed'));
+        }
+
         // 세션에는 비밀번호를 유지한다 (install-process.php 가 runtime.php 로 이송).
         // 단 admin_password_confirm 은 검증 이후 소비처가 전무한 순수 잔여물이므로 제거.
         $sessionConfig = $formData;
         unset($sessionConfig['admin_password_confirm']);
         $_SESSION['install_config'] = $sessionConfig;
-
-        // state.json 에는 비밀(DB/관리자 비밀번호) 을 저장하지 않는다 (이슈 #465).
-        // read 필드 정리(이슈 #63 2단계 방어) 도 sanitizeConfigForState 가 함께 수행.
-        $safeFormData = sanitizeConfigForState($formData);
-
-        updateStepStatus(3, 4, [
-            'config' => $safeFormData,
-            'installation_status' => 'ready',
-        ]);
 
         redirectToStep(4);
     }

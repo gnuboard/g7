@@ -1,0 +1,352 @@
+<!-- 도서산간 추가배송비 **템플릿** 창 — 자주 쓰는 우편번호·금액 묶음을 쇼핑몰 차원에서 만들어 두고,
+  정책마다 손으로 다시 넣지 않고 불러다 쓴다.
+  그래서 이 창에는 두 종류의 일이 섞여 있다 — ⑴ 템플릿 자체를 만들고 고치고 지우는 것(서버에 즉시
+  반영된다) ⑵ 그것을 **지금 편집 중인 정책에 복사해 넣는 것**([전체 적용]·[선택 적용]).
+  ⑵ 는 정책을 저장하지 않는다. 폼의 배열에 줄을 넣을 뿐이라 정책 저장을 눌러야 남는다.
+  값은 이 창의 지역 상태가 아니라 **`$parent._local`** 에 둔다 — 모달은 부모와 다른 컨텍스트라,
+  적용 대상인 국가 탭 번호나 읽기 전용 여부 같은 폼 쪽 값을 함께 봐야 하기 때문이다.
+  표에서 한 줄을 추가하거나 고칠 때 **같은 `templateForm` 한 칸을 돌려 쓴다** — 그래서 추가와 편집이
+  동시에 열리지 않도록 한쪽을 켤 때 다른 쪽을 끈다.
+  목록은 무한 스크롤이라 검색·저장·삭제 뒤에는 스크롤 상태를 처음으로 되돌린 뒤 다시 부른다. -->
+<partial description="배송정책 폼 - 도서산간 추가배송비 템플릿 CRUD 모달">
+  <modal data-type="composite" data-ref="extra_fee_template" title="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.title" width="900px" class="max-w-[calc(100vw-2rem)]">
+    <div data-ref="modal_content">
+      <div data-ref="search_section" class="flex gap-2">
+        <input type="text" value="{{$parent._local.templateSearch ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.search_placeholder" class="input flex-1">
+          <on type="change">
+            <!-- 검색어 담기 — 조회는 하지 않는다. 엔터나 옆 돋보기 버튼이 실제 조회를 맡는다. -->
+            <set-state :debounce="300" target="$parent._local" templateSearch="{{$event.target.value}}"/>
+          </on>
+          <on type="keydown" key="Enter">
+            <!-- 엔터로 검색 — 스크롤 상태를 처음으로 되돌리고 체크도 비운 뒤 다시 부른다. 되돌리지 않으면 새 검색 결과가 2쪽부터 이어 붙고, 체크를 남기면 사라진 줄의 id 가 선택에 남는다. -->
+            <sequence>
+              <set-state target="global" :infiniteScroll.currentPage="1" :infiniteScroll.hasMore="true" :infiniteScroll.isLoadingMore="false"/>
+              <set-state target="$parent._local" :selectedTemplateIds="[]"/>
+              <refetch-data-source dataSourceId="extra_fee_templates"/>
+            </sequence>
+          </on>
+        </input>
+        <button type="button" class="btn btn-outline" aria-label="$t:common.search">
+          <on type="click">
+            <!-- 돋보기 버튼 — 엔터와 똑같은 세 단계다(같은 동작을 두 입구로 낸 것). -->
+            <sequence>
+              <set-state target="global" :infiniteScroll.currentPage="1" :infiniteScroll.hasMore="true" :infiniteScroll.isLoadingMore="false"/>
+              <set-state target="$parent._local" :selectedTemplateIds="[]"/>
+              <refetch-data-source dataSourceId="extra_fee_templates"/>
+            </sequence>
+          </on>
+          <icon name="magnifying-glass" class="text-sm"/>
+        </button>
+      </div>
+      <div data-ref="toolbar_section" class="flex-between">
+        <div class="flex-center gap-2">
+          <button type="button" class="flex-center btn btn-sm btn-primary gap-1 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{$parent._local.isAddingTemplate === true || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_create !== true}}">
+            <on type="click">
+              <!-- 새 템플릿 줄 열기 — 편집 중이던 줄을 함께 닫는다(둘이 `templateForm` 한 칸을 돌려 쓰므로 동시에 열리면 입력이 섞인다). 금액 기본값 3000 은 여기서 정해진다. -->
+              <set-state target="$parent._local" :isAddingTemplate="true" :editingTemplate="null" templateForm="{{({ zipcode: '', fee: 3000, region: '', description: '' })}}"/>
+            </on>
+            <icon name="plus" class="text-xs"/>
+            <span>$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.add_btn</span>
+          </button>
+          <button data-if="{{($parent._local.selectedTemplateIds ?? []).length > 0}}" type="button" class="flex-center btn btn-sm btn-danger gap-1 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateDeleting || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_delete !== true}}">
+            <on type="click">
+              <!-- 체크한 템플릿 일괄 삭제 — 확인 문구를 액션에 달아 별도 창 없이 묻고, 문구에 건수를 실어 몇 건이 사라지는지 보인다. **템플릿 자체를 지우는 것**이라 이 정책만이 아니라 다른 정책의 불러오기에도 영향이 간다. -->
+              <sequence confirm="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.bulk_delete_confirm|count={{($parent._local.selectedTemplateIds ?? []).length}}">
+                <set-state target="global" :isTemplateDeleting="true"/>
+                <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/extra-fee-templates/bulk" method="DELETE">
+                  <success>
+                    <set-state target="global" :isTemplateDeleting="false"/>
+                    <set-state target="$parent._local" :selectedTemplateIds="[]"/>
+                    <set-state target="global" :infiniteScroll.currentPage="1" :infiniteScroll.hasMore="true" :infiniteScroll.isLoadingMore="false"/>
+                    <refetch-data-source dataSourceId="extra_fee_templates"/>
+                    <toast type="success" message="$t:sirsoft-ecommerce.admin.shipping_policy.messages.template_bulk_deleted"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :isTemplateDeleting="false"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                  <body ids="{{$parent._local.selectedTemplateIds ?? []}}"/>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{_global.isTemplateDeleting}}" name="spinner" class="text-xs animate-spin"/>
+            <icon data-if="{{!_global.isTemplateDeleting}}" name="trash" class="text-xs"/>
+            <span>$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.bulk_delete</span>
+          </button>
+          <span data-if="{{($parent._local.selectedTemplateIds ?? []).length > 0}}" class="text-label">$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.selected_count|count={{($parent._local.selectedTemplateIds ?? []).length}}</span>
+        </div>
+        <div data-if="{{(extra_fee_templates?.data?.data ?? []).length > 0}}" class="flex-center gap-2">
+          <button type="button" class="btn btn-sm btn-outline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{$parent._computed?.isReadOnly !== false}}">
+            <on type="click">
+              <!-- [전체 적용] — **사용 중인 템플릿만** 골라 지금 국가 탭의 추가배송비 목록으로 복사해 넣고 창을 닫는다. 정책을 저장하지는 않으므로 폼의 [저장]을 눌러야 남는다. -->
+              <sequence confirm="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.apply_confirm">
+                <action handler="sirsoft-ecommerce.applyExtraFeeTemplate" countryIndex="{{$parent._local.activeCountryTab ?? 0}}" settings="{{(extra_fee_templates?.data?.data ?? []).filter(t => t.is_active).map(t => ({ zipcode: t.zipcode, fee: Number(t.fee), region: t.region ?? '' }))}}"/>
+                <close-modal/>
+              </sequence>
+            </on>
+            $t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.apply_all
+          </button>
+          <button data-if="{{($parent._local.selectedTemplateIds ?? []).length > 0}}" type="button" class="btn btn-sm btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{$parent._computed?.isReadOnly !== false}}">
+            <on type="click">
+              <!-- [선택 적용] — 위와 같은 동작이나 대상이 체크한 줄이다. **여기서는 사용 여부를 보지 않는다** — 관리자가 직접 고른 것이므로 중지된 템플릿도 적용된다. -->
+              <sequence confirm="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.apply_confirm">
+                <action handler="sirsoft-ecommerce.applyExtraFeeTemplate" countryIndex="{{$parent._local.activeCountryTab ?? 0}}" settings="{{(extra_fee_templates?.data?.data ?? []).filter(t => ($parent._local.selectedTemplateIds ?? []).includes(t.id)).map(t => ({ zipcode: t.zipcode, fee: Number(t.fee), region: t.region ?? '' }))}}"/>
+                <close-modal/>
+              </sequence>
+            </on>
+            $t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.apply_selected
+          </button>
+        </div>
+      </div>
+      <div data-ref="table_container" data-if="{{(extra_fee_templates?.data?.data ?? []).length > 0 || $parent._local.isAddingTemplate === true}}" class="border border-gray-200 dark:border-gray-700 rounded-lg">
+        <!-- overflow-x-auto 명시 — 6열 표(615px)가 좁은 뷰포트 컨테이너를 넘는다. overflow-y 만 선언해도 CSS Overflow 명세상 다른 축이 visible 로 남을 수 없어 computed 가 auto 로 계산되지만 그 의존은 암묵적이다. 누군가 overflow-y-visible 로 바꾸면 즉시 표가 잘리므로 의도를 코드에 고정한다. 표는 whitespace-nowrap 이라 절단 없이 가로 스크롤된다(세로 스택 전환은 과잉 대응). -->
+        <div data-ref="template_list" class="max-h-96 overflow-y-auto overflow-x-auto">
+          <on type="scroll">
+            <sequence :debounce="200">
+              <switch on="{{$event.target.scrollHeight - $event.target.scrollTop <= $event.target.clientHeight + 100 &amp;&amp; _global.infiniteScroll.hasMore &amp;&amp; !_global.infiniteScroll.isLoadingMore}}">
+                <case when="true">
+                  <set-state target="global" :infiniteScroll.isLoadingMore="true"/>
+                  <scroll-into-view selector="#loading_indicator" scrollContainer="#template_list" behavior="smooth" block="end" :waitForElement="true" :timeout="2000"/>
+                  <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/extra-fee-templates" method="GET">
+                    <success>
+                      <append-data-source dataSourceId="extra_fee_templates" dataPath="data.data" newData="{{response.data.data}}"/>
+                      <set-state target="global" infiniteScroll.currentPage="{{_global.infiniteScroll.currentPage + 1}}" infiniteScroll.hasMore="{{response.data?.pagination?.has_more_pages ?? false}}" :infiniteScroll.isLoadingMore="false"/>
+                    </success>
+                    <fail>
+                      <set-state target="global" :infiniteScroll.isLoadingMore="false"/>
+                    </fail>
+                    <query page="{{_global.infiniteScroll.currentPage + 1}}" :per_page="20" search="{{$parent._local.templateSearch ?? ''}}"/>
+                  </api-call>
+                </case>
+              </switch>
+            </sequence>
+          </on>
+          <table class="table whitespace-nowrap">
+            <thead class="sticky top-0 z-10 bg-white dark:bg-gray-800">
+              <tr>
+                <th class="w-10 text-center">
+                  <input type="checkbox" checked="{{(extra_fee_templates?.data?.data ?? []).length > 0 &amp;&amp; ($parent._local.selectedTemplateIds ?? []).length === (extra_fee_templates?.data?.data ?? []).length}}" class="w-4 h-4 rounded" disabled="{{$parent._computed?.isReadOnly !== false}}">
+                    <on type="change">
+                      <!-- 머리글 전체 선택 — 체크 값을 읽지 않고 **지금 전부 골라진 상태인지**로 판단해 비우거나 전부 채운다. 다만 지금 쪽에 실린 줄만 대상이라, 무한 스크롤로 더 받으면 그만큼은 빠진다. -->
+                      <set-state target="$parent._local" selectedTemplateIds="{{($parent._local.selectedTemplateIds ?? []).length === (extra_fee_templates?.data?.data ?? []).length ? [] : (extra_fee_templates?.data?.data ?? []).map(t => t.id)}}"/>
+                    </on>
+                  </input>
+                </th>
+                <th>$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.zipcode</th>
+                <th class="whitespace-normal">$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.region</th>
+                <th class="w-28">$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.fee</th>
+                <th class="w-20 text-center">$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.status</th>
+                <th class="w-24 text-center">$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.manage</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-ref="new_template_row" data-if="{{$parent._local.isAddingTemplate === true}}" class="bg-blue-50 dark:bg-blue-900/20">
+                <td/>
+                <td>
+                  <input type="text" value="{{$parent._local.templateForm.zipcode ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.zipcode" class="{{$parent._local.templateFormErrors?.zipcode ? 'input input-error' : 'input'}}" disabled="{{$parent._computed?.isReadOnly !== false}}">
+                    <on type="change">
+                      <!-- 새 줄의 우편번호 — 값과 함께 그 칸의 서버 오류를 지운다. 고치는 순간 빨간 표시가 사라져야 무엇이 아직 문제인지 읽을 수 있다. 아래 저장 버튼의 잠금 조건이기도 하다(비면 저장 불가). -->
+                      <set-state :debounce="300" target="$parent._local" templateForm.zipcode="{{$event.target.value}}" :templateFormErrors.zipcode="null"/>
+                    </on>
+                  </input>
+                  <span data-if="{{$parent._local.templateFormErrors?.zipcode}}" class="form-error">{{$parent._local.templateFormErrors?.zipcode?.[0] ?? ''}}</span>
+                </td>
+                <td class="whitespace-normal">
+                  <input type="text" value="{{$parent._local.templateForm.region ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.region" class="{{$parent._local.templateFormErrors?.region ? 'input input-error' : 'input'}}" disabled="{{$parent._computed?.isReadOnly !== false}}">
+                    <on type="change">
+                      <!-- 새 줄의 지역 이름 — 우편번호와 같은 규약(값 + 해당 칸 오류 지우기). -->
+                      <set-state :debounce="300" target="$parent._local" templateForm.region="{{$event.target.value}}" :templateFormErrors.region="null"/>
+                    </on>
+                  </input>
+                  <span data-if="{{$parent._local.templateFormErrors?.region}}" class="form-error">{{$parent._local.templateFormErrors?.region?.[0] ?? ''}}</span>
+                </td>
+                <td>
+                  <input type="number" value="{{$parent._local.templateForm.fee ?? 3000}}" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.fee" class="{{$parent._local.templateFormErrors?.fee ? 'input input-error' : 'input'}}" :min="0" disabled="{{$parent._computed?.isReadOnly !== false}}">
+                    <on type="change">
+                      <!-- 새 줄의 금액 — 여기서는 숫자로 바꿔 담는다(빈 칸은 0). 정책 쪽 금액 칸들이 글자 그대로 넘기는 것과 갈리는 자리다. -->
+                      <set-state :debounce="300" target="$parent._local" templateForm.fee="{{Number($event.target.value) || 0}}" :templateFormErrors.fee="null"/>
+                    </on>
+                  </input>
+                  <span data-if="{{$parent._local.templateFormErrors?.fee}}" class="form-error">{{$parent._local.templateFormErrors?.fee?.[0] ?? ''}}</span>
+                </td>
+                <td/>
+                <td class="text-center">
+                  <div class="flex-center justify-center gap-1">
+                    <button type="button" class="btn-icon text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300" disabled="{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_create !== true}}" aria-label="$t:common.save">
+                      <on type="click">
+                        <!-- 새 템플릿 저장 — 오류를 먼저 비우고 보낸다. 성공하면 입력 줄을 닫고 폼을
+                          초깃값으로 되세운 뒤, 스크롤 상태를 처음으로 돌려 목록을 다시 부른다
+                          (새 줄이 어디에 끼워질지 모르므로 전체를 다시 받는다).
+                          실패하면 줄을 열어 둔 채 서버 오류를 각 칸 아래에 붙인다. -->
+                        <sequence>
+                          <set-state target="$parent._local" templateFormErrors="{{({})}}"/>
+                          <set-state target="global" :isTemplateSaving="true"/>
+                          <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/extra-fee-templates" method="POST" body="{{$parent._local.templateForm}}">
+                            <success>
+                              <set-state target="global" :isTemplateSaving="false"/>
+                              <toast type="success" message="$t:sirsoft-ecommerce.admin.shipping_policy.messages.template_saved"/>
+                              <set-state target="$parent._local" :isAddingTemplate="false" templateForm="{{({ zipcode: '', fee: 3000, region: '', description: '' })}}" templateFormErrors="{{({})}}"/>
+                              <set-state target="global" :infiniteScroll.currentPage="1" :infiniteScroll.hasMore="true" :infiniteScroll.isLoadingMore="false"/>
+                              <refetch-data-source dataSourceId="extra_fee_templates"/>
+                            </success>
+                            <fail>
+                              <set-state target="global" :isTemplateSaving="false"/>
+                              <set-state target="$parent._local" templateFormErrors="{{error.errors ?? {}}}"/>
+                              <toast type="error" message="{{error.message}}"/>
+                            </fail>
+                          </api-call>
+                        </sequence>
+                      </on>
+                      <icon data-if="{{_global.isTemplateSaving}}" name="spinner" class="text-sm animate-spin"/>
+                      <icon data-if="{{!_global.isTemplateSaving}}" name="check" class="text-sm"/>
+                    </button>
+                    <button type="button" class="btn-icon text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300" aria-label="$t:common.cancel">
+                      <on type="click">
+                        <!-- 새 줄 취소 — 줄을 닫으면서 폼과 오류를 초깃값으로 되세운다. 남겨 두면 다음에 [추가]를 눌렀을 때 지난 입력이 그대로 뜬다. -->
+                        <set-state target="$parent._local" :isAddingTemplate="false" templateForm="{{({ zipcode: '', fee: 3000, region: '', description: '' })}}" templateFormErrors="{{({})}}"/>
+                      </on>
+                      <icon name="xmark" class="text-sm"/>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr data-each="template, templateIdx in {{extra_fee_templates?.data?.data ?? []}}">
+                <td class="text-center">
+                  <input type="checkbox" checked="{{($parent._local.selectedTemplateIds ?? []).includes(template.id)}}" class="w-4 h-4 rounded" disabled="{{$parent._computed?.isReadOnly !== false}}">
+                    <on type="change">
+                      <!-- 줄 체크 — 체크 값을 읽지 않고 목록에 있으면 빼고 없으면 넣는다. 머리글 전체 선택과 같은 목록을 쓰므로 낱개로 다 고르면 머리글도 켜진 것으로 보인다. -->
+                      <set-state target="$parent._local" selectedTemplateIds="{{($parent._local.selectedTemplateIds ?? []).includes(template.id) ? ($parent._local.selectedTemplateIds ?? []).filter(id => id !== template.id) : [...($parent._local.selectedTemplateIds ?? []), template.id]}}"/>
+                    </on>
+                  </input>
+                </td>
+                <td>
+                  <span data-if="{{$parent._local.editingTemplate !== template.id}}" class="text-primary text-sm font-mono">{{template.zipcode ?? ''}}</span>
+                  <input data-if="{{$parent._local.editingTemplate === template.id}}" type="text" value="{{$parent._local.templateForm.zipcode ?? ''}}" class="{{$parent._local.templateFormErrors?.zipcode ? 'input input-error' : 'input'}}" disabled="{{$parent._computed?.isReadOnly !== false}}">
+                    <on type="change">
+                      <!-- 편집 중인 줄의 우편번호 — 위 새 줄과 **같은 `templateForm` 칸**을 쓴다. 그래서 편집과 추가가 동시에 열리지 않게 서로를 닫는 것이다. -->
+                      <set-state :debounce="300" target="$parent._local" templateForm.zipcode="{{$event.target.value}}" :templateFormErrors.zipcode="null"/>
+                    </on>
+                  </input>
+                  <span data-if="{{$parent._local.editingTemplate === template.id &amp;&amp; $parent._local.templateFormErrors?.zipcode}}" class="form-error">{{$parent._local.templateFormErrors?.zipcode?.[0] ?? ''}}</span>
+                </td>
+                <td class="whitespace-normal">
+                  <span data-if="{{$parent._local.editingTemplate !== template.id}}" class="text-label truncate">{{template.region ?? ''}}</span>
+                  <input data-if="{{$parent._local.editingTemplate === template.id}}" type="text" value="{{$parent._local.templateForm.region ?? ''}}" class="{{$parent._local.templateFormErrors?.region ? 'input input-error' : 'input'}}" disabled="{{$parent._computed?.isReadOnly !== false}}">
+                    <on type="change">
+                      <!-- 편집 중인 줄의 지역 이름 — 새 줄과 같은 규약. -->
+                      <set-state :debounce="300" target="$parent._local" templateForm.region="{{$event.target.value}}" :templateFormErrors.region="null"/>
+                    </on>
+                  </input>
+                  <span data-if="{{$parent._local.editingTemplate === template.id &amp;&amp; $parent._local.templateFormErrors?.region}}" class="form-error">{{$parent._local.templateFormErrors?.region?.[0] ?? ''}}</span>
+                </td>
+                <td>
+                  <span data-if="{{$parent._local.editingTemplate !== template.id}}" class="text-primary text-sm">{{template.fee_formatted ?? ($t('sirsoft-ecommerce.currency.krw_prefix') + Number(template.fee ?? 0).toLocaleString() + $t('sirsoft-ecommerce.currency.krw_suffix'))}}</span>
+                  <input data-if="{{$parent._local.editingTemplate === template.id}}" type="number" value="{{$parent._local.templateForm.fee ?? 0}}" class="{{$parent._local.templateFormErrors?.fee ? 'input input-error' : 'input'}}" :min="0" disabled="{{$parent._computed?.isReadOnly !== false}}">
+                    <on type="change">
+                      <!-- 편집 중인 줄의 금액 — 새 줄과 같은 규약이나 **비었을 때 보이는 기본값이 다르다**(새 줄 3000 ↔ 여기 0). 편집은 이미 있는 값을 부어 받으므로 그 자리가 비는 경우가 정상이 아니기 때문이다. -->
+                      <set-state :debounce="300" target="$parent._local" templateForm.fee="{{Number($event.target.value) || 0}}" :templateFormErrors.fee="null"/>
+                    </on>
+                  </input>
+                  <span data-if="{{$parent._local.editingTemplate === template.id &amp;&amp; $parent._local.templateFormErrors?.fee}}" class="form-error">{{$parent._local.templateFormErrors?.fee?.[0] ?? ''}}</span>
+                </td>
+                <td class="text-center">
+                  <span data-if="{{$parent._local.editingTemplate !== template.id &amp;&amp; template.is_active}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.active</span>
+                  <span data-if="{{$parent._local.editingTemplate !== template.id &amp;&amp; !template.is_active}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.inactive</span>
+                  <toggle data-type="composite" data-if="{{$parent._local.editingTemplate === template.id}}" value="{{$parent._local.templateForm.is_active ?? true}}" name="is_active" disabled="{{$parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_update !== true}}">
+                    <on type="change">
+                      <!-- 편집 중인 줄의 사용 여부 — 스위치 값을 읽지 않고 현재 값을 뒤집는다(기본은 켬). 이 값이 꺼지면 [전체 적용]에서 빠진다. -->
+                      <set-state target="$parent._local" templateForm.is_active="{{!($parent._local.templateForm.is_active ?? true)}}"/>
+                    </on>
+                  </toggle>
+                </td>
+                <td class="text-center">
+                  <div data-if="{{$parent._local.editingTemplate !== template.id}}" class="flex-center justify-center gap-1">
+                    <button type="button" class="btn-icon text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{$parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_update !== true}}" aria-label="$t:common.edit">
+                      <on type="click">
+                        <!-- 이 줄 편집 시작 — 새 줄 입력이 열려 있으면 함께 닫고(같은 `templateForm` 을 돌려 쓴다), 그 줄의 값을 폼에 부어 준다. -->
+                        <set-state target="$parent._local" editingTemplate="{{template.id}}" :isAddingTemplate="false" templateForm="{{({ zipcode: template.zipcode, fee: Number(template.fee), region: template.region ?? '', description: template.description ?? '', is_active: template.is_active ?? true })}}"/>
+                      </on>
+                      <icon name="pencil" class="text-sm"/>
+                    </button>
+                    <button type="button" class="btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateDeleting || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_delete !== true}}" aria-label="$t:common.delete">
+                      <on type="click">
+                        <!-- 이 줄 삭제 — 지운 뒤 체크 목록에서도 그 id 를 빼야 한다. 남겨 두면 없는 줄을 가리킨 채로 [선택 적용]·일괄 삭제의 건수가 어긋난다. -->
+                        <sequence confirm="$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.delete_confirm">
+                          <set-state target="global" :isTemplateDeleting="true"/>
+                          <api-call :auth_required="true" target="{{'/api/modules/sirsoft-ecommerce/admin/extra-fee-templates/' + template.id}}" method="DELETE">
+                            <success>
+                              <set-state target="global" :isTemplateDeleting="false"/>
+                              <set-state target="$parent._local" selectedTemplateIds="{{($parent._local.selectedTemplateIds ?? []).filter(id => id !== template.id)}}"/>
+                              <set-state target="global" :infiniteScroll.currentPage="1" :infiniteScroll.hasMore="true" :infiniteScroll.isLoadingMore="false"/>
+                              <refetch-data-source dataSourceId="extra_fee_templates"/>
+                              <toast type="success" message="$t:sirsoft-ecommerce.admin.shipping_policy.messages.template_deleted"/>
+                            </success>
+                            <fail>
+                              <set-state target="global" :isTemplateDeleting="false"/>
+                              <toast type="error" message="{{error.message}}"/>
+                            </fail>
+                          </api-call>
+                        </sequence>
+                      </on>
+                      <icon name="trash" class="text-sm"/>
+                    </button>
+                  </div>
+                  <div data-if="{{$parent._local.editingTemplate === template.id}}" class="flex-center justify-center gap-1">
+                    <button type="button" class="btn-icon text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300" disabled="{{_global.isTemplateSaving || !($parent._local.templateForm.zipcode ?? '') || $parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_update !== true}}" aria-label="$t:common.save">
+                      <on type="click">
+                        <!-- 편집 저장 — 새 줄 저장과 같은 흐름이나 두 가지가 다르다: 주소가 그 줄의
+                          id 를 달고(PUT), 앞의 두 상태 쓰기 순서가 반대다(진행 깃발 먼저, 오류 비우기
+                          나중). 순서 차이는 결과에 영향이 없다. -->
+                        <sequence>
+                          <set-state target="global" :isTemplateSaving="true"/>
+                          <set-state target="$parent._local" templateFormErrors="{{({})}}"/>
+                          <api-call :auth_required="true" target="{{'/api/modules/sirsoft-ecommerce/admin/extra-fee-templates/' + $parent._local.editingTemplate}}" method="PUT" body="{{$parent._local.templateForm}}">
+                            <success>
+                              <set-state target="global" :isTemplateSaving="false"/>
+                              <set-state target="$parent._local" templateFormErrors="{{({})}}"/>
+                              <toast type="success" message="$t:sirsoft-ecommerce.admin.shipping_policy.messages.template_saved"/>
+                              <set-state target="$parent._local" :editingTemplate="null" templateForm="{{({ zipcode: '', fee: 3000, region: '', description: '' })}}"/>
+                              <set-state target="global" :infiniteScroll.currentPage="1" :infiniteScroll.hasMore="true" :infiniteScroll.isLoadingMore="false"/>
+                              <refetch-data-source dataSourceId="extra_fee_templates"/>
+                            </success>
+                            <fail>
+                              <set-state target="global" :isTemplateSaving="false"/>
+                              <set-state target="$parent._local" templateFormErrors="{{error.errors ?? {}}}"/>
+                              <toast type="error" message="{{error.message}}"/>
+                            </fail>
+                          </api-call>
+                        </sequence>
+                      </on>
+                      <icon data-if="{{_global.isTemplateSaving}}" name="spinner" class="text-sm animate-spin"/>
+                      <icon data-if="{{!_global.isTemplateSaving}}" name="check" class="text-sm"/>
+                    </button>
+                    <button type="button" class="btn-icon text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300" aria-label="$t:common.cancel">
+                      <on type="click">
+                        <!-- 편집 취소 — 편집 줄을 닫고 폼·오류를 초깃값으로 되세운다(새 줄 취소와 같은 규약이고 닫는 대상만 다르다). -->
+                        <set-state target="$parent._local" :editingTemplate="null" templateForm="{{({ zipcode: '', fee: 3000, region: '', description: '' })}}" templateFormErrors="{{({})}}"/>
+                      </on>
+                      <icon name="xmark" class="text-sm"/>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <loading-spinner data-type="composite" data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:sirsoft-ecommerce.common.loading" color="text-blue-600 dark:text-blue-400" class="py-3"/>
+        </div>
+      </div>
+      <div data-ref="empty_state" data-if="{{(extra_fee_templates?.data?.data ?? []).length === 0 &amp;&amp; $parent._local.isAddingTemplate !== true}}" class="flex flex-col items-center gap-3 text-center text-gray-400 dark:text-gray-500">
+        <icon name="inbox" class="text-4xl"/>
+        <span class="text-sm">$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.no_templates</span>
+      </div>
+    </div>
+    <div data-ref="modal_footer" class="flex justify-end mt-6">
+      <button type="button" class="btn btn-secondary">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.close
+      </button>
+    </div>
+  </modal>
+</partial>

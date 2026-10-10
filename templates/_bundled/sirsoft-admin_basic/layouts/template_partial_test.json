@@ -1,172 +1,173 @@
 {
-  "version": "1.0.0",
-  "layout_name": "template_partial_test",
-  "extends": "_admin_base",
-  "meta": {
-    "title": "템플릿 Partial 시스템 테스트",
-    "description": "sirsoft-admin_basic 템플릿의 Partial 시스템 동작 확인"
-  },
-  "slots": {
-    "content": [
-      {
-        "id": "test_container",
-        "type": "basic",
-        "name": "Div",
-        "props": {
-          "className": "admin-page-content-responsive"
-        },
-        "children": [
-          {
-            "id": "page_header",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "mb-6"
-            },
-            "children": [
-              {
+    "comment": "템플릿 Partial 시스템이 살아 있는지 눈으로 보는 **개발용 확인 화면**. 업무 기능이 아니다.\n  중첩 2단(이 화면 → `_content_section` → 그 안의 `_header_section`·`_info_card`)이 모두 그려지면\n  치환이 재귀로 도는 것이고, 한 단이라도 빈 자리로 남으면 그 단에서 해석이 끊긴 것이다.\n  본문의 체크 목록은 사람이 읽는 안내 문구라 파일명을 `.json` 으로 적고 있다 — 실제 참조는\n  아래 `<include src>` 한 줄뿐이고 작성 규약대로 `.g7.html` 을 가리킨다.",
+    "version": "1.0.0",
+    "layout_name": "template_partial_test",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "템플릿 Partial 시스템 테스트",
+        "description": "sirsoft-admin_basic 템플릿의 Partial 시스템 동작 확인"
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "test_container",
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                  "className": "flex-center gap-3 mb-2"
+                    "className": "admin-page-content-responsive"
                 },
                 "children": [
-                  {
-                    "type": "basic",
-                    "name": "Span",
-                    "props": {
-                      "className": "text-4xl"
-                    },
-                    "text": "🧪"
-                  },
-                  {
-                    "type": "basic",
-                    "name": "H1",
-                    "props": {
-                      "className": "text-page-heading sm:text-3xl"
-                    },
-                    "text": "템플릿 Partial 시스템 테스트"
-                  }
-                ]
-              },
-              {
-                "type": "basic",
-                "name": "P",
-                "props": {
-                  "className": "text-label"
-                },
-                "text": "sirsoft-admin_basic 템플릿의 레이아웃 Partial 기능을 테스트합니다"
-              }
-            ]
-          },
-          {
-            "id": "main_content_card",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-              "className": "bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
-            },
-            "children": [
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900 rounded-lg p-6 border-2 border-blue-200 dark:border-blue-700 shadow-md mb-6"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                      "className": "flex-center gap-2 mb-4"
-                    },
-                    "children": [
-                      {
+                    {
+                        "id": "page_header",
                         "type": "basic",
-                        "name": "Span",
+                        "name": "Div",
                         "props": {
-                          "className": "text-2xl"
+                            "className": "mb-6"
                         },
-                        "text": "📋"
-                      },
-                      {
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-center gap-3 mb-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-4xl"
+                                        },
+                                        "text": "🧪"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "text-page-heading sm:text-3xl"
+                                        },
+                                        "text": "템플릿 Partial 시스템 테스트"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "text-label"
+                                },
+                                "text": "sirsoft-admin_basic 템플릿의 레이아웃 Partial 기능을 테스트합니다"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "main_content_card",
                         "type": "basic",
-                        "name": "H2",
+                        "name": "Div",
                         "props": {
-                          "className": "text-lg font-bold text-blue-900 dark:text-blue-100"
+                            "className": "bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
                         },
-                        "text": "테스트 항목"
-                      }
-                    ]
-                  },
-                  {
-                    "type": "basic",
-                    "name": "Ul",
-                    "props": {
-                      "className": "list-disc list-inside text-sm space-y-1 ml-4 text-black dark:text-white"
-                    },
-                    "children": [
-                      {
-                        "type": "basic",
-                        "name": "Li",
-                        "text": "✅ Level 1 Partial: partials/_content_section.json"
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Li",
-                        "text": "✅ Level 2 Partial: partials/_header_section.json"
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Li",
-                        "text": "✅ Level 2 Partial: partials/_info_card.json (Composite 컴포넌트)"
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Li",
-                        "text": "✅ Basic 컴포넌트 렌더링"
-                      },
-                      {
-                        "type": "basic",
-                        "name": "Li",
-                        "text": "✅ 다크 모드 지원"
-                      }
-                    ]
-                  }
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900 rounded-lg p-6 border-2 border-blue-200 dark:border-blue-700 shadow-md mb-6"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-center gap-2 mb-4"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "text-2xl"
+                                                },
+                                                "text": "📋"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "text-lg font-bold text-blue-900 dark:text-blue-100"
+                                                },
+                                                "text": "테스트 항목"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Ul",
+                                        "props": {
+                                            "className": "list-disc list-inside text-sm space-y-1 ml-4 text-black dark:text-white"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Li",
+                                                "text": "✅ Level 1 Partial: partials/_content_section.json"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Li",
+                                                "text": "✅ Level 2 Partial: partials/_header_section.json"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Li",
+                                                "text": "✅ Level 2 Partial: partials/_info_card.json (Composite 컴포넌트)"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Li",
+                                                "text": "✅ Basic 컴포넌트 렌더링"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Li",
+                                                "text": "✅ 다크 모드 지원"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "partial": "partials/template_partial_test/_content_section.json"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "mt-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H3",
+                                        "props": {
+                                            "className": "text-md font-semibold text-gray-900 dark:text-gray-100 mb-2"
+                                        },
+                                        "text": "🎉 Partial 시스템 정상 동작"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-label"
+                                        },
+                                        "text": "위의 모든 섹션이 정상적으로 표시되면 템플릿 Partial 시스템이 정상 작동하는 것입니다."
+                                    }
+                                ]
+                            }
+                        ]
+                    }
                 ]
-              },
-              {
-                "partial": "partials/template_partial_test/_content_section.json"
-              },
-              {
-                "type": "basic",
-                "name": "Div",
-                "props": {
-                  "className": "mt-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg"
-                },
-                "children": [
-                  {
-                    "type": "basic",
-                    "name": "H3",
-                    "props": {
-                      "className": "text-md font-semibold text-gray-900 dark:text-gray-100 mb-2"
-                    },
-                    "text": "🎉 Partial 시스템 정상 동작"
-                  },
-                  {
-                    "type": "basic",
-                    "name": "P",
-                    "props": {
-                      "className": "text-label"
-                    },
-                    "text": "위의 모든 섹션이 정상적으로 표시되면 템플릿 Partial 시스템이 정상 작동하는 것입니다."
-                  }
-                ]
-              }
-            ]
-          }
+            }
         ]
-      }
-    ]
-  }
+    }
 }

@@ -1,0 +1,35 @@
+<!-- 상품 폼 — 옵션 재생성 확인. 옵션 조합을 다시 만들면 기존 줄에 넣어 둔 재고·추가금·판매상태가
+  함께 지워지므로 되묻는다. -->
+<partial description="Product Form - Confirm Regenerate Options Modal">
+  <modal data-type="composite" data-ref="modal_confirm_regenerate" title="$t:sirsoft-ecommerce.admin.product.create.modal.confirm.title" size="sm">
+    <div>
+      <div class="alert-warning">
+        <icon name="triangle-exclamation" class="text-xl text-amber-500 shrink-0 mt-0.5"/>
+        <div>
+          <div>
+            <p class="text-sm font-medium text-warning-soft">$t:sirsoft-ecommerce.admin.product.create.modal.confirm.regenerate_options</p>
+            <p class="text-warning-soft">$t:sirsoft-ecommerce.admin.product.create.modal.confirm.regenerate_options_note</p>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3">
+        <button type="button" class="btn btn-outline">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:sirsoft-ecommerce.common.cancel
+        </button>
+        <button type="button" class="btn btn-warning">
+          <on type="click">
+            <!-- 창을 먼저 닫고 재생성한다 — 조합이 많으면 만드는 동안 화면이 멈춘 것처럼 보이기 때문이다. 확인을 이미 받았으므로 핸들러의 재확인은 건너뛴다 -->
+            <sequence>
+              <close-modal/>
+              <action handler="sirsoft-ecommerce.generateOptions" :skipConfirm="true" isCreate="{{!route.itemCode}}"/>
+            </sequence>
+          </on>
+          $t:sirsoft-ecommerce.common.confirm
+        </button>
+      </div>
+    </div>
+  </modal>
+</partial>

@@ -1,0 +1,214 @@
+<!-- 보안 탭의 **IP 접근 제한** 카드 — 켜면 관리자 영역(관리자 화면·코어/확장 관리자 API·관리자 로그인)은 허용 목록의
+  IP 에서만, 규칙에 맞는 경로는 그 규칙의 IP 에서만 열린다. 토글이 꺼져 있으면 목록·규칙을 흐리게 두고 입력을 잠근다
+  (적용되지 않는 값을 고치게 두지 않는다 — SEO 봇 목록과 같은 결).
+  규칙은 표(넓은 화면)와 카드(좁은 화면 — mobile 프리셋, 태블릿은 표 유지)로 **두 벌 그린다** — 같은 배선(사용 토글·
+  편집·삭제)이 두 번 나오므로 한쪽을 고치면 다른 쪽도 같이 본다. 규칙 편집 창은 서버에 저장하지 않고 폼 배열만
+  고치며, 저장은 화면 하단의 공용 버튼이 보안 탭 전체를 한 번에 보낸다(저장 검증이 자기 잠금을 422 로 막는다).
+  보안 탭 본문과 조각을 나눈 것은 반응형 프리셋 때문이다 — 혼용 린트가 **문서 단위**로 재고
+  (`LayoutLinter::lintResponsiveMix`) `<include>` 가 굽기 뒤에도 참조로 남아, 나눠 두면 앱 키 카드(portable)와
+  이 카드(mobile)가 서로의 문서에 섞이지 않는다. -->
+<partial description="환경설정 보안 탭 — IP 접근 제한 카드">
+  <div data-ref="card_ip_restriction" class="card-stack-item">
+    <h3 class="card-title">$t:admin.settings.security.ip_restriction.title</h3>
+    <div class="card-description">$t:admin.settings.security.ip_restriction.desc</div>
+    <!-- 신뢰 프록시 경고 — 서버 진단이 warning 일 때만 뜬다. 판정은 서버(TrustedProxyDiagnostic) 하나가 하고 화면은
+         따라 그린다. 이 상태로 켜면 모든 방문자가 프록시 주소 하나로 보여 제한이 통째로 무너진다. -->
+    <div data-ref="ip_restriction_proxy_warning" data-if="{{trustedProxy?.data?.status === 'warning'}}" class="alert-warning">
+      <div class="flex gap-3">
+        <icon name="triangle-exclamation" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5"/>
+        <p class="text-warning-soft">$t:admin.settings.security.ip_restriction.proxy_warning</p>
+      </div>
+    </div>
+    <div class="row-stack">
+      <div data-ref="toggle_ip_restriction_enabled" class="flex-between">
+        <div>
+          <span class="text-heading">$t:admin.settings.security.ip_restriction.enabled</span>
+          <p class="text-label-subtle">$t:admin.settings.security.ip_restriction.enabled_desc</p>
+          <span data-if="{{_local.errors?.['security.ip_restriction_enabled']}}" class="form-error">{{_local.errors?.['security.ip_restriction_enabled']?.[0] ?? ''}}</span>
+        </div>
+        <toggle data-type="composite" name="security.ip_restriction_enabled" :autoBinding="false" checked="{{_computed.ipRestrictionEnabled}}" size="md" disabled="{{_computed.isReadOnly}}">
+          <on type="change">
+            <!-- 자동 바인딩에만 맡기지 않는다 — 미저장이면 값이 없어 빈 문자열이 실려 나가고, 그 값이 다시
+                 「꺼짐」으로 읽히는 자리다. 켜짐 판정은 화면·저장이 같이 쓰는 _computed 를 그대로 쓴다. -->
+            <set-state target="local" form.security.ip_restriction_enabled="{{$event.target.checked}}" :hasChanges="true"/>
+          </on>
+        </toggle>
+      </div>
+      <!-- 관리자 영역 허용 목록. 현재 접속 IP 는 서버 진단이 준 값이다 — 저장 검증이 자기 잠금을 판정할 때 쓰는 IP 와
+           같은 해석(신뢰 프록시 반영)이라, 여기 보이는 IP 를 넣으면 그 검증을 통과한다. -->
+      <div data-ref="field_admin_allowed_ips" class="{{_computed.ipRestrictionEnabled ? '' : 'opacity-50 pointer-events-none'}}">
+        <div class="flex-between gap-2 mb-1">
+          <label class="form-label">$t:admin.settings.security.ip_restriction.admin_allowed_ips</label>
+          <div data-if="{{!!trustedProxy?.data?.client_ip}}" class="flex-center gap-2">
+            <span data-ref="ip_restriction_current_ip" class="badge badge-blue font-mono">$t:admin.settings.security.ip_restriction.current_ip|ip={{trustedProxy?.data?.client_ip ?? ''}}</span>
+            <button data-ref="ip_restriction_add_current_ip" data-if="{{!(_local.form?.security?.admin_allowed_ips ?? []).includes(trustedProxy?.data?.client_ip)}}" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed">
+              <on type="click">
+                <!-- 현재 IP 를 목록 끝에 더한다 — 자기 잠금을 피하는 가장 흔한 첫 조작이라 한 번에 넣게 한다.
+                     이미 들어 있으면 버튼 자체가 사라진다. 저장은 하단 공용 버튼이 한다. -->
+                <set-state target="local" form.security.admin_allowed_ips="{{[...(_local.form?.security?.admin_allowed_ips ?? []), trustedProxy?.data?.client_ip]}}" :hasChanges="true"/>
+              </on>
+              <span>$t:admin.settings.security.ip_restriction.add_current_ip</span>
+            </button>
+          </div>
+        </div>
+        <tag-input data-type="composite" data-ref="ip_restriction_admin_allowed_ips" name="security.admin_allowed_ips" :creatable="true" placeholder="$t:admin.settings.security.ip_restriction.ip_placeholder" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}"/>
+        <span data-if="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('security.admin_allowed_ips'))}}" class="form-error">{{Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('security.admin_allowed_ips'))?.[1]?.[0] ?? ''}}</span>
+        <p class="form-hint">$t:admin.settings.security.ip_restriction.admin_allowed_ips_hint</p>
+      </div>
+      <!-- 라우트별 규칙 — 위에서부터 처음 맞는 규칙 하나만 적용된다(순서가 곧 우선순위). 편집은 창에서, 사용 토글과
+           삭제는 행에서 곧바로 폼 배열을 고친다. 배열은 통째로 다시 세운다 — 동적 인덱스 키로는 set-state 를 쓸 수 없다. -->
+      <div data-ref="field_ip_restriction_rules" class="{{_computed.ipRestrictionEnabled ? '' : 'opacity-50 pointer-events-none'}}">
+        <div class="flex-between gap-2 mb-2">
+          <span class="form-label">$t:admin.settings.security.ip_restriction.rules</span>
+          <button data-ref="ip_restriction_add_rule" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+            <on type="click">
+              <!-- 규칙 추가 창 열기 — 창 상태를 통째로 만들어 넣는다(창은 자기 초기값이 없다). 지금 규칙 목록을 함께
+                   복사해 넘기는 것은 창이 부모 폼을 직접 읽으면 창이 처음 붙은 시점의 사본을 보기 때문이다. row_index 가
+                   null 이면 추가다. -->
+              <sequence>
+                <!-- 규칙을 고치러 들어가면 지난 저장의 규칙 오류(422)는 더는 맞지 않는다 — 규칙 몫만 지운다.
+                     `_computed.errorsWithoutIpRules`(admin_settings) 는 저장 오류에서 security.ip_restriction_rules* 만 뺀 값이고
+                     남는 오류가 없으면 null 이라 상단 오류 상자도 닫힌다. 표·카드의 사용 토글·삭제도 같은 값으로 갈아 끼운다. -->
+                <set-state target="local" errors="{{_computed.errorsWithoutIpRules}}"/>
+                <set-state target="global">
+                  <field name="ip_restriction_rule_form_modal">
+                    <field name="form">
+                      <field name="pattern" value=""/>
+                      <field name="ips" :value="[]"/>
+                      <field name="memo" value=""/>
+                      <field name="enabled" :value="true"/>
+                    </field>
+                    <field name="row_index" :value="null"/>
+                    <field name="rules" value="{{_local.form?.security?.ip_restriction_rules ?? []}}"/>
+                    <field name="error" :value="null"/>
+                  </field>
+                </set-state>
+                <open-modal target="ip_restriction_rule_form_modal"/>
+              </sequence>
+            </on>
+            <icon name="plus" size="xs"/>
+            <span>$t:admin.settings.security.ip_restriction.add_rule</span>
+          </button>
+        </div>
+        <div data-ref="ip_rules_table_desktop" data-if="{{(_local.form?.security?.ip_restriction_rules ?? []).length > 0}}" class="overflow-x-auto">
+          <responsive on="mobile" data-if="{{false}}"/>
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700/50">
+              <tr>
+                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.settings.security.ip_restriction.col_pattern</th>
+                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.settings.security.ip_restriction.col_ips</th>
+                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.settings.security.ip_restriction.col_memo</th>
+                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.settings.security.ip_restriction.col_enabled</th>
+                <th class="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">$t:common.actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-each="rule, idx in _local.form?.security?.ip_restriction_rules ?? []" class="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                <td class="px-3 py-2 font-mono text-xs text-gray-700 dark:text-gray-300 break-all">{{rule.pattern ?? ''}}</td>
+                <td class="px-3 py-2 font-mono text-xs text-gray-700 dark:text-gray-300">{{(rule.ips ?? []).join(', ')}}</td>
+                <td class="px-3 py-2 text-gray-700 dark:text-gray-300">{{rule.memo ?? ''}}</td>
+                <td class="px-3 py-2">
+                  <toggle data-type="composite" ariaLabel="$t:admin.settings.security.ip_restriction.col_enabled" checked="{{rule.enabled !== false}}" size="sm" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}">
+                    <on type="change">
+                      <!-- 사용 여부만 뒤집는다(표 판) — 지우지 않고 잠시 끄는 자리다. 좁은 화면 카드 판에 같은 배선이 있다. -->
+                      <set-state target="local" form.security.ip_restriction_rules="{{(_local.form?.security?.ip_restriction_rules ?? []).map((r, i) => i === idx ? {...r, enabled: !(r.enabled !== false)} : r)}}" :hasChanges="true" errors="{{_computed.errorsWithoutIpRules}}"/>
+                    </on>
+                  </toggle>
+                </td>
+                <td class="px-3 py-2 text-right whitespace-nowrap">
+                  <button data-ref="ip_rule_edit_{{idx}}" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <on type="click">
+                      <!-- 편집 창 열기(표 판) — 추가와 같은 창을 쓰되 row_index 에 행 번호를 넣고 그 행 값으로 채운다.
+                           규칙 목록 사본을 함께 넘기는 이유는 추가 버튼과 같다. -->
+                      <sequence>
+                        <set-state target="local" errors="{{_computed.errorsWithoutIpRules}}"/>
+                        <set-state target="global">
+                          <field name="ip_restriction_rule_form_modal">
+                            <field name="form">
+                              <field name="pattern" value="{{rule.pattern ?? ''}}"/>
+                              <field name="ips" value="{{rule.ips ?? []}}"/>
+                              <field name="memo" value="{{rule.memo ?? ''}}"/>
+                              <field name="enabled" value="{{rule.enabled !== false}}"/>
+                            </field>
+                            <field name="row_index" value="{{idx}}"/>
+                            <field name="rules" value="{{_local.form?.security?.ip_restriction_rules ?? []}}"/>
+                            <field name="error" :value="null"/>
+                          </field>
+                        </set-state>
+                        <open-modal target="ip_restriction_rule_form_modal"/>
+                      </sequence>
+                    </on>
+                    <span>$t:common.edit</span>
+                  </button>
+                  <button data-ref="ip_rule_delete_{{idx}}" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="ml-2 text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <on type="click">
+                      <!-- 규칙 삭제(표 판) — 확인 창 없이 폼에서만 뺀다. 저장 전이라 하단 「취소」로 되돌릴 수 있다. -->
+                      <set-state target="local" form.security.ip_restriction_rules="{{(_local.form?.security?.ip_restriction_rules ?? []).filter((r, i) => i !== idx)}}" :hasChanges="true" errors="{{_computed.errorsWithoutIpRules}}"/>
+                    </on>
+                    <span>$t:common.delete</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div data-ref="ip_rules_cards_mobile" data-if="{{false}}" class="divider-list">
+          <responsive on="mobile" data-if="{{true}}"/>
+          <div data-each="rule, idx in _local.form?.security?.ip_restriction_rules ?? []" class="py-3 row-stack">
+            <div class="font-mono text-xs text-gray-900 dark:text-gray-100 break-all">{{rule.pattern ?? ''}}</div>
+            <div class="form-hint break-all">{{(rule.ips ?? []).join(', ')}}{{rule.memo ? ' · ' + rule.memo : ''}}</div>
+            <div class="flex-between gap-3">
+              <toggle data-type="composite" label="$t:admin.settings.security.ip_restriction.col_enabled" checked="{{rule.enabled !== false}}" size="sm" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}">
+                <on type="change">
+                  <!-- 사용 여부만 뒤집는다(좁은 화면 카드 판) — 표 판과 같은 배선이다. -->
+                  <set-state target="local" form.security.ip_restriction_rules="{{(_local.form?.security?.ip_restriction_rules ?? []).map((r, i) => i === idx ? {...r, enabled: !(r.enabled !== false)} : r)}}" :hasChanges="true" errors="{{_computed.errorsWithoutIpRules}}"/>
+                </on>
+              </toggle>
+              <div class="flex-center gap-2">
+                <button data-ref="ip_rule_edit_m_{{idx}}" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="text-sm px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  <on type="click">
+                    <!-- 편집 창 열기(좁은 화면 카드 판) — 표 판과 같은 배선이다. -->
+                    <sequence>
+                      <set-state target="local" errors="{{_computed.errorsWithoutIpRules}}"/>
+                      <set-state target="global">
+                        <field name="ip_restriction_rule_form_modal">
+                          <field name="form">
+                            <field name="pattern" value="{{rule.pattern ?? ''}}"/>
+                            <field name="ips" value="{{rule.ips ?? []}}"/>
+                            <field name="memo" value="{{rule.memo ?? ''}}"/>
+                            <field name="enabled" value="{{rule.enabled !== false}}"/>
+                          </field>
+                          <field name="row_index" value="{{idx}}"/>
+                          <field name="rules" value="{{_local.form?.security?.ip_restriction_rules ?? []}}"/>
+                          <field name="error" :value="null"/>
+                        </field>
+                      </set-state>
+                      <open-modal target="ip_restriction_rule_form_modal"/>
+                    </sequence>
+                  </on>
+                  <span>$t:common.edit</span>
+                </button>
+                <button data-ref="ip_rule_delete_m_{{idx}}" type="button" disabled="{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}" class="text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                  <on type="click">
+                    <!-- 규칙 삭제(좁은 화면 카드 판) — 표 판과 같은 배선이다. -->
+                    <set-state target="local" form.security.ip_restriction_rules="{{(_local.form?.security?.ip_restriction_rules ?? []).filter((r, i) => i !== idx)}}" :hasChanges="true" errors="{{_computed.errorsWithoutIpRules}}"/>
+                  </on>
+                  <span>$t:common.delete</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-ref="ip_rules_empty" data-if="{{(_local.form?.security?.ip_restriction_rules ?? []).length === 0}}" class="py-6 text-center text-label-subtle">$t:admin.settings.security.ip_restriction.rules_empty</div>
+        <span data-if="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('security.ip_restriction_rules'))}}" class="form-error">{{Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('security.ip_restriction_rules'))?.[1]?.[0] ?? ''}}</span>
+        <!-- 외부 콜백 경고(적색) — 관리자 영역 밖을 막는 규칙은 결제 승인·입금 통보 같은 외부 서버 요청까지 끊을 수 있다.
+             코어가 아는 콜백 경로는 판정 전에 빠지지만, 확장이 다른 경로로 받는 요청은 운영자가 스스로 조심해야 한다. -->
+        <div data-ref="ip_restriction_callback_warning" class="alert-danger mt-3">
+          <p class="text-danger-soft">$t:admin.settings.security.ip_restriction.rules_callback_warning</p>
+        </div>
+        <p class="form-hint">$t:admin.settings.security.ip_restriction.rules_hint</p>
+        <p data-ref="ip_restriction_emergency_hint" class="form-hint font-mono">$t:admin.settings.security.ip_restriction.emergency_hint</p>
+      </div>
+    </div>
+  </div>
+</partial>

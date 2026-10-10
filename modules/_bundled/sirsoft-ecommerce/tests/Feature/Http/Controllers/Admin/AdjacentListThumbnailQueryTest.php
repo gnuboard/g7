@@ -98,6 +98,7 @@ class AdjacentListThumbnailQueryTest extends ModuleTestCase
 
     /**
      * @scenario surface=wishlist,observation=query_shape
+     *
      * @effects thumbnail_query_count_does_not_grow_with_rows, thumbnail_url_falls_back_to_first_image_when_undesignated
      */
     public function test_wishlist_thumbnail_query_count_does_not_grow_with_rows(): void
@@ -128,6 +129,7 @@ class AdjacentListThumbnailQueryTest extends ModuleTestCase
 
     /**
      * @scenario surface=admin_product_review_list,observation=response_payload
+     *
      * @effects product_thumbnail_columns_stay_pruned_without_touching_review_images
      */
     public function test_admin_review_list_thumbnail_query_count_does_not_grow_with_rows(): void

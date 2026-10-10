@@ -5,9 +5,9 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.1.2-0066FF?style=flat-square" alt="version 0.1.2">
+  <img src="https://img.shields.io/badge/version-0.2.0-0066FF?style=flat-square" alt="version 0.2.0">
   <img src="https://img.shields.io/badge/type-%EB%AA%A8%EB%93%88-555555?style=flat-square" alt="type 모듈">
-  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.0.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.0.0">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.0">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
 </p>
 <!-- @generated:badges END -->
@@ -70,7 +70,7 @@ flowchart LR
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| 그누보드7 코어 | `>=7.0.0` |
+| 그누보드7 코어 | `>=7.1.0` |
 | PHP | `^8.2` |
 <!-- @generated:requirements END -->
 
@@ -87,6 +87,8 @@ php artisan module:activate gnuboard7-hello_module
 # 업데이트 (번들 소스 기준 강제 반영)
 php artisan module:update gnuboard7-hello_module --force
 ```
+
+저장소: https://github.com/gnuboard/g7-module-gnuboard7-hello_module
 <!-- @generated:install END -->
 
 ## 관리자 설정
@@ -136,8 +138,8 @@ php artisan module:activate gnuboard7-hello_module
 
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
-| `gnuboard7-hello_plugin` | 플러그인 | `>=0.1.0` |
-| `gnuboard7-hello_user_template` | 템플릿 | `>=0.1.0` |
+| `gnuboard7-hello_plugin` | 플러그인 | `>=0.2.0` |
+| `gnuboard7-hello_user_template` | 템플릿 | `>=0.2.0` |
 <!-- @generated:integrations END -->
 
 ## 문서

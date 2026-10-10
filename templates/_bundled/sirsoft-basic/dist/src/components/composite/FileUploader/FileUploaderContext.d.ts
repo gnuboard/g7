@@ -6,7 +6,7 @@ export interface FileUploaderContextValue {
     isDragOver: boolean;
     isDeleting: boolean;
     maxFiles: number;
-    maxSize: number;
+    maxSize?: number;
     accept?: string;
     endpoints: ApiEndpoints;
     confirmBeforeRemove: boolean;

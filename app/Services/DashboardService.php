@@ -9,10 +9,14 @@ use App\Contracts\Repositories\ActivityLogRepositoryInterface;
 use App\Contracts\Repositories\LanguagePackRepositoryInterface;
 use App\Contracts\Repositories\NotificationLogRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Enums\PermissionType;
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
 use App\Models\ActivityLog;
 use App\Models\NotificationLog;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -23,6 +27,16 @@ use Illuminate\Support\Str;
  */
 class DashboardService
 {
+    /**
+     * @param  UserRepositoryInterface  $userRepository  회원 저장소
+     * @param  ActivityLogRepositoryInterface  $activityLogRepository  활동 로그 저장소
+     * @param  ModuleManagerInterface  $moduleManager  모듈 관리자
+     * @param  PluginManagerInterface  $pluginManager  플러그인 관리자
+     * @param  NotificationLogRepositoryInterface  $notificationLogRepository  알림 발송 이력 저장소
+     * @param  TemplateManagerInterface  $templateManager  템플릿 관리자
+     * @param  LanguagePackRepositoryInterface  $languagePackRepository  언어팩 저장소
+     * @param  LanguagePackService  $languagePackService  언어팩 서비스
+     */
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private ActivityLogRepositoryInterface $activityLogRepository,
@@ -568,21 +582,100 @@ class DashboardService
      */
     public function getSystemAlerts(): array
     {
-        return HookManager::applyFilters('core.dashboard.alerts', []);
+        $alerts = HookManager::applyFilters('core.dashboard.alerts', []);
+
+        return array_map(fn ($alert) => is_array($alert) ? $this->withAlertAbilities($alert) : $alert, $alerts);
+    }
+
+    /**
+     * 경고 하나에 [복구]·[닫기] 가능 여부(abilities)를 싣습니다.
+     *
+     * 경고는 시스템 알림 권한으로 보이지만, 버튼이 부르는 엔드포인트는 각자 다른 권한을 요구한다
+     * (확장 복구·닫기 = core.plugins.activate, 정적 캐시 재발행 = core.settings.update 등).
+     * 경고 종류를 열거하지 않고 **그 엔드포인트 라우트의 permission 미들웨어**로 판정해, 새 경고가
+     * 복구 주소를 붙여도 이 판정을 고칠 필요가 없게 한다. 라우트를 찾지 못하면 잠근다(fail-closed).
+     *
+     * @param  array<string, mixed>  $alert  경고 항목
+     * @return array<string, mixed> abilities 가 붙은 경고 항목
+     */
+    private function withAlertAbilities(array $alert): array
+    {
+        $recover = is_string($alert['recover_endpoint'] ?? null) && $alert['recover_endpoint'] !== ''
+            ? $this->endpointAllowed($alert['recover_endpoint'])
+            : false;
+
+        $dismiss = ! empty($alert['extension_type']) && ! empty($alert['identifier'])
+            ? $this->endpointAllowed("/api/admin/extensions/{$alert['extension_type']}/{$alert['identifier']}/dismiss")
+            : false;
+
+        $alert['abilities'] = ['can_recover' => $recover, 'can_dismiss' => $dismiss];
+
+        return $alert;
+    }
+
+    /**
+     * 현재 사용자가 POST 엔드포인트의 라우트 권한을 모두 가졌는지 판정합니다.
+     *
+     * permission 미들웨어 인자(`permission:admin,a|b[,false]`)를 미들웨어와 같은 규칙(기본 AND,
+     * 세 번째 인자 false 면 OR)으로 해석한다. permission 미들웨어가 없는 라우트는 허용한다.
+     *
+     * @param  string  $endpoint  경로 (예: /api/admin/extensions/plugin/x/recover)
+     * @return bool 호출 가능 여부
+     */
+    private function endpointAllowed(string $endpoint): bool
+    {
+        $user = Auth::user();
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        try {
+            $route = app('router')->getRoutes()->match(Request::create($endpoint, 'POST'));
+        } catch (\Throwable) {
+            return false;
+        }
+
+        $parameters = $route->parameters();
+
+        foreach ($route->gatherMiddleware() as $middleware) {
+            if (! is_string($middleware) || ! str_starts_with($middleware, 'permission:')) {
+                continue;
+            }
+
+            // 라우트 파라미터 자리표시자(core.{type}s.activate 등)를 미들웨어와 같이 치환한다.
+            $middleware = preg_replace_callback(
+                '/\{(\w+)\}/',
+                fn (array $m) => is_scalar($parameters[$m[1]] ?? null) ? (string) $parameters[$m[1]] : $m[0],
+                $middleware
+            );
+
+            $args = explode(',', substr($middleware, strlen('permission:')));
+            $type = PermissionType::tryFrom($args[0] ?? '');
+            $permissions = explode('|', $args[1] ?? '');
+            $requireAll = filter_var($args[2] ?? 'true', FILTER_VALIDATE_BOOLEAN);
+
+            if (! $user->hasPermissions($permissions, $requireAll, $type)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
      * 최근 발송된 알림 이력을 조회합니다.
      *
      * notification_logs 테이블에서 발송 시각 최신순으로 조회하여
-     * 대시보드 "최근 알림" 카드 표시 형식으로 변환합니다.
+     * 대시보드 "최근 알림" 카드 표시 형식으로 변환합니다. 현재 사용자의 발송 이력 조회 범위
+     * (self·role 스코프)를 그대로 따른다 — 최근 활동 카드가 스코프를 거는 것과 같은 기준이다.
      *
      * @param  int  $limit  조회할 알림 수
      * @return array 최근 알림 배열
      */
     public function getRecentNotificationLogs(int $limit = 5): array
     {
-        $logs = $this->notificationLogRepository->getRecent($limit);
+        $viewer = Auth::user();
+        $logs = $this->notificationLogRepository->getRecent($limit, $viewer instanceof User ? $viewer : null);
 
         return $logs->map(function (NotificationLog $log) {
             return [

@@ -1,0 +1,23 @@
+feature: 관리자 기간 입력칸·묶음 입력칸 접근성 이름
+
+description: |
+  관리자 입력칸에 곁 라벨 이름을 잇는 훅은 라벨 하나 뒤에 칸이 둘 이상이면 어느 칸에도
+  잇지 않는다. 게시판 관리자 화면의 기간 칸(시작일 ~ 종료일)·라디오 묶음·나란한 숫자 칸에
+  칸마다 이름을 직접 단다. 기간 칸은 공용 문구 common.range_start / common.range_end 에
+  그 화면의 라벨 문구를 넣어 「스크랩일 시작일」처럼 읽힌다.
+
+axes:
+  surface:
+    - admin_filter_range   # 게시판 관리자 레이아웃 전체의 기간 칸 (모집단 파생 — 스크랩·반응·신고·게시글 목록 필터와 게시판 설정 탭)
+    - admin_label_group    # 라벨 하나 뒤 칸 둘 이상인 묶음 전체 (모집단 파생 — 관리자 레이아웃 + 확장 주입 조각. 고치기 전 반응 목록의 대상 고르기 1건)
+
+exclusions:
+  - { surface: admin_filter_range, reason: "제외 없음 — 모집단을 저장소에서 파생하는 단일 축이다" }
+  - { surface: admin_label_group, reason: "제외 없음 — 훅 규칙을 옮긴 판정으로 모집단을 저장소에서 파생한다" }
+
+effects:
+  - board_range_inputs_have_aria_label   # 같은 부모 아래 date/datetime-local 칸이 둘 이상이면 칸마다 aria-label 이 있다
+  - board_label_group_controls_named     # 라벨 하나 뒤 칸이 둘 이상이면 칸마다 이름(aria-label·aria-labelledby·placeholder·label[for])이 있다
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-range-input-names.test.ts

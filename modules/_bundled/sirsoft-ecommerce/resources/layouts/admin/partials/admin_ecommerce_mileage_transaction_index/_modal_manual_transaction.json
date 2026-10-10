@@ -1,754 +1,762 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "마일리지 수동 지급/차감 모달 (회원 검색 부유 자동완성 + 지급/차감 분기 + G7 표준 검증 피드백 3종 + 로딩 상태). user_id 는 uuid 전송 (코어 UserResource 가 id 미노출)."
-  },
-  "id": "modal_manual_transaction",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.title",
-    "size": "md",
-    "closeOnOverlayClick": false
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "space-y-4"
-      },
-      "children": [
-        {
-          "id": "manual_error_banner",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.mileageManual?.errors}}",
-          "props": {
-            "className": "p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex gap-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "triangle-exclamation",
-                    "size": "md",
-                    "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-1"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "P",
-                      "props": {
-                        "className": "text-sm font-medium text-red-800 dark:text-red-200"
-                      },
-                      "text": "{{_global.mileageManual?.errors?.message ?? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_manual.validation_error')}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Ul",
-                      "if": "{{_global.mileageManual?.errors?.errors && Object.keys(_global.mileageManual.errors.errors).length > 0}}",
-                      "props": {
-                        "className": "mt-1 list-disc list-inside space-y-0.5"
-                      },
-                      "iteration": {
-                        "source": "Object.entries(_global.mileageManual?.errors?.errors ?? {}).flatMap(([f, m]) => Array.isArray(m) ? m : [m])",
-                        "item_var": "msg"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Li",
-                          "props": {
-                            "className": "text-xs text-red-700 dark:text-red-300"
-                          },
-                          "text": "{{msg}}"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "member_search_block",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{!_global.mileageManual?.selectedMember}}",
-          "props": {
-            "className": "relative"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.member_search"
-            },
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "text",
-                "value": "{{_global.mileageManual?.memberSearchKeyword ?? ''}}",
-                "placeholder": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.member_search_placeholder",
-                "debounce": 250,
-                "className": "{{_global.mileageManual?.errors?.errors?.user_id ? 'input w-full input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input w-full'}}"
-              },
-              "actions": [
-                {
-                  "type": "input",
-                  "handler": "sequence",
-                  "params": {
-                    "actions": [
-                      {
-                        "handler": "setState",
-                        "params": {
-                          "target": "global",
-                          "mileageManual.memberSearchKeyword": "{{$event.target.value}}"
-                        }
-                      },
-                      {
-                        "handler": "apiCall",
-                        "auth_required": true,
-                        "if": "{{($event.target.value ?? '').length > 0}}",
-                        "target": "/api/admin/users/search",
-                        "params": {
-                          "method": "GET",
-                          "query": {
-                            "keyword": "{{$event.target.value}}"
-                          }
-                        },
-                        "onSuccess": [
-                          {
-                            "handler": "setState",
-                            "params": {
-                              "target": "global",
-                              "mileageManual.memberSearchResults": "{{response?.data ?? []}}"
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                }
-              ]
-            },
-            {
-              "id": "member_search_results",
-              "type": "basic",
-              "name": "Div",
-              "if": "{{(_global.mileageManual?.memberSearchKeyword ?? '').length > 0}}",
-              "props": {
-                "className": "absolute left-0 right-0 top-full z-50 mt-1 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-lg divide-y divide-gray-100 dark:divide-gray-700 max-h-60 overflow-y-auto"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "iteration": {
-                    "source": "_global.mileageManual?.memberSearchResults ?? []",
-                    "item_var": "member",
-                    "index_var": "memberIndex"
-                  },
-                  "props": {
-                    "className": "flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
-                  },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "mileageManual.selectedMember": "{{({ uuid: member.uuid, name: member.name, email: member.email, balance: member.ecommerce_mileage?.available ?? null })}}",
-                        "mileageManual.memberSearchResults": [],
-                        "mileageManual.memberSearchKeyword": "",
-                        "mileageManual.errors": null
-                      }
-                    }
-                  ],
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": {
-                            "name": "user",
-                            "size": "sm",
-                            "className": "text-gray-500 dark:text-gray-400"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "min-w-0 flex-1"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "block font-medium text-sm text-gray-900 dark:text-white truncate"
-                          },
-                          "text": "{{member.name}}"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "block text-xs text-gray-500 dark:text-gray-400 truncate"
-                          },
-                          "text": "{{member.email}}"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{(_global.mileageManual?.memberSearchResults ?? []).length === 0}}",
-                  "props": {
-                    "className": "p-3 text-sm text-center text-gray-400 dark:text-gray-500"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.no_results"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "selected_member_block",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{!!_global.mileageManual?.selectedMember}}",
-          "props": {
-            "className": "flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "block font-medium text-sm text-gray-900 dark:text-white"
-                  },
-                  "text": "{{_global.mileageManual?.selectedMember?.name}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "block text-xs text-gray-500 dark:text-gray-400"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.current_balance|balance={{_global.mileageManual?.selectedMember?.balance ?? '-'}}"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Button",
-              "props": {
-                "type": "button",
-                "disabled": "{{_global.mileageManual?.isSaving ?? false}}",
-                "className": "text-xs text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-              },
-              "actions": [
-                {
-                  "type": "click",
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "mileageManual.selectedMember": null,
-                    "mileageManual.memberSearchKeyword": ""
-                  }
-                }
-              ],
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.search.reset"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex items-center gap-4"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "flex items-center gap-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "radio",
-                    "name": "mileageManualAction",
-                    "value": "earn",
-                    "checked": "{{(_global.mileageManual?.action ?? 'earn') === 'earn'}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "mileageManual.action": "earn"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-sm text-gray-700 dark:text-gray-300"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.action_earn"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "flex items-center gap-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "radio",
-                    "name": "mileageManualAction",
-                    "value": "deduct",
-                    "checked": "{{_global.mileageManual?.action === 'deduct'}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "change",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "mileageManual.action": "deduct"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-sm text-gray-700 dark:text-gray-300"
-                  },
-                  "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.action_deduct"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex items-center gap-2"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Input",
-                  "props": {
-                    "type": "number",
-                    "value": "{{_global.mileageManual?.amount ?? ''}}",
-                    "min": "1",
-                    "placeholder": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.amount",
-                    "className": "{{_global.mileageManual?.errors?.errors?.amount ? 'input flex-1 input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input flex-1'}}"
-                  },
-                  "actions": [
-                    {
-                      "type": "input",
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "mileageManual.amount": "{{$event.target.value}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "px-3 py-2 text-sm text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800"
-                  },
-                  "text": "{{_global.mileageManual?.currency ?? 'KRW'}}"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_global.mileageManual?.errors?.errors?.amount}}",
-              "props": {
-                "className": "form-error"
-              },
-              "text": "{{_global.mileageManual?.errors?.errors?.amount?.[0] ?? ''}}"
-            }
-          ]
-        },
-        {
-          "id": "deduct_exceed_warning",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.mileageManual?.action === 'deduct' && _global.mileageManual?.selectedMember?.balance !== null && Number(_global.mileageManual?.amount ?? 0) > Number(_global.mileageManual?.selectedMember?.balance ?? 0)}}",
-          "props": {
-            "className": "flex items-center gap-2 text-sm text-red-600 dark:text-red-400"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "triangle-exclamation",
-                "size": "sm"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.exceed_warning|balance={{_global.mileageManual?.selectedMember?.balance ?? 0}}"
-            }
-          ]
-        },
-        {
-          "id": "earn_expiry_block",
-          "type": "basic",
-          "name": "Div",
-          "if": "{{(_global.mileageManual?.action ?? 'earn') === 'earn'}}",
-          "props": {
-            "className": "space-y-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.expiry"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex flex-wrap items-center gap-4"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "flex items-center gap-2 cursor-pointer"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "radio",
-                        "name": "mileageManualExpiry",
-                        "checked": "{{(_global.mileageManual?.useDefaultExpiry ?? true) === true}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "mileageManual.useDefaultExpiry": true
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.expiry_policy"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "flex items-center gap-2 cursor-pointer"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "radio",
-                        "name": "mileageManualExpiry",
-                        "checked": "{{_global.mileageManual?.useDefaultExpiry === false}}"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "mileageManual.useDefaultExpiry": false
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "props": {
-                        "className": "text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
-                      },
-                      "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.expiry_custom"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Input",
-              "if": "{{_global.mileageManual?.useDefaultExpiry === false}}",
-              "props": {
-                "type": "date",
-                "value": "{{_global.mileageManual?.expiresAt ?? ''}}",
-                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-              },
-              "actions": [
-                {
-                  "type": "change",
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "mileageManual.expiresAt": "{{$event.target.value}}"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "children": [
-            {
-              "type": "basic",
-              "name": "Label",
-              "props": {
-                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              },
-              "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.reason"
-            },
-            {
-              "type": "basic",
-              "name": "Input",
-              "props": {
-                "type": "text",
-                "value": "{{_global.mileageManual?.reason ?? ''}}",
-                "placeholder": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.reason_placeholder",
-                "className": "{{_global.mileageManual?.errors?.errors?.memo ? 'input w-full input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input w-full'}}"
-              },
-              "actions": [
-                {
-                  "type": "input",
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "mileageManual.reason": "{{$event.target.value}}"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Span",
-              "if": "{{_global.mileageManual?.errors?.errors?.memo}}",
-              "props": {
-                "className": "form-error"
-              },
-              "text": "{{_global.mileageManual?.errors?.errors?.memo?.[0] ?? ''}}"
-            }
-          ]
-        }
-      ]
+    "comment": "관리자가 회원 마일리지를 손으로 지급하거나 차감하는 창. 이 화면의 유일한 잔액 변경 경로다.\n  회원은 이름·이메일로 찾아 고른다 — 고르고 나면 검색칸이 사라지고 선택된 회원 카드로 바뀌며,\n  거기 현재 잔액이 함께 뜬다. 그 잔액이 아래 차감 초과 경고의 근거다.\n  지급과 차감이 라디오 하나로 갈리고, 그에 따라 화면이 둘 달라진다 — 지급일 때만 유효기간 칸이\n  나오고, 차감일 때만 잔액 초과 경고가 뜬다. 실행 버튼의 색과 글자도 그에 맞춰 바뀐다.\n  실행 버튼의 잠금 조건이 다섯이다(저장 중·회원 미선택·금액 0 이하·사유 공백·차감액이 잔액 초과).\n  잔액을 모르는 회원(`balance` 가 `null`)은 마지막 조건을 건너뛴다 — 모르는 값으로 막지 않는다.\n  회원 식별은 **uuid** 다. 코어가 회원 응답에 숫자 id 를 내리지 않기 때문이고, 이 화면의 다른\n  창들도 같은 규약을 쓴다.",
+    "meta": {
+        "is_partial": true,
+        "description": "마일리지 수동 지급/차감 모달 (회원 검색 부유 자동완성 + 지급/차감 분기 + G7 표준 검증 피드백 3종 + 로딩 상태). user_id 는 uuid 전송 (코어 UserResource 가 id 미노출)."
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "flex justify-end gap-2 mt-6"
-      },
-      "children": [
+    "id": "modal_manual_transaction",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.title",
+        "size": "md",
+        "closeOnOverlayClick": false
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "disabled": "{{_global.mileageManual?.isSaving ?? false}}",
-            "className": "btn btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.cancel"
-            }
-          ]
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-4"
+            },
+            "children": [
+                {
+                    "id": "manual_error_banner",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.mileageManual?.errors}}",
+                    "props": {
+                        "className": "p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "triangle-exclamation",
+                                        "size": "md",
+                                        "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-sm font-medium text-red-800 dark:text-red-200"
+                                            },
+                                            "text": "{{_global.mileageManual?.errors?.message ?? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_manual.validation_error')}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Ul",
+                                            "if": "{{_global.mileageManual?.errors?.errors && Object.keys(_global.mileageManual.errors.errors).length > 0}}",
+                                            "iteration": {
+                                                "source": "Object.entries(_global.mileageManual?.errors?.errors ?? {}).flatMap(([f, m]) => Array.isArray(m) ? m : [m])",
+                                                "item_var": "msg"
+                                            },
+                                            "props": {
+                                                "className": "mt-1 list-disc list-inside space-y-0.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Li",
+                                                    "props": {
+                                                        "className": "text-xs text-red-700 dark:text-red-300"
+                                                    },
+                                                    "text": "{{msg}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "member_search_block",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!_global.mileageManual?.selectedMember}}",
+                    "props": {
+                        "className": "relative"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.member_search"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "회원 자동완성. 글자마다 요청이 나가지 않도록 입력칸에 대기시간(`debounce` 250ms)이\n              걸려 있고, 검색어가 비거나 공백뿐이면 조회 자체를 건너뛴다(`if`) — 회원 검색은 빈 검색어를\n              422 로 거절하고(공백은 서버 요청 정리에서 지워져 빈 값이 된다), 길이만 보면 공백이 통과한다.\n              찾기는 코어의 회원 검색을 그대로 쓴다(이커머스 전용 검색이 따로 없다).",
+                                    "type": "input",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "mileageManual.memberSearchKeyword": "{{$event.target.value}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/users/search",
+                                            "if": "{{String($event.target.value ?? '').trim() !== ''}}",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "GET",
+                                                "query": {
+                                                    "keyword": "{{$event.target.value}}"
+                                                }
+                                            },
+                                            "onSuccess": {
+                                                "comment": "결과를 만든 키워드는 **응답이 실어 온 값**(`meta.keyword`)을 쓴다 — `$event.target.value` 로 찍으면 그것은 **응답이 도착한 순간의 입력칸**이라, 가장 큰 옛 응답(한 글자가 부른 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다. 아래 가드가 그대로 통과해 엉뚱한 목록이 그려졌다(2026-09-22 #599 3차 실측 T2-D1 — `MEAS599T-S2` 를 친 화면에 전체 회원 83행). 서버가 자기 키워드를 답하므로 화면은 그것과 지금 입력값을 견주기만 한다. 늦게 온 옛 응답은 저장하지 않는다 — 응답 키워드가 지금 검색어와 같을 때만 담고, 아니면 지금 값을 그대로 둔다 — 비교는 값 식 안에서 한다(액션 `if` 와 `$event` 는 요청 시점 문맥이고, 값 식의 `_global` 만 평가 시점 최신 상태다)(덮어쓰면 정답 목록이 사라지고 다시 오지 않는다).",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "mileageManual.memberSearchResults": "{{((response?.meta?.keyword ?? '') === String(_global.mileageManual?.memberSearchKeyword ?? '').trim()) ? (response?.data ?? []) : (_global.mileageManual?.memberSearchResults ?? [])}}",
+                                                    "mileageManual.memberSearchResultsKeyword": "{{((response?.meta?.keyword ?? '') === String(_global.mileageManual?.memberSearchKeyword ?? '').trim()) ? (response?.meta?.keyword ?? '') : (_global.mileageManual?.memberSearchResultsKeyword ?? null)}}"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "value": "{{_global.mileageManual?.memberSearchKeyword ?? ''}}",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.member_search_placeholder",
+                                "className": "{{_global.mileageManual?.errors?.errors?.user_id ? 'input w-full input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input w-full'}}",
+                                "debounce": 250
+                            }
+                        },
+                        {
+                            "comment": "목록은 지금 입력값이 만든 결과일 때만 그린다 — 늦게 온 옛 응답은 잠시 감출 뿐 잘못된 행을 보여주지 않는다. 입력값은 trim 해 견준다: 서버는 검색어를 trim 해 `meta.keyword` 로 돌려주므로 앞뒤 공백이 있는 입력(붙여넣은 이메일 등)과 그대로 견주면 결과가 영영 숨는다.",
+                            "id": "member_search_results",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{String(_global.mileageManual?.memberSearchKeyword ?? '').trim() !== '' && (_global.mileageManual?.memberSearchResultsKeyword ?? null) === (_global.mileageManual?.memberSearchKeyword ?? '').trim()}}",
+                            "props": {
+                                "className": "absolute left-0 right-0 top-full z-50 mt-1 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-lg divide-y divide-gray-100 dark:divide-gray-700 max-h-60 overflow-y-auto"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "_global.mileageManual?.memberSearchResults ?? []",
+                                        "item_var": "member",
+                                        "index_var": "memberIndex"
+                                    },
+                                    "actions": [
+                                        {
+                                            "comment": "회원 확정 — 필요한 넷만 추려 담는다(회원 응답 전체를 들고 다니지 않는다). 잔액을 함께 담아 두는 것은 아래 차감 초과 경고가 그 값으로 판단하기 때문이고, 검색어·결과·오류를 한 번에 비워 목록이 남아 떠 있지 않게 한다.",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "mileageManual.selectedMember": "{{({ uuid: member.uuid, name: member.name, email: member.email, balance: member.ecommerce_mileage?.available ?? null })}}",
+                                                "mileageManual.memberSearchResults": [],
+                                                "mileageManual.memberSearchResultsKeyword": null,
+                                                "mileageManual.memberSearchKeyword": "",
+                                                "mileageManual.errors": null
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "className": "flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "user",
+                                                        "size": "sm",
+                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "min-w-0 flex-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "block font-medium text-sm text-gray-900 dark:text-white truncate"
+                                                    },
+                                                    "text": "{{member.name}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "block text-xs text-gray-500 dark:text-gray-400 truncate"
+                                                    },
+                                                    "text": "{{member.email}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_global.mileageManual?.memberSearchResults ?? []).length === 0}}",
+                                    "props": {
+                                        "className": "p-3 text-sm text-center text-gray-400 dark:text-gray-500"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.no_results"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "selected_member_block",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!_global.mileageManual?.selectedMember}}",
+                    "props": {
+                        "className": "flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "block font-medium text-sm text-gray-900 dark:text-white"
+                                    },
+                                    "text": "{{_global.mileageManual?.selectedMember?.name}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.current_balance|balance={{_global.mileageManual?.selectedMember?.balance ?? '-'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "회원 다시 고르기 — 선택과 검색어만 비운다. 입력해 둔 금액·사유·유효기간은 남는다(대상만 바꾸는 경우가 잦다).",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "mileageManual.selectedMember": null,
+                                        "mileageManual.memberSearchKeyword": ""
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "disabled": "{{_global.mileageManual?.isSaving ?? false}}",
+                                "className": "text-xs text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.search.reset"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "지급 선택. 이 값 하나가 유효기간 칸의 등장·초과 경고·버튼 글자를 함께 좌우한다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "mileageManual.action": "earn"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "radio",
+                                        "name": "mileageManualAction",
+                                        "value": "earn",
+                                        "checked": "{{(_global.mileageManual?.action ?? 'earn') === 'earn'}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.action_earn"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "차감 선택. 유효기간 칸이 사라진다 — 차감에는 만료라는 개념이 없다. 대신 잔액 초과 경고와 버튼 잠금이 살아난다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "mileageManual.action": "deduct"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "radio",
+                                        "name": "mileageManualAction",
+                                        "value": "deduct",
+                                        "checked": "{{_global.mileageManual?.action === 'deduct'}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.action_deduct"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "금액. 글자 그대로 담고 숫자 변환은 읽는 쪽(경고 조건·버튼 잠금·전송 본문)이 각자 한다 — 입력 도중 빈 칸이 0 으로 굳는 것을 피한다.",
+                                            "type": "input",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "mileageManual.amount": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "number",
+                                        "value": "{{_global.mileageManual?.amount ?? ''}}",
+                                        "min": "1",
+                                        "placeholder": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.amount",
+                                        "className": "{{_global.mileageManual?.errors?.errors?.amount ? 'input flex-1 input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input flex-1'}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "px-3 py-2 text-sm text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800"
+                                    },
+                                    "text": "{{_global.mileageManual?.currency ?? 'KRW'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.mileageManual?.errors?.errors?.amount}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_global.mileageManual?.errors?.errors?.amount?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "deduct_exceed_warning",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.mileageManual?.action === 'deduct' && _global.mileageManual?.selectedMember?.balance !== null && Number(_global.mileageManual?.amount ?? 0) > Number(_global.mileageManual?.selectedMember?.balance ?? 0)}}",
+                    "props": {
+                        "className": "flex items-center gap-2 text-sm text-red-600 dark:text-red-400"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "size": "sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.exceed_warning|balance={{_global.mileageManual?.selectedMember?.balance ?? 0}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "earn_expiry_block",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_global.mileageManual?.action ?? 'earn') === 'earn'}}",
+                    "props": {
+                        "className": "space-y-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.expiry"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap items-center gap-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "만료를 정책에 맡긴다 — 서버가 마일리지 설정의 기본 유효기간으로 계산한다. 이때 날짜 입력칸은 숨고, 전송 본문의 만료일도 비워 나간다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "mileageManual.useDefaultExpiry": true
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "mileageManualExpiry",
+                                                "checked": "{{(_global.mileageManual?.useDefaultExpiry ?? true) === true}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.expiry_policy"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex items-center gap-2 cursor-pointer"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "만료일을 직접 정한다 — 아래 날짜칸이 나타난다. 날짜를 고르지 않은 채 보내면 만료일이 빈 값으로 나가므로 서버 판단에 맡겨진다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "mileageManual.useDefaultExpiry": false
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "mileageManualExpiry",
+                                                "checked": "{{_global.mileageManual?.useDefaultExpiry === false}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.expiry_custom"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "if": "{{_global.mileageManual?.useDefaultExpiry === false}}",
+                            "actions": [
+                                {
+                                    "comment": "직접 정한 만료일. 하한이 걸려 있지 않아 과거 날짜도 고를 수 있고, 그 판단은 서버가 한다.",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "mileageManual.expiresAt": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "date",
+                                "value": "{{_global.mileageManual?.expiresAt ?? ''}}",
+                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.reason"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "사유 — 필수다(공백만 있으면 실행 버튼이 잠긴다). 화면 이름은 '사유' 이지만 서버로는 `memo` 로 나가고, 오류 표시도 그 이름으로 돌아온다.",
+                                    "type": "input",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "mileageManual.reason": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "value": "{{_global.mileageManual?.reason ?? ''}}",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.reason_placeholder",
+                                "className": "{{_global.mileageManual?.errors?.errors?.memo ? 'input w-full input-error focus:ring-2 focus:ring-red-500 focus:border-red-500' : 'input w-full'}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.mileageManual?.errors?.errors?.memo}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_global.mileageManual?.errors?.errors?.memo?.[0] ?? ''}}"
+                        }
+                    ]
+                }
+            ]
         },
         {
-          "id": "manual_submit_button",
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "type": "button",
-            "disabled": "{{_global.mileageManual?.isSaving || !_global.mileageManual?.selectedMember || !(Number(_global.mileageManual?.amount ?? 0) > 0) || !(_global.mileageManual?.reason ?? '').trim() || (_global.mileageManual?.action === 'deduct' && _global.mileageManual?.selectedMember?.balance !== null && Number(_global.mileageManual?.amount ?? 0) > Number(_global.mileageManual?.selectedMember?.balance ?? 0))}}",
-            "className": "flex items-center gap-2 btn text-sm bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "params": {
-                "actions": [
-                  {
-                    "handler": "setState",
-                    "params": {
-                      "target": "global",
-                      "mileageManual.isSaving": true,
-                      "mileageManual.errors": null
-                    }
-                  },
-                  {
-                    "handler": "apiCall",
-                    "auth_required": true,
-                    "target": "/api/modules/sirsoft-ecommerce/admin/mileage-transactions",
-                    "params": {
-                      "method": "POST",
-                      "body": "{{({ user_id: _global.mileageManual?.selectedMember?.uuid, action: _global.mileageManual?.action ?? 'earn', amount: Number(_global.mileageManual?.amount ?? 0), currency: _global.mileageManual?.currency ?? 'KRW', memo: _global.mileageManual?.reason, use_default_expiry: _global.mileageManual?.useDefaultExpiry ?? true, expires_at: (_global.mileageManual?.useDefaultExpiry === false ? _global.mileageManual?.expiresAt : null) })}}"
-                    },
-                    "onSuccess": [
-                      {
-                        "handler": "closeModal"
-                      },
-                      {
-                        "handler": "refetchDataSource",
-                        "params": {
-                          "dataSourceId": "transactions"
-                        }
-                      },
-                      {
-                        "handler": "toast",
-                        "params": {
-                          "type": "success",
-                          "message": "$t:sirsoft-ecommerce.admin.mileage_transactions.message.manual_success"
-                        }
-                      },
-                      {
-                        "handler": "setState",
-                        "params": {
-                          "target": "global",
-                          "mileageManual": null
-                        }
-                      }
-                    ],
-                    "onError": [
-                      {
-                        "handler": "setState",
-                        "params": {
-                          "target": "global",
-                          "mileageManual.isSaving": false,
-                          "mileageManual.errors": "{{error}}"
-                        }
-                      }
-                    ]
-                  }
-                ]
-              }
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.mileageManual?.isSaving}}",
-              "props": {
-                "name": "spinner",
-                "size": "sm",
-                "className": "animate-spin"
-              }
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex justify-end gap-2 mt-6"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.mileageManual?.isSaving ? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_manual.submitting') : ((_global.mileageManual?.action ?? 'earn') === 'earn' ? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_manual.submit_earn') : $t('sirsoft-ecommerce.admin.mileage_transactions.modal_manual.submit_deduct'))}}"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "disabled": "{{_global.mileageManual?.isSaving ?? false}}",
+                        "className": "btn btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.cancel"
+                        }
+                    ]
+                },
+                {
+                    "id": "manual_submit_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "지급·차감 실행. 화면에 흩어져 있던 값들을 여기서 서버 형태로 맞춘다 — 금액은 숫자로,\n            사유는 `memo` 로, 만료일은 '직접 지정' 일 때만 실어 보내고 아니면 비운다.\n            성공 갈래에서 `mileageManual` 을 통째로 비우므로 다음에 창을 열면 처음 상태다.\n            실패 갈래는 창을 닫지 않고 서버 응답을 담아 둔다 — 위 배너와 각 칸 아래 문구가 그 안의\n            필드별 오류(`user_id`·`amount`·`memo`)를 나눠 읽는다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "mileageManual.isSaving": true,
+                                        "mileageManual.errors": null
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/mileage-transactions",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": "{{({ user_id: _global.mileageManual?.selectedMember?.uuid, action: _global.mileageManual?.action ?? 'earn', amount: Number(_global.mileageManual?.amount ?? 0), currency: _global.mileageManual?.currency ?? 'KRW', memo: _global.mileageManual?.reason, use_default_expiry: _global.mileageManual?.useDefaultExpiry ?? true, expires_at: (_global.mileageManual?.useDefaultExpiry === false ? _global.mileageManual?.expiresAt : null) })}}"
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "transactions"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-ecommerce.admin.mileage_transactions.message.manual_success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "mileageManual": null
+                                            }
+                                        }
+                                    ],
+                                    "onError": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "mileageManual.isSaving": false,
+                                            "mileageManual.errors": "{{error}}"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "disabled": "{{_global.mileageManual?.isSaving || !_global.mileageManual?.selectedMember || !(Number(_global.mileageManual?.amount ?? 0) > 0) || !(_global.mileageManual?.reason ?? '').trim() || (_global.mileageManual?.action === 'deduct' && _global.mileageManual?.selectedMember?.balance !== null && Number(_global.mileageManual?.amount ?? 0) > Number(_global.mileageManual?.selectedMember?.balance ?? 0))}}",
+                        "className": "flex items-center gap-2 btn text-sm bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.mileageManual?.isSaving}}",
+                            "props": {
+                                "name": "spinner",
+                                "size": "sm",
+                                "className": "animate-spin"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.mileageManual?.isSaving ? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_manual.submitting') : ((_global.mileageManual?.action ?? 'earn') === 'earn' ? $t('sirsoft-ecommerce.admin.mileage_transactions.modal_manual.submit_earn') : $t('sirsoft-ecommerce.admin.mileage_transactions.modal_manual.submit_deduct'))}}"
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

@@ -250,7 +250,11 @@ try {
     $this->service->doSomething($order, $data);
 } catch (OrderModificationException $e) {
     // 도메인 규칙 위반 — 사용자가 고칠 수 있다. 기존 상태코드를 그대로 유지한다.
-    return ResponseHelper::error($e->getMessageKey(), 422, null, $e->getMessageParams());
+    // 키는 지역 변수에 받아 넘긴다 — 첫 인자에 메서드 호출을 그대로 두면
+    // 정적 검사가 "키가 아닌 값" 으로 판정한다.
+    $messageKey = $e->getMessageKey();
+
+    return ResponseHelper::error($messageKey, 422, null, $e->getMessageParams());
 } catch (\Exception $e) {
     // 그 외 — 서버 결함/인프라 장애. 메시지 키 자리에는 원문을 넣지 않는다.
     // (진단이 필요하면 $errors 인자로 Throwable 을 넘겨 헬퍼의 debug 게이트에 맡긴다)
@@ -265,6 +269,7 @@ try {
 - typed 예외를 잡는 분기의 상태코드는 **바꾸지 않는다**. 예외를 도입하는 작업이 사용자에게 보이는 계약을 함께 바꾸면 회귀다.
 - 서비스가 typed 예외를 던지는데 컨트롤러에 그 typed catch 가 없으면, 도메인 사유가 generic 으로 흘러 500 이 된다. 서비스를 typed 로 승격할 때는 **호출하는 컨트롤러 메서드를 전수로** 함께 본다.
 - 상태코드 인자를 생략한 `ResponseHelper::error('key')` / `moduleError($mod, 'key')` 는 기본값 **400** 이다. generic catch 안에서는 인자를 생략하지 않는다.
+- **모듈/플러그인 도메인 예외의 `getMessageKey()` 는 이미 확장 접두를 포함한 완전한 키다.** 그 값을 `moduleError($mod, $key)` 에 넘기면 접두가 두 번 붙어 키 해석에 실패하고, 원시 키 문자열이 그대로 사용자 화면에 나간다. 이 경우는 `ResponseHelper::error()` 를 쓴다 — 접두를 붙이는 주체가 하나여야 한다.
 - **도메인 예외의 부모를 잡지 않는다.** 도메인 예외는 대개 `\RuntimeException` 을 상속하므로, 서비스를 typed 로 승격한 뒤에도 `catch (\RuntimeException)` 을 남겨 두면 그 자리는 도메인 예외를 잡는 것처럼 보이지만 실제로 남는 것은 인프라 예외뿐이다. 그것까지 4xx 로 나가면 승격 작업이 아무것도 고치지 못한 셈이 된다. 승격한 예외 이름으로 좁힌다.
 
 의도적으로 4xx 를 유지하는 generic catch 도 있다 — 업로드 파일 해석처럼 실패 원인이 대부분 클라이언트 입력인 경우다. 그런 지점은 사유와 함께 명시적으로 선언하고, 판정에서 조용히 빠지게 두지 않는다.
@@ -431,4 +436,4 @@ class LayoutService
 ## 관련 문서
 
 - [validation.md](./validation.md) - Custom Rule 다국어 처리
-- [index.md](./index.md) - 백엔드 가이드 인덱스
+- [README.md](./README.md) - 백엔드 가이드 인덱스

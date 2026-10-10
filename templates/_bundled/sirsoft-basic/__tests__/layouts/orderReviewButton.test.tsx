@@ -3,11 +3,11 @@
  * @description 주문상세 리뷰작성 버튼 구조 회귀 테스트 (U22 / D4 — 인라인 모달 단일 진입점)
  *
  * 테스트 대상:
- * - templates/.../layouts/mypage/orders/show.json (데드라우트 버튼 제거 확인)
- * - templates/.../layouts/partials/mypage/orders/_items.json (항목별 리뷰 버튼 → openModal)
+ * - templates/.../layouts/mypage/orders/show.g7.html (데드라우트 버튼 제거 확인)
+ * - templates/.../layouts/partials/mypage/orders/_items.g7.html (항목별 리뷰 버튼 → openModal)
  *
  * 회귀 차단:
- * - show.json 에 /mypage/reviews/write 데드라우트 navigate 가 없어야 한다
+ * - show.g7.html 에 /mypage/reviews/write 데드라우트 navigate 가 없어야 한다
  * - 리뷰 버튼은 항목(option) 단위로 can_write_review 게이트 + openModal(modal_write_review) 사용
  *
  * @scenario payment_method=card_pg, terminal_path=admin_status_update, option_mix=all_active, actor=member
@@ -81,7 +81,7 @@ describe('show.json — 데드라우트 리뷰 버튼 제거 (D4)', () => {
   });
 
   it('주문레벨 리뷰작성 버튼(navigate)이 제거되어, 리뷰 작성은 항목별 모달이 단일 진입점이다', () => {
-    // show.json 자체에 write_review 라벨 + navigate 조합이 남아있지 않아야 한다
+    // show.g7.html 자체에 write_review 라벨 + navigate 조합이 남아있지 않아야 한다
     const navReviewBtns = flatten(show).filter(
       (n) =>
         n.name === 'Button' &&

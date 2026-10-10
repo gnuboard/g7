@@ -1,0 +1,37 @@
+<!-- 보고 있던 공통정보를 복사해 새로 만들지 확인하는 창.
+  복사값을 여기서 폼에 직접 쓰지 않고 **이벤트로 흘려보낸다**(`common_info:init_copy_form`) — 폼은
+  다른 조각이라 이 창의 지역 상태에 손이 닿지 않는다.
+  넘기는 값에서 **기본값 지정만 꺼서 보낸다** — 기본 공통정보는 하나뿐이라, 복사본이 그 표시를
+  물고 태어나면 원본의 자리를 빼앗는다. -->
+<partial description="Common Info Copy Confirm Modal">
+  <modal data-type="composite" data-ref="copy_confirm_modal" title="$t:sirsoft-ecommerce.admin.common_info.modal.copy.title" size="sm">
+    <p class="text-body text-center">$t:sirsoft-ecommerce.admin.common_info.modal.copy.message|name={{$localized(_global.selectedItem?.name)}}</p>
+    <div class="modal-footer-buttons">
+      <button class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.common_info.button.cancel
+      </button>
+      <button class="px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
+        <on type="click">
+          <!-- 복사 실행 — 모드 전환 → 창 닫기 → 폼에 값 전달 순서다. 값 전달이 마지막인 것은 폼이 복사 모드로 이미 떠 있어야 그 이벤트를 받기 때문이다. -->
+          <sequence>
+            <set-state target="global" panelMode="copy"/>
+            <close-modal/>
+            <emit-event event="common_info:init_copy_form">
+              <field name="data">
+                <field name="name" value="{{_global.selectedItem.name}}"/>
+                <field name="content" value="{{_global.selectedItem.content}}"/>
+                <field name="content_mode" value="{{_global.selectedItem.content_mode}}"/>
+                <field name="is_default" :value="false"/>
+                <field name="is_active" value="{{_global.selectedItem.is_active}}"/>
+              </field>
+            </emit-event>
+          </sequence>
+        </on>
+        $t:sirsoft-ecommerce.admin.common_info.modal.copy.confirm
+      </button>
+    </div>
+  </modal>
+</partial>

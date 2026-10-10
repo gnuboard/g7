@@ -1,0 +1,20 @@
+feature: 사용자 프로필 API 권한 정의 (7.1.0 관측 A O-2, 결정 2026-10-07 「권한 정의 추가」)
+
+description: |
+  사용자 API 의 본인 프로필(`GET|PUT /api/user/profile`·`GET /api/user/profile/activity-log`)이 요구하는
+  `core.profile.read`·`core.profile.update` 가 코어 권한 정의에 없어 모든 회원이 403 이었다. 정의를
+  config/core.php(SSoT)에 두고 `user` 역할에 기본 부여한다(admin 은 all_leaf). 기존 설치본은 코어 업데이트의
+  역할·권한 동기화(`syncCoreRolesAndPermissions`)가 채우고, 운영자가 역할에서 뺀 권한(user_overrides)은 건드리지 않는다.
+
+axes:
+  case: [definition, default_role_api, bare_role_api, core_update_sync]
+
+effects:
+  - profile_permissions_defined_as_user_type
+  - profile_permissions_granted_to_default_roles
+  - member_profile_api_allowed
+  - member_without_profile_permission_forbidden
+  - existing_install_backfilled_by_core_update_sync
+
+test_files:
+  - tests/Feature/Auth/UserProfilePermissionDefinitionTest.php

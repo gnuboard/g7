@@ -1,0 +1,53 @@
+feature: 코어 알림 수신 정책 단일화 · 파일 크기 표시 공지 · 역할 수신자 eager load 상한 (#599 validate P4 코어)
+
+description: |
+  세 결함을 닫는다.
+
+  ① 탈퇴·삭제 회원 수신 정책 — 발송 루프는 탈퇴 회원에게 바깥 채널을 막는데, 수신자 해석은
+     계정이 삭제된 회원을 확장이 실은 게스트 재료(주문서 연락처)로 대신 불러 메일을 보냈다.
+     판정을 `NotificationWithdrawnRecipientPolicy` 한 곳으로 모으고, 삭제 회원은 폴백하지 않는다.
+     0명이 된 사유는 `member_account_missing` 으로 이력에 남긴다. 탈퇴 회원(행은 남음)은 그 회원
+     자신으로 해석되어 알림함은 받고 바깥 채널만 막힌다. 회원이 지목되지 않은 사건(비회원)은
+     종전대로 게스트 재료를 쓴다.
+
+  ② `BaseApiResource::formatFileSize()` — 레이아웃 리소스 세 곳의 private 변환을 합치면서
+     `size_formatted` 자릿수(소수 1 → 2)와 상한 단위(MB → GB)가 바뀌었는데 공지가 없었다.
+     형식 계약을 문서(docs/backend/api-resources.md)에 적고 코드에 핀으로 고정한다.
+
+  ③ `RoleRepository::getUsersByIdentifiers()` — 수신자 권한 판정용 eager load 가 권한 행의 전
+     컬럼(다국어 JSON)을 읽었다. 사용자 수는 줄일 수 없으므로(전원이 수신자) 권한 행은 판정이
+     읽는 컬럼(id·identifier·type + 피벗)만 싣는다. 추가 쿼리 없이 판정되는 계약은 그대로다.
+
+axes:
+  case:
+    - deleted_member
+    - single_policy
+    - withdrawn_member
+    - guest_event
+    - file_size_contract
+    - file_size_bc_notice
+    - role_eager_load
+
+effects:
+  - deleted_member_is_not_replaced_by_guest_material                          # 삭제 회원을 주문서 연락처로 대신 부르지 않는다
+  - deleted_member_skip_is_logged_with_its_own_reason                         # 0명 사유가 member_account_missing 으로 남는다 (ko·en·ja)
+  - deleted_member_skip_reason_is_domain_neutral                              # 코어 사유 문구는 확장 도메인(주문)을 언급하지 않는다 (ko·en·ja)
+  - resolver_and_listener_share_one_policy                                    # 해석·발송 루프가 한 정책 객체를 따른다
+  - withdrawn_member_resolves_to_self_and_only_external_channels_are_blocked  # 탈퇴 회원은 알림함은 받고 바깥 채널만 막힌다
+  - guest_event_still_uses_guest_material                                     # 비회원 사건은 종전대로 게스트 재료로 보낸다
+  - format_file_size_follows_documented_contract                              # 단위·자릿수 계약 핀
+  - format_file_size_change_is_documented                                     # 자릿수 변경(BC) 공지가 문서에 있다
+  - role_recipient_permissions_load_only_judgement_columns                    # 권한 행은 판정 컬럼만 싣는다
+  - role_recipient_permission_judgement_needs_no_extra_query                  # 좁힌 뒤에도 추가 쿼리 없이 판정된다
+
+test_files:
+  - tests/Feature/Validate/DeletedMemberRecipientPolicyTest.php
+  - tests/Feature/Validate/BaseApiResourceFileSizeContractTest.php
+  - tests/Feature/Validate/RoleRecipientPermissionColumnsTest.php
+
+validation:
+  audit_rule: test-scenario-coverage
+  note: |
+    기존 `tests/Unit/Services/NotificationRecipientResolverTest::test_missing_trigger_user_falls_through_to_the_guest_recipient`
+    는 폐기된 정책(삭제 회원 게스트 폴백)을 단언했으므로 `..._does_not_fall_back_...` 로 뒤집었다
+    (notification-recipient-personalization.yaml 효과명 동반 변경).

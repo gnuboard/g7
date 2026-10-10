@@ -25,6 +25,7 @@ import {
     createLayoutTest,
     createMockComponentRegistryWithBasics,
 } from '@core/template-engine/__tests__/utils/layoutTestUtils';
+import { actionsOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 const root = layout as unknown as AnyNode;
 
@@ -226,7 +227,8 @@ describe('plugin_settings.json — 연결 확인 버튼의 hasChanges 초기 상
     const connectionCheckButton = findById(root, 'connection_check_button') as AnyNode & {
         actions: AnyNode[];
     };
-    const clickAction = connectionCheckButton.actions.find((a) => a.handler === 'sequence') as AnyNode;
+    // 굽기는 단일 원소 actions 를 객체로 접으므로 모양에 기대지 않고 헬퍼로 읽는다.
+    const clickAction = actionsOf(connectionCheckButton).find((a) => a.handler === 'sequence') as AnyNode;
 
     function buildProbe() {
         return {
@@ -310,7 +312,9 @@ describe('plugin_settings.json — 리포트 수신 설정', () => {
         expect(raw).toContain('report_url?.data?.url');
         expect(raw).toContain('/api/plugins/sirsoft-message_bizppurio/webhook');
         expect(raw).toContain('"readOnly":true');
-        expect(raw).toContain('copyToClipboard');
+        // 복사 핸들러는 이 플러그인이 소유한다 — 네임스페이스 없는 이름은 코어·템플릿 어디에도 없어 버튼이 무반응이었다
+        expect(raw).toContain('"handler":"sirsoft-message_bizppurio.copyToClipboard"');
+        expect(raw).not.toContain('"handler":"copyToClipboard"');
     });
 });
 
@@ -345,10 +349,11 @@ describe('plugin_settings.json — 저장 버튼', () => {
         const handlers = collectHandlers(layout);
         const allowed = [
             'apiCall', 'setState', 'toast', 'navigate', 'sequence', 'switch',
-            'refetchDataSource', 'scrollIntoView', 'copyToClipboard',
+            'refetchDataSource', 'scrollIntoView',
             'openModal', 'closeModal', 'replaceUrl', 'suppress',
             'sirsoft-message_bizppurio.uploadTemplateImage',
             'sirsoft-message_bizppurio.insertVariable',
+            'sirsoft-message_bizppurio.copyToClipboard',
         ];
         for (const h of handlers) {
             expect(allowed).toContain(h);

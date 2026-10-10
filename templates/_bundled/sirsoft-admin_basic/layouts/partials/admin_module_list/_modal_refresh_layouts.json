@@ -1,194 +1,196 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "모듈 레이아웃 갱신 확인 모달",
-    "editor_label": "$t:admin.modal_label.admin_module_list.module_refresh_layouts_modal"
-  },
-  "id": "module_refresh_layouts_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:admin.modules.modals.refresh_layouts_title",
-    "size": "sm"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "py-2"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "alert-warning"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "exclamation-triangle",
-                "className": "w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "P",
-              "props": {
-                "className": "text-warning-soft"
-              },
-              "text": "$t:admin.modules.modals.refresh_layouts_warning"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-gray-700 dark:text-gray-300"
-          },
-          "text": "$t:admin.modules.modals.refresh_layouts_confirm|name={{_global.selectedModule.name}}"
-        },
-        {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "mt-2 text-label-subtle"
-          },
-          "text": "$t:admin.modules.modals.refresh_layouts_description"
-        }
-      ]
+    "comment": "모듈이 들고 온 레이아웃을 **다시 심는** 확인 창(활성 모듈만). 편집기로 고친 레이아웃이 원본으로\n  덮이므로 경고를 앞세운다.\n  성공 뒤 대상(`selectedModule`)을 비우는 것은 이 창만의 처리다 — 되돌릴 수 없는 동작이라\n  같은 대상으로 곧바로 한 번 더 누르는 길을 남기지 않는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "모듈 레이아웃 갱신 확인 모달",
+        "editor_label": "$t:admin.modal_label.admin_module_list.module_refresh_layouts_modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
+    "id": "module_refresh_layouts_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.modules.modals.refresh_layouts_title",
+        "size": "sm"
+    },
+    "children": [
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "btn btn-secondary",
-            "disabled": "{{_global.isModuleRefreshingLayouts}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:common.cancel"
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "flex-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isModuleRefreshingLayouts}}"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "py-2"
+            },
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isModuleRefreshingLayouts": true
-                  }
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "alert-warning"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "exclamation-triangle",
+                                "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-warning-soft"
+                            },
+                            "text": "$t:admin.modules.modals.refresh_layouts_warning"
+                        }
+                    ]
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/admin/modules/refresh-layouts",
-                  "params": {
-                    "method": "POST",
-                    "body": {
-                      "module_name": "{{_global.selectedModule.identifier}}"
-                    }
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isModuleRefreshingLayouts": false
-                      }
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-700 dark:text-gray-300"
                     },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "selectedModule": null
-                      }
+                    "text": "$t:admin.modules.modals.refresh_layouts_confirm|name={{_global.selectedModule.name}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "mt-2 text-label-subtle"
                     },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:admin.modules.refresh_layouts_success"
-                      }
-                    },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "modules"
-                      }
-                    },
-                    {
-                      "handler": "closeModal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isModuleRefreshingLayouts": false
-                      }
-                    },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message}}"
-                      }
-                    }
-                  ]
+                    "text": "$t:admin.modules.modals.refresh_layouts_description"
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isModuleRefreshingLayouts}}",
-              "props": {
-                "name": "spinner",
-                "className": "spinner-sm"
-              }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isModuleRefreshingLayouts ? '$t:admin.modules.refreshing_layouts' : '$t:admin.modules.actions.refresh_layouts'}}"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.isModuleRefreshingLayouts}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "다시 심기 실행. 성공 갈래가 대상을 비우므로 **요청 본문은 그 전에 조립된 값을 쓴다**.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isModuleRefreshingLayouts": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/modules/refresh-layouts",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "module_name": "{{_global.selectedModule.identifier}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isModuleRefreshingLayouts": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:admin.modules.refresh_layouts_success"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "modules"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedModule": null
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isModuleRefreshingLayouts": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isModuleRefreshingLayouts}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isModuleRefreshingLayouts}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isModuleRefreshingLayouts ? '$t:admin.modules.refreshing_layouts' : '$t:admin.modules.actions.refresh_layouts'}}"
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

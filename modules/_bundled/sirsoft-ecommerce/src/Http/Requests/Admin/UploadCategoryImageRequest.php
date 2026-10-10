@@ -3,27 +3,33 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
 use App\Extension\HookManager;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Sirsoft\Ecommerce\Http\Requests\Concerns\ValidatesTempKey;
 
 /**
  * 카테고리 이미지 업로드 요청
  */
 class UploadCategoryImageRequest extends FormRequest
 {
+    use ValidatesTempKey;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인합니다.
      *
-     * @return bool
+     * 권한(sirsoft-ecommerce.categories.update)은 두 업로드 라우트의 permission 미들웨어가 검사한다.
+     *
+     * @return bool 항상 true
      */
     public function authorize(): bool
     {
-        return $this->user()->can('sirsoft-ecommerce.categories.update');
+        return true;
     }
 
     /**
      * 요청에 적용할 검증 규칙을 반환합니다.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
+     * @return array<string, ValidationRule|array|string>
      */
     public function rules(): array
     {
@@ -35,11 +41,7 @@ class UploadCategoryImageRequest extends FormRequest
                 'mimes:jpeg,png,jpg,gif,svg,webp',
                 'max:10240', // 10MB
             ],
-            'temp_key' => [
-                'nullable',
-                'string',
-                'max:64',
-            ],
+            'temp_key' => $this->tempKeyRules(),
             'collection' => [
                 'nullable',
                 'string',
@@ -81,7 +83,6 @@ class UploadCategoryImageRequest extends FormRequest
             'file.mimes' => __('sirsoft-ecommerce::validation.category_images.file.mimes'),
             'file.max' => __('sirsoft-ecommerce::validation.category_images.file.max'),
             'temp_key.string' => __('sirsoft-ecommerce::validation.category_images.temp_key.string'),
-            'temp_key.max' => __('sirsoft-ecommerce::validation.category_images.temp_key.max'),
             'collection.in' => __('sirsoft-ecommerce::validation.category_images.collection.in'),
             'alt_text.array' => __('sirsoft-ecommerce::validation.category_images.alt_text.array'),
         ];

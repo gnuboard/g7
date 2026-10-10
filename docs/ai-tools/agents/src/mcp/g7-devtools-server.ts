@@ -30,7 +30,6 @@
  *   - g7-computed: Computed 의존성 추적 (재계산 트리거, 의존성 체인, 순환 감지)
  *   - g7-modal-state: 모달 상태 스코프 추적 (격리, 유출 감지, 중첩 모달 관계)
  */
-import 'dotenv/config';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
@@ -677,6 +676,14 @@ server.tool(
   async ({ symptoms }) => {
     // 진단 규칙 (서버 사이드)
     const rules = [
+      {
+        id: 'spa-local-leak',
+        name: 'SPA 이동 후 이전 페이지 _local 잔존',
+        keywords: ['페이지 전환', '페이지 이동', '다른 목록', '이전 페이지', '컬럼이 사라', '목록이 깨', '체크박스만', '잔존', '유출', 'visibleColumns', 'SPA'],
+        solution: 'g7-state 로 _local 을 읽어 현재 레이아웃 state 에 없는 키(이전 화면 전용 키)가 있는지 본다. 있으면 보존(_fromBase) 컴포넌트의 저장소 A 가 새 페이지 첫 렌더에 병합된 뒤 자식 마운트 콜백(ColumnSelector·FilterVisibilitySelector init)이 되쓴 경로다 — 엔진 engine-v1.72.1 이상인지, 렌더 단계 초기화(appliedLayoutKey)가 살아 있는지 확인. 시크릿 창(목록 컬럼 저장값 없음)에서 재현한다',
+        doc: 'troubleshooting-state-closure.md#사례-4-spa-이동-시-보존된-base-루트의-stale-저장소-a-가-첫-렌더에-병합되어-마운트-콜백이-이전-페이지-값을-되쓴다-engine-v1721',
+        example: '// g7-state _local → 쿠폰 목록인데 bulkCourier·ordererSearchResults(주문 목록 키) 잔존, visibleColumns 가 주문 컬럼\n// → DynamicRenderer.tsx isBaseLayoutSwitch(렌더 단계 초기화) 확인',
+      },
       {
         id: 'stale-closure',
         name: 'Stale Closure',
@@ -2834,7 +2841,7 @@ server.tool(
       `| 인증 상태 | ${authIcon} ${state.isAuthenticated ? '인증됨' : '미인증'} |`,
     );
 
-    if (state.user) {
+    if (state.user && !Array.isArray(state.user) && state.user.id != null) {
       sb.push(`| 사용자 ID | ${state.user.id} |`);
       sb.push(`| 이메일 | ${state.user.email} |`);
       if (state.user.name) {
@@ -3018,7 +3025,7 @@ server.tool(
 
     // 이슈 분석
     let issues = styleData.issues || [];
-    let components = styleData.components || [];
+    let components = styleData.componentStyles || [];
 
     // search 필터링
     if (search) {
@@ -4434,7 +4441,7 @@ server.tool(
       '|------|------|-------------------|',
       '| `expandChildren` | DataGrid 행 확장 | `row`, `rowIndex` |',
       '| `cellChildren` | DataGrid 셀 커스텀 렌더링 | `cell`, `row`, `column` |',
-      '| `iteration` | 반복 렌더링 | `item`, `index` (또는 `item_var`, `index_var`) |',
+      '| `iteration` | 반복 렌더링 | `item_var`, `index_var` (정본. `item`/`index` 는 미지원) |',
       '| `modal` | 모달 컴포넌트 | 부모 상태 + 모달 로컬 상태 |',
       '| `slot` | 슬롯/Partial 렌더링 | 부모에서 전달된 props |',
       '',

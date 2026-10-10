@@ -1,0 +1,19 @@
+feature: 게시판 ja 언어팩을 켜면 시더가 다시 돌아 게시판 유형 이름에 ja 가 채워진다
+
+description: |
+  모듈 언어팩 활성화 훅이 module:seed 를 다시 돌리고, 시더는 언어팩 seed/board_types.json 번역을 필터로 받아
+  이름에 ja 를 넣는다. 운영자가 고친 ko 이름(user_overrides)은 지키고 ja 만 채운다.
+
+  #727 에서 고친 것: 테스트가 번역 레지스트리 싱글톤을 갈아 끼워(forgetInstance), 옛 인스턴스가 캐시를 이미 채운
+  실행에서만 새 활성 팩이 필터에 보이지 않아 결과가 흔들렸다. 리스너(#597)와 같은 규칙으로 캐시만 비운다.
+
+axes:
+  entity: [board_types]
+  override: [none, name_ko]
+
+effects:
+  - lang_pack_activation_injects_ja_into_seeded_rows
+  - operator_ko_edit_survives_ja_sync
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/LanguagePack/BoardLanguagePackSeederTriggerTest.php

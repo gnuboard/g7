@@ -5,7 +5,7 @@
         "ko": "Basic",
         "en": "Basic"
     },
-    "version": "1.1.4",
+    "version": "1.2.0",
     "license": "MIT",
     "description": {
         "ko": "그누보드7 기본 사용자 템플릿",
@@ -21,13 +21,13 @@
         "email": "contact@sirsoft.com",
         "url": "https://sirsoft.com"
     },
-    "release_date": "2026-01-07",
-    "g7_version": ">=7.0.11",
+    "release_date": "2026-10-10",
+    "g7_version": ">=7.1.0",
     "dependencies": {
         "modules": {
-            "sirsoft-board": ">=1.0.0",
-            "sirsoft-ecommerce": ">=1.1.0",
-            "sirsoft-page": ">=1.1.0"
+            "sirsoft-board": ">=1.2.0",
+            "sirsoft-ecommerce": ">=1.3.0",
+            "sirsoft-page": ">=1.2.0"
         },
         "plugins": {
             "sirsoft-daum_postcode": ">=1.0.0"
@@ -83,7 +83,6 @@
             "rich-text-editor",
             "image-gallery",
             "quantity-selector",
-            "post-reactions",
             "social-login-buttons",
             "file-uploader",
             "card",
@@ -104,13 +103,6 @@
             "flex",
             "grid",
             "section"
-        ]
-    },
-    "preview": {
-        "thumbnail": "preview/thumbnail.png",
-        "screenshots": [
-            "preview/screenshot1.png",
-            "preview/screenshot2.png"
         ]
     },
     "error_config": {
@@ -142,5 +134,53 @@
             "type": "webfont",
             "asset": "vendor/pretendard/1.3.9/pretendard-variable.css"
         }
-    ]
+    ],
+    "state_contracts": {
+        "shopBase": {
+            "description": {
+                "ko": "쇼핑몰 경로 앞머리 (예: /shop, 루트면 빈 문자열) — 쇼핑몰 경로 설정에서 온다",
+                "en": "Shop path prefix (e.g. /shop, empty string when mounted at root) — derived from the shop route setting"
+            },
+            "schema": {
+                "type": "string"
+            },
+            "writers": []
+        },
+        "selectedAddressId": {
+            "description": {
+                "ko": "배송지 변경 창에서 고른 배송지 ID",
+                "en": "Address chosen in the change-address dialog"
+            },
+            "schema": {
+                "type": [
+                    "integer",
+                    "null"
+                ]
+            },
+            "writers": []
+        },
+        "changeAddressMode": {
+            "description": {
+                "ko": "배송지 변경 창의 모드 (목록·새 배송지 등)",
+                "en": "Mode of the change-address dialog"
+            },
+            "schema": {
+                "type": "string"
+            },
+            "writers": []
+        },
+        "editingShippingAddress": {
+            "description": {
+                "ko": "배송지 변경 창에서 고치는 중인 주소",
+                "en": "Address being edited in the change-address dialog"
+            },
+            "schema": {
+                "type": [
+                    "object",
+                    "null"
+                ]
+            },
+            "writers": []
+        }
+    }
 }

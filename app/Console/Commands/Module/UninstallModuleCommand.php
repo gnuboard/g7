@@ -32,6 +32,9 @@ class UninstallModuleCommand extends Command
 
     /**
      * 모듈 관리자 및 리포지토리
+     *
+     * @param  ModuleManager  $moduleManager  모듈 관리자
+     * @param  ModuleRepositoryInterface  $moduleRepository  모듈 리포지토리
      */
     public function __construct(
         private ModuleManager $moduleManager,
@@ -42,6 +45,8 @@ class UninstallModuleCommand extends Command
 
     /**
      * Execute the console command.
+     *
+     * @return int 종료 코드 (성공 0, 실패 1)
      */
     public function handle(): int
     {
@@ -74,10 +79,10 @@ class UninstallModuleCommand extends Command
             // 확인 프롬프트 (--force 옵션이 없는 경우)
             if (! $this->option('force')) {
                 $this->warn(__('modules.commands.uninstall.confirm_prompt', ['module' => $identifier]));
-                $this->line(__('modules.commands.uninstall.confirm_details.roles', ['count' => $rolesCount]));
-                $this->line(__('modules.commands.uninstall.confirm_details.permissions', ['count' => $permissionsCount]));
-                $this->line(__('modules.commands.uninstall.confirm_details.menus', ['count' => $menusCount]));
-                $this->line(__('modules.commands.uninstall.confirm_details.layouts', ['count' => $layoutsCount]));
+                $this->line(trans_choice('modules.commands.uninstall.confirm_details.roles', $rolesCount));
+                $this->line(trans_choice('modules.commands.uninstall.confirm_details.permissions', $permissionsCount));
+                $this->line(trans_choice('modules.commands.uninstall.confirm_details.menus', $menusCount));
+                $this->line(trans_choice('modules.commands.uninstall.confirm_details.layouts', $layoutsCount));
                 $this->line(__('modules.commands.uninstall.confirm_details.data'));
                 if ($this->option('delete-data')) {
                     $this->warn('⚠️  --delete-data: 마이그레이션 롤백 및 환경설정 파일이 함께 삭제됩니다.');
@@ -110,10 +115,10 @@ class UninstallModuleCommand extends Command
 
             if ($result) {
                 $this->info('✅ '.__('modules.commands.uninstall.success', ['module' => $identifier]));
-                $this->info('   - '.__('modules.commands.uninstall.roles_deleted', ['count' => $rolesCount]));
-                $this->info('   - '.__('modules.commands.uninstall.permissions_deleted', ['count' => $permissionsCount]));
-                $this->info('   - '.__('modules.commands.uninstall.menus_deleted', ['count' => $menusCount]));
-                $this->info('   - '.__('modules.commands.uninstall.layouts_deleted', ['count' => $layoutsCount]));
+                $this->info('   - '.trans_choice('modules.commands.uninstall.roles_deleted', $rolesCount));
+                $this->info('   - '.trans_choice('modules.commands.uninstall.permissions_deleted', $permissionsCount));
+                $this->info('   - '.trans_choice('modules.commands.uninstall.menus_deleted', $menusCount));
+                $this->info('   - '.trans_choice('modules.commands.uninstall.layouts_deleted', $layoutsCount));
 
                 // 운영자가 넣은 `custom/` 은 삭제 전에 사본을 남긴다 — 그 경로를 알리지 않으면
                 // 로그를 뒤지지 않는 한 사본의 존재를 알 수 없다.

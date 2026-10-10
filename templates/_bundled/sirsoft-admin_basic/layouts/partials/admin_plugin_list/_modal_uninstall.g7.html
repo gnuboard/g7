@@ -1,0 +1,182 @@
+<!-- 플러그인을 지우기 전 되묻는 창. 파일을 지우는 것과 **그 플러그인이 쌓아 둔 자료를 지우는 것**은
+  별개라, 자료 삭제는 따로 체크해야 한다(기본은 끔 — 지웠다 다시 깔면 자료가 이어진다).
+  체크를 켜면 그때 「무엇이 얼마나 지워지는지」를 서버에 물어 아래에 펼친다. 끄면 그 조회는 하지
+  않으므로, 목록이 안 보이는 것은 못 받아 온 것이 아니라 물어보지 않은 상태다. -->
+<partial description="플러그인 삭제 확인 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_uninstall_modal">
+  <modal data-type="composite" data-ref="plugin_uninstall_modal" title="{{_global.pluginUninstallBackups?.length ? '$t:admin.plugins.modals.uninstall_done_title' : '$t:admin.plugins.modals.uninstall_title'}}" size="medium">
+    <div data-if="{{!(_global.pluginUninstallBackups?.length)}}" class="py-2">
+      <p class="text-gray-700 dark:text-gray-300 flex items-center gap-2"><span data-ref="plugin_uninstall_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden">
+        <img data-if="{{_global.selectedPlugin?.icon_url}}" src="{{_global.selectedPlugin.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/>
+        <icon data-if="{{!_global.selectedPlugin?.icon_url}}" name="puzzle-piece" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/>
+      </span><span>$t:admin.plugins.modals.uninstall_confirm|name={{_global.selectedPlugin.name}}</span></p>
+      <p class="mt-2 text-label-subtle">$t:admin.plugins.modals.uninstall_warning</p>
+    </div>
+    <div data-ref="delete_data_option" data-if="{{!(_global.pluginUninstallBackups?.length)}}" class="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div class="flex-start gap-2">
+        <checkbox id="delete_plugin_data_checkbox" checked="{{_global.deletePluginData || false}}" class="mt-0.5">
+          <on type="change">
+            <!-- 켤 때만 「무엇이 지워지는지」를 물어 온다. 물어보기 전에 지난 결과를 먼저 비워, 다른 플러그인에서 받아 둔 목록이 잠깐 보이는 일을 막는다. 끌 때는 조회하지 않는다. -->
+            <conditions>
+              <when if="{{$event.target.checked}}">
+                <set-state target="global" :deletePluginData="true" :pluginUninstallInfo="null"/>
+                <api-call :auth_required="true" target="/api/admin/plugins/{{_global.selectedPlugin.identifier}}/uninstall-info" method="GET">
+                  <success>
+                    <set-state target="global" pluginUninstallInfo="{{response.data}}"/>
+                  </success>
+                </api-call>
+              </when>
+              <else>
+                <set-state target="global" :deletePluginData="false"/>
+              </else>
+            </conditions>
+          </on>
+        </checkbox>
+        <div>
+          <label for="delete_plugin_data_checkbox" class="text-body cursor-pointer">$t:admin.plugins.modals.delete_data_option</label>
+          <p class="form-hint">$t:admin.plugins.modals.delete_data_warning</p>
+        </div>
+      </div>
+    </div>
+    <div data-ref="extension_directory_section" data-if="{{!(_global.pluginUninstallBackups?.length)}}" class="mt-4 border-t border-gray-200 dark:border-gray-600 pt-4">
+      <span class="text-primary text-sm font-semibold">$t:admin.plugins.modals.extension_directory_title</span>
+      <div data-if="{{!_global.pluginUninstallInfo}}" class="flex-center justify-center py-4">
+        <icon name="spinner" class="text-xl animate-spin text-gray-400 dark:text-gray-500"/>
+      </div>
+      <div data-if="{{_global.pluginUninstallInfo &amp;&amp; _global.pluginUninstallInfo.extension_directory}}" class="mt-3">
+        <div class="flex-center gap-2 mb-2">
+          <icon name="folder-open" class="text-base text-gray-500"/>
+          <span class="text-body font-medium">$t:admin.plugins.modals.extension_directory_section</span>
+          <span class="text-tertiary">($t:admin.plugins.modals.tables_total|size={{_global.pluginUninstallInfo.extension_directory.size_formatted}})</span>
+        </div>
+        <div class="ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+          <div class="flex-between px-3 py-1.5">
+            <span class="text-xs font-mono text-gray-700 dark:text-gray-300">{{_global.pluginUninstallInfo.extension_directory.path}}</span>
+            <span class="text-tertiary">{{_global.pluginUninstallInfo.extension_directory.size_formatted}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="uninstall_info_section" data-if="{{(_global.deletePluginData) &amp;&amp; (!(_global.pluginUninstallBackups?.length))}}" class="mt-4">
+      <div class="border-t border-gray-200 dark:border-gray-600 pt-4">
+        <span class="text-primary text-sm font-semibold">$t:admin.plugins.modals.delete_data_info_title</span>
+      </div>
+      <div data-if="{{!_global.pluginUninstallInfo}}" class="flex-center justify-center py-4">
+        <icon name="spinner" class="text-xl animate-spin text-gray-400 dark:text-gray-500"/>
+      </div>
+      <div data-if="{{_global.pluginUninstallInfo}}" class="mt-3 space-y-4">
+        <div>
+          <div class="flex-center gap-2 mb-2">
+            <icon name="database" class="text-base text-gray-500"/>
+            <span class="text-body font-medium">$t:admin.plugins.modals.tables_section</span>
+            <span data-if="{{_global.pluginUninstallInfo.tables &amp;&amp; _global.pluginUninstallInfo.tables.length > 0}}" class="text-tertiary">($t:admin.plugins.modals.tables_total|size={{_global.pluginUninstallInfo.total_table_size_formatted}})</span>
+          </div>
+          <p data-if="{{!_global.pluginUninstallInfo.tables || _global.pluginUninstallInfo.tables.length === 0}}" class="text-tertiary ml-6">$t:admin.plugins.modals.no_tables</p>
+          <div data-if="{{_global.pluginUninstallInfo.tables &amp;&amp; _global.pluginUninstallInfo.tables.length > 0}}" class="ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+            <div data-each="table in _global.pluginUninstallInfo.tables" class="flex-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+              <span class="text-xs font-mono text-gray-700 dark:text-gray-300">{{table.name}}</span>
+              <span class="text-tertiary">{{table.size_formatted ?? '$t:admin.plugins.modals.size_unknown'}}</span>
+            </div>
+          </div>
+        </div>
+        <div data-if="{{_global.pluginUninstallInfo.shared_records &amp;&amp; _global.pluginUninstallInfo.shared_records.length > 0}}">
+          <div class="flex-center gap-2 mb-2">
+            <icon name="share-nodes" class="text-base text-gray-500"/>
+            <span class="text-body font-medium">$t:admin.plugins.modals.shared_records_section</span>
+          </div>
+          <div class="ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+            <div data-each="rec in _global.pluginUninstallInfo.shared_records" class="flex-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+              <span class="text-xs font-medium text-gray-700 dark:text-gray-300">$t:admin.plugins.modals.shared.{{rec.label_key}}</span>
+              <span class="text-tertiary">$t:admin.plugins.modals.shared_records_count|count={{rec.count}}</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="flex-center gap-2 mb-2">
+            <icon name="folder" class="text-base text-gray-500"/>
+            <span class="text-body font-medium">$t:admin.plugins.modals.storage_section</span>
+            <span data-if="{{_global.pluginUninstallInfo.storage_directories &amp;&amp; _global.pluginUninstallInfo.storage_directories.length > 0}}" class="text-tertiary">($t:admin.plugins.modals.storage_total|size={{_global.pluginUninstallInfo.total_storage_size_formatted}})</span>
+          </div>
+          <p data-if="{{!_global.pluginUninstallInfo.storage_directories || _global.pluginUninstallInfo.storage_directories.length === 0}}" class="text-tertiary ml-6">$t:admin.plugins.modals.no_storage</p>
+          <div data-if="{{_global.pluginUninstallInfo.storage_directories &amp;&amp; _global.pluginUninstallInfo.storage_directories.length > 0}}" class="ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+            <div data-each="dir in _global.pluginUninstallInfo.storage_directories" class="flex-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+              <span class="text-xs font-mono text-gray-700 dark:text-gray-300">{{dir.name}}</span>
+              <span class="text-tertiary">{{dir.size_formatted}}</span>
+            </div>
+          </div>
+        </div>
+        <div data-if="{{_global.pluginUninstallInfo.vendor_directory}}">
+          <div class="flex-center gap-2 mb-2">
+            <icon name="cube" class="text-base text-gray-500"/>
+            <span class="text-body font-medium">$t:admin.plugins.modals.vendor_section</span>
+            <span class="text-tertiary">({{_global.pluginUninstallInfo.vendor_directory.total_size_formatted}})</span>
+          </div>
+          <div class="ml-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+            <div data-each="vendorItem in _global.pluginUninstallInfo.vendor_directory.items" class="flex-between px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+              <span class="text-xs font-mono text-gray-700 dark:text-gray-300">{{vendorItem.name}}</span>
+              <span class="text-tertiary">{{vendorItem.size_formatted}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="preserved_backups_section" data-if="{{_global.pluginUninstallBackups?.length}}" class="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div class="flex-center gap-2">
+        <icon name="folder-open" class="text-base text-gray-500"/>
+        <span class="text-body font-medium">$t:admin.plugins.modals.preserved_title</span>
+      </div>
+      <p class="mt-2 text-label-subtle">$t:admin.plugins.modals.preserved_desc</p>
+      <div class="mt-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+        <div data-each="backup in _global.pluginUninstallBackups" class="px-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+          <span class="text-xs font-mono text-gray-700 dark:text-gray-300 select-all break-all">{{backup.archive}}</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons sticky bottom-0 items-center px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+      <button data-if="{{!(_global.pluginUninstallBackups?.length)}}" class="btn btn-secondary" disabled="{{_global.isPluginUninstalling}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button data-if="{{!(_global.pluginUninstallBackups?.length)}}" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPluginUninstalling}}">
+        <on type="click">
+          <!-- 자료까지 지울지를 본문에 실어 보낸다(체크를 건드린 적 없으면 끔으로 친다). 끝난 뒤 목록·관리자 메뉴를 함께 다시 받아, 사라진 플러그인의 메뉴가 남지 않게 한다.
+               실어 둔 JS·CSS 를 걷어 낼 식별자는 고른 플러그인에서 읽는다 — 제거 응답에는 보존 백업 목록뿐이라 식별자가 없다. 그래서 선택을 비우는 setState 보다 앞에 둔다. -->
+          <sequence>
+            <set-state target="global" :isPluginUninstalling="true"/>
+            <api-call :auth_required="true" target="/api/admin/plugins/uninstall" method="DELETE">
+              <success>
+                <set-state target="global" :isPluginUninstalling="false"/>
+                <set-state target="global" pluginUninstallBackups="{{response.data?.preserved_backups ?? []}}"/>
+                <toast type="success" message="$t:admin.plugins.uninstall_success"/>
+                <refetch-data-source dataSourceId="plugins"/>
+                <refetch-data-source dataSourceId="admin_menu"/>
+                <reload-extensions pluginInfo="{{_global.selectedPlugin}}" action="remove"/>
+                <close-modal if="{{!(response.data?.preserved_backups?.length)}}"/>
+                <set-state if="{{!(response.data?.preserved_backups?.length)}}" target="global" :selectedPlugin="null" :deletePluginData="false" :pluginUninstallInfo="null"/>
+              </success>
+              <fail>
+                <set-state target="global" :isPluginUninstalling="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+              <body plugin_name="{{_global.selectedPlugin.identifier}}" delete_data="{{_global.deletePluginData || false}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isPluginUninstalling}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isPluginUninstalling ? '$t:admin.plugins.uninstalling' : '$t:admin.plugins.actions.uninstall'}}</span>
+      </button>
+      <button data-if="{{_global.pluginUninstallBackups?.length}}" class="btn btn-secondary">
+        <on type="click">
+          <!-- 보존된 백업 안내를 본 뒤 닫는다 — 대상·데이터 삭제 선택·안내·백업 목록을 전부 비워야 다음에 다른 플러그인을 지울 때 이전 백업 경로가 남아 보이지 않는다. -->
+          <sequence>
+            <close-modal/>
+            <!-- 창을 먼저 닫고 선택을 비운다 — 먼저 비우면 닫히는 몇 초 동안 문구의 확장 이름 자리가 빈 표시로 보였다(7.1.0 O-G3-7). -->
+            <set-state target="global" :selectedPlugin="null" :deletePluginData="false" :pluginUninstallInfo="null" :pluginUninstallBackups="null"/>
+          </sequence>
+        </on>
+        <span>$t:common.close</span>
+      </button>
+    </div>
+  </modal>
+</partial>

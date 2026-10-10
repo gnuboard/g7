@@ -1,0 +1,113 @@
+<!-- 예약 작업(스케줄) 관리. 목록 표는 조각(`_tab_schedules`)이 갖고 있고 여기에는 뼈대와 창 다섯이 있다.
+  등록·수정이 별도 화면이 아니라 **한 폼 창**이다 — 대상과 편집 여부를 전역에 담아 그 창이 겸한다.
+  탭이 둘이지만 큐 탭은 아직 잠겨 있다(`:disabled`) — 자리만 잡아 둔 상태다. -->
+<layout name="admin_schedule_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:admin.schedules.page_title" description="$t:admin.schedules.page_description"/>
+  <!-- 예약 작업 목록. 조건 열둘을 전부 `query.*` 에서 읽는다(필터는 표 조각이 갖고 있다). -->
+  <data-source id="schedules" label_key="$t:editor.data_source.schedules" type="api" endpoint="/api/admin/schedules" method="GET" :auto_fetch="true" :auth_required="true">
+    <params page="{{query.page ?? 1}}" per_page="{{query.per_page ?? 20}}" search="{{query.search}}" type="{{query.type}}" frequency="{{query.frequency}}" status="{{query.status}}" last_result="{{query.last_result}}" without_overlapping="{{query.without_overlapping}}" run_in_maintenance="{{query.run_in_maintenance}}" created_from="{{query.created_from}}" created_to="{{query.created_to}}" sort_by="{{query.sort_by ?? 'created_at'}}" sort_order="{{query.sort_order ?? 'desc'}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="per_page" :value="20"/>
+          <field name="total" :value="0"/>
+          <field name="has_more_pages" :value="false"/>
+        </field>
+      </field>
+    </fallback>
+  </data-source>
+  <init-local>
+    <field name="searchQuery" value=""/>
+    <field name="searchType" value=""/>
+  </init-local>
+  <permissions>
+    <permission>core.schedules.read</permission>
+  </permissions>
+  <transition-overlay target="schedules_tab_content" fallback-target="right_content_area">
+    <wait-for>schedules</wait-for>
+  </transition-overlay>
+  <!-- 검색 실행 — 표 조각의 검색창이 부른다. 빈 값은 쿼리에서 빼고 페이지를 1로 되돌리며,
+       나머지 필터는 유지한다(`mergeQuery`). 대기 표시는 표 본문에만 건다. -->
+  <action name="searchSchedules">
+    <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
+      <query search="{{_local.searchQuery || undefined}}" search_type="{{_local.searchType || undefined}}" :page="1"/>
+    </navigate>
+  </action>
+  <init>
+    <set-state target="global">
+      <field name="_local">
+        <field name="searchQuery" value="{{query.search || ''}}"/>
+        <field name="searchType" value="{{query.search_type || ''}}"/>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="schedule_list_content" class="admin-page-content">
+      <responsive on="portable" class="admin-page-content-compact"/>
+      <page-header data-type="composite" data-ref="page_header" title="$t:admin.schedules.title" description="$t:admin.schedules.description">
+        <icon-button data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
+          <on type="click">
+            <!-- 새로고침 겸 조건 초기화. 경로를 고정하지 않고 **지금 있는 경로 그대로** 다시 밟는다 —
+                 탭이 둘이라 목적지를 박아 두면 큐 탭에서 눌렀을 때 다른 탭으로 튄다. -->
+            <navigate path="{{route.path}}" :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+        </icon-button>
+        <button data-ref="add_schedule_button" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{schedules?.data?.abilities?.can_create !== true}}">
+          <on type="click">
+            <!-- 새 예약 — 폼 창을 등록 모드로 연다. 대상을 **비우고** 여는 것이 핵심이다.
+                 그 창은 수정과 겸용이라, 안 비우면 직전에 고친 예약의 값이 새 등록에 실린다. -->
+            <sequence>
+              <set-state target="global" :selectedSchedule="null" :isEditMode="false">
+                <field name="scheduleForm">
+                  <field name="type" value="artisan"/>
+                  <field name="frequency" value="daily"/>
+                  <field name="without_overlapping" :value="true"/>
+                  <field name="run_in_maintenance" :value="false"/>
+                  <field name="is_active" :value="true"/>
+                </field>
+              </set-state>
+              <open-modal target="schedule_form_modal"/>
+            </sequence>
+          </on>
+          <icon name="plus" size="md"/>
+          <span>$t:admin.schedules.register_schedule</span>
+        </button>
+      </page-header>
+      <div data-ref="tab_navigation_wrapper" class="sticky-tab-nav">
+        <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{route.path === '/admin/schedules/queue' ? 'queue' : 'schedules'}}" variant="default">
+          <prop name="tabs">
+            <item id="schedules" label="$t:admin.schedules.tabs.schedules" iconName="clock"/>
+            <item id="queue" label="$t:admin.schedules.tabs.queue" iconName="chart-column" :disabled="true"/>
+          </prop>
+          <on type="change" event="onTabChange">
+            <!-- 탭 전환 — 탭이 **URL 경로**라 이동이다. 기본 탭만 경로 뒤가 비고 나머지는 이름이 붙는다.
+                 마지막 스크롤은 목록 아래쪽에 머문 화면을 위로 되돌린다. -->
+            <sequence>
+              <navigate path="/admin/schedules{{$args[0] === 'schedules' ? '' : '/' + $args[0]}}"/>
+              <scroll-into-view selector="#main_content" behavior="instant" block="start" :waitForElement="true" :timeout="1000"/>
+            </sequence>
+          </on>
+        </tab-navigation>
+      </div>
+      <div data-ref="schedules_tab_content" class="tab-content">
+        <include src="partials/admin_schedule_list/_tab_schedules.g7.html"/>
+      </div>
+    </div>
+  </slot>
+  <!-- 등록·수정 겸용 폼 창. 어느 쪽인지는 전역 `isEditMode` 와 `selectedSchedule` 로 정해진다. -->
+  <modal src="partials/admin_schedule_list/_modal_form.g7.html"/>
+  <!-- 삭제 확인 창 — 표 행 메뉴가 연다. -->
+  <modal src="partials/admin_schedule_list/_modal_delete.g7.html"/>
+  <!-- 즉시 실행 확인 창. 예약 시각과 무관하게 지금 한 번 돌리는 것이라 확인을 받는다. -->
+  <modal src="partials/admin_schedule_list/_modal_run.g7.html"/>
+  <!-- 실행 이력 창(성공·실패와 출력) — 조회 전용이다. -->
+  <modal src="partials/admin_schedule_list/_modal_history.g7.html"/>
+  <!-- 복제 창. 등록 폼을 다시 쓰지 않고 별도 창을 둔 것은, 복제는 이름만 바꿔 바로 만드는 동작이라
+       입력 항목이 훨씬 적기 때문이다. -->
+  <modal src="partials/admin_schedule_list/_modal_duplicate.g7.html"/>
+</layout>

@@ -1,0 +1,40 @@
+feature: 이커머스 「하루」 경계 — 공용 집계·라벨 기간은 사이트 표준시 (7.1.0 전수 실측 QE-O1·O2·O3)
+
+description: |
+  원칙(2026-10-07): 유저가 보는 화면은 유저의 시간대 기준, 서버에 기록되는 시각은 UTC. 다만 날짜당 1행 집계·
+  공용 캐시처럼 보는 사람마다 경계를 둘 수 없는 값은 사이트 표준시(방문자 통계 AnalyticsClock·게시판 대시보드와 같은 규정).
+
+  이커머스의 하루 경계 네 곳이 UTC 자정으로 잘려 한국 시간 새벽 0~9시 주문이 전날로 묶였다.
+  - 대시보드 일별 집계(ecommerce_stats)·「오늘」 배지·추이 그래프: 사이트 하루로 행을 만들고 읽는다.
+  - 집계 명령 미리보기(--dry-run): 실제 집계와 같은 사이트 하루로 보인다.
+  - 주문 통계(오늘 주문 수·오늘/이번 달 매출): 키 하나짜리 전역 캐시라 사이트 하루·달.
+  - 상품 라벨 기간(날짜만 저장, 모든 방문자에게 같은 라벨): 사이트 표준시의 오늘로 판정(쿠폰 유효기간과 같은 기준).
+  저장 시각은 그대로 UTC 이고, 질의할 때 사이트 하루를 UTC 범위로 바꾼다.
+  - 대시보드 「오늘」 배지 → 주문 목록 링크의 날짜: 배지가 센 하루와 같은 사이트 표준시의 오늘.
+
+  관리자 화면의 날짜 버튼(목록 빠른 기간 setDateRange·상품 라벨 기간 버튼 두 곳)은 보는 관리자의 계정 시간대
+  (회원 시간대 → 사이트 기본 시간대)의 오늘로 날짜를 만든다 — UTC(`toISOString`)·브라우저 날짜가 아니라.
+
+axes:
+  boundary: [ecommerce_stats_daily, aggregate_command_preview, order_statistics, product_label_period, admin_quick_dates]
+  timezone: [site, account]
+
+exclusions:
+  - { boundary: ecommerce_stats_daily, timezone: account, reason: "하루 1행 공용 집계 — 사이트 표준시만 해당" }
+  - { boundary: aggregate_command_preview, timezone: account, reason: "CLI 미리보기 — 사이트 표준시만 해당" }
+  - { boundary: order_statistics, timezone: account, reason: "전역 캐시 — 사이트 표준시만 해당" }
+  - { boundary: admin_quick_dates, timezone: site, reason: "관리자가 고르는 날짜 — 그 관리자의 계정 시간대만 해당" }
+
+effects:
+  - ecommerce_stats_rows_follow_site_day
+  - ecommerce_stats_day_spans_dst_transition_day
+  - ecommerce_aggregate_preview_starts_at_site_today
+  - ecommerce_order_statistics_follow_site_day_and_month
+  - ecommerce_label_period_follows_site_today
+  - ecommerce_today_badge_links_use_site_today
+  - ecommerce_admin_date_buttons_use_account_timezone
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/EcommerceDayBoundaryTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/accountTimezoneDates.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-dashboard-commerce-today-link.test.ts

@@ -45,6 +45,7 @@ effects:
   - seo_guard_passes_absolute_cdn_url_unmodified
   - cross_origin_asset_request_omits_session_token
   - s3_credentials_visible_when_public_asset_disk_is_s3
+  - stale_disk_normalized_with_notice
 
 test_files:
   - tests/Unit/Extension/Storage/CoreStorageDriverTest.php

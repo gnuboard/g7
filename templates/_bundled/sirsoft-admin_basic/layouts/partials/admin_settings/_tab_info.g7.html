@@ -1,0 +1,238 @@
+<!-- 정보 탭 — **저장할 것이 없는 유일한 탭**이다(그래서 화면 하단 공용 저장 버튼도 이 탭에서는 숨는다).
+  서버·프레임워크 정보를 보여 주고, 코어 새 버전 확인과 변경 이력 보기 두 동작이 있다. -->
+<partial description="환경설정 정보 탭 콘텐츠">
+  <div data-ref="tab_content_info" data-if="{{(_global.activeSettingsTab || query.tab) === 'info'}}">
+    <div data-ref="opcache_warning" data-if="{{systemInfo?.data?.opcache?.enabled === false}}" class="alert-warning">
+      <div class="flex-center gap-3">
+        <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+        <p class="text-warning-soft">$t:admin.settings.info.opcache_disabled_warning</p>
+      </div>
+    </div>
+    <div class="grid-2col-responsive">
+      <div data-ref="card_system_info" class="admin-card">
+        <h3 class="card-title">$t:admin.settings.info.system_info</h3>
+        <div class="card-description">$t:admin.settings.info.system_info_desc</div>
+        <div class="row-stack">
+          <div class="flex-between">
+            <span class="text-label">$t:admin.settings.info.os</span>
+            <span class="text-heading">{{systemInfo?.data?.os_info ?? '-'}}</span>
+          </div>
+          <div class="flex-between">
+            <span class="text-label">$t:admin.settings.info.web_server</span>
+            <span class="text-heading">{{systemInfo?.data?.web_server ?? '-'}}</span>
+          </div>
+          <div class="flex-between">
+            <span class="text-label">$t:admin.settings.info.php_version</span>
+            <span class="text-heading">{{systemInfo?.data?.php_version ?? '-'}}</span>
+          </div>
+          <div class="flex-between">
+            <span class="text-label">$t:admin.settings.info.mysql_version</span>
+            <span class="text-heading">{{systemInfo?.data?.mysql_version ?? '-'}}</span>
+          </div>
+          <div class="flex-between">
+            <span class="text-label">$t:admin.settings.info.g7_version</span>
+            <div class="flex-center gap-2">
+              <span class="text-heading">{{systemInfo?.data?.g7_version ?? '-'}}</span>
+              <status-badge data-type="composite" data-if="{{_local.coreUpdateInfo?.update_available}}" status="success" label="{{_local.coreUpdateInfo?.latest_version ?? ''}}"/>
+              <button type="button" class="px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50" disabled="{{_local.checkingCoreUpdate}}">
+                <on type="click">
+                  <!-- 코어 새 버전 확인 — 결과(있음/없음 모두)를 창으로 띄운다.
+                       받은 값을 **부모 화면 상태**에 담아 두는 것이 중요하다. 결과 창과 이력 창이
+                       그 값을 `$parent` 로 읽으므로, 여기서 담지 않으면 창이 빈 채로 뜬다. -->
+                  <sequence>
+                    <set-state target="local" :checkingCoreUpdate="true"/>
+                    <api-call :auth_required="true" target="/api/admin/core-update/check" method="POST">
+                      <success>
+                        <set-state target="local" :checkingCoreUpdate="false" coreUpdateInfo="{{result.data}}"/>
+                        <open-modal target="core_update_result_modal"/>
+                      </success>
+                      <fail>
+                        <set-state target="local" :checkingCoreUpdate="false" coreUpdateError="{{error.errors?.reason ?? ''}}"/>
+                        <toast type="error" message="{{error.errors?.reason ?? $t('admin.settings.info.update_check_failed')}}"/>
+                      </fail>
+                    </api-call>
+                  </sequence>
+                </on>
+                <icon data-if="{{_local.checkingCoreUpdate}}" name="spinner" class="text-xs animate-spin"/>
+                <span data-if="{{!_local.checkingCoreUpdate}}">$t:admin.settings.info.check_update</span>
+              </button>
+              <button type="button" class="px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50" disabled="{{_local.loadingChangelog}}">
+                <on type="click">
+                  <!-- 변경 이력 보기 — 버전 확인과 달리 **범위를 지정하지 않아** 전체 이력을 받는다
+                       (결과 창 안의 이력 버튼은 현재↔최신 구간만 받는다). -->
+                  <sequence>
+                    <set-state target="local" :loadingChangelog="true"/>
+                    <api-call :auth_required="true" target="/api/admin/core-update/changelog" method="GET">
+                      <success>
+                        <set-state target="local" :loadingChangelog="false" coreChangelog="{{result.data.changelog ?? []}}"/>
+                        <open-modal target="core_changelog_modal"/>
+                      </success>
+                      <fail>
+                        <set-state target="local" :loadingChangelog="false"/>
+                        <toast type="error" message="{{error.message ?? '$t:admin.settings.info.changelog_load_failed'}}"/>
+                      </fail>
+                    </api-call>
+                  </sequence>
+                </on>
+                <icon data-if="{{_local.loadingChangelog}}" name="spinner" class="text-xs animate-spin"/>
+                <span data-if="{{!_local.loadingChangelog}}">$t:admin.settings.info.view_changelog</span>
+              </button>
+            </div>
+          </div>
+          <div class="flex-between">
+            <span class="text-label">$t:admin.settings.info.laravel_version</span>
+            <span class="text-heading">{{systemInfo?.data?.laravel_version ?? '-'}}</span>
+          </div>
+        </div>
+      </div>
+      <div data-ref="card_system_specs" class="admin-card">
+        <h3 class="card-title">$t:admin.settings.info.system_specs</h3>
+        <div class="card-description">$t:admin.settings.info.system_specs_desc</div>
+        <div class="row-stack">
+          <div class="flex-between">
+            <span class="text-label">$t:admin.settings.info.cpu</span>
+            <span class="text-heading">{{systemInfo?.data?.cpu_info ?? '-'}}</span>
+          </div>
+          <div class="flex-between">
+            <span class="text-label">$t:admin.settings.info.memory</span>
+            <span class="text-heading">{{systemInfo?.data?.memory_usage?.used ?? '-'}} / {{systemInfo?.data?.memory_usage?.total ?? '-'}} ({{systemInfo?.data?.memory_usage?.percentage ?? 0}}%)</span>
+          </div>
+          <div class="flex-between">
+            <span class="text-label">$t:admin.settings.info.disk</span>
+            <span class="text-heading">{{systemInfo?.data?.disk_usage?.used ?? '-'}} / {{systemInfo?.data?.disk_usage?.total ?? '-'}} ({{systemInfo?.data?.disk_usage?.percentage ?? 0}}%)</span>
+          </div>
+          <div class="flex-between">
+            <span class="text-label">$t:admin.settings.info.php_memory</span>
+            <span class="text-heading">{{systemInfo?.data?.php_memory_limit ?? '-'}}</span>
+          </div>
+          <div data-ref="opcache_row" class="flex-between">
+            <span class="text-label">$t:admin.settings.info.opcache</span>
+            <span class="text-heading">{{systemInfo?.data?.opcache?.enabled === true ? $t('admin.settings.info.opcache_enabled') : (systemInfo?.data?.opcache?.enabled === false ? $t('admin.settings.info.opcache_disabled') : $t('admin.settings.info.opcache_unknown'))}}</span>
+          </div>
+          <div class="flex-between">
+            <span class="text-label">$t:admin.settings.info.max_execution_time</span>
+            <span class="text-heading">{{systemInfo?.data?.max_execution_time ?? '-'}}</span>
+          </div>
+          <div class="flex-between">
+            <span class="text-label">$t:admin.settings.info.upload_size</span>
+            <span class="text-heading">{{systemInfo?.data?.upload_max_filesize ?? '-'}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_install_paths" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.info.install_paths</h3>
+      <div class="card-description">$t:admin.settings.info.install_paths_desc</div>
+      <div>
+        <div class="row-stack">
+          <div class="grid-2col-responsive">
+            <div class="flex-between py-2">
+              <span class="text-label">$t:admin.settings.info.install_path</span>
+              <span class="text-primary text-sm font-mono break-all">{{systemInfo?.data?.install_path ?? '-'}}</span>
+            </div>
+            <div class="flex-between py-2">
+              <span class="text-label">$t:admin.settings.info.config_file</span>
+              <span class="text-primary text-sm font-mono break-all">{{systemInfo?.data?.config_path ?? '-'}}</span>
+            </div>
+          </div>
+          <div class="grid-2col-responsive">
+            <div class="flex-between py-2">
+              <span class="text-label">$t:admin.settings.info.log_path</span>
+              <span class="text-primary text-sm font-mono break-all">{{systemInfo?.data?.log_path ?? '-'}}</span>
+            </div>
+            <div class="flex-between py-2">
+              <span class="text-label">$t:admin.settings.info.upload_path</span>
+              <span class="text-primary text-sm font-mono break-all">{{systemInfo?.data?.upload_path ?? '-'}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_database_config" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.info.database_config</h3>
+      <div class="card-description">$t:admin.settings.info.database_config_desc</div>
+      <div class="row-stack">
+        <div class="flex-center gap-2">
+          <span class="text-body font-medium">$t:admin.settings.info.config_type</span>
+          <span class="{{systemInfo?.data?.database_config?.has_read_write_split ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}">{{systemInfo?.data?.database_config?.has_read_write_split ? $t('admin.settings.info.read_write_split') : $t('admin.settings.info.write_only')}}</span>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+            <p class="text-body font-medium mb-3">$t:admin.settings.info.write_db</p>
+            <div class="row-stack">
+              <div class="flex-between py-1.5">
+                <span class="text-label">$t:admin.settings.info.db_host</span>
+                <span class="text-primary text-sm font-mono">{{systemInfo?.data?.database_config?.write?.host ?? '-'}}</span>
+              </div>
+              <div class="flex-between py-1.5">
+                <span class="text-label">$t:admin.settings.info.db_port</span>
+                <span class="text-primary text-sm font-mono">{{systemInfo?.data?.database_config?.write?.port ?? '-'}}</span>
+              </div>
+              <div class="flex-between py-1.5">
+                <span class="text-label">$t:admin.settings.info.db_name</span>
+                <span class="text-primary text-sm font-mono">{{systemInfo?.data?.database_config?.write?.database ?? '-'}}</span>
+              </div>
+              <div class="flex-between py-1.5">
+                <span class="text-label">$t:admin.settings.info.db_user</span>
+                <span class="text-primary text-sm font-mono">{{systemInfo?.data?.database_config?.write?.username ?? '-'}}</span>
+              </div>
+            </div>
+          </div>
+          <div data-if="{{systemInfo?.data?.database_config?.has_read_write_split}}" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+            <p class="text-body font-medium mb-3">$t:admin.settings.info.read_db</p>
+            <div>
+              <div data-each="replica, replicaIndex in systemInfo?.data?.database_config?.read ?? []">
+                <p data-if="{{(systemInfo?.data?.database_config?.read?.length ?? 0) > 1}}" class="text-tertiary font-medium mb-2">Replica #{{replicaIndex + 1}}</p>
+                <div class="row-stack">
+                  <div class="flex-between py-1.5">
+                    <span class="text-label">$t:admin.settings.info.db_host</span>
+                    <span class="text-primary text-sm font-mono">{{replica?.host ?? '-'}}</span>
+                  </div>
+                  <div class="flex-between py-1.5">
+                    <span class="text-label">$t:admin.settings.info.db_port</span>
+                    <span class="text-primary text-sm font-mono">{{replica?.port ?? '-'}}</span>
+                  </div>
+                  <div class="flex-between py-1.5">
+                    <span class="text-label">$t:admin.settings.info.db_name</span>
+                    <span class="text-primary text-sm font-mono">{{replica?.database ?? '-'}}</span>
+                  </div>
+                  <div class="flex-between py-1.5">
+                    <span class="text-label">$t:admin.settings.info.db_user</span>
+                    <span class="text-primary text-sm font-mono">{{replica?.username ?? '-'}}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div data-if="{{!systemInfo?.data?.database_config?.has_read_write_split}}" class="flex-center bg-gray-50 dark:bg-gray-900 rounded-lg p-4 justify-center">
+            <p class="text-label-subtle">$t:admin.settings.info.no_read_db</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_php_extensions" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.info.php_extensions</h3>
+      <div class="card-description">$t:admin.settings.info.php_extensions_desc</div>
+      <div class="row-stack">
+        <div>
+          <p class="text-body font-medium mb-3">$t:admin.settings.info.required_modules</p>
+          <div class="module-badge-grid">
+            <div data-each="ext in Object.entries(systemInfo?.data?.php_extensions?.required ?? {})" class="flex-center gap-1.5">
+              <icon name="{{ext[1] ? 'check' : 'x'}}" class="{{ext[1] ? 'text-base text-green-500 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"/>
+              <span class="text-body">{{ext[0]}}</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <p class="text-body font-medium mb-3">$t:admin.settings.info.optional_modules</p>
+          <div class="module-badge-grid">
+            <div data-each="ext in Object.entries(systemInfo?.data?.php_extensions?.optional ?? {})" class="flex-center gap-1.5">
+              <icon name="{{ext[1] ? 'check' : 'x'}}" class="{{ext[1] ? 'text-base text-green-500 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"/>
+              <span class="text-body">{{ext[0]}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

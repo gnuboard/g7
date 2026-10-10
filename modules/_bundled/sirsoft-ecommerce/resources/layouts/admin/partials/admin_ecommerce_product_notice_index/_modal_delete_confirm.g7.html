@@ -1,0 +1,52 @@
+<!-- 상품 공지 템플릿 삭제 확인 창. 지울 대상은 여는 쪽이 `_global.modal_data` 에 담아 준 이름·id 다.
+  삭제 후 목록을 다시 부르기 전에 **무한 스크롤 상태를 처음으로 되돌린다** — 이 목록은 쪽을 이어
+  붙이며 쌓이는 구조라, 되돌리지 않으면 재조회가 2쪽부터 이어 붙어 첫 쪽이 사라진다.
+  이어서 선택을 비우고 패널을 빈 상태로 되돌린다(지운 항목이 선택된 채 남으면 빈 상세가 뜬다). -->
+<partial description="Product Notice Template Delete Confirmation Modal">
+  <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:sirsoft-ecommerce.admin.product_notice_template.modals.delete.title" size="medium">
+    <div>
+      <div>
+        <p class="text-primary text-base">{{$localized(_global.modal_data?.templateName)}}{{$t('sirsoft-ecommerce.admin.product_notice_template.modals.delete.message_suffix')}}</p>
+        <p class="text-sm text-red-600 dark:text-red-400 font-medium">$t:sirsoft-ecommerce.admin.product_notice_template.modals.delete.warning</p>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        <on type="click">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button class="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isDeleting}}">
+        <on type="click">
+          <!-- 삭제 실행. 성공 갈래가 무한 스크롤 상태를 되돌린 뒤 목록을 다시 부르고, 마지막에 선택을 비운다. 이 순서를 바꾸면 지운 항목이 잠깐 다시 보이거나 첫 쪽이 빈다. -->
+          <sequence>
+            <set-state target="local" :isDeleting="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/product-notice-templates/{{_global.modal_data.templateId}}" method="DELETE">
+              <success>
+                <set-state target="local" :isDeleting="false"/>
+                <set-state target="global">
+                  <field name="infiniteScroll">
+                    <field name="currentPage" :value="1"/>
+                    <field name="hasMore" :value="true"/>
+                    <field name="isLoadingMore" :value="false"/>
+                  </field>
+                </set-state>
+                <refetch-data-source dataSourceId="templates"/>
+                <set-state target="global" panelMode="empty" :selectedTemplateId="null" :selectedTemplate="null"/>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.product_notice_template.messages.deleted"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="local" :isDeleting="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <span data-if="{{!_local.isDeleting}}">$t:common.delete</span>
+        <span data-if="{{_local.isDeleting}}">$t:common.loading</span>
+      </button>
+    </div>
+  </modal>
+</partial>

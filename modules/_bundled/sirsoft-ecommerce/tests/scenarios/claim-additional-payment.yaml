@@ -1,0 +1,123 @@
+feature: claim_additional_payment
+
+description: |
+  클레임 추가결제 — 수단 · 청구 시점 · 결과(승인 · 실패 · 환급) (#599 S15a)
+
+  회수·왕복 배송비와 교환 차액을 구매자에게서 받는 경로다. 계획서 §9-1 이 이름으로 선언해 두고
+  만들어지지 않았던 도메인 조합축이며, 코어가 아니라 **결제 플러그인과의 계약**이 판정의 절반을
+  갖는다는 점에서 다른 세 매니페스트와 성격이 다르다.
+
+  조용히 갈리는 지점은 넷이다.
+
+  ① **청구 시점은 결제 행이 생기는 순간만 바꾼다.** 신청 시점 결제는 접수와 함께 결제 대기 건을
+     만들고, 승인 시점 결제는 관리자가 승인할 때 만든다. 그 뒤의 결제창·승인·환급은 같은
+     코드를 탄다 — 다만 **결제 확정 뒤의 전이**는 갈린다: 승인 시점 결제는 언제나 승인으로
+     가고, 신청 시점 결제는 설정이 참일 때만 간다.
+
+  ② **환불금 차감은 결제 행을 만들지 않는다.** 그 방식의 회수비는 오직 환불액에서 빠지는
+     형태로만 걷힌다. 결제 대기 건을 만들면 구매자에게 낼 것이 없는 청구서가 열린다.
+
+  ③ **PG 응답 원문은 응답에 실리지 않는다.** 승인 실패의 사유는 결제 행에 기록하고(운영자가
+     조치할 근거), 구매자에게 가는 응답에는 다국어 키만 보낸다. 원문을 그대로 흘리면 PG 사의
+     내부 코드·가맹점 식별자가 구매자 화면에 나타난다.
+
+  ④ **환급은 멱등해야 하고 그 멱등키는 금액이 바뀌면 함께 바뀌어야 한다.** 같은 키로 재시도하면
+     PG 가 앞선 요청을 되돌려주므로, 실패한 환급을 다른 금액으로 다시 시도할 때 키가 그대로면
+     새 금액이 나가지 않는데 성공 응답만 돌아온다.
+
+# axis 의미:
+#   method  — 결제 수단. 마일리지는 코어가 직접 차감하고(FIFO · 결제 건 단위 멱등) 카드는 결제
+#             플러그인 훅이 승인한다. 두 경로는 실패·환급의 처리 주체가 아예 다르다. 확장이
+#             더하는 수단(간편결제 등)은 자기 카탈로그 선언을 따르므로 이 축의 값이 아니다.
+#   timing  — 청구 발행 시점(`pay_on_request` / `pay_on_approval`). `deduct_from_refund` 는
+#             결제 행 자체를 만들지 않아 이 축의 값이 아니며, 그 사실이 이름 붙은 effect 다.
+#   outcome — 결제 행의 종착지. `approved`(결제 확정) · `failed`(승인 거절) · `refunded`(철회·반려
+#             에 따른 환급). `cancelled`(미결제 상태로 취소)는 환급의 한 갈래라 effect 로 둔다.
+#
+# 자동 승인(`auto_approve`)과 다통화(`mc`)는 축이 아니다 — 자동 승인은 결제 확정 **뒤**의 전이
+# 하나를 가르는 설정이고(그 판정은 timing 축이 이미 둘로 나눈다), 다통화는 결제 금액을 주문
+# 스냅샷의 최소 화폐단위로 옮기는 변환이라 어느 조합에서도 같은 규칙을 쓴다. 둘 다 이름 붙은
+# effect 로 고정한다.
+axes:
+  method: [card, point]
+  timing: [on_request, on_approval]
+  outcome: [approved, failed, refunded]
+
+exclusions:
+  - { timing: on_approval, outcome: [failed, refunded], reason: "승인 거절과 환급은 결제 실행 뒤의 축이라 청구가 언제 발행됐는지가 그 경로를 바꾸지 않는다 — 두 시점이 다른 것은 결제 행이 만들어지는 순간과 확정 뒤 전이뿐이고, 그 둘은 approved 칸이 각각 잰다" }
+
+effects:
+  # 결제 행 발행
+  - claim_payment_row_is_created_only_when_the_charge_is_positive
+  - claim_payment_is_not_created_for_deduct_from_refund
+  - claim_payment_on_approval_waits_for_the_admin
+  - claim_payment_on_approval_is_idempotent
+  - claim_payment_method_outside_the_allowed_list_is_rejected
+  - claim_payment_guest_never_gets_a_mileage_payment_row
+  - claim_payment_requires_a_readable_currency_snapshot
+  - claim_payment_number_is_the_merchant_order_id
+  # 결제 실행
+  - claim_payment_mileage_is_deducted_fifo_once_per_payment
+  - claim_payment_mileage_requires_a_member
+  - claim_payment_mileage_insufficient_balance_leaves_the_payment_pending
+  - claim_payment_switching_the_method_moves_the_amount_between_columns
+  - claim_payment_partial_payment_stays_in_payment_pending
+  # PG 승인 — 플러그인 훅 계약
+  - claim_payment_pg_approval_goes_through_the_plugin_hook
+  - claim_payment_pg_approval_is_idempotent_for_a_replayed_callback
+  - claim_payment_pg_approval_without_a_listener_is_rejected
+  - claim_payment_pg_failure_keeps_the_payment_pending_and_records_the_error
+  - claim_payment_pg_failure_message_is_not_leaked_to_the_response
+  - claim_payment_amount_must_match_the_frozen_charge
+  # 결제 확정 뒤 전이
+  - claim_payment_completion_moves_the_claim_to_paid
+  - claim_payment_on_request_auto_approves_only_when_the_setting_is_on
+  - claim_payment_on_approval_always_approves_after_payment
+  - claim_payment_on_hold_approval_keeps_the_claim_in_place   # 보류에서 누른 승인은 결제행만 만들고 신청서를 제자리에 둔다 (S3-D7)
+  - claim_payment_completion_hook_sees_the_claim_already_paid
+  - claim_payment_completion_fires_the_claim_type_specific_hook
+  - claim_payment_completed_notice_fires_once_on_every_path   # 보류→승인 추가결제처럼 paid 를 거치지 않은 결제 확정도 결제 완료 알림 1회 (S1-D8)
+  # 결제 어휘 (ClaimEnumsTest) — 어느 유형·청구 방식이 결제 행을 만들고 어느 상태가 환급 대상인가
+  - claim_type_payable_is_exchange_and_return_only
+  - claim_charge_method_deduct_from_refund_creates_no_payment
+  - claim_payment_status_refundable_only_when_paid
+  - claim_payment_status_final_states_are_cancelled_and_refunded
+
+sub_flows:
+  - id: refund_and_cancel
+    description: |
+      철회·반려에 따른 환급. 미결제 건은 환급 없이 취소되고, 결제된 건은 수단에 따라
+      마일리지 복원 또는 PG 환급 훅을 탄다. 멱등키는 결제 건과 누적 환급액으로 만들어
+      금액이 바뀌면 함께 바뀐다.
+    effects:
+      - claim_payment_refund_cancels_a_pending_payment_without_refunding
+      - claim_payment_refund_restores_mileage_once
+      - claim_payment_point_refund_without_an_owner_is_not_marked_refunded
+      - claim_payment_refund_calls_the_pg_hook_with_an_idempotency_key
+      - claim_payment_refund_idempotency_key_changes_when_the_amount_changes
+      - claim_payment_refund_failure_keeps_the_payment_paid
+      - claim_payment_refund_without_a_listener_is_rejected
+
+  - id: settle_difference
+    description: |
+      운영자가 금액을 고쳤을 때의 차액 정산 — 내려가면 부분 환급, 올라가면 새 청구,
+      0 이 되면 대기 건 취소. 주문 실수납 합계는 그 환급분을 뺀 값이다.
+    effects:
+      - claim_payment_settle_difference_refunds_a_decrease
+      - claim_payment_settle_difference_charges_an_increase
+      - claim_payment_settle_difference_cancels_the_pending_row_at_zero
+      - claim_payment_order_paid_total_excludes_refunded_amounts
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimPaymentServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Enums/ClaimEnumsTest.php
+
+notes: |
+  **없던 칸은 하나였다** — 승인 시점 청구를 카드로 결제해 PG 승인까지 가는 경로다. 착수 시점
+  `ClaimPaymentServiceTest` 44케이스는 승인 시점 청구를 **마일리지**로만 결제해 봤고, 카드
+  승인은 신청 시점 청구로만 재고 있었다. 둘을 나란히 놓기 전에는 그 자리가 비어 있다는 것이
+  드러나지 않는다. 이 세션이 채웠다.
+
+  **PG 실호출은 이 매니페스트의 축이 아니다.** 승인·환급은 결제 플러그인이 훅으로 응답하고,
+  이 스위트는 그 훅의 **계약**(성공/실패/부재/금액 대조/멱등키)만 고정한다. 실제 PG 사와의
+  왕복은 각 플러그인의 스위트와 S17 통합 실측이 갖는다.

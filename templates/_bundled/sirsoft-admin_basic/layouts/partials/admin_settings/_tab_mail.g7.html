@@ -1,0 +1,220 @@
+<!-- 메일 탭 — 발송 방식과 접속 정보를 정하고, **시험 발송** 버튼이 하나 있다.
+  메일 본문 템플릿은 이 탭이 아니라 알림 정의 탭(`_tab_notification_definitions`)이 다룬다. -->
+<partial description="환경설정 메일 탭 콘텐츠">
+  <div data-ref="tab_content_mail" data-if="{{(_global.activeSettingsTab || query.tab || 'general') === 'mail'}}">
+    <div data-ref="card_mail_settings" class="admin-card">
+      <h3 class="card-title">{{_local.form?.mail?.mailer === 'mailgun' ? '$t:admin.settings.mail.mailgun_settings' : (_local.form?.mail?.mailer === 'ses' ? '$t:admin.settings.mail.ses_settings' : '$t:admin.settings.mail.smtp_settings')}}</h3>
+      <div class="card-description">{{_local.form?.mail?.mailer === 'mailgun' ? '$t:admin.settings.mail.mailgun_settings_desc' : (_local.form?.mail?.mailer === 'ses' ? '$t:admin.settings.mail.ses_settings_desc' : '$t:admin.settings.mail.smtp_settings_desc')}}</div>
+      <div class="row-stack">
+        <div data-ref="field_mailer_row" class="grid-2col-responsive">
+          <div data-ref="field_mailer">
+            <label class="form-label">
+              <span>$t:admin.settings.mail.mailer</span>
+              <span class="text-red-500 ml-1">*</span>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.mailer'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <select name="mail.mailer" class="w-full" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.mailer'] === true}}" placeholder="$t:admin.settings.mail.select_mailer" options="{{(_local.form?.available_drivers?.mail ?? []).map(d => ({value: d.id, label: $localized(d.label)}))}}" error="{{_local.errors?.['mail.mailer']?.[0] ?? ''}}"/>
+            <p data-ref="unavailable_driver_notice_mail" data-if="{{!!_local.form?.mail?.mailer &amp;&amp; !(_local.form?.available_drivers?.mail ?? []).some(d => d.id === _local.form?.mail?.mailer)}}" class="text-warning-soft mt-2" data-testid="driver-unavailable-mail">
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_prefix</span>
+              <span class="font-mono">{{_local.form?.mail?.mailer ?? ''}}</span>
+              <span>$t:admin.settings.drivers.common.unavailable_saved_value_suffix</span>
+            </p>
+          </div>
+        </div>
+        <div data-ref="smtp_settings_fields" data-if="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp'}}" class="row-stack">
+          <div class="grid-2col-responsive">
+            <div data-ref="field_encryption">
+              <label class="form-label">$t:admin.settings.mail.encryption</label>
+              <select name="mail.encryption" class="w-full" disabled="{{_computed.isReadOnly}}" placeholder="$t:admin.settings.mail.select_encryption" error="{{_local.errors?.['mail.encryption']?.[0] ?? ''}}">
+                <options>
+                  <option value="tls">TLS</option>
+                  <option value="ssl">SSL</option>
+                  <option value="">$t:admin.settings.mail.none</option>
+                </options>
+              </select>
+            </div>
+            <div data-ref="field_host">
+              <label class="form-label">
+                <span>$t:admin.settings.mail.host</span>
+                <span class="text-red-500 ml-1">*</span>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.host'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="text" name="mail.host" placeholder="smtp.example.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.host'] === true}}" class="input {{_local.errors?.['mail.host'] ? 'input-error' : ''}}"/>
+              <span data-if="{{_local.errors?.['mail.host']}}" class="form-error">{{_local.errors?.['mail.host']?.[0] ?? ''}}</span>
+            </div>
+          </div>
+          <div class="grid-2col-responsive">
+            <div data-ref="field_port">
+              <label class="form-label">
+                <span>$t:admin.settings.mail.port</span>
+                <span class="text-red-500 ml-1">*</span>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.port'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="number" name="mail.port" placeholder="587" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.port'] === true}}" class="input {{_local.errors?.['mail.port'] ? 'input-error' : ''}}"/>
+              <span data-if="{{_local.errors?.['mail.port']}}" class="form-error">{{_local.errors?.['mail.port']?.[0] ?? ''}}</span>
+            </div>
+            <div data-ref="field_username">
+              <label class="form-label">
+                <span>$t:admin.settings.mail.username</span>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.username'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="text" name="mail.username" placeholder="your@email.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.username'] === true}}" class="input"/>
+            </div>
+          </div>
+          <div data-ref="field_password">
+            <label class="form-label">
+              <span>$t:admin.settings.mail.password</span>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.password'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="password" name="mail.password" placeholder="********" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.password'] === true}}" class="input"/>
+          </div>
+        </div>
+        <div data-ref="mailgun_settings_fields" data-if="{{_local.form?.mail?.mailer === 'mailgun'}}" class="row-stack">
+          <div class="grid-2col-responsive">
+            <div data-ref="field_mailgun_domain">
+              <label class="form-label">
+                <span>$t:admin.settings.mail.mailgun_domain</span>
+                <span class="text-red-500 ml-1">*</span>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.mailgun_domain'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="text" name="mail.mailgun_domain" placeholder="mg.example.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.mailgun_domain'] === true}}" class="input {{_local.errors?.['mail.mailgun_domain'] ? 'input-error' : ''}}"/>
+              <span data-if="{{_local.errors?.['mail.mailgun_domain']}}" class="form-error">{{_local.errors?.['mail.mailgun_domain']?.[0] ?? ''}}</span>
+            </div>
+            <div data-ref="field_mailgun_secret">
+              <label class="form-label">
+                <span>$t:admin.settings.mail.mailgun_secret</span>
+                <span class="text-red-500 ml-1">*</span>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.mailgun_secret'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="password" name="mail.mailgun_secret" placeholder="key-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.mailgun_secret'] === true}}" class="input {{_local.errors?.['mail.mailgun_secret'] ? 'input-error' : ''}}"/>
+              <span data-if="{{_local.errors?.['mail.mailgun_secret']}}" class="form-error">{{_local.errors?.['mail.mailgun_secret']?.[0] ?? ''}}</span>
+            </div>
+          </div>
+          <div data-ref="field_mailgun_endpoint">
+            <label class="form-label">
+              <span>$t:admin.settings.mail.mailgun_endpoint</span>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.mailgun_endpoint'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <input type="text" name="mail.mailgun_endpoint" placeholder="api.mailgun.net" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.mailgun_endpoint'] === true}}" class="input"/>
+          </div>
+        </div>
+        <div data-ref="ses_settings_fields" data-if="{{_local.form?.mail?.mailer === 'ses'}}" class="row-stack">
+          <div class="grid-2col-responsive">
+            <div data-ref="field_ses_key">
+              <label class="form-label">
+                <span>$t:admin.settings.mail.ses_key</span>
+                <span class="text-red-500 ml-1">*</span>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.ses_key'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="text" name="mail.ses_key" placeholder="AKIAIOSFODNN7EXAMPLE" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.ses_key'] === true}}" class="input {{_local.errors?.['mail.ses_key'] ? 'input-error' : ''}}"/>
+              <span data-if="{{_local.errors?.['mail.ses_key']}}" class="form-error">{{_local.errors?.['mail.ses_key']?.[0] ?? ''}}</span>
+            </div>
+            <div data-ref="field_ses_secret">
+              <label class="form-label">
+                <span>$t:admin.settings.mail.ses_secret</span>
+                <span class="text-red-500 ml-1">*</span>
+                <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.ses_secret'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+              </label>
+              <input type="password" name="mail.ses_secret" placeholder="********" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.ses_secret'] === true}}" class="input {{_local.errors?.['mail.ses_secret'] ? 'input-error' : ''}}"/>
+              <span data-if="{{_local.errors?.['mail.ses_secret']}}" class="form-error">{{_local.errors?.['mail.ses_secret']?.[0] ?? ''}}</span>
+            </div>
+          </div>
+          <div data-ref="field_ses_region">
+            <label class="form-label">
+              <span>$t:admin.settings.mail.ses_region</span>
+              <span class="text-red-500 ml-1">*</span>
+              <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.ses_region'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+            </label>
+            <select name="mail.ses_region" class="w-full" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.ses_region'] === true}}" placeholder="$t:admin.settings.mail.select_ses_region" error="{{_local.errors?.['mail.ses_region']?.[0] ?? ''}}">
+              <options>
+                <option value="ap-northeast-2">Asia Pacific (Seoul) - ap-northeast-2</option>
+                <option value="ap-northeast-1">Asia Pacific (Tokyo) - ap-northeast-1</option>
+                <option value="ap-southeast-1">Asia Pacific (Singapore) - ap-southeast-1</option>
+                <option value="us-east-1">US East (N. Virginia) - us-east-1</option>
+                <option value="us-west-2">US West (Oregon) - us-west-2</option>
+                <option value="eu-west-1">Europe (Ireland) - eu-west-1</option>
+                <option value="eu-central-1">Europe (Frankfurt) - eu-central-1</option>
+              </options>
+            </select>
+          </div>
+        </div>
+        <div data-ref="common_mail_fields">
+          <div>
+            <div class="grid-2col-responsive">
+              <div data-ref="field_from_address">
+                <label class="form-label">
+                  <span>$t:admin.settings.mail.from_address</span>
+                  <span class="text-red-500 ml-1">*</span>
+                  <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.from_address'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+                </label>
+                <input type="email" name="mail.from_address" placeholder="noreply@example.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.from_address'] === true}}" class="input {{_local.errors?.['mail.from_address'] ? 'input-error' : ''}}"/>
+                <span data-if="{{_local.errors?.['mail.from_address']}}" class="form-error">{{_local.errors?.['mail.from_address']?.[0] ?? ''}}</span>
+              </div>
+              <div data-ref="field_from_name">
+                <label class="form-label">
+                  <span>$t:admin.settings.mail.from_name</span>
+                  <span class="text-red-500 ml-1">*</span>
+                  <badge data-type="composite" data-if="{{_computed.envLocked?.['mail.from_name'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
+                </label>
+                <input type="text" name="mail.from_name" placeholder="그누보드7" disabled="{{_computed.isReadOnly || _computed.envLocked?.['mail.from_name'] === true}}" class="input {{_local.errors?.['mail.from_name'] ? 'input-error' : ''}}"/>
+                <span data-if="{{_local.errors?.['mail.from_name']}}" class="form-error">{{_local.errors?.['mail.from_name']?.[0] ?? ''}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-ref="card_test_mail" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.mail.test_mail</h3>
+      <div class="card-description">$t:admin.settings.mail.test_mail_desc</div>
+      <div class="flex flex-col gap-2 sm:flex-row">
+        <input type="email" name="mail.test_email" placeholder="$t:admin.settings.mail.test_email_placeholder" disabled="{{_computed.isReadOnly}}" class="input flex-1"/>
+        <button data-ref="test_mail_button" disabled="{{_computed.isReadOnly || _local.isSendingTest}}" class="flex-center justify-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+          <on type="click">
+            <!-- 시험 발송 — **저장하지 않은 화면 값으로 보낸다**(저장 전에 접속 정보가 맞는지 보라는 뜻).
+                 그래서 요청 본문이 길다: 발송 방식(smtp/mailgun/ses)에 따라 그쪽 칸만 담고 나머지는
+                 `undefined` 로 빼 서버가 엉뚱한 조합으로 시도하지 않게 한다.
+                 결과는 토스트와 함께 화면 아래 상자에도 남긴다(성공 시 실제 제목·본문까지 보여 준다). -->
+            <sequence>
+              <set-state target="local" :isSendingTest="true" :testMailResult="null" :testMailResultMessage="null"/>
+              <api-call :auth_required="true" target="/api/admin/settings/test-mail" method="POST">
+                <success>
+                  <set-state target="local" :isSendingTest="false" testMailResult="success" testMailResultMessage="$t:admin.settings.mail.test_mail_success" testMailSubject="{{response.data?.subject ?? ''}}" testMailBody="{{response.data?.body ?? ''}}" :testMailError="null"/>
+                  <toast type="success" message="$t:admin.settings.mail.test_mail_success"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSendingTest="false" testMailResult="error" testMailResultMessage="{{error.message || '$t:admin.settings.mail.test_mail_failed'}}" :testMailSubject="null" :testMailBody="null" testMailError="{{typeof error.errors === 'object' ? Object.values(error.errors).flat().join(', ') : (error.errors ?? '')}}"/>
+                  <toast type="error" message="{{error.message || '$t:admin.settings.mail.test_mail_failed'}}"/>
+                </fail>
+                <body to_email="{{_local.form?.mail?.test_email || ''}}" mailer="{{_local.form?.mail?.mailer || 'smtp'}}" from_address="{{_local.form?.mail?.from_address || ''}}" from_name="{{_local.form?.mail?.from_name || ''}}" host="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.host ?? '') : undefined}}" port="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.port ?? 587) : undefined}}" username="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.username ?? '') : undefined}}" password="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.password ?? '') : undefined}}" encryption="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp' ? (_local.form?.mail?.encryption ?? 'tls') : undefined}}" mailgun_domain="{{_local.form?.mail?.mailer === 'mailgun' ? (_local.form?.mail?.mailgun_domain ?? '') : undefined}}" mailgun_secret="{{_local.form?.mail?.mailer === 'mailgun' ? (_local.form?.mail?.mailgun_secret ?? '') : undefined}}" mailgun_endpoint="{{_local.form?.mail?.mailer === 'mailgun' ? (_local.form?.mail?.mailgun_endpoint ?? '') : undefined}}" ses_key="{{_local.form?.mail?.mailer === 'ses' ? (_local.form?.mail?.ses_key ?? '') : undefined}}" ses_secret="{{_local.form?.mail?.mailer === 'ses' ? (_local.form?.mail?.ses_secret ?? '') : undefined}}" ses_region="{{_local.form?.mail?.mailer === 'ses' ? (_local.form?.mail?.ses_region ?? '') : undefined}}"/>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_local.isSendingTest}}" name="spinner" class="spinner-sm"/>
+          <icon data-if="{{!_local.isSendingTest}}" name="paper-plane" class="text-base"/>
+          <span>$t:admin.settings.mail.send_test</span>
+        </button>
+      </div>
+      <div data-ref="test_mail_result" data-if="{{_local.testMailResult}}" class="{{_local.testMailResult === 'success' ? 'mt-4 p-4 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm' : 'mt-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm'}}">
+        <div class="flex-center gap-2">
+          <icon data-if="{{_local.testMailResult === 'success'}}" name="check-circle" class="text-green-500 dark:text-green-400 flex-shrink-0"/>
+          <icon data-if="{{_local.testMailResult === 'error'}}" name="exclamation-circle" class="text-red-500 dark:text-red-400 flex-shrink-0"/>
+          <span class="font-medium">{{_local.testMailResultMessage ?? ''}}</span>
+        </div>
+        <div data-if="{{_local.testMailResult === 'success' &amp;&amp; _local.testMailSubject}}" class="mt-2 pl-7 space-y-1 text-green-600 dark:text-green-300">
+          <div>
+            <span class="font-medium">$t:admin.settings.mail.test_mail_subject_label</span>
+            <span>{{_local.testMailSubject ?? ''}}</span>
+          </div>
+          <div>
+            <span class="font-medium">$t:admin.settings.mail.test_mail_body_label</span>
+            <span>{{_local.testMailBody ?? ''}}</span>
+          </div>
+        </div>
+        <div data-if="{{_local.testMailResult === 'error' &amp;&amp; _local.testMailError}}" class="mt-2 pl-7 text-xs text-red-600 dark:text-red-300 break-all">
+          <span>{{_local.testMailError ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

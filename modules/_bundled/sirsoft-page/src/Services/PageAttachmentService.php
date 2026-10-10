@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Page\Services;
 
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
+use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
 use App\Support\ImageResizer;
 use Illuminate\Database\Eloquent\Collection;
@@ -16,6 +17,8 @@ use Illuminate\Support\Str;
 use Modules\Sirsoft\Page\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Page\Models\PageAttachment;
 use Modules\Sirsoft\Page\Repositories\Contracts\PageAttachmentRepositoryInterface;
+use Modules\Sirsoft\Page\Repositories\Contracts\PageRepositoryInterface;
+use Modules\Sirsoft\Page\Support\AttachmentLimits;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -26,9 +29,17 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class PageAttachmentService
 {
+    /**
+     * PageAttachmentService 생성자
+     *
+     * @param  PageAttachmentRepositoryInterface  $attachmentRepository  첨부파일 저장소
+     * @param  StorageInterface  $storage  스토리지 드라이버 (모듈 서비스 프로바이더가 주입 — attachments 카테고리 디스크)
+     * @param  PageRepositoryInterface  $pageRepository  페이지 저장소 (업로드 대상 페이지의 스코프 판정용)
+     */
     public function __construct(
         private PageAttachmentRepositoryInterface $attachmentRepository,
         private StorageInterface $storage,
+        private PageRepositoryInterface $pageRepository,
     ) {}
 
     /**
@@ -41,6 +52,7 @@ class PageAttachmentService
      * @param  int|null  $pageId  페이지 ID (신규 작성 중이면 null)
      * @param  int  $additional  이번에 추가하려는 첨부 개수
      * @param  string|null  $tempKey  임시 업로드 키 (신규 작성 시 기존 임시첨부 합산용)
+     * @return void
      *
      * @throws AttachmentLimitExceededException 상한 초과 시
      */
@@ -50,7 +62,7 @@ class PageAttachmentService
             return;
         }
 
-        $limit = (int) g7_module_settings('sirsoft-page', 'attachment.max_count', 0);
+        $limit = AttachmentLimits::maxCount();
         if ($limit <= 0) {
             // 상한 미설정은 제한하지 않는다 (기존 동작 유지)
             return;
@@ -70,6 +82,65 @@ class PageAttachmentService
     }
 
     /**
+     * 화면이 상한 안내·입력 제약에 쓰는 공개 설정을 반환합니다.
+     *
+     * 상한·허용 형식을 화면이 리터럴로 적으면 운영자가 설정을 바꾼 순간 화면과 서버가
+     * 갈린다 — 사용자에게는 "왜 갑자기 안 되는지" 만 남는다.
+     *
+     * MIME → 확장자 변환도 **서버에서 한 번만** 한다. 화면이 변환하면 같은 매핑이 화면마다
+     * 생기고, 형식을 추가할 때 한쪽만 늘어난다.
+     *
+     * @return array<string, mixed> 공개 설정
+     */
+    public function publicLimits(): array
+    {
+        // 해석(기본값·폴백)은 업로드 검증과 같은 하위 지점을 쓴다 — Service 가 FormRequest 의
+        // 상수를 읽으면 하위 계층이 HTTP 계층에 기대는 역전이 된다.
+        $maxCount = AttachmentLimits::maxCount();
+        $maxSizeMb = AttachmentLimits::maxSizeMb();
+        $allowedTypes = AttachmentLimits::allowedTypes();
+
+        return [
+            // 0 이하는 "제한 없음" 이다(서버 판정과 같은 뜻) — 화면은 컴포넌트 기본값을 쓴다.
+            'max_count' => $maxCount > 0 ? $maxCount : null,
+            'max_size_mb' => $maxSizeMb,
+            'allowed_types' => $allowedTypes,
+            'accept' => $this->acceptFromMimeTypes($allowedTypes),
+        ];
+    }
+
+    /**
+     * MIME 목록을 파일 선택창 필터 문자열로 바꿉니다.
+     *
+     * 매핑에 없는 MIME 은 그대로 실어 보낸다 — 브라우저가 MIME 자체도 `accept` 값으로
+     * 받아 주므로, 모르는 형식을 조용히 버려 고를 수 없게 만드는 것보다 낫다.
+     *
+     * @param  array<int, string>  $mimeTypes  허용 MIME 목록
+     * @return string `accept` 문자열
+     */
+    private function acceptFromMimeTypes(array $mimeTypes): string
+    {
+        $map = [
+            'image/jpeg' => ['.jpg', '.jpeg'],
+            'image/png' => ['.png'],
+            'image/gif' => ['.gif'],
+            'image/webp' => ['.webp'],
+            'application/pdf' => ['.pdf'],
+            'application/zip' => ['.zip'],
+            'application/x-zip-compressed' => ['.zip'],
+        ];
+
+        $extensions = [];
+        foreach ($mimeTypes as $mimeType) {
+            foreach ($map[$mimeType] ?? [$mimeType] as $extension) {
+                $extensions[$extension] = true;
+            }
+        }
+
+        return implode(',', array_keys($extensions));
+    }
+
+    /**
      * 파일을 업로드합니다.
      *
      * @param  UploadedFile  $file  업로드 파일
@@ -84,6 +155,18 @@ class PageAttachmentService
         string $collection = 'attachments',
         ?string $tempKey = null
     ): PageAttachment {
+        // 페이지도 임시 키도 없는 업로드는 서버가 키를 만든다 (이커머스 이미지 업로드와 동일) —
+        // 비워 두면 임시 경로가 `temp//파일` 이 되어 저장소 경로 가드가 거부한다
+        if (! $pageId && ! $tempKey) {
+            $tempKey = Str::uuid()->toString();
+        }
+
+        // 기존 페이지에 붙이는 업로드는 그 페이지의 수정 권한·스코프를 본다 — 업로드 라우트는 정적 경로라 미들웨어
+        // 스코프 검사를 건너뛰고, 등록 권한만으로도 통과하므로 서비스가 다시 판정한다
+        if ($pageId) {
+            $this->assertUploadTargetPage($pageId);
+        }
+
         // 개수 상한 최종 방어선 — 단일 업로드를 N 번 반복하는 경로도 여기서 막힌다
         $this->assertAttachmentCountWithin($pageId, 1, $tempKey);
 
@@ -144,8 +227,10 @@ class PageAttachmentService
     /**
      * 임시 첨부파일을 페이지에 연결하고 파일을 이동합니다.
      *
-     * getByTempKey 가 order(업로드 시점 부여) 순으로 반환하므로, 그 순서대로
-     * order 를 1..N 으로 재부여한다 (이커머스 ProductImageService::linkTempImages 와 동일).
+     * getByTempKey 가 order(업로드 시점 부여) 순으로 반환하므로, 그 순서대로 order 를 다시 매긴다
+     * (이커머스 ProductImageService::linkTempImages 와 동일). 이미 첨부가 있는 페이지(수정 화면)에서는
+     * 기존 첨부의 마지막 번호 뒤에 붙인다 — 1 부터 다시 매기면 새 첨부가 기존 첨부와 같은 번호를 받아
+     * 목록 중간에 낀다. 새 페이지는 기존 첨부가 없어 1..N 이 된다.
      *
      * @param  string  $tempKey  임시 키
      * @param  int  $pageId  연결할 페이지 ID
@@ -155,9 +240,16 @@ class PageAttachmentService
     {
         $tempAttachments = $this->attachmentRepository->getByTempKey($tempKey);
 
+        // 연결할 임시 첨부가 없으면 디렉토리 정리도 하지 않는다 — temp_key 는 요청에서 온 값이라
+        // 조회 결과 없이 정리 경로를 만들면 사용자 입력으로 삭제 대상을 고르게 된다 (KVE-2026-2349)
+        if ($tempAttachments->isEmpty()) {
+            return 0;
+        }
+
         // 개수 상한 최종 방어선 — FormRequest 는 단건 업로드만 보므로 temp_key 연결 경로가 그대로 뚫린다
         $this->assertAttachmentCountWithin($pageId, $tempAttachments->count());
         $linkedCount = 0;
+        $baseOrder = $this->attachmentRepository->getMaxOrder($pageId);
 
         foreach ($tempAttachments as $index => $attachment) {
             // 최종 경로 생성
@@ -170,19 +262,27 @@ class PageAttachmentService
                 $this->storage->delete('attachments', $attachment->path);
             }
 
-            // DB 업데이트: page_id 설정, temp_key 제거, path 변경, order 재배치 (조회 순서 = 업로드 순서)
+            // DB 업데이트: page_id 설정, temp_key 제거, path 변경, order 재배치 (조회 순서 = 업로드 순서, 기존 첨부 뒤)
             $this->attachmentRepository->update($attachment, [
                 'page_id' => $pageId,
                 'temp_key' => null,
                 'path' => $newPath,
-                'order' => $index + 1,
+                'order' => $baseOrder + $index + 1,
             ]);
 
             $linkedCount++;
         }
 
-        // 임시 디렉토리 정리
-        $this->storage->deleteDirectory('attachments', 'temp/'.$tempKey);
+        // 임시 디렉토리 정리 — 부수 작업이라 실패해도 연결을 되돌리지 않는다. 막 옮긴 대용량 파일을 운영체제가
+        // 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던져 저장 전체가 500 이 되고 파일·DB 경로가 어긋났다(#703 게시판 실측).
+        try {
+            $this->storage->deleteDirectory('attachments', 'temp/'.$tempKey);
+        } catch (\Throwable $e) {
+            Log::warning('페이지 임시 첨부 디렉토리 정리 실패 — 연결은 완료, 빈 디렉토리가 남음', [
+                'temp_key' => $tempKey,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return $linkedCount;
     }
@@ -269,6 +369,7 @@ class PageAttachmentService
      * 빠졌거나 파일 삭제에 실패한 경우 등) 삭제하지 않습니다.
      *
      * @param  Collection  $attachments  이번 회차에 처리한 첨부 목록
+     * @return void
      */
     private function removeEmptyTempDirectories(Collection $attachments): void
     {
@@ -346,17 +447,53 @@ class PageAttachmentService
      * 스코프 대상은 첨부가 아니라 **부모 페이지**다 — `sirsoft-page.pages.update` 의
      * owner_key 가 페이지의 `created_by` 이기 때문이다.
      *
-     * @param  PageAttachment  $attachment  대상 첨부
+     * 아직 페이지에 연결되지 않은 임시 첨부(`page_id` 없음)는 부모가 없으므로 **올린 사람**만
+     * 다룰 수 있다. 작성 화면은 [저장] 때 첨부를 먼저 올리고 페이지를 만들므로, 페이지 저장이
+     * 검증 오류로 실패하면 임시 첨부가 업로더 목록에 남는다 — 이것을 지우는 요청까지 부모 없음으로
+     * 막으면 사용자는 방금 올린 파일을 뺄 수 없다.
      *
-     * @throws AccessDeniedHttpException 부모 페이지가 스코프 밖인 경우
+     * @param  PageAttachment  $attachment  대상 첨부
+     * @return void
+     *
+     * @throws AccessDeniedHttpException 부모 페이지가 스코프 밖이거나, 남이 올린 임시 첨부인 경우
      */
     private function assertPageScope(PageAttachment $attachment): void
     {
+        if ($attachment->page_id === null) {
+            if ($attachment->created_by === null || (int) $attachment->created_by !== (int) Auth::id()) {
+                throw new AccessDeniedHttpException(__('auth.scope_denied'));
+            }
+
+            return;
+        }
+
         $page = $attachment->page;
 
         // 부모를 못 읽으면 막는다(fail-closed) — 첨부에 page_id 가 있는데 페이지를 못 찾는
         // 것은 정상 상태가 아니고, 통과시키면 게이트가 있어야 할 자리가 비어 버린다.
-        if (! $page || ! PermissionHelper::checkScopeAccess($page, 'sirsoft-page.pages.update')) {
+        // 삭제 라우트가 등록·수정 어느 권한으로도 열리므로(임시 첨부 정리) 연결된 첨부는 수정 권한을 여기서 직접 본다.
+        if (! $page
+            || ! PermissionHelper::check('sirsoft-page.pages.update', Auth::user())
+            || ! PermissionHelper::checkScopeAccess($page, 'sirsoft-page.pages.update')) {
+            throw new AccessDeniedHttpException(__('auth.scope_denied'));
+        }
+    }
+
+    /**
+     * 기존 페이지에 첨부를 더하는 업로드가 그 페이지의 수정 권한·스코프 안인지 검사합니다.
+     *
+     * @param  int  $pageId  대상 페이지 ID
+     * @return void
+     *
+     * @throws AccessDeniedHttpException 페이지가 없거나 수정 권한·스코프 밖인 경우
+     */
+    private function assertUploadTargetPage(int $pageId): void
+    {
+        $page = $this->pageRepository->findById($pageId);
+
+        if (! $page
+            || ! PermissionHelper::check('sirsoft-page.pages.update', Auth::user())
+            || ! PermissionHelper::checkScopeAccess($page, 'sirsoft-page.pages.update')) {
             throw new AccessDeniedHttpException(__('auth.scope_denied'));
         }
     }
@@ -367,14 +504,18 @@ class PageAttachmentService
      * 순서는 집합 전체에 대한 하나의 배열이라 일부만 반영하면 나머지와 어긋난다 —
      * 걸러내지 않고 전량 거부한다(코어 첨부/메뉴 순서 변경과 같은 의미론).
      *
-     * @param  array<int, array{id: int, order: int}>  $orders  순서 데이터
+     * 대상 ID 는 `reorder()` 가 받는 `[첨부 ID => 순서]` 매핑의 **키**다. 값(순서)에서 `id` 를 찾으면
+     * ID 를 하나도 읽지 못해 검사 없이 통과한다.
+     *
+     * @param  array<int, int>  $orders  [첨부 ID => 순서] 매핑
+     * @return void
      *
      * @throws AccessDeniedHttpException 스코프 밖 첨부가 하나라도 포함된 경우
      */
     private function assertReorderScope(array $orders): void
     {
         $ids = array_values(array_unique(array_filter(
-            array_map(static fn ($item): int => (int) ($item['id'] ?? 0), $orders)
+            array_map(static fn ($id): int => (int) $id, array_keys($orders))
         )));
 
         foreach ($ids as $id) {
@@ -432,7 +573,7 @@ class PageAttachmentService
 
         $encodedFilename = rawurlencode($attachment->original_filename);
 
-        return $this->storage->response(
+        $response = $this->storage->response(
             'attachments',
             $attachment->path,
             $attachment->original_filename,
@@ -441,6 +582,13 @@ class PageAttachmentService
                 'Content-Disposition' => "attachment; filename=\"{$attachment->original_filename}\"; filename*=UTF-8''{$encodedFilename}",
             ]
         );
+
+        // nosniff — 다운로드 응답도 브라우저가 내용을 추측해 렌더하지 않도록 (KVE-2026-2366)
+        if ($response) {
+            InlineMediaPolicy::harden($response, $attachment->mime_type, $attachment->original_filename);
+        }
+
+        return $response;
     }
 
     /**
@@ -459,7 +607,7 @@ class PageAttachmentService
             return null;
         }
 
-        return $this->storage->response(
+        $response = $this->storage->response(
             'attachments',
             $attachment->path,
             $attachment->original_filename,
@@ -468,6 +616,13 @@ class PageAttachmentService
                 'Content-Disposition' => 'inline',
             ]
         );
+
+        // 인라인은 래스터 이미지만 — isImage() 가 이미 거르지만 서빙 응답에도 nosniff 를 건다 (KVE-2026-2366)
+        if ($response) {
+            InlineMediaPolicy::harden($response, $attachment->mime_type, $attachment->original_filename);
+        }
+
+        return $response;
     }
 
     /**

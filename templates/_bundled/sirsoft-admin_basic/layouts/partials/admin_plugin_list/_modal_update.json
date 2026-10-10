@@ -1,871 +1,935 @@
 {
-  "meta": {
-    "is_partial": true,
-    "description": "플러그인 업데이트 확인 모달",
-    "editor_label": "$t:admin.modal_label.admin_plugin_list.plugin_update_modal"
-  },
-  "id": "plugin_update_modal",
-  "type": "composite",
-  "name": "Modal",
-  "props": {
-    "title": "$t:admin.plugins.modals.update_title",
-    "size": "medium"
-  },
-  "children": [
-    {
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_global.selectedPlugin?.is_compatible === false}}",
-      "props": {
-        "className": "mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg",
-        "role": "alert"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-start gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "exclamation-triangle",
-                "className": "text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-1"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-sm font-medium text-warning-soft"
-                  },
-                  "text": "$t:extensions.update_modal.compat_warning_title"
-                },
-                {
-                  "type": "basic",
-                  "name": "P",
-                  "props": {
-                    "className": "text-warning-soft mt-1"
-                  },
-                  "text": "$t:defer:extensions.update_modal.compat_warning_message|type=$t:extensions.types.plugin|required={{_global.selectedPlugin?.required_core_version ?? _global.selectedPlugin?.incompatible_required_version ?? ''}}|installed={{_global.selectedPlugin?.current_core_version ?? ''}}"
-                },
-                {
-                  "type": "basic",
-                  "name": "Button",
-                  "props": {
-                    "type": "button",
-                    "className": "inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-amber-500 dark:border-amber-400 bg-white dark:bg-gray-800 text-warning-soft hover:bg-amber-50 dark:hover:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:ring-offset-2 transition-colors cursor-pointer mt-2"
-                  },
-                  "actions": [
-                    {
-                      "type": "click",
-                      "handler": "openModal",
-                      "target": "core_update_guide_modal"
-                    }
-                  ],
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Icon",
-                      "props": {
-                        "name": "external-link",
-                        "size": "xs"
-                      }
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:extensions.update_modal.compat_guide_link"
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "flex-center gap-2 mt-3 text-warning-soft cursor-pointer select-none"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "checked": "{{_global.pluginForceUpdate === true}}",
-                        "className": "w-4 h-4 rounded border-amber-300 dark:border-amber-600 text-amber-600 dark:text-amber-400 focus:ring-amber-500 dark:focus:ring-amber-400"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "pluginForceUpdate": "{{!_global.pluginForceUpdate}}"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Span",
-                      "text": "$t:extensions.update_modal.force_label"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
+    "comment": "플러그인을 새 판본으로 올리기 전 묻는 창. 두 가지를 정하고 넘어간다.\n\n  ⑴ **코어 버전이 맞지 않으면** 위에 경고 띠가 뜨고 「알면서 진행」에 체크하기 전까지 버튼이 잠긴다.\n     맞을 때는 그 띠 자체가 안 보인다.\n  ⑵ **화면 정의를 어떻게 할지** — 새 것으로 덮을지, 지금 것을 그대로 둘지. 손댄 화면이 있으면\n     몇 개인지 먼저 알려 주고, 「그대로 두기」를 고르면 어느 화면이 남는지 목록으로 편다.\n  실패해도 창은 열린 채이고 사유가 창 안에 남는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "플러그인 업데이트 확인 모달",
+        "editor_label": "$t:admin.modal_label.admin_plugin_list.plugin_update_modal"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "if": "{{_global.pluginUpdateError}}",
-      "props": {
-        "className": "mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "flex-start gap-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "props": {
-                "name": "exclamation-circle",
-                "className": "text-red-500 dark:text-red-400 mt-0.5 shrink-0"
-              }
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "text-error-soft break-all"
-              },
-              "text": "{{_global.pluginUpdateError}}"
-            }
-          ]
-        }
-      ]
+    "id": "plugin_update_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.plugins.modals.update_title",
+        "size": "medium"
     },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "py-2"
-      },
-      "children": [
+    "children": [
         {
-          "type": "basic",
-          "name": "P",
-          "props": {
-            "className": "text-gray-700 dark:text-gray-300"
-          },
-          "text": "$t:admin.plugins.modals.update_confirm|name={{_global.selectedPlugin.name ?? ''}}"
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "mt-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg space-y-2"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 text-sm"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-500 dark:text-gray-400"
-                  },
-                  "text": "$t:admin.plugins.modals.field_version"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-primary font-medium"
-                  },
-                  "text": "$t:admin.plugins.modals.update_version_info|from={{_global.selectedPlugin.version ?? ''}}|to={{_global.selectedPlugin.latest_version ?? ''}}"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 text-sm"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-500 dark:text-gray-400"
-                  },
-                  "text": "$t:admin.plugins.modals.field_vendor"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-700 dark:text-gray-300"
-                  },
-                  "text": "{{_global.selectedPlugin.vendor ?? ''}}"
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "flex-center gap-2 text-sm"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-500 dark:text-gray-400"
-                  },
-                  "text": "$t:admin.plugins.modals.field_update_source"
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "props": {
-                    "className": "text-gray-700 dark:text-gray-300"
-                  },
-                  "text": "{{_global.selectedPlugin.update_source === 'github' ? '$t:admin.plugins.modals.update_source_github' : (_global.selectedPlugin.update_source === 'pending' ? '$t:admin.plugins.modals.update_source_pending' : '$t:admin.plugins.modals.update_source_bundled')}}"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.updateChangelog && _global.updateChangelog.length > 0}}",
-          "props": {
-            "className": "mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "text-sm font-medium text-info-soft mb-2"
-              },
-              "text": "$t:admin.plugins.modals.update_changelog_title"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "max-h-48 overflow-y-auto"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "iteration": {
-                    "source": "_global.updateChangelog",
-                    "item_var": "entry",
-                    "index_var": "entryIdx"
-                  },
-                  "props": {
-                    "className": "pb-3 mb-3 border-b border-blue-200 dark:border-blue-700 last:border-b-0 last:mb-0 last:pb-0"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center gap-2 mb-1.5"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-info-soft inline-flex items-center px-2 py-0.5 rounded-md font-semibold bg-blue-100 dark:bg-blue-800"
-                          },
-                          "text": "v{{entry.version}}"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "if": "{{entry.date}}",
-                          "props": {
-                            "className": "text-hint"
-                          },
-                          "text": "{{entry.date}}"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "row-stack"
-                      },
-                      "iteration": {
-                        "source": "entry.categories",
-                        "item_var": "category",
-                        "index_var": "catIdx"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-secondary text-xs font-medium"
-                              },
-                              "text": "{{category.name}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Div",
-                              "props": {
-                                "className": "ml-3 space-y-0.5"
-                              },
-                              "iteration": {
-                                "source": "category.items",
-                                "item_var": "changeItem",
-                                "index_var": "itemIdx"
-                              },
-                              "children": [
-                                {
-                                  "type": "basic",
-                                  "name": "Div",
-                                  "props": {
-                                    "className": "text-secondary text-xs"
-                                  },
-                                  "text": "• {{changeItem}}"
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "if": "{{_global.selectedPlugin.github_changelog_url}}",
-          "props": {
-            "className": "mt-3"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "A",
-              "props": {
-                "href": "{{_global.selectedPlugin.github_changelog_url}}",
-                "target": "_blank",
-                "className": "inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Icon",
-                  "props": {
-                    "name": "external-link",
-                    "size": "sm"
-                  }
-                },
-                {
-                  "type": "basic",
-                  "name": "Span",
-                  "text": "$t:admin.plugins.modals.view_changelog"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "className": "mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
-          },
-          "children": [
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              },
-              "text": "$t:admin.plugins.modals.layout_strategy_title"
-            },
-            {
-              "id": "plugin_rebuild_search_index",
-              "comment": "검색 인덱스 재생성 — 인덱스 잠금·재색인 비용이 있어 기본은 미선택. 운영 중인 사이트는 유지보수 시간에 수행한다.",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                  },
-                  "text": "$t:extensions.update_modal.rebuild_search_index_title"
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "flex items-start gap-2 cursor-pointer select-none"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "checkbox",
-                        "checked": "{{_global.pluginRebuildSearchIndex === true}}",
-                        "className": "w-4 h-4 mt-0.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "pluginRebuildSearchIndex": "{{!_global.pluginRebuildSearchIndex}}"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "text-sm text-gray-700 dark:text-gray-300"
-                          },
-                          "text": "$t:extensions.update_modal.rebuild_search_index_label"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
-                          },
-                          "text": "$t:extensions.update_modal.rebuild_search_index_desc"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_global.hasModifiedPluginLayouts}}",
-              "props": {
-                "className": "mb-2 p-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded text-xs text-amber-700 dark:text-amber-400"
-              },
-              "text": "$t:admin.plugins.modals.modified_layouts_warning|count={{_global.modifiedPluginLayoutsCount ?? 0}}"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{_global.modifiedPluginLayoutsCheckFailed}}",
-              "props": {
-                "className": "mb-2 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded text-xs text-red-700 dark:text-red-400",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.selectedPlugin?.is_compatible === false}}",
+            "props": {
+                "className": "mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg",
                 "role": "alert"
-              },
-              "text": "$t:admin.plugins.modals.modified_layouts_check_failed"
             },
-            {
-              "type": "basic",
-              "name": "Div",
-              "if": "{{!_global.hasModifiedPluginLayouts && !_global.modifiedPluginLayoutsCheckFailed}}",
-              "props": {
-                "className": "mb-2 p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded text-xs text-green-700 dark:text-green-400"
-              },
-              "text": "$t:admin.plugins.modals.no_modified_layouts"
-            },
-            {
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "row-stack"
-              },
-              "children": [
+            "children": [
                 {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "radio",
-                        "name": "plugin_layout_strategy",
-                        "value": "overwrite",
-                        "checked": "{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'overwrite'}}",
-                        "className": "radio mt-0.5"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "pluginLayoutStrategy": "overwrite"
-                          }
-                        }
-                      ]
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start gap-2"
                     },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
+                    "children": [
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
-                          },
-                          "text": "$t:admin.plugins.modals.layout_strategy_overwrite"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "P",
-                          "props": {
-                            "className": "text-tertiary"
-                          },
-                          "text": "$t:admin.plugins.modals.layout_strategy_overwrite_desc"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Label",
-                  "props": {
-                    "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Input",
-                      "props": {
-                        "type": "radio",
-                        "name": "plugin_layout_strategy",
-                        "value": "keep",
-                        "checked": "{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'keep'}}",
-                        "className": "radio mt-0.5"
-                      },
-                      "actions": [
-                        {
-                          "type": "change",
-                          "handler": "setState",
-                          "params": {
-                            "target": "global",
-                            "pluginLayoutStrategy": "keep"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Span",
-                          "props": {
-                            "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
-                          },
-                          "text": "$t:admin.plugins.modals.layout_strategy_keep"
-                        },
-                        {
-                          "type": "basic",
-                          "name": "P",
-                          "props": {
-                            "className": "text-tertiary"
-                          },
-                          "text": "$t:admin.plugins.modals.layout_strategy_keep_desc"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "if": "{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'keep' && _global.modifiedPluginLayouts && _global.modifiedPluginLayouts.length > 0}}",
-                  "props": {
-                    "className": "ml-6 mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "text-xs font-medium text-warning-soft mb-2"
-                      },
-                      "text": "$t:admin.plugins.modals.modified_layouts_list_title|count={{_global.modifiedPluginLayouts?.length ?? 0}}"
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "space-y-1 max-h-40 overflow-y-auto"
-                      },
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Div",
-                          "iteration": {
-                            "source": "_global.modifiedPluginLayouts",
-                            "item_var": "modLayout"
-                          },
-                          "props": {
-                            "className": "flex-center gap-3 text-xs px-2 py-1.5 bg-white dark:bg-gray-800 rounded"
-                          },
-                          "children": [
-                            {
-                              "type": "composite",
-                              "name": "Icon",
-                              "props": {
-                                "name": "file-alt",
-                                "className": "text-amber-500 dark:text-amber-400 shrink-0"
-                              }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "font-mono flex-1 text-gray-700 dark:text-gray-300"
-                              },
-                              "text": "{{modLayout.name}}"
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-gray-400 dark:text-gray-500 shrink-0"
-                              },
-                              "text": "{{modLayout.updated_at}}"
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "exclamation-triangle",
+                                "className": "text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"
                             }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center mt-2 text-xs text-amber-600 dark:text-amber-400 gap-1"
-                      },
-                      "children": [
-                        {
-                          "type": "composite",
-                          "name": "Icon",
-                          "props": {
-                            "name": "info-circle",
-                            "size": "xs"
-                          }
                         },
                         {
-                          "type": "basic",
-                          "name": "Span",
-                          "text": "$t:admin.plugins.modals.modified_layouts_keep_notice"
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm font-medium text-warning-soft"
+                                    },
+                                    "text": "$t:extensions.update_modal.compat_warning_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-warning-soft mt-1"
+                                    },
+                                    "text": "$t:extensions.update_modal.compat_warning_message|type=$t:extensions.types.plugin|required={{_global.selectedPlugin?.required_core_version ?? _global.selectedPlugin?.incompatible_required_version ?? ''}}|installed={{_global.selectedPlugin?.current_core_version ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "openModal",
+                                            "target": "core_update_guide_modal"
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border border-amber-500 dark:border-amber-400 bg-white dark:bg-gray-800 text-warning-soft hover:bg-amber-50 dark:hover:bg-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:ring-offset-2 transition-colors cursor-pointer mt-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "external-link",
+                                                "size": "xs"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:extensions.update_modal.compat_guide_link"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-center gap-2 mt-3 text-warning-soft cursor-pointer select-none"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "이 체크가 아래 갱신 버튼의 잠금을 푸는 유일한 열쇠다(코어 버전이 안 맞는 경우에 한해). 값은 그대로 요청 본문에도 실린다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "pluginForceUpdate": "{{!_global.pluginForceUpdate}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "checked": "{{_global.pluginForceUpdate === true}}",
+                                                "className": "w-4 h-4 rounded border-amber-300 dark:border-amber-600 text-amber-600 dark:text-amber-400 focus:ring-amber-500 dark:focus:ring-amber-400"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:extensions.update_modal.force_label"
+                                        }
+                                    ]
+                                }
+                            ]
                         }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "name": "Div",
-      "props": {
-        "className": "modal-footer-buttons"
-      },
-      "children": [
-        {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "btn btn-secondary",
-            "disabled": "{{_global.isPluginUpdating}}",
-            "type": "button"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "closeModal"
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "$t:common.cancel"
-            }
-          ]
+            ]
         },
         {
-          "type": "basic",
-          "name": "Button",
-          "props": {
-            "className": "flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed",
-            "disabled": "{{_global.isPluginUpdating || (_global.selectedPlugin?.is_compatible === false && _global.pluginForceUpdate !== true)}}",
-            "type": "button"
-          },
-          "actions": [
-            {
-              "type": "click",
-              "handler": "sequence",
-              "actions": [
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.pluginUpdateError}}",
+            "props": {
+                "className": "mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg"
+            },
+            "children": [
                 {
-                  "handler": "setState",
-                  "params": {
-                    "target": "global",
-                    "isPluginUpdating": true,
-                    "pluginUpdateError": null
-                  }
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "exclamation-circle",
+                                "className": "text-red-500 dark:text-red-400 mt-0.5 shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-error-soft break-all"
+                            },
+                            "text": "{{_global.pluginUpdateError}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "py-2"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                    },
+                    "children": [
+                        {
+                            "id": "plugin_update_icon",
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Img",
+                                    "if": "{{_global.selectedPlugin?.icon_url}}",
+                                    "props": {
+                                        "src": "{{_global.selectedPlugin.icon_url}}",
+                                        "alt": "",
+                                        "loading": "lazy",
+                                        "decoding": "async",
+                                        "className": "w-5 h-5 object-contain"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{!_global.selectedPlugin?.icon_url}}",
+                                    "props": {
+                                        "name": "puzzle-piece",
+                                        "className": "text-xs text-gray-600 dark:text-gray-400",
+                                        "aria-hidden": "true"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.plugins.modals.update_confirm|name={{_global.selectedPlugin.name ?? ''}}"
+                        }
+                    ]
                 },
                 {
-                  "handler": "apiCall",
-                  "auth_required": true,
-                  "target": "/api/admin/plugins/{{_global.selectedPlugin.identifier}}/update",
-                  "params": {
-                    "method": "POST",
-                    "body": {
-                      "layout_strategy": "{{_global.pluginLayoutStrategy ?? 'overwrite'}}",
-                      "force": "{{_global.pluginForceUpdate === true}}",
-                      "rebuild_search_index": "{{_global.pluginRebuildSearchIndex === true}}"
-                    }
-                  },
-                  "onSuccess": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isPluginUpdating": false
-                      }
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "kv-list gap-y-2 text-sm mt-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
                     },
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "selectedPlugin": null,
-                        "pluginLayoutStrategy": "overwrite",
-                        "hasModifiedPluginLayouts": false,
-                        "modifiedPluginLayoutsCount": 0,
-                        "modifiedPluginLayouts": [],
-                        "pluginRebuildSearchIndex": false
-                      }
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "kv-row"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:admin.plugins.modals.field_version"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-primary font-medium"
+                                    },
+                                    "text": "$t:admin.plugins.modals.update_version_info|from={{_global.selectedPlugin.version ?? ''}}|to={{_global.selectedPlugin.latest_version ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "kv-row"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:admin.plugins.modals.field_vendor"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "{{_global.selectedPlugin.vendor ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "kv-row"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:admin.plugins.modals.field_update_source"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "{{_global.selectedPlugin.update_source === 'github' ? '$t:admin.plugins.modals.update_source_github' : (_global.selectedPlugin.update_source === 'pending' ? '$t:admin.plugins.modals.update_source_pending' : '$t:admin.plugins.modals.update_source_bundled')}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.updateChangelog && _global.updateChangelog.length > 0}}",
+                    "props": {
+                        "className": "mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg"
                     },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "success",
-                        "message": "$t:admin.plugins.update_success"
-                      }
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-sm font-medium text-info-soft mb-2"
+                            },
+                            "text": "$t:admin.plugins.modals.update_changelog_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "max-h-48 overflow-y-auto"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "_global.updateChangelog",
+                                        "item_var": "entry",
+                                        "index_var": "entryIdx"
+                                    },
+                                    "props": {
+                                        "className": "pb-3 mb-3 border-b border-blue-200 dark:border-blue-700 last:border-b-0 last:mb-0 last:pb-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-2 mb-1.5"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-info-soft inline-flex items-center px-2 py-0.5 rounded-md font-semibold bg-blue-100 dark:bg-blue-800"
+                                                    },
+                                                    "text": "v{{entry.version}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{entry.date}}",
+                                                    "props": {
+                                                        "className": "text-hint"
+                                                    },
+                                                    "text": "{{entry.date}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "entry.categories",
+                                                "item_var": "category",
+                                                "index_var": "catIdx"
+                                            },
+                                            "props": {
+                                                "className": "row-stack"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-secondary text-xs font-medium"
+                                                            },
+                                                            "text": "{{category.name}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "iteration": {
+                                                                "source": "category.items",
+                                                                "item_var": "changeItem",
+                                                                "index_var": "itemIdx"
+                                                            },
+                                                            "props": {
+                                                                "className": "ml-3 space-y-0.5"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Div",
+                                                                    "props": {
+                                                                        "className": "text-secondary text-xs"
+                                                                    },
+                                                                    "text": "• {{changeItem}}"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.selectedPlugin.github_changelog_url}}",
+                    "props": {
+                        "className": "mt-3"
                     },
-                    {
-                      "handler": "refetchDataSource",
-                      "params": {
-                        "dataSourceId": "plugins"
-                      }
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "A",
+                            "props": {
+                                "href": "{{_global.selectedPlugin.github_changelog_url}}",
+                                "target": "_blank",
+                                "className": "inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "external-link",
+                                        "size": "sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.plugins.modals.view_changelog"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
                     },
-                    {
-                      "handler": "closeModal"
-                    }
-                  ],
-                  "onError": [
-                    {
-                      "handler": "setState",
-                      "params": {
-                        "target": "global",
-                        "isPluginUpdating": false,
-                        "pluginUpdateError": "{{error.message}}"
-                      }
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                            },
+                            "text": "$t:admin.plugins.modals.layout_strategy_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.hasModifiedPluginLayouts}}",
+                            "props": {
+                                "className": "mb-2 p-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded text-xs text-amber-700 dark:text-amber-400"
+                            },
+                            "text": "$t:admin.plugins.modals.modified_layouts_warning|count={{_global.modifiedPluginLayoutsCount ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.modifiedPluginLayoutsCheckFailed}}",
+                            "props": {
+                                "className": "mb-2 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded text-xs text-red-700 dark:text-red-400",
+                                "role": "alert"
+                            },
+                            "text": "$t:admin.plugins.modals.modified_layouts_check_failed"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!_global.hasModifiedPluginLayouts && !_global.modifiedPluginLayoutsCheckFailed}}",
+                            "props": {
+                                "className": "mb-2 p-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded text-xs text-green-700 dark:text-green-400"
+                            },
+                            "text": "$t:admin.plugins.modals.no_modified_layouts"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "row-stack"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "기본값이 「덮어쓰기」다 — 값이 아직 없을 때도 이쪽이 골라진 것으로 보이고, 요청 본문에서도 같은 기본값을 쓴다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "pluginLayoutStrategy": "overwrite"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "plugin_layout_strategy",
+                                                "value": "overwrite",
+                                                "checked": "{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'overwrite'}}",
+                                                "className": "radio mt-0.5"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:admin.plugins.modals.layout_strategy_overwrite"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-tertiary"
+                                                    },
+                                                    "text": "$t:admin.plugins.modals.layout_strategy_overwrite_desc"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "남기기 — 손댄 화면 목록이 아래에 펼쳐진다. 고친 부분은 두고 손대지 않은 조각·설정만 새 판본으로 바꾼다(겹치면 고친 쪽 유지).",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "pluginLayoutStrategy": "keep"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "plugin_layout_strategy",
+                                                "value": "keep",
+                                                "checked": "{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'keep'}}",
+                                                "className": "radio mt-0.5"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:admin.plugins.modals.layout_strategy_keep"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-tertiary"
+                                                    },
+                                                    "text": "$t:admin.plugins.modals.layout_strategy_keep_desc"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_global.pluginLayoutStrategy ?? 'overwrite') === 'keep' && _global.modifiedPluginLayouts && _global.modifiedPluginLayouts.length > 0}}",
+                                    "props": {
+                                        "className": "ml-6 mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "text-xs font-medium text-warning-soft mb-2"
+                                            },
+                                            "text": "$t:admin.plugins.modals.modified_layouts_list_title|count={{_global.modifiedPluginLayouts?.length ?? 0}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "space-y-1 max-h-40 overflow-y-auto"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "iteration": {
+                                                        "source": "_global.modifiedPluginLayouts",
+                                                        "item_var": "modLayout"
+                                                    },
+                                                    "props": {
+                                                        "className": "flex-center gap-3 text-xs px-2 py-1.5 bg-white dark:bg-gray-800 rounded"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "file-alt",
+                                                                "className": "text-amber-500 dark:text-amber-400 shrink-0"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-mono flex-1 text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "{{modLayout.name}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-gray-400 dark:text-gray-500 shrink-0"
+                                                            },
+                                                            "text": "{{modLayout.updated_at}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center mt-2 text-xs text-amber-600 dark:text-amber-400 gap-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "info-circle",
+                                                        "size": "xs"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.plugins.modals.modified_layouts_keep_notice"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "검색 인덱스 재생성 — 인덱스 잠금·재색인 비용이 있어 기본은 미선택. 운영 중인 사이트는 유지보수 시간에 수행한다.",
+                    "id": "plugin_rebuild_search_index",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
                     },
-                    {
-                      "handler": "toast",
-                      "params": {
-                        "type": "error",
-                        "message": "{{error.message}}"
-                      }
-                    }
-                  ]
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                            },
+                            "text": "$t:extensions.update_modal.rebuild_search_index_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex items-start gap-2 cursor-pointer select-none"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "검색 인덱스 재생성 여부. 창을 다시 열 때 이월되지 않도록 시드와 제출 뒤 양쪽에서 해제하며, 모듈 창과 다른 전역 키를 쓰는 것은 한쪽 체크가 다른 쪽으로 옮지 않게 하기 위해서다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "pluginRebuildSearchIndex": "{{!_global.pluginRebuildSearchIndex}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "checkbox",
+                                        "checked": "{{_global.pluginRebuildSearchIndex === true}}",
+                                        "className": "w-4 h-4 mt-0.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:extensions.update_modal.rebuild_search_index_label"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                            },
+                                            "text": "$t:extensions.update_modal.rebuild_search_index_desc"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
-              ]
-            }
-          ],
-          "children": [
-            {
-              "type": "basic",
-              "name": "Icon",
-              "if": "{{_global.isPluginUpdating}}",
-              "props": {
-                "name": "spinner",
-                "className": "spinner-sm"
-              }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
             },
-            {
-              "type": "basic",
-              "name": "Span",
-              "text": "{{_global.isPluginUpdating ? '$t:admin.plugins.updating' : '$t:admin.plugins.actions.update'}}"
-            }
-          ]
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.isPluginUpdating}}",
+                        "type": "button"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "화면 정의 처리 방식과 강행 여부 둘을 실어 보낸다. 성공하면 고른 플러그인과 화면 정의 관련 값들을 처음으로 되돌린다 — 전역이라 다음에 다른 플러그인을 열 때 지난 선택이 따라붙는다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isPluginUpdating": true,
+                                        "pluginUpdateError": null
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/plugins/{{_global.selectedPlugin.identifier}}/update",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "layout_strategy": "{{_global.pluginLayoutStrategy ?? 'overwrite'}}",
+                                            "force": "{{_global.pluginForceUpdate === true}}",
+                                            "rebuild_search_index": "{{_global.pluginRebuildSearchIndex === true}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isPluginUpdating": false
+                                            }
+                                        },
+                                        {
+                                            "comment": "서버 문구를 그대로 띄운다 — 업데이트할 것이 없었으면 「업데이트할 내용이 없습니다」가 온다",
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "{{response?.message ?? '$t:admin.plugins.update_success'}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "plugins"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "selectedPlugin": null,
+                                                "pluginLayoutStrategy": "overwrite",
+                                                "hasModifiedPluginLayouts": false,
+                                                "modifiedPluginLayoutsCount": 0,
+                                                "modifiedPluginLayouts": [],
+                                                "pluginRebuildSearchIndex": false
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "comment": "409 = 같은 플러그인의 업데이트가 이미 진행 중(더블클릭·CLI 동시 실행). 실패가 아니므로 오류 상자를 띄우지 않고\n                     안내만 한다. 버튼은 풀어 둔다 — CLI 가 돌리는 중이면 이 창의 요청은 끝나지 않으므로 잠가 두면 창을 닫을 수 없다.",
+                                            "handler": "setState",
+                                            "if": "{{error.status === 409}}",
+                                            "params": {
+                                                "target": "global",
+                                                "isPluginUpdating": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "if": "{{error.status === 409}}",
+                                            "params": {
+                                                "type": "info",
+                                                "message": "{{error.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "if": "{{error.status !== 409}}",
+                                            "params": {
+                                                "target": "global",
+                                                "isPluginUpdating": false,
+                                                "pluginUpdateError": "{{error.message}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "if": "{{error.status !== 409}}",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "className": "flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.isPluginUpdating || (_global.selectedPlugin?.is_compatible === false && _global.pluginForceUpdate !== true)}}",
+                        "type": "button"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.isPluginUpdating}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.isPluginUpdating ? '$t:admin.plugins.updating' : '$t:admin.plugins.actions.update'}}"
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }

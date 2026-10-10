@@ -10,14 +10,13 @@
  *  - sampleData 오버라이드(검색 결과 없음 등)·초기 상태 패치는 단위/레이아웃 렌더 테스트가
  *    잠그며, 본 spec 은 토글 표시/전환의 브라우저 가시 결과를 측정한다.
  *
- * @scenario layout-editor-page-state-switcher
  * 효과 요약(마커 아님 — 평문): login_route_shows_state_toggle_with_two_options, root_route_hides_state_toggle, login_failed_state_renders_form_error_text_on_canvas, profile_edit_password_entry_vs_actual_edit_section_toggle, admin_users_edit_vs_create_title_via_route_id_removal, admin_settings_general_vs_seo_tab_via_query_tab, checkout_validation_failed_renders_dotted_key_inline_errors, guest_order_form_guest_vs_member_branch_toggle_via_currentuser_patch.
  */
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 
 test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
   /** @effects login_route_shows_state_toggle_with_two_options */
-  test('states 선언 라우트(/login) → 상태 토글 표시 + 항목 2개', async ({ page }) => {
+  test('states 선언 라우트(/login) → 상태 토글 표시 + 선언된 상태가 전부 항목으로 나온다', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
 
@@ -25,13 +24,17 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
     await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
     await page.waitForSelector('[data-testid="g7le-preview-frame"]', { timeout: 30_000 });
 
-    // 상태 토글 등장 — /login 은 default/login_failed 2상태이므로 표시된다.
+    // 상태 토글 등장 — /login 은 2개 이상 상태를 선언하므로 표시된다.
     const select = page.getByTestId('g7le-state-switcher-select');
     await expect(select).toBeVisible({ timeout: 15_000 });
 
-    // 항목 2개(기본 + 로그인 실패)
-    const options = select.locator('option');
-    await expect(options).toHaveCount(2);
+    // 개수 대신 **id 집합**을 단언한다. 종전에는 `toHaveCount(2)` 였는데, 스펙에 상태가
+    // 하나 늘 때마다(2FA 입력 상태 추가) 이 줄이 조용히 낡아 red 가 된다 — 무엇이 빠졌는지도
+    // 알려주지 않는다. 선언된 id 를 그대로 대조하면 추가·삭제가 이름으로 드러난다.
+    const optionValues = await select.locator('option').evaluateAll((els) =>
+      els.map((el) => (el as HTMLOptionElement).value),
+    );
+    expect(optionValues).toEqual(['default', 'login_failed', 'two_factor_challenge']);
   });
 
   /** @effects root_route_hides_state_toggle */
@@ -96,8 +99,11 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
 
     const select = page.getByTestId('g7le-state-switcher-select');
     await expect(select).toBeVisible({ timeout: 15_000 });
-    // 3상태 (password_entry / actual_edit / validation_failed)
-    await expect(select.locator('option')).toHaveCount(3);
+    // 개수가 아니라 **id 집합**을 단언한다(위 `/login` 케이스와 같은 이유).
+    const profileStateIds = await select.locator('option').evaluateAll((els) =>
+      els.map((el) => (el as HTMLOptionElement).value),
+    );
+    expect(profileStateIds).toEqual(['password_entry', 'actual_edit', 'validation_failed']);
 
     const frame = page.getByTestId('g7le-preview-frame');
 
@@ -232,8 +238,11 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
 
     const select = page.getByTestId('g7le-state-switcher-select');
     await expect(select).toBeVisible({ timeout: 15_000 });
-    // 2상태 (guest / member)
-    await expect(select.locator('option')).toHaveCount(2);
+    // 개수가 아니라 **id 집합**을 단언한다(위 `/login` 케이스와 같은 이유).
+    const guestOrderStateIds = await select.locator('option').evaluateAll((els) =>
+      els.map((el) => (el as HTMLOptionElement).value),
+    );
+    expect(guestOrderStateIds).toEqual(['guest', 'member']);
 
     const frame = page.getByTestId('g7le-preview-frame');
 
@@ -248,5 +257,87 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
       { timeout: 5_000 },
     );
     await expect(frame.getByText('마이페이지', { exact: false }).first()).toBeVisible({ timeout: 15_000 });
+  });
+  /** @effects active_state_survives_enter_iteration_item_edit, iteration_item_inherits_host_route_scope */
+  test('반복 항목 편집에 들어가도 상태 토글과 고른 상태가 유지된다', async ({ page }) => {
+    // PO 실측 결함: 반복 항목 편집 모드가 states scope 비대상이라 토글이 사라지고 상태가
+    // 기본값으로 풀렸다. 항목 템플릿은 그 화면의 상태 뒤에 있으므로(알림톡 템플릿 행은
+    // templates_tab 에서만 존재) 상태가 풀리면 편집 대상 자체가 캔버스에서 사라진다.
+    const token = issueToken('core.templates.layouts.edit');
+    await authenticatePage(page, token);
+
+    await page.goto(
+      '/admin/layout-editor/sirsoft-admin_basic?route=' +
+        encodeURIComponent('*/admin/plugins/sirsoft-message_bizppurio/settings'),
+    );
+    await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+    await page.waitForSelector('[data-testid="g7le-preview-frame"]', { timeout: 30_000 });
+
+    const select = page.getByTestId('g7le-state-switcher-select');
+    await expect(select).toBeVisible({ timeout: 15_000 });
+
+    // 알림톡 템플릿 탭으로 전환 — 이 상태에서만 템플릿 행(반복 항목)이 존재한다.
+    await select.selectOption('templates_tab');
+    await expect(page.getByTestId('g7le-state-switcher')).toHaveAttribute(
+      'data-active-state',
+      'templates_tab',
+      { timeout: 5_000 },
+    );
+
+    // 반복 그룹 선택 → 어포던스의 [반복 항목 편집] 진입.
+    await page.locator('[data-dnd-iteration-group="true"]').first().click();
+    const enter = page.getByTestId('g7le-overlay-edit-iteration');
+    await expect(enter).toBeVisible({ timeout: 15_000 });
+    await enter.click();
+
+    // 진입 후에도 토글이 살아 있고(호스트 scope 상속) 고른 상태가 유지된다.
+    await expect(page.getByTestId('g7le-state-switcher')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('g7le-state-switcher')).toHaveAttribute(
+      'data-active-state',
+      'templates_tab',
+      { timeout: 10_000 },
+    );
+  });
+
+  // 상태 기억은 **그 화면의 것**이다. 상태 id 는 화면마다 재사용되므로(번들 실측:
+  // `modal_filled` 하나가 170개 scope, `validation_failed` 가 17개) id 만 보고 이어 가면
+  // A 화면에서 고른 상태가 B 화면에서도 살아나 B 가 기본 모습으로 열리지 않는다.
+  //
+  // A/B 근거: `create_mode` 는 `*/admin/users/:id/edit` 와 `*/admin/roles/:id/edit`
+  // **양쪽에** 있고 **어느 쪽에서도 기본이 아니다**(둘 다 기본은 `edit_existing`).
+  // 그래서 scope 를 보지 않던 종전 판정에서는 users 에서 고른 create_mode 가 roles 로
+  // 그대로 따라왔고, 이 단언이 red 가 된다.
+  /** @effects active_state_memory_is_scoped_to_its_screen, active_state_resets_to_default_when_moving_to_other_screen */
+  test('다른 화면으로 옮기면 같은 id 의 상태가 있어도 그 화면의 기본 상태로 열린다', async ({ page }) => {
+    const token = issueToken('core.templates.layouts.edit');
+    await authenticatePage(page, token);
+
+    await page.goto('/admin/layout-editor/sirsoft-admin_basic');
+    await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
+
+    // (1) 회원 수정 화면에서 기본이 아닌 상태(create_mode)를 고른다.
+    await page.waitForSelector('[data-route-path="*/admin/users/:id/edit"]', { timeout: 30_000 });
+    await page.locator('[data-route-path="*/admin/users/:id/edit"]').first().click();
+    await page.waitForSelector('[data-testid="g7le-preview-frame"]', { timeout: 30_000 });
+
+    const select = page.getByTestId('g7le-state-switcher-select');
+    await expect(select).toBeVisible({ timeout: 15_000 });
+    await select.selectOption('create_mode');
+    await expect(page.getByTestId('g7le-state-switcher')).toHaveAttribute(
+      'data-active-state',
+      'create_mode',
+      { timeout: 5_000 },
+    );
+
+    // (2) 역할 수정 화면으로 옮긴다 — 이 화면도 create_mode 를 갖지만 기본은 edit_existing 이다.
+    await page.locator('[data-route-path="*/admin/roles/:id/edit"]').first().click();
+    await page.waitForSelector('[data-testid="g7le-preview-frame"]', { timeout: 30_000 });
+
+    // (3) 앞 화면의 선택이 따라오지 않고 이 화면의 기본 상태로 열린다.
+    await expect(page.getByTestId('g7le-state-switcher')).toHaveAttribute(
+      'data-active-state',
+      'edit_existing',
+      { timeout: 10_000 },
+    );
   });
 });

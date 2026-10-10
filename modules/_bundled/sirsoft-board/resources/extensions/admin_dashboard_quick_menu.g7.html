@@ -1,0 +1,17 @@
+<!-- 대시보드 퀵메뉴에 게시판 관리·신고 관리 두 타일을 덧붙인다. 타일마다 옮겨 갈 화면의 진입 권한을 걸어 권한이 없으면 그리지 않는다(눌러도 403 화면뿐). 타일 순서는 `priority` 오름차순이라 숫자가 작을수록 앞이고, 50 은 이커머스 타일(40)보다 뒤에 선다 -->
+<extension extension-point="admin_dashboard_quick_menu" mode="append" priority="50">
+  <a data-ref="qm_boards" href="/admin/boards" class="flex items-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200">
+    <permissions>
+      <permission>sirsoft-board.boards.read</permission>
+    </permissions>
+    <icon name="clipboard-list" class="text-lg md:text-xl"/>
+    <span class="text-center leading-tight">$t:sirsoft-board.admin.dashboard.quick_menu.boards</span>
+  </a>
+  <a data-ref="qm_reports" href="/admin/boards/reports" class="flex items-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200">
+    <permissions>
+      <permission>sirsoft-board.reports.view</permission>
+    </permissions>
+    <icon name="flag" class="text-lg md:text-xl"/>
+    <span class="text-center leading-tight">$t:sirsoft-board.admin.dashboard.quick_menu.reports</span>
+  </a>
+</extension>

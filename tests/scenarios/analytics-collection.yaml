@@ -1,0 +1,237 @@
+# audit:allow test-scenario-coverage reason: |
+#   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지
+#   못한다(저장소 기존 시나리오와 같은 한계). 축 조합은 PHPUnit 단위·Feature 테스트가
+#   커버하고 green 이다.
+
+feature: 방문자 통계 수집 기반 — 방문 묶기·액션 적재·제외 판정 (이슈 #682 S1)
+
+description: |
+  방문자가 사이트를 보는 동안 일어난 일을 방문과 액션으로 남긴다. 세 경로(브라우저
+  비콘·서버 폴백·사이트 내부 검색)가 모두 같은 적재 파이프라인으로 모인다.
+
+  배경:
+    - 코어에는 방문·페이지뷰를 세는 표면이 하나도 없었다. 운영자는 외부 도구 없이는
+      방문자 규모조차 알 수 없었다.
+    - SPA 라 서버 로그로는 페이지뷰가 방문당 1건으로만 찍힌다 — 브라우저가 알려 주지
+      않으면 화면 이동이 보이지 않는다.
+    - 수집 실패는 전부 조용하다. 방문이 두 개로 갈리거나 페이지뷰가 두 배가 되어도
+      화면에는 그럴듯한 숫자가 나오므로, 행 수를 직접 단언해야 어긋남이 잡힌다.
+
+  적용 지점:
+    - `app/Analytics/**` 순수 로직(제외 판정·방문자 식별·환경/유입 분류·URL 정규화).
+    - `app/Services/Analytics/VisitService` 가 트랜잭션 안에서 방문을 잠그고 적재한다.
+    - 방문 묶기: 같은 방문자 키 + 마지막 활동이 창(기본 30분) 안.
+    - 서버 폴백과 첫 비콘이 같은 페이지를 두 번 세지 않도록 60초 안의 행을 병합한다.
+
+# 축 조합이 많아 전건을 도는 대신 쌍 단위로 덮는다(계획서 §7.1).
+coverage_strategy: pairwise
+
+axes:
+  source: [beacon, server, search, server+beacon]
+  mode: [full, consent, anonymous]
+  visitor: [guest, member, admin, bot]
+  exclusion:
+    - none
+    - disabled
+    - prefetch
+    - dnt
+    - opt_out
+    - url_pattern
+    - ip_rule
+    - ua_rule
+    - headless
+    - cloud_ip
+    - country
+    - bot
+    - consent
+  # 훅 리스너가 큐를 타는가. 수집·검색 리스너는 `sync => true` 라 발화 자리에서 돌고
+  # (방문 1건이 잡 1개가 되지 않도록 — #682 S3 라운드 6), 활동 로그 같은 리스너는 큐로 간다.
+  dispatch: [sync, queue]
+  visit_state: [new, open, timed_out, max_actions]
+  merge: [within_window, outside_window, different_url]
+  init: [true, false]
+  prev_time_spent: [present, absent]
+  seo: [on, off]
+  mask_octets: [0, 1, 2, 3]
+  # 판정기 단위 축 — 조합을 만들려는 것이 아니라 UA·유입·URL·IP 판정기가 받는 입력 모양을 열거한다
+  ua: [empty, conflicting]
+  browser: [chrome, chromium_derivatives, edge, firefox, kakaotalk, naver_app, opera, safari, samsung, whale]
+  os: [android, chromeos, ios, ipados, linux, macos, windows]
+  os_version: [android, ios, macos, windows]
+  device: [desktop, mobile, tablet]
+  hints: [present, placeholder_only]
+  referrer: [absent, empty, self_host, search, website]
+  keyword: [present, absent]
+  campaign: [present, absent]
+  engine: [google, naver, daum, bing, yahoo, duckduckgo, baidu, yandex, zum, nate]
+  prefix: [http, http_www, https, https_www]
+  case: [mixed]
+  restore: [all_prefixes]
+  strip: [fragment, utm, fbclid, gclid]
+  query: [preserved_for_campaign, reordered]
+  display: [strip_site_host, decode_for_display]
+  url: [relative]
+  hash: [stable, type_separated]
+  cidr: [v4_inside, v4_outside, v6_inside, v6_outside, exact, all, non_byte_boundary, cross_family]
+  input: [invalid]
+  list: [hit, miss]
+  roundtrip: [ipv4, ipv6]
+
+exclusions:
+  - { visitor: bot, source: beacon, reason: "봇은 브라우저 비콘을 보내지 않는다 — 서버 경로에서만 판정된다" }
+  - { exclusion: cloud_ip, reason: "대역 목록 파일이 있어야 판정된다 — 파일 부재 시 판정을 건너뛰는 동작만 단위로 커버" }
+  - { mode: consent, visitor: bot, reason: "동의 판정 전에 봇이 먼저 걸러진다 — 순서가 계약이다" }
+
+effects:
+  # 이벤트 이름 저장 · 매체만 붙은 주소
+  - event_name_is_stored_in_the_event_dictionary
+  - utm_medium_alone_is_recorded
+  - first_request_creates_visit_and_action
+  - second_request_within_window_joins_same_visit
+  - request_after_timeout_starts_new_visit
+  - open_visit_lookup_locks_the_row
+  - previous_pageview_dwell_time_is_confirmed_by_next_request
+  - dwell_time_is_capped_at_configured_maximum
+  - bounce_flag_releases_on_second_pageview
+  - entry_and_exit_pages_are_recorded
+  - entry_and_exit_pages_come_from_pageviews_only
+  - server_fallback_and_first_beacon_merge_into_one_action
+  - merged_action_does_not_double_count_pageviews
+  - returning_visitor_reload_stays_in_one_visit
+  - first_beacon_fills_what_the_server_could_not_know
+  - login_during_a_visit_starts_a_new_visit
+  - server_placeholder_moves_to_the_beacon_visit_when_identities_differ
+  - blob_downloads_are_named_without_a_target
+  - repeated_navigation_to_the_same_page_counts_once
+  - cookieless_server_fallback_is_adopted_by_first_beacon
+  - anonymous_server_fallback_and_beacon_share_a_visit
+  - beacon_outside_merge_window_creates_new_action
+  - beacon_for_different_url_creates_new_action
+  - actions_beyond_visit_limit_are_dropped_with_failure_log
+  - excluded_requests_record_nothing
+  - each_exclusion_reason_is_counted_separately
+  - allowlisted_ip_skips_ip_ua_headless_cloud_country_rules
+  - bot_requests_never_enter_the_visit_ledger
+  - site_search_action_stores_result_count_and_tab
+  - download_and_outlink_actions_store_target_in_dictionary
+  - action_name_dictionary_is_reused_for_repeated_urls
+  - concurrent_dictionary_insert_falls_back_to_reread
+  - tracking_never_throws_to_the_caller
+  - failures_are_recorded_with_a_reason
+  - every_failure_reason_has_a_producer_and_a_label
+  - beacon_keys_and_limits_match_the_server_rules
+  - public_analytics_api_never_throws
+  - referrer_url_drops_fragment_and_tracking_params
+  - tracking_failure_is_logged_to_application_log
+  - after_track_hook_fires_with_ledger_ids
+  - visit_limit_notification_hook_fires
+  - visit_limit_notification_is_sent_once_a_day
+  - beacon_cannot_forge_site_search
+  # 전환 원장 (S1 결함 보수 — goal 비콘이 수신 후 버려지던 것)
+  - goal_action_records_a_conversion_row
+  - conversion_keeps_the_supplying_extension_identifier
+  - core_goal_is_not_attributed_to_an_extension
+  - conversion_revenue_and_currency_are_normalized
+  - malformed_conversion_attributes_do_not_break_tracking
+  - goal_attribute_schema_violation_is_logged_as_validation
+  - non_goal_actions_record_no_conversion
+  - download_action_name_prefers_the_display_name
+  - dictionary_returns_one_row_per_type_and_name
+  # 서버 폴백·봇·검색 경로 (미들웨어·훅이 원장에 닿는 배선)
+  - server_fallback_records_html_page_loads_only
+  - bot_hits_are_recorded_with_cache_status
+  - site_search_hook_records_query_and_result_count
+  - collection_listeners_never_go_through_the_queue
+  # 운영 표면 (설정 스키마·시딩·활동 로그·스키마 왕복·지역 조회)
+  - settings_schema_exposes_only_public_keys
+  - permissions_menus_and_definitions_are_seeded
+  - activity_log_records_analytics_hooks_as_admin
+  - analytics_action_labels_are_translated  # 목록 동작 칸이 원문 키(analytics.xxx)로 새지 않는다 (#138 실측 ⑧)
+  - activity_log_survives_queued_listener_dispatch
+  - activity_log_descriptions_fill_every_placeholder
+  - migrations_roll_back_and_forward_idempotently
+  - geo_location_lookup_returns_null_without_database
+  # 방문 환경·유입 분류 (원장 컬럼을 채우는 판정)
+  - browser_and_os_are_classified_from_user_agent
+  - derivative_browsers_are_not_misread_as_their_base
+  - device_type_distinguishes_mobile_from_tablet
+  - client_hints_take_precedence_over_user_agent
+  - unknown_environment_falls_back_to_other
+  - referrer_type_is_classified_into_direct_search_website_campaign
+  - same_site_navigation_is_not_counted_as_referral
+  - search_keyword_is_extracted_when_the_engine_sends_it
+  - campaign_parameters_take_precedence_over_referrer
+  - url_normalization_collapses_scheme_www_and_tracking_params
+  - url_prefix_is_kept_so_the_original_address_can_be_restored
+  - display_names_decode_only_readable_text
+  # 브라우저 트래커 (비콘을 만들어 보내는 쪽)
+  - tracker_sends_beacon_on_route_change
+  - only_the_first_beacon_carries_init_and_referrer
+  - tracker_reports_previous_page_dwell_time
+  - tracker_caps_dwell_time_at_the_configured_maximum
+  - tracker_attaches_bearer_token_when_present
+  - tracker_uses_keepalive_so_unloading_pages_still_deliver
+  - tracker_fits_payload_to_server_field_limits
+  - tracker_clears_dimensions_on_navigation
+  - prerendered_page_counts_its_landing_pageview_when_activated
+  - tracker_defers_sending_so_navigation_is_not_delayed
+  - tracker_swallows_transport_failures
+  - tracker_skips_excluded_requests_before_sending
+  - tracker_honours_do_not_track_and_opt_out
+  - tracker_toggles_opt_out_through_the_server
+  - client_and_server_exclusion_rules_agree
+  - page_title_falls_back_through_meta_document_and_path
+  - consent_bridge_blocks_sending_until_consent_is_known
+  - consented_visitors_first_page_is_held_until_consent_is_known
+  - consent_bridge_does_not_block_when_there_is_no_consent_source
+  - consent_bridge_updates_on_consent_change_events
+  - consent_lookup_identifies_the_logged_in_member
+  - first_screen_sends_exactly_one_pageview
+  - consent_gate_applies_only_in_consent_mode
+  - link_clicks_are_classified_into_download_and_outlink
+  - same_site_links_are_not_counted_as_outlinks
+  - repeated_clicks_on_one_link_count_once
+  # 브라우저 왕복 (트래커와 서버 사이의 배선)
+  - beacon_reaches_server_with_204
+  - spa_navigation_sends_another_beacon
+  - admin_template_does_not_track
+
+test_files:
+  - resources/js/core/analytics/__tests__/publicApi.test.ts
+  - resources/js/core/analytics/__tests__/payloadContract.test.ts
+  - tests/Unit/Analytics/CollectFailureReasonTest.php
+  - tests/Feature/Analytics/VisitServiceTest.php
+  - tests/Feature/Analytics/ActionNameRepositoryTest.php
+  - tests/Feature/Analytics/CollectControllerTest.php
+  - tests/Feature/Analytics/TrackServerVisitMiddlewareTest.php
+  - tests/Feature/Analytics/TrackBotHitMiddlewareTest.php
+  - tests/Feature/Analytics/SiteSearchTrackingTest.php
+  - tests/Feature/Analytics/CollectionDispatchTest.php
+  - tests/Feature/Analytics/ActivityLogTest.php
+  - tests/Feature/Analytics/SettingsSchemaTest.php
+  - tests/Feature/Analytics/PermissionsMenusSeedTest.php
+  - tests/Feature/Analytics/MigrationSmokeTest.php
+  - tests/Feature/Analytics/GeoIpLocationTest.php
+  - tests/Unit/Analytics/IpAddressTest.php
+  - tests/Unit/Analytics/UserAgentClassifierTest.php
+  - tests/Unit/Analytics/ReferrerClassifierTest.php
+  - tests/Unit/Analytics/UrlNormalizerTest.php
+  - tests/Unit/Analytics/VisitExclusionPipelineTest.php
+  - tests/Unit/Analytics/AnalyticsBotClassifierTest.php
+  - resources/js/core/analytics/__tests__/Tracker.test.ts
+  - resources/js/core/analytics/__tests__/exclusions.test.ts
+  - resources/js/core/analytics/__tests__/pageTitle.test.ts
+  - resources/js/core/analytics/__tests__/consent.test.ts
+  - resources/js/core/analytics/__tests__/clickTracking.test.ts
+  - resources/js/core/__tests__/TemplateApp.analyticsGuard.test.ts
+  - tests/Playwright/specs/admin/analytics-collect-e2e.spec.ts
+
+e2e:
+  - spec: tests/Playwright/specs/admin/analytics-collect-e2e.spec.ts
+    axes: [user_first_load, admin_screen]
+    reason: |
+      단위·Feature 테스트는 트래커와 적재 파이프라인을 따로 잠근다. 그 사이의 배선 —
+      사용자 화면 부팅 시 트래커가 켜지고, 비콘이 만들어지고, 서버가 204 로 받는 것 —
+      은 브라우저에서만 드러나며 깨져도 화면에 아무 증상이 없다.
+
+# 관리자 화면(14면)의 E2E 는 S3 이 소유한다 — 이 단계에는 화면이 없다.

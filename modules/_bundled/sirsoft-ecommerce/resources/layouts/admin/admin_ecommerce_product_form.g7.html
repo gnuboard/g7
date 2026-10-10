@@ -1,0 +1,441 @@
+<!-- 상품 등록·수정 (운영자) — 이 모듈에서 가장 큰 폼이다. 한 레이아웃이 세 진입을 겸한다:
+  신규(`route.itemCode` 없음) · 수정(`route.itemCode`) · 복사(`query.copy_id`).
+  기본정보부터 활동로그까지 열두 구획을 한 페이지에 이어 붙이고 탭은 스크롤 위치를 따라가며,
+  구획은 전부 `_local.form` 하나를 나눠 쓴다. 신규 진입은 아직 상품 id 가 없어 이미지 업로드를
+  임시키(`ui.imageTempKey`)로 묶어 두었다가 저장할 때 서버에서 상품에 붙인다. -->
+<layout name="admin_ecommerce_product_form" version="1.0.0" extends="_admin_base">
+  <meta title="{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.title_edit' : '$t:sirsoft-ecommerce.admin.product.title_create'}}" description="{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.description_edit' : '$t:sirsoft-ecommerce.admin.product.description_create'}}"/>
+  <!-- 수정 진입일 때만 원본을 받아 폼에 심는다. 수정 권한이 없으면 응답을 받고도 403 화면으로 돌린다 — 목록을 거치지 않고 주소만으로 들어오는 경로가 있어 이 자리에서 막아야 한다 -->
+  <data-source id="product" label_key="$t:sirsoft-ecommerce.editor.data_source.product" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/products/{{route.itemCode}}" method="GET" if="{{!!route.itemCode}}" initLocal="form" :refetchOnMount="true" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+    <field name="errorCondition">
+      <field name="if" value="{{response?.data?.abilities?.can_update === false}}"/>
+      <field name="errorCode" :value="403"/>
+    </field>
+  </data-source>
+  <!-- 등록·복사는 등록 권한(can_create)의 일인데 상품 응답(수정 진입)에는 그 키가 없고 등록 진입에는 응답 자체가 없다 — 목록 응답의 컬렉션 abilities 를 목록 API 최소 단위(per_page=10, 그보다 작으면 422)로 받아 쓴다. 이 화면은 조회 권한이 있어야 열리므로 목록 조회가 막히지 않는다. 폼 전체의 읽기 전용 계산값(`isReadOnly`)이 수정 진입은 상품의 can_update, 등록·복사 진입은 이 응답의 can_create 를 보고, 구획의 입력·버튼·업로더·에디터·옵션 추가/삭제·드래그 손잡이가 모두 그 값 하나를 따른다. 응답이 아직 없으면(로딩 중·실패) 잠긴 쪽으로 시작한다. -->
+  <data-source id="product_abilities" label_key="$t:sirsoft-ecommerce.editor.data_source.product_abilities" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/products" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <params :per_page="10"/>
+    <fallback :data="null"/>
+  </data-source>
+  <!-- 복사 진입 전용 엔드포인트다 — 원본을 그대로 주는 것이 아니라 어느 구획을 가져올지(`copy_*`)를 서버가 받아 골라 담아 준다. 어떤 항목을 복사할지는 복사 창에서 정해 쿼리로 넘어온다(SEO 만 기본 제외 — 검색엔진에 같은 내용이 둘로 잡히기 때문) -->
+  <data-source id="copy_source" label_key="$t:sirsoft-ecommerce.editor.data_source.copy_source" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/products/{{query.copy_id}}/copy" method="GET" if="{{!route.itemCode &amp;&amp; !!query.copy_id}}" :refetchOnMount="true" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
+    <params copy_images="{{query.copy_images ?? '1'}}" copy_options="{{query.copy_options ?? '1'}}" copy_categories="{{query.copy_categories ?? '1'}}" copy_sales_info="{{query.copy_sales_info ?? '1'}}" copy_description="{{query.copy_description ?? '1'}}" copy_notice="{{query.copy_notice ?? '1'}}" copy_common_info="{{query.copy_common_info ?? '1'}}" copy_other_info="{{query.copy_other_info ?? '1'}}" copy_shipping="{{query.copy_shipping ?? '1'}}" copy_seo="{{query.copy_seo ?? '0'}}" copy_identification="{{query.copy_identification ?? '1'}}"/>
+    <init-local>
+      <field name="_merge" value="replace"/>
+      <field name="form" value="{{data}}"/>
+    </init-local>
+  </data-source>
+  <!-- 분류 선택 트리. 아래 선택지 소스들은 상품마다 달라지지 않아 5분간 캐시해 두고 재진입에서 다시 부르지 않는다 -->
+  <data-source id="categories" label_key="$t:sirsoft-ecommerce.editor.data_source.categories" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/categories/tree" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <field name="cache">
+      <field name="ttl" :value="300"/>
+    </field>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="unavailable" :value="true"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <!-- 상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다 -->
+        <suppress/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 브랜드 선택지 — 사용 중인 것만 받는다 -->
+  <data-source id="brands" label_key="$t:sirsoft-ecommerce.editor.data_source.brands" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/brands" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params :per_page="100" :is_active="true"/>
+    <field name="cache">
+      <field name="ttl" :value="300"/>
+    </field>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="unavailable" :value="true"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <!-- 상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다 -->
+        <suppress/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 상품정보제공고시 템플릿 — 고시 구획에서 불러 쓴다. 쪽 나눔 없이 전량 받는 것은 고를 때 검색이 아니라 목록으로 훑기 때문이다 -->
+  <data-source id="notice_templates" label_key="$t:sirsoft-ecommerce.editor.data_source.notice_templates" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/product-notice-templates" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params :active_only="true" per_page="all"/>
+    <field name="cache">
+      <field name="ttl" :value="300"/>
+    </field>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="unavailable" :value="true"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <!-- 상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다 -->
+        <suppress/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 공통정보 선택지 — 여러 상품이 함께 쓰는 안내문을 골라 붙인다 -->
+  <data-source id="common_infos" label_key="$t:sirsoft-ecommerce.editor.data_source.common_infos" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/product-common-infos" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <params :active_only="true" :per_page="100"/>
+    <field name="cache">
+      <field name="ttl" :value="300"/>
+    </field>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="unavailable" :value="true"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <!-- 상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다 -->
+        <suppress/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 배송정책 선택지. 신규 진입에서 기본 정책을 미리 골라 두어야 해 blocking 이다. 사용 중인 것만 받으므로, 이미 붙어 있던 정책이 나중에 꺼지면 목록에서 사라진다 — 아래 computed 가 그 한 건을 도로 끼워 넣어 화면에서 조용히 빠지는 것을 막는다 -->
+  <data-source id="shipping_policies" label_key="$t:sirsoft-ecommerce.editor.data_source.shipping_policies" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
+    <params :is_active="true" :per_page="100"/>
+    <field name="cache">
+      <field name="ttl" :value="300"/>
+    </field>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="unavailable" :value="true"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <!-- 상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다 -->
+        <suppress/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 상품 라벨(신상품·베스트 등) 선택지 — 이 폼 안에서 만들고 지울 수도 있어 라벨 창이 바뀌면 다시 받는다 -->
+  <data-source id="product_labels" label_key="$t:sirsoft-ecommerce.editor.data_source.product_labels" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/product-labels" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <field name="cache">
+      <field name="ttl" :value="300"/>
+    </field>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="unavailable" :value="true"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <!-- 상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다 -->
+        <suppress/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 열람 가능 등급 선택지 — 특정 회원 등급에게만 보이는 상품을 만들 때 쓴다. 코어가 가진 목록이라 갱신이 드물어 10분 캐시다 -->
+  <data-source id="roles" label_key="$t:sirsoft-ecommerce.editor.data_source.roles" type="api" endpoint="/api/admin/roles/active" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <field name="cache">
+      <field name="ttl" :value="600"/>
+    </field>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="unavailable" :value="true"/>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <!-- 상품 등록·수정 권한만 받고 이 선택지의 조회 권한은 없는 운영자에게는 정상 응답이다 — 전파하면 폼 전체가 오류 화면이 된다. fallback 의 unavailable 로 그 칸 아래에서 권한이 없다고 말하고 칸만 비운다 -->
+        <suppress/>
+      </on-code>
+      <default>
+        <show-error-page target="content"/>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 활동로그 구획 전용(수정 진입에만 있다). 쪽수·정렬을 _local 에서 읽으므로 그 값이 바뀔 때마다 서버에서 다시 받아 온다 -->
+  <data-source id="activity_logs" label_key="$t:sirsoft-ecommerce.editor.data_source.activity_logs" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/products/{{route.itemCode}}/logs" method="GET" if="{{!!route.itemCode}}" :auto_fetch="true" :auth_required="true">
+    <params page="{{_local.ui.logsPage ?? 1}}" per_page="{{_local.ui.activityLogPerPage ?? 10}}" sort_order="{{_local.ui.activityLogSort ?? 'desc'}}"/>
+  </data-source>
+  <computed name="currencyColumns">{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies || []).filter(c => !c.is_default &amp;&amp; c.exchange_rate).map(c => ({ field: 'multi_currency_selling_price.' + c.code, header: $localized(c.name) || c.code, currencyCode: c.code }))}}</computed>
+  <computed name="shippingPolicyOptions">{{((shipping_policies?.data?.data ?? []).some(p => p.id === product?.data?.shipping_policy_id) || !product?.data?.shipping_policy) ? (shipping_policies?.data?.data ?? []) : [...(shipping_policies?.data?.data ?? []), product.data.shipping_policy]}}</computed>
+  <computed name="isReadOnly">{{route.itemCode ? product?.data?.abilities?.can_update !== true : product_abilities?.data?.abilities?.can_create !== true}}</computed>
+  <computed name="assignedPolicyInactive">{{!!product?.data?.shipping_policy &amp;&amp; product.data.shipping_policy.is_active === false}}</computed>
+  <permissions>
+    <permission>sirsoft-ecommerce.products.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>categories</wait-for>
+    <wait-for>brands</wait-for>
+    <wait-for>notice_templates</wait-for>
+    <wait-for>common_infos</wait-for>
+    <wait-for>product_labels</wait-for>
+    <wait-for>roles</wait-for>
+    <wait-for>activity_logs</wait-for>
+  </transition-overlay>
+  <init>
+    <!-- 생성 모드: 상품 수정 화면에서 SPA 로 넘어오면 같은 레이아웃이라 엔진이 `_local` 을 비우지 않아 직전 상품의 form(product_code·이름 등)이 아래 기본값 setState 에 깊은 병합으로 살아남는다. form=null 로 먼저 지운다(객체 대신 null 로 덮어써 완전 삭제). 복사 진입(copy_id)은 copy_source 의 initLocal 이 init_actions 뒤에 병합되므로 영향 없음. -->
+    <set-state if="{{!route.itemCode}}" target="local" :form="null"/>
+    <set-state target="local" activeTab="basic" :isSaving="false" :hasChanges="false" :errors="null" :isDataLoaded="false" :ui='{"optionInputs":[],"activityLogExpanded":true,"basicInfoExpanded":true,"commonInfoDetailExpanded":false,"commonInfoExpanded":true,"descriptionExpanded":true,"identificationExpanded":true,"imagesExpanded":true,"noticeExpanded":true,"otherInfoExpanded":true,"productOptionsExpanded":true,"salesInfoExpanded":true,"seoExpanded":true,"shippingDetailExpanded":true,"shippingExpanded":true,"useDefaultShippingPolicy":true,"categoryStep":1,"selectedCategories":[null,null,null,null],"productNameLocale":"ko","descriptionLocale":"ko","noticeLocale":"ko","logsPage":1,"showAddLocaleModal":false,"lastClickedLabelId":null,"descriptionActiveLocales":["ko"],"selectedLocale":"en","isSavingLabel":false,"imageToDelete":null,"copyOptions":{"images":true,"options":true,"categories":true,"sales_info":true,"description":true,"notice":true,"common_info":true,"other_info":true,"shipping":true,"seo":false,"identification":true},"saveTemplateData":{"name":"","category_id":null,"is_default":false},"isDeleting":false,"isSavingTemplate":false,"imageTempKey":"{{$uuid()}}"}' :optionGenerators="[]" :productOptionItems="[]" :selectedCategoryInfos="[]">
+      <field name="form">
+        <field name="options" :value="[]"/>
+        <field name="additional_options" :value="[]"/>
+        <field name="images" :value="[]"/>
+        <field name="category_ids" :value="[]"/>
+        <field name="label_assignments" :value="[]"/>
+        <field name="notice_items" :value="[]"/>
+        <field name="meta_keywords" :value="[]"/>
+        <field name="allowed_roles" :value="[]"/>
+        <field name="seo_sync_title" :value="true"/>
+        <field name="seo_sync_description" :value="true"/>
+        <field name="tax_status" value="taxable"/>
+        <field name="sales_status" value="on_sale"/>
+        <field name="display_status" value="visible"/>
+      </field>
+      <field name="copyOptions">
+        <field name="images" :value="true"/>
+        <field name="options" :value="true"/>
+        <field name="categories" :value="true"/>
+        <field name="sales_info" :value="true"/>
+        <field name="description" :value="true"/>
+        <field name="notice" :value="true"/>
+        <field name="common_info" :value="true"/>
+        <field name="other_info" :value="true"/>
+        <field name="shipping" :value="true"/>
+        <field name="seo" :value="false"/>
+        <field name="identification" :value="true"/>
+      </field>
+    </set-state>
+    <action handler="sirsoft-ecommerce.setDefaultShippingPolicy" if="{{!route.itemCode}}"/>
+    <!-- 수정·복사 진입: 위 기본값(true)대로 두면 기본이 아닌 정책을 쓰는 상품도 「기본 배송정책 사용」 이 켜진 채 선택지가 잠긴다. 저장된 정책이 기본 정책일 때만 켠다 -->
+    <set-state if="{{!!route.itemCode || !!query?.copy_id}}" target="local" ui.useDefaultShippingPolicy="{{(product?.data?.shipping_policy_id ?? copy_source?.data?.shipping_policy_id) == null ? true : (shipping_policies?.data?.data ?? shipping_policies?.data ?? []).some(p =&gt; p.id === (product?.data?.shipping_policy_id ?? copy_source?.data?.shipping_policy_id) &amp;&amp; p.is_default === true)}}"/>
+  </init>
+  <slot name="content">
+    <div data-ref="product_form_content" data-key="form" data-debounce="300" class="admin-page-content">
+      <div data-ref="page_header_section" class="mb-6">
+        <div data-ref="page_header" class="page-header-padded flex items-start justify-between gap-3">
+          <div>
+            <h1 class="page-title">{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.title_edit' : '$t:sirsoft-ecommerce.admin.product.title_create'}}</h1>
+            <p class="page-description">{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.description_edit' : '$t:sirsoft-ecommerce.admin.product.description_create'}}</p>
+          </div>
+          <a data-ref="view_user_page_link" data-if="{{!!route.itemCode}}" href="{{(_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : ('/' + (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop'))) + '/products/' + route.itemCode}}" target="_blank" rel="noopener noreferrer" title="$t:sirsoft-ecommerce.admin.product.action.view_user_page" class="flex-center gap-2 flex-shrink-0 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
+            <icon name="external-link" size="sm"/>
+            <span>$t:sirsoft-ecommerce.admin.product.action.view_user_page</span>
+          </a>
+        </div>
+      </div>
+      <tab-navigation-scroll data-type="composite" data-ref="tab_navigation" class="sticky-tab-nav tab-nav-default mb-6" activeTabId="{{_local.activeTab ?? 'basic'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="">
+        <prop name="tabs">
+          <item id="basic" label="$t:sirsoft-ecommerce.admin.product.tabs.basic"/>
+          <item id="sales" label="$t:sirsoft-ecommerce.admin.product.tabs.sales"/>
+          <item id="options" label="$t:sirsoft-ecommerce.admin.product.tabs.options"/>
+          <item id="images" label="$t:sirsoft-ecommerce.admin.product.tabs.images"/>
+          <item id="description" label="$t:sirsoft-ecommerce.admin.product.tabs.description"/>
+          <item id="notice" label="$t:sirsoft-ecommerce.admin.product.tabs.notice"/>
+          <item id="common_info" label="$t:sirsoft-ecommerce.admin.product.tabs.common_info"/>
+          <item id="other" label="$t:sirsoft-ecommerce.admin.product.tabs.other"/>
+          <item id="shipping" label="$t:sirsoft-ecommerce.admin.product.tabs.shipping"/>
+          <item id="seo" label="$t:sirsoft-ecommerce.admin.product.tabs.seo"/>
+          <item id="identification" label="$t:sirsoft-ecommerce.admin.product.tabs.identification"/>
+          <item id="activity_log" label="$t:sirsoft-ecommerce.admin.product.tabs.activity_log"/>
+        </prop>
+      </tab-navigation-scroll>
+      <div data-ref="form_body_content" class="tab-content">
+        <div data-ref="validation_error" data-if="{{_local.errors}}" class="mb-6">
+          <div class="alert-danger">
+            <icon name="triangle-exclamation" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" size="md"/>
+            <div>
+              <h3 class="text-error-strong">$t:sirsoft-ecommerce.common.validation_error</h3>
+              <ul data-if="{{typeof _local.errors === 'object'}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+                <li class="text-error-soft">{{message}}</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <section data-ref="product_code_info_section" data-if="{{!!route.itemCode}}" id="section_product_code_info" class="scroll-mt-32 mt-6 mb-6">
+          <grid data-type="layout" :cols="2" :gap="4">
+            <responsive on="portable" :cols="1"/>
+            <form-field data-type="composite" label="$t:sirsoft-ecommerce.admin.product.fields.product_code">
+              <span class="text-primary font-medium">{{product?.data?.product_code ?? '-'}}</span>
+            </form-field>
+            <form-field data-type="composite" label="$t:sirsoft-ecommerce.admin.product.fields.sales_product_code">
+              <span class="text-primary font-medium">{{product?.data?.sales_product_code ?? '-'}}</span>
+            </form-field>
+            <form-field data-type="composite" label="$t:sirsoft-ecommerce.admin.product.fields.created_at">
+              <span class="text-secondary">{{product?.data?.created_at | datetime('YYYY-MM-DD HH:mm')}}</span>
+            </form-field>
+            <form-field data-type="composite" label="$t:sirsoft-ecommerce.admin.product.fields.updated_at">
+              <span class="text-secondary">{{product?.data?.updated_at | datetime('YYYY-MM-DD HH:mm')}}</span>
+            </form-field>
+          </grid>
+        </section>
+        <section data-ref="copy_source_info_section" data-if="{{!route.itemCode &amp;&amp; !!query.copy_id}}" id="section_copy_source_info" class="scroll-mt-32 mt-6 mb-6">
+          <div class="alert-info">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="copy" class="text-blue-600 dark:text-blue-400" size="md"/>
+              <span class="text-sm font-medium text-info-soft">$t:sirsoft-ecommerce.admin.product.copy_mode.title</span>
+            </div>
+            <div class="flex-start gap-4">
+              <responsive on="portable" class="flex-center flex-col gap-3"/>
+              <img data-if="{{copy_source?.data?.thumbnail_url}}" src="{{copy_source?.data?.thumbnail_url}}" alt="{{$localized(copy_source?.data?.name)}}" class="w-16 h-16 object-cover rounded-lg flex-shrink-0"/>
+              <div data-if="{{!copy_source?.data?.thumbnail_url}}" class="flex-center w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 justify-center flex-shrink-0">
+                <icon name="image" class="text-2xl text-gray-400 dark:text-gray-500"/>
+              </div>
+              <div class="flex-1 min-w-0">
+                <responsive on="portable" class="w-full text-center"/>
+                <p class="text-primary font-medium truncate">{{$localized(copy_source?.data?.name) || '-'}}</p>
+                <!-- 원본 코드는 진입 주소의 copy_id 에서 — 복사 데이터의 product_code 는 새 상품용으로 미리 채번한 코드다 -->
+                <p class="text-label">$t:sirsoft-ecommerce.admin.product.fields.product_code: {{query.copy_id ?? '-'}}</p>
+                <p class="text-sm font-medium text-blue-600 dark:text-blue-400">{{(copy_source?.data?.selling_price ?? 0) | number}}{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}</p>
+              </div>
+              <a href="{{'/admin/ecommerce/products/' + query.copy_id + '/edit'}}" target="_blank" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0">
+                <responsive on="portable" href="{{'/admin/ecommerce/products/' + query.copy_id + '/edit'}}" target="_blank" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline mt-2"/>
+                <span>$t:sirsoft-ecommerce.admin.product.copy_mode.view_original</span>
+                <icon name="arrow-up-right-from-square" size="xs"/>
+              </a>
+            </div>
+          </div>
+        </section>
+        <include src="partials/admin_ecommerce_product_form/_partial_basic_info.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_sales_info.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_product_options.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_image_upload.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_description.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_product_notice.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_common_info.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_other_info.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_shipping.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_seo_settings.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_identification_codes.g7.html"/>
+        <include src="partials/admin_ecommerce_product_form/_partial_activity_log.g7.html"/>
+        <div data-ref="footer_buttons" class="sticky-footer-buttons">
+          <!-- 목록으로. 보던 목록 상태를 이고 간다 -->
+          <button data-ref="footer_list_button" type="button" class="btn btn-outline">
+            <on type="click">
+              <navigate path="/admin/ecommerce/products" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            $t:sirsoft-ecommerce.common.list
+          </button>
+          <button data-ref="footer_copy_button" data-if="{{route.itemCode &amp;&amp; product_abilities?.data?.abilities?.can_create === true}}" type="button" class="btn btn-outline">
+            <on type="click">
+              <open-modal target="modal_copy_product"/>
+            </on>
+            $t:sirsoft-ecommerce.common.copy
+          </button>
+          <button data-ref="footer_delete_button" data-if="{{!!route.itemCode}}" type="button" class="btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{product?.data?.abilities?.can_delete !== true}}">
+            <on type="click">
+              <!-- 삭제 — 곧바로 지우지 않고 먼저 서버에 삭제 가능 여부를 묻는다. 주문·장바구니에 걸린 상품은 지울 수 없고 그 사유와 걸린 자료를 확인 창에서 보여 줘야 하므로, 응답을 전역에 담아 둔 뒤 창을 연다(창은 별도 컨텍스트라 _local 을 못 본다) -->
+              <sequence>
+                <set-state target="global">
+                  <field name="deleteProduct">
+                    <field name="target" value="{{product?.data}}"/>
+                    <field name="canDelete" :value="null"/>
+                    <field name="reason" :value="null"/>
+                    <field name="relatedData" :value="null"/>
+                  </field>
+                </set-state>
+                <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/products/{{route.itemCode}}/can-delete" method="GET">
+                  <success>
+                    <set-state target="global" deleteProduct.canDelete="{{result.data.canDelete}}" deleteProduct.reason="{{result.data.reason}}" deleteProduct.relatedData="{{result.data.relatedData}}"/>
+                    <open-modal target="modal_delete_confirm"/>
+                  </success>
+                  <fail>
+                    <toast type="error" message="$t:sirsoft-ecommerce.admin.product.messages.delete_check_error"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            $t:sirsoft-ecommerce.common.delete
+          </button>
+          <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || _computed.isReadOnly}}" class="flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" data-testid="product-save">
+            <on type="click">
+              <!-- 저장 — 보내기 전에 이미지 업로드부터 끝낸다. 업로드 구획이 아직 서버에 올리지 않은
+                파일을 들고 있을 수 있고, 그 결과 목록으로 폼의 이미지 항목을 갈아 끼운 뒤에야
+                상품 본문이 올바른 이미지를 가리키기 때문이다. 신규 저장은 방금 받은 id 로 수정
+                화면에 갈아타므로(이미지 임시키가 그때 상품에 묶인다) 목록으로 돌아가지 않는다. -->
+              <sequence>
+                <set-state target="local" :isSaving="true" :errors="null"/>
+                <emit-event event="upload:product_images"/>
+                <set-state if="{{!!route.itemCode &amp;&amp; Array.isArray(_local._eventResult?.data?.allFiles)}}" target="local" form.images="{{_local._eventResult?.data?.allFiles ?? (_local.form?.images ?? [])}}"/>
+                <api-call :auth_required="true" target="{{route.itemCode ? '/api/modules/sirsoft-ecommerce/admin/products/' + route.itemCode : '/api/modules/sirsoft-ecommerce/admin/products'}}" method="{{route.itemCode ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, !route.itemCode ? { image_temp_key: _local.ui.imageTempKey } : {})}}">
+                  <success>
+                    <set-state target="local" :isSaving="false" :hasChanges="false" :errors="null"/>
+                    <toast type="success" message="{{route.itemCode ? '$t:sirsoft-ecommerce.messages.product_updated' : '$t:sirsoft-ecommerce.messages.product_created'}}"/>
+                    <!-- 신규 저장 후 편집 화면으로 전환 — 같은 목록 클러스터 안의 이동이므로 목록 상태를 유지한다 (#75). -->
+                    <navigate if="{{!route.itemCode}}" path="{{'/admin/ecommerce/products/' + result.data.id + '/edit'}}" :mergeQuery="true">
+                      <query/>
+                    </navigate>
+                  </success>
+                  <fail>
+                    <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+            <span data-if="{{!_local.isSaving}}">$t:sirsoft-ecommerce.common.save</span>
+            <span data-if="{{_local.isSaving}}">$t:sirsoft-ecommerce.common.saving</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </slot>
+  <!-- 언어 추가 — 상품명·설명을 어느 언어까지 입력할지 고른다 -->
+  <modal src="partials/admin_ecommerce_product_form/_modal_add_language.g7.html"/>
+  <!-- 라벨 만들기·고치기 — 상품 폼을 벗어나지 않고 라벨 자체를 관리한다 -->
+  <modal src="partials/admin_ecommerce_product_form/_modal_label_form.g7.html"/>
+  <!-- 라벨 삭제 확인 — 이 라벨을 쓰는 다른 상품에서도 함께 떨어진다 -->
+  <modal src="partials/admin_ecommerce_product_form/_modal_label_delete_confirm.g7.html"/>
+  <!-- 라벨 해제 확인 — 기간이 걸린 라벨을 끄면 그 설정이 사라지므로 되묻는다 -->
+  <modal src="partials/admin_ecommerce_product_form/_modal_label_uncheck_confirm.g7.html"/>
+  <!-- 상품 복사 — 어느 구획을 가져올지 고르고 복사 진입으로 넘어간다 -->
+  <modal src="partials/admin_ecommerce_product_form/_modal_copy_product.g7.html"/>
+  <!-- 옵션 재생성 확인 — 다시 만들면 기존 옵션에 넣어 둔 재고·가격이 사라진다 -->
+  <modal src="partials/admin_ecommerce_product_form/_modal_confirm_regenerate.g7.html"/>
+  <!-- 상품 삭제 확인 — 삭제 가능 여부와 걸려 있는 자료를 함께 보여 준다 -->
+  <modal src="partials/admin_ecommerce_product_form/_modal_delete_confirm.g7.html"/>
+  <!-- 추가옵션 비우기 확인 -->
+  <modal src="partials/admin_ecommerce_product_form/_modal_additional_options_clear.g7.html"/>
+  <!-- 고시 항목을 템플릿으로 저장 — 지금 입력한 내용을 다음 상품에서 불러 쓴다 -->
+  <modal src="partials/admin_ecommerce_product_form/_modal_save_template.g7.html"/>
+  <!-- 고시 항목 일괄 변경 -->
+  <modal src="partials/admin_ecommerce_product_form/_modal_notice_bulk_change.g7.html"/>
+  <!-- 고시 템플릿 적용 확인 — 지금 넣어 둔 고시 내용을 템플릿 값이 덮는다 -->
+  <modal src="partials/admin_ecommerce_product_form/_modal_notice_template_confirm.g7.html"/>
+  <!-- 검색 태그 다국어 입력 -->
+  <modal src="partials/admin_ecommerce_product_form/_modal_multilingual_tag_edit.g7.html"/>
+</layout>

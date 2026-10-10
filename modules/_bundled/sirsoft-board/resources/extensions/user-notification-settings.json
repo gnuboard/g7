@@ -1,236 +1,285 @@
 {
-  "target_layout": "admin_user_form",
-  "injections": [
-    {
-      "target_id": "user_form_tabs",
-      "position": "inject_props",
-      "props": {
-        "tabs": {
-          "_append": [
-            {
-              "id": "ext_notification",
-              "label": "$t:sirsoft-board.admin.users.form.sections.notification_settings",
-              "iconName": "cubes"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "target_id": "extension_form_content",
-      "position": "append_child",
-      "components": [
+    "comment": "관리자 회원 «편집» 폼에 알림 수신 설정 네 가지를 체크박스로 덧붙인다 — 탭 목록에 항목 하나(inject_props) + 확장 슬롯에 본문(append_child). 값은 부모 폼의 _local.form 에 함께 실려 저장된다(이 조각에는 저장 액션이 없다). 체크박스는 자동 바인딩을 끄고 change 에서 checked 불리언을 직접 쓴다 — 엔진 자동 바인딩은 값이 이미 불리언일 때만 checked 로 묶어, 값이 없는 회원 등록 화면에서는 클릭해도 빈 문자열이 쓰이고 체크가 켜지지 않았다",
+    "target_layout": "admin_user_form",
+    "priority": 300,
+    "injections": [
         {
-          "id": "ext_notification_form_content",
-          "type": "basic",
-          "name": "Div",
-          "props": {
-            "id": "ext_notification",
-            "className": "scroll-mt-32 mt-6"
-          },
-          "children": [
-            {
-              "id": "section_notification_settings",
-              "type": "basic",
-              "name": "Div",
-              "props": {
-                "className": "admin-card"
-              },
-              "children": [
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "flex-between mb-4"
-                  },
-                  "children": [
-                    {
-                      "type": "basic",
-                      "name": "Div",
-                      "props": {
-                        "className": "flex-center gap-2"
-                      },
-                      "children": [
+            "target_id": "user_form_tabs",
+            "position": "inject_props",
+            "props": {
+                "tabs": {
+                    "_append": [
                         {
-                          "type": "basic",
-                          "name": "Icon",
-                          "props": {
-                            "name": "bell",
-                            "className": "text-secondary w-5 h-5"
-                          }
-                        },
-                        {
-                          "type": "basic",
-                          "name": "H3",
-                          "props": {
-                            "className": "section-heading"
-                          },
-                          "text": "$t:sirsoft-board.admin.users.form.sections.notification_settings"
+                            "id": "ext_notification",
+                            "label": "$t:sirsoft-board.admin.users.form.sections.notification_settings",
+                            "iconName": "cubes"
                         }
-                      ]
-                    },
-                    {
-                      "type": "composite",
-                      "name": "ExtensionBadge",
-                      "props": {
-                        "type": "module",
-                        "identifier": "sirsoft-board",
-                        "installedModules": "{{_global.installedModules}}"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "basic",
-                  "name": "Div",
-                  "props": {
-                    "className": "grid-2col-responsive"
-                  },
-                  "children": [
-                    {
-                      "id": "field_notify_post_complete",
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Label",
-                          "props": {
-                            "className": "flex-center gap-2 cursor-pointer"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Input",
-                              "props": {
-                                "type": "checkbox",
-                                "name": "notify_post_complete",
-                                "checked": "{{_local.form?.notify_post_complete ?? false}}",
-                                "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
-                              }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-body"
-                              },
-                              "text": "$t:sirsoft-board.admin.users.form.notifications.post_complete"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "id": "field_notify_post_reply",
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Label",
-                          "props": {
-                            "className": "flex-center gap-2 cursor-pointer"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Input",
-                              "props": {
-                                "type": "checkbox",
-                                "name": "notify_post_reply",
-                                "checked": "{{_local.form?.notify_post_reply ?? false}}",
-                                "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
-                              }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-body"
-                              },
-                              "text": "$t:sirsoft-board.admin.users.form.notifications.post_reply"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "id": "field_notify_comment",
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Label",
-                          "props": {
-                            "className": "flex-center gap-2 cursor-pointer"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Input",
-                              "props": {
-                                "type": "checkbox",
-                                "name": "notify_comment",
-                                "checked": "{{_local.form?.notify_comment ?? false}}",
-                                "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
-                              }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-body"
-                              },
-                              "text": "$t:sirsoft-board.admin.users.form.notifications.comment"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "id": "field_notify_reply_comment",
-                      "type": "basic",
-                      "name": "Div",
-                      "children": [
-                        {
-                          "type": "basic",
-                          "name": "Label",
-                          "props": {
-                            "className": "flex-center gap-2 cursor-pointer"
-                          },
-                          "children": [
-                            {
-                              "type": "basic",
-                              "name": "Input",
-                              "props": {
-                                "type": "checkbox",
-                                "name": "notify_reply_comment",
-                                "checked": "{{_local.form?.notify_reply_comment ?? false}}",
-                                "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
-                              }
-                            },
-                            {
-                              "type": "basic",
-                              "name": "Span",
-                              "props": {
-                                "className": "text-body"
-                              },
-                              "text": "$t:sirsoft-board.admin.users.form.notifications.reply_comment"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
+                    ]
                 }
-              ]
             }
-          ]
+        },
+        {
+            "target_id": "extension_form_content",
+            "position": "append_child",
+            "components": [
+                {
+                    "id": "ext_notification_form_content",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "id": "ext_notification",
+                        "className": "scroll-mt-32 mt-6"
+                    },
+                    "children": [
+                        {
+                            "id": "section_notification_settings",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "admin-card"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-between mb-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "bell",
+                                                        "className": "text-gray-600 dark:text-gray-400 text-xl"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "H3",
+                                                    "props": {
+                                                        "className": "section-heading"
+                                                    },
+                                                    "text": "$t:sirsoft-board.admin.users.form.sections.notification_settings"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "ExtensionBadge",
+                                            "props": {
+                                                "type": "module",
+                                                "identifier": "sirsoft-board",
+                                                "installedModules": "{{_global.installedModules}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "grid-2col-responsive"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "field_notify_post_complete",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "flex items-center gap-2 cursor-pointer"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "checked 불리언을 부모 회원 폼의 _local.form 에 직접 쓴다 — 자동 바인딩은 값이 없는 등록 화면에서 빈 문자열을 써 체크가 켜지지 않았다",
+                                                                    "type": "change",
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "form.notify_post_complete": "{{$event.target.checked}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "checkbox",
+                                                                "name": "notify_post_complete",
+                                                                "checked": "{{_local.form?.notify_post_complete ?? false}}",
+                                                                "autoBinding": false,
+                                                                "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.users.form.notifications.post_complete"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "field_notify_post_reply",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "flex items-center gap-2 cursor-pointer"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "checked 불리언을 부모 회원 폼의 _local.form 에 직접 쓴다 — 자동 바인딩은 값이 없는 등록 화면에서 빈 문자열을 써 체크가 켜지지 않았다",
+                                                                    "type": "change",
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "form.notify_post_reply": "{{$event.target.checked}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "checkbox",
+                                                                "name": "notify_post_reply",
+                                                                "checked": "{{_local.form?.notify_post_reply ?? false}}",
+                                                                "autoBinding": false,
+                                                                "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.users.form.notifications.post_reply"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "field_notify_comment",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "flex items-center gap-2 cursor-pointer"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "checked 불리언을 부모 회원 폼의 _local.form 에 직접 쓴다 — 자동 바인딩은 값이 없는 등록 화면에서 빈 문자열을 써 체크가 켜지지 않았다",
+                                                                    "type": "change",
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "form.notify_comment": "{{$event.target.checked}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "checkbox",
+                                                                "name": "notify_comment",
+                                                                "checked": "{{_local.form?.notify_comment ?? false}}",
+                                                                "autoBinding": false,
+                                                                "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.users.form.notifications.comment"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "field_notify_reply_comment",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "flex items-center gap-2 cursor-pointer"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "checked 불리언을 부모 회원 폼의 _local.form 에 직접 쓴다 — 자동 바인딩은 값이 없는 등록 화면에서 빈 문자열을 써 체크가 켜지지 않았다",
+                                                                    "type": "change",
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "form.notify_reply_comment": "{{$event.target.checked}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "checkbox",
+                                                                "name": "notify_reply_comment",
+                                                                "checked": "{{_local.form?.notify_reply_comment ?? false}}",
+                                                                "autoBinding": false,
+                                                                "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:sirsoft-board.admin.users.form.notifications.reply_comment"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
         }
-      ]
-    }
-  ],
-  "priority": 300
+    ]
 }

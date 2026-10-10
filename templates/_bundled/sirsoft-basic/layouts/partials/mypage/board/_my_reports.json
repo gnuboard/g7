@@ -1,0 +1,668 @@
+{
+    "comment": "게시판 활동의 「내 신고」 하위 탭 — 내가 넣은 신고가 지금 어떤 상태인지 보고, 아직\n     처리가 시작되지 않은 건은 스스로 취소한다.\n\n     취소는 **대기 중인 신고만** 된다(`can_cancel`). 운영자가 이미 검토에 들어갔거나 판정이\n     끝난 건은 신고자가 되돌릴 수 없다 — 그 사실은 상태 배지가 말한다.\n\n     이 탭은 신고 내용을 보여주되 신고 대상을 지우지 않는다. 취소해도 글·댓글은 그대로다.",
+    "meta": {
+        "is_partial": true,
+        "description": "마이페이지 내 게시판 활동 - 내 신고 탭"
+    },
+    "type": "basic",
+    "name": "Div",
+    "children": [
+        {
+            "comment": "필터 영역",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-col sm:flex-row gap-3 mb-4"
+            },
+            "children": [
+                {
+                    "comment": "게시판 필터",
+                    "type": "basic",
+                    "name": "Select",
+                    "actions": [
+                        {
+                            "type": "change",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReportsBoard": "{{$event.target.value}}",
+                                        "myReportsPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "myReports"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "value": "{{_global.myReportsBoard ?? ''}}",
+                        "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": ""
+                            },
+                            "text": "$t:mypage.board_activities.filter.all_boards"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "iteration": {
+                                "source": "{{boards?.data ?? []}}",
+                                "item_var": "board"
+                            },
+                            "props": {
+                                "value": "{{board.slug}}"
+                            },
+                            "text": "{{board.name}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "처리 상태 필터",
+                    "type": "basic",
+                    "name": "Select",
+                    "actions": [
+                        {
+                            "type": "change",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReportsStatus": "{{$event.target.value}}",
+                                        "myReportsPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "myReports"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "data-testid": "my-reports-status-filter",
+                        "value": "{{_global.myReportsStatus ?? ''}}",
+                        "className": "min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                        "options": [
+                            {
+                                "value": "",
+                                "label": "$t:mypage.board_activities.reports.filter.all_statuses"
+                            },
+                            {
+                                "value": "pending",
+                                "label": "$t:mypage.board_activities.reports.status.pending"
+                            },
+                            {
+                                "value": "review",
+                                "label": "$t:mypage.board_activities.reports.status.review"
+                            },
+                            {
+                                "value": "rejected",
+                                "label": "$t:mypage.board_activities.reports.status.rejected"
+                            },
+                            {
+                                "value": "suspended",
+                                "label": "$t:mypage.board_activities.reports.status.suspended"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "comment": "대상 필터",
+                    "type": "basic",
+                    "name": "Select",
+                    "actions": [
+                        {
+                            "type": "change",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReportsTargetType": "{{$event.target.value}}",
+                                        "myReportsPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "myReports"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "data-testid": "my-reports-target-filter",
+                        "value": "{{_global.myReportsTargetType ?? ''}}",
+                        "className": "min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                        "options": [
+                            {
+                                "value": "",
+                                "label": "$t:mypage.board_activities.reports.filter.all_targets"
+                            },
+                            {
+                                "value": "post",
+                                "label": "$t:mypage.board_activities.target.post"
+                            },
+                            {
+                                "value": "comment",
+                                "label": "$t:mypage.board_activities.target.comment"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "comment": "정렬 필터",
+                    "type": "basic",
+                    "name": "Select",
+                    "actions": [
+                        {
+                            "type": "change",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReportsSort": "{{$event.target.value}}",
+                                        "myReportsPage": 1
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "myReports"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "value": "{{_global.myReportsSort ?? 'latest'}}",
+                        "className": "min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "latest"
+                            },
+                            "text": "$t:mypage.board_activities.sort.latest"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Option",
+                            "props": {
+                                "value": "oldest"
+                            },
+                            "text": "$t:mypage.board_activities.sort.oldest"
+                        }
+                    ]
+                },
+                {
+                    "comment": "검색 영역",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1 flex gap-2"
+                    },
+                    "children": [
+                        {
+                            "comment": "검색 대상 — 형제 탭(내 글·내 댓글·내 반응)과 같은 자리·같은 모양. 'reason' 은 신고할 때 적은 사유 설명을 찾는다",
+                            "id": "my_reports_search_field_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReportsSearchField": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "data-testid": "my-reports-search-field",
+                                "value": "{{_global.myReportsSearchField ?? 'title_content'}}",
+                                "className": "px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                                "options": [
+                                    {
+                                        "value": "title_content",
+                                        "label": "$t:mypage.board_activities.search_fields.title_content"
+                                    },
+                                    {
+                                        "value": "title",
+                                        "label": "$t:mypage.board_activities.search_fields.title"
+                                    },
+                                    {
+                                        "value": "content",
+                                        "label": "$t:mypage.board_activities.search_fields.content"
+                                    },
+                                    {
+                                        "value": "reason",
+                                        "label": "$t:mypage.board_activities.search_fields.reason"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "검색어 — 담아만 둔다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "myReportsSearch": "{{$event.target.value}}"
+                                    }
+                                },
+                                {
+                                    "comment": "Enter 검색 — 검색 버튼과 같은 순서를 탄다. 적용 검색어는 입력칸 값에서 바로 읽는다(상태가 아직 따라오지 않은 마지막 글자도 빠지지 않게). 한글 조합 중 Enter 는 엔진 키 필터가 건너뛴다",
+                                    "type": "keypress",
+                                    "key": "Enter",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "myReportsPage": 1,
+                                                "myReportsSearch": "{{$event.target.value}}",
+                                                "myReportsSearchApplied": "{{$event.target.value}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "myReports"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "placeholder": "$t:mypage.board_activities.search_placeholder",
+                                "value": "{{_global.myReportsSearch ?? ''}}",
+                                "className": "flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "검색 — 쪽수를 1 로 되돌리지 않으면 3쪽을 보던 중 검색했을 때 빈 쪽이 뜬다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "myReportsPage": 1,
+                                                "myReportsSearchApplied": "{{_global.myReportsSearch ?? ''}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "myReports"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                            },
+                            "text": "$t:common.search"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "초기화 — 게시판·상태·대상·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "myReportsBoard": "",
+                                                "myReportsStatus": "",
+                                                "myReportsTargetType": "",
+                                                "myReportsSearch": "",
+                                                "myReportsSearchApplied": "",
+                                                "myReportsSearchField": "title_content",
+                                                "myReportsSort": "latest",
+                                                "myReportsPage": 1
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "myReports"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            },
+                            "text": "$t:common.reset"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "신고 목록",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{myReports?.data?.data ?? []}}",
+                        "item_var": "report"
+                    },
+                    "props": {
+                        "data-testid": "my-report-row-{{report.id}}",
+                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 {{report.target_deleted ? 'opacity-60' : ''}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-start justify-between gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-1 min-w-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2 flex-wrap mb-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "comment": "게시판",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded"
+                                                    },
+                                                    "text": "{{report.board_name ?? ''}}"
+                                                },
+                                                {
+                                                    "comment": "대상 구분",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{report.target_type === 'comment' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}}"
+                                                    },
+                                                    "text": "{{report.target_type_label ?? ''}}"
+                                                },
+                                                {
+                                                    "comment": "처리 상태 — 네 가지 색으로 갈린다",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "data-testid": "my-report-status-{{report.id}}",
+                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{report.status === 'pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' : report.status === 'review' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : report.status === 'rejected' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : report.status === 'suspended' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}}"
+                                                    },
+                                                    "text": "{{report.status_label ?? ''}}"
+                                                },
+                                                {
+                                                    "comment": "신고 대상이 이미 사라진 경우",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{report.target_deleted}}",
+                                                    "props": {
+                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded"
+                                                    },
+                                                    "text": "$t:mypage.board_activities.reports.target_deleted"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "신고한 글·댓글. 글은 제목, 댓글은 본문 요약(댓글 스냅샷에는 제목이 없다). 살아 있으면 눌러서 원글로 간다",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "if": "{{!report.target_deleted && !!report.board_slug && !!report.post_id}}",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "/board/{{report.board_slug}}/{{report.post_id}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2"
+                                            },
+                                            "text": "{{raw:report.title ?? report.excerpt ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{report.target_deleted || !report.board_slug || !report.post_id}}",
+                                            "props": {
+                                                "className": "block text-sm text-gray-500 dark:text-gray-400 line-clamp-2"
+                                            },
+                                            "text": "{{raw:report.title ?? report.excerpt ?? ''}}"
+                                        },
+                                        {
+                                            "comment": "내가 고른 사유와 덧붙인 설명",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "mt-2 flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "flag",
+                                                        "size": "sm",
+                                                        "className": "mt-0.5 flex-shrink-0"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "min-w-0"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-medium"
+                                                            },
+                                                            "text": "{{report.reason_type_label ?? ''}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{!!report.reason_detail}}",
+                                                            "props": {
+                                                                "className": "block line-clamp-2"
+                                                            },
+                                                            "text": "{{report.reason_detail}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex flex-col items-end gap-2 flex-shrink-0"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                                            },
+                                            "text": "{{report.reported_at ?? ''}}"
+                                        },
+                                        {
+                                            "comment": "취소는 대기 중인 건에만 뜬다 — 검토가 시작된 뒤에는 신고자가 되돌릴 수 없다",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "if": "{{report.can_cancel}}",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "reportCancelModal": {
+                                                                    "id": "{{report.id}}",
+                                                                    "title": "{{report.title ?? report.excerpt ?? ''}}"
+                                                                }
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "report_cancel_modal"
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "data-testid": "my-report-cancel-{{report.id}}",
+                                                "className": "px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors whitespace-nowrap"
+                                            },
+                                            "text": "$t:mypage.board_activities.reports.cancel"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "신고 없음",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(myReports?.data?.data ?? []).length === 0}}",
+                    "props": {
+                        "data-testid": "my-reports-empty",
+                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "flag",
+                                "size": "3x",
+                                "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                            }
+                        },
+                        {
+                            "comment": "검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!(!!_global.myReportsSearchApplied || !!_global.myReportsBoard || !!_global.myReportsStatus || !!_global.myReportsTargetType)}}",
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:mypage.board_activities.reports.empty"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!_global.myReportsSearchApplied || !!_global.myReportsBoard || !!_global.myReportsStatus || !!_global.myReportsTargetType}}",
+                            "props": {
+                                "className": "text-gray-500 dark:text-gray-400"
+                            },
+                            "text": "$t:board.no_search_results"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "페이지네이션",
+            "type": "composite",
+            "name": "Pagination",
+            "actions": [
+                {
+                    "event": "onPageChange",
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "myReportsPage": "{{$args[0]}}"
+                            }
+                        },
+                        {
+                            "handler": "refetchDataSource",
+                            "params": {
+                                "dataSourceId": "myReports"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "props": {
+                "currentPage": "{{myReports?.data?.pagination?.current_page ?? 1}}",
+                "totalPages": "{{myReports?.data?.pagination?.last_page ?? null}}",
+                "hasMorePages": "{{myReports?.data?.pagination?.has_more_pages ?? false}}",
+                "className": "mt-4 flex justify-center"
+            }
+        }
+    ]
+}

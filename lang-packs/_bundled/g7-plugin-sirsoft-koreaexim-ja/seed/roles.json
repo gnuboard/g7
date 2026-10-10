@@ -1,0 +1,6 @@
+{
+  "sirsoft-koreaexim.operator": {
+    "name": "為替レート管理者",
+    "description": "為替レート設定と実行履歴を管理します。"
+  }
+}

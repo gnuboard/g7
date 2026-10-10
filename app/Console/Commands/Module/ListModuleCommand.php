@@ -23,6 +23,9 @@ class ListModuleCommand extends Command
 
     /**
      * 모듈 관리자 및 리포지토리
+     *
+     * @param  ModuleManager  $moduleManager  모듈 관리자
+     * @param  ModuleRepositoryInterface  $moduleRepository  모듈 리포지토리
      */
     public function __construct(
         private ModuleManager $moduleManager,
@@ -33,6 +36,8 @@ class ListModuleCommand extends Command
 
     /**
      * Execute the console command.
+     *
+     * @return int 종료 코드 (성공 0, 실패 1)
      */
     public function handle(): int
     {
@@ -138,7 +143,7 @@ class ListModuleCommand extends Command
         $installedCount = count(array_filter($tableData, fn ($m) => ! str_contains($m['status'], __('modules.commands.list.status.uninstalled'))));
 
         $this->newLine();
-        $this->info(__('modules.commands.list.summary', [
+        $this->info(trans_choice('modules.commands.list.summary', $totalCount, [
             'total' => $totalCount,
             'installed' => $installedCount,
             'active' => $activeCount,
@@ -149,6 +154,9 @@ class ListModuleCommand extends Command
 
     /**
      * 상태 포맷팅
+     *
+     * @param  string  $status  상태 값 (installed·active·inactive·uninstalled 등)
+     * @return string 콘솔 표시용 상태 라벨
      */
     private function formatStatus(string $status): string
     {

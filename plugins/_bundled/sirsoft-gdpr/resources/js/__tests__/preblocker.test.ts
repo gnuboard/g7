@@ -70,6 +70,15 @@ describe('preblocker — 도메인 기반 차단 (외부 origin)', () => {
         expect(script.getAttribute('data-gdpr-blocked-category')).toBe('analytics');
     });
 
+    it('차단하면 코어 계약 속성(data-g7-script-deferred)도 붙인다 — 코어 로더가 이 플러그인을 몰라도 미완료로 다룬다', () => {
+        installPreblocker(defaultConfig());
+
+        const script = document.createElement('script');
+        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-DEMO';
+
+        expect(script.hasAttribute('data-g7-script-deferred')).toBe(true);
+    });
+
     it('카탈로그 매칭 + 동의 있음 → src 설정 통과', () => {
         installPreblocker(defaultConfig({ consent: { necessary: true, analytics: true } }));
 
@@ -270,6 +279,8 @@ describe('preblocker — restorePreblockedCategory (동의 후 복원)', () => {
         );
         expect(restored).not.toBeNull();
         expect(restored?.getAttribute('data-gdpr-blocked-src')).toBeNull();
+        // 복원본에 코어 지연 속성이 따라가면 코어 로더가 다시 미완료로 다룬다.
+        expect(restored?.hasAttribute('data-g7-script-deferred')).toBe(false);
     });
 
     it('동의 안 받은 카테고리는 restore 호출해도 효과 없음', () => {

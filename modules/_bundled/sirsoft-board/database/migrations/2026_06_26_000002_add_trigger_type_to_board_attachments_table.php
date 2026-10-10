@@ -16,14 +16,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('board_attachments', function (Blueprint $table) {
-            $table->enum('trigger_type', ['report', 'admin', 'system', 'auto_hide', 'user', 'cascade'])
-                ->default('admin')
-                ->after('created_by')
-                ->comment('삭제 조치 주체 (admin: 관리자, user: 사용자 직접 삭제, cascade: 게시글 삭제 연쇄)');
+        // 재실행 안전: 컬럼·인덱스를 각각 확인한다. 컬럼만 만들고 인덱스 단계에서 멈춘 설치본이
+        // 다음 실행에서 "Duplicate column" 으로 영구 실패하지 않게 한다.
+        if (! Schema::hasColumn('board_attachments', 'trigger_type')) {
+            Schema::table('board_attachments', function (Blueprint $table) {
+                $table->enum('trigger_type', ['report', 'admin', 'system', 'auto_hide', 'user', 'cascade'])
+                    ->default('admin')
+                    ->after('created_by')
+                    ->comment('삭제 조치 주체 (admin: 관리자, user: 사용자 직접 삭제, cascade: 게시글 삭제 연쇄)');
+            });
+        }
 
-            $table->index(['board_id', 'post_id', 'trigger_type'], 'idx_board_post_trigger');
-        });
+        if (! Schema::hasIndex('board_attachments', 'idx_board_post_trigger')) {
+            Schema::table('board_attachments', function (Blueprint $table) {
+                $table->index(['board_id', 'post_id', 'trigger_type'], 'idx_board_post_trigger');
+            });
+        }
     }
 
     /**
@@ -33,11 +41,16 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('board_attachments', function (Blueprint $table) {
-            if (Schema::hasColumn('board_attachments', 'trigger_type')) {
+        if (Schema::hasIndex('board_attachments', 'idx_board_post_trigger')) {
+            Schema::table('board_attachments', function (Blueprint $table) {
                 $table->dropIndex('idx_board_post_trigger');
+            });
+        }
+
+        if (Schema::hasColumn('board_attachments', 'trigger_type')) {
+            Schema::table('board_attachments', function (Blueprint $table) {
                 $table->dropColumn('trigger_type');
-            }
-        });
+            });
+        }
     }
 };

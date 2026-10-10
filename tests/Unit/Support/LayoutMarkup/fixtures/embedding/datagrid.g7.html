@@ -1,0 +1,38 @@
+<data-grid data-type="composite" data="{{coupons?.data ?? []}}" subRowClassName="bg-gray-50">
+  <column field="checkbox" header="" width="40px" :selectable="true"/>
+  <column field="name" header="$t:admin.coupon.name" width="200px">
+    <cell>
+      <a class="text-blue-600" text="{{row.localized_name}}">
+        <on event="click">
+          <navigate path="/admin/coupons/{{row.id}}/edit"/>
+        </on>
+      </a>
+    </cell>
+  </column>
+  <expand>
+    <div class="p-4" data-each="opt in row.options">
+      <span text="{{opt.label}}"/>
+    </div>
+  </expand>
+  <prop name="expandContext">{"selectedIds": "{{_local.selectedIds ?? []}}", "label": "$t:defer:common.edit"}</prop>
+  <sub-row>
+    <div class="empty" data-if="{{(row.items ?? []).length === 0}}">
+      <span text="$t:admin.coupon.no_items"/>
+    </div>
+  </sub-row>
+  <footer-cell field="label" text="$t:admin.coupon.total" class="text-right font-bold"/>
+  <footer-cell field="amount">
+    <span text="{{summary.total_amount}}"/>
+  </footer-cell>
+  <footer-cell field="status"/>
+  <footer-card>
+    <div class="card-footer">
+      <span text="{{summary.total_amount}}"/>
+    </div>
+  </footer-card>
+  <responsive on="portable" class="row-stack">
+    <div data-each="row, i in {{rows}}">
+      <span text="{{row.name}}"/>
+    </div>
+  </responsive>
+</data-grid>

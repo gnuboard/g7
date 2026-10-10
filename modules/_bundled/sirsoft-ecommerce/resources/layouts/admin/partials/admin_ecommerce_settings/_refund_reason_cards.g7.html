@@ -1,0 +1,78 @@
+<!-- 쇼핑몰 설정 — 환불 사유 목록, 좁은 화면용 카드. 넓은 화면용 표(`_refund_reason_section`)와
+  같은 배열을 편집한다.
+  
+  사유는 고객이 환불을 신청할 때 고르는 항목이고, **누가 부담하는가**(사유 종류)가 함께 붙어
+  있어 배송비 정산이 달라진다. -->
+<partial description="환불 사유 관리 - Mobile 카드 뷰">
+  <div data-ref="refund_reason_cards_container">
+    <div data-ref="refund_reason_card_{{rIdx}}" data-each="reason, rIdx in (_local.form?.claim?.refund_reasons ?? []).map((r, i) => ({...r, _idx: i}))" class="excel-card mb-3">
+      <div class="excel-card-header">
+        <div class="flex-center gap-2 min-w-0">
+          <div class="min-w-0">
+            <div class="{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.code'] ? 'excel-card-title font-mono text-red-600 dark:text-red-400' : 'excel-card-title font-mono'}}">{{reason.code}}</div>
+            <!-- PC 표와 같은 행 지목 통로 — 모바일에서만 코드 거절 사유가 사라지지 않게. -->
+            <span data-if="{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.code']}}" class="form-error">{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.code']?.[0] ?? ''}}</span>
+          </div>
+        </div>
+        <div class="flex-center gap-2 shrink-0">
+          <toggle data-type="composite" checked="{{reason.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+            <on type="change">
+              <!-- 사용 여부. 끄면 고객 화면의 선택지에서 빠지고, 이미 그 사유로 접수된 건에는 영향이 없다. -->
+              <set-state target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, is_active: !(r.is_active)} : r)}}" :hasChanges="true"/>
+            </on>
+          </toggle>
+        </div>
+      </div>
+      <div class="excel-card-body">
+        <div class="excel-card-row">
+          <span class="excel-card-label">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.name</span>
+          <div class="excel-card-value flex-1">
+            <multilingual-input data-type="composite" value="{{reason.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.name_ko_placeholder" error="{{_local.errors?.['claim.refund_reasons.' + reason._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['claim.refund_reasons.' + reason._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <!-- 사유 문구. 고객에게 그대로 보이므로 언어별로 넣는다. -->
+                <set-state target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, name: $event.target.value} : r)}}" :hasChanges="true"/>
+              </on>
+            </multilingual-input>
+          </div>
+        </div>
+        <div class="excel-card-row">
+          <span class="excel-card-label">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.fault_type</span>
+          <div class="excel-card-value flex-1">
+            <select value="{{reason.fault_type ?? 'customer'}}" class="w-full" disabled="{{_computed.isReadOnly}}">
+              <options>
+                <option value="customer">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.fault_types.customer</option>
+                <option value="seller">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.fault_types.seller</option>
+                <option value="carrier">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.form.fault_types.carrier</option>
+              </options>
+              <on type="change">
+                <!-- 사유 종류(귀책). 배송비를 누가 부담하는지가 여기서 갈린다. -->
+                <set-state target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, fault_type: $event.target.value} : r)}}" :hasChanges="true"/>
+              </on>
+            </select>
+          </div>
+        </div>
+        <div class="excel-card-row">
+          <span class="excel-card-label">$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.columns.is_user_selectable</span>
+          <div class="excel-card-value">
+            <input type="checkbox" checked="{{reason.is_user_selectable ?? false}}" class="checkbox" disabled="{{_computed.isReadOnly}}">
+              <on type="change">
+                <!-- 고객이 직접 고를 수 있는 사유인지. 끄면 관리자만 이 사유를 지정할 수 있다. -->
+                <set-state target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).map((r, i) => i === reason._idx ? {...r, is_user_selectable: !(r.is_user_selectable)} : r)}}" :hasChanges="true"/>
+              </on>
+            </input>
+          </div>
+        </div>
+      </div>
+      <div class="excel-card-footer">
+        <div/>
+        <button type="button" class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_computed.isReadOnly}}">
+          <on type="click">
+            <!-- 사유 삭제. -->
+            <set-state confirm="$t:sirsoft-ecommerce.admin.settings.claim.refund_reasons.confirm_delete" target="local" form.claim.refund_reasons="{{(_local.form?.claim?.refund_reasons ?? []).filter((_, i) => i !== reason._idx)}}" form.claim.refund_reasons_deleted="{{[...(_local.form?.claim?.refund_reasons_deleted ?? []), ...(reason?.id ? [reason.id] : [])]}}" :hasChanges="true"/>
+          </on>
+          <icon name="fa-solid fa-trash" class="text-sm"/>
+        </button>
+      </div>
+    </div>
+  </div>
+</partial>

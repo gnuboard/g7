@@ -9,11 +9,14 @@ use Modules\Sirsoft\Ecommerce\Enums\CashReceiptIssueStatus;
 use Modules\Sirsoft\Ecommerce\Enums\CashReceiptTransactionType;
 use Modules\Sirsoft\Ecommerce\Enums\CashReceiptType;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Exceptions\CashReceiptConversionException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderCashReceipt;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderCashReceiptRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Services\Concerns\MasksSensitiveResponse;
+use Modules\Sirsoft\Ecommerce\Support\ConcurrencyErrors;
 
 /**
  * 현금영수증 발급/취소 오케스트레이션 서비스
@@ -27,27 +30,16 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInter
  */
 class CashReceiptService
 {
-    /**
-     * 원응답에서 마스킹할 민감 키 목록 (대소문자 무시, 부분 일치)
-     *
-     * @var array<int, string>
-     */
-    private const SENSITIVE_RESPONSE_KEYS = [
-        'customeridentitynumber',
-        'identitynumber',
-        'identifier',
-        'customermobilephone',
-        'mobilephone',
-        'phone',
-        'businessnumber',
-        'customername',
-        'customeremail',
-        'email',
-        'secret',
-        'secretkey',
-        'password',
-    ];
+    use MasksSensitiveResponse;
 
+    /**
+     * 현금영수증 서비스를 생성합니다.
+     *
+     * @param  OrderCashReceiptRepositoryInterface  $repository  현금영수증 이력 Repository
+     * @param  OrderPaymentRepositoryInterface  $paymentRepository  결제 Repository
+     * @param  EcommerceSettingsService  $settingsService  이커머스 설정 서비스
+     * @param  CurrencyConversionService  $currencyConversionService  통화 환산 서비스
+     */
     public function __construct(
         private OrderCashReceiptRepositoryInterface $repository,
         private OrderPaymentRepositoryInterface $paymentRepository,
@@ -94,7 +86,27 @@ class CashReceiptService
             return $existing;
         }
 
-        $target = $this->calculateIssuableAmount($order);
+        // 실제 발급은 엄격하게 환산한다(B3) — 결제 통화로 환산할 수 없으면 기준 통화 금액으로 신고하지 않고 실패로 남긴다.
+        // 화면 표시용 계산(`calculateIssuableAmount()` 기본값)은 종전대로 폴백한다.
+        try {
+            $target = $this->calculateIssuableAmount($order, strict: true);
+        } catch (CashReceiptConversionException $e) {
+            Log::warning('[cash_receipt] 발급액 환산 실패 — 발급하지 않음', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->recordFailure(
+                $order,
+                $payment,
+                CashReceiptTransactionType::ISSUE,
+                $type,
+                'CURRENCY_CONVERSION_FAILED',
+                __('sirsoft-ecommerce::cash_receipt.errors.currency_conversion_failed'),
+                $identifier,
+                $provider,
+            );
+        }
 
         if ($target['amount'] <= 0) {
             return $this->recordFailure(
@@ -123,13 +135,20 @@ class CashReceiptService
             'issue_sequence' => $this->repository->countIssues($order) + 1,
         ];
 
-        $result = HookManager::applyFilters(
-            'sirsoft-ecommerce.cash_receipt.issue',
-            $this->defaultIssueResult(),
-            $order,
-            $provider,
-            $payload,
-        );
+        // 프로바이더 예외도 실패 결과로 받는다(B1) — 예외가 그대로 올라가면 이력이 생기지 않아 관리자 화면에 재발급 버튼이
+        // 없었다(자동 발급 리스너는 로그만 남겼다).
+        try {
+            $result = HookManager::applyFilters(
+                'sirsoft-ecommerce.cash_receipt.issue',
+                $this->defaultIssueResult(),
+                $order,
+                $provider,
+                $payload,
+            );
+        } catch (\Throwable $e) {
+            ConcurrencyErrors::rethrowIfConcurrencyError($e);
+            $result = $this->providerExceptionResult($e);
+        }
 
         $succeeded = (bool) ($result['success'] ?? false);
 
@@ -191,13 +210,19 @@ class CashReceiptService
             $provider = $active->provider;
             $receiptKey = (string) $active->receipt_key;
 
-            $result = HookManager::applyFilters(
-                'sirsoft-ecommerce.cash_receipt.cancel',
-                $this->defaultCancelResult(),
-                $order,
-                $provider,
-                $receiptKey,
-            );
+            // 프로바이더 예외도 실패 결과로 받아 FAILED 취소 이력을 남긴다(B2) — 이력이 있어야 운영자가 재시도한다.
+            try {
+                $result = HookManager::applyFilters(
+                    'sirsoft-ecommerce.cash_receipt.cancel',
+                    $this->defaultCancelResult(),
+                    $order,
+                    $provider,
+                    $receiptKey,
+                );
+            } catch (\Throwable $e) {
+                ConcurrencyErrors::rethrowIfConcurrencyError($e);
+                $result = $this->providerExceptionResult($e);
+            }
 
             $succeeded = (bool) ($result['success'] ?? false);
             $allSucceeded = $allSucceeded && $succeeded;
@@ -250,6 +275,7 @@ class CashReceiptService
      *
      * @param  Order  $order  주문 모델
      * @param  string|null  $reason  변동 사유 (취소 이력에 기록)
+     * @return void 반환값 없음
      */
     public function syncFromOrder(Order $order, ?string $reason = null): void
     {
@@ -383,18 +409,21 @@ class CashReceiptService
      * 마일리지 사용분은 현금이 아니므로 제외되어 있다.
      *
      * @param  Order  $order  주문 모델
+     * @param  bool  $strict  환산 실패 시 예외를 던질지 (발급 직전은 true — B3, 화면 표시는 false 로 기준 통화 폴백)
      * @return array{amount: int, tax_free_amount: int} 발급액과 면세액
+     *
+     * @throws CashReceiptConversionException $strict 이고 결제 통화로 환산할 수 없을 때
      */
-    public function calculateIssuableAmount(Order $order): array
+    public function calculateIssuableAmount(Order $order, bool $strict = false): array
     {
-        $cashEquivalent = $this->toPaymentCurrencyAmount($order, (float) $order->total_cash_equivalent_amount);
+        $cashEquivalent = $this->toPaymentCurrencyAmount($order, (float) $order->total_cash_equivalent_amount, $strict);
 
         if ($cashEquivalent <= 0) {
             return ['amount' => 0, 'tax_free_amount' => 0];
         }
 
-        $taxFree = $this->toPaymentCurrencyAmount($order, (float) $order->total_tax_free_amount);
-        $taxable = $this->toPaymentCurrencyAmount($order, (float) $order->total_tax_amount);
+        $taxFree = $this->toPaymentCurrencyAmount($order, (float) $order->total_tax_free_amount, $strict);
+        $taxable = $this->toPaymentCurrencyAmount($order, (float) $order->total_tax_amount, $strict);
         $classified = $taxFree + $taxable;
 
         // 과세/면세 분류 합이 현금성 금액과 다르면(마일리지 사용, 할인 등) 면세 비율로 안분한다.
@@ -428,9 +457,12 @@ class CashReceiptService
      *
      * @param  Order  $order  주문
      * @param  float  $baseAmount  base 통화 금액
-     * @return int 결제 통화 최소 화폐단위 금액 (환율 스냅샷 손상 시 base 금액으로 폴백)
+     * @param  bool  $strict  환산 실패 시 예외를 던질지 (false 면 base 금액으로 폴백)
+     * @return int 결제 통화 최소 화폐단위 금액
+     *
+     * @throws CashReceiptConversionException $strict 이고 환산할 수 없을 때
      */
-    protected function toPaymentCurrencyAmount(Order $order, float $baseAmount): int
+    protected function toPaymentCurrencyAmount(Order $order, float $baseAmount, bool $strict = false): int
     {
         if ($baseAmount <= 0) {
             return 0;
@@ -442,6 +474,10 @@ class CashReceiptService
                 $order->currency_snapshot ?? []
             )['minor_unit_amount'];
         } catch (\Throwable $e) {
+            if ($strict) {
+                throw new CashReceiptConversionException($e->getMessage(), 0, $e);
+            }
+
             Log::warning('현금영수증 발급액 환산 실패 — base 금액으로 폴백', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
@@ -536,6 +572,7 @@ class CashReceiptService
      * 이미 폐기된 경우 아무것도 하지 않는다 (멱등).
      *
      * @param  Order  $order  주문 모델
+     * @return void 반환값 없음
      */
     public function purgeIdentifier(Order $order): void
     {
@@ -609,6 +646,27 @@ class CashReceiptService
     }
 
     /**
+     * 프로바이더 예외를 실패 결과 모양으로 바꿉니다. (B1 · B2)
+     *
+     * @param  \Throwable  $e  프로바이더 예외
+     * @return array{success: false, error_code: string, error_message: string, receipt_key: null, receipt_url: null, issue_number: null, raw_response: null} 실패 결과
+     */
+    private function providerExceptionResult(\Throwable $e): array
+    {
+        Log::error('[cash_receipt] 프로바이더 예외 — 실패 이력으로 기록', ['error' => $e->getMessage()]);
+
+        return [
+            'success' => false,
+            'error_code' => 'PROVIDER_EXCEPTION',
+            'error_message' => mb_substr($e->getMessage(), 0, 255),
+            'receipt_key' => null,
+            'receipt_url' => null,
+            'issue_number' => null,
+            'raw_response' => null,
+        ];
+    }
+
+    /**
      * 발급 성공 시 결제 테이블의 요약 컬럼을 갱신합니다.
      *
      * @param  OrderPayment|null  $payment  결제 모델
@@ -616,6 +674,7 @@ class CashReceiptService
      * @param  CashReceiptType  $type  발급 용도
      * @param  string  $identifier  식별번호 원본
      * @param  CashReceiptIdentifierType|null  $identifierType  식별번호 종류
+     * @return void 반환값 없음
      */
     private function syncPaymentSummary(
         ?OrderPayment $payment,
@@ -645,6 +704,7 @@ class CashReceiptService
      * 구매확정(purgeIdentifier) 시점에 일괄 폐기된다.
      *
      * @param  OrderPayment|null  $payment  결제 모델
+     * @return void 반환값 없음
      */
     private function clearPaymentSummary(?OrderPayment $payment): void
     {
@@ -700,65 +760,6 @@ class CashReceiptService
     {
         return $order->payment?->payment_name
             ?? (string) $order->order_number;
-    }
-
-    /**
-     * 프로바이더 원응답에서 민감 키를 마스킹합니다.
-     *
-     * 프로젝트 결정: 전체 응답을 보관하되 알려진 민감 키를 재귀적으로 가린다.
-     *
-     * @param  mixed  $response  원응답
-     * @return array<string, mixed>|null 마스킹된 응답 (배열이 아니면 null)
-     */
-    private function sanitizeResponse(mixed $response): ?array
-    {
-        if (! is_array($response)) {
-            return null;
-        }
-
-        return $this->maskSensitiveKeys($response);
-    }
-
-    /**
-     * 배열을 재귀 순회하며 민감 키의 값을 마스킹합니다.
-     *
-     * @param  array<mixed, mixed>  $data  원본 배열
-     * @return array<mixed, mixed> 마스킹된 배열
-     */
-    private function maskSensitiveKeys(array $data): array
-    {
-        $masked = [];
-
-        foreach ($data as $key => $value) {
-            if (is_array($value)) {
-                $masked[$key] = $this->maskSensitiveKeys($value);
-
-                continue;
-            }
-
-            $masked[$key] = $this->isSensitiveKey((string) $key) ? '***' : $value;
-        }
-
-        return $masked;
-    }
-
-    /**
-     * 민감 키인지 확인합니다.
-     *
-     * @param  string  $key  키 이름
-     * @return bool 민감 키 여부
-     */
-    private function isSensitiveKey(string $key): bool
-    {
-        $normalized = strtolower(str_replace(['_', '-'], '', $key));
-
-        foreach (self::SENSITIVE_RESPONSE_KEYS as $sensitive) {
-            if (str_contains($normalized, $sensitive)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

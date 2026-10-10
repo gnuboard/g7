@@ -1,0 +1,45 @@
+feature: 신고 알림 — 처리 결과는 피신고자에게, 접수는 운영자에게 (정책·범위 게이팅)
+
+description: |
+  신고 흐름에는 알림이 두 갈래로 걸린다. 운영자가 신고를 처리(블라인드·삭제·반려 복원)하면
+  **피신고 게시글·댓글의 작성자**에게, 신고가 접수되면 **운영자**에게 알림이 간다. 둘 다 게시판
+  환경설정의 신고 정책(`report_policy`)이 켜고 끈다. 실제 API 호출로 훅 → 리스너 → 알림 전체
+  흐름을 재며, 어긋나면 **알림이 조용히 안 가거나 엉뚱한 사람에게 가는** 것으로만 드러난다.
+
+  핵심 계약:
+    - 처리 알림(notify_author_on_report_action): ON 이면 suspended·deleted·rejected(복원) 모두
+      작성자에게 발송, OFF 면 미발송. 게시글·댓글 대상 모두 같은 정책을 따른다.
+    - 접수 알림(notify_admin_on_report): 수신자는 **그 게시판의 관리자 + 사이트 운영자(`admin`
+      역할)** 다. 게시판마다 관리자 역할이 동적으로 생겨 권한 식별자로는 열거할 수 없어 1.3.0 에서
+      권한 기준에서 이 둘로 바꿨다. 둘 다 없으면 **최고 관리자에게 대신 보내지 않는다**.
+    - 발송 범위: per_case 는 한 케이스(활성 사이클)의 첫 신고만, per_report 는 신고마다 보낸다.
+      케이스가 재활성화되면 새 사이클이라 per_case 에서도 다시 첫 신고가 된다.
+
+# axis 의미: 알림 갈래(처리 알림 대상 × 접수 알림 조건)를 한 축으로 편 커버리지 단위.
+# 정책 ON/OFF 는 각 갈래 안의 효과로 나눠 잰다.
+axes:
+  case:
+    - post_action_notice       # 게시글 신고 처리 → 게시글 작성자 알림
+    - comment_action_notice    # 댓글 신고 처리 → 댓글 작성자 알림
+    - admin_received_notice    # 신고 접수 → 운영자 알림 (정책 ON/OFF)
+    - admin_recipient_absent   # 받을 운영자 없음 → 폴백 없이 미발송
+    - notice_scope             # per_case / per_report 발송 범위
+
+effects:
+  - author_notified_when_post_report_is_suspended
+  - author_notified_when_post_report_is_deleted
+  - author_notified_when_post_report_is_rejected_and_restored
+  - author_not_notified_when_action_policy_is_off
+  - comment_author_notified_when_comment_report_is_suspended
+  - admin_notified_on_report_received_with_post_title_and_reason
+  - admin_not_notified_when_received_policy_is_off
+  - no_fallback_to_super_admin_when_no_board_manager_or_admin_role_member
+  - per_case_notifies_only_the_first_report_of_a_case
+  - per_report_notifies_every_report
+  - per_case_notifies_again_after_case_reactivation
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/ReportNotificationTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

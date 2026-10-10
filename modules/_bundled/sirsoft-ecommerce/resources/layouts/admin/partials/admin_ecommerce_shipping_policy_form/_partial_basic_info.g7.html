@@ -1,0 +1,34 @@
+<!-- 배송정책 폼의 기본 정보 구역 — 정책 이름·사용 여부·기본 정책 지정.
+  아래 국가별 설정들과 달리 **나라와 무관한 값**만 여기 있다. 폼 전체가 `_local.form` 한 그릇을
+  나눠 쓰므로 이 조각도 그 안에 직접 쓰고, 저장은 화면 하단에서 한 번에 한다.
+  '기본 정책' 은 상품에 정책이 지정되지 않았을 때 쓰이는 것이라 쇼핑몰에 하나뿐이다 — 여기서 켜면
+  다른 정책의 표시가 풀린다. -->
+<partial description="배송정책 폼 - 기본정보 섹션 (정책명, 사용여부, 기본정책)">
+  <div data-ref="basic_info_section" class="admin-card">
+    <h2 class="card-title">$t:sirsoft-ecommerce.admin.shipping_policy.form.section_basic</h2>
+    <div data-ref="basic_info_fields" class="row-stack">
+      <div data-ref="field_name">
+        <div>
+          <label class="form-label">
+            <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.name</span>
+            <span class="text-required">*</span>
+          </label>
+          <multilingual-input data-type="composite" name="name" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.name_placeholder" :maxLength="200" :required="true" layout="tabs" disabled="{{_computed.isReadOnly}}"/>
+          <span data-if="{{_local.errors?.name}}" class="form-error-xs">{{_local.errors?.name?.[0] ?? ''}}</span>
+        </div>
+      </div>
+      <div data-ref="field_row_status" class="grid-2col-responsive">
+        <div data-ref="field_is_active">
+          <div>
+            <toggle data-type="composite" label="$t:sirsoft-ecommerce.admin.shipping_policy.form.is_active" name="is_active" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+        </div>
+        <div data-ref="field_is_default">
+          <div>
+            <toggle data-type="composite" label="$t:sirsoft-ecommerce.admin.shipping_policy.form.is_default" name="is_default" disabled="{{_computed.isReadOnly}}"/>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

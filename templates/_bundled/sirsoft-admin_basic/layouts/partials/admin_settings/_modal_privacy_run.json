@@ -1,0 +1,439 @@
+{
+    "comment": "개인정보 조치 직권 실행 확인 창 (#636 후속) — 개인정보 탭 카드의 「지금 실행」이 연다.\n  여는 버튼이 `_global.privacyRun` 에 대상 키·이름·생략 지원 여부를 넣고 창을 연 뒤 건수를 받아 온다\n  (창은 스스로 조회하지 않는다). 건수는 명단·배치와 같은 조건식이라 여기 보이는 숫자가 곧 처리될 양이다.\n  「대기기간 생략」은 휴면 전환·탈퇴 단계에만 보이고, 바꾸면 건수를 다시 센다 — 생략하면 안내를 받지 못한\n  회원까지 대상이 되므로 숫자가 달라지는 것을 운영자가 보고 결정해야 한다.\n  실행은 큐에 접수만 하고 곧바로 닫는다. 처리 결과는 카드의 상태 줄이 주기 조회로 보여 준다.",
+    "meta": {
+        "is_partial": true,
+        "description": "환경설정 개인정보 탭 - 직권 실행 확인 모달",
+        "editor_label": "$t:admin.settings.privacy.manual_run.editor_label"
+    },
+    "id": "privacy_run_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.settings.privacy.manual_run.modal_title|target={{_global.privacyRun?.label ?? ''}}",
+        "size": "md"
+    },
+    "children": [
+        {
+            "id": "privacy_run_content",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "space-y-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-body"
+                    },
+                    "text": "$t:admin.settings.privacy.manual_run.confirm_desc"
+                },
+                {
+                    "id": "privacy_run_summary",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "p-3 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.settings.privacy.manual_run.count_label"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "LoadingSpinner",
+                                    "if": "{{_global.privacyRun?.loading}}",
+                                    "props": {
+                                        "size": "sm",
+                                        "text": "$t:admin.settings.privacy.manual_run.loading",
+                                        "color": "text-blue-600 dark:text-blue-400"
+                                    }
+                                },
+                                {
+                                    "id": "privacy_run_count",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!_global.privacyRun?.loading && _global.privacyRun?.preview}}",
+                                    "props": {
+                                        "className": "text-primary font-medium tabular-nums"
+                                    },
+                                    "text": "$t:admin.settings.privacy.manual_run.count_value|count={{_global.privacyRun?.preview?.count ?? 0}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "privacy_run_mode",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{['anonymize', 'delete', 'erase_ip'].includes(_global.privacyRun?.preview?.mode ?? '')}}",
+                            "props": {
+                                "className": "flex-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.settings.privacy.manual_run.mode_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-primary font-medium"
+                                    },
+                                    "text": "{{$t('admin.settings.privacy.manual_run.modes.' + (_global.privacyRun?.preview?.mode ?? 'anonymize'))}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "privacy_run_disabled_notice",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{_global.privacyRun?.preview && _global.privacyRun?.preview?.enabled === false}}",
+                    "props": {
+                        "className": "alert-info"
+                    },
+                    "text": "$t:admin.settings.privacy.manual_run.disabled_notice"
+                },
+                {
+                    "id": "privacy_run_skip_waiting",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.privacyRun?.supportsSkip}}",
+                    "props": {
+                        "className": "p-3 border border-yellow-300 dark:border-yellow-700 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "comment": "생략 여부를 바꾸면 건수를 다시 센다 — 옛 숫자가 남아 있으면 운영자가 생략 전 규모로 오독한다.\n                   체크 여부는 **분기 판정에서 한 번만** 읽고 각 갈래는 고정값으로 조회한다(모듈 삭제 창의 데이터 삭제\n                   토글과 같은 결). 조회 주소 안에 `$event.target.checked` 를 넣었더니 체크했는데도\n                   `skip_waiting=0` 이 나갔다(브라우저 실측 2026-09-25).",
+                                            "type": "change",
+                                            "handler": "conditions",
+                                            "conditions": [
+                                                {
+                                                    "if": "{{$event.target.checked}}",
+                                                    "then": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "privacyRun.skipWaiting": true,
+                                                                "privacyRun.loading": true
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "target": "/api/admin/privacy/manual-runs/{{_global.privacyRun?.key}}/preview",
+                                                            "auth_required": true,
+                                                            "params": {
+                                                                "method": "GET",
+                                                                "query": {
+                                                                    "skip_waiting": 1
+                                                                }
+                                                            },
+                                                            "onSuccess": {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "privacyRun.preview": "{{response.data}}",
+                                                                    "privacyRun.loading": false
+                                                                }
+                                                            },
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "privacyRun.loading": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message ?? '$t:admin.settings.privacy.manual_run.preview_failed'}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "then": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "privacyRun.skipWaiting": false,
+                                                                "privacyRun.loading": true
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "target": "/api/admin/privacy/manual-runs/{{_global.privacyRun?.key}}/preview",
+                                                            "auth_required": true,
+                                                            "params": {
+                                                                "method": "GET",
+                                                                "query": {
+                                                                    "skip_waiting": 0
+                                                                }
+                                                            },
+                                                            "onSuccess": {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "privacyRun.preview": "{{response.data}}",
+                                                                    "privacyRun.loading": false
+                                                                }
+                                                            },
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "privacyRun.loading": false
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message ?? '$t:admin.settings.privacy.manual_run.preview_failed'}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "id": "privacy_run_skip_waiting_checkbox",
+                                        "checked": "{{_global.privacyRun?.skipWaiting || false}}",
+                                        "disabled": "{{_global.privacyRun?.loading || _global.privacyRun?.submitting}}",
+                                        "className": "mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "htmlFor": "privacy_run_skip_waiting_checkbox",
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.privacy.manual_run.skip_waiting"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-hint mt-1"
+                                            },
+                                            "text": "$t:admin.settings.privacy.manual_run.skip_waiting_desc"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-error-soft"
+                    },
+                    "text": "$t:admin.settings.privacy.manual_run.irreversible"
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-hint"
+                    },
+                    "text": "$t:admin.settings.privacy.manual_run.queue_hint"
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "취소 — 접수 없이 닫고 `_global.privacyRun` 을 비운다. 대기기간 생략 선택도 그 안에 있어 함께 사라진다 —\n               다음에 열면 늘 생략하지 않는 쪽(대상이 더 좁은 쪽)에서 시작한다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "privacyRun": null
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal",
+                                    "target": "privacy_run_modal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary",
+                        "disabled": "{{_global.privacyRun?.submitting}}"
+                    },
+                    "text": "$t:admin.settings.privacy.manual_run.cancel"
+                },
+                {
+                    "id": "privacy_run_execute",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "더블클릭: disabled 의 submitting 은 다시 그려진 뒤에야 걸려 두 번째 클릭이 한 번 더 접수될 수 있다 — 버튼이 첫 클릭\n               즉시 스스로 잠근다(lockRepeatClick, #736 S2 P10).\n               접수만 하고 닫는다. 상태를 다시 받아 카드에 「처리 대기」를 띄우고, 진행 중이면 상태 소스가 스스로\n               주기 조회를 시작한다. 건수도 한 번 다시 받는다 — 큐가 동기 드라이버면 응답이 오기 전에 이미 처리가\n               끝나 있어 상태 소스가 「진행 중」을 한 번도 보지 못한다. 이미 접수된 작업이 있으면(409) 그 사실을\n               알리고 상태를 다시 받는다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "privacyRun.submitting": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/privacy/manual-runs/{{_global.privacyRun?.key}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "skip_waiting": "{{!!_global.privacyRun?.skipWaiting}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "privacyRun": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal",
+                                            "target": "privacy_run_modal"
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:admin.settings.privacy.manual_run.queued_toast"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "privacyManualRuns"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "privacyPreview"
+                                            }
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "privacyRun.submitting": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message ?? '$t:admin.settings.privacy.manual_run.queue_failed'}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "privacyManualRuns"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "lockRepeatClick": true,
+                        "className": "btn btn-danger flex-center gap-2",
+                        "disabled": "{{!_global.privacyRun?.preview || _global.privacyRun?.loading || _global.privacyRun?.submitting}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.privacyRun?.submitting}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.privacyRun?.submitting ? '$t:admin.settings.privacy.manual_run.executing' : '$t:admin.settings.privacy.manual_run.execute'}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

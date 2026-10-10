@@ -1,0 +1,84 @@
+<!-- 코어에 함께 들어 있는 언어팩을 깔기 전 되묻는 창. 파일을 올리는 설치와 달리 받아 올 것이
+  없어 식별자 하나만 넘기면 되지만, 그래도 확인을 한 번 두어 목록에서 잘못 누른 팩이 곧바로
+  깔리지 않게 한다.
+  깔아도 **켜지지는 않는다** — 설치와 활성을 갈라 두어, 켜는 것은 목록의 스위치로 따로 한다
+  (같은 언어 자리를 다른 팩이 이미 쓰고 있을 수 있기 때문이다).
+  깔 수 없는 사정이 있으면 그 사유를 창 안에 적고 설치 버튼을 잠근다. -->
+<partial description="번들 언어팩 설치 확인 모달 — 모듈/플러그인의 install 모달과 동일한 패턴. 행의 '설치' 버튼이 즉시 apiCall 하지 않고 본 모달을 열어 운영자가 확인 후 진행." editor_label="$t:admin.modal_label.admin_language_pack_list.language_pack_install_bundled_modal">
+  <modal data-type="composite" data-ref="language_pack_install_bundled_modal" title="$t:admin.language_packs.modals.install_bundled_title" size="sm">
+    <div class="py-2 space-y-3">
+      <p class="text-gray-700 dark:text-gray-300 flex items-center gap-2"><span data-ref="lp_install_bundled_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden">
+        <img data-if="{{_global.selectedBundledLanguagePack?.icon_url}}" src="{{_global.selectedBundledLanguagePack.icon_url}}" alt="" loading="lazy" decoding="async" class="w-5 h-5 object-contain"/>
+        <icon data-if="{{!_global.selectedBundledLanguagePack?.icon_url}}" name="fas fa-language" class="text-xs text-gray-600 dark:text-gray-400" aria-hidden="true"/>
+      </span><span>$t:admin.language_packs.modals.install_bundled_confirm|identifier={{_global.selectedBundledLanguagePack?.identifier ?? ''}}</span></p>
+      <div class="rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm space-y-1">
+        <div class="text-secondary flex justify-between">
+          <span>$t:admin.language_packs.columns.scope</span>
+          <span class="font-medium text-gray-900 dark:text-gray-100">{{_global.selectedBundledLanguagePack?.scope ?? '-'}}</span>
+        </div>
+        <div data-if="{{_global.selectedBundledLanguagePack?.target_identifier}}" class="text-secondary flex justify-between">
+          <span>$t:admin.language_packs.columns.target</span>
+          <span class="font-medium text-gray-900 dark:text-gray-100">{{_global.selectedBundledLanguagePack?.target_identifier}}</span>
+        </div>
+        <div class="text-secondary flex justify-between">
+          <span>$t:admin.language_packs.columns.locale</span>
+          <span class="font-medium text-gray-900 dark:text-gray-100">{{_global.selectedBundledLanguagePack?.locale}} · {{_global.selectedBundledLanguagePack?.locale_native_name ?? ''}}</span>
+        </div>
+        <div class="text-secondary flex justify-between">
+          <span>$t:admin.language_packs.columns.version</span>
+          <span class="font-medium text-gray-900 dark:text-gray-100">{{_global.selectedBundledLanguagePack?.version ?? '-'}}</span>
+        </div>
+      </div>
+      <div data-if="{{_global.selectedBundledLanguagePack?.install_blocked_reason}}" class="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-warning-soft">
+        <div class="flex-start gap-2">
+          <icon name="fas fa-triangle-exclamation" size="sm" class="mt-0.5"/>
+          <span data-if="{{_global.selectedBundledLanguagePack?.install_blocked_reason === 'core_locale_missing'}}">$t:admin.language_packs.modals.install_bundled_core_required|locale={{_global.selectedBundledLanguagePack?.locale}}</span>
+          <span data-if="{{_global.selectedBundledLanguagePack?.install_blocked_reason === 'target_not_installed'}}">$t:admin.language_packs.modals.install_blocked_target_not_installed|scope={{_global.selectedBundledLanguagePack?.scope}}|target={{_global.selectedBundledLanguagePack?.target_identifier ?? ''}}</span>
+          <span data-if="{{_global.selectedBundledLanguagePack?.install_blocked_reason === 'target_version_too_old'}}">$t:admin.language_packs.modals.install_blocked_target_version_too_old|scope={{_global.selectedBundledLanguagePack?.scope}}|target={{_global.selectedBundledLanguagePack?.target_identifier ?? ''}}</span>
+        </div>
+      </div>
+      <!-- 대상 확장이 설치돼 있으나 꺼져 있으면 막지 않고 알리기만 한다 — 꺼진 채 설치되고, 켜는 것은 그 확장을 켠 뒤 목록에서 한다. -->
+      <div data-if="{{!_global.selectedBundledLanguagePack?.install_blocked_reason &amp;&amp; _global.selectedBundledLanguagePack?.install_notice === 'target_inactive'}}" class="rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 text-sm text-info-soft">
+        <div class="flex-start gap-2">
+          <icon name="fas fa-circle-info" size="sm" class="mt-0.5"/>
+          <span>$t:admin.language_packs.modals.install_notice_target_inactive|scope={{_global.selectedBundledLanguagePack?.scope}}|target={{_global.selectedBundledLanguagePack?.target_identifier ?? ''}}</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isLanguagePackInstalling}}">
+        <on event="onClick">
+          <close-modal/>
+        </on>
+        <span>$t:common.cancel</span>
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isLanguagePackInstalling || _global.selectedBundledLanguagePack?.install_blocked_reason || _global.selectedBundledLanguagePack?.abilities?.can_install !== true}}">
+        <on event="onClick">
+          <!-- 켜지 않고 깔기만 한다는 뜻을 본문에 명시해 보낸다. 성공하면 고른 팩을 비워 다음에 열 때 지난 값이 남지 않게 한다. -->
+          <sequence>
+            <set-state target="global" :isLanguagePackInstalling="true"/>
+            <api-call :auth_required="true" target="/api/admin/language-packs/install-from-bundled" method="POST">
+              <success>
+                <set-state target="global" :isLanguagePackInstalling="false"/>
+                <toast type="success" message="$t:admin.language_packs.messages.install_success"/>
+                <refetch-data-source dataSourceId="language_packs"/>
+                <reload-extensions/>
+                <close-modal/>
+                <!-- 고른 팩은 창을 닫은 뒤에 비운다 — 먼저 비우면 목록을 다시 받는 동안 열린 창의 식별자·범위·버전 칸이 빈 값으로 다시 그려진다. -->
+                <set-state target="global" :selectedBundledLanguagePack="null"/>
+              </success>
+              <fail>
+                <set-state target="global" :isLanguagePackInstalling="false"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.language_packs.messages.install_failed'}}"/>
+              </fail>
+              <body identifier="{{_global.selectedBundledLanguagePack?.identifier}}" auto_activate="{{_global.languagePackReinstallMode === true &amp;&amp; _global.selectedBundledLanguagePack?.abilities?.can_activate === true}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{!_global.isLanguagePackInstalling}}" name="fas fa-download" size="sm"/>
+        <icon data-if="{{_global.isLanguagePackInstalling}}" name="fas fa-spinner" class="animate-spin" size="sm"/>
+        <span>{{_global.isLanguagePackInstalling ? '$t:admin.language_packs.installing' : '$t:admin.language_packs.actions.install'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

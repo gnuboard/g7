@@ -8,6 +8,7 @@ use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
+use App\Support\SiteUrl;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -239,6 +240,10 @@ class InicisIdentityProvider implements IdentityVerificationInterface
                 // 이니시스 등록가맹점 검증 hash — apiKey 는 frontend 에 노출 금지이므로
                 // backend 가 매 challenge 마다 계산해서 publicPayload 로 전달.
                 'authHash' => hash('sha256', $mid.$mtxid.$this->resolveApiKey()),
+                // 보안: 이니시스로 보내는 결과 수신 주소(successUrl·failUrl)와 결과 창 출처 검증 기준.
+                // 브라우저의 현재 주소(window.location.origin)가 아니라 사이트 주소로 만든다.
+                'callbackUrl' => SiteUrl::absolute('/plugins/sirsoft-verification_kginicis/plugin/inicis/callback'),
+                'siteOrigin' => SiteUrl::origin(),
             ],
             metadata: ['mtxid' => $mtxid],
         );

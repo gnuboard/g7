@@ -1098,7 +1098,7 @@ describe('PageSkeleton', () => {
     // === 로딩/에러 wrapper 전체 스킵 ===
 
     it('모든 자식이 부정 조건이면 컨테이너 자체를 스킵해야 한다 (_loading_error 패턴)', () => {
-        // _loading_error.json 구조: Div(no if) → [Container(!data), Container(hasError)]
+        // _loading_error.g7.html 구조: Div(no if) → [Container(!data), Container(hasError)]
         const components = [
             {
                 name: 'Div',
@@ -1185,7 +1185,7 @@ describe('PageSkeleton', () => {
     // === empty state 조건 스킵 ===
 
     it('empty state 조건(=== 0)을 부정 조건으로 감지하여 스킵해야 한다', () => {
-        // _empty_states.json 패턴: 모든 자식이 === 0 조건
+        // _empty_states.g7.html 패턴: 모든 자식이 === 0 조건
         const components = [
             {
                 name: 'Div',
