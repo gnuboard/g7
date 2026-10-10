@@ -46,7 +46,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| changelog | array | `[{"version":"7.1.0","date":"2026-10-09","categories":[{"n…` | 변경 이력 텍스트 (원격/파일 CHANGELOG 본문) |
+| changelog | array | `[{"version":"7.1.0","date":"2026-10-10","categories":[{"n…` | 변경 이력 텍스트 (원격/파일 CHANGELOG 본문) |
 
 **응답 예시**
 

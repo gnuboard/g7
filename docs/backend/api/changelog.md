@@ -55,7 +55,7 @@ HTTP/1.1 200
     "success": true,
     "message": "성공적으로 처리되었습니다.",
     "data": {
-        "content": "# Changelog\n\n이 프로젝트의 모든 주요 변경사항을 기록합니다.\n형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,\n[Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.\n\n## [7.1.0] - 2026-10-09\n\n### Security\n\n- 운영 모드에서 레이아웃·확장 조각·커스텀 다국어 관리(저장·미리보기·판본 복원)가 데이터베이스 오류 같은 내부 오류로 실패하면 응답에 원래 오류 문장(SQL·DB 이름 등)이 그대로 실리던 문제를 막았습니다. 이제 일반 안내만 보여 주고 원문은 서버 로그에 남깁니다.\n… (생략)"
+        "content": "# Changelog\n\n이 프로젝트의 모든 주요 변경사항을 기록합니다.\n형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,\n[Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.\n\n## [7.1.0] - 2026-10-10\n\n### Security\n\n- 운영 모드에서 레이아웃·확장 조각·커스텀 다국어 관리(저장·미리보기·판본 복원)가 데이터베이스 오류 같은 내부 오류로 실패하면 응답에 원래 오류 문장(SQL·DB 이름 등)이 그대로 실리던 문제를 막았습니다. 이제 일반 안내만 보여 주고 원문은 서버 로그에 남깁니다.\n… (생략)"
     }
 }
 ```
