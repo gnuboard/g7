@@ -3,8 +3,10 @@
  * @file HeaderNotificationAbilities.test.tsx
  * @description 데스크톱 Header 가 알림 수정·삭제 권한을 NotificationCenter 에 전달하는지 검증.
  *
- * NotificationCenter 는 canUpdate/canDelete 기본값이 true 라서, Header 가 값을 넘기지 않으면
- * 권한이 없는 회원에게도 데스크톱 헤더의 [모두 읽음]·[모두 삭제]·개별 삭제 버튼이 보인다.
+ * 권한이 없을 때는 레이아웃(_user_base)이 abilities 를 읽어 false 를 명시해 넘기고, Header 는 그 값을
+ * NotificationCenter 에 그대로 전달한다. 값을 받지 못하면(운영자가 루트 레이아웃을 고쳐 keep 으로
+ * 업데이트해 새 prop 바인딩이 없는 사이트) 관리자·사용자 NotificationCenter 와 같은 기본값 true 로
+ * 넘긴다 — false 로 두면 [모두 읽음]·삭제가 숨고 닫을 때 읽음 처리도 빠진다. 최종 방어선은 서버 403.
  * NotificationCenter 를 모킹해 Header 가 넘긴 prop 을 그대로 확인한다.
  *
  * @vitest-environment jsdom
@@ -87,11 +89,12 @@ describe('Header — 알림센터 권한 prop 전달', () => {
     expect(lastProps().canDelete).toBe(true);
   });
 
-  // @scenario component=Header,state=disabled
+  // @scenario component=Header,state=enabled
   // @effects header_passes_notification_abilities
-  it('권한 값을 받지 못하면 버튼을 숨기는 쪽(false)으로 넘긴다', () => {
+  it('권한 값을 받지 못하면 NotificationCenter 와 같은 기본값(true)으로 넘긴다 — keep 업데이트 사이트 회귀', () => {
     render(<Header siteName="S" user={user} availableLocales={['ko']} currentLocale="ko" />);
-    expect(lastProps().canUpdate).toBe(false);
-    expect(lastProps().canDelete).toBe(false);
+    expect(captured.length).toBeGreaterThan(0);
+    expect(lastProps().canUpdate).toBe(true);
+    expect(lastProps().canDelete).toBe(true);
   });
 });

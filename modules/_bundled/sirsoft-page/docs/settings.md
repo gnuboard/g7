@@ -124,7 +124,7 @@ FormRequest 가 단일 책임으로 갖습니다 — 이중 클램프가 생기�
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
 | `sirsoft-marketing` | 플러그인 | `>=1.0.0` |
-| `sirsoft-basic` | 템플릿 | `>=1.1.0` |
+| `sirsoft-basic` | 템플릿 | `>=1.2.0` |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->

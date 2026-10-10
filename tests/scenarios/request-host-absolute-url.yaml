@@ -38,6 +38,7 @@ effects:
   - site_url_host_with_port
   - seo_url_delegates_to_site_url
   - foreign_host_page_request_redirects_to_site
+  - www_pair_host_page_request_redirects_to_site
   - canonical_host_passes_without_loop
   - canonical_redirect_skipped_when_not_applicable
   - canonical_redirect_only_on_page_shells

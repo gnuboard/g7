@@ -30,6 +30,8 @@
         },
         "plugins": {}
     },
+    "github_url": "https://github.com/gnuboard/g7-template-gnuboard7-hello_user_template",
+    "github_changelog_url": "https://github.com/gnuboard/g7-template-gnuboard7-hello_user_template/blob/main/CHANGELOG.md",
     "assets": {
         "css": [],
         "js": [

@@ -124,7 +124,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // 응답이 압축 단계를 거치지 않게 한다.
         $middleware->append(RestrictIpAccess::class);
 
-        // 신뢰 Host (전역, 인증 불필요) — 사이트 주소(APP_URL)의 도메인·하위 도메인과 TRUSTED_HOSTS 가
+        // 신뢰 Host (전역, 인증 불필요) — 사이트 주소(APP_URL)의 도메인·하위 도메인·www 쌍과 TRUSTED_HOSTS 가
         // 아닌 Host 헤더로 온 요청을 받지 않는다. 위조 Host 로 절대 URL 을 만드는 코드가 남아 있을 때의
         // 마지막 겹이다(보안: 근본 조치는 절대 URL 을 요청 Host 가 아니라 사이트 주소로 만드는 것 —
         // App\Support\SiteUrl). 하위 도메인·포트만 바꾼 Host 는 통과하므로 그 자체로는 충분하지 않다.

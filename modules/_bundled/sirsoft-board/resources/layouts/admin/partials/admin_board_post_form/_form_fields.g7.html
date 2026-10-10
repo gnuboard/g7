@@ -24,12 +24,12 @@
             </div>
           </div>
         </div>
-        <div data-ref="post_options_section" data-if="{{form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.secret_mode !== 'disabled'}}" class="">
+        <div data-ref="post_options_section" data-if="{{form_meta?.data?.board?.user_abilities?.can_write_notice || form_meta?.data?.board?.secret_mode !== 'disabled'}}" class="">
           <h3 class="text-label-subtle font-medium mb-3">$t:sirsoft-board.admin.posts.form.post_options</h3>
           <div class="grid-2col-responsive">
-            <label data-ref="notice_card" data-if="{{!_local.form?.parent_id}}" disabled="{{_computed.isReadOnly || !form_meta?.data?.board?.user_abilities?.can_manage}}" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-blue-400 dark:hover:border-blue-600 transition-colors">
+            <label data-ref="notice_card" data-if="{{!_local.form?.parent_id}}" disabled="{{_computed.isReadOnly || !form_meta?.data?.board?.user_abilities?.can_write_notice}}" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-blue-400 dark:hover:border-blue-600 transition-colors">
               <div class="flex-start gap-3">
-                <input type="checkbox" name="is_notice" disabled="{{_computed.isReadOnly || !form_meta?.data?.board?.user_abilities?.can_manage}}" class="mt-0.5 w-4 h-4 text-blue-600 dark:text-blue-400 rounded dark:focus:ring-blue-600 dark:ring-offset-gray-800"/>
+                <input type="checkbox" name="is_notice" disabled="{{_computed.isReadOnly || !form_meta?.data?.board?.user_abilities?.can_write_notice}}" class="mt-0.5 w-4 h-4 text-blue-600 dark:text-blue-400 rounded dark:focus:ring-blue-600 dark:ring-offset-gray-800"/>
                 <div class="flex-1">
                   <div class="flex-center gap-2 mb-1">
                     <icon name="bullhorn" class="text-base text-blue-600 dark:text-blue-400"/>

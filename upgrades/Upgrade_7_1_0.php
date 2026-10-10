@@ -58,6 +58,11 @@ use App\Extension\AbstractUpgradeStep;
  *       08_DropLegacyMailTables.php
  *         7.0.0-beta.2 부터 쓰이지 않는 `mail_templates`(0건일 때)·`mail_send_logs`(0건이거나 알림 발송 로그로 이관이
  *         끝났을 때)를 드랍한다(#699). 행이 남아 있으면 경고만 남기고 보존한다.
+ *       09_PruneStaleBundledFiles.php
+ *         7.0.x 부모의 파일 적용이 번들 디렉토리(`*_bundled`)에 남긴, 7.1.0 에서 지운 파일을 지운다(R1). 남겨 두면 뒤이은
+ *         확장 갱신이 그 파일을 활성 디렉토리로 옮겨 옛 조각·레이아웃이 다시 등록된다(결제 3종 옛 주문 목록 조각이
+ *         관리자 주문 목록 열을 7.0.11 판으로 덮은 실측). 동결 목록(`upgrades/data/7.1.0/stale_bundled_files.snapshot.json`)의
+ *         경로 중 본문이 7.0.x 배포본과 같은 파일만 지우고, 고친 파일은 경고만 남긴다. 활성 디렉토리는 건드리지 않는다.
  *
  * 신규 테이블 13개(방문자 통계 원장·집계·운영 11개 + 개인정보 처리 수동 실행 기록 `privacy_manual_runs`·
  * 비밀번호 이력 `user_password_histories`)는 일반 마이그레이션이 만들고, 설정 기본값·권한(사용자 본인 정보

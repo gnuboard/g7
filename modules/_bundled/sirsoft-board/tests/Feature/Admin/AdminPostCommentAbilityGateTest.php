@@ -15,6 +15,8 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  *
  * - 댓글 본인 판정 권한명이 config 에 없는 'admin.write' 라 댓글 쓰기 권한만 가진 작성자도 자기 댓글을 못 고쳤다(#1)
  * - 관리자 글 저장·수정 API 가 공지 지정 권한을 보지 않아 본문에 is_notice 를 넣으면 공지가 등록됐다(S1·G30)
+ * - 그 판정이 관리 권한(admin.manage)만 인정해 공지 등록 권한(posts.write-notice)자는 사용자 경로에선 되는 공지를
+ *   관리자 경로에선 지정하지 못했다 — 사용자 경로와 같은 판정(canSetNotice)으로 맞추고 form-meta 가 can_write_notice 를 싣는다(B7-2)
  * - 남의 글 수정 폼이 열린 채 편집되고 저장할 때만 403 이었다 — form-meta 가 저장과 같은 판정(can_modify)을 싣는다(#4)
  *
  * 시나리오 축·효과는 매니페스트 tests/scenarios/board-admin-post-comment-gate.yaml 참조.
@@ -230,5 +232,94 @@ class AdminPostCommentAbilityGateTest extends BoardTestCase
         $this->actingAs($writer)->getJson($base.$ownPost)
             ->assertOk()
             ->assertJsonPath('data.can_modify', true);
+    }
+
+    /**
+     * 게시판 관리자 역할 대신 공지 등록 권한(posts.write-notice, 사용자 권한)을 준 관리자를 만듭니다.
+     *
+     * @param  array<int, string>  $adminActions  함께 줄 관리자 게시판 권한 액션
+     * @return User 관리자
+     */
+    private function boardAdminWithWriteNotice(array $adminActions): User
+    {
+        $user = $this->boardAdminWith($adminActions);
+        $role = $user->roles()->first();
+        $identifier = "sirsoft-board.{$this->board->slug}.posts.write-notice";
+        $permission = Permission::firstOrCreate(
+            ['identifier' => $identifier],
+            ['name' => ['ko' => '공지 등록', 'en' => 'Create Notice Posts'], 'type' => 'user']
+        );
+        $role->permissions()->attach($permission->id, ['scope_type' => null, 'granted_at' => now()]);
+        $this->resetPermissionMiddlewareCache();
+
+        return $user->fresh();
+    }
+
+    /**
+     * 공지 등록 권한만 있고 관리 권한이 없어도 관리자 글 등록·수정으로 공지를 지정·해제할 수 있다 — 사용자 경로
+     * (canSetNotice)와 같은 판정이다(B7-2 회귀 잠금).
+     *
+     * @scenario case=notice_with_write_notice_only
+     *
+     * @effects notice_requires_manage_or_write_notice_on_server
+     *
+     * @return void 반환값 없음
+     */
+    public function test_write_notice_holder_can_set_notice_on_admin_route(): void
+    {
+        $holder = $this->boardAdminWithWriteNotice(['admin.posts.read', 'admin.posts.write']);
+        $base = "/api/modules/sirsoft-board/admin/board/{$this->board->slug}/posts";
+
+        $created = $this->actingAs($holder)
+            ->postJson($base, [
+                'title' => '공지 담당 관리자 공지',
+                'content' => '공지 등록 권한으로 올리는 공지 본문입니다.',
+                'is_notice' => true,
+            ])
+            ->assertCreated();
+        $this->assertTrue((bool) DB::table('board_posts')->where('id', $created->json('data.id'))->value('is_notice'));
+
+        $postId = $this->createTestPost(['user_id' => $holder->id, 'author_name' => $holder->name]);
+        $this->actingAs($holder)
+            ->putJson("{$base}/{$postId}", ['title' => '본인 글 제목', 'content' => '본인 글 본문입니다.', 'is_notice' => true])
+            ->assertOk();
+        $this->assertTrue((bool) DB::table('board_posts')->where('id', $postId)->value('is_notice'));
+
+        $this->actingAs($holder)
+            ->putJson("{$base}/{$postId}", ['title' => '본인 글 제목', 'content' => '본인 글 본문입니다.', 'is_notice' => false])
+            ->assertOk();
+        $this->assertFalse((bool) DB::table('board_posts')->where('id', $postId)->value('is_notice'));
+    }
+
+    /**
+     * 관리자 글쓰기 form-meta 의 can_write_notice 는 서버 공지 판정과 같다 — 공지 등록 권한·관리 권한이면 true,
+     * 글쓰기 권한뿐이면 false. 화면의 공지 체크박스가 이 값으로 잠긴다.
+     *
+     * @scenario case=form_meta_can_write_notice
+     *
+     * @effects form_meta_reports_can_write_notice
+     *
+     * @return void 반환값 없음
+     */
+    public function test_form_meta_reports_can_write_notice_matching_server(): void
+    {
+        $url = "/api/modules/sirsoft-board/admin/board/{$this->board->slug}/posts/form-meta";
+
+        $holder = $this->boardAdminWithWriteNotice(['admin.posts.read', 'admin.posts.write']);
+        $holderMeta = $this->actingAs($holder)->getJson($url)
+            ->assertOk()
+            ->assertJsonPath('data.board.user_abilities.can_write_notice', true);
+        // 관리 권한은 없다(권한 행이 아직 없으면 키가 빠진다) — 공지 체크박스가 can_manage 만 보면 잠기던 경우다
+        $this->assertNotTrue($holderMeta->json('data.board.user_abilities.can_manage'));
+
+        $manager = $this->boardAdminWith(['admin.posts.read', 'admin.posts.write', 'admin.manage']);
+        $this->actingAs($manager)->getJson($url)
+            ->assertOk()
+            ->assertJsonPath('data.board.user_abilities.can_write_notice', true);
+
+        $writer = $this->boardAdminWith(['admin.posts.read', 'admin.posts.write']);
+        $this->actingAs($writer)->getJson($url)
+            ->assertOk()
+            ->assertJsonPath('data.board.user_abilities.can_write_notice', false);
     }
 }

@@ -551,11 +551,18 @@ class BoardResource extends BaseApiResource
                 $result[$canKey] = $this->checkGuestPermission($permission);
             }
 
-            // 비회원은 공지를 지정할 수 없다 — 서버 판정(PostController::canSetNotice·StorePostRequest)이
+            // 비회원은 공지를 지정할 수 없다 — 서버 판정(ChecksBoardPermission::canSetNotice·StorePostRequest)이
             // 로그인을 요구하므로 guest 역할에 공지 등록 권한이 있어도 글쓰기 화면의 공지 옵션을 열지 않는다
             if (array_key_exists('can_write_notice', $result)) {
                 $result['can_write_notice'] = false;
             }
+        }
+
+        // 관리자 글쓰기 폼의 공지 체크박스 잠금 — 관리자 글 저장·수정 API 의 판정(canSetNotice: 관리 권한 또는
+        // 공지 등록 권한)과 같은 값을 싣는다. can_manage(admin.manage)만 보면 공지 등록 권한자는 서버가 허용하는데도
+        // 화면이 잠겼다
+        if ($isAdminRoute) {
+            $result['can_write_notice'] = $user !== null && $this->canSetNotice((string) $slug);
         }
 
         return $result;

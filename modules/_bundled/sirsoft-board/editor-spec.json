@@ -1436,7 +1436,8 @@
             "user_abilities": {
               "can_manage": true,
               "can_write": true,
-              "can_upload": true
+              "can_upload": true,
+              "can_write_notice": true
             }
           },
           "author": {

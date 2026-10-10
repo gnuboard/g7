@@ -63,10 +63,12 @@ sub_flows:
 
   - id: trusted_hosts
     description: |
-      전역 TrustHosts 미들웨어의 허용 패턴. APP_URL 도메인·하위 도메인 + TRUSTED_HOSTS(정확 일치).
+      전역 TrustHosts 미들웨어의 허용 패턴. APP_URL 도메인·하위 도메인 + APP_URL 의 www 쌍
+      (www.X 면 X 정확 일치 — 맨 앞 www. 한 단계만, IP·점 없는 이름 제외) + TRUSTED_HOSTS(정확 일치).
       설치 전·TRUSTED_HOSTS_ENABLED=false·APP_URL 미상이면 빈 목록(제한 없음).
     effects:
       - trusted_hosts_allow_site_domain_and_listed_hosts
+      - trusted_hosts_allow_www_pair_of_site_host
       - trusted_hosts_unrestricted_before_install_or_disabled
       - untrusted_host_is_rejected
       - trust_hosts_registered_in_global_stack

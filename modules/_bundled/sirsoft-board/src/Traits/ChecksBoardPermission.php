@@ -43,6 +43,7 @@ trait ChecksBoardPermission
      * @param  string  $slug  게시판 슬러그
      * @param  string  $action  권한 액션 (예: 'admin.posts.read')
      * @param  PermissionType  $type  권한 타입
+     * @return bool 권한 보유 여부
      */
     protected function checkBoardPermission(string $slug, string $action, PermissionType $type = PermissionType::Admin): bool
     {
@@ -56,6 +57,7 @@ trait ChecksBoardPermission
      * @param  array  $actions  권한 액션 배열
      * @param  PermissionType  $type  권한 타입
      * @param  bool  $requireAll  모든 권한 필요 여부
+     * @return bool 권한 보유 여부
      */
     protected function checkBoardPermissions(string $slug, array $actions, PermissionType $type = PermissionType::Admin, bool $requireAll = false): bool
     {
@@ -65,11 +67,53 @@ trait ChecksBoardPermission
     }
 
     /**
+     * 게시판 관리 권한을 보유했는지 확인합니다.
+     *
+     * 관리자 페이지 권한(admin.manage)과 사용자 페이지 관리 권한(manager)을
+     * 모두 인정합니다. 사용자 페이지 화면은 manager 권한으로 can_manage 를
+     * 노출하므로, 실제 처리도 manager 를 인정해야 화면-서버 정합이 맞습니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return bool 관리 권한 보유 여부
+     */
+    protected function hasBoardManagePermission(string $slug): bool
+    {
+        if (! Auth::check()) {
+            return false;
+        }
+
+        return $this->checkBoardPermission($slug, 'admin.manage')
+            || $this->checkBoardPermission($slug, 'manager', PermissionType::User);
+    }
+
+    /**
+     * 공지 지정 권한 보유 여부를 확인합니다.
+     *
+     * 게시판 관리 권한(admin.manage / manager)은 상위 권한이므로 함께 인정하고,
+     * 공지 등록 권한(posts.write-notice)도 단독으로 인정합니다. 사용자 글쓰기·관리자 글쓰기
+     * 경로와 관리자 글쓰기 폼의 공지 체크박스 잠금(can_write_notice)이 모두 이 판정 하나를 쓴다 —
+     * 경로마다 사설 판정을 두면 한쪽만 공지 등록 권한을 빠뜨려 같은 권한자가 경로에 따라 막혔다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return bool 공지 지정 가능 여부
+     */
+    protected function canSetNotice(string $slug): bool
+    {
+        if (! Auth::check()) {
+            return false;
+        }
+
+        return $this->hasBoardManagePermission($slug)
+            || $this->checkBoardPermission($slug, 'posts.write-notice', PermissionType::User);
+    }
+
+    /**
      * 모듈 레벨 권한을 확인합니다.
      *
      * @param  string  $resource  리소스명 (예: 'boards')
      * @param  string  $action  권한 액션 (예: 'create')
      * @param  PermissionType  $type  권한 타입
+     * @return bool 권한 보유 여부
      */
     protected function checkModulePermission(string $resource, string $action, PermissionType $type = PermissionType::Admin): bool
     {
@@ -82,6 +126,7 @@ trait ChecksBoardPermission
      * @param  string  $slug  게시판 슬러그
      * @param  string  $action  권한 액션
      * @param  PermissionType  $type  권한 타입
+     * @return ?JsonResponse 권한이 없으면 403 응답, 있으면 null
      */
     protected function authorizeOrFail(string $slug, string $action, PermissionType $type = PermissionType::Admin): ?JsonResponse
     {
@@ -99,6 +144,7 @@ trait ChecksBoardPermission
      * @param  array  $actions  권한 액션 배열
      * @param  PermissionType  $type  권한 타입
      * @param  bool  $requireAll  모든 권한 필요 여부
+     * @return ?JsonResponse 권한이 없으면 403 응답, 있으면 null
      */
     protected function authorizeAnyOrFail(string $slug, array $actions, PermissionType $type = PermissionType::Admin, bool $requireAll = false): ?JsonResponse
     {
@@ -115,6 +161,7 @@ trait ChecksBoardPermission
      * @param  string  $resource  리소스명
      * @param  string  $action  권한 액션
      * @param  PermissionType  $type  권한 타입
+     * @return ?JsonResponse 권한이 없으면 403 응답, 있으면 null
      */
     protected function authorizeModuleOrFail(string $resource, string $action, PermissionType $type = PermissionType::Admin): ?JsonResponse
     {
@@ -131,6 +178,7 @@ trait ChecksBoardPermission
      * Admin/User 페이지에 따라 자동으로 권한 타입을 결정합니다.
      *
      * @param  string  $identifier  권한 식별자 (예: 'sirsoft-board.notice.posts.read')
+     * @return bool 권한 보유 여부
      */
     protected function checkPermissionByIdentifier(string $identifier): bool
     {
@@ -144,6 +192,8 @@ trait ChecksBoardPermission
      * 권한 캐시를 초기화합니다.
      *
      * 테스트 환경에서 동일 Request 인스턴스가 재사용되는 경우 호출합니다.
+     *
+     * @return void 반환값 없음
      */
     public static function clearPermissionCache(): void
     {
@@ -160,6 +210,7 @@ trait ChecksBoardPermission
      * @param  string  $permission  권한 식별자 (파이프로 복수 권한 구분)
      * @param  PermissionType  $type  권한 타입
      * @param  bool  $requireAll  모든 권한 필요 여부
+     * @return bool 권한 보유 여부
      */
     protected function checkPermissionViaMiddleware(string $permission, PermissionType $type, bool $requireAll = true): bool
     {

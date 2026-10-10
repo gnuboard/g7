@@ -833,45 +833,6 @@ class PostController extends PublicBaseController
     }
 
     /**
-     * 사용자 페이지에서 게시판 관리 권한을 보유했는지 확인합니다.
-     *
-     * 관리자 페이지 권한(admin.manage)과 사용자 페이지 관리 권한(manager)을
-     * 모두 인정합니다. 사용자 페이지 화면은 manager 권한으로 can_manage 를
-     * 노출하므로, 실제 처리도 manager 를 인정해야 화면-서버 정합이 맞습니다.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @return bool 관리 권한 보유 여부
-     */
-    private function hasBoardManagePermission(string $slug): bool
-    {
-        if (! Auth::check()) {
-            return false;
-        }
-
-        return $this->checkBoardPermission($slug, 'admin.manage')
-            || $this->checkBoardPermission($slug, 'manager', PermissionType::User);
-    }
-
-    /**
-     * 공지 지정 권한 보유 여부를 확인합니다.
-     *
-     * 게시판 관리 권한(admin.manage / manager)은 상위 권한이므로 함께 인정하고,
-     * 공지 등록 권한(posts.write-notice)도 단독으로 인정합니다.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @return bool 공지 지정 가능 여부
-     */
-    private function canSetNotice(string $slug): bool
-    {
-        if (! Auth::check()) {
-            return false;
-        }
-
-        return $this->hasBoardManagePermission($slug)
-            || $this->checkBoardPermission($slug, 'posts.write-notice', PermissionType::User);
-    }
-
-    /**
      * 부모 게시글이 답글 작성 가능한 상태인지 검증합니다.
      *
      * 블라인드/삭제된 부모글에는 답글 폼 진입 단계에서 차단하여,

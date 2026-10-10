@@ -7,7 +7,8 @@ description: |
   - HtmlEditor — disabled 를 readOnly 와 같이 다룬다(G09)
   - NotificationCenter — canUpdate·canDelete 가 false 면 모두 읽음·삭제를 숨기고 닫을 때 읽음 처리를 보내지 않는다(G27)
   - Header — 데스크톱 헤더가 알림 권한(notificationCanUpdate·notificationCanDelete)을 NotificationCenter 에 넘긴다.
-    값을 받지 못하면 false 로 넘겨 버튼을 숨긴다(NotificationCenter 의 기본값 true 가 적용되지 않게).
+    권한이 없으면 레이아웃이 false 를 명시해 넘기고, 값을 받지 못하면 NotificationCenter 와 같은 기본값 true 로 넘긴다
+    (루트 레이아웃을 keep 으로 업데이트해 새 prop 바인딩이 없는 사이트에서 버튼·닫힘 읽음 처리가 사라지지 않게, 최종 방어선은 서버 403).
 
 axes:
   component: [HtmlEditor, NotificationCenter, Header]

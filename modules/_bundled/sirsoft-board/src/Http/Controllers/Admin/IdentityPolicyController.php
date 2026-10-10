@@ -28,7 +28,8 @@ use Modules\Sirsoft\Board\Http\Resources\IdentityPolicyResource;
  *
  * 정책은 출처가 아니라 범위·대상으로 적용되므로, 운영자 정책의 대상도 게시판 지점으로 묶는다 — 훅·사용자 지정
  * 범위는 `sirsoft-board.` 로, 경로 범위는 `api.modules.sirsoft-board.` 로 시작해야 한다. 그렇지 않으면 게시판 권한만으로
- * 코어 로그인 같은 다른 지점에 본인인증을 걸 수 있다.
+ * 코어 로그인 같은 다른 지점에 본인인증을 걸 수 있다. 이 검사는 대상을 새로 지정·변경할 때만 한다 — 7.0.11 에서
+ * 자유 입력으로 만든 게시판 밖 대상 정책도 대상을 그대로 둔 사용 토글·다른 칸 수정은 된다(옮기려면 게시판 지점으로만).
  */
 class IdentityPolicyController extends AdminBaseController
 {
@@ -136,10 +137,12 @@ class IdentityPolicyController extends AdminBaseController
 
         if ($policy->source_type !== IdentityPolicySourceType::Admin) {
             $validated = array_intersect_key($validated, array_flip(self::LIMITED_EDITABLE_FIELDS));
-        } elseif (! $this->isOwnedTarget(
+        } elseif ($this->changesScopeOrTarget($policy, $validated) && ! $this->isOwnedTarget(
             $validated['scope'] ?? $policy->scope,
             $validated['target'] ?? $policy->target,
         )) {
+            // 대상을 새로 지정·변경할 때만 소유를 검사한다 — 7.0.11 에서 자유 입력으로 만든 게시판 밖 대상 정책도
+            // 사용 토글·다른 칸 수정은 그대로 된다. 대상이 그대로면 게시판 밖 지점이 새로 생기지 않는다.
             return $this->targetNotOwnedError();
         }
 
@@ -196,6 +199,26 @@ class IdentityPolicyController extends AdminBaseController
         $prefix = self::OWNED_TARGET_PREFIXES[$scopeValue] ?? null;
 
         return $prefix !== null && is_string($target) && str_starts_with($target, $prefix);
+    }
+
+    /**
+     * 수정 요청이 정책의 범위나 대상을 저장된 값과 다르게 바꾸는지 판정합니다.
+     *
+     * 편집 창은 범위·대상을 늘 다시 보내므로 키가 있는지가 아니라 값이 바뀌는지로 가른다.
+     *
+     * @param  IdentityPolicy  $policy  저장된 정책
+     * @param  array<string, mixed>  $validated  검증된 수정 값
+     * @return bool 범위나 대상이 바뀌면 true
+     */
+    private function changesScopeOrTarget(IdentityPolicy $policy, array $validated): bool
+    {
+        $storedScope = $policy->scope instanceof IdentityPolicyScope ? $policy->scope->value : $policy->scope;
+
+        if (array_key_exists('scope', $validated) && (string) $validated['scope'] !== (string) $storedScope) {
+            return true;
+        }
+
+        return array_key_exists('target', $validated) && (string) $validated['target'] !== (string) $policy->target;
     }
 
     /**

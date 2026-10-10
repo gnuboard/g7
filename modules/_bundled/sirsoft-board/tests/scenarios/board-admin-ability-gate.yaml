@@ -21,6 +21,8 @@ description: |
     인증 제공자 선택지는 공개 목록(/api/identity/providers)에서 받는다. 권한은 기본 관리자 역할(admin)에 기본 부여된다.
     운영자 정책의 대상은 게시판 지점으로 묶는다 — 훅·사용자 지정 범위는 `sirsoft-board.`, 경로 범위는 `api.modules.sirsoft-board.`
     로 시작해야 하고, 아니면 추가·수정이 422(target)다. 정책은 범위·대상으로 적용되므로 출처만 묶어서는 코어 로그인 같은 지점을 막지 못한다.
+    이 검사는 범위·대상을 새로 지정·변경할 때만 한다 — 7.0.11 에서 자유 입력으로 만든 게시판 밖 대상 정책도 대상을 그대로 둔
+    사용 토글·다른 칸 수정은 된다(B7-1). 대상을 옮기려면 게시판 지점으로만 옮길 수 있다.
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/Admin/BoardAdminAbilityGateTest.php
@@ -49,6 +51,8 @@ axes:
     - identity_permission_declared
     - identity_target_outside_module
     - identity_target_inside_module
+    - identity_legacy_target_unchanged
+    - identity_legacy_target_changed
     - identity_tab_module_route
     - identity_tab_without_read
     - identity_tab_read_only
@@ -75,6 +79,7 @@ effects:
   - identity_policy_write_scoped_to_board
   - identity_permission_granted_to_admin_by_default
   - identity_policy_target_limited_to_board
+  - identity_policy_unchanged_target_skips_ownership
   - identity_tab_uses_module_permission_route
   - identity_provider_options_need_no_core_permission
   - identity_tab_shows_no_permission_notice

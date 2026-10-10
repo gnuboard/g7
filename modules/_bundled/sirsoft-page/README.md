@@ -142,7 +142,7 @@ _별도의 관리자 설정 항목이 없습니다._
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
 | `sirsoft-marketing` | 플러그인 | `>=1.0.0` |
-| `sirsoft-basic` | 템플릿 | `>=1.1.0` |
+| `sirsoft-basic` | 템플릿 | `>=1.2.0` |
 <!-- @generated:integrations END -->
 
 ## 문서

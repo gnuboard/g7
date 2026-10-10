@@ -28,6 +28,8 @@
         "modules": {},
         "plugins": {}
     },
+    "github_url": "https://github.com/gnuboard/g7-template-gnuboard7-hello_admin_template",
+    "github_changelog_url": "https://github.com/gnuboard/g7-template-gnuboard7-hello_admin_template/blob/main/CHANGELOG.md",
     "assets": {
         "js": [
             "dist/js/components.iife.js"

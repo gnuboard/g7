@@ -18,5 +18,7 @@
             "gnuboard7-hello_module": ">=0.2.0"
         },
         "plugins": {}
-    }
+    },
+    "github_url": "https://github.com/gnuboard/g7-plugin-gnuboard7-hello_plugin",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-gnuboard7-hello_plugin/blob/main/CHANGELOG.md"
 }

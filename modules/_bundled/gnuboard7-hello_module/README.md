@@ -87,6 +87,8 @@ php artisan module:activate gnuboard7-hello_module
 # 업데이트 (번들 소스 기준 강제 반영)
 php artisan module:update gnuboard7-hello_module --force
 ```
+
+저장소: https://github.com/gnuboard/g7-module-gnuboard7-hello_module
 <!-- @generated:install END -->
 
 ## 관리자 설정

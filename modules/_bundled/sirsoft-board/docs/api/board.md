@@ -640,7 +640,7 @@ HTTP/1.1 201
 
 <!-- @generated:end -->
 
-**설명** 게시판 관리자가 새 게시글을 작성합니다. `auth:sanctum` + admin + 게시판별 `posts.write` 권한이 필요하며, `StorePostRequest` 검증을 거친 값에 작성자(`Auth::id()`)와 요청 IP가 자동으로 채워집니다. 업로드 파일과 첨부파일 ID 배열은 본문에서 분리되어 `PostService::createPost()`로 전달되고, 성공 시 생성된 게시글 리소스를 201로 반환합니다. `is_notice=true` 는 게시판 관리 권한(`admin.manage`)이 있어야 합니다 — 없으면 403(`messages.permission.notice_denied`, 7.1.0).
+**설명** 게시판 관리자가 새 게시글을 작성합니다. `auth:sanctum` + admin + 게시판별 `posts.write` 권한이 필요하며, `StorePostRequest` 검증을 거친 값에 작성자(`Auth::id()`)와 요청 IP가 자동으로 채워집니다. 업로드 파일과 첨부파일 ID 배열은 본문에서 분리되어 `PostService::createPost()`로 전달되고, 성공 시 생성된 게시글 리소스를 201로 반환합니다. `is_notice=true` 는 게시판 관리 권한(`admin.manage`/`manager`) 또는 공지 등록 권한(`posts.write-notice`)이 있어야 합니다(사용자 글쓰기 경로와 같은 판정) — 없으면 403(`messages.permission.notice_denied`, 7.1.0).
 
 
 ### GET /api/modules/sirsoft-board/admin/board/{slug}/posts/form-data
@@ -838,7 +838,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시글 폼 화면 표시용 메타 데이터(읽기 전용)를 반환합니다. `auth:sanctum` + admin + 게시판별 `posts.write` 권한이 필요하며, 게시판 정보와 사용자 권한(abilities)을 항상 포함합니다. `board.max_file_size` 는 게시판 값이 비어 있으면(기본값 따름) 게시판 환경설정 기본값, 그것도 없으면 10(MB)으로 채워 첨부 업로드 검증의 용량 상한과 같은 값을 내려 줍니다. `post_id`가 있으면 작성자·작성일·첨부파일과 원글 정보를 덧붙이고(수정 모드), `parent_id`가 있으면 원글 정보를 포함하되 블라인드/삭제된 원글에는 답글 작성이 차단됩니다(각각 403). 수정 모드(`post_id`)에서는 `can_modify` 를 싣습니다 — 저장(PUT)과 같은 판정(관리 권한이거나 글쓰기 권한 + 본인 글)으로, false 면 화면이 폼을 읽기 전용으로 엽니다(7.1.0).
+**설명** 게시글 폼 화면 표시용 메타 데이터(읽기 전용)를 반환합니다. `auth:sanctum` + admin + 게시판별 `posts.write` 권한이 필요하며, 게시판 정보와 사용자 권한(abilities)을 항상 포함합니다. `board.max_file_size` 는 게시판 값이 비어 있으면(기본값 따름) 게시판 환경설정 기본값, 그것도 없으면 10(MB)으로 채워 첨부 업로드 검증의 용량 상한과 같은 값을 내려 줍니다. `post_id`가 있으면 작성자·작성일·첨부파일과 원글 정보를 덧붙이고(수정 모드), `parent_id`가 있으면 원글 정보를 포함하되 블라인드/삭제된 원글에는 답글 작성이 차단됩니다(각각 403). 수정 모드(`post_id`)에서는 `can_modify` 를 싣습니다 — 저장(PUT)과 같은 판정(관리 권한이거나 글쓰기 권한 + 본인 글)으로, false 면 화면이 폼을 읽기 전용으로 엽니다(7.1.0). `board.user_abilities.can_write_notice` 는 글 등록·수정 API 의 공지 판정(게시판 관리 권한 `admin.manage`/`manager` 또는 공지 등록 권한 `posts.write-notice`)과 같은 값으로, 화면의 공지 체크박스가 이 값으로 잠깁니다.
 
 
 ### DELETE /api/modules/sirsoft-board/admin/board/{slug}/posts/{id}
@@ -1418,7 +1418,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시판 관리자가 게시글을 수정합니다. `auth:sanctum` + admin + 게시판별 `posts.write` 권한이 필요하며, 컨트롤러가 대상 게시글을 조회한 뒤 세분화된 권한을 적용합니다: 일반 글은 `admin.manage`(타인 글) 또는 `admin.write`(본인 글), 이미 삭제된 글은 `admin.manage`가 필요합니다. `UpdatePostRequest` 검증 값에서 첨부파일 ID 배열을 분리해 `PostService::updatePost()`로 전달하고, 갱신된 게시글 리소스를 반환합니다. 공지 여부를 바꾸는 요청(`is_notice` 가 현재 값과 다름)은 게시판 관리 권한(`admin.manage`)이 있어야 합니다 — 없으면 403. 같은 값의 재전송은 막지 않습니다(7.1.0).
+**설명** 게시판 관리자가 게시글을 수정합니다. `auth:sanctum` + admin + 게시판별 `posts.write` 권한이 필요하며, 컨트롤러가 대상 게시글을 조회한 뒤 세분화된 권한을 적용합니다: 일반 글은 `admin.manage`(타인 글) 또는 `admin.write`(본인 글), 이미 삭제된 글은 `admin.manage`가 필요합니다. `UpdatePostRequest` 검증 값에서 첨부파일 ID 배열을 분리해 `PostService::updatePost()`로 전달하고, 갱신된 게시글 리소스를 반환합니다. 공지 여부를 바꾸는 요청(`is_notice` 가 현재 값과 다름)은 게시판 관리 권한(`admin.manage`/`manager`) 또는 공지 등록 권한(`posts.write-notice`)이 있어야 합니다 — 없으면 403. 같은 값의 재전송은 막지 않습니다(7.1.0).
 
 
 ### PATCH /api/modules/sirsoft-board/admin/board/{slug}/posts/{id}/blind

@@ -426,7 +426,7 @@ Laravel 의 `throttle:N,M` 은 비로그인 요청의 제한 키를 `sha1(domain
 
 Laravel 의 `url()`·`route()`·`redirect('/x')`·`redirect()->back()` 과 FormRequest 의 기본 `failedValidation`(직전 화면으로 되돌림)은 절대 주소의 호스트를 **요청의 Host 헤더**(신뢰 프록시 뒤라면 `X-Forwarded-Host`)에서 가져온다. 화면 안 링크처럼 같은 요청에 되돌려 주는 주소라면 문제가 없지만, 그 주소가 사이트 밖으로 나가거나 나중에 다시 쓰이면 Host 를 바꿔 보낸 사람이 목적지를 정하게 된다 — 결제·본인인증 결과와 검증 토큰이 그 호스트로 전달된다.
 
-운영 환경의 신뢰 호스트 검사(`config/trustedhosts.php`)는 마지막 겹일 뿐이다. 사이트 주소의 **하위 도메인과 다른 포트**는 그 검사를 통과하므로, 그것만으로 이 경로를 막지 못한다.
+운영 환경의 신뢰 호스트 검사(`config/trustedhosts.php`)는 마지막 겹일 뿐이다. 사이트 주소의 **하위 도메인·www 쌍(`www.` 를 붙이거나 뗀 주소)·다른 포트**는 그 검사를 통과하므로, 그것만으로 이 경로를 막지 못한다.
 
 | ❌ 금지 (리다이렉트·콜백·제3자 전송·메일/알림 링크) | ✅ 올바른 사용 |
 |--------|---------------|
@@ -446,7 +446,7 @@ Laravel 의 `url()`·`route()`·`redirect('/x')`·`redirect()->back()` 과 FormR
 | `SiteUrl::base()` · `SiteUrl::origin()` · `SiteUrl::hostWithPort()` | 사이트 주소(끝 `/` 제거)·출처(`scheme://host[:port]`)·호스트[:포트] |
 | `SiteUrl::isSameOrigin($url)` | 주어진 URL 이 사이트 주소와 같은 출처인지 |
 
-API 라우트(`api/*`)의 검증 오류는 Accept 헤더와 관계없이 JSON 으로 응답한다(`bootstrap/app.php` 의 `shouldRenderJsonWhen`) — 직전 화면으로 되돌아가는 응답이 생기지 않는다. 사이트 주소가 아닌 Host 로 들어온 화면 요청은 사이트 주소로 이동한다(`CANONICAL_HOST_REDIRECT`, 기본 켜짐).
+API 라우트(`api/*`)의 검증 오류는 Accept 헤더와 관계없이 JSON 으로 응답한다(`bootstrap/app.php` 의 `shouldRenderJsonWhen`) — 직전 화면으로 되돌아가는 응답이 생기지 않는다. 사이트 주소가 아닌 Host(하위 도메인·www 쌍·다른 포트·별칭)로 들어온 화면 요청은 사이트 주소로 이동한다(`CANONICAL_HOST_REDIRECT`, 기본 켜짐).
 
 요청 Host 를 의도적으로 쓰는 코드(예: 요청 Host 로 만든 주소를 사이트 주소와 비교하는 관리자 진단)는 해당 줄 위에 `// audit:allow request-host-absolute-url reason: …` 를 단다. 회귀 가드: audit 룰 `request-host-absolute-url`, 계약 테스트 `tests/Feature/Http/TrustedProxyContractTest.php`, 단위 테스트 `tests/Unit/Support/SiteUrlTest.php`.
 

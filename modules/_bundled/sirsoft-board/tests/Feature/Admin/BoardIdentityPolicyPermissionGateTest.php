@@ -394,6 +394,104 @@ class BoardIdentityPolicyPermissionGateTest extends ModuleTestCase
     }
 
     /**
+     * 7.0.11 에서 자유 입력으로 만든, 게시판 밖 지점을 겨누는 게시판 몫 운영자 정책을 만듭니다.
+     *
+     * @return IdentityPolicy 게시판 밖 대상을 가진 기존 정책
+     */
+    private function legacyForeignTargetPolicy(): IdentityPolicy
+    {
+        $suffix = substr(md5(uniqid('', true)), 0, 8);
+
+        return IdentityPolicy::create([
+            'key' => 'gate-legacy-'.$suffix,
+            'scope' => 'route',
+            'target' => 'api.legacy.foreign.'.$suffix,
+            'purpose' => 'sensitive_action',
+            'grace_minutes' => 0,
+            'enabled' => true,
+            'priority' => 100,
+            'source_type' => 'admin',
+            'source_identifier' => 'sirsoft-board',
+            'applies_to' => 'self',
+            'fail_mode' => 'block',
+        ]);
+    }
+
+    /**
+     * 대상을 바꾸지 않는 수정(사용 토글·다른 칸 수정)은 기존 정책의 대상이 게시판 밖이어도 된다 — 7.0.11 에서 만든
+     * 정책이 업데이트 뒤 토글조차 422 가 되던 결함(B7-1)의 회귀 잠금. 편집 모달처럼 같은 범위·대상을 다시 보내도 같다.
+     *
+     * @scenario case=identity_legacy_target_unchanged
+     *
+     * @effects identity_policy_unchanged_target_skips_ownership
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_without_target_change_is_allowed_for_legacy_foreign_target(): void
+    {
+        $updater = $this->adminWith(['sirsoft-board.identity.policies.read', 'sirsoft-board.identity.policies.update']);
+        $legacy = $this->legacyForeignTargetPolicy();
+
+        // 목록의 사용 토글 — 본문은 enabled 하나뿐
+        $this->actingAs($updater)
+            ->putJson(self::BASE.'/'.$legacy->id, ['enabled' => false])
+            ->assertOk()
+            ->assertJsonPath('data.enabled', false);
+
+        // 편집 모달 저장 — 범위·대상을 그대로 다시 보내며 다른 칸만 고친다
+        $this->actingAs($updater)
+            ->putJson(self::BASE.'/'.$legacy->id, [
+                'scope' => 'route',
+                'target' => $legacy->target,
+                'grace_minutes' => 30,
+                'enabled' => true,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.grace_minutes', 30);
+
+        $fresh = $legacy->fresh();
+        $this->assertTrue((bool) $fresh->enabled);
+        $this->assertSame(30, (int) $fresh->grace_minutes);
+        $this->assertSame($legacy->target, $fresh->target);
+    }
+
+    /**
+     * 게시판 밖 대상을 가진 기존 정책이라도 대상·범위를 새로 지정하면 소유 검사를 받는다 — 다른 게시판 밖 지점으로
+     * 옮기거나 범위만 바꾸는 것은 422, 게시판 지점으로 옮기는 것은 허용.
+     *
+     * @scenario case=identity_legacy_target_changed
+     *
+     * @effects identity_policy_target_limited_to_board
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_changing_target_of_legacy_policy_is_checked(): void
+    {
+        $updater = $this->adminWith(['sirsoft-board.identity.policies.read', 'sirsoft-board.identity.policies.update']);
+        $legacy = $this->legacyForeignTargetPolicy();
+        $originalTarget = $legacy->target;
+
+        $this->actingAs($updater)
+            ->putJson(self::BASE.'/'.$legacy->id, ['target' => 'api.auth.login'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('target');
+
+        $this->actingAs($updater)
+            ->putJson(self::BASE.'/'.$legacy->id, ['scope' => 'hook'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('target');
+
+        $fresh = $legacy->fresh();
+        $this->assertSame($originalTarget, $fresh->target);
+        $this->assertSame('route', $fresh->scope instanceof \BackedEnum ? $fresh->scope->value : $fresh->scope);
+
+        $this->actingAs($updater)
+            ->putJson(self::BASE.'/'.$legacy->id, ['target' => 'api.modules.sirsoft-board.legacy.moved'])
+            ->assertOk()
+            ->assertJsonPath('data.target', 'api.modules.sirsoft-board.legacy.moved');
+    }
+
+    /**
      * 모듈은 본인인증 정책 조회·수정 권한을 선언하고 기본 관리자 역할(admin)에 준다.
      *
      * @scenario case=identity_permission_declared

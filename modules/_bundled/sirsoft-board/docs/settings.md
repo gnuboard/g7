@@ -92,6 +92,9 @@ _`getSettingsSchema()` 선언이 없습니다._
 수정(`update`)이 없으면 읽기 전용 안내가 뜨고 추가·켜고 끄기·편집·삭제가 잠깁니다. 탭은 게시판 경로
 (`/api/modules/sirsoft-board/admin/identity-policies`)를 쓰고, 그 경로는 같은 권한으로 403 을 내며 코어 정책 표에서
 게시판 몫(`source_identifier = sirsoft-board`)만 다룹니다. 두 권한은 기본 관리자 역할(`admin`)에 기본으로 주어집니다.
+운영자 정책의 대상이 게시판 지점(`sirsoft-board.` · `api.modules.sirsoft-board.`)인지 검사하는 것은 **추가할 때와 범위·대상을
+바꿀 때만**입니다 — 켜고 끄기나 다른 칸 수정은 저장된 범위·대상과 값이 같으면 검사를 건너뜁니다. 7.0.x 에서 이 탭의 자유 입력으로
+게시판 밖 대상을 겨눈 정책도 업데이트 뒤 켜고 끄기·수정이 되고(422 아님), 대상을 게시판 밖으로 새로 옮기는 것만 거절합니다.
 코어 관리자 환경설정의 본인인증 정책 화면은 코어 권한(`core.admin.identity.policies.*`)으로 모든 출처의 정책을 다룹니다.
 
 위 표는 **모듈 레벨** 권한(게시판 관리 자체를 다루는 관리자 권한)만 보여줍니다. 게시판 하나를
@@ -103,9 +106,9 @@ _`getSettingsSchema()` 선언이 없습니다._
 있다는 뜻입니다.
 
 게시판 동적 권한 중 `posts.write-notice`(공지 등록)는 **필드 설정 권한**입니다 — `posts.write` 를
-통과한 사용자 중 글을 공지로 등록·해제할 수 있는 사람을 가립니다. 사용자 글 작성·수정 컨트롤러가
-게시판 관리 권한(`admin.manage`/`manager`) 또는 이 권한으로 판정하며, 폼 메타의
-`user_abilities.can_write_notice` 가 같은 권한을 화면에 내려 줍니다. 기본값은 `admin` 이고 게시판
+통과한 사용자 중 글을 공지로 등록·해제할 수 있는 사람을 가립니다. 사용자·관리자 글 작성·수정 컨트롤러가
+같은 판정(`ChecksBoardPermission::canSetNotice()` — 게시판 관리 권한 `admin.manage`/`manager` 또는 이 권한)을 쓰며, 폼 메타의
+`user_abilities.can_write_notice` 가 같은 결과를 화면에 내려 줍니다(관리자 글 폼의 공지 체크박스도 이 값으로 잠금). 기본값은 `admin` 이고 게시판
 생성 시 그 게시판의 관리자·스텝 역할이 자동 주입됩니다. 기존 설치본은 1.2.0 업그레이드 스텝이 기존
 게시판의 권한 행과 저장된 기본 권한 설정(`basic_defaults.default_board_permissions`)을 함께 채웁니다
 — 설정이 통째로 저장되는 구조라 기본값 병합만으로는 새 키가 들어가지 않기 때문입니다.

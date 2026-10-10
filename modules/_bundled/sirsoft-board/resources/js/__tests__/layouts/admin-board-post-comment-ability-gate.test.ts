@@ -132,6 +132,35 @@ describe('글 수정 폼 (#4·#5·#6)', () => {
   });
 
   /**
+   * 공지 체크박스는 서버 공지 판정과 같은 can_write_notice 로 잠긴다 — 관리 권한(can_manage) 없이 공지 등록 권한만
+   * 가진 관리자도 열리고(B7-2), 둘 다 없으면 잠긴다. 비밀글이 꺼진 게시판에서도 옵션 구획이 보인다.
+   *
+   * @scenario case=form_meta_can_write_notice
+   *
+   * @effects notice_checkbox_follows_can_write_notice
+   */
+  it('공지 체크박스가 can_write_notice 를 본다', () => {
+    const scope = (abilities: Record<string, boolean>) => ({
+      _computed: { isReadOnly: false },
+      _local: { form: {} },
+      form_meta: { data: { board: { secret_mode: 'disabled', user_abilities: abilities } } },
+    });
+    const checkbox = collect(formFields, (n) => n.name === 'Input' && n.props?.name === 'is_notice')[0];
+    const card = collect(formFields, (n) => n.id === 'notice_card')[0];
+    const section = collect(formFields, (n) => n.id === 'post_options_section')[0];
+
+    const noticeOnly = scope({ can_manage: false, can_write_notice: true });
+    expect(evaluate(checkbox.props.disabled, noticeOnly)).toBe(false);
+    expect(evaluate(card.props.disabled, noticeOnly)).toBe(false);
+    expect(evaluate(section.if, noticeOnly)).toBe(true);
+
+    const writerOnly = scope({ can_manage: false, can_write_notice: false });
+    expect(evaluate(checkbox.props.disabled, writerOnly)).toBe(true);
+    expect(evaluate(card.props.disabled, writerOnly)).toBe(true);
+    expect(evaluate(section.if, writerOnly)).toBe(false);
+  });
+
+  /**
    * 업로드 권한이 없으면 업로더가 잠기고 안내가 보인다.
    *
    * @scenario case=upload_without_permission

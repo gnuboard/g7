@@ -97,4 +97,3 @@ Content-Type: application/json
 | 502 | PG 취소 API 실패 또는 취소 후 주문 반영 실패 (서버 로그에 원문 기록) |
 
 **설명** 7.1.0 부터 PG 취소와 주문 취소까지 하므로 「환불 실행」 권한(`sirsoft-ecommerce.claims.execute-refund`)이 필요합니다.
-

@@ -14,7 +14,7 @@
 3. 코어 정책 표에서 게시판 몫(source_identifier = sirsoft-board)만 다룹니다 — 다른 출처의 정책 ID 는 404
 4. 목록 응답의 abilities(can_create·can_update·can_delete)와 행 abilities 는 수정 권한 하나로 판정합니다
 5. 검증 규칙·저장 동작은 코어 관리자 정책 API(/api/admin/identity/policies)와 같습니다
-6. 운영자 정책의 대상은 게시판 지점만 — 훅·사용자 지정 범위는 `sirsoft-board.`, 경로 범위는 `api.modules.sirsoft-board.` 로 시작 (아니면 422)
+6. 운영자 정책의 대상은 게시판 지점만 — 훅·사용자 지정 범위는 `sirsoft-board.`, 경로 범위는 `api.modules.sirsoft-board.` 로 시작 (아니면 422). 수정은 범위·대상을 바꿀 때만 검사
 ```
 
 ---
@@ -294,7 +294,7 @@ _단건 응답: 고친 정책 — 목록 행과 같은 필드._
 
 <!-- @generated:end -->
 
-**설명** 게시판 몫 정책을 고칩니다(목록의 활성 토글도 이 경로). 모듈이 선언한 정책은 키·범위·대상을 바꿀 수 없어 그 칸은 버리고 나머지만 반영합니다. 운영자 정책은 수정 뒤의 범위·대상(보내지 않은 칸은 기존 값)이 게시판 지점이어야 하며, 아니면 추가와 같은 422(`errors.target`)입니다. 선언형 정책에 고칠 수 있는 칸이 하나도 없으면 422(`sirsoft-board::validation.identity_policy.nothing_to_update`)입니다.
+**설명** 게시판 몫 정책을 고칩니다(목록의 활성 토글도 이 경로). 모듈이 선언한 정책은 키·범위·대상을 바꿀 수 없어 그 칸은 버리고 나머지만 반영합니다. 운영자 정책은 범위나 대상을 저장된 값과 다르게 보낼 때만 수정 뒤의 범위·대상(보내지 않은 칸은 기존 값)이 게시판 지점인지 보며, 아니면 추가와 같은 422(`errors.target`)입니다. 범위·대상을 보내지 않거나 같은 값을 다시 보내는 수정(활성 토글·다른 칸 수정)은 이 검사를 하지 않습니다 — 이전 버전에서 게시판 밖 대상으로 만들어 둔 정책도 토글·수정이 되고, 대상을 옮길 때는 게시판 지점으로만 옮길 수 있습니다. 선언형 정책에 고칠 수 있는 칸이 하나도 없으면 422(`sirsoft-board::validation.identity_policy.nothing_to_update`)입니다.
 
 
 ### DELETE /api/modules/sirsoft-board/admin/identity-policies/{id}

@@ -124,7 +124,7 @@
                             "id": "post_options_section",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{form_meta?.data?.board?.user_abilities?.can_manage || form_meta?.data?.board?.secret_mode !== 'disabled'}}",
+                            "if": "{{form_meta?.data?.board?.user_abilities?.can_write_notice || form_meta?.data?.board?.secret_mode !== 'disabled'}}",
                             "props": {
                                 "className": ""
                             },
@@ -150,7 +150,7 @@
                                             "name": "Label",
                                             "if": "{{!_local.form?.parent_id}}",
                                             "props": {
-                                                "disabled": "{{_computed.isReadOnly || !form_meta?.data?.board?.user_abilities?.can_manage}}",
+                                                "disabled": "{{_computed.isReadOnly || !form_meta?.data?.board?.user_abilities?.can_write_notice}}",
                                                 "className": "bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 cursor-pointer hover:border-blue-400 dark:hover:border-blue-600 transition-colors"
                                             },
                                             "children": [
@@ -167,7 +167,7 @@
                                                             "props": {
                                                                 "type": "checkbox",
                                                                 "name": "is_notice",
-                                                                "disabled": "{{_computed.isReadOnly || !form_meta?.data?.board?.user_abilities?.can_manage}}",
+                                                                "disabled": "{{_computed.isReadOnly || !form_meta?.data?.board?.user_abilities?.can_write_notice}}",
                                                                 "className": "mt-0.5 w-4 h-4 text-blue-600 dark:text-blue-400 rounded dark:focus:ring-blue-600 dark:ring-offset-gray-800"
                                                             }
                                                         },

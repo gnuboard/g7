@@ -17,6 +17,8 @@
         "modules": {},
         "plugins": {}
     },
+    "github_url": "https://github.com/gnuboard/g7-module-gnuboard7-hello_module",
+    "github_changelog_url": "https://github.com/gnuboard/g7-module-gnuboard7-hello_module/blob/main/CHANGELOG.md",
     "assets": {
         "js": {
             "entry": "resources/js/index.ts",

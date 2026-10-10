@@ -91,7 +91,7 @@ flowchart LR
 | PHP | `^8.2` |
 | 의존 모듈 | `sirsoft-board` `>=1.2.0` |
 | 의존 모듈 | `sirsoft-ecommerce` `>=1.3.0` |
-| 의존 모듈 | `sirsoft-page` `>=1.1.0` |
+| 의존 모듈 | `sirsoft-page` `>=1.2.0` |
 | 의존 플러그인 | `sirsoft-daum_postcode` `>=1.0.0` |
 <!-- @generated:requirements END -->
 
@@ -172,7 +172,7 @@ php artisan template:update sirsoft-basic --force
 |---|---|---|---|
 | `sirsoft-board` | 모듈 | `>=1.2.0` | ✅ |
 | `sirsoft-ecommerce` | 모듈 | `>=1.3.0` | ✅ |
-| `sirsoft-page` | 모듈 | `>=1.1.0` | ✅ |
+| `sirsoft-page` | 모듈 | `>=1.2.0` | ✅ |
 | `sirsoft-daum_postcode` | 플러그인 | `>=1.0.0` | ✅ |
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)

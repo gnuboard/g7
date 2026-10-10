@@ -41,6 +41,7 @@ class Upgrade710DataMigrationOrderTest extends TestCase
             '06_PurgeOrphanPluginLayouts',
             '07_MigrateIdentityMessagesToNotifications',
             '08_DropLegacyMailTables',
+            '09_PruneStaleBundledFiles',
         ], $names, '7.1.0 데이터 스텝 목록·순서가 바뀌었다 — 출시 뒤 동결 디렉토리다');
 
         $at = array_flip($names);

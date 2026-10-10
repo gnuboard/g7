@@ -1256,7 +1256,7 @@ Host 헤더는 방문자가 마음대로 적어 보낼 수 있습니다. 예전�
 - 리다이렉트는 APP_URL 안에서만 따릅니다(http→https 같은 정상 전환은 통과, 최대 3회).
 - TLS 검증은 켜 둡니다. 단 APP_URL 호스트가 **루프백(127.0.0.0/8·::1)으로 풀리는 서버**(자기 도메인을 hosts 로 127.0.0.1 에 묶은 구성, 자가서명 인증서를 쓰는 로컬 개발)에서는 연결을 가로챌 경로가 없어 검증을 생략하고, 판정한 주소로 연결을 고정(CURLOPT_RESOLVE)합니다. APP_URL 이 외부 IP 로 풀리는데 인증서를 PHP 가 검증하지 못하면(자가서명·CA 번들 없음) 데이터소스가 fallback 으로 채워지고 `[SEO] DataSource API error` 경고가 남습니다.
 
-마지막 겹으로 전역 `TrustHosts` 미들웨어가 APP_URL 의 도메인·하위 도메인과 `TRUSTED_HOSTS` 가 아닌 Host 로 온 요청을 받지 않습니다(운영 환경·설치 완료 후, `config/trustedhosts.php`). 이 검사는 포트를 보지 않으므로 코드 쪽 방어를 대신하지 않습니다.
+마지막 겹으로 전역 `TrustHosts` 미들웨어가 APP_URL 의 도메인·하위 도메인·www 쌍(`www.` 를 붙이거나 뗀 주소)과 `TRUSTED_HOSTS` 가 아닌 Host 로 온 요청을 받지 않습니다(운영 환경·설치 완료 후, `config/trustedhosts.php`). 이 검사는 포트를 보지 않으므로 코드 쪽 방어를 대신하지 않습니다.
 
 ### DataSourceResolver — 내부 호출 표식 헤더
 

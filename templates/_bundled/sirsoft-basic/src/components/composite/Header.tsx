@@ -1,3 +1,4 @@
+// e2e:allow 알림 권한 prop 의 미전달 기본값만 true 로(NotificationCenter 와 동일). 기본 레이아웃은 권한 값을 명시로 넘겨 표준 설치 화면은 불변이고, 미전달은 keep 으로 남은 옛 _user_base 에서만 생긴다 — 단위 회귀는 HeaderNotificationAbilities.test.tsx.
 /**
  * Header 컴포넌트
  *
@@ -102,9 +103,13 @@ interface HeaderProps {
   notificationLoading?: boolean;
   /** "안 읽은 알림만" 필터 상태 */
   notificationUnreadOnly?: boolean;
-  /** 알림 읽음 처리 권한 — false 면 [모두 읽음] 숨김 */
+  /**
+   * 알림 읽음 처리 권한 — false 면 [모두 읽음] 숨김·닫을 때 읽음 처리 생략.
+   * 기본값 true(NotificationCenter 와 같음): 권한이 없으면 레이아웃이 abilities 를 읽어 false 를 명시한다.
+   * 값이 오지 않는 경우(루트 레이아웃을 keep 으로 업데이트해 바인딩이 없는 사이트)에 기능을 숨기지 않으며, 최종 방어선은 서버 403.
+   */
   notificationCanUpdate?: boolean;
-  /** 알림 삭제 권한 — false 면 [모두 삭제]·개별 삭제 숨김 */
+  /** 알림 삭제 권한 — false 면 [모두 삭제]·개별 삭제 숨김. 기본값 true(위와 같은 이유) */
   notificationCanDelete?: boolean;
   /** 알림 드롭다운 제목 */
   notificationTitleText?: string;
@@ -172,8 +177,8 @@ const Header: React.FC<HeaderProps> = ({
   notificationHasMore = false,
   notificationLoading = false,
   notificationUnreadOnly = false,
-  notificationCanUpdate = false,
-  notificationCanDelete = false,
+  notificationCanUpdate = true,
+  notificationCanDelete = true,
   notificationTitleText,
   notificationEmptyText,
   notificationMarkAllReadText,

@@ -6,7 +6,9 @@ description: |
   - 글 점 메뉴 수정도 수정 API(글쓰기 권한)에 맞춰 쓰기 AND (본인 OR 관리)로 잠근다.
   - 남의 글 수정 폼: form-meta 가 저장과 같은 판정(can_modify)을 실어 읽기 전용으로 연다. 본문 편집기는 readOnly 도 받는다.
   - 첨부 업로더는 업로드 권한(can_upload)으로 잠그고 안내한다. 내려받기는 관리자 다운로드 라우트 + can_download.
-  - 관리자 글 저장·수정 API 는 공지 지정·해제를 게시판 관리 권한(admin.manage)으로만 허용한다(S1·G30). 같은 값의 평소 저장은 막지 않는다.
+  - 관리자 글 저장·수정 API 는 공지 지정·해제를 게시판 관리 권한(admin.manage·manager) 또는 공지 등록 권한(posts.write-notice)으로만
+    허용한다(S1·G30) — 사용자 경로와 같은 판정(canSetNotice)이다. 같은 값의 평소 저장은 막지 않는다.
+  - 관리자 글쓰기 폼의 공지 체크박스는 form-meta 의 can_write_notice(서버 공지 판정과 같은 값)로 잠근다(B7-2).
   - 신고 목록 행 체크박스는 관리 권한일 때만 그린다.
 
 test_files:
@@ -22,6 +24,8 @@ axes:
     - notice_store_without_manage
     - notice_store_with_manage
     - notice_update_without_manage
+    - notice_with_write_notice_only
+    - form_meta_can_write_notice
     - form_meta_can_modify
     - upload_without_permission
     - download_without_permission
@@ -33,6 +37,9 @@ effects:
   - comment_edit_requires_write
   - post_edit_requires_write
   - notice_requires_manage_on_server
+  - notice_requires_manage_or_write_notice_on_server
+  - form_meta_reports_can_write_notice
+  - notice_checkbox_follows_can_write_notice
   - form_meta_reports_can_modify
   - form_read_only_for_others_post
   - editor_read_only_prop

@@ -118,9 +118,9 @@ IP 기록·IP 기반 차단·통보 화이트리스트가 전부 위조 가능�
 - 프록시에서 **클라이언트가 보낸 `X-Forwarded-*` 를 제거**하고 프록시가 직접 설정한다
 - 웹서버의 `server_name`(Apache 는 `ServerName`)을 실제 서비스 호스트로 엄격히 둔다
 - 가능하면 `*` 대신 프록시의 IP·CIDR 목록을 지정한다
-- 프록시가 전달하는 Host(또는 신뢰된 `X-Forwarded-Host`)가 `APP_URL` 의 도메인이 아니면 앱이 요청을 받지 않는다(운영 환경의 신뢰 호스트 검사, `config/trustedhosts.php`). 프록시가 다른 도메인을 넘긴다면 `TRUSTED_HOSTS` 에 그 도메인을 적는다
+- 프록시가 전달하는 Host(또는 신뢰된 `X-Forwarded-Host`)가 `APP_URL` 의 도메인(하위 도메인 포함)이나 그 www 쌍이 아니면 앱이 요청을 받지 않는다(운영 환경의 신뢰 호스트 검사, `config/trustedhosts.php`). www 쌍은 `APP_URL` 이 `www.example.com` 이면 `example.com`, `example.com` 이면 `www.example.com` 이며 따로 적지 않아도 허용된다. 프록시가 다른 도메인을 넘긴다면 `TRUSTED_HOSTS` 에 그 도메인을 적는다
 - 프록시는 클라이언트가 보낸 `X-Forwarded-Host`·`X-Forwarded-Port`·`X-Forwarded-Prefix` 를 **덮어쓰거나 지운다**. 신뢰 호스트 검사는 호스트 이름만 보고 포트·경로 접두사는 보지 않으므로, 흘려보낸 값은 그 검사를 통과한 채 절대 URL 에 들어간다(앱이 리다이렉트·콜백 주소를 사이트 주소로 만드는 규칙은 [routing.md](routing.md#절대-url-은-사이트-주소로-만든다))
-- 사이트 주소가 아닌 Host(하위 도메인·다른 포트)로 들어온 화면 요청은 앱이 사이트 주소로 이동시킨다(`CANONICAL_HOST_REDIRECT`, 기본 켜짐). 프록시가 내부 이름을 Host 로 넘기면 이동이 반복되므로, 그런 구성은 프록시가 원래 Host 를 넘기게 하거나 `CANONICAL_HOST_REDIRECT=false` 로 끈다
+- 사이트 주소가 아닌 Host(하위 도메인·www 쌍·다른 포트)로 들어온 화면 요청은 앱이 사이트 주소로 이동시킨다(`CANONICAL_HOST_REDIRECT`, 기본 켜짐). 프록시가 내부 이름을 Host 로 넘기면 이동이 반복되므로, 그런 구성은 프록시가 원래 Host 를 넘기게 하거나 `CANONICAL_HOST_REDIRECT=false` 로 끈다
 
 ---
 

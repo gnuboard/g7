@@ -529,10 +529,10 @@ G7 는 일본어 번들 언어팩 23종을 공식 제공합니다. ko 원본을 
 ### 설치 및 활성화
 
 ```bash
-# 12개 패키지를 번들 소스로 설치 (자동 활성)
+# 23개 패키지를 번들 소스로 설치 (자동 활성)
 php artisan language-pack:install g7-core-ja --source=bundled
 php artisan language-pack:install g7-template-sirsoft-admin_basic-ja --source=bundled
-# ... (나머지 10개 동일)
+# ... (나머지 21개 동일 — 식별자는 위 「패키지 구성」 표)
 
 # 확인
 php artisan language-pack:list --scope=core

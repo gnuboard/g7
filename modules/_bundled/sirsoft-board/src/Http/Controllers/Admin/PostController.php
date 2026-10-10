@@ -198,9 +198,9 @@ class PostController extends AdminBaseController
         try {
             $validated = $request->validated();
 
-            // 공지 지정은 게시판 관리 권한(admin.manage) 보유자만 — 화면은 체크박스를 잠그지만 본문에 직접 넣으면
-            // 공지가 등록됐다. 사용자 경로의 canSetNotice 와 같은 서버 판정이다
-            if (! empty($validated['is_notice']) && ! $this->checkBoardPermission($slug, 'admin.manage')) {
+            // 공지 지정은 게시판 관리 권한(admin.manage·manager) 또는 공지 등록 권한(posts.write-notice) 보유자만 —
+            // 화면은 체크박스를 잠그지만 본문에 직접 넣으면 공지가 등록됐다. 사용자 경로와 같은 판정(canSetNotice)이다
+            if (! empty($validated['is_notice']) && ! $this->canSetNotice($slug)) {
                 return $this->forbidden('sirsoft-board::messages.permission.notice_denied');
             }
 
@@ -270,10 +270,11 @@ class PostController extends AdminBaseController
             }
         }
 
-        // 공지 여부를 바꾸는 요청은 게시판 관리 권한(admin.manage)만 — 같은 값이 다시 오는 평소 저장은 막지 않는다
+        // 공지 여부를 바꾸는 요청은 공지 지정 권한(canSetNotice — 관리 권한 또는 공지 등록 권한)만 —
+        // 같은 값이 다시 오는 평소 저장은 막지 않는다
         if (array_key_exists('is_notice', $request->validated())
             && (bool) $request->validated()['is_notice'] !== (bool) $post->is_notice
-            && ! $this->checkBoardPermission($slug, 'admin.manage')) {
+            && ! $this->canSetNotice($slug)) {
             return $this->forbidden('sirsoft-board::messages.permission.notice_denied');
         }
 

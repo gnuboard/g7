@@ -18,8 +18,8 @@
         },
         "plugins": {}
     },
-    "github_url": null,
-    "github_changelog_url": null,
+    "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-koreaexim",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-koreaexim/blob/main/CHANGELOG.md",
     "loading": {
         "strategy": "global",
         "priority": 100
