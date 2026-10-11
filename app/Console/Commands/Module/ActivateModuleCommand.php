@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Module;
 
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
+use App\Console\Commands\Traits\RestoresHostLanguagePacks;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\ModuleManager;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 class ActivateModuleCommand extends Command
 {
     use RendersLayoutSyncResult;
+    use RestoresHostLanguagePacks;
 
     /**
      * The name and signature of the console command.
@@ -34,6 +36,8 @@ class ActivateModuleCommand extends Command
         private ModuleRepositoryInterface $moduleRepository
     ) {
         parent::__construct();
+
+        $this->addLanguagePackRestoreOption('modules');
     }
 
     /**
@@ -99,6 +103,7 @@ class ActivateModuleCommand extends Command
                 $this->info('✅ '.__('modules.commands.activate.success', ['module' => $identifier]));
                 $this->info('   - '.trans_choice('modules.commands.activate.layouts_registered', (int) ($result['layouts_registered'] ?? 0)));
                 $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
+                $this->restoreHostLanguagePacks('module', $identifier, 'modules');
                 Log::info(__('modules.commands.activate.success', ['module' => $identifier]));
 
                 return Command::SUCCESS;

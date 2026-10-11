@@ -41,6 +41,10 @@ return [
         ],
         'activate' => [
             'success' => '모듈 ":module" 활성화 완료',
+            'language_packs_restored' => '언어팩 :count개를 함께 켰습니다: :list',
+            'language_packs_kept' => '다시 켜지 않은 언어팩: :list (관리자 화면에서 다시 켤 수 있습니다)',
+            'language_pack_restore_failed' => '언어팩 ":pack" 을(를) 다시 켜지 못했습니다: :error',
+            'option_without_language_packs' => '이 확장을 끌 때 함께 꺼진 언어팩을 다시 켜지 않습니다 (기본은 함께 켭니다)',
             'not_installed' => '":module" 모듈이 설치되지 않았습니다.',
             'already_active' => '":module" 모듈은 이미 활성화되어 있습니다.',
             'layouts_registered' => ':count개 레이아웃 등록됨',

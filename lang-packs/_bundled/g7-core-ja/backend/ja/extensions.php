@@ -31,6 +31,8 @@ return [
     ],
     'warnings' => [
         'auto_deactivated' => ':type ":identifier"がコアバージョン互換性の問題により自動無効化されました。',
+        'auto_deactivate_blocked' => 'コアバージョンが合わない拡張を自動で無効化しようとしましたが、無効化できませんでした。依存する拡張が有効になっているか、無効化に失敗しました。',
+        'auto_deactivate_skipped_stale_version' => '現在のコアバージョンの値がインストール済みのコアコードのバージョンより低いため、拡張の自動無効化をスキップしました。以前の更新で残った設定キャッシュ、または更新前から実行中のプロセスが原因の可能性があります。設定キャッシュがあれば削除します（config_cached で確認）。',
         'dependency_version_unmet' => ':identifier :required が必要ですが、現在は :installed です',
         'dependency_not_installed' => ':identifier :required が必要ですが、インストールされていません',
         'dependency_inactive' => '拡張 :identifier が無効になっています(必要バージョン :required)',

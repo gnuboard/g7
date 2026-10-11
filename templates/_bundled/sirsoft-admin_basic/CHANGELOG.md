@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.1] - 2026-10-11
+
+### Fixed
+
+- 모듈·플러그인·템플릿 관리 화면에서 「코어 호환성 문제로 자동 비활성화된 확장」 배너에 나온 확장을 다시 켜도, 새로 고치기 전까지 배너에 그대로 남던 문제를 고쳤습니다. 이제 켜는 즉시 배너가 갱신됩니다.
+
 ## [1.1.0] - 2026-10-10
 
 ### Added

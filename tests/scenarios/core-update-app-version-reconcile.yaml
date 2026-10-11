@@ -1,0 +1,24 @@
+feature: core_update_app_version_reconcile
+
+description: |
+  7.0.0~7.0.10 core:update 부모는 `.env` 의 APP_VERSION 만 바꾸고 자기 프로세스 env 는 옛 값으로 둔다. 그 env 를 물려받은
+  새 코드 자식과 부모 안의 config:cache 일회용 앱이 옛 버전을 config/hooks 캐시에 굽고, 업데이트 뒤 첫 프로세스가 새 코어를
+  요구하는 확장을 자동 비활성화했다(공개 #145, #137). 새 bootstrap/app.php 가 업데이트 트리 안에서 프로세스 env 의
+  APP_VERSION 을 디스크 `.env` 값으로 올린다(올리기만 — 업그레이드 스텝 자식의 toVersion 은 유지).
+
+coverage_strategy: full
+
+axes:
+  case: [disk_newer, process_higher, equal, process_env_absent, disk_value_absent, dotenv_syntax, prerelease]
+
+effects:
+  - reconcile_raises_all_three_channels_to_disk_version
+  - reconcile_never_lowers_upgrade_step_child_version
+  - reconcile_noop_when_equal
+  - reconcile_noop_when_process_env_absent
+  - reconcile_noop_without_disk_value
+  - reconcile_parses_env_value_like_dotenv
+  - reconcile_compares_prerelease_versions
+
+test_files:
+  - tests/Unit/Bootstrap/UpdateAppVersionReconcileTest.php

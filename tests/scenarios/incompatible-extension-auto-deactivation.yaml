@@ -1,0 +1,22 @@
+feature: incompatible_extension_auto_deactivation
+
+description: |
+  부팅 시 코어 버전 비호환 확장 자동 비활성화(IncompatibleExtensionDeactivator, CoreServiceProvider 에서 분리)의 규칙(공개 #145, #137).
+  (W3) 비호환이 1건 이상이고 현재 코어 버전이 디스크 코드 버전(config/app.php 기본값)보다 낮으면 아무것도 끄지 않고 config 캐시를
+  비우며 경고를 남기고 판정 캐시를 저장하지 않는다. (W4) 매니저가 실제로 끄지 못한 확장(의존 확장 경고)은 알림과 「자동 해제」 로그에
+  넣지 않고 차단 경고를 남기며 그 회차의 판정 캐시를 저장하지 않는다. (W6) 여러 건을 꺼도 config·라우트 캐시 재생성은 한 번이다.
+
+coverage_strategy: full
+
+axes:
+  case: [stale_version, truly_incompatible, blocked_by_dependents, multiple_deactivations, templates, all_compatible]
+
+effects:
+  - stale_version_skips_auto_deactivation_and_clears_config_cache
+  - truly_incompatible_extension_is_deactivated_with_alert
+  - blocked_deactivation_is_not_reported_as_deactivated
+  - cache_rebuild_runs_once_per_deactivation_batch
+  - compatible_site_only_stores_version_check_cache
+
+test_files:
+  - tests/Feature/Extension/IncompatibleExtensionDeactivatorTest.php

@@ -1,0 +1,16 @@
+feature: extension_list_active_count
+
+description: |
+  module:list·plugin:list·template:list 요약줄의 활성 개수를 표시 문자열에 「활성」 이 들어 있는지로 세어, 한국어에서 「비활성」 도
+  활성으로 셌다(공개 #137 두 번째 증상). 원래 상태값으로 센다.
+
+coverage_strategy: full
+
+axes:
+  case: [module_list, plugin_list, template_list]
+
+effects:
+  - list_summary_counts_active_by_raw_status
+
+test_files:
+  - tests/Feature/Console/Commands/ListCommandsActiveCountTest.php

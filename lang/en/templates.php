@@ -245,6 +245,10 @@ return [
         ],
         'activate' => [
             'success' => 'Template ":template" activated successfully',
+            'language_packs_restored' => 'Re-enabled language packs along with it (:count): :list',
+            'language_packs_kept' => 'Language packs left disabled: :list (you can re-enable them in the admin screen)',
+            'language_pack_restore_failed' => 'Could not re-enable language pack ":pack": :error',
+            'option_without_language_packs' => 'Do not re-enable the language packs that were disabled together with this extension (they are re-enabled by default)',
             'not_installed' => 'Template ":template" is not installed.',
             'deactivated_previous' => 'Previous :type template ":previous" deactivated',
         ],

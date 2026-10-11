@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.1] - 2026-10-11
+
+### Added
+
+- 코어 7.1.1 의 새 문구 일본어 번역을 추가했습니다. 확장 자동 비활성화를 건너뛰거나 끄지 못했을 때의 기록 문구 2건과, 모듈·플러그인·템플릿 활성화 명령이 함께 꺼진 언어팩을 다시 켤 때 출력하는 문구와 `--without-language-packs` 옵션 설명 4건(명령마다)입니다. 없으면 일본어 로케일에서 이 문구가 키 그대로 보입니다.
+
 ## [1.1.0] - 2026-10-10
 
 ### Added

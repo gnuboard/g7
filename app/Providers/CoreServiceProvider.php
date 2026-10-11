@@ -59,7 +59,6 @@ use App\Contracts\Repositories\UserConsentRepositoryInterface;
 use App\Contracts\Repositories\UserPasswordHistoryRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Contracts\UniqueIdServiceInterface;
-use App\Enums\DeactivationReason;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Consent\ConsentManager;
 use App\Extension\CoreVersionChecker;
@@ -70,6 +69,7 @@ use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Extension\IdentityVerification\Providers\MailIdentityProvider;
+use App\Extension\IncompatibleExtensionDeactivator;
 use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
@@ -148,6 +148,11 @@ class CoreServiceProvider extends ServiceProvider
      * @var array<string>
      */
     private array $deferredDynamicListeners = [];
+
+    /**
+     * 이번 부팅의 자동 비활성화 서비스 (모듈·플러그인·템플릿 공용).
+     */
+    private ?IncompatibleExtensionDeactivator $incompatibleExtensionDeactivator = null;
 
     /**
      * 코어 서비스들을 등록합니다.
@@ -589,8 +594,8 @@ class CoreServiceProvider extends ServiceProvider
     /**
      * 호환되지 않는 확장(모듈/플러그인)을 자동 비활성화합니다.
      *
-     * 코어 버전 업데이트 후 기존 확장이 새 코어 버전과 호환되지 않는 경우
-     * 자동으로 비활성화하고 로그를 기록합니다.
+     * 판정·비활성화·결과 처리는 `IncompatibleExtensionDeactivator` 가 소유한다(#145 — 디스크보다 낮은 현재 버전 안전망,
+     * 끄지 못한 확장의 알림 제외, 캐시 재생성 묶기). 이 메서드는 업데이트 트리 가드 뒤 위임만 한다.
      *
      * @param  ModuleManager|PluginManager  $manager  확장 매니저
      * @param  string  $type  확장 타입 (modules, plugins)
@@ -617,50 +622,17 @@ class CoreServiceProvider extends ServiceProvider
             return;
         }
 
-        $cache = $this->app->make(CacheInterface::class);
-        $cacheKey = CoreVersionChecker::getCacheKey($type);
+        $this->incompatibleExtensionDeactivator()->deactivateIncompatibleExtensions($manager, $type);
+    }
 
-        // 캐시가 있으면 이미 검증된 것으로 간주
-        if ($cache->has($cacheKey)) {
-            return;
-        }
-
-        $deactivated = [];
-        $activeMethod = $type === 'modules' ? 'getActiveModules' : 'getActivePlugins';
-        $deactivateMethod = $type === 'modules' ? 'deactivateModule' : 'deactivatePlugin';
-
-        foreach ($manager->$activeMethod() as $identifier => $extension) {
-            $requiredVersion = $extension->getRequiredCoreVersion();
-
-            if (! CoreVersionChecker::isCompatible($requiredVersion)) {
-                // 자동 비활성화: reason='incompatible_core' + 요구 버전 전달
-                // (수동 비활성화와 DB 레벨 구분 → UI 라벨링 / 알림 영속화 / 재호환 복구 판정)
-                $manager->$deactivateMethod(
-                    $identifier,
-                    false,
-                    DeactivationReason::IncompatibleCore->value,
-                    $requiredVersion
-                );
-                $deactivated[] = [
-                    'identifier' => $identifier,
-                    'required' => $requiredVersion,
-                ];
-
-                Log::warning(__('extensions.warnings.auto_deactivated'), [
-                    'type' => $type,
-                    'identifier' => $identifier,
-                    'required_version' => $requiredVersion,
-                    'core_version' => CoreVersionChecker::getCoreVersion(),
-                ]);
-            }
-        }
-
-        // 비활성화된 확장이 있으면 세션에 저장 (관리자 알림용)
-        if (! empty($deactivated)) {
-            $this->storeDeactivatedExtensionsAlert($type, $deactivated);
-        }
-
-        $cache->put($cacheKey, true, CoreVersionChecker::getCacheTtl());
+    /**
+     * 이번 부팅에서 쓸 자동 비활성화 서비스를 반환합니다 (모듈·플러그인·템플릿이 같은 인스턴스를 써 안전망 경고가 한 번만 남는다).
+     *
+     * @return IncompatibleExtensionDeactivator 자동 비활성화 서비스
+     */
+    protected function incompatibleExtensionDeactivator(): IncompatibleExtensionDeactivator
+    {
+        return $this->incompatibleExtensionDeactivator ??= $this->app->make(IncompatibleExtensionDeactivator::class);
     }
 
     /**
@@ -733,8 +705,7 @@ class CoreServiceProvider extends ServiceProvider
     /**
      * 호환되지 않는 템플릿을 자동 비활성화합니다.
      *
-     * 코어 버전 업데이트 후 템플릿이 새 코어 버전과 호환되지 않는 경우
-     * 자동으로 비활성화하고 로그를 기록합니다.
+     * 판정·비활성화·결과 처리는 `IncompatibleExtensionDeactivator` 가 소유한다. 이 메서드는 업데이트 트리 가드 뒤 위임만 한다.
      *
      * @param  TemplateManager  $templateManager  템플릿 매니저
      * @return void 반환값 없음
@@ -746,76 +717,7 @@ class CoreServiceProvider extends ServiceProvider
             return;
         }
 
-        $cache = $this->app->make(CacheInterface::class);
-        $cacheKey = CoreVersionChecker::getCacheKey('templates');
-
-        // 캐시가 있으면 이미 검증된 것으로 간주
-        if ($cache->has($cacheKey)) {
-            return;
-        }
-
-        $deactivated = [];
-        $allTemplates = $templateManager->getAllTemplates();
-        $templateRepository = $this->app->make(TemplateRepositoryInterface::class);
-
-        foreach ($allTemplates as $identifier => $template) {
-            // 설치되고 활성화된 템플릿만 검증
-            $templateRecord = $templateRepository->findByIdentifier($identifier);
-            if (! $templateRecord || $templateRecord->status !== 'active') {
-                continue;
-            }
-
-            $requiredVersion = $template['g7_version'] ?? null;
-
-            if (! CoreVersionChecker::isCompatible($requiredVersion)) {
-                // 자동 비활성화: reason='incompatible_core' + 요구 버전 전달
-                $templateManager->deactivateTemplate(
-                    $identifier,
-                    DeactivationReason::IncompatibleCore->value,
-                    $requiredVersion
-                );
-                $deactivated[] = [
-                    'identifier' => $identifier,
-                    'required' => $requiredVersion,
-                ];
-
-                Log::warning(__('extensions.warnings.auto_deactivated'), [
-                    'type' => 'templates',
-                    'identifier' => $identifier,
-                    'required_version' => $requiredVersion,
-                    'core_version' => CoreVersionChecker::getCoreVersion(),
-                ]);
-            }
-        }
-
-        // 비활성화된 템플릿이 있으면 세션에 저장 (관리자 알림용)
-        if (! empty($deactivated)) {
-            $this->storeDeactivatedExtensionsAlert('templates', $deactivated);
-        }
-
-        $cache->put($cacheKey, true, CoreVersionChecker::getCacheTtl());
-    }
-
-    /**
-     * 비활성화된 확장 알림을 캐시에 저장합니다.
-     *
-     * 관리자 대시보드에서 비활성화된 확장에 대한 알림을 표시하기 위해
-     * 캐시에 정보를 저장합니다.
-     *
-     * @param  string  $type  확장 타입 (modules, plugins, templates)
-     * @param  array  $deactivated  비활성화된 확장 목록
-     * @return void 반환값 없음
-     */
-    protected function storeDeactivatedExtensionsAlert(string $type, array $deactivated): void
-    {
-        $cache = $this->app->make(CacheInterface::class);
-        $alerts = $cache->get('ext.compatibility_alerts', []);
-        $alerts[$type] = [
-            'deactivated' => $deactivated,
-            'core_version' => CoreVersionChecker::getCoreVersion(),
-            'timestamp' => now()->toIso8601String(),
-        ];
-        $cache->put('ext.compatibility_alerts', $alerts, 86400); // 24시간
+        $this->incompatibleExtensionDeactivator()->deactivateIncompatibleTemplates($templateManager);
     }
 
     /**

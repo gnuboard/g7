@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Support\CoreVersionDiskReader;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -27,6 +29,11 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      */
     public const RUNTIME_PATH_RELATIVE = 'storage/installer/runtime.php';
 
+    /**
+     * 인스톨러 런타임 설정과 beta.7 한시 보정을 등록 단계에서 적용합니다.
+     *
+     * @return void 반환값 없음
+     */
     public function register(): void
     {
         // testing 환경은 .env.testing 의 DB/APP_KEY 가 SSoT 이며,
@@ -97,6 +104,8 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      *
      * 트리거 조건이 매우 보수적이라 정상 환경 부팅 비용은 .env 의 parseEnvFile 1회 + 키 4~5개
      * 비교. 손상 환경에서만 putenv/$_ENV/$_SERVER 갱신이 일어남.
+     *
+     * @return void 반환값 없음
      */
     private function recoverStaleProcessEnvFromDiskEnv(): void
     {
@@ -179,7 +188,8 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      *
      * 기존 `applyDatabaseConfig` 와 동등한 키 경로 / 구조 (`database.connections.mysql.{read,write}.*`).
      *
-     * @param  array<string, string>  $parsed
+     * @param  array<string, string>  $parsed  파싱된 .env 키-값
+     * @return void 반환값 없음
      */
     private function applyConfigFromParsedEnv(array $parsed): void
     {
@@ -221,7 +231,7 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
         // 새 Config 로 재인스턴스화되도록 강제. config.write.username 이 stale root 로
         // 남아 있던 회귀의 부속 원인 차단 (DB Manager 의 connection 캐시).
         try {
-            \Illuminate\Support\Facades\DB::purge('mysql');
+            DB::purge('mysql');
         } catch (\Throwable $e) {
             // non-fatal — Config 만 갱신된 상태로도 다음 connection 시 정합 값 사용
         }
@@ -239,6 +249,8 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      *   - 디스크 config/app.php version === '7.0.0-beta.7' (recover 와 동일)
      *   - posix_geteuid() === 0 (root 권한 자식만 — 운영자 의도 권한 보존)
      *   - cache/data 자신이 정합 owner/group (chown 기준값 추정)
+     *
+     * @return void 반환값 없음
      */
     private function normalizeRootOwnedCacheDirs(): void
     {
@@ -301,6 +313,9 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
     /**
      * 디렉토리/파일을 재귀적으로 chown + chgrp.
      *
+     * @param  string  $path  대상 경로
+     * @param  int  $uid  소유자 UID
+     * @param  int  $gid  그룹 GID
      * @return bool 모든 항목 성공 시 true
      */
     private function chownRecursive(string $path, int $uid, int $gid): bool
@@ -327,30 +342,13 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      *
      * 메모리 config('app.version') 은 부모 stale ENV 의 APP_VERSION 을 따르므로
      * 본 fix 의 자기 활성화 가드로 사용 불가. 디스크 SSoT (config/app.php) 직접 읽기로
-     * 코어 업그레이드 시점의 실제 적용 버전 확보.
+     * 코어 업그레이드 시점의 실제 적용 버전 확보. 정규식은 `CoreVersionDiskReader` 한 곳에 둔다.
      *
      * @return string|null 추출 실패 시 null
      */
     private function readCoreVersionFromDisk(): ?string
     {
-        $configPath = base_path('config/app.php');
-        if (! is_file($configPath)) {
-            return null;
-        }
-        $content = @file_get_contents($configPath);
-        if ($content === false) {
-            return null;
-        }
-        // 'version' => env('APP_VERSION', '7.0.0-beta.7'),
-        if (preg_match("/'version'\s*=>\s*env\(\s*'APP_VERSION'\s*,\s*'([^']+)'\s*\)/", $content, $m)) {
-            return $m[1];
-        }
-        // fallback: 'version' => '7.0.0-beta.7',
-        if (preg_match("/'version'\s*=>\s*'([^']+)'/", $content, $m)) {
-            return $m[1];
-        }
-
-        return null;
+        return CoreVersionDiskReader::shippedVersion(base_path('config/app.php'));
     }
 
     /**
@@ -362,7 +360,8 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      *   - 외곽 인용부호 (single/double) 제거 — unwrapEnvValue 사용
      *   - 키 이름은 [A-Za-z_][A-Za-z0-9_]* 만 인정
      *
-     * @return array<string, string>
+     * @param  string  $envPath  .env 파일 경로
+     * @return array<string, string> 키-값 배열
      */
     private function parseEnvFile(string $envPath): array
     {
@@ -400,6 +399,12 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
         return $result;
     }
 
+    /**
+     * .env 값의 외곽 인용부호(single/double)를 벗깁니다.
+     *
+     * @param  string  $value  원본 값
+     * @return string 인용부호를 벗긴 값
+     */
     private function unwrapEnvValue(string $value): string
     {
         $length = strlen($value);
@@ -417,7 +422,8 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
     /**
      * runtime 배열의 DB 자격증명을 config('database.connections.mysql.*') 에 주입.
      *
-     * @param  array<string, mixed>  $runtime
+     * @param  array<string, mixed>  $runtime  인스톨러 런타임 설정
+     * @return void 반환값 없음
      */
     protected function applyDatabaseConfig(array $runtime): void
     {
@@ -463,7 +469,8 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
      *
      * Encrypter 가 lazy resolve 이므로 register 단계 변경으로 충분.
      *
-     * @param  array<string, mixed>  $runtime
+     * @param  array<string, mixed>  $runtime  인스톨러 런타임 설정
+     * @return void 반환값 없음
      */
     protected function applyAppKey(array $runtime): void
     {

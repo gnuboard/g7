@@ -4,6 +4,7 @@ namespace Tests\Unit\Support;
 
 use App\Support\ConfigCacheHelper;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
@@ -19,6 +20,11 @@ use Tests\TestCase;
  */
 class ConfigCacheHelperTest extends TestCase
 {
+    /**
+     * 강제한 환경을 testing 으로 되돌립니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 환경 강제 복원 (다른 테스트 오염 방지)
@@ -27,6 +33,15 @@ class ConfigCacheHelperTest extends TestCase
         parent::tearDown();
     }
 
+    /**
+     * testing 환경의 rebuild() 는 config:clear 만 하고 config:cache 는 만들지 않는다.
+     *
+     * @scenario case=testing_env
+     *
+     * @effects rebuild_skips_cache_in_testing
+     *
+     * @return void 반환값 없음
+     */
     public function test_rebuild_clears_but_never_caches_in_testing_environment(): void
     {
         // 기본 테스트 환경 = testing → config:clear 는 수행(값 반영 보장), config:cache 는 스킵(격리 보호).
@@ -43,6 +58,15 @@ class ConfigCacheHelperTest extends TestCase
         $this->assertNotContains('config:cache', $calls, 'testing 환경에서는 config:cache 를 생성하지 않아야 합니다 (격리 보호).');
     }
 
+    /**
+     * 설치된 운영 환경의 rebuild() 는 config:clear 뒤 config:cache 를 다시 만든다.
+     *
+     * @scenario case=installed
+     *
+     * @effects rebuild_recreates_cache_when_installed
+     *
+     * @return void 반환값 없음
+     */
     public function test_rebuild_clears_then_caches_when_installed(): void
     {
         // 비-testing 환경 + 설치 완료 상태 강제
@@ -68,17 +92,24 @@ class ConfigCacheHelperTest extends TestCase
         );
     }
 
+    /**
+     * 설치가 끝나지 않은 운영 환경의 rebuild() 는 clear 만 하고 불완전한 config 를 캐시에 박지 않는다.
+     *
+     * @scenario case=not_installed
+     *
+     * @effects rebuild_skips_cache_when_not_installed
+     *
+     * @return void 반환값 없음
+     */
     public function test_rebuild_clears_only_when_not_installed(): void
     {
         // 비-testing + 설치 미완료 → clear 만, 재생성은 스킵(불완전 config 박제 방지)
         app()->detectEnvironment(fn () => 'production');
         config(['app.installer_completed' => false]);
 
-        // 설치 플래그 파일도 없어야 함 (isInstalled false 보장) — 존재 시 이 테스트는
-        // 환경상 스킵될 수 있으나, 로컬 dev 에서 g7_installed 가 있으면 결과가 달라진다.
-        if (file_exists(storage_path('app/g7_installed'))) {
-            $this->markTestSkipped('storage/app/g7_installed 존재 — 미설치 경로 검증 불가');
-        }
+        // 설치 플래그 파일도 없다고 답하게 한다 — 실제 storage/app/g7_installed 유무(설치된 개발 PC 에는 있다)에
+        // 결과가 갈리지 않도록 파일 확인만 대역으로 바꾼다(종전에는 그 파일이 있으면 이 테스트를 건너뛰었다).
+        File::partialMock()->shouldReceive('exists')->with(storage_path('app/g7_installed'))->andReturn(false);
 
         $calls = [];
         Artisan::shouldReceive('call')->andReturnUsing(function ($command) use (&$calls) {
@@ -93,6 +124,15 @@ class ConfigCacheHelperTest extends TestCase
         $this->assertNotContains('config:cache', $calls, '설치 미완료 시 config:cache 를 생성하지 않아야 합니다.');
     }
 
+    /**
+     * clear() 는 설치된 운영 환경에서도 config:cache 를 만들지 않는다.
+     *
+     * @scenario case=clear_production
+     *
+     * @effects clear_never_recreates_cache
+     *
+     * @return void 반환값 없음
+     */
     public function test_clear_only_helper_never_caches(): void
     {
         app()->detectEnvironment(fn () => 'production');
@@ -111,6 +151,15 @@ class ConfigCacheHelperTest extends TestCase
         $this->assertNotContains('config:cache', $calls, 'clear() 는 config:cache 를 재생성하지 않아야 합니다.');
     }
 
+    /**
+     * clear() 는 testing 환경에서도 config:clear 를 실행한다.
+     *
+     * @scenario case=clear_testing
+     *
+     * @effects clear_never_recreates_cache
+     *
+     * @return void 반환값 없음
+     */
     public function test_clear_calls_config_clear_even_in_testing(): void
     {
         // clear() 는 config:clear 만 수행(재생성 없음). testing 에서도 clear 는 격리를 깨지 않으므로 실행한다.
