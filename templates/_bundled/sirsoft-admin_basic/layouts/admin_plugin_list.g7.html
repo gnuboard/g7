@@ -197,6 +197,8 @@
           </div>
           <button data-ref="unplaced_bundled_notice_dismiss" type="button" class="shrink-0 text-info-soft hover:underline" aria-label="$t:extensions.unplaced_bundled.dismiss">
             <on type="click">
+              <!-- 이 관리자에게서만 플러그인 안내를 닫는다(번들 자체는 그대로 미배치다).
+                   성공하면 안내 소스만 다시 받아 블록이 사라졌는지 확인한다. -->
               <api-call :auth_required="true" target="/api/admin/extensions/unplaced-bundled/plugin/dismiss" method="POST">
                 <success>
                   <refetch-data-source dataSourceId="unplaced_bundled_notice"/>

@@ -678,6 +678,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "이 관리자에게서만 템플릿 안내를 닫는다(번들 자체는 그대로 미배치다).\n                   성공하면 안내 소스만 다시 받아 블록이 사라졌는지 확인한다.",
                                                 "type": "click",
                                                 "handler": "apiCall",
                                                 "target": "/api/admin/extensions/unplaced-bundled/template/dismiss",
