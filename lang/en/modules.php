@@ -203,6 +203,7 @@ return [
         'delete_directory_failed' => 'Failed to delete module directory: :error',
         'update_failed' => 'Failed to update module ":module": :error',
         'invalid_layout_strategy' => 'Invalid layout strategy. (only overwrite or keep allowed)',
+        'invalid_layout_source' => 'Invalid layout install source. (Only auto or json allowed)',
         'invalid_vendor_mode' => 'Invalid vendor installation mode. (only auto, composer, bundled allowed)',
     ],
 

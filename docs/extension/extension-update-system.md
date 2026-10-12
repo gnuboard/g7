@@ -727,7 +727,7 @@ Body: { "layout_strategy": "keep" }
 | 업데이트 응답 `message` (업데이트 창 토스트) | 기존 성공 문구 + `레이아웃: 새 버전 변경 N곳 자동 반영, 운영자 수정과 겹친 M곳은 운영자 것 유지.` (+ 기준 없음·건너뜀 수) — 보고할 행이 있을 때만 |
 | 업데이트 응답 `data.layout_sync` | `{strategy, applied_count, conflict_count, kept_no_base_count, kept_removed_count, kept_deleted_by_operator_count, kept_name_collision_count, kept_invalid_count, modified_count, entries[]}` · `entries[] = {kind: layout\|extension, template, name, verdict, applied[], conflicts[{unit, reason}]}` |
 | CLI `{type}:update --layout-strategy=keep` | 「레이아웃 처리 결과 (수정 유지)」 표(화면·종류·결과·자동 반영·겹침) + 요약 한 줄. `core:update` 일괄 업데이트는 확장마다 요약 한 줄 |
-| 활동 로그 (`module.update`·`plugin.update`·`template.version_update`) | `properties.layout_strategy`·`properties.layout_sync`(카운트) · 행을 펼치면 변경 내역 표에 운영자 관련 화면마다 「운영자 수정본 → 결과」 한 줄 · 겹친 단위는 `properties.layout_sync_conflicts`(최대 50) |
+| 활동 로그 (`module.update`·`plugin.update`·`template.version_update`) | `properties.layout_strategy`·`properties.layout_source`(적용된 설치 소스)·`properties.layout_sync`(카운트) · 행을 펼치면 변경 내역 표에 운영자 관련 화면마다 「운영자 수정본 → 결과」 한 줄 · 겹친 단위는 `properties.layout_sync_conflicts`(최대 50) |
 
 ### 수정 감지 원리
 
@@ -754,6 +754,8 @@ Body: { "layout_strategy": "keep" }
 
 > 단일 `check-updates`는 `checkXxxUpdate()` 호출 후 커맨드에서 DB 갱신 (`updateByIdentifier()`)
 > `--layout-strategy`: 3종 공통. `overwrite` (기본) 또는 `keep` (운영자 수정본에 새 버전 3자 병합 + 결과 표 출력). 섹션 10 참조
+> `--layout-source`: 설치·업데이트·`refresh-layout` 9개 커맨드 공통. `auto`(`.g7.html` 우선) 또는 `json`(짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). **생략하면 설정 `LAYOUT_INSTALL_SOURCE`(`template.layout_markup.install_source`, 기본 `auto`)를 따른다**(7.1.1~ — 그 전에는 생략 시 항상 `auto` 여서 `.env` 의 `json` 이 덮였다)
+> 관리자 화면: 확장(템플릿·모듈·플러그인) 설치·업데이트·레이아웃 갱신 창의 접힌 「고급 설정」에서 같은 값을 고른다(자동(권장) / 원본 JSON 우선(문제 해결용)). 창을 열 때마다 자동으로 돌아가며, 고른 값은 요청 본문 `layout_source` 로 가서 **그 요청 동안만** 적용된다
 > `--vendor-mode`: 모듈/플러그인 전용. `auto|composer|bundled` — Vendor 설치 방식 선택 (템플릿 미지원)
 > `--force` (update): 버전 비교를 건너뛰고 강제 재설치 (파일 손상, 수동 수정 복원 시 사용)
 > `--force` (install): 이미 설치된 확장이라도 `_bundled`/`_pending` 원본으로 활성 디렉토리를 덮어쓰고 재설치 — 불완전 활성 디렉토리(manifest 누락 등) 복구 시 사용

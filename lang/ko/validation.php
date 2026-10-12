@@ -1300,6 +1300,7 @@ return [
 
     // 검증 속성명 (validation.attributes)
     'attributes' => [
+        'layout_source' => '레이아웃 설치 소스',
         'since' => '기준 시각',
         'skip_waiting' => '대기기간 생략',
         'targets' => '조회 대상',

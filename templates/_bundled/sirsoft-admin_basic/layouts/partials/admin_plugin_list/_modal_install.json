@@ -424,6 +424,195 @@
             ]
         },
         {
+            "comment": "고급 설정 — 레이아웃 설치 소스(#144). 평소에는 자동(.g7.html 우선)이고, 새 형식 처리에 문제가 있을 때만\n         원본 JSON 우선을 고른다. 값은 요청 본문 layout_source 로 보내고 서버는 그 요청 동안만 적용한다.\n         창을 열 때마다 자동·접힘으로 되돌린다(여는 쪽이 전역값을 초기화한다).",
+            "id": "plugin_install_layout_source_section",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "mt-4 border-t border-gray-200 dark:border-gray-700 pt-3"
+            },
+            "children": [
+                {
+                    "id": "plugin_install_layout_source_toggle",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "접힘/펼침만 바꾼다 — 고른 값은 그대로 둔다.",
+                            "type": "click",
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "pluginLayoutSourceOpen": "{{_global.pluginLayoutSourceOpen !== true}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "aria-expanded": "{{_global.pluginLayoutSourceOpen === true}}",
+                        "className": "text-label hover:text-gray-900 dark:hover:text-gray-200 inline-flex items-center gap-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "{{_global.pluginLayoutSourceOpen === true ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}",
+                                "className": "text-xs"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.plugins.modals.layout_source_advanced"
+                        }
+                    ]
+                },
+                {
+                    "id": "plugin_install_layout_source_options",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.pluginLayoutSourceOpen === true}}",
+                    "props": {
+                        "className": "mt-2 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                            },
+                            "text": "$t:admin.plugins.modals.layout_source_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-tertiary mb-2"
+                            },
+                            "text": "$t:admin.plugins.modals.layout_source_help"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "row-stack"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "자동(권장) — .g7.html 을 우선 설치하고 없으면 .json 을 쓴다. 기본값.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "pluginLayoutSource": "auto"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "plugin_install_layout_source",
+                                                "value": "auto",
+                                                "checked": "{{(_global.pluginLayoutSource ?? 'auto') === 'auto'}}",
+                                                "className": "radio mt-0.5"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:admin.plugins.modals.layout_source_auto"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-tertiary"
+                                                    },
+                                                    "text": "$t:admin.plugins.modals.layout_source_auto_desc"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "원본 JSON 우선(문제 해결용) — 짝 .json 이 있는 화면은 .g7.html 대신 원본 JSON 으로 설치한다.",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "pluginLayoutSource": "json"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "radio",
+                                                "name": "plugin_install_layout_source",
+                                                "value": "json",
+                                                "checked": "{{(_global.pluginLayoutSource ?? 'auto') === 'json'}}",
+                                                "className": "radio mt-0.5"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:admin.plugins.modals.layout_source_json"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-tertiary"
+                                                    },
+                                                    "text": "$t:admin.plugins.modals.layout_source_json_desc"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "type": "basic",
             "name": "Div",
             "props": {
@@ -478,7 +667,8 @@
                                             "plugin_name": "{{_global.selectedPlugin.identifier}}",
                                             "vendor_mode": "{{_global.pluginInstallVendorMode ?? 'auto'}}",
                                             "dependencies": "{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}",
-                                            "language_packs": "{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) && (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}"
+                                            "language_packs": "{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) && (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}",
+                                            "layout_source": "{{_global.pluginLayoutSource ?? 'auto'}}"
                                         }
                                     },
                                     "onSuccess": [
@@ -538,7 +728,9 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",
-                                                "selectedPlugin": null
+                                                "selectedPlugin": null,
+                                                "pluginLayoutSource": "auto",
+                                                "pluginLayoutSourceOpen": false
                                             }
                                         }
                                     ],

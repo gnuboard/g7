@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Template;
 
 use App\Extension\HookManager;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -27,7 +28,7 @@ class PerformTemplateUpdateRequest extends FormRequest
     /**
      * 요청에 적용할 검증 규칙
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -35,6 +36,8 @@ class PerformTemplateUpdateRequest extends FormRequest
             'layout_strategy' => ['nullable', 'string', 'in:overwrite,keep'],
             // 코어 버전 비호환 강제 우회 플래그
             'force' => ['nullable', 'boolean'],
+            // 레이아웃 설치 소스(auto|json) — 이 요청 동안만 설정을 덮는다. 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따른다.
+            'layout_source' => ['nullable', 'string', 'in:auto,json'],
         ];
 
         return HookManager::applyFilters('core.template.perform_update_validation_rules', $rules, $this);
@@ -49,6 +52,7 @@ class PerformTemplateUpdateRequest extends FormRequest
     {
         return [
             'layout_strategy.in' => __('templates.errors.invalid_layout_strategy'),
+            'layout_source.in' => __('templates.errors.invalid_layout_source'),
         ];
     }
 }

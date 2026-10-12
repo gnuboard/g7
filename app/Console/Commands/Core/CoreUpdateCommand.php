@@ -609,7 +609,10 @@ class CoreUpdateCommand extends Command
                 (bool) $this->option('force'),
             );
 
-            if (($promptResult['success'] ?? 0) > 0) {
+            $bundledFailed = (int) ($promptResult['failed'] ?? 0);
+
+            // 실패한 확장도 롤백 전까지 파일을 썼을 수 있다 — 시도한 업데이트가 하나라도 있으면 후처리를 한다.
+            if (($promptResult['success'] ?? 0) > 0 || $bundledFailed > 0) {
                 // 일괄 업데이트는 이 (이전 코드) 프로세스에서 확장마다 훅 캐시를 재생성해, 위에서 새 프로세스로
                 // 구운 캐시를 이전 리스너 구독으로 덮어쓸 수 있다 — 소유권 복원 전에 새 프로세스로 다시 굽는다.
                 $this->rebuildHookCacheInFreshProcess($log);
@@ -634,7 +637,8 @@ class CoreUpdateCommand extends Command
             // 전면 500 차단 (7.0.9→7.0.10 실사례)
             app(CoreUpdateService::class)->normalizeRuntimeOwnershipAfterRootRun();
 
-            return Command::SUCCESS;
+            // 번들 확장 일괄 업데이트가 하나라도 실패하면 종료 코드 1 (후처리는 위에서 모두 끝냈다).
+            return $this->bundledUpdateExitCode($promptResult, $toVersion);
 
         } catch (UpgradeHandoffException $e) {
             // 업그레이드 스텝이 새 PHP 프로세스 재진입을 요청한 경우.

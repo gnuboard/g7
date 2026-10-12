@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.1] - 2026-10-11
+
+### Added
+
+- 확장(템플릿·모듈·플러그인) 설치·업데이트·레이아웃 갱신 창의 「詳細設定」(레이아웃 설치 소스 — 自動(推奨) / 元の JSON を優先(トラブルシューティング用)) 문구의 일본어 번역을 추가했습니다.
+
 ## [1.1.0] - 2026-10-10
 
 ### Added

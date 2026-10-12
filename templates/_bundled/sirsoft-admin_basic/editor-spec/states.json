@@ -1974,7 +1974,7 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(installPreview, installSelectedDeps, installSelectedLPs, isModuleInstalling, moduleInstallVendorMode, selectedModule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(installPreview, installSelectedDeps, installSelectedLPs, isModuleInstalling, moduleInstallVendorMode, moduleLayoutSource, moduleLayoutSourceOpen, selectedModule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "module_install_modal"
@@ -1986,6 +1986,8 @@
           "default": true,
           "initialState": {
             "global": {
+              "moduleLayoutSource": "auto",
+              "moduleLayoutSourceOpen": true,
               "selectedModule": {
                 "identifier": "sirsoft-ecommerce",
                 "name": "이커머스",
@@ -2134,7 +2136,7 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(isModuleRefreshingLayouts, selectedModule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(isModuleRefreshingLayouts, moduleLayoutSource, moduleLayoutSourceOpen, selectedModule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "module_refresh_layouts_modal"
@@ -2146,6 +2148,8 @@
           "default": true,
           "initialState": {
             "global": {
+              "moduleLayoutSource": "auto",
+              "moduleLayoutSourceOpen": true,
               "selectedModule": {
                 "identifier": "sirsoft-ecommerce",
                 "name": "이커머스",
@@ -2255,7 +2259,7 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(hasModifiedModuleLayouts, isModuleUpdating, modifiedModuleLayouts, modifiedModuleLayoutsCheckFailed, modifiedModuleLayoutsCount, moduleForceUpdate, moduleLayoutStrategy, moduleRebuildSearchIndex, moduleUpdateError, selectedModule, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(hasModifiedModuleLayouts, isModuleUpdating, modifiedModuleLayouts, modifiedModuleLayoutsCheckFailed, modifiedModuleLayoutsCount, moduleForceUpdate, moduleLayoutSource, moduleLayoutSourceOpen, moduleLayoutStrategy, moduleRebuildSearchIndex, moduleUpdateError, selectedModule, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "module_update_modal"
@@ -2267,6 +2271,8 @@
           "default": true,
           "initialState": {
             "global": {
+              "moduleLayoutSource": "auto",
+              "moduleLayoutSourceOpen": true,
               "selectedModule": {
                 "identifier": "sirsoft-ecommerce",
                 "vendor": "sirsoft",
@@ -2566,7 +2572,7 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(installPreview, installSelectedDeps, installSelectedLPs, isPluginInstalling, pluginInstallVendorMode, selectedPlugin) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(installPreview, installSelectedDeps, installSelectedLPs, isPluginInstalling, pluginInstallVendorMode, pluginLayoutSource, pluginLayoutSourceOpen, selectedPlugin) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "plugin_install_modal"
@@ -2578,6 +2584,8 @@
           "default": true,
           "initialState": {
             "global": {
+              "pluginLayoutSource": "auto",
+              "pluginLayoutSourceOpen": true,
               "installPreview": {
                 "dependencies": [
                   {
@@ -2726,7 +2734,7 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(isPluginRefreshingLayouts, selectedPlugin) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(isPluginRefreshingLayouts, pluginLayoutSource, pluginLayoutSourceOpen, selectedPlugin) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "plugin_refresh_layouts_modal"
@@ -2738,6 +2746,8 @@
           "default": true,
           "initialState": {
             "global": {
+              "pluginLayoutSource": "auto",
+              "pluginLayoutSourceOpen": true,
               "selectedPlugin": {
                 "identifier": "sirsoft-gdpr",
                 "name": "GDPR (일반 데이터 보호 규정)",
@@ -2835,7 +2845,7 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(hasModifiedPluginLayouts, isPluginUpdating, modifiedPluginLayouts, modifiedPluginLayoutsCheckFailed, modifiedPluginLayoutsCount, pluginForceUpdate, pluginLayoutStrategy, pluginRebuildSearchIndex, pluginUpdateError, selectedPlugin, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(hasModifiedPluginLayouts, isPluginUpdating, modifiedPluginLayouts, modifiedPluginLayoutsCheckFailed, modifiedPluginLayoutsCount, pluginForceUpdate, pluginLayoutSource, pluginLayoutSourceOpen, pluginLayoutStrategy, pluginRebuildSearchIndex, pluginUpdateError, selectedPlugin, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "plugin_update_modal"
@@ -2847,6 +2857,8 @@
           "default": true,
           "initialState": {
             "global": {
+              "pluginLayoutSource": "auto",
+              "pluginLayoutSourceOpen": true,
               "updateChangelog": [
                 {
                   "version": "1.1.1",
@@ -3356,7 +3368,7 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(installPreview, installSelectedDeps, installSelectedLPs, isTemplateInstalling, selectedTemplate) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(installPreview, installSelectedDeps, installSelectedLPs, isTemplateInstalling, selectedTemplate, templateLayoutSource, templateLayoutSourceOpen) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "template_install_modal"
@@ -3368,6 +3380,8 @@
           "default": true,
           "initialState": {
             "global": {
+              "templateLayoutSource": "auto",
+              "templateLayoutSourceOpen": true,
               "installPreview": {
                 "dependencies": [
                   {
@@ -3517,7 +3531,7 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(isTemplateRefreshingLayouts, selectedTemplate) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(isTemplateRefreshingLayouts, selectedTemplate, templateLayoutSource, templateLayoutSourceOpen) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "template_refresh_layouts_modal"
@@ -3529,6 +3543,8 @@
           "default": true,
           "initialState": {
             "global": {
+              "templateLayoutSource": "auto",
+              "templateLayoutSourceOpen": true,
               "selectedTemplate": {
                 "identifier": "sirsoft-basic",
                 "name": "Basic",
@@ -3599,7 +3615,7 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(hasModifiedTemplateLayouts, isTemplateUpdating, modifiedTemplateLayouts, modifiedTemplateLayoutsCheckFailed, modifiedTemplateLayoutsCount, selectedTemplate, templateForceUpdate, templateLayoutStrategy, templateUpdateError, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(hasModifiedTemplateLayouts, isTemplateUpdating, modifiedTemplateLayouts, modifiedTemplateLayoutsCheckFailed, modifiedTemplateLayoutsCount, selectedTemplate, templateForceUpdate, templateLayoutSource, templateLayoutSourceOpen, templateLayoutStrategy, templateUpdateError, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "template_update_modal"
@@ -3611,6 +3627,8 @@
           "default": true,
           "initialState": {
             "global": {
+              "templateLayoutSource": "auto",
+              "templateLayoutSourceOpen": true,
               "updateChangelog": [
                 {
                   "version": "1.2.1",

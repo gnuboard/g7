@@ -1014,7 +1014,9 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "global",
-                                                            "selectedModule": "{{$args[0]}}"
+                                                            "selectedModule": "{{$args[0]}}",
+                                                            "moduleLayoutSource": "auto",
+                                                            "moduleLayoutSourceOpen": false
                                                         }
                                                     },
                                                     {
@@ -1032,6 +1034,8 @@
                                                             "target": "global",
                                                             "selectedModule": "{{$args[0]}}",
                                                             "moduleLayoutStrategy": "overwrite",
+                                                            "moduleLayoutSource": "auto",
+                                                            "moduleLayoutSourceOpen": false,
                                                             "moduleForceUpdate": false,
                                                             "hasModifiedModuleLayouts": false,
                                                             "modifiedModuleLayoutsCount": 0,
@@ -1118,7 +1122,9 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "global",
-                                                            "selectedModule": "{{$args[1]}}"
+                                                            "selectedModule": "{{$args[1]}}",
+                                                            "moduleLayoutSource": "auto",
+                                                            "moduleLayoutSourceOpen": false
                                                         }
                                                     },
                                                     {

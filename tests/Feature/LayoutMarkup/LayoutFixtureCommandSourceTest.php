@@ -35,6 +35,11 @@ class LayoutFixtureCommandSourceTest extends TestCase
 
     private string $out;
 
+    /**
+     * 임시 레이아웃·출력 폴더를 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,6 +52,11 @@ class LayoutFixtureCommandSourceTest extends TestCase
         File::ensureDirectoryExists($this->out);
     }
 
+    /**
+     * 임시 폴더를 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory($this->root);
@@ -60,6 +70,8 @@ class LayoutFixtureCommandSourceTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects fixture_command_prefers_the_authoring_source
+     *
+     * @return void 반환값 없음
      */
     public function test_fixture_is_baked_from_the_markup_sibling(): void
     {
@@ -80,6 +92,8 @@ class LayoutFixtureCommandSourceTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects fixture_command_accepts_a_markup_path_argument
+     *
+     * @return void 반환값 없음
      */
     public function test_markup_path_argument_is_accepted(): void
     {
@@ -98,6 +112,8 @@ class LayoutFixtureCommandSourceTest extends TestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects fixture_command_still_reads_json_only_layouts
+     *
+     * @return void 반환값 없음
      */
     public function test_json_only_layout_still_works(): void
     {
@@ -108,6 +124,39 @@ class LayoutFixtureCommandSourceTest extends TestCase
             $this->bakeAndReadText($this->layouts.'/json_only.json'),
             '짝이 없는 `.json` 레이아웃이 더 이상 읽히지 않습니다 — 규약 편입이 기존 사용법을 깼다'
         );
+    }
+
+    /**
+     * JSON 레이아웃의 없는 조각은 설치와 같이 빈 자리로 관용돼 fixture 가 만들어지고 경고가 출력된다 (#712 관용, #144 W9).
+     *
+     * 종전에는 이 명령만 관용 플래그를 넘기지 않아, 설치는 통과하는 JSON 레이아웃의 fixture 를 만들 수 없었다.
+     *
+     * @scenario compile_unit=install,source_health=invalid
+     *
+     * @effects fixture_command_tolerates_missing_partial_in_json_layout
+     *
+     * @return void 반환값 없음
+     */
+    public function test_missing_partial_in_json_layout_is_tolerated_with_warning(): void
+    {
+        File::put($this->layouts.'/json_broken.json', json_encode([
+            'layout_name' => 'json_broken',
+            'components' => [
+                ['type' => 'basic', 'name' => 'Span', 'props' => ['text' => 'KEPT']],
+                ['partial' => 'partials/_absent.json'],
+            ],
+        ]));
+
+        $this->artisan('layout:generate-fixture', [
+            'layout' => $this->layouts.'/json_broken.json',
+            '--dir' => $this->out,
+        ])
+            ->expectsOutputToContain('partials/_absent.json')
+            ->assertSuccessful();
+
+        $data = json_decode((string) File::get($this->out.'/json_broken.json'), true);
+        $this->assertCount(1, $data['components'], '없는 조각 자리가 빠지지 않았습니다');
+        $this->assertSame('KEPT', $data['components'][0]['props']['text'] ?? null);
     }
 
     /**
@@ -139,6 +188,7 @@ class LayoutFixtureCommandSourceTest extends TestCase
      *
      * @param  string  $name  파일 이름(확장자 제외)
      * @param  string  $text  첫 노드 텍스트
+     * @return void 반환값 없음
      */
     private function writeMarkup(string $name, string $text): void
     {
@@ -151,6 +201,7 @@ class LayoutFixtureCommandSourceTest extends TestCase
      *
      * @param  string  $name  파일 이름(확장자 제외)
      * @param  string  $text  첫 노드 텍스트
+     * @return void 반환값 없음
      */
     private function writeJson(string $name, string $text): void
     {

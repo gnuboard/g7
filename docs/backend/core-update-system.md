@@ -341,9 +341,12 @@ spawn 자식이 실패(`proc_open` 미지원 · 비정상 종료 · silent skip)
    - 예외 확장 지정 여부 확인, yes 이면 다중 선택으로 전략 오버라이드
    - 매니페스트 JSON 직렬화 → `core:execute-bundled-updates` spawn 자식 실행
 6. 결과 요약 출력 (성공/실패 건수)
+7. 실패가 1건 이상이면 후처리(훅 캐시 재생성·소유권 복원·로그 정리)를 마친 뒤 경고 1줄 + 종료 코드 1
 
 --force 플래그가 코어 업데이트에 지정된 경우: 프롬프트 스킵 + 전역 overwrite 자동 적용 (CI 대응)
 ```
+
+> **종료 코드 (7.1.1 이후)**: 번들 확장 일괄 업데이트가 하나라도 실패하면 `core:update` 는 코어가 새 버전으로 반영된 상태에서도 종료 코드 `1` 을 반환한다(단독 실행한 `core:execute-upgrade-steps` 도 같다). 자동화 스크립트는 종료 코드 `1` 을 받으면 출력의 실패 항목을 확인한 뒤 해당 확장을 다시 업데이트한다. spawn 자식이 결과 줄을 남기지 못하고 비정상 종료하면 실패 1건으로 센다. 업데이트할 번들 확장이 없거나 모두 성공하면 종전대로 `0` 이다.
 
 > **spawn 위임의 배경 (beta.4 이후)**: 부모(`core:update`) 프로세스는 코어 업그레이드 *직전* 버전의 메모리 상태를 보유한다. 부모가 직접 `ModuleManager::updateModule()` 등을 호출하면 신버전 코어가 도입한 sync 메서드(예: `syncModuleIdentityPolicies` `@since beta.4`)가 메모리에 부재해 호출 자체가 누락된다. `executeBulkUpdate` 는 사용자 선택만 매니페스트로 직렬화한 뒤 `proc_open` 으로 `core:execute-bundled-updates` 를 spawn — 자식은 fresh PHP 프로세스라 디스크의 신버전 코어 코드를 메모리에 로드한 상태에서 update 메서드 호출. proc_open 미지원 환경에서는 in-process fallback 으로 안전 전환. 자식 stdout 은 부모 콘솔로 forwarding 하며, 종료 직전 `[BUNDLED-RESULT]` 표식 라인으로 결과 카운트를 회신한다.
 
@@ -784,7 +787,7 @@ php artisan core:update [--force] [--no-backup] [--prune] [--no-maintenance] [--
 
 **종료 코드**:
 - `0` (SUCCESS): 업데이트 성공 또는 이미 최신 버전
-- `1` (FAILURE): 요건 미충족 또는 업데이트 실패
+- `1` (FAILURE): 요건 미충족 또는 업데이트 실패. 7.1.1 이후에는 코어가 새 버전으로 반영됐어도 번들 확장 일괄 업데이트가 하나라도 실패하면 `1` (위 「종료 코드 (7.1.1 이후)」)
 
 ### core:check-updates
 

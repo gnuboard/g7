@@ -463,7 +463,10 @@ foreach ($jsonFiles as $jsonFile) {
 
 `.g7.html` 은 설치 시점에 **메모리로 컴파일**해 등록 content 를 만들고 디스크에 산출 JSON 을 남기지
 않는다. `--layout-source=json`(`config('template.layout_markup.install_source')`)으로 우선순위를 뒤집을
-수 있으나, 짝 `.json` 이 없는 마크업 전용 레이아웃은 대안이 없으므로 그대로 컴파일된다.
+수 있으나, 짝 `.json` 이 없는 마크업 전용 레이아웃은 대안이 없으므로 그대로 컴파일된다. 옵션을 생략하면 설정
+`LAYOUT_INSTALL_SOURCE` 를 따르고(7.1.1~), 관리자 설치·업데이트·레이아웃 갱신 창의 「고급 설정」에서 같은 선택을
+요청 한 번 단위로 할 수 있다. 조각(`partial`) 참조도 같은 우선순위를 쓰되, 실재하는 후보를 먼저 고른 뒤 그 경로 하나에만
+layouts 폴더 경계 검사를 한다 — 짝 `.g7.html` 이 없는 JSON 전용 조각이 리눅스 서버에서도 그대로 해석된다.
 
 ### 모듈 레이아웃 자동 등록
 

@@ -346,13 +346,13 @@
             <switch on="{{$args[0].status === 'uninstalled' ? 'install' : 'update'}}">
               <case when="install">
                 <sequence>
-                  <set-state target="global" selectedPlugin="{{$args[0]}}"/>
+                  <set-state target="global" selectedPlugin="{{$args[0]}}" pluginLayoutSource="auto" :pluginLayoutSourceOpen="false"/>
                   <open-modal target="plugin_install_modal"/>
                 </sequence>
               </case>
               <case when="update">
                 <sequence>
-                  <set-state target="global" selectedPlugin="{{$args[0]}}" pluginLayoutStrategy="overwrite" :pluginForceUpdate="false" :hasModifiedPluginLayouts="false" :modifiedPluginLayoutsCount="0" :modifiedPluginLayouts="[]" :modifiedPluginLayoutsCheckFailed="false" :pluginRebuildSearchIndex="false"/>
+                  <set-state target="global" selectedPlugin="{{$args[0]}}" pluginLayoutStrategy="overwrite" pluginLayoutSource="auto" :pluginLayoutSourceOpen="false" :pluginForceUpdate="false" :hasModifiedPluginLayouts="false" :modifiedPluginLayoutsCount="0" :modifiedPluginLayouts="[]" :modifiedPluginLayoutsCheckFailed="false" :pluginRebuildSearchIndex="false"/>
                   <api-call :auth_required="true" target="/api/admin/plugins/{{$args[0].identifier}}/check-modified-layouts" method="GET">
                     <success>
                       <set-state target="global" hasModifiedPluginLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedPluginLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedPluginLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedPluginLayoutsCheckFailed="false"/>
@@ -385,7 +385,7 @@
                 <navigate path="{{$args[1].settings_route}}"/>
               </case>
               <case when="refresh_layouts">
-                <set-state target="global" selectedPlugin="{{$args[1]}}"/>
+                <set-state target="global" selectedPlugin="{{$args[1]}}" pluginLayoutSource="auto" :pluginLayoutSourceOpen="false"/>
                 <open-modal target="plugin_refresh_layouts_modal"/>
               </case>
               <case when="manage_language_packs">

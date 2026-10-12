@@ -1,15 +1,15 @@
 {
     "schema_version": "1.0",
-    "generated_at": "2026-10-10T11:03:39+00:00",
+    "generated_at": "2026-10-11T10:52:52+00:00",
     "generator": "g7 vendor-bundle:build",
     "target": "core",
-    "composer_json_sha256": "17ca60498a728100b5f97e7724676b67dc27bdc2c736f27d6db992758da77e6a",
-    "composer_lock_sha256": "4a6f4ae9981949dccba8dee40cde37a585f178a75b1051ff4e3a67dd9fdf9eb3",
-    "zip_sha256": "09fad4df3bcbfa42f071ca43505adfe3e77e1a26d94820ae22d7a37f59b1b37e",
-    "zip_size": 17071733,
+    "composer_json_sha256": "1d1a9d93d593e681162738556c34e49a3b5acc132dc1813b10aafd860d4e8753",
+    "composer_lock_sha256": "50ef67f686a6dd742db123429d4683296a17061a5eeed2ee22a1d25ff3d8a42b",
+    "zip_sha256": "252c69540c9c5d9d67d27c99e991eccf971684f595af1ffc67a1e2ab810364ac",
+    "zip_size": 17071718,
     "package_count": 106,
     "php_requirement": "^8.2",
-    "g7_version": "7.1.0",
+    "g7_version": "7.1.1",
     "packages": [
         {
             "name": "aws/aws-crt-php",

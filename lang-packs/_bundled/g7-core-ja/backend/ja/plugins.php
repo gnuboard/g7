@@ -94,6 +94,7 @@ return [
         'delete_directory_failed' => 'プラグイン ディレクトリ削除に失敗しました: :error',
         'update_failed' => 'プラグイン ":plugin" アップデートに失敗しました: :error',
         'invalid_layout_strategy' => '無効なレイアウト戦略です。(overwrite または keep のみ許可)',
+        'invalid_layout_source' => '無効なレイアウトインストールソースです。(auto または json のみ許可)',
         'invalid_vendor_mode' => '無効な Vendor インストールモードです。(auto、composer、bundled のみ許可)',
         'github_url_invalid' => '無効な GitHub URL 形式です。',
         'github_download_failed' => 'GitHub からのダウンロードに失敗しました: :error',

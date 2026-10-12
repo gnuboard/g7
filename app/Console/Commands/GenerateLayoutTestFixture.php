@@ -35,6 +35,8 @@ class GenerateLayoutTestFixture extends Command
 
     /**
      * 커맨드 실행
+     *
+     * @return int 성공 시 `SUCCESS`, 레이아웃 부재·컴파일·병합 실패 시 `FAILURE`
      */
     public function handle(): int
     {
@@ -55,7 +57,8 @@ class GenerateLayoutTestFixture extends Command
         $this->info("레이아웃 로드 중: {$layoutPath}");
 
         // 소스 선택은 설치 경로와 **같은 규약**을 쓴다 — 소스 SSoT(`.g7.html`) 우선, 없으면 짝
-        // `.json`, `--layout-source=json` 이면 역전. 종전에는 인자 경로를 `json_decode` 로 직행해
+        // `.json`, 설정 `LAYOUT_INSTALL_SOURCE`(template.layout_markup.install_source)가 json 이면 역전
+        // (이 명령은 소스 옵션을 받지 않는다 — 설정을 따른다). 종전에는 인자 경로를 `json_decode` 로 직행해
         // 읽어 소스를 인자로 줄 수도, 짝 소스를 우선할 수도 없었다(fixture 가 낡은 `.json` 에서
         // 나오는데 화면은 소스로 설치되므로, 그 fixture 로 만든 회귀 테스트가 실물과 갈린다).
         $source = null;
@@ -97,12 +100,22 @@ class GenerateLayoutTestFixture extends Command
         $basePath = dirname($source['path']);
         $dataSources = $layoutData['data_sources'] ?? [];
 
+        // `.json` 문서의 깨진 조각 참조는 설치와 같이 빈 자리로 관용한다(#712) — 종전에는 이 명령만 관용 플래그를
+        // 넘기지 않아, 설치는 통과하는 JSON 레이아웃의 fixture 를 만들 수 없었다.
         try {
-            $mergedLayout = $this->resolveAllPartials($layoutData, $basePath, 0, $dataSources);
+            $mergedLayout = $this->resolveAllPartials($layoutData, $basePath, 0, $dataSources, ! $source['markup']);
         } catch (\Exception $e) {
             $this->error('Partial 병합 실패: '.$e->getMessage());
 
             return self::FAILURE;
+        }
+
+        if ($mergedLayout === self::SKIPPED_PARTIAL) {
+            $mergedLayout = [];
+        }
+
+        foreach ($this->takeLayoutIncludeWarnings() as $warning) {
+            $this->warn($warning['message']);
         }
 
         // 출력 디렉토리 결정

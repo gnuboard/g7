@@ -475,6 +475,7 @@ _단건 응답: `data` 는 비활성화된 모듈의 `ModuleResource` 객체 (�
 | vendor_mode | body | string | 아니오 | `auto`, `composer`, `bundled` | 벤더 설치 모드 (auto/composer/bundled) |
 | dependencies | body | array | 아니오 | — | 함께 설치할 의존 확장 목록 (cascade 1단계). 각 원소는 `type`(module\|plugin)·`identifier` 로 구성하며, install-preview 응답에서 사용자가 선택한 항목 |
 | language_packs | body | array | 아니오 | — | 함께 설치할 번들 언어팩 식별자 목록 (cascade 2단계, best-effort). 원소는 언어팩 식별자 문자열 |
+| layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.module.install_validation_rules`).
 
@@ -1036,6 +1037,7 @@ _단건 응답: `data` 객체의 필드._
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | module_name | body | string | 예 | max 255 | module 이름 (식별자) |
+| layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.module.refresh_layouts_validation_rules`).
 
@@ -1880,6 +1882,7 @@ _단건 응답: `data` 객체의 필드._
 | vendor_mode | body | string | 아니오 | `auto`, `composer`, `bundled` | 벤더 설치 모드 (auto/composer/bundled) |
 | force | body | boolean | 아니오 | — | 강제 실행 여부 (안전 확인/선행 검사 우회) |
 | rebuild_search_index | body | boolean | 아니오 | — | 업데이트 후 색인이 누락된 검색 인덱스를 재생성할지 여부 (기본 false). 재생성 중에는 대상 인덱스가 잠기거나 재색인되므로 운영 중인 사이트에서는 접속이 적은 시간에 별도로 수행하는 것을 권장 |
+| layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.module.perform_update_validation_rules`).
 

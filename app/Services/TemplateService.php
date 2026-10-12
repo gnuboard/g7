@@ -21,6 +21,7 @@ use App\Extension\Traits\ResolvesLanguageFragments;
 use App\Models\Template;
 use App\Services\Extension\ExtensionIconResolver;
 use App\Support\CustomAssets;
+use App\Support\Filesystem\PathGuard;
 use App\Support\SafeExceptionMessage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -1631,7 +1632,6 @@ class TemplateService
         if ($layoutDirReal === false) {
             return null;
         }
-        $normalize = static fn (string $p): string => str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $p);
 
         // 경로 해석 규약(레이아웃 partial 과 동형): ① 호스트 파일 디렉토리 기준 →
         // ② layouts 루트 기준 폴백. 두 결합을 순서대로 시도해 먼저 존재하는 파일을 채택한다.
@@ -1649,8 +1649,9 @@ class TemplateService
                 if ($candidate === false) {
                     continue;
                 }
-                // 보안 — layouts 디렉토리 밖 참조 거부(경로 traversal 방지).
-                if (! str_starts_with($normalize($candidate), $normalize($layoutDirReal))) {
+                // 보안 — layouts 디렉토리 밖 참조 거부(경로 traversal 방지). 폴더 경계를 지킨다 — 문자열 접두
+                // 비교는 `layouts-x` 같은 이름이 비슷한 형제 폴더를 통과시켰다(#144).
+                if (! PathGuard::isWithin($layoutDirReal, $candidate)) {
                     continue;
                 }
                 $resolved = $candidate;

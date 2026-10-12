@@ -135,6 +135,7 @@ return [
             ],
             'item_failed' => '  Failed: :message',
             'completed' => 'Update completed: :success succeeded, :failed failed',
+            'exit_failure' => 'The core was updated to :version, but :failed bundled extension update(s) failed. Check the failed items above and update those extensions again.',
             'search_index_result' => 'Search index: :summary',
             'manifest_required' => 'The --manifest option is required and must point to an existing file.',
             'manifest_parse_failed' => 'Failed to parse manifest JSON: :path',

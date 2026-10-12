@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Enums\LanguagePackScope;
 use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\ModuleOperationException;
+use App\Extension\Layout\LayoutInstallSourceScope;
 use App\Extension\Layout\LayoutSyncSummary;
 use App\Extension\Vendor\VendorMode;
 use App\Helpers\PermissionHelper;
@@ -228,9 +229,12 @@ class ModuleController extends AdminBaseController
             }
 
             // cascade 1단계: 사용자가 선택한 의존 확장 사전 설치 (실패 시 abort)
-            $this->installSelectedDependencies($validated['dependencies'] ?? []);
+            // 관리자 창 '고급 설정'의 레이아웃 설치 소스 — 이 요청 동안만 설정을 덮고 끝나면 되돌린다(CLI --layout-source 와 같은 자리).
+            $module = LayoutInstallSourceScope::run($request->validated('layout_source'), function () use ($validated, $moduleName, $vendorMode, &$installFailureReason) {
+                $this->installSelectedDependencies($validated['dependencies'] ?? []);
 
-            $module = $this->moduleService->installModule($moduleName, $vendorMode, false, $installFailureReason);
+                return $this->moduleService->installModule($moduleName, $vendorMode, false, $installFailureReason);
+            });
 
             if ($module) {
                 // cascade 2단계: 동반 번들 언어팩 best-effort 설치
@@ -609,7 +613,11 @@ class ModuleController extends AdminBaseController
             );
             $layoutStrategy = $validated['layout_strategy'] ?? 'overwrite';
             $force = (bool) ($validated['force'] ?? false);
-            $result = $this->moduleService->updateModule($moduleName, $vendorMode, $layoutStrategy, $force);
+            // 관리자 창 '고급 설정'의 레이아웃 설치 소스 — 이 요청 동안만 설정을 덮고 끝나면 되돌린다(CLI --layout-source 와 같은 자리).
+            $result = LayoutInstallSourceScope::run(
+                $validated['layout_source'] ?? null,
+                fn () => $this->moduleService->updateModule($moduleName, $vendorMode, $layoutStrategy, $force)
+            );
 
             // 검색 인덱스 재생성은 운영자가 체크했을 때만 수행한다 — 인덱스 잠금·재색인 비용이
             // 있어 운영 중인 사이트에서 업데이트만으로 발생해서는 안 된다.
@@ -683,7 +691,11 @@ class ModuleController extends AdminBaseController
     {
         try {
             $moduleName = $request->validated()['module_name'];
-            $module = $this->moduleService->refreshModuleLayouts($moduleName);
+            // 관리자 창 '고급 설정'의 레이아웃 설치 소스 — 이 요청 동안만 설정을 덮고 끝나면 되돌린다(CLI --layout-source 와 같은 자리).
+            $module = LayoutInstallSourceScope::run(
+                $request->validated('layout_source'),
+                fn () => $this->moduleService->refreshModuleLayouts($moduleName)
+            );
 
             if ($module) {
                 return $this->successWithResource(

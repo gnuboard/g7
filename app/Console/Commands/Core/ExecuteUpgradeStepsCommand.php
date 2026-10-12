@@ -281,9 +281,11 @@ class ExecuteUpgradeStepsCommand extends Command
             $this->info($stepsOnly ? '[steps-only] 캐시 정리 스킵' : '[spawn] 캐시 정리 스킵 — 부모가 처리');
         }
 
+        $bundledResult = ['failed' => 0];
+
         if (! $this->option('skip-bundled-updates') && ! $isSpawnChild && ! $stepsOnly) {
             $this->info('번들 확장 일괄 업데이트 (모듈/플러그인/템플릿/언어팩)');
-            $this->runBundledExtensionUpdatePrompt(
+            $bundledResult = $this->runBundledExtensionUpdatePrompt(
                 app(ModuleManager::class),
                 app(PluginManager::class),
                 app(TemplateManager::class),
@@ -300,7 +302,9 @@ class ExecuteUpgradeStepsCommand extends Command
         // 종료부의 동일 호출이 부모 측 후속 쓰기를 담당한다
         $service->normalizeRuntimeOwnershipAfterRootRun();
 
-        return self::SUCCESS;
+        // 단독 실행의 번들 확장 일괄 업데이트가 하나라도 실패하면 core:update 와 같이 종료 코드 1.
+        // spawn 자식·steps-only 는 번들 업데이트를 하지 않으므로 늘 0 이다.
+        return $this->bundledUpdateExitCode($bundledResult, $to);
     }
 
     /**
@@ -313,6 +317,7 @@ class ExecuteUpgradeStepsCommand extends Command
      * 디렉토리)는 술어상 건드리지 않는다. 실패는 업데이트 결과와 무관하므로 경고로 흡수한다.
      *
      * @param  CoreUpdateService  $service  코어 업데이트 서비스
+     * @return void 반환값 없음
      */
     private function sweepEmptyStagingDirectories(CoreUpdateService $service): void
     {
@@ -339,6 +344,8 @@ class ExecuteUpgradeStepsCommand extends Command
      * 그 결과 이후 www-data(php-fpm) 의 module:update upgrade step 이 같은 날짜 upgrade
      * 로그에 append 할 수 있다. 본 메서드는 어떤 로그도 쓰지 않는다(쓰면 다시 root 가 됨).
      * sudo 아닌 환경에서는 silent no-op(멱등).
+     *
+     * @return void 반환값 없음
      */
     private function restoreUpgradeLogOwnership(): void
     {

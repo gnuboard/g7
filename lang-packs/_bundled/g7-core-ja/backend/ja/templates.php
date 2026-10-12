@@ -74,6 +74,7 @@ return [
         'delete_directory_failed' => 'テンプレートディレクトリの削除に失敗しました: :error',
         'update_failed' => 'テンプレート ":template" のアップデートに失敗しました: :error',
         'invalid_layout_strategy' => '無効なレイアウト戦略です。(overwrite または keep のみ許可)',
+        'invalid_layout_source' => '無効なレイアウトインストールソースです。(auto または json のみ許可)',
         'layout_validation_markup_error' => ':file - マークアップコンパイルエラー: :error',
         'last_active_deactivate' => '最後に有効化された:typeテンプレートは無効化できません。同じ種類の別のテンプレートを先に有効化してください。',
         'last_active_uninstall' => '最後に有効化された:typeテンプレートは削除できません。同じ種類の別のテンプレートを先に有効化してください。',

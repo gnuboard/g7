@@ -129,6 +129,49 @@
           </div>
         </div>
       </div>
+      <!-- 고급 설정 — 레이아웃 설치 소스(#144). 평소에는 자동(.g7.html 우선)이고, 새 형식 처리에 문제가 있을 때만
+           원본 JSON 우선을 고른다. 값은 요청 본문 layout_source 로 보내고 서버는 그 요청 동안만 적용한다.
+           창을 열 때마다 자동·접힘으로 되돌린다(여는 쪽이 전역값을 초기화한다). -->
+      <div data-ref="module_update_layout_source_section" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
+        <button data-ref="module_update_layout_source_toggle" type="button" aria-expanded="{{_global.moduleLayoutSourceOpen === true}}" class="text-label hover:text-gray-900 dark:hover:text-gray-200 inline-flex items-center gap-1">
+          <on type="click">
+            <!-- 접힘/펼침만 바꾼다 — 고른 값은 그대로 둔다. -->
+            <set-state target="global" moduleLayoutSourceOpen="{{_global.moduleLayoutSourceOpen !== true}}"/>
+          </on>
+          <icon name="{{_global.moduleLayoutSourceOpen === true ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" class="text-xs"/>
+          <span>$t:admin.modules.modals.layout_source_advanced</span>
+        </button>
+        <div data-ref="module_update_layout_source_options" data-if="{{_global.moduleLayoutSourceOpen === true}}" class="mt-2 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:admin.modules.modals.layout_source_title</div>
+          <p class="text-tertiary mb-2">$t:admin.modules.modals.layout_source_help</p>
+          <div class="row-stack">
+            <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              <input type="radio" name="module_update_layout_source" value="auto" checked="{{(_global.moduleLayoutSource ?? 'auto') === 'auto'}}" class="radio mt-0.5">
+                <on type="change">
+                  <!-- 자동(권장) — .g7.html 을 우선 설치하고 없으면 .json 을 쓴다. 기본값. -->
+                  <set-state target="global" moduleLayoutSource="auto"/>
+                </on>
+              </input>
+              <div>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.modules.modals.layout_source_auto</span>
+                <p class="text-tertiary">$t:admin.modules.modals.layout_source_auto_desc</p>
+              </div>
+            </label>
+            <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              <input type="radio" name="module_update_layout_source" value="json" checked="{{(_global.moduleLayoutSource ?? 'auto') === 'json'}}" class="radio mt-0.5">
+                <on type="change">
+                  <!-- 원본 JSON 우선(문제 해결용) — 짝 .json 이 있는 화면은 .g7.html 대신 원본 JSON 으로 설치한다. -->
+                  <set-state target="global" moduleLayoutSource="json"/>
+                </on>
+              </input>
+              <div>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.modules.modals.layout_source_json</span>
+                <p class="text-tertiary">$t:admin.modules.modals.layout_source_json_desc</p>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
       <!-- 검색 인덱스 재생성 — 인덱스 잠금·재색인 비용이 있어 기본은 미선택. 운영 중인 사이트는 유지보수 시간에 수행한다. -->
       <div data-ref="module_rebuild_search_index" class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
         <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:extensions.update_modal.rebuild_search_index_title</div>
@@ -166,7 +209,7 @@
                 <toast type="success" message="{{response?.message ?? '$t:admin.modules.update_success'}}"/>
                 <refetch-data-source dataSourceId="modules"/>
                 <close-modal/>
-                <set-state target="global" :selectedModule="null" moduleLayoutStrategy="overwrite" :hasModifiedModuleLayouts="false" :modifiedModuleLayoutsCount="0" :modifiedModuleLayouts="[]" :moduleRebuildSearchIndex="false"/>
+                <set-state target="global" :selectedModule="null" moduleLayoutSource="auto" :moduleLayoutSourceOpen="false" moduleLayoutStrategy="overwrite" :hasModifiedModuleLayouts="false" :modifiedModuleLayoutsCount="0" :modifiedModuleLayouts="[]" :moduleRebuildSearchIndex="false"/>
               </success>
               <fail>
                 <!-- 409 = 같은 모듈의 업데이트가 이미 진행 중(더블클릭·CLI 동시 실행). 실패가 아니므로 오류 상자를 띄우지 않고
@@ -176,7 +219,7 @@
                 <set-state if="{{error.status !== 409}}" target="global" :isModuleUpdating="false" moduleUpdateError="{{error.message}}"/>
                 <toast if="{{error.status !== 409}}" type="error" message="{{error.message}}"/>
               </fail>
-              <body layout_strategy="{{_global.moduleLayoutStrategy ?? 'overwrite'}}" force="{{_global.moduleForceUpdate === true}}" rebuild_search_index="{{_global.moduleRebuildSearchIndex === true}}"/>
+              <body layout_strategy="{{_global.moduleLayoutStrategy ?? 'overwrite'}}" force="{{_global.moduleForceUpdate === true}}" rebuild_search_index="{{_global.moduleRebuildSearchIndex === true}}" layout_source="{{_global.moduleLayoutSource ?? 'auto'}}"/>
             </api-call>
           </sequence>
         </on>

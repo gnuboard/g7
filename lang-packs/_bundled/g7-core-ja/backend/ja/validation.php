@@ -1121,6 +1121,7 @@ return [
     'summary_more_error' => '(他 :count 件のエラー)',
     'summary_more_errors' => '(他 :count 件のエラー)',
     'attributes' => [
+        'layout_source' => 'レイアウトインストールソース',
         'layout' => 'レイアウト',
         'module' => 'モジュール',
         'token' => 'トークン',

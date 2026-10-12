@@ -1808,7 +1808,7 @@ class CoreActivityLogListener implements HookListenerInterface
      *
      * 카운트만 싣고 행 목록은 `changes` 로 보낸다. 겹친 조각 이름은 `layout_sync_conflicts` 에 최대 50건.
      *
-     * @param  array<string, mixed>  $result  업데이트 결과 (`layout_strategy`·`layout_sync`)
+     * @param  array<string, mixed>  $result  업데이트 결과 (`layout_strategy`·`layout_source`·`layout_sync`)
      * @return array<string, mixed> properties 에 더할 키 (보고가 없으면 빈 배열)
      */
     private function layoutSyncProperties(array $result): array
@@ -1828,6 +1828,8 @@ class CoreActivityLogListener implements HookListenerInterface
 
         return [
             'layout_strategy' => $result['layout_strategy'] ?? ($sync['strategy'] ?? null),
+            // 관리자 창 '고급 설정'·CLI --layout-source 로 고른 설치 소스(auto|json) — 매니저가 실행 당시 값을 결과에 싣는다.
+            'layout_source' => $result['layout_source'] ?? null,
             'layout_sync' => array_intersect_key($sync, array_flip([
                 'applied_count', 'conflict_count', 'kept_no_base_count', 'kept_removed_count',
                 'kept_deleted_by_operator_count', 'kept_name_collision_count', 'kept_invalid_count', 'modified_count',
