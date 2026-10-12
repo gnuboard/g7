@@ -4,6 +4,7 @@ namespace App\Extension\Traits;
 
 use App\Extension\Helpers\LayoutFragmentSourceHelper;
 use App\Support\LayoutMarkup\CompileError;
+use App\Support\LayoutMarkup\EmptyMap;
 use App\Support\LayoutMarkup\LayoutMarkupCompiler;
 use App\Support\LayoutMarkup\MarkupCompileContextResolver;
 use Illuminate\Support\Facades\File;
@@ -158,7 +159,8 @@ trait CollectsFragmentSources
                 return $this->compileMarkupFragmentFile($source['path'], $templateId);
             }
 
-            $data = json_decode(File::get($source['path']), true);
+            // 빈 객체 `{}` 를 보존해 읽는다 — 연관 배열 디코드는 등록하는 순간 `[]` 로 굳힌다 (#758)
+            $data = EmptyMap::decodePreserving(File::get($source['path']));
 
             if (json_last_error() !== JSON_ERROR_NONE || ! is_array($data)) {
                 Log::error("레이아웃 확장 JSON 파싱 실패: {$source['path']}", $logContext + [

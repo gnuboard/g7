@@ -407,7 +407,8 @@ class ReportController extends AdminBaseController
                     ];
 
                     foreach ($extraColumns as $header => $extraKey) {
-                        $value = (int) ($row['extra'][$extraKey] ?? 0);
+                        // 부가 값이 없는 행의 `extra` 는 빈 맵(stdClass)이다 (#758)
+                        $value = (int) (((array) $row['extra'])[$extraKey] ?? 0);
 
                         $line[] = in_array($header, self::CENT_CSV_COLUMNS, true)
                             ? number_format($value / 100, 2, '.', '')
@@ -416,7 +417,9 @@ class ReportController extends AdminBaseController
 
                     // 확장이 값을 사람이 읽는 단위로 바꿀 수 있게 한 번 더 건넨다. 열 수가
                     // 바뀌면 헤더와 어긋나므로 같은 길이일 때만 받는다.
-                    $filtered = HookManager::applyFilters('core.analytics.csv_row', $line, $row, $dimension);
+                    // 공개 훅 인자 모양은 그대로 둔다 — `extra` 는 응답(JSON)에서만 빈 맵(stdClass)이고 리스너에는 배열로 건넨다 (#758)
+                    $hookRow = ['extra' => (array) $row['extra']] + $row;
+                    $filtered = HookManager::applyFilters('core.analytics.csv_row', $line, $hookRow, $dimension);
                     if (is_array($filtered) && count($filtered) === count($line)) {
                         $line = array_values($filtered);
                     }

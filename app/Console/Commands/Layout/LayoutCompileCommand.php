@@ -6,6 +6,7 @@ use App\Services\LayoutMarkupService;
 use App\Support\LayoutMarkup\CompileContext;
 use App\Support\LayoutMarkup\CompileError;
 use App\Support\LayoutMarkup\ComponentRegistry;
+use App\Support\LayoutMarkup\EmptyMap;
 use App\Support\LayoutMarkup\LayoutCorpus;
 use App\Support\LayoutMarkup\LayoutMarkupCompiler;
 use App\Support\LayoutMarkup\LayoutMarkupDecompiler;
@@ -102,7 +103,8 @@ class LayoutCompileCommand extends Command
         foreach ($files as $file) {
             $registry = $this->resolveRegistry($file);
 
-            $json = json_decode(File::get($file), true);
+            // 빈 객체 `{}` 를 보존해 읽는다 — 연관 배열 디코드는 산출 `.g7.html` 에 `[]` 를 써 넣는다 (#758)
+            $json = EmptyMap::decodePreserving(File::get($file));
 
             if (! is_array($json)) {
                 $skipped++;
@@ -239,7 +241,8 @@ class LayoutCompileCommand extends Command
         foreach ($files as $file) {
             $registry = $this->resolveRegistry($file);
 
-            $json = json_decode(File::get($file), true);
+            // 빈 객체 `{}` 를 보존해 읽는다 — 연관 배열 디코드는 산출 `.g7.html` 에 `[]` 를 써 넣는다 (#758)
+            $json = EmptyMap::decodePreserving(File::get($file));
 
             if (! is_array($json)) {
                 $this->error("JSON 이 아닙니다: {$file}");

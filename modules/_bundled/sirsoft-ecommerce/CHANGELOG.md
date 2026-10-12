@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.3.1] - 2026-10-12
+
+### Fixed
+
+- 클레임·주문 응답의 다통화 금액(`mc_*`)이 비어 있을 때 빈 목록(`[]`)이 아니라 빈 객체(`{}`)로 나가도록 수정했습니다. API 문서가 약속한 모양과 맞췄으며, 통화 코드로 값을 꺼내는 화면의 기본값이 그대로 동작합니다.
+
 ## [1.3.0] - 2026-10-10
 
 ### Added

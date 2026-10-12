@@ -310,6 +310,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 - [ ] 클레임 상태 Enum(`ExchangeStatusEnum` · `ReturnStatusEnum` · `RefundStatusEnum`)의 전이를 바꾸면 `canTransitionTo()` · 알림 정의(상태별 항목) · `ClaimActivityLogListener` · 화면의 `adminAssignableValues()` 를 함께 본다 — 한 곳만 고치면 전이는 되는데 알림·로그만 조용히 빠진다
 - [ ] 클레임 추가결제 계약(`claim_payment.approve` / `.refund` 필터의 인자·반환 키)을 바꾸면 결제 플러그인 4종의 리스너와 그 플러그인들의 `dependencies.modules.sirsoft-ecommerce` 하한을 함께 올린다
 - [ ] 클레임 금액 표시를 추가할 때 보조 통화 줄(`mc_*`)은 바로 위 기준 통화 줄과 같은 필드·같은 게이트로 — 서버가 만든 맵을 나열만 하고 화면에서 더하거나 곱하지 않는다
+- [ ] 응답에 통화 코드 맵(`mc_*`)을 새로 실을 때 비면 `[]` 가 아니라 빈 객체 `{}` 로 낸다(1.3.1~, claims.md 「모든 `mc_*` 가 같다」) — `formatStoredMultiCurrency()` 를 거치거나 `ClaimResource::emptyMultiCurrencyMapsAsObjects()` 처럼 **응답 경계에서만** 바꾼다. 같은 맵을 서비스가 PHP 배열로 읽는 표시기(`CalculationSnapshotPresenter`)·서비스 반환값은 바꾸지 않는다
 - [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_ecommerce_product_form`·`admin_ecommerce_shipping_policy_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비운 뒤 기본값을 쓴다 — 엔진은 `layout_name` 이 바뀔 때만 `_local` 을 비운다. 생성 모드에서도 폼을 채우는 `initLocal` 데이터소스(복사 `copy_source` 등)는 문자열형이 아니라 `{"_merge":"replace","form":"{{data}}"}` 맵으로 둔다 — 문자열형은 엔진이 기존 form 과 깊은 병합해 잔존을 페이로드에 섞는다(트러블슈팅 state-global 사례 7)
 ## 6. 금지 패턴
 
@@ -367,10 +368,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 684개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| PHPUnit | 685개 | `modules/_bundled/sirsoft-ecommerce/tests` |
 | Vitest | 267개 | `vitest.config.ts` |
 | Playwright | 72개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 359개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 360개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

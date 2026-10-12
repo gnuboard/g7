@@ -6,6 +6,7 @@ use App\Extension\HookManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Support\ExtensionSettingsMirror;
+use App\Support\LayoutMarkup\EmptyMap;
 use App\Support\LayoutMarkup\LayoutMarkupCompiler;
 use App\Support\LayoutMarkup\MarkupCompileContextResolver;
 use App\Support\SensitiveSettingMask;
@@ -489,9 +490,10 @@ class PluginSettingsService
             }
         }
 
-        $layout = json_decode($content, true);
+        // 빈 객체 `{}` 를 보존해 읽는다 — 응답에서 `[]` 로 나가지 않게 (#758)
+        $layout = EmptyMap::decodePreserving($content);
 
-        if (json_last_error() !== JSON_ERROR_NONE) {
+        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($layout)) {
             Log::error('플러그인 설정 레이아웃 JSON 파싱 실패', [
                 'path' => $path,
                 'error' => json_last_error_msg(),

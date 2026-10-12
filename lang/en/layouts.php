@@ -30,4 +30,19 @@ return [
         'partial' => 'Fragment reference (include / modal)',
         'route' => 'Route binding',
     ],
+
+    'repair_empty_objects' => [
+        'description' => 'Find layout empty objects ({}) that editor saves or version restores turned into [] and restore them from the original',
+        'no_templates' => 'No target templates.',
+        'header_table' => 'Table',
+        'header_id' => 'id',
+        'header_name' => 'Name',
+        'header_count' => 'Positions to fix',
+        'header_paths' => 'Example paths',
+        'nothing' => 'Nothing to fix.',
+        'summary' => 'Total — rows :rows · positions :positions',
+        'skipped' => 'Rows skipped without a reference (no original, or the owning row is deleted): :count',
+        'preview_hint' => 'This is a preview. Add --apply to fix.',
+        'applied' => 'Fixed :rows row(s).',
+    ],
 ];

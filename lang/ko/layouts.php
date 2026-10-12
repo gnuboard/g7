@@ -35,4 +35,20 @@ return [
         'partial' => '조각 참조(include·modal)',
         'route' => '라우트 연결',
     ],
+
+    // `layout:repair-empty-objects` — 이미 `[]` 로 굳은 빈 객체를 원본 기준으로 되돌리는 명령 출력
+    'repair_empty_objects' => [
+        'description' => '편집기 저장·버전 복원 등으로 [] 로 굳은 레이아웃 빈 객체({})를 원본 기준으로 찾아 되돌립니다',
+        'no_templates' => '대상 템플릿이 없습니다.',
+        'header_table' => '테이블',
+        'header_id' => 'id',
+        'header_name' => '이름',
+        'header_count' => '고칠 자리 수',
+        'header_paths' => '경로 예시',
+        'nothing' => '고칠 자리가 없습니다.',
+        'summary' => '합계 — 행 :rows · 자리 :positions',
+        'skipped' => '기준 없음(원본이 없거나 소속 행이 삭제됨)으로 건너뛴 행: :count',
+        'preview_hint' => '미리보기입니다. --apply 를 붙이면 고칩니다.',
+        'applied' => ':rows개 행을 고쳤습니다.',
+    ],
 ];

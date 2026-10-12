@@ -608,6 +608,11 @@ class LayoutExtensionService
     private function processExtensionPointsRecursive(array $components, int $templateId, array &$dataSources, array &$scripts, array &$modals, bool $withSourceMeta = false): array
     {
         foreach ($components as $index => &$component) {
+            // 반복 렌더 템플릿(props 아래)은 값 자리라 빈 노드 `{}` 가 빈 stdClass 로 온다 — 컴포넌트가 아니므로 그대로 둔다 (#758)
+            if (! is_array($component)) {
+                continue;
+            }
+
             // Extension Point 발견
             if (($component['type'] ?? '') === 'extension_point' && isset($component['name'])) {
                 $extensionPointName = $component['name'];
@@ -617,7 +622,8 @@ class LayoutExtensionService
                     $this->repository->getResolvedExtensionPoints($templateId, $extensionPointName)
                 );
 
-                $injectedComponents = $component['default'] ?? [];
+                // 대체 컴포넌트 목록 — 값 자리의 `default: {}` 는 빈 stdClass 로 오므로 빈 목록으로 읽는다 (#758)
+                $injectedComponents = is_array($component['default'] ?? null) ? $component['default'] : [];
 
                 foreach ($extensions as $extension) {
                     // 모듈/플러그인 활성화 상태 확인
@@ -1217,9 +1223,10 @@ class LayoutExtensionService
 
                     continue;
                 }
+                // 지시값이 빈 객체(stdClass — 값 자리 보존, #758)면 덧붙일 것이 없다
                 $component['props'][$propKey] = array_merge(
                     is_array($existing) ? $existing : [],
-                    $propValue['_append']
+                    is_array($propValue['_append']) ? $propValue['_append'] : []
                 );
             } elseif (isset($propValue['_prepend'])) {
                 $existing = $component['props'][$propKey] ?? [];
@@ -1233,7 +1240,7 @@ class LayoutExtensionService
                     continue;
                 }
                 $component['props'][$propKey] = array_merge(
-                    $propValue['_prepend'],
+                    is_array($propValue['_prepend']) ? $propValue['_prepend'] : [],
                     is_array($existing) ? $existing : []
                 );
             } elseif (isset($propValue['_merge'])) {
@@ -1247,10 +1254,12 @@ class LayoutExtensionService
 
                     continue;
                 }
-                $component['props'][$propKey] = array_merge(
+                $merged = array_merge(
                     is_array($existing) ? $existing : [],
-                    $propValue['_merge']
+                    is_array($propValue['_merge']) ? $propValue['_merge'] : []
                 );
+                // `_merge` 는 맵 병합이다 — 결과가 비면 빈 맵(`{}`)으로 둔다. 배열로 두면 화면이 키-값 대신 목록을 받는다 (#758)
+                $component['props'][$propKey] = $merged === [] ? new \stdClass : $merged;
             } elseif (isset($propValue['_patch'])) {
                 $existing = $component['props'][$propKey] ?? [];
 
@@ -1981,6 +1990,7 @@ class LayoutExtensionService
         }
 
         if (is_string($raw) && $raw !== '') {
+            // layout-assoc-decode-ok: 레이아웃 본문이 아니라 다국어 name 컬럼이다
             $decoded = json_decode($raw, true);
 
             return is_array($decoded) && ! empty($decoded) ? $decoded : null;
@@ -2045,7 +2055,8 @@ class LayoutExtensionService
 
         // content 키가 있으면 추출 (UpdateLayoutExtensionContentRequest 사용 시)
         $newContent = $data['content'] ?? null;
-        $oldContent = $extension->content;
+        // 수정 전 원문 — 캐스트는 `{}` 를 `[]` 로 만든다 (#758)
+        $oldContent = LayoutEmptyObjects::rawPreserving($extension);
 
         $updateData = [];
         if ($newContent !== null) {

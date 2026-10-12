@@ -2212,7 +2212,8 @@ class TemplateManager implements TemplateManagerInterface
         // PublicTemplateController::getRoutes()와 동일한 캐시 키 패턴 사용
         try {
             $templateService = app(TemplateService::class);
-            $result = $templateService->getRoutesDataWithModules($templateIdentifier);
+            // 공개 routes 응답과 같은 캐시 키를 채우므로 그 응답처럼 빈 맵 `{}` 를 보존한다 (#758)
+            $result = $templateService->getRoutesDataWithModules($templateIdentifier, preserveEmptyMaps: true);
 
             if ($result['success']) {
                 $cacheKey = "template.routes.{$templateIdentifier}.v{$cacheVersion}";

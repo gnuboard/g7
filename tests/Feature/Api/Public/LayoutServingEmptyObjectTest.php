@@ -220,4 +220,163 @@ class LayoutServingEmptyObjectTest extends TestCase
         $this->assertStringContainsString('ext_injected', $body, '확장 조각이 병합되지 않았다');
         $this->assertStringContainsString('"selection":{}', $body);
     }
+
+    /**
+     * 이슈 #758 원 시나리오 — `init_actions[].params` 의 `filters: {}`·`items: []` 가 그대로 나간다.
+     *
+     * @scenario position=params_fallback_value
+     *
+     * @effects empty_object_served_as_object, empty_array_served_as_array
+     *
+     * @return void 반환값 없음
+     */
+    public function test_served_layout_keeps_empty_objects(): void
+    {
+        $template = $this->createTemplate();
+
+        TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => 'product_show',
+            'content' => [
+                'init_actions' => [[
+                    'handler' => 'setState',
+                    'params' => ['target' => 'local', 'filters' => new \stdClass, 'items' => []],
+                ]],
+                'components' => [['id' => 'root', 'type' => 'basic', 'name' => 'Div']],
+            ],
+        ]);
+
+        $body = $this->getJson("/api/layouts/{$template->identifier}/product_show.json")->assertOk()->getContent();
+
+        $this->assertStringContainsString('"filters":{}', $body);
+        $this->assertStringContainsString('"items":[]', $body);
+    }
+
+    /**
+     * 확대한 값 자리(props 값·responsive props 값·isolatedState 값·data_sources data/headers 아래·defines·computed 값)의
+     * 빈 객체가 `{}` 로 나가고, 구조 키 자기 자신(`props: {}`)은 배열 그대로다. 두 번째 요청(캐시)도 같다.
+     *
+     * @scenario position=expanded_value
+     *
+     * @effects expanded_value_positions_preserved, structural_self_empty_stays_array, cached_response_keeps_empty_objects
+     *
+     * @return void 반환값 없음
+     */
+    public function test_expanded_value_positions_are_served_as_objects(): void
+    {
+        $template = $this->createTemplate();
+
+        TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => 'expanded_page',
+            'content' => [
+                'defines' => ['emptyMap' => new \stdClass],
+                'computed' => ['picked' => new \stdClass],
+                'data_sources' => [[
+                    'id' => 'static_src',
+                    'type' => 'static',
+                    'data' => ['byId' => new \stdClass],
+                    'headers' => ['X-Probe' => 'a', 'X-Map' => new \stdClass],
+                ]],
+                'components' => [
+                    [
+                        'id' => 'host',
+                        'type' => 'basic',
+                        'name' => 'Div',
+                        'props' => ['dataMap' => new \stdClass],
+                        'isolatedState' => ['sel' => new \stdClass],
+                        'responsive' => ['mobile' => ['props' => ['mobileMap' => new \stdClass]]],
+                    ],
+                    ['id' => 'plain', 'type' => 'basic', 'name' => 'Div', 'props' => new \stdClass],
+                ],
+            ],
+        ]);
+
+        foreach (['첫 요청', '캐시 요청'] as $label) {
+            $data = json_decode($this->getJson("/api/layouts/{$template->identifier}/expanded_page.json")->assertOk()->getContent())->data;
+
+            $this->assertEquals(new \stdClass, $data->defines->emptyMap, "{$label}: defines 값");
+            $this->assertEquals(new \stdClass, $data->computed->picked, "{$label}: computed 값");
+            $this->assertEquals(new \stdClass, $data->data_sources[0]->data->byId, "{$label}: data_sources data 아래");
+            $this->assertEquals(new \stdClass, $data->data_sources[0]->headers->{'X-Map'}, "{$label}: data_sources headers 아래");
+            $this->assertEquals(new \stdClass, $data->components[0]->props->dataMap, "{$label}: props 값");
+            $this->assertEquals(new \stdClass, $data->components[0]->isolatedState->sel, "{$label}: isolatedState 값");
+            $this->assertEquals(new \stdClass, $data->components[0]->responsive->mobile->props->mobileMap, "{$label}: responsive props 값");
+            $this->assertSame([], $data->components[1]->props, "{$label}: props 자기 자신은 배열 그대로");
+        }
+    }
+
+    /**
+     * 확장 지점 확장의 props 값과 overlay `inject_props` 값의 빈 객체도 `{}` 로 나간다.
+     *
+     * @scenario position=expanded_value
+     *
+     * @effects expanded_value_positions_preserved
+     *
+     * @return void 반환값 없음
+     */
+    public function test_extension_props_keep_empty_objects(): void
+    {
+        $activeModule = $this->createMock(ModuleInterface::class);
+        $activeModule->method('getIdentifier')->willReturn('sirsoft-ecommerce');
+        $mockModuleManager = $this->createMock(ModuleManager::class);
+        $mockModuleManager->method('getActiveModules')->willReturn(['sirsoft-ecommerce' => $activeModule]);
+        $this->app->instance(ModuleManager::class, $mockModuleManager);
+
+        $template = $this->createTemplate();
+
+        $layout = TemplateLayout::create([
+            'template_id' => $template->id,
+            'name' => 'host_with_props',
+            'content' => [
+                'layout_name' => 'host_with_props',
+                'components' => [
+                    ['id' => 'props_host', 'type' => 'basic', 'name' => 'Div', 'props' => ['className' => 'x']],
+                    ['id' => 'point_host', 'type' => 'extension_point', 'name' => 'probe_point', 'props' => ['hostMap' => new \stdClass]],
+                ],
+            ],
+            'is_active' => true,
+        ]);
+
+        LayoutExtension::create([
+            'template_id' => $template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'host_with_props',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-ecommerce',
+            'content' => [
+                'target_layout' => 'host_with_props',
+                'injections' => [[
+                    'target_id' => 'props_host',
+                    'position' => 'inject_props',
+                    'props' => ['injectedMap' => new \stdClass, 'mergedMap' => ['_merge' => new \stdClass]],
+                ]],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        LayoutExtension::create([
+            'template_id' => $template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'probe_point',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-ecommerce',
+            'content' => [
+                'extension_point' => 'probe_point',
+                'components' => [['id' => 'ext_child', 'type' => 'basic', 'name' => 'Div', 'props' => ['childMap' => new \stdClass]]],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $data = json_decode($this->getJson("/api/layouts/{$template->identifier}/{$layout->name}.json")->assertOk()->getContent())->data;
+
+        $this->assertEquals(new \stdClass, $data->components[0]->props->injectedMap, 'inject_props 값');
+        $this->assertEquals(new \stdClass, $data->components[0]->props->mergedMap, 'inject_props _merge 빈 맵');
+        $child = $data->components[1]->children[0];
+        $this->assertSame('ext_child', $child->id);
+        $this->assertEquals(new \stdClass, $child->props->childMap, '확장 지점 확장 props 값');
+        $this->assertEquals(new \stdClass, $child->extensionPointProps->hostMap, '호스트 props 값을 이어받은 extensionPointProps');
+    }
 }

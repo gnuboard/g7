@@ -189,6 +189,7 @@ final class LayoutRowSynchronizer
 
         $raw = $row->getRawOriginal('original_content');
         if (is_string($raw) && $raw !== '') {
+            // layout-assoc-decode-ok: 삭제 후보 판정 전용(layout_name 비교)
             $original = json_decode($raw, true);
 
             return is_array($original) && isset($original['layout_name']) && $namePrefix.$original['layout_name'] === $row->name;
@@ -317,6 +318,7 @@ final class LayoutRowSynchronizer
         $raw = $row->getRawOriginal('original_content');
 
         if (is_string($raw) && $raw !== '') {
+            // layout-assoc-decode-ok: 수정 여부 비교 전용 — {}/[] 표기 차이를 수정으로 세지 않는다(#758 W11)
             return ! LayoutContentComparator::sameDocument($row->getRawOriginal('content'), LayoutPartialOrigin::strip(json_decode($raw, true)));
         }
 

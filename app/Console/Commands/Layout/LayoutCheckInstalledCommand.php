@@ -164,6 +164,7 @@ class LayoutCheckInstalledCommand extends Command
         $rows = TemplateLayout::query()->where('template_id', $template->id)->orderBy('name')->get();
 
         foreach ($rows as $row) {
+            // layout-assoc-decode-ok: 점검 전용(왕복 대조) — 행을 쓰지 않는다
             $content = is_array($row->content) ? $row->content : json_decode((string) $row->content, true);
             $sourceType = $row->source_type instanceof LayoutSourceType ? $row->source_type->value : ($row->source_type ?? null);
 

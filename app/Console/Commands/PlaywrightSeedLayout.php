@@ -6,6 +6,7 @@ use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\Traits\ComputesLayoutContentHash;
 use App\Extension\Traits\InvalidatesLayoutCache;
+use App\Support\LayoutMarkup\EmptyMap;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
@@ -221,7 +222,8 @@ class PlaywrightSeedLayout extends Command
                 return false;
             }
 
-            $content = json_decode((string) File::get($fixturePath), true);
+            // 빈 객체 `{}` 를 보존해 읽는다 — 캐스트로 저장할 때 `{}` 로 남는다 (#758)
+            $content = EmptyMap::decodePreserving((string) File::get($fixturePath));
             if (json_last_error() !== JSON_ERROR_NONE || ! is_array($content)) {
                 $this->error("시드 레이아웃 fixture 파싱 실패: {$fixturePath}");
 

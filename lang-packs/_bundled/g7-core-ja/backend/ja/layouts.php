@@ -23,4 +23,18 @@ return [
         'partial' => 'フラグメント参照(include·modal)',
         'route' => 'ルート接続',
     ],
+    'repair_empty_objects' => [
+        'description' => 'エディター保存・バージョン復元などで [] に固まったレイアウトの空オブジェクト({})を原本基準で見つけて元に戻します',
+        'no_templates' => '対象テンプレートがありません。',
+        'header_table' => 'テーブル',
+        'header_id' => 'id',
+        'header_name' => '名前',
+        'header_count' => '修正箇所数',
+        'header_paths' => 'パス例',
+        'nothing' => '修正する箇所がありません。',
+        'summary' => '合計 — 行 :rows · 箇所 :positions',
+        'skipped' => '基準なし(原本がない、または所属行が削除済み)でスキップした行: :count',
+        'preview_hint' => 'プレビューです。--apply を付けると修正します。',
+        'applied' => ':rows件の行を修正しました。',
+    ],
 ];
