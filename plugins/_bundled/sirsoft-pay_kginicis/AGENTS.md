@@ -92,8 +92,8 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 6개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 22개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 16개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 21개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 15개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 5개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -156,7 +156,7 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 56개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
+| PHPUnit | 55개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
 | Vitest | 28개 | `vitest.config.ts` |
 | Playwright | 1개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 41개 | `tests/scenarios` |

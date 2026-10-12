@@ -3349,14 +3349,34 @@ class PluginManager implements PluginManagerInterface
      * 새 템플릿 활성화 시 기존 활성 플러그인의 레이아웃을 등록하기 위해 사용됩니다.
      * registerPluginLayouts()는 updateOrCreate를 사용하므로 기존 등록 중복은 안전합니다.
      *
+     * 템플릿 활성화는 켜는 템플릿의 종류(`$onlyType`)만 넘긴다 — 그 종류의 화면만 컴파일하고, 한 플러그인의 실패는 그 플러그인만
+     * 로그로 남기고 건너뛴다(#725 D6). 종전에는 사용자 템플릿을 켤 때도 관리자 화면까지 검증했고, 무관한 플러그인의 화면 하나가
+     * 깨지면 예외가 번져 활성화 트랜잭션 전체가 되돌아갔다. 인자 없는 호출은 종전과 같다(전 종류 · 실패는 예외).
+     *
+     * @param  string|null  $onlyType  이 종류(`admin`·`user`)의 화면만 등록 — null 이면 전부
+     * @param  string|null  $forTemplate  활성화 중인 템플릿 식별자 (실패 로그 문맥)
      * @return int 등록된 레이아웃 총 개수
      */
-    public function registerLayoutsForAllActivePlugins(): int
+    public function registerLayoutsForAllActivePlugins(?string $onlyType = null, ?string $forTemplate = null): int
     {
         $totalRegistered = 0;
 
         foreach ($this->getActivePlugins() as $plugin) {
-            $totalRegistered += $this->registerPluginLayouts($plugin->getIdentifier());
+            if ($onlyType === null) {
+                $totalRegistered += $this->registerPluginLayouts($plugin->getIdentifier());
+
+                continue;
+            }
+
+            try {
+                $totalRegistered += $this->registerPluginLayouts($plugin->getIdentifier(), null, $onlyType);
+            } catch (\Throwable $e) {
+                Log::error('템플릿 활성화 중 플러그인 레이아웃 등록 실패 — 그 플러그인만 건너뜀', [
+                    'template' => $forTemplate,
+                    'plugin' => $plugin->getIdentifier(),
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return $totalRegistered;
@@ -3398,11 +3418,12 @@ class PluginManager implements PluginManagerInterface
      *
      * @param  string  $pluginName  플러그인 디렉토리명 (vendor-plugin 형식)
      * @param  array<int, array{file: string, data: array<string, mixed>, original: array<string, mixed>, layout_name: string}>|null  $validatedLayouts  미리 검증한 결과 ({@see validatePluginLayoutFiles()}) — null 이면 여기서 검증
+     * @param  string|null  $onlyType  이 종류(`admin`·`user`)의 화면만 검증·등록 — null 이면 전부 (템플릿 활성화만 넘긴다)
      * @return int 등록된 레이아웃 개수
      *
      * @throws \Exception 레이아웃 검증 실패 시
      */
-    protected function registerPluginLayouts(string $pluginName, ?array $validatedLayouts = null): int
+    protected function registerPluginLayouts(string $pluginName, ?array $validatedLayouts = null, ?string $onlyType = null): int
     {
         $plugin = $this->getPlugin($pluginName);
         if (! $plugin) {
@@ -3431,7 +3452,14 @@ class PluginManager implements PluginManagerInterface
 
         // 레이아웃 검증 (등록 전 모든 레이아웃 파일 유효성 검사)
         // 공통 Trait 메서드 사용 (recursive=true: 하위 디렉토리 전체 스캔)
-        $validatedLayouts ??= $this->validateLayoutFiles($layoutsPath, $identifier, 'plugin', true);
+        // 종류 필터는 파일 수집 단계에서 건다 — 다른 종류의 화면은 컴파일조차 하지 않는다(#725 D6).
+        $this->onlyLayoutTargetType = $onlyType;
+
+        try {
+            $validatedLayouts ??= $this->validateLayoutFiles($layoutsPath, $identifier, 'plugin', true);
+        } finally {
+            $this->onlyLayoutTargetType = null;
+        }
 
         if (empty($validatedLayouts)) {
             Log::info("플러그인에 등록할 레이아웃 파일이 없습니다: {$pluginName}");
@@ -3621,14 +3649,12 @@ class PluginManager implements PluginManagerInterface
         // 소스 디렉토리에 실재하는 조각 키 — 고아 정리는 이 집합으로 판정한다(컴파일 실패 조각의 행은 보존).
         $liveKeys = $this->fragmentSourceKeys($plugin->getExtensionsPath(), $extensionFiles);
 
+        // 정의·백업 기준은 템플릿과 무관하다(컴파일이 템플릿을 보지 않는다) — 템플릿 루프 밖에서 한 번만 읽는다. 루프 안에서
+        // 읽으면 깨진 조각 하나가 활성 템플릿 수만큼 실패 로그를 남기고, 붙지도 않는 템플릿 이름이 원인처럼 찍혔다(#725).
+        $definitions = $this->loadFragmentDefinitions($plugin->getExtensionsPath(), $extensionFiles, ['plugin' => $identifier]);
+        $backupFragments = $this->layoutSynchronizer()->compileBackupFragments($backupPath, $identifier);
+
         foreach ($allTemplates as $template) {
-            $backupFragments = $this->layoutSynchronizer()->compileBackupFragments($backupPath, $identifier, (string) $template->identifier);
-            $definitions = $this->loadFragmentDefinitions(
-                $plugin->getExtensionsPath(),
-                $extensionFiles,
-                ['plugin' => $identifier, 'template' => $template->identifier],
-                (string) $template->identifier
-            );
 
             // 등록 + 백필된 옛 키 행 잇기 + 오등록·고아 행 정리를 한 번에 한다 (#703) — 등록만 하면 7.0.11 에서
             // 올라온 설치의 옛 키 행과 재활성화가 되살린 행이 새 행과 함께 살아 같은 조각이 두 번 주입된다.
@@ -3937,15 +3963,15 @@ class PluginManager implements PluginManagerInterface
      * 플러그인의 레이아웃 확장을 파일에서 다시 읽어 DB에 갱신합니다.
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스
-     * @param  Collection  $adminTemplates  admin 템플릿 컬렉션
+     * @param  Collection  $templates  조각을 동기화할 템플릿 컬렉션
      * @param  bool  $preserveModified  관리자가 편집한 확장을 보존(병합)할지 여부 (--layout-strategy=keep)
      * @param  string|null  $backupPath  업데이트 백업 디렉토리
      * @param  LayoutSyncReport|null  $report  결과를 모을 보고
      * @return array{refreshed: int, created: int, updated: int, deleted: int, skipped: int} 갱신 통계
      */
-    protected function refreshLayoutExtensions(PluginInterface $plugin, $adminTemplates, bool $preserveModified = false, ?string $backupPath = null, ?LayoutSyncReport $report = null): array
+    protected function refreshLayoutExtensions(PluginInterface $plugin, $templates, bool $preserveModified = false, ?string $backupPath = null, ?LayoutSyncReport $report = null): array
     {
-        return $this->refreshExtensionLayoutExtensions($plugin, $adminTemplates, LayoutSourceType::Plugin, $preserveModified, $backupPath, $report);
+        return $this->refreshExtensionLayoutExtensions($plugin, $templates, LayoutSourceType::Plugin, $preserveModified, $backupPath, $report);
     }
 
     /**

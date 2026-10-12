@@ -82,10 +82,24 @@ effects:
   - register_extension_without_key_reuses_the_single_existing_row
   - register_extension_without_key_is_skipped_when_target_is_ambiguous
   - register_extension_without_key_falls_back_to_target_name
+  # 저장소 조회·수명 계약 — 어떤 행을 적용할지(오버라이드·활성·버전)는 서비스 판정 한 벌이 정한다(#725, 저장소의 해석 함수 제거).
+  - repository_lists_active_rows_of_a_target_in_priority_order
+  - repository_creates_extension_row
+  - repository_source_lifecycle_soft_delete_trashed_lookup_force_delete
+  - repository_finds_template_override_for_a_target
+  - repository_scopes_rows_by_template
+  # 등록 → 서빙 통합 흐름(LayoutExtensionIntegrationTest — 매니페스트 미소속이던 파일을 #725 에서 등재)
+  - extension_registration_flows_into_the_served_layout
+  - reactivation_restores_rows_that_have_a_host
+  - template_override_replaces_the_module_extension_when_served
+  - served_extensions_follow_priority_order
+  - extensions_of_inactive_sources_are_not_served
+  - uninstall_and_template_deletion_remove_extension_rows
 
 test_files:
   - tests/Feature/Api/Admin/LayoutExtensionControllerTest.php
   - tests/Unit/Repositories/LayoutExtensionRepositoryTest.php
+  - tests/Feature/Services/LayoutExtensionIntegrationTest.php
   - tests/Unit/Repositories/LayoutExtensionVersionRepositoryTest.php
   - tests/Unit/Repositories/LayoutVersionRepositoryTest.php
   - tests/Unit/Services/LayoutExtensionServiceEditingTest.php

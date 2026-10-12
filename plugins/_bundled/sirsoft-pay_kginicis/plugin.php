@@ -373,7 +373,6 @@ class Plugin extends AbstractPlugin
             Listeners\AdjustEcommercePaymentMethodsLayoutListener::class,
             Listeners\EnsureAdminOrderDetailTestModeLayoutListener::class,
             Listeners\EnsureAdminOrderDetailPaymentQueryLayoutListener::class,
-            Listeners\RestoreLayoutExtensionsAfterUpdateListener::class,
             Listeners\ValidateCbtSettingsListener::class,
             Listeners\ProvideNecessaryStorageKeysListener::class,
         ];

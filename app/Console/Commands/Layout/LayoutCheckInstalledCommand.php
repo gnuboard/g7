@@ -5,6 +5,7 @@ namespace App\Console\Commands\Layout;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
@@ -15,6 +16,7 @@ use App\Models\Template;
 use App\Models\TemplateLayout;
 use App\Services\LayoutExtensionService;
 use App\Services\LayoutMarkupService;
+use App\Services\TemplateService;
 use App\Support\LayoutMarkup\LayoutMarkupRoundTrip;
 use Illuminate\Console\Command;
 
@@ -33,6 +35,13 @@ use Illuminate\Console\Command;
  *
  * 「JSON 조각 참조 누락」 절(#712): 활성 모듈·플러그인과 점검 대상 템플릿의 레이아웃 소스를 등록 없이 다시 검증해, 7.0 JSON
  * 레이아웃의 깨진 조각 참조가 빈 자리로 등록된 곳을 표로 보여 준다. 설치를 막지 않은 경고라 종료 코드에는 반영하지 않는다.
+ *
+ * 읽지 못한 조각 소스(컴파일·파싱 실패)는 등록 정합성의 `unreadable` 로 출처당 1행 보고하고 실패로 친다(#725) — 종전에는
+ * 「소실」 판정에서 조용히 빠져 로그에만 남았고 점검은 「이상 없음」 으로 끝났다.
+ *
+ * 「라우트에 연결되지 않은 플러그인 사용자 화면」 절(#725): 플러그인 `layouts/user` 화면은 사용자 템플릿에 등록되지만 플러그인
+ * 라우트는 관리자 템플릿에만 병합된다. 공개 필터 `core.routes.filter_merged` 로 라우트를 주입하지 않으면 고객이 들어갈 길이
+ * 없다 — 어느 활성 사용자 템플릿 라우트에도 없는 화면을 정보로 보여 준다(종료 코드에 반영하지 않는다).
  */
 class LayoutCheckInstalledCommand extends Command
 {
@@ -89,6 +98,20 @@ class LayoutCheckInstalledCommand extends Command
     private array $includeSkipped = [];
 
     /**
+     * 어느 활성 사용자 템플릿 라우트에도 연결되지 않은 플러그인 사용자 화면 (`{plugin, layout}`).
+     *
+     * @var array<int, array<string, string>>
+     */
+    private array $unroutedPluginUserLayouts = [];
+
+    /**
+     * 읽기 실패를 이미 보고한 출처·조각 키 — 템플릿마다 반복하지 않는다.
+     *
+     * @var array<string, true>
+     */
+    private array $reportedUnreadable = [];
+
+    /**
      * 커맨드를 생성합니다.
      *
      * @param  LayoutMarkupService  $markup  설치본 JSON ↔ 마크업 변환 서비스
@@ -114,10 +137,19 @@ class LayoutCheckInstalledCommand extends Command
      */
     public function handle(): int
     {
+        // 같은 프로세스에서 다시 부르면(Artisan::call) 커맨드 인스턴스가 재사용된다 — 지난 실행의 결과가 섞이지 않게 비운다.
+        $this->rows = [];
+        $this->budget = [];
+        $this->registration = [];
+        $this->includeWarnings = [];
+        $this->includeSkipped = [];
+        $this->unroutedPluginUserLayouts = [];
+        $this->reportedUnreadable = [];
+
         $templates = $this->targetTemplates();
 
         if ($templates === []) {
-            $this->line($this->option('json') ? json_encode(['templates' => [], 'rows' => [], 'registration' => [], 'include_warnings' => [], 'include_skipped' => [], 'ok' => true]) : '점검할 템플릿이 없습니다.');
+            $this->line($this->option('json') ? json_encode(['templates' => [], 'rows' => [], 'registration' => [], 'include_warnings' => [], 'include_skipped' => [], 'unrouted_plugin_user_layouts' => [], 'ok' => true]) : '점검할 템플릿이 없습니다.');
 
             return self::SUCCESS;
         }
@@ -129,6 +161,7 @@ class LayoutCheckInstalledCommand extends Command
         }
 
         $this->checkIncludeWarnings($templates);
+        $this->checkUnroutedPluginUserLayouts();
 
         return $this->report(array_map(static fn (Template $t): string => (string) $t->identifier, $templates));
     }
@@ -235,9 +268,15 @@ class LayoutCheckInstalledCommand extends Command
             $sources[] = [LayoutSourceType::Plugin, $plugin->getIdentifier(), $plugin->getExtensionsPath(), $plugin->getLayoutExtensions()];
         }
 
+        $templateActive = $template->status === ExtensionStatus::Active->value;
+
         foreach ($sources as [$sourceType, $identifier, $path, $jsonFiles]) {
-            $definitions = $this->loadFragmentDefinitions($path, $jsonFiles, ['source' => $identifier, 'template' => $template->identifier], (string) $template->identifier);
+            // 조각 컴파일은 템플릿과 무관하다 — 실패 로그에 템플릿을 싣지 않고, 같은 파일의 실패는 프로세스에 한 번만 남는다.
+            $definitions = $this->loadFragmentDefinitions($path, $jsonFiles, ['source' => $identifier]);
             $liveKeys = array_fill_keys($this->fragmentSourceKeys($path, $jsonFiles), true);
+
+            // 읽지 못한 조각 — 소스 키 중 정의를 얻지 못한 것. 템플릿 수와 무관하게 출처당 1행이다.
+            $this->reportUnreadableFragments($identifier, $path, $jsonFiles, $definitions);
 
             $dbKeys = LayoutExtension::query()
                 ->where('template_id', $template->id)
@@ -248,9 +287,10 @@ class LayoutCheckInstalledCommand extends Command
                 ->all();
             $dbKeySet = array_fill_keys($dbKeys, true);
 
-            // 소실 — 소스에 있고 이 템플릿에 붙을 자리가 있는데 DB 행이 없다.
+            // 소실 — 소스에 있고 이 템플릿에 붙을 자리가 있는데 DB 행이 없다. 꺼진 템플릿은 켤 때 등록되므로 소실이 아니다(#725 —
+            // 등록·재활성화 복원 모두 켜진 템플릿에만 행을 만든다).
             foreach ($definitions as $definition) {
-                if (isset($dbKeySet[$definition['key']])) {
+                if (! $templateActive || isset($dbKeySet[$definition['key']])) {
                     continue;
                 }
 
@@ -280,6 +320,91 @@ class LayoutCheckInstalledCommand extends Command
                     'target' => null,
                     'fragment_key' => $key,
                 ];
+            }
+        }
+    }
+
+    /**
+     * 정의를 얻지 못한 조각 소스를 `unreadable` 로 보고합니다 (출처·조각 키당 한 번).
+     *
+     * @param  string  $identifier  출처 식별자
+     * @param  string  $path  조각 디렉토리
+     * @param  array<int, string>  $jsonFiles  출처가 아는 `.json` 경로
+     * @param  array<int, array{path: string, data: array<string, mixed>, key: string}>  $definitions  읽기에 성공한 정의
+     * @return void 반환값 없음
+     */
+    private function reportUnreadableFragments(string $identifier, string $path, array $jsonFiles, array $definitions): void
+    {
+        foreach ($this->unreadableFragmentSources($path, $jsonFiles, $definitions) as $key => $error) {
+            if (isset($this->reportedUnreadable[$identifier.'|'.$key])) {
+                continue;
+            }
+
+            $this->reportedUnreadable[$identifier.'|'.$key] = true;
+            $this->registration[] = [
+                'kind' => 'unreadable',
+                'template' => '-',
+                'source' => $identifier,
+                'target' => null,
+                'fragment_key' => (string) $key,
+                'error' => $error,
+            ];
+        }
+    }
+
+    /**
+     * 「라우트에 연결되지 않은 플러그인 사용자 화면」 — 활성 플러그인의 `layouts/user` 화면을 활성 사용자 템플릿 라우트와 대조합니다.
+     *
+     * 라우트는 서빙과 같은 병합({@see TemplateService::getRoutesDataWithModules()} — 필터 `core.routes.filter_merged`
+     * 반영)으로 얻는다. 활성 사용자 템플릿이 없으면 대조할 라우트가 없어 건너뛴다. 화면을 읽지 못한 플러그인은 이 절의
+     * 대상이 아니다(「조각 참조 점검 건너뜀」 이 이미 알린다).
+     *
+     * @return void 반환값 없음
+     */
+    private function checkUnroutedPluginUserLayouts(): void
+    {
+        $userTemplates = $this->templates->getActiveByType('user');
+
+        if ($userTemplates->isEmpty()) {
+            return;
+        }
+
+        $routed = [];
+        $templateService = app(TemplateService::class);
+        foreach ($userTemplates as $template) {
+            $routes = $templateService->getRoutesDataWithModules((string) $template->identifier)['data']['routes'] ?? [];
+
+            foreach ($routes as $route) {
+                if (is_string($route['layout'] ?? null)) {
+                    $routed[$route['layout']] = true;
+                }
+            }
+        }
+
+        foreach (app(PluginManager::class)->getActivePlugins() as $plugin) {
+            $layoutsPath = dirname($plugin->getExtensionsPath()).DIRECTORY_SEPARATOR.'layouts';
+
+            if (! is_dir($layoutsPath.DIRECTORY_SEPARATOR.'user')) {
+                continue;
+            }
+
+            $this->onlyLayoutTargetType = 'user';
+
+            try {
+                $layouts = $this->validateLayoutFiles($layoutsPath, $plugin->getIdentifier(), 'plugin', true);
+            } catch (\Exception) {
+                continue;
+            } finally {
+                $this->onlyLayoutTargetType = null;
+                $this->takeLayoutIncludeWarnings();
+            }
+
+            foreach ($layouts as $layout) {
+                $name = $plugin->getIdentifier().'.'.$layout['layout_name'];
+
+                if (! isset($routed[$name])) {
+                    $this->unroutedPluginUserLayouts[] = ['plugin' => $plugin->getIdentifier(), 'layout' => $name];
+                }
             }
         }
     }
@@ -389,6 +514,7 @@ class LayoutCheckInstalledCommand extends Command
                 'registration' => $this->registration,
                 'include_warnings' => $this->includeWarnings,
                 'include_skipped' => $this->includeSkipped,
+                'unrouted_plugin_user_layouts' => $this->unroutedPluginUserLayouts,
                 'ok' => $ok,
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
@@ -407,24 +533,26 @@ class LayoutCheckInstalledCommand extends Command
 
         foreach ($this->registration as $item) {
             $this->error(sprintf(
-                '✗ %s %s/%s target=%s fragment_key=%s',
+                '✗ %s %s/%s target=%s fragment_key=%s%s',
                 $item['kind'],
                 $item['template'],
                 $item['source'],
                 $item['target'] ?? '-',
                 $item['fragment_key'] ?? '-',
+                isset($item['error']) ? ' — '.$item['error'] : '',
             ));
         }
 
         $this->reportBudget();
         $this->reportIncludeWarnings();
+        $this->reportUnroutedPluginUserLayouts();
 
         $counts = array_count_values(array_column($this->rows, 'verdict'));
         $registrationCounts = array_count_values(array_column($this->registration, 'kind'));
 
         $this->newLine();
         $this->info(sprintf(
-            '설치본 점검 — 템플릿 %d개, 행 %d개 (ok %d · fail %d · mismatch %d), 등록 정합성 — 부적합 %d · 소실 %d · 고아 %d, JSON 조각 참조 누락 %d.',
+            '설치본 점검 — 템플릿 %d개, 행 %d개 (ok %d · fail %d · mismatch %d), 등록 정합성 — 부적합 %d · 소실 %d · 고아 %d · 읽기 실패 %d, JSON 조각 참조 누락 %d, 라우트 미연결 플러그인 사용자 화면 %d.',
             count($templates),
             count($this->rows),
             $counts['ok'] ?? 0,
@@ -433,7 +561,9 @@ class LayoutCheckInstalledCommand extends Command
             $registrationCounts['inapplicable'] ?? 0,
             $registrationCounts['missing'] ?? 0,
             $registrationCounts['orphan'] ?? 0,
+            $registrationCounts['unreadable'] ?? 0,
             count($this->includeWarnings),
+            count($this->unroutedPluginUserLayouts),
         ));
 
         return $ok ? self::SUCCESS : self::FAILURE;
@@ -460,6 +590,26 @@ class LayoutCheckInstalledCommand extends Command
             ['출처', '식별자', '파일', '조각', '사유'],
             array_map(static fn (array $w): array => [$w['source'], $w['identifier'], $w['file'], $w['partial'], $w['reason']], $this->includeWarnings),
         );
+    }
+
+    /**
+     * 「라우트에 연결되지 않은 플러그인 사용자 화면」 절을 표로 보고합니다 (정보 — 종료 코드에 반영하지 않는다).
+     *
+     * @return void 반환값 없음
+     */
+    private function reportUnroutedPluginUserLayouts(): void
+    {
+        if ($this->unroutedPluginUserLayouts === []) {
+            return;
+        }
+
+        $this->newLine();
+        $this->line('<comment>=== 라우트에 연결되지 않은 플러그인 사용자 화면 ===</comment>');
+        $this->table(
+            ['플러그인', '화면'],
+            array_map(static fn (array $item): array => [$item['plugin'], $item['layout']], $this->unroutedPluginUserLayouts),
+        );
+        $this->line('  고객이 이 화면에 들어가려면 플러그인이 `core.routes.filter_merged` 필터로 사용자 라우트를 주입해야 합니다. 모달·부분 화면으로만 쓰면 무시해도 됩니다.');
     }
 
     /**

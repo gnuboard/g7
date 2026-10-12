@@ -263,9 +263,9 @@ DB::transaction(function () use ($templateName, $template, $templateRecord) {
     // 2. 상태 업데이트
     $this->templateRepository->updateByIdentifier($templateName, [...]);
 
-    // 3. 활성 모듈/플러그인의 레이아웃을 새 템플릿에 등록 (호스트 먼저)
-    app(ModuleManager::class)->registerLayoutsForAllActiveModules();
-    app(PluginManager::class)->registerLayoutsForAllActivePlugins();
+    // 3. 활성 모듈/플러그인의 레이아웃을 새 템플릿에 등록 (호스트 먼저) — 켜는 템플릿 종류의 화면만, 확장마다 실패 격리
+    app(ModuleManager::class)->registerLayoutsForAllActiveModules($template['type'], $templateName);
+    app(PluginManager::class)->registerLayoutsForAllActivePlugins($template['type'], $templateName);
 
     // 4. 레이아웃 확장(layout_extensions) 등록 — 붙을 자리(호스트 레이아웃·확장점)가 실재할 때만 행을 만든다
     $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($templateRecord->id);
@@ -276,6 +276,8 @@ DB::transaction(function () use ($templateName, $template, $templateRecord) {
 ```
 
 **중요**: `registerModuleLayouts()`는 `updateOrCreate` 패턴을 사용하므로 중복 호출에 안전합니다.
+
+**종류와 실패 격리**: 템플릿 활성화는 켜는 템플릿 종류(`admin`·`user`)의 화면만 다룹니다 — 사용자 템플릿을 켤 때 모듈의 `layouts/admin` 화면은 컴파일하지 않습니다. 한 모듈·플러그인의 화면을 읽지 못하면 그 확장만 ERROR 로그를 남기고 건너뛰며 활성화는 계속됩니다. 그래서 무관한 확장의 화면 하나가 깨져 있어도 템플릿을 켤 수 있고, 건너뛴 확장은 고친 뒤 `module:refresh-layout`·`plugin:refresh-layout` 으로 다시 등록합니다.
 
 **순서**: 조각 등록은 붙을 자리가 그 템플릿에 실재하는지 보고 행을 만듭니다. 모듈 화면에 붙는 조각은 그 모듈 레이아웃이 호스트이므로, 새로 켠 템플릿에 모듈 레이아웃을 먼저 등록하고 조각을 그 뒤에 등록해야 빠지지 않습니다.
 

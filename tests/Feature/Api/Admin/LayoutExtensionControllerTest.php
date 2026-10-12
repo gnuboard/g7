@@ -12,6 +12,7 @@ use App\Models\Template;
 use App\Models\TemplateLayout;
 use App\Models\TemplateLayoutExtensionVersion;
 use App\Models\User;
+use App\Services\LayoutExtensionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -166,6 +167,8 @@ class LayoutExtensionControllerTest extends TestCase
             'source_identifier' => 'plugin-b',
         ]);
 
+        $this->treatRowSourcesAsActive();
+
         $response = $this->authRequest()
             ->getJson("/api/admin/templates/{$this->template->identifier}/layout-extensions");
 
@@ -235,6 +238,8 @@ class LayoutExtensionControllerTest extends TestCase
             'content' => ['extension_point' => 'checkout.payment', 'components' => [['name' => 'Div']]],
         ]);
 
+        $this->treatRowSourcesAsActive();
+
         $response = $this->authRequest()
             ->getJson("/api/admin/templates/{$this->template->identifier}/layout-extensions");
 
@@ -287,6 +292,8 @@ class LayoutExtensionControllerTest extends TestCase
             'priority' => 50,
             'is_active' => true,
         ]);
+
+        $this->treatRowSourcesAsActive();
 
         $response = $this->authRequest()
             ->getJson("/api/admin/templates/{$this->template->identifier}/layout-extensions");
@@ -369,6 +376,8 @@ class LayoutExtensionControllerTest extends TestCase
             'is_active' => true,
         ]);
 
+        $this->treatRowSourcesAsActive();
+
         $response = $this->authRequest()
             ->getJson("/api/admin/templates/{$this->template->identifier}/layout-extensions");
 
@@ -403,6 +412,8 @@ class LayoutExtensionControllerTest extends TestCase
             'priority' => 100,
             'is_active' => true,
         ]);
+
+        $this->treatRowSourcesAsActive();
 
         $response = $this->authRequest()
             ->getJson("/api/admin/templates/{$this->template->identifier}/layout-extensions");
@@ -446,6 +457,8 @@ class LayoutExtensionControllerTest extends TestCase
             'is_active' => true,
         ]);
 
+        $this->treatRowSourcesAsActive();
+
         $response = $this->authRequest()
             ->getJson("/api/admin/templates/{$this->template->identifier}/layout-extensions");
 
@@ -477,6 +490,8 @@ class LayoutExtensionControllerTest extends TestCase
             'priority' => 100,
             'is_active' => true,
         ]);
+
+        $this->treatRowSourcesAsActive();
 
         $response = $this->authRequest()
             ->getJson("/api/admin/templates/{$this->template->identifier}/layout-extensions");
@@ -694,6 +709,8 @@ class LayoutExtensionControllerTest extends TestCase
         TemplateLayoutExtensionVersion::factory()->create(['extension_id' => $withHistory->id, 'version' => 1]);
         TemplateLayoutExtensionVersion::factory()->create(['extension_id' => $withHistory->id, 'version' => 5]);
         $noHistory = $this->makeExtensionPoint();
+
+        $this->treatRowSourcesAsActive();
 
         $response = $this->authRequest()
             ->getJson("/api/admin/templates/{$this->template->identifier}/layout-extensions");
@@ -1040,5 +1057,27 @@ class LayoutExtensionControllerTest extends TestCase
             ]);
 
         $response->assertStatus(422);
+    }
+
+    /**
+     * 확장 행의 출처를 모두 활성으로 보는 서비스를 고정합니다.
+     *
+     * 편집기 트리는 화면과 같은 판정(출처가 켜진 행만 · 호환 오버라이드 우선)을 쓴다(#725). 이 테스트들은 실재하지 않는
+     * 출처 식별자로 행을 만들므로, 판정 대상이 아닌 축(출처 활성 여부)을 「켜짐」 으로 고정해 각 테스트가 보려는 계약만 남긴다.
+     *
+     * @return LayoutExtensionService 활성 출처가 고정된 서비스 (컨테이너에도 바인딩)
+     */
+    private function treatRowSourcesAsActive(): LayoutExtensionService
+    {
+        $service = $this->app->make(LayoutExtensionService::class);
+        $modules = LayoutExtension::query()->where('source_type', LayoutSourceType::Module)->pluck('source_identifier')->all();
+        $plugins = LayoutExtension::query()->where('source_type', LayoutSourceType::Plugin)->pluck('source_identifier')->all();
+        $targets = LayoutExtension::query()->whereNotNull('override_target')->pluck('override_target')->all();
+
+        (new \ReflectionProperty(LayoutExtensionService::class, 'activeModules'))->setValue($service, array_values(array_unique([...$modules, ...$targets])));
+        (new \ReflectionProperty(LayoutExtensionService::class, 'activePlugins'))->setValue($service, array_values(array_unique([...$plugins, ...$targets])));
+        $this->app->instance(LayoutExtensionService::class, $service);
+
+        return $service;
     }
 }

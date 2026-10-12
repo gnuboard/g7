@@ -363,8 +363,8 @@ final class LayoutRowSynchronizer
             $rows = $this->extensions->getWithoutOriginalContentBySource($sourceType, $identifier);
 
             foreach ($rows->groupBy('template_id') as $templateId => $group) {
-                $templateIdentifier = (string) $this->templates->findById((int) $templateId)?->identifier;
-                $fragments = $templateIdentifier !== '' ? $reader->fragments($backupPath, $identifier, $templateIdentifier) : [];
+                // 템플릿이 사라진 행은 건너뛴다. 조각 컴파일은 템플릿과 무관해 업데이트 1회에 한 번만 한다(#725).
+                $fragments = $this->templates->findById((int) $templateId) !== null ? $reader->fragments($backupPath, $identifier) : [];
 
                 foreach ($group as $row) {
                     $original = $fragments[$row->fragment_key] ?? null;
@@ -393,16 +393,16 @@ final class LayoutRowSynchronizer
     }
 
     /**
-     * 업데이트 백업의 확장 조각을 한 템플릿 표로 컴파일합니다.
+     * 업데이트 백업의 확장 조각을 컴파일합니다 — 템플릿과 무관하며 업데이트 1회에 한 번만 컴파일한다.
      *
      * @param  string|null  $backupPath  업데이트 백업 디렉토리
      * @param  string  $identifier  확장 식별자
-     * @param  string  $templateIdentifier  템플릿 식별자
+     * @param  string  $templateIdentifier  쓰지 않는다 — 호출 계약 호환으로만 받는다
      * @return array<string, array<string, mixed>> 조각 식별자 => 원본
      */
-    public function compileBackupFragments(?string $backupPath, string $identifier, string $templateIdentifier): array
+    public function compileBackupFragments(?string $backupPath, string $identifier, string $templateIdentifier = ''): array
     {
-        return $backupPath === null ? [] : (new BackupLayoutReader)->fragments($backupPath, $identifier, $templateIdentifier);
+        return $backupPath === null ? [] : (new BackupLayoutReader)->fragments($backupPath, $identifier);
     }
 
     /**

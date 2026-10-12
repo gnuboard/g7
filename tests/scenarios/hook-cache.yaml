@@ -58,6 +58,8 @@ effects:
   - generate_produces_three_bucket_cache_core_modules_plugins
   - each_cache_entry_has_listener_hooks_and_dynamic_keys
   - listener_class_not_autoloaded_at_boot_when_registered_from_cache
+  # #725 — 업데이트가 리스너 클래스를 지운 프로세스에서 옛 구독이 발화해도 그 리스너만 건너뛴다
+  - listener_removed_by_update_is_skipped_without_failing_the_hook
   # 재생성 (무효화=재생성)
   - extension_update_regenerates_hook_cache_via_updateComposerAutoload
   - core_update_regenerates_hook_cache_via_clearAllCaches_extension_update_autoload
@@ -72,6 +74,7 @@ effects:
 test_files:
   - tests/Unit/Extension/HookCacheManagerTest.php
   - tests/Unit/Extension/HookListenerRegistrarTest.php
+  - tests/Unit/Extension/HookListenerMissingClassTest.php
   - tests/Feature/Console/HooksCacheCommandTest.php
   - tests/Unit/Services/NotificationDefinitionServiceTest.php
   - tests/Feature/Extension/ExtensionUpdateAutoloadHookCacheTest.php

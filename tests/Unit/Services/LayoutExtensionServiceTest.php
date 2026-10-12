@@ -987,6 +987,13 @@ class LayoutExtensionServiceTest extends TestCase
      */
     public function test_restores_by_source(): void
     {
+        // 복원은 붙을 자리가 있는 활성 템플릿의 행만 되살린다(#725) — 확장점을 가진 호스트 화면을 둔다.
+        TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'point1_host',
+            'content' => ['layout_name' => 'point1_host', 'components' => [['type' => 'extension_point', 'name' => 'point1']]],
+        ]);
+
         // Soft deleted 확장 생성
         $extension = LayoutExtension::create([
             'template_id' => $this->template->id,
@@ -994,7 +1001,7 @@ class LayoutExtensionServiceTest extends TestCase
             'target_name' => 'point1',
             'source_type' => LayoutSourceType::Module,
             'source_identifier' => 'sirsoft-test',
-            'content' => [],
+            'content' => ['extension_point' => 'point1', 'components' => []],
             'is_active' => true,
         ]);
         $extension->delete();

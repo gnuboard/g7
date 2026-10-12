@@ -954,18 +954,10 @@ effects:
   # 없었다. 두 경로가 갈리면 어느 쪽으로 설치했느냐에 따라 산출이 달라진다(실측 92파일 153자리).
   - empty_map_survives_the_json_install_path
   - extension_badge_injection_is_idempotent_and_scoped
-  # B2(2026-09-28): 결제 플러그인 업데이트 뒤 복원 리스너가 overlay 뿐 아니라 주문 목록 결제수단 칸 확장점 조각도 되살린다
-  # (소유 매니페스트는 admin-order-list-payment-method-badges.yaml — 같은 테스트 파일을 이 게이트 매니페스트도 소유하므로 등재).
+  # B2(2026-09-28): 결제 플러그인 업데이트 뒤 주문 목록 결제수단 칸 확장점 조각도 다시 등록된다. #725 에서 결제 플러그인
+  # 4종의 복원 리스너(꺼진 템플릿까지 행을 만들던 사본)를 지우고 코어 재등록으로 수렴했다 — 관측은
+  # PaymentPluginUpdateFragmentConvergenceTest 가 진다(소유 매니페스트는 admin-order-list-payment-method-badges.yaml).
   - extension_point_fragment_is_restored_after_plugin_update
-  - overlay_extensions_are_restored_after_plugin_update
-  # #476 C13 — 업데이트 복원이 조각 파일 이름을 식별자로 넘긴다. 설치 경로와 키가 갈리면 같은 대상에
-  # 행이 둘 생기고, 그 뒤로는 키 없는 등록이 어느 행인지 가리지 못해 조용히 멈춘다.
-  - restored_overlay_uses_the_file_derived_fragment_key
-  # 복원 리스너의 배선 자체 — 동기 구독 · 선언 실재 · 남의 업데이트 무시
-  - restore_listener_subscribes_to_plugin_updated_as_sync_action
-  - plugin_declares_the_layout_extension_restore_listener
-  - restore_listener_ignores_other_plugins_updates
-  - restore_listener_skips_when_update_had_nothing_to_apply
   # 소스 정형 — 직렬화기의 inline 규칙을 「텍스트 앞뒤 공백이 의미를 가질 때」로 좁혔다.
   # 종전에는 글자가 있으면 서브트리 전체를 한 줄로 찍어 액션을 실은 버튼 하나가 1,800자를 넘었다.
   # 무손실 근거는 `normalizeText` 가 텍스트 앞뒤의 개행+공백만 걷어낸다는 것이고, 코퍼스 실측으로
@@ -1037,6 +1029,28 @@ effects:
   # 2026-09-28 결정: 조각 컴파일은 붙을 템플릿과 무관(C10 의 템플릿별 컴파일 폐기)
   - fragment_compile_does_not_depend_on_the_target_template
   - late_host_is_filled_by_reregistration_and_orphans_are_removed
+  # #725 — 「붙을 자리 없는 대상」 잡음·죽은 행 결함군 (조각 실패 1회 기록 · 백업 경고 · 복원 범위 · 오버라이드 단일 판정 ·
+  # 활성화 격리 · 점검 명령 보고). 결함 재현은 각 테스트 docblock 에 있다.
+  - broken_fragment_is_logged_once_per_process_without_template_tag
+  - each_broken_fragment_logs_once_and_fixed_file_recompiles
+  - json_source_warning_once_per_pass
+  - inapplicable_skip_is_debug_level
+  - backup_fragment_failures_are_one_warning_per_update
+  - editor_tree_layout_failure_uses_layout_message
+  - scalar_fragment_json_reports_type
+  - empty_object_fragment_json_reports_no_definition
+  - payment_plugin_update_registers_only_to_active_hosts
+  - stale_rows_on_inactive_template_converge_on_activation
+  - reactivation_restores_only_rows_with_host_on_active_templates
+  - template_activation_compiles_only_its_type_and_isolates_module_failure
+  - check_installed_reports_unreadable_fragments
+  - check_installed_lists_unrouted_plugin_user_layouts
+  - check_installed_skips_missing_for_inactive_templates
+  - editor_tree_hides_override_of_inactive_target
+  - incompatible_extension_point_override_falls_back_to_original
+  - overlay_version_fallback_unchanged
+  - override_hides_only_its_target_original_in_render_and_tree
+  - docgen_fragment_failure_names_extension
   # layout:compile 자기 점검 (쓰기 전에 프로덕션 컴파일로 되돌려 본다)
   - compile_command_writes_markup_that_passes_production_compile
   - compile_command_refuses_to_write_markup_that_production_compile_rejects
@@ -1066,6 +1080,7 @@ effects:
   - lint_warning_carries_source_line
   - security_violation_carries_source_line
   - returned_json_has_no_position_markers
+  - init_layout_with_unlocated_warning_compiles
 
 # S18.5 축 B — 설치/업데이트/삭제 × 소스 매트릭스.
 #
@@ -1188,16 +1203,12 @@ test_files:
   # 35차 근본 조치 J — 가드 품질 속성을 등록부로 모아 전 가드에 곱집합 집행 (계약 × 가드).
   # 회차마다 "그 회차에 깨진 개체" 에만 성질을 심던 구조를 끊는 지점이다.
   - tests/Unit/Support/LayoutMarkup/GuardContractGuardTest.php
-  # S18 P1 — 확장이 자기 확장점을 읽는 소비 축 (게이트 필터 EnsureAdminOrder|RestoreLayoutExtensions)
+  # S18 P1 — 확장이 자기 확장점을 읽는 소비 축 (게이트 필터 EnsureAdminOrder). 업데이트 복원 리스너 4종은 #725 에서 지웠다.
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/EnsureAdminOrderDetailPaymentQueryLayoutListenerTest.php
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/EnsureAdminOrderDetailTestModeLayoutListenerTest.php
   # 31차 — 게이트 상주 모집단을 phpunit.xml 도출로 반전하자 드러난 미등재분(자매 4파일과 같은 축)
-  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
   - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/EnsureAdminOrderLayoutExtensionsListenerTest.php
-  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
   - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Listeners/EnsureAdminOrderLayoutExtensionsListenerTest.php
-  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
-  - plugins/_bundled/sirsoft-tosspayments/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
   # 39차 — 마킹 모집단을 저장소 전량으로 반전하자 드러난 미등재 3건.
   # 셋 다 이 트랙의 축을 단언하면서 `@scenario`/`@effects` 를 달아 놓았는데 어느 매니페스트에도
   # 없어, 커버리지 집계에 한 번도 들어간 적이 없었다(게이트 필터도 함께 넓혔다).
@@ -1268,6 +1279,15 @@ test_files:
   - tests/Unit/Services/LayoutMarkupServiceTest.php
   - tests/Feature/LayoutMarkup/LayoutCheckInstalledCommandTest.php
   - tests/Feature/LayoutMarkup/FragmentRegistrationPolicyTest.php
+  # #725 — 「붙을 자리 없는 대상」 잡음·죽은 행 결함군
+  - tests/Feature/LayoutMarkup/FragmentFailureLogOnceTest.php
+  - tests/Feature/LayoutMarkup/BackupFragmentReadWarningTest.php
+  - tests/Feature/LayoutMarkup/EditorTreeLayoutReadFailureMessageTest.php
+  - tests/Feature/LayoutMarkup/PaymentPluginUpdateFragmentConvergenceTest.php
+  - tests/Feature/LayoutMarkup/RestoreApplicableFragmentRowsTest.php
+  - tests/Feature/LayoutMarkup/TemplateActivationIsolatesOtherTypeLayoutsTest.php
+  - tests/Feature/LayoutMarkup/ExtensionOverrideVisibilityTest.php
+  - tests/Feature/LayoutMarkup/ExtensionDocFragmentLogContextTest.php
   # 7.1.0 P16 — 검사 경고·보안 위반의 소스 줄 위치. 클래스명이 게이트 필터 `LayoutMarkup` 에 걸려
   # 게이트에서 돈다. 조합 축(lint 경고 / 보안 위반)은 `layout-markup-issue-location.yaml` 이 소유한다.
   - tests/Feature/Api/Admin/LayoutMarkupIssueLocationTest.php

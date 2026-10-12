@@ -112,8 +112,8 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 4개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 16개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 11개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 15개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 10개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 3개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -167,7 +167,7 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 30개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
+| PHPUnit | 29개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
 | Vitest | 12개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
 | 시나리오 매니페스트 | 20개 | `tests/scenarios` |
