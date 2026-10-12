@@ -207,4 +207,36 @@ class TemplateOverrideMarkupInstallTest extends TestCase
             File::deleteDirectory(base_path("templates/{$identifier}"));
         }
     }
+
+    /**
+     * 내용이 빈 객체 `{}` 뿐인 조각은 건너뛰고, 원인을 「빈 객체」 로 적는다.
+     *
+     * 빈 객체를 보존하는 디코드(#758)는 문서 전체가 `{}` 면 배열이 아니라 빈 map 표식을 돌려준다. 그래서
+     * 「객체가 아님」 분기로 떨어져 `{}` 를 객체가 아니라고 적고, 타입 자리에 내부 클래스명이 찍혔다.
+     * 등록하지 않는 동작은 그대로 두고 문구만 사실대로 고정한다.
+     *
+     * @scenario compile_unit=install,source_health=invalid
+     *
+     * @effects empty_object_fragment_json_reports_no_definition
+     *
+     * @return void 반환값 없음
+     */
+    public function test_empty_object_fragment_json_reports_no_definition(): void
+    {
+        $file = "{$this->tmp}/empty.json";
+        File::put($file, '{}');
+
+        Log::spy();
+
+        $result = $this->invokeProtected('loadFragmentSource', [['path' => $file, 'markup' => false]]);
+
+        $this->assertNull($result, '빈 객체 조각은 등록하지 않는다');
+
+        Log::shouldHaveReceived('error')
+            ->withArgs(fn (string $message, array $context = []): bool => str_contains($message, '레이아웃 확장 JSON 형식 오류 (빈 객체 — 정의 없음)')
+                && str_contains($message, 'empty.json')
+                && ! str_contains($message, '객체가 아님')
+                && ! str_contains($context['error'] ?? '', 'EmptyMap'))
+            ->once();
+    }
 }

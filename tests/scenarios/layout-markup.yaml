@@ -1038,6 +1038,7 @@ effects:
   - backup_fragment_failures_are_one_warning_per_update
   - editor_tree_layout_failure_uses_layout_message
   - scalar_fragment_json_reports_type
+  - empty_object_fragment_json_reports_no_definition
   - payment_plugin_update_registers_only_to_active_hosts
   - stale_rows_on_inactive_template_converge_on_activation
   - reactivation_restores_only_rows_with_host_on_active_templates

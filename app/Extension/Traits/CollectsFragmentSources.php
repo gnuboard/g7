@@ -192,6 +192,14 @@ trait CollectsFragmentSources
                 return null;
             }
 
+            if ($data instanceof EmptyMap) {
+                // 문서 전체가 `{}` 다 — 보존 디코드는 배열 대신 빈 map 표식을 돌려주므로, 아래 분기로 보내면
+                // 객체를 「객체가 아님」 이라 적고 타입 자리에 내부 클래스명이 찍힌다.
+                $this->reportFragmentReadFailure($key, $path, "{$jsonSubject} JSON 형식 오류 (빈 객체 — 정의 없음): {$path}", '조각 JSON 에 정의가 없습니다 (빈 객체 {})', $logContext);
+
+                return null;
+            }
+
             if (! is_array($data)) {
                 // 파싱은 됐는데 객체가 아니다 — 종전에는 `error: "No error"` 로 남아 원인을 알 수 없었다.
                 $this->reportFragmentReadFailure($key, $path, "{$jsonSubject} JSON 형식 오류 (객체가 아님): {$path}", '조각 JSON 은 객체여야 합니다 ('.get_debug_type($data).')', $logContext + [
