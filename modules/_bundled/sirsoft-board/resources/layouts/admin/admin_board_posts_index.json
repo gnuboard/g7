@@ -1015,10 +1015,11 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "제목 칸은 줄어들 수 있고 제목은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 제목이 좁은 화면에서 본문을 622px 넘겼다(#143).",
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-1"
+                                                        "className": "flex-1 min-w-0"
                                                     },
                                                     "children": [
                                                         {
@@ -1074,7 +1075,7 @@
                                                                         }
                                                                     ],
                                                                     "props": {
-                                                                        "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                                        "className": "min-w-0 wrap-anywhere font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                                                     },
                                                                     "text": "{{row.title}}"
                                                                 },

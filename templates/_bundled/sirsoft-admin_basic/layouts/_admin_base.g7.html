@@ -261,9 +261,9 @@
               <img data-ref="user_avatar_img" data-if="{{current_user.data?.avatar_url}}" src="{{current_user.data?.avatar_url}}" alt="{{current_user.data?.name ?? 'User'}}" class="user_avatar_img"/>
               <i data-ref="user_avatar_fallback" data-if="{{!current_user.data?.avatar_url}}" class="fas fa-user icon-muted"/>
             </div>
-            <div data-ref="user_info" class="user_info">
-              <p data-ref="user_name" class="text-primary text-sm font-bold leading-none">{{current_user.data?.name ?? '관리자'}}</p>
-              <p data-ref="user_email" class="text-tertiary text-[11px] mt-1">{{current_user.data?.email ?? ''}}</p>
+            <div data-ref="user_info" class="user_info min-w-0">
+              <p data-ref="user_name" class="text-primary text-sm font-bold leading-none truncate max-w-xs">{{current_user.data?.name ?? '관리자'}}</p>
+              <p data-ref="user_email" class="text-tertiary text-[11px] mt-1 truncate max-w-xs">{{current_user.data?.email ?? ''}}</p>
             </div>
             <user-profile data-type="composite" data-ref="user_dropdown" user="{{current_user.data}}" profileText="$t:admin.profile_settings" logoutText="$t:admin.logout" languageText="$t:admin.language" availableLocales="{{_global.appConfig.supportedLocales ?? $locales}}" class="" :showAvatar="false" :showName="false" :dropdownOnly="true" :showChevron="false" dropdownDirection="down"/>
           </div>

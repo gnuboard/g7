@@ -476,7 +476,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-slate-500 dark:text-slate-400"
+                                                        "className": "text-xs text-slate-500 dark:text-slate-400 truncate"
                                                     },
                                                     "text": "{{(post?.board_name ?? '') + ' · ' + (post?.author_name ?? '') + ' · ' + (post?.created_at ?? '')}}"
                                                 }

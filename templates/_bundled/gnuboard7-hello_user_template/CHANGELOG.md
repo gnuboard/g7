@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [0.2.1] - 2026-10-12
+
+### Fixed
+
+- 홈 메모 카드의 제목과 내용에 띄어쓰기 없는 긴 글이 칸을 넘치지 않도록 줄바꿈 표시 규칙을 지정했습니다(이 예시 템플릿은 스타일시트를 싣지 않으므로, 스타일시트를 붙여 쓸 때 적용됩니다). (#143 @glitter-gim 님께서 제보해주셨습니다.)
+
 ## [0.2.0] - 2026-10-10
 
 ### Added

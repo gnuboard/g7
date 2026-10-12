@@ -408,9 +408,10 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   // className에 text- 색상 클래스가 있으면 nameButtonClass의 기본 색상을 대체
   const hasCustomColor = /\btext-\S+/.test(className);
   const defaultColorClass = hasCustomColor ? '' : 'text-gray-900 dark:text-white';
+  // 이름은 한 줄 … 로 최대 8rem — 공백 없는 긴 이름이 작성일·버튼을 밀어내지 않는다(#143).
   const nameButtonClass = (showDropdown || clickable)
-    ? `${defaultColorClass} hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer font-medium`.trim()
-    : `${defaultColorClass} font-medium`.trim();
+    ? `${defaultColorClass} hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer font-medium truncate max-w-32`.trim()
+    : `${defaultColorClass} font-medium truncate max-w-32`.trim();
 
   return (
     <Div ref={containerRef} className={`relative inline-block ${className}`} id={id} {...editorAttrs}>

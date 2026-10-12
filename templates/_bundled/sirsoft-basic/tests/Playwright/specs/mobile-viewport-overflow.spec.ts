@@ -322,3 +322,49 @@ test.describe('비회원 폼/칩 (390px)', () => {
     expect(await docOverflow(page)).toBe(0);
   });
 });
+
+test.describe('좁은 화면 고정 줄 (297·320px)', () => {
+  for (const width of [297, 320]) {
+    /**
+     * 상품 검색 입력칸이 줄어들지 않아 [검색] 단추가 313px 까지 나가던 회귀(297px 31px, 320px 8px 넘침).
+     *
+     * @scenario case=shop_search_row_narrow
+     * @effects document_no_horizontal_overflow
+     */
+    test(`${width}px 상품 목록 검색 줄이 화면 안에 있다`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto('/shop/products');
+      // 검색 입력칸과 [검색] 단추가 나란히 있는 줄 — 머리글의 다른 검색칸과 섞이지 않게 줄 단위로 찾는다
+      const row = page.locator('div:has(> input[name="keyword"]):has(> button)').first();
+      await expect(row).toBeVisible({ timeout: 60_000 });
+      // 단추 문구·상품 목록이 다 그려진 뒤 잰다 — 그리기 전에 재면 단추가 좁아 넘침을 놓친다
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(1_500);
+      const m = await row.evaluate((el) => ({
+        rowRight: Math.max(...[...el.children].map((c) => Math.round(c.getBoundingClientRect().right))),
+        vw: document.documentElement.clientWidth,
+      }));
+      expect(m.rowRight).toBeLessThanOrEqual(m.vw);
+      expect(await docOverflow(page)).toBe(0);
+    });
+
+    /**
+     * 인기글 기간 단추 줄이 297px 에서 302px 까지 나가던 회귀.
+     *
+     * @scenario case=popular_period_filter_wrap
+     * @effects document_no_horizontal_overflow
+     */
+    test(`${width}px 인기글 기간 단추가 화면 안에 있다`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto('/boards/popular');
+      const first = page.locator('button', { hasText: /오늘|Today/ }).first();
+      await expect(first).toBeVisible({ timeout: 60_000 });
+      const m = await first.evaluate((el) => {
+        const row = el.parentElement!;
+        return { right: Math.max(...[...row.children].map((c) => Math.round(c.getBoundingClientRect().right))), vw: document.documentElement.clientWidth };
+      });
+      expect(m.right).toBeLessThanOrEqual(m.vw);
+      expect(await docOverflow(page)).toBe(0);
+    });
+  }
+});

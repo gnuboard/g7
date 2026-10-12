@@ -826,7 +826,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-3"
+                                                "className": "w-full max-w-0 px-4 py-3"
                                             },
                                             "children": [
                                                 {
@@ -878,7 +878,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                        "className": "block truncate max-w-32 text-sm text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "{{reaction.board_name ?? ''}}"
                                                 }
@@ -1051,7 +1051,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-3"
+                                                "className": "w-full max-w-0 px-4 py-3"
                                             },
                                             "children": [
                                                 {
@@ -1102,7 +1102,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                        "className": "block truncate max-w-32 text-sm text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "{{reaction.board_name ?? ''}}"
                                                 }
@@ -1275,7 +1275,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-3"
+                                                "className": "w-full max-w-0 px-4 py-3"
                                             },
                                             "children": [
                                                 {
@@ -1316,7 +1316,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                        "className": "block truncate max-w-32 text-sm text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "{{reaction.board_name ?? ''}}"
                                                 }
@@ -1570,7 +1570,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                        "className": "min-w-0 wrap-anywhere text-xs text-gray-400 dark:text-gray-500"
                                                     },
                                                     "text": "{{reaction.board_name ?? ''}} · {{reaction.reacted_at ?? ''}}"
                                                 },

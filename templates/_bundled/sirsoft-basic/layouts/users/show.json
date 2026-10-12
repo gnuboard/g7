@@ -199,27 +199,27 @@
                                                         "responsive": {
                                                             "portable": {
                                                                 "props": {
-                                                                    "className": "w-full space-y-3 text-center"
+                                                                    "className": "w-full min-w-0 space-y-3 text-center"
                                                                 }
                                                             }
                                                         },
                                                         "props": {
-                                                            "className": "flex-1 space-y-3"
+                                                            "className": "flex-1 min-w-0 space-y-3"
                                                         },
                                                         "children": [
                                                             {
-                                                                "comment": "이름 (배지 제거)",
+                                                                "comment": "이름 (배지 제거). 칸이 줄어들 수 있고(min-w-0) 이름·소개는 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름이 카드를 넘쳤다(#143).",
                                                                 "type": "basic",
                                                                 "name": "H2",
                                                                 "responsive": {
                                                                     "portable": {
                                                                         "props": {
-                                                                            "className": "text-xl font-bold text-gray-900 dark:text-white"
+                                                                            "className": "text-xl font-bold text-gray-900 dark:text-white break-words"
                                                                         }
                                                                     }
                                                                 },
                                                                 "props": {
-                                                                    "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                                                    "className": "text-2xl font-bold text-gray-900 dark:text-white break-words"
                                                                 },
                                                                 "text": "{{profile.data?.name ?? '-'}}"
                                                             },
@@ -267,7 +267,7 @@
                                                                 "name": "P",
                                                                 "if": "{{profile.data?.bio}}",
                                                                 "props": {
-                                                                    "className": "text-gray-600 dark:text-gray-300 whitespace-pre-wrap mt-4"
+                                                                    "className": "text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words mt-4"
                                                                 },
                                                                 "text": "{{profile.data?.bio}}"
                                                             }
@@ -476,7 +476,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap"
+                                                                                    "className": "flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap truncate max-w-32"
                                                                                 },
                                                                                 "text": "{{post.board_name}}"
                                                                             },

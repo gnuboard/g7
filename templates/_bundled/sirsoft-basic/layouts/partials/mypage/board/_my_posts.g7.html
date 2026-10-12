@@ -101,9 +101,9 @@
           </on>
           <!-- 상단: [게시판명] 제목 + 비밀글 아이콘 (한 줄) -->
           <div class="flex items-center justify-between gap-3">
-            <div class="flex-1 min-w-0 flex items-center gap-2">
+            <div class="flex-1 min-w-0 flex flex-wrap items-center gap-2">
               <!-- 게시판 이름 -->
-              <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded flex-shrink-0">{{post.board_name}}</span>
+              <span class="inline-block px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded flex-shrink-0 truncate max-w-32">{{post.board_name}}</span>
               <!-- 제목 -->
               <span class="text-base font-medium text-gray-900 dark:text-white truncate">{{post.title}}</span>
               <!-- 비밀글 아이콘 -->
@@ -113,7 +113,7 @@
             <span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 whitespace-nowrap" title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
           </div>
           <!-- 게시글 내용 요약 (2줄, HTML 태그 제거된 plain text 사용) -->
-          <p data-if="{{post.content_plain}}" class="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2">{{post.content_plain}}</p>
+          <p data-if="{{post.content_plain}}" class="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2 break-words">{{post.content_plain}}</p>
           <!-- 하단: 조회수 + 댓글수 -->
           <div class="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
             <span class="flex items-center gap-1">

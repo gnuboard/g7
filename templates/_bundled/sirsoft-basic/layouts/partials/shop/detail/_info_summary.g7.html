@@ -69,7 +69,7 @@
     <div data-if="{{product.data?.option_groups &amp;&amp; product.data?.option_groups.length > 0 &amp;&amp; (product.data?.options?.length ?? 0) > 1}}" class="border-t border-gray-200 dark:border-gray-700 pt-4 px-2 space-y-1">
       <div data-each="group in {{product.data?.option_groups ?? []}}">
         <div class="flex items-center gap-4">
-          <span class="text-sm text-gray-500 dark:text-gray-400 w-16">{{group.name_localized ?? group.name}}</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400 w-16 shrink-0 truncate">{{group.name_localized ?? group.name}}</span>
           <span class="text-sm text-gray-900 dark:text-white">{{(group.values_localized ?? group.values).join(', ')}}</span>
         </div>
       </div>

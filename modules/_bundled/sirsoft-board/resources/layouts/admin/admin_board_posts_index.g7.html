@@ -253,7 +253,8 @@
                 <field name="paddingLeft" value="{{(row?.depth ?? 0) > 0 ? (row?.depth * 1) + 'rem' : '0'}}"/>
               </prop>
               <icon data-if="{{row.is_reply}}" name="level-up-alt" class="text-sm rotate-90 mt-1 text-gray-400 dark:text-gray-500"/>
-              <div class="flex-1">
+              <!-- 제목 칸은 줄어들 수 있고 제목은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 제목이 좁은 화면에서 본문을 622px 넘겼다(#143). -->
+              <div class="flex-1 min-w-0">
                 <div class="flex-center gap-2 flex-wrap">
                   <!-- 카테고리 배지 -->
                   <span data-if="{{row.category}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">{{row.category}}</span>
@@ -262,7 +263,7 @@
                   <!-- 블라인드 배지 -->
                   <span data-if="{{row?.status === 'blinded'}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">$t:sirsoft-board.admin.posts.status.blinded</span>
                   <!-- 제목 -->
-                  <span class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                  <span class="min-w-0 wrap-anywhere font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                     <on type="click">
                       <navigate path="/admin/board/{{row.slug}}/post/{{row.id}}" :mergeQuery="true">
                         <query/>

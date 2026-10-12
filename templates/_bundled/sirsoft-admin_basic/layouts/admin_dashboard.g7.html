@@ -319,8 +319,8 @@
             <div data-ref="activity_item_{{$idx}}" data-each="activity, $idx in dashboard_activities?.data" class="flex-start gap-3">
               <div data-ref="activity_dot_{{$idx}}" class="w-2 h-2 mt-2 rounded-full bg-blue-500 dark:bg-blue-400 flex-shrink-0"/>
               <div data-ref="activity_content_{{$idx}}" class="flex-1 min-w-0">
-                <p data-ref="activity_title_{{$idx}}" class="text-heading">{{activity.title}}</p>
-                <p data-ref="activity_desc_{{$idx}}" class="text-label-subtle">{{activity.description}}</p>
+                <p data-ref="activity_title_{{$idx}}" class="text-heading break-words">{{activity.title}}</p>
+                <p data-ref="activity_desc_{{$idx}}" class="text-label-subtle break-words">{{activity.description}}</p>
               </div>
               <span data-ref="activity_time_{{$idx}}" class="text-hint whitespace-nowrap">{{activity.time}}</span>
             </div>

@@ -448,7 +448,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-sm text-gray-600 dark:text-gray-400 mb-1"
+                                                        "className": "text-sm text-gray-600 dark:text-gray-400 mb-1 break-words"
                                                     },
                                                     "text": "{{notification.body ?? ''}}"
                                                 },

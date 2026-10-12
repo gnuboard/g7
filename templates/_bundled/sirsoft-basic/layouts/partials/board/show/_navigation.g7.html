@@ -13,10 +13,10 @@
       <icon name="list" size="sm"/>
       <span>$t:board.back_to_list</span>
     </button>
-    <!-- 게시판 이름 (가운데) -->
-    <span class="text-lg font-semibold text-gray-900 dark:text-white">
+    <!-- 게시판 이름 (가운데). 공백 없는 긴 이름도 한 줄 … 로 자른다(#143). -->
+    <span class="text-lg font-semibold text-gray-900 dark:text-white min-w-0 truncate">
       <!-- order-first + w-full 로 첫 줄 전체를 차지. 이 노드가 형제를 압착하던 원인이므로 폭 경쟁에서 아예 빼낸다. -->
-      <responsive on="mobile" class="order-first w-full text-center text-lg font-semibold text-gray-900 dark:text-white"/>
+      <responsive on="mobile" class="order-first w-full text-center text-lg font-semibold text-gray-900 dark:text-white min-w-0 truncate"/>
       {{post?.data?.board?.name ?? ''}}
     </span>
     <!-- 이전글/다음글 그룹. shrink-0: 게시판명이 길어도 눌리지 않는다. -->

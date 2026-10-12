@@ -98,9 +98,9 @@
           </on>
           <!-- 상단: [게시판명] 원글 제목 + 작성일 -->
           <div class="flex items-center justify-between gap-3">
-            <div class="flex-1 min-w-0 flex items-center gap-2">
+            <div class="flex-1 min-w-0 flex flex-wrap items-center gap-2">
               <!-- 게시판 이름 -->
-              <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded flex-shrink-0">{{comment.board_name}}</span>
+              <span class="inline-block px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded flex-shrink-0 truncate max-w-32">{{comment.board_name}}</span>
               <!-- 원글 제목 -->
               <span class="text-base font-medium text-gray-900 dark:text-white truncate">{{comment.post_title}}</span>
             </div>
@@ -108,7 +108,7 @@
             <span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 whitespace-nowrap" title="{{comment.created_at ?? ''}}">{{comment.created_at_formatted ?? ''}}</span>
           </div>
           <!-- 댓글 내용 요약 (2줄) -->
-          <p data-if="{{comment.content}}" class="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2">{{comment.content}}</p>
+          <p data-if="{{comment.content}}" class="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2 break-words">{{comment.content}}</p>
         </button>
       </div>
       <!-- 댓글 없음 -->

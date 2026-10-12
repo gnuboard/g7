@@ -32,9 +32,9 @@
         </div>
         <!-- 게시글 목록 -->
         <div data-if="{{userPosts.data &amp;&amp; !userPosts.error}}" class="space-y-6">
-          <!-- 브레드크럼 (1행) -->
+          <!-- 브레드크럼 (1행). 경로의 이름은 한 줄 … 로 자르고, 아래 제목은 줄을 바꿔 모두 보인다(#143). -->
           <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
-            <button class="hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors">
+            <button class="min-w-0 truncate hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors">
               <on type="click">
                 <navigate path="/users/{{route.userId}}"/>
               </on>
@@ -47,8 +47,8 @@
           <div class="mb-4">
             <!-- 2행: 타이틀 -->
             <div class="flex items-center gap-2">
-              <icon name="file-lines" size="xl" class="text-gray-900 dark:text-white"/>
-              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{userProfile.data?.name ?? ''}}$t:user.profile.posts_suffix</h1>
+              <icon name="file-lines" size="xl" class="text-gray-900 dark:text-white shrink-0"/>
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere">{{userProfile.data?.name ?? ''}}$t:user.profile.posts_suffix</h1>
             </div>
             <!-- 3행: 총 게시글 수 -->
             <span class="text-sm text-gray-500 dark:text-gray-400 mt-1 block text-right">$t:user.profile.total_posts|count={{userPosts.data?.total ?? 0}}</span>
@@ -78,7 +78,7 @@
                 <!-- 제목 영역 (배지 + 제목 + 댓글수) -->
                 <div class="col-span-1 md:col-span-6 flex items-center gap-2 min-w-0 overflow-hidden">
                   <!-- 게시판명 배지 (모바일용) -->
-                  <span class="md:hidden flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap">{{post.board_name}}</span>
+                  <span class="md:hidden flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap truncate max-w-32">{{post.board_name}}</span>
                   <!-- 카테고리 배지 -->
                   <span data-if="{{post.category}}" class="flex-shrink-0 text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded whitespace-nowrap">{{post.category}}</span>
                   <!-- 비밀글 아이콘 -->

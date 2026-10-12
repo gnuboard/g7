@@ -36,10 +36,11 @@
             ]
         },
         {
+            "comment": "이름·설명은 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름이 카드 밖으로 넘쳐 화면 전체에 가로 스크롤을 만들었다(#143).",
             "type": "basic",
             "name": "H2",
             "props": {
-                "className": "text-xl font-bold mb-2"
+                "className": "text-xl font-bold mb-2 break-words"
             },
             "text": "{{_global.settings?.general?.site_name ?? 'Site'}}$t:home.welcome_suffix"
         },
@@ -47,7 +48,7 @@
             "type": "basic",
             "name": "P",
             "props": {
-                "className": "text-sm opacity-90 mb-4"
+                "className": "text-sm opacity-90 mb-4 break-words"
             },
             "text": "{{_global.settings?.general?.site_description ?? '$t:home.welcome_description'}}"
         },

@@ -29,14 +29,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex items-center gap-2"
+                        "className": "flex flex-wrap items-center gap-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-xs flex-shrink-0"
+                                "className": "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-xs flex-shrink-0 truncate max-w-32"
                             },
                             "text": "{{post.board_name}}"
                         },
@@ -53,7 +53,7 @@
                                 }
                             ],
                             "props": {
-                                "className": "justify-start font-medium text-gray-900 dark:text-white truncate flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer"
+                                "className": "justify-start font-medium text-gray-900 dark:text-white min-w-0 truncate flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer"
                             },
                             "text": "{{post.title}}"
                         },

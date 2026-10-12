@@ -103,7 +103,7 @@
                                     "name": "H1",
                                     "if": "{{!_global.settings?.general?.site_logo_url}}",
                                     "props": {
-                                        "className": "text-primary text-4xl font-bold mb-2"
+                                        "className": "text-primary text-4xl font-bold mb-2 break-words"
                                     },
                                     "children": [
                                         {

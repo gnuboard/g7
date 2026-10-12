@@ -34,10 +34,11 @@
             }
         },
         {
+            "comment": "본문 칸은 줄어들 수 있고(min-w-0) 댓글 글은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 URL 이 화면 밖으로 넘쳤다(#143).",
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-1"
+                "className": "flex-1 min-w-0"
             },
             "children": [
                 {
@@ -465,7 +466,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                        "className": "text-sm text-gray-700 dark:text-gray-300 wrap-anywhere"
                                     },
                                     "text": "{{comment?.content}}"
                                 }
@@ -540,7 +541,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                        "className": "text-sm text-gray-700 dark:text-gray-300 wrap-anywhere"
                                     },
                                     "text": "{{comment?.content}}"
                                 }
@@ -581,7 +582,7 @@
                     "name": "P",
                     "if": "{{(!comment?.deleted_at || comment?.is_cascade_deleted) && comment?.status !== 'blinded' && !(comment?.is_secret && comment?.content === null) && _global.commentEdit?.editingCommentId !== comment?.id}}",
                     "props": {
-                        "className": "text-gray-700 dark:text-gray-300"
+                        "className": "text-gray-700 dark:text-gray-300 wrap-anywhere"
                     },
                     "text": "{{comment?.content}}"
                 },

@@ -1,0 +1,27 @@
+feature: 관리자 긴 사이트 이름·사용자 이름 넘침 방지 (#143)
+
+description: |
+  사이트 이름이 공백 없이 길거나(예 `SirSoftBasicMenuReverse`, 52자 영문) 관리자 이름·이메일이 길어도 관리자 화면이 넘치지 않는다.
+  모바일 관리자 상단은 좌측(메뉴 단추 + 이름) 칸이 줄어들 수 있어 이름이 한 줄 … 로 잘리고 우측 테마·알림 단추는 화면 안에 남는다.
+  로그인 화면 제목은 줄바꿈해 카드 안에 머문다. PC 헤더 사용자 이름·이메일과 프로필 드롭다운은 한 줄 … 이고,
+  페이지 제목·설명은 줄바꿈한다.
+
+axes:
+  surface:
+    - mobile_header
+    - login_title
+    - desktop_user_info
+    - profile_dropdown
+    - page_header
+# 폭(297/320/375/1280)은 축이 아니라 각 테스트의 측정 조건이다.
+
+effects:
+  - mobile_header_right_in_viewport
+  - mobile_site_name_single_line_ellipsis
+  - login_title_wraps_within_card
+  - user_info_ellipsis_with_cap
+  - page_title_wraps
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-long-site-name.test.ts
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-long-site-name.spec.ts

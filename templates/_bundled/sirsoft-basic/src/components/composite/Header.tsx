@@ -388,18 +388,19 @@ const Header: React.FC<HeaderProps> = ({
       {/* 상단 바 */}
       <Div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Div className="flex items-center justify-between h-16">
-          {/* 로고 */}
-          <Button onClick={() => navigate('/')} className="flex items-center gap-2 flex-shrink-0 cursor-pointer">
+          {/* 로고 — 이름이 길면 이 칸이 줄어들고(min-w-0) 최대 20rem 에서 이름이 한 줄 … 로 잘린다. 우측 액션은 제자리를
+              지키고 검색창은 12rem 아래로 줄지 않는다 — 52자 이름에서 로고 칸이 646px 를 차지해 검색창이 57px 로 눌렸다(#143). */}
+          <Button onClick={() => navigate('/')} className="flex items-center gap-2 min-w-0 max-w-xs cursor-pointer">
             {logo ? (
-              <Img src={logo} alt={siteName} className="h-8" />
+              <Img src={logo} alt={siteName} className="h-8 max-w-full object-contain object-left" />
             ) : (
-              <Span className="text-xl font-bold text-gray-900 dark:text-white">{siteName}</Span>
+              <Span className="text-xl font-bold text-gray-900 dark:text-white truncate">{siteName}</Span>
             )}
           </Button>
 
           {/* 검색바 (데스크톱 전용) */}
           {!isMobile && (
-            <Form onSubmit={handleSearch} className="flex flex-1 max-w-lg mx-8">
+            <Form onSubmit={handleSearch} className="flex flex-1 min-w-48 max-w-lg mx-8">
               <Div className="relative w-full">
                 <Input
                   type="text"
@@ -417,7 +418,7 @@ const Header: React.FC<HeaderProps> = ({
           )}
 
           {/* 우측 액션 버튼들 */}
-          <Div className="flex items-center gap-2">
+          <Div className="flex items-center gap-2 shrink-0">
             {/* 다크모드 전환 */}
             <ThemeToggle
               autoText={t('common.theme.auto')}
@@ -533,7 +534,7 @@ const Header: React.FC<HeaderProps> = ({
                     name={user.name}
                     size="sm"
                   />
-                  <Span className="hidden sm:inline text-sm font-medium">{user.name}</Span>
+                  <Span className="hidden sm:inline text-sm font-medium truncate max-w-32">{user.name}</Span>
                   <Icon name="chevron-down" className="w-4 h-4" />
                 </Button>
 
@@ -548,8 +549,8 @@ const Header: React.FC<HeaderProps> = ({
                           name={user.name}
                           size="md"
                         />
-                        <Div>
-                          <Div className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</Div>
+                        <Div className="min-w-0">
+                          <Div className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.name}</Div>
                           <Div className="text-xs text-gray-500 dark:text-gray-400">{t('common.member')}</Div>
                         </Div>
                       </Div>
@@ -653,14 +654,15 @@ const Header: React.FC<HeaderProps> = ({
             </Button>
 
             {/* 게시판 링크 */}
+            {/* 게시판 탭은 최대 20rem 에서 이름을 한 줄 … 로 자른다 — 긴 이름 탭 하나가 줄 전체(768px)를 차지했다(#143). */}
             {visibleBoards.map((board) => (
               <Button
                 key={board.id}
                 onClick={() => navigate(`/board/${board.slug}`)}
-                className={getNavButtonClass(isActiveRoute(`/board/${board.slug}`))}
+                className={`flex items-center max-w-xs ${getNavButtonClass(isActiveRoute(`/board/${board.slug}`))}`}
               >
                 {board.icon && <Span className="mr-1">{board.icon}</Span>}
-                {board.name}
+                <Span className="min-w-0 truncate">{board.name}</Span>
               </Button>
             ))}
 
@@ -704,7 +706,7 @@ const Header: React.FC<HeaderProps> = ({
                           }`}
                         >
                           {board.icon && <Span className="mr-1">{board.icon}</Span>}
-                          {board.name}
+                          <Span className="block min-w-0 truncate">{board.name}</Span>
                         </Button>
                       );
                     })}

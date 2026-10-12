@@ -143,16 +143,17 @@ const MobileNav: React.FC<MobileNavProps> = ({
       >
         {/* 헤더 */}
         <Div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
-          <Button onClick={() => { onClose(); navigate('/'); }} className="flex items-center gap-2 cursor-pointer">
+          {/* 이름이 길면 이 칸이 줄어들고 이름은 한 줄 … — 닫기 단추는 제자리를 지킨다(#143). */}
+          <Button onClick={() => { onClose(); navigate('/'); }} className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer">
             {logo ? (
-              <Img src={logo} alt={siteName} className="h-8" />
+              <Img src={logo} alt={siteName} className="h-8 max-w-full object-contain object-left" />
             ) : (
-              <Span className="text-xl font-bold text-gray-900 dark:text-white">{siteName}</Span>
+              <Span className="text-xl font-bold text-gray-900 dark:text-white truncate">{siteName}</Span>
             )}
           </Button>
           <Button
             onClick={onClose}
-            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="shrink-0 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
             aria-label={t('common.close_menu')}
           >
             <Icon name="x" className="w-6 h-6 text-2xl leading-none" />
@@ -164,14 +165,14 @@ const MobileNav: React.FC<MobileNavProps> = ({
           <Div className="p-4 border-b border-gray-200 dark:border-gray-800">
             <Div className="flex items-center gap-3">
               {user.avatar ? (
-                <Img src={user.avatar} alt={user.name} className="w-12 h-12 rounded-full" />
+                <Img src={user.avatar} alt={user.name} className="w-12 h-12 shrink-0 rounded-full" />
               ) : (
-                <Div className="w-12 h-12 rounded-full bg-blue-500 dark:bg-blue-400 flex items-center justify-center text-white text-lg font-medium">
+                <Div className="w-12 h-12 shrink-0 rounded-full bg-blue-500 dark:bg-blue-400 flex items-center justify-center text-white text-lg font-medium">
                   {(user.name || 'U').charAt(0).toUpperCase()}
                 </Div>
               )}
-              <Div>
-                <P className="font-medium text-gray-900 dark:text-white">{user.name}</P>
+              <Div className="min-w-0">
+                <P className="font-medium text-gray-900 dark:text-white truncate">{user.name}</P>
                 <Button onClick={() => { onClose(); navigate('/mypage'); }} className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                   {t('common.mypage')}
                 </Button>
@@ -257,7 +258,7 @@ const MobileNav: React.FC<MobileNavProps> = ({
                   className="flex items-center gap-3 px-3 py-2 w-full text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
                 >
                   {board.icon && <Span>{board.icon}</Span>}
-                  {board.name}
+                  <Span className="min-w-0 truncate">{board.name}</Span>
                 </Button>
               </Li>
             ))}

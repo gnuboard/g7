@@ -118,7 +118,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-blue-600 dark:text-blue-400 shrink-0"
+                                                "className": "text-blue-600 dark:text-blue-400 shrink-0 truncate max-w-32"
                                             },
                                             "text": "{{post.board_name}}"
                                         },
@@ -135,7 +135,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm font-medium text-gray-900 dark:text-white text-left line-clamp-1"
+                                                "className": "min-w-0 wrap-anywhere text-sm font-medium text-gray-900 dark:text-white text-left line-clamp-1"
                                             },
                                             "text": "{{post.title}}"
                                         },

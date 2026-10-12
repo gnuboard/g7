@@ -31,7 +31,8 @@
         </h1>
         <p class="text-gray-600 dark:text-gray-400 mt-1">$t:board.popular.description</p>
       </div>
-      <div class="flex gap-2 mb-6">
+      <!-- 기간 단추는 칸이 모자라면 다음 줄로 내린다 — 297px 에서 마지막 단추가 화면 밖(302px)으로 나갔다(#143 실측). -->
+      <div class="flex flex-wrap gap-2 mb-6">
         <button class="{{(query.period ?? 'week') === 'today' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}">
           <on type="click">
             <navigate path="/boards/popular?period=today"/>

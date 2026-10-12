@@ -182,7 +182,8 @@ test.describe('FileUploader 를 initialFiles 없이 놓은 화면', () => {
     const errors: string[] = [];
     page.on('console', (m) => { if (m.type() === 'error' && /Maximum update depth/.test(m.text())) errors.push(m.text()); });
     page.on('pageerror', (e) => errors.push(String(e)));
-    await page.route(/\/api\/layouts\/sirsoft-admin_basic\/admin_dashboard(\?|$)/, async (route) => {
+    // 레이아웃 주소는 `admin_dashboard.json?v=…` 형태다(#615 정적 게시 이후) — `.json` 이 없는 패턴은 가로채지 못해 프로브가 주입되지 않았다
+    await page.route(/\/api\/layouts\/sirsoft-admin_basic\/admin_dashboard(\.json)?(\?|$)/, async (route) => {
       const res = await route.fetch();
       const json = await res.json();
       json.data.components.push({
@@ -197,16 +198,25 @@ test.describe('FileUploader 를 initialFiles 없이 놓은 화면', () => {
     await gotoAdmin(page, '/admin/dashboard');
     const probe = page.getByTestId('e2e-uploader-probe');
     await expect(probe.locator('input[type="file"]')).toHaveCount(1, { timeout: 30_000 });
+    // 대시보드 데이터 응답이 다 온 뒤에 관측한다 — 응답이 관측 창 안에 도착하면 그때마다 레이아웃이 다시 그려져
+    // 업로더 입력칸 속성(name·type)이 다시 쓰인다(응답 3.5초 지연 1회에 3건, 병렬 실행 부하에서 30건). 무한 갱신이 아니다.
+    await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2_000);
-    const mutations = await probe.evaluate(async (el) => {
-      let n = 0;
-      const mo = new MutationObserver((list) => { n += list.length; });
+    const records = await probe.evaluate(async (el) => {
+      const recs: string[] = [];
+      const mo = new MutationObserver((list) => {
+        for (const m of list) {
+          const t = m.target as Element;
+          recs.push(`${m.type}:${t.nodeName}${m.attributeName ? `@${m.attributeName}` : ''}+${m.addedNodes.length}-${m.removedNodes.length}:${(t.textContent ?? '').trim().slice(0, 24)}`);
+        }
+      });
       mo.observe(el, { subtree: true, childList: true, attributes: true, characterData: true });
       await new Promise((r) => setTimeout(r, 5_000));
       mo.disconnect();
-      return n;
+      return recs;
     });
-    expect(mutations).toBeLessThanOrEqual(5);
+    // 실패하면 무엇이 변했는지 메시지에 남긴다(변이 종류·대상·추가/제거 수)
+    expect(records.length, records.slice(0, 12).join('\n')).toBeLessThanOrEqual(5);
     expect(errors).toEqual([]);
   });
 });

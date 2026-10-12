@@ -2,11 +2,12 @@
 <partial description="게시판 기본형(basic) 인덱스. 헤더 + 필터 + 테이블형 목록 + 빈상태 + 페이지네이션 + 글쓰기 버튼">
   <div>
     <!-- 헤더 (게시판명 + 설명 + 글쓰기 버튼)
-         좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 J D-J12). -->
-    <div class="flex justify-between items-start gap-3 mb-6">
+         좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 J D-J12).
+         이름이 길어 둘이 한 줄에 못 들면 버튼 묶음이 다음 줄로 내린다(flex-wrap) — 297px 에서 제목 칸이 54px 로 눌려 26줄로 접혔다(#143). -->
+    <div class="flex flex-wrap justify-between items-start gap-3 mb-6">
       <div class="min-w-0">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{posts?.data?.board?.name ?? ''}}</h1>
-        <p data-if="{{posts?.data?.board?.description}}" class="text-gray-600 dark:text-gray-400 mt-1">{{posts?.data?.board?.description}}</p>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white break-words">{{posts?.data?.board?.name ?? ''}}</h1>
+        <p data-if="{{posts?.data?.board?.description}}" class="text-gray-600 dark:text-gray-400 mt-1 break-words">{{posts?.data?.board?.description}}</p>
       </div>
       <!-- 상단 액션 (관리자 진입 링크 + 글쓰기 버튼) -->
       <div class="flex items-center gap-2 shrink-0 whitespace-nowrap">
@@ -106,7 +107,7 @@
                 <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                 <!-- 블라인드 아이콘 -->
                 <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-500 dark:text-orange-400 flex-shrink-0"/>
-                <span class="text-sm font-medium truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}">{{post?.title}}</span>
+                <span class="text-sm font-medium min-w-0 truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}">{{post?.title}}</span>
                 <!-- 첨부파일 아이콘 -->
                 <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                 <span data-if="{{posts?.data?.board?.settings?.use_comment &amp;&amp; post?.comment_count > 0}}" class="text-blue-600 dark:text-blue-400 text-sm font-medium flex-shrink-0">[{{post?.comment_count}}]</span>
@@ -151,7 +152,8 @@
                     <icon data-if="{{post?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                     <!-- 블라인드 아이콘 -->
                     <icon data-if="{{post?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-500 dark:text-orange-400 flex-shrink-0"/>
-                    <span class="text-sm font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}">{{post?.title}}</span>
+                    <!-- 제목은 한 줄 … — 공백 없는 긴 제목이 N 배지·댓글 수를 화면 밖으로 밀었다(#143) -->
+                    <span class="text-sm font-medium min-w-0 truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}">{{post?.title}}</span>
                     <!-- 첨부파일 아이콘 -->
                     <icon data-if="{{post?.has_attachment}}" name="paperclip" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                     <span data-if="{{posts?.data?.board?.settings?.use_comment &amp;&amp; post?.comment_count > 0}}" class="text-blue-600 dark:text-blue-400 text-sm font-medium flex-shrink-0">[{{post?.comment_count}}]</span>

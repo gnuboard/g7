@@ -117,7 +117,7 @@
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap mb-1">
               <!-- 게시판 -->
-              <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">{{report.board_name ?? ''}}</span>
+              <span class="inline-block truncate max-w-32 px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">{{report.board_name ?? ''}}</span>
               <!-- 대상 구분 -->
               <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{report.target_type === 'comment' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}}">{{report.target_type_label ?? ''}}</span>
               <!-- 처리 상태 — 네 가지 색으로 갈린다 -->

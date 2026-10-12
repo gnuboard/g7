@@ -170,7 +170,7 @@
                                             "type": "basic",
                                             "name": "H1",
                                             "props": {
-                                                "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                                "className": "text-2xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere"
                                             },
                                             "text": "{{post?.data?.title ?? ''}}"
                                         },
@@ -1120,7 +1120,7 @@
                             "name": "Div",
                             "if": "{{post?.data?.is_guest_post || post?.data?.is_author || post?.data?.abilities?.can_manage || post?.data?.board?.use_reply || (_global.currentUser?.uuid && post?.data?.board?.use_report) || post?.data?.board?.use_scrap}}",
                             "props": {
-                                "className": "flex items-center justify-end gap-2 ml-auto"
+                                "className": "flex flex-wrap items-center justify-end gap-2 ml-auto"
                             },
                             "children": [
                                 {

@@ -217,8 +217,8 @@ export const UserProfile: React.FC<UserProfileProps> = ({
                 <Icon name={IconName.User} className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               </Div>
             )}
-            <Div className="flex-1 text-left">
-              <Div className="font-semibold text-gray-900 dark:text-white text-sm">{user.name}</Div>
+            <Div className="flex-1 min-w-0 text-left">
+              <Div className="font-semibold text-gray-900 dark:text-white text-sm truncate">{user.name}</Div>
               {user.role && (
                 <Div className="text-gray-500 dark:text-gray-400 text-xs">{user.role}</Div>
               )}
@@ -243,8 +243,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               });
             }}
           >
-            <Div className="font-semibold text-gray-900 dark:text-white">{user.name}</Div>
-            <Div className="text-gray-500 dark:text-gray-400 text-sm">{user.email}</Div>
+            {/* 이름·이메일은 드롭다운 폭 안에서 한 줄 … (#143) */}
+            <Div className="font-semibold text-gray-900 dark:text-white truncate">{user.name}</Div>
+            <Div className="text-gray-500 dark:text-gray-400 text-sm truncate">{user.email}</Div>
           </Div>
           {/* 언어 선택은 헤더 독립 버튼으로 일원화(드롭다운에서 제거) — 유저 템플릿 패리티(H-T7).
               languageText/availableLocales props 는 하위호환을 위해 유지하되 더 이상 사용하지 않는다. */}

@@ -36,7 +36,7 @@
         <div data-ref="logo_image_wrapper" data-if="{{_global.settings?.general?.site_logo_url}}" class="mb-4">
           <img data-ref="logo_image" src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? '그누보드7'}}" class="h-16 w-auto max-w-[200px] mx-auto object-contain"/>
         </div>
-        <h1 data-ref="logo" data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-primary text-4xl font-bold mb-2">
+        <h1 data-ref="logo" data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-primary text-4xl font-bold mb-2 break-words">
           <span data-ref="logo_text">{{_global.settings?.general?.site_name ?? '그누보드7'}}</span>
         </h1>
         <p data-ref="subtitle" class="text-label">$t:auth.login.subtitle</p>

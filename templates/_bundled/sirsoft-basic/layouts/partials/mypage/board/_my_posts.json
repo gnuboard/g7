@@ -414,7 +414,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-1 min-w-0 flex items-center gap-2"
+                                                "className": "flex-1 min-w-0 flex flex-wrap items-center gap-2"
                                             },
                                             "children": [
                                                 {
@@ -422,7 +422,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded flex-shrink-0"
+                                                        "className": "inline-block px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded flex-shrink-0 truncate max-w-32"
                                                     },
                                                     "text": "{{post.board_name}}"
                                                 },
@@ -466,7 +466,7 @@
                                     "name": "P",
                                     "if": "{{post.content_plain}}",
                                     "props": {
-                                        "className": "mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2"
+                                        "className": "mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2 break-words"
                                     },
                                     "text": "{{post.content_plain}}"
                                 },

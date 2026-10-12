@@ -3,9 +3,9 @@
   <div class="group flex w-full text-left gap-4 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
     <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white {{index === 0 ? 'bg-orange-500 dark:bg-orange-500' : index === 1 ? 'bg-yellow-500 dark:bg-yellow-500' : index === 2 ? 'bg-yellow-400 dark:bg-yellow-400' : 'bg-gray-400 dark:bg-gray-500'}}">{{index + 1}}</div>
     <div class="flex-1 min-w-0 flex flex-col gap-1.5">
-      <div class="flex items-center gap-2">
-        <span class="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-xs flex-shrink-0">{{post.board_name}}</span>
-        <button class="justify-start font-medium text-gray-900 dark:text-white truncate flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-xs flex-shrink-0 truncate max-w-32">{{post.board_name}}</span>
+        <button class="justify-start font-medium text-gray-900 dark:text-white min-w-0 truncate flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer">
           <on type="click">
             <navigate path="/board/{{post.board_slug}}/{{post.id}}"/>
           </on>

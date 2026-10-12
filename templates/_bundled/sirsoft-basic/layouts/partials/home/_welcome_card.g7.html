@@ -5,8 +5,9 @@
       <icon name="sparkles" class="text-xl"/>
       <span class="text-sm font-medium opacity-90">Welcome</span>
     </div>
-    <h2 class="text-xl font-bold mb-2">{{_global.settings?.general?.site_name ?? 'Site'}}$t:home.welcome_suffix</h2>
-    <p class="text-sm opacity-90 mb-4">{{_global.settings?.general?.site_description ?? '$t:home.welcome_description'}}</p>
+    <!-- 이름·설명은 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름이 카드 밖으로 넘쳐 화면 전체에 가로 스크롤을 만들었다(#143). -->
+    <h2 class="text-xl font-bold mb-2 break-words">{{_global.settings?.general?.site_name ?? 'Site'}}$t:home.welcome_suffix</h2>
+    <p class="text-sm opacity-90 mb-4 break-words">{{_global.settings?.general?.site_description ?? '$t:home.welcome_description'}}</p>
     <div class="flex gap-3">
       <button data-ref="register_button" data-if="{{!_global.currentUser?.uuid}}" class="px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer">
         <on type="click">

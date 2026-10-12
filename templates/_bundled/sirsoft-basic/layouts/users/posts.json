@@ -106,7 +106,7 @@
                                 },
                                 "children": [
                                     {
-                                        "comment": "브레드크럼 (1행)",
+                                        "comment": "브레드크럼 (1행). 경로의 이름은 한 줄 … 로 자르고, 아래 제목은 줄을 바꿔 모두 보인다(#143).",
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
@@ -126,7 +126,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
+                                                    "className": "min-w-0 truncate hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
                                                 },
                                                 "text": "{{userProfile.data?.name ?? ''}} $t:user.profile.back_to_profile"
                                             },
@@ -167,14 +167,14 @@
                                                         "props": {
                                                             "name": "file-lines",
                                                             "size": "xl",
-                                                            "className": "text-gray-900 dark:text-white"
+                                                            "className": "text-gray-900 dark:text-white shrink-0"
                                                         }
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "H1",
                                                         "props": {
-                                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                                            "className": "text-2xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere"
                                                         },
                                                         "text": "{{userProfile.data?.name ?? ''}}$t:user.profile.posts_suffix"
                                                     }
@@ -321,7 +321,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "md:hidden flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap"
+                                                                            "className": "md:hidden flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap truncate max-w-32"
                                                                         },
                                                                         "text": "{{post.board_name}}"
                                                                     },

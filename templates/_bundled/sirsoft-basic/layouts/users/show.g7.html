@@ -51,11 +51,11 @@
                 <responsive on="portable" size="lg"/>
               </avatar>
               <!-- 기본 정보 (일반 사용자) -->
-              <div data-if="{{profile.data?.status !== 'withdrawn'}}" class="flex-1 space-y-3">
-                <responsive on="portable" class="w-full space-y-3 text-center"/>
-                <!-- 이름 (배지 제거) -->
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-                  <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white"/>
+              <div data-if="{{profile.data?.status !== 'withdrawn'}}" class="flex-1 min-w-0 space-y-3">
+                <responsive on="portable" class="w-full min-w-0 space-y-3 text-center"/>
+                <!-- 이름 (배지 제거). 칸이 줄어들 수 있고(min-w-0) 이름·소개는 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름이 카드를 넘쳤다(#143). -->
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white break-words">
+                  <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white break-words"/>
                   {{profile.data?.name ?? '-'}}
                 </h2>
                 <!-- 가입일 -->
@@ -66,7 +66,7 @@
                   <span class="font-medium text-gray-700 dark:text-gray-300">{{profile.data?.created_at ?? '-'}}</span>
                 </div>
                 <!-- 자기소개 -->
-                <p data-if="{{profile.data?.bio}}" class="text-gray-600 dark:text-gray-300 whitespace-pre-wrap mt-4">{{profile.data?.bio}}</p>
+                <p data-if="{{profile.data?.bio}}" class="text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words mt-4">{{profile.data?.bio}}</p>
               </div>
               <!-- 기본 정보 (탈퇴한 사용자) -->
               <div data-if="{{profile.data?.status === 'withdrawn'}}" class="flex-1 space-y-3">
@@ -113,7 +113,7 @@
                   <!-- 제목 영역 -->
                   <div class="flex-1 min-w-0 flex items-center gap-2 overflow-hidden">
                     <!-- 게시판명 배지 -->
-                    <span class="flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap">{{post.board_name}}</span>
+                    <span class="flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap truncate max-w-32">{{post.board_name}}</span>
                     <!-- 카테고리 배지 -->
                     <span data-if="{{post.category}}" class="flex-shrink-0 text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded whitespace-nowrap">{{post.category}}</span>
                     <!-- 비밀글 아이콘 -->

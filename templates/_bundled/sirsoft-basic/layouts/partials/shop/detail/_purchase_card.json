@@ -80,7 +80,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "block text-sm text-gray-700 dark:text-gray-300 mb-1 break-words"
                                     },
                                     "text": "{{group.name_localized}}"
                                 },

@@ -110,9 +110,10 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 장」, 7.1.0 J D-J9). */}
       <Div className="flex-between flex-wrap gap-3 mb-lg">
         <Div className="min-w-0">
-          <H1 className="page-title">{title}</H1>
+          {/* 제목·설명은 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름이 들어간 제목도 화면을 넘지 않는다(#143). */}
+          <H1 className="page-title break-words">{title}</H1>
           {description && (
-            <P className="page-description">{description}</P>
+            <P className="page-description break-words">{description}</P>
           )}
         </Div>
 

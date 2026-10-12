@@ -19,6 +19,9 @@ axes:
     - desktop_currency_dropdown
     - guest_write_form_stacked
     - coupon_chip_single_line
+    - shop_search_row_narrow
+    - post_action_buttons_wrap
+    - popular_period_filter_wrap
 
 effects:
   - document_no_horizontal_overflow
@@ -33,3 +36,4 @@ effects:
 
 test_files:
   - templates/_bundled/sirsoft-basic/tests/Playwright/specs/mobile-viewport-overflow.spec.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/narrow-viewport-rows.test.ts

@@ -147,18 +147,18 @@
     <!-- === 모바일 헤더 (툴바) - 데스크톱에서 숨김 === -->
     <div data-ref="mobile_header" class="hidden">
       <responsive on="portable" class="flex items-center justify-between h-14 px-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30"/>
-      <!-- 모바일 헤더 좌측 - 로고 -->
-      <button data-ref="mobile_header_left" class="flex items-center cursor-pointer">
+      <!-- 모바일 헤더 좌측 - 로고. 이름이 길어도 우측 단추를 밀지 않도록 이 칸이 줄어들고(min-w-0 flex-1) 이름은 한 줄 … 로 자른다(#143 — 공백 없는 23자 이름에서 414px 까지 메뉴 단추가 화면 밖, 공백·한글 긴 이름은 4줄로 접혀 h-14 헤더를 위아래로 넘쳤다). -->
+      <button data-ref="mobile_header_left" class="flex items-center min-w-0 flex-1 cursor-pointer">
         <on type="click">
           <navigate path="/"/>
         </on>
-        <div data-if="{{_global.settings?.general?.site_logo_url}}">
-          <img src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? 'Site'}}" class="h-8 w-auto"/>
+        <div data-if="{{_global.settings?.general?.site_logo_url}}" class="min-w-0">
+          <img src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? 'Site'}}" class="h-8 w-auto max-w-full object-contain object-left"/>
         </div>
-        <span data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-lg font-bold text-gray-900 dark:text-white">{{_global.settings?.general?.site_name ?? 'Site'}}</span>
+        <span data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-lg font-bold text-gray-900 dark:text-white truncate">{{_global.settings?.general?.site_name ?? 'Site'}}</span>
       </button>
       <!-- 모바일 헤더 우측 - 액션 버튼들 -->
-      <div data-ref="mobile_header_right" class="flex items-center gap-1">
+      <div data-ref="mobile_header_right" class="flex items-center gap-1 shrink-0">
         <!-- 다크모드 전환 -->
         <theme-toggle data-type="composite" data-ref="mobile_theme_btn" autoText="$t:common.theme.auto" lightText="$t:common.theme.light" darkText="$t:common.theme.dark"/>
         <!-- 알림센터 드롭다운 — 모바일 (PC와 동일 순서: 알림 → 장바구니) -->
@@ -475,8 +475,8 @@
                 <navigate path="/board/{{board.slug}}"/>
               </sequence>
             </on>
-            <span>{{board.name}}</span>
-            <span data-if="{{board.post_count > 0}}" class="text-xs text-gray-500 dark:text-gray-400">{{board.post_count}}</span>
+            <span class="min-w-0 truncate">{{board.name}}</span>
+            <span data-if="{{board.post_count > 0}}" class="text-xs text-gray-500 dark:text-gray-400 shrink-0">{{board.post_count}}</span>
           </button>
         </div>
       </div>
