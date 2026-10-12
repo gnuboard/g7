@@ -55,6 +55,7 @@ use App\Http\Controllers\Api\Admin\SeoOgPreviewController;
 use App\Http\Controllers\Api\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Api\Admin\TemplateController as AdminTemplateController;
 use App\Http\Controllers\Api\Admin\TemplateCustomTranslationController as AdminTemplateCustomTranslationController;
+use App\Http\Controllers\Api\Admin\UnplacedBundledNoticeController as AdminUnplacedBundledNoticeController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\Auth\AuthController as UserAuthController;
 use App\Http\Controllers\Api\Auth\NotificationController as UserNotificationController;
@@ -674,6 +675,15 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('auto-deactivated', [AdminExtensionRecoveryController::class, 'autoDeactivated'])
             ->middleware('permission:admin,core.plugins.activate|core.modules.activate|core.templates.activate,false')
             ->name('api.admin.extensions.auto-deactivated');
+        // 미배치 공식 번들 안내(#146) — 조회는 네 종류 중 하나의 조회 권한이면 열리고, 컨트롤러가 권한 없는 종류를 비운다.
+        Route::get('unplaced-bundled', [AdminUnplacedBundledNoticeController::class, 'index'])
+            ->middleware('permission:admin,core.modules.read|core.plugins.read|core.templates.read|core.language_packs.read,false')
+            ->name('api.admin.extensions.unplaced-bundled');
+        // 닫기는 관리자별이며 그 종류의 조회 권한(core.{type}s.read)을 요구한다.
+        Route::post('unplaced-bundled/{type}/dismiss', [AdminUnplacedBundledNoticeController::class, 'dismiss'])
+            ->where('type', 'module|plugin|template|language_pack')
+            ->middleware('permission:admin,core.{type}s.read')
+            ->name('api.admin.extensions.unplaced-bundled.dismiss');
         // 복구·닫기는 그 확장 종류의 활성화 권한(core.{type}s.activate)을 요구한다.
         Route::post('{type}/{identifier}/recover', [AdminExtensionRecoveryController::class, 'recover'])
             ->where('type', 'plugin|module|template')

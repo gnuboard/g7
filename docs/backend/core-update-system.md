@@ -131,8 +131,41 @@
 | `--local` | 현재 코드베이스를 소스로 사용 (GitHub 스킵) |
 | `--force` | 버전 비교 스킵, 동일 버전이어도 강제 실행 |
 | `--vendor-mode=auto\|composer\|bundled` | vendor 설치 모드 지정 (기본 `auto` — composer 가능 시 composer, 불가 시 vendor-bundle.zip 추출). `bundled` 강제 시 공유 호스팅에서도 설치 가능 |
+| `--bundled-sources=none\|all\|식별자,…` | 설치되지 않았고 이 프로젝트에도 없는 공식 번들을 어떻게 할지 미리 정한다(7.1.1+). `none` 배치하지 않음, `all` 모두 배치, 식별자 목록은 그것만 배치(유형이 겹치면 `plugin:식별자`). 미지정 시 대화형은 묻고, 비대화형(`--force`·`--no-interaction`·응답 불가)은 `none`. 배포본에 없는 식별자·알 수 없는 유형은 유지보수 모드 전에 실패 |
 
 > `--source` / `--zip` / `--local` 은 **상호 배타적**입니다. 동시 지정 시 커맨드는 시작 전에 FAILURE(1) 로 종료됩니다.
+
+### 공식 번들 배치 판정 (7.1.1+)
+
+새 배포본에는 공식 번들(모듈·플러그인·템플릿과 그 언어팩)이 `{modules,plugins,templates,lang-packs}/_bundled/` 로 들어 있다. 7.1.0 까지는 Step 7 이 이 트리를 통째로 배치해, 설치하지 않은 번들과 운영자가 지운 번들이 업데이트마다 다시 깔렸다(공개 #146). 7.1.1 부터는 아래 규칙으로 **배치할 번들(P)** 과 **건너뛸 번들(U)** 을 먼저 정한다.
+
+| 구분 | 규칙 |
+| --- | --- |
+| 항상 갱신 | 설치된 번들(DB 행 존재, 상태 무관), 디스크에 이미 있는 번들, 그리고 이들의 **새 판 manifest** `dependencies` 추이 폐포 중 배포본에 있는 번들(의존성으로 배치) |
+| 운영자 선택 | 나머지(디스크에도 없고 설치되지도 않은 번들)는 [배치하지 않음 / 모두 배치 / 골라서 배치] 로 묻는다. 고른 번들의 의존 번들은 자동으로 함께 배치한다 |
+| 언어팩 | `scope=core` 팩은 항상 배치. 확장 팩은 대상 확장이 배치·설치되거나 팩 자신이 설치·디스크에 있을 때만 배치 |
+| 판정 밖 | 배포본 목록에 없는 사용자 자체 `_bundled/{id}` 는 판정 대상이 아니며 그대로 보존 |
+
+묻는 시점은 소스별로 가장 이르다. `--source`·`--local`·`--zip` 은 시작 확인 직후, **유지보수 모드를 켜기 전**에 묻는다(`--zip` 은 압축을 풀지 않고 목록만 읽으며, PHP zip 확장이 없으면 추출 직후로 미룬다). GitHub 에서 받는 경우만 Step 4 다운로드 직후 유지보수 중에 묻고, 질문 앞에 「사이트가 유지보수 중입니다」를 표시한다. 그 시점에 `--bundled-sources` 의 식별자가 배포본에 없으면 백업·파일 적용 전이므로 받은 배포본을 지우고 유지보수를 풀고 실패로 끝낸다.
+
+판정 결과는 `storage/app/core_update/bundled_sources.json` 에 남는다(미배치 목록·의존성으로 배치한 번들·고른 번들·해시). 관리자 목록 화면 안내와 `core:bundled-sources` 가 이 기록을 쓰며, 업데이트가 롤백되면 이전 기록으로 되돌린다. 완료 요약은 기존 설치 확장 업데이트, 의존성으로 배치한 번들(필요로 한 확장 표시), 고른 번들, 배치하지 않은 번들(나중에 배치하는 명령 안내)의 4구분으로 출력하고, 디스크에 있던 미설치 번들 갱신 수를 한 줄 덧붙인다.
+
+> **효력 시점**: Step 7 은 업데이트를 실행하는 쪽(이전 버전)의 코드로 돈다. 그래서 이 판정은 **7.1.1 로 올린 뒤의 업데이트부터** 적용되고, 7.1.0 → 7.1.1 업데이트는 7.1.0 코드가 돌려 지금까지처럼 모두 배치한다. 이미 깔린 쓰지 않는 번들은 `php artisan core:bundled-sources prune` 으로 정리한다(아래 「사후 관리 명령」).
+
+### 사후 관리 명령: core:bundled-sources (7.1.1+)
+
+```bash
+php artisan core:bundled-sources list                         # 배포본 번들 × 디스크 × 설치 상태 표 + 기록 갱신
+php artisan core:bundled-sources place sirsoft-totp           # 그 번들 + 의존 번들 + 대상 언어팩을 _bundled 로 배치 (설치는 별도)
+php artisan core:bundled-sources prune                        # 정리 대상 미리보기 (삭제 없음)
+php artisan core:bundled-sources prune --force                # 실제 삭제
+php artisan core:bundled-sources prune --force --include-modified  # 배포본과 다른 파일이 있는 폴더도 삭제
+```
+
+- 배포본은 `--source`(디렉토리) > `--zip` > GitHub 의 현재 코어 버전 태그 순으로 고른다. 배포본의 코어 버전이 현재와 다르면 거부한다(다른 판 번들을 섞지 않음). GitHub 다운로드는 격리 디렉토리에 받고 끝나면 지운다.
+- `list` 는 배포본을 못 읽으면 같은 버전의 기록 파일로, 그것도 없으면 디스크·설치 상태만 경고와 함께 보인다.
+- `prune` 대상 = 배포본 번들 ∩ 디스크 − 설치됨 − 설치된 확장의 의존 대상 − 남는 번들의 의존 대상(반복 축소). 배포본과 md5 가 다르거나 배포본에 없는 파일이 있는 폴더는 「수정됨, 보존」과 다른 파일 목록을 출력하고 `--include-modified` 일 때만 지운다. 확장 언어팩은 팩이 미설치이고 대상 확장 소스가 정리되거나 이미 없을 때 함께 정리하며 core 팩은 대상이 아니다. 배포본 목록에 없는 사용자 자체 `_bundled/{id}` 는 어떤 경우에도 지우지 않는다. 정리한 번들은 미배치 안내에 다시 올리지 않는다.
+- 웹 인스톨러로 새로 설치한 사이트는 배포본의 번들을 그대로 두므로, 쓰지 않을 번들은 설치 뒤 `prune` 으로 정리한다.
 
 ### Step 4: 다운로드 및 추출
 
@@ -219,6 +252,10 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
   `preserveLinkPaths: ['storage']` 화이트리스트로 링크/junction 을 보존 (#43, 아래 §참조)
 
 공통:
+- 미배치 공식 번들 건너뛰기(7.1.1+): 위 「공식 번들 배치 판정」의 U 경로(`plugins/_bundled/{id}` 등)를
+  증분·--prune·백업 부재 세 모드 모두에서 복사와 orphan 정리 양쪽에서 건너뛴다(skipPaths).
+  Step 6.5 의 3-way 산출과 롤백 manifest 도 같은 목록으로 건너뛰어 적용 목록과 일치시킨다.
+  excludes 의 「이름 매치(모든 깊이)」와 달리 경로가 같거나 그 하위일 때만 건너뛴다.
 - 자동 발견 폴백: targets 에 미등재된 source 최상위 항목도 스캔하여 적용
   (config('app.update.protected_paths') 와 config('app.update.excludes') 매치 시 스킵)
 - FilePermissionHelper::copyDirectory() 사용 → 원본 파일 권한 보존

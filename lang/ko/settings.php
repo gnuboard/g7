@@ -212,6 +212,90 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | 공식 번들 소스 배치 (core:update --bundled-sources, core:bundled-sources) (#146)
+    |--------------------------------------------------------------------------
+    */
+    'bundled_sources' => [
+        'types' => [
+            'module' => '모듈',
+            'plugin' => '플러그인',
+            'template' => '템플릿',
+            'language_pack' => '언어팩',
+        ],
+        'sample_suffix' => ' (샘플)',
+        'item_line' => '  [:type] :identifier — :name (:version):sample',
+
+        // core:update 질문
+        'prompt_intro' => '이 프로젝트에 없는 공식 번들 확장 :count개가 새 배포본에 있습니다 (설치된 확장과 그 의존 확장은 자동으로 갱신됩니다).',
+        'maintenance_warning' => '사이트가 유지보수 중입니다 — 빠르게 답해 주세요.',
+        'choice_question' => '어떻게 할까요?',
+        'choice_none' => '배치하지 않음 (기본)',
+        'choice_all' => '모두 배치',
+        'choice_pick' => '골라서 배치',
+        'pick_question' => '배치할 번들을 고르세요 (쉼표로 여러 개)',
+        'dependency_added' => '의존성으로 함께 배치: :items',
+        'noninteractive_default' => '비대화형 실행이고 --bundled-sources 를 지정하지 않아, 이 프로젝트에 없는 공식 번들 :count개를 배치하지 않습니다.',
+        'option_applied' => '--bundled-sources=:value 적용: 미배치 :unplaced개, 선택 배치 :selected개',
+        'inventory_deferred' => 'ZIP 목록을 읽을 수 없어 공식 번들 배치 여부는 압축을 푼 뒤에 묻습니다.',
+
+        // core:update 완료 요약
+        'summary_title' => '── 공식 번들 처리 결과 ──',
+        'summary_installed' => '1) 기존 설치 확장 업데이트: 성공 :success, 실패 :failed, 건너뜀 :skipped',
+        'summary_installed_none' => '1) 기존 설치 확장 업데이트: 새 버전 없음',
+        'summary_dependency' => '2) 의존성으로 배치한 번들: :count개',
+        'summary_dependency_item' => '     :label ← :required_by',
+        'summary_selected' => '3) 운영자 선택으로 배치한 번들: :count개',
+        'summary_selected_item' => '     :label',
+        'summary_unplaced' => '4) 배치하지 않은 번들: :count개',
+        'summary_unplaced_item' => '     :label',
+        'summary_place_hint' => '   필요할 때 배치하세요: php artisan core:bundled-sources place <식별자>',
+        'summary_on_disk' => '디스크에 있던 미설치 번들 :count개는 새 버전으로 갱신했습니다.',
+        'summary_selection_aborted' => '공식 번들 선택이 잘못되어 업데이트를 중단했습니다. 파일은 바뀌지 않았고 유지보수 모드를 해제했습니다.',
+
+        // core:bundled-sources
+        'source_resolving_github' => 'GitHub 에서 코어 :version 배포본을 내려받아 번들 목록을 읽습니다...',
+        'source_used' => '배포본: :source (코어 :version)',
+        'source_failed' => '배포본을 읽지 못했습니다: :error',
+        'record_fallback' => '배포본을 읽지 못해 기록 파일(:recorded_at)로 표시합니다.',
+        'disk_db_only' => '배포본도 기록 파일도 없어 디스크와 설치 상태만 표시합니다. 배포본 대조는 --source 또는 --zip 으로 지정하세요.',
+        'list_headers' => [
+            'type' => '유형',
+            'identifier' => '식별자',
+            'version' => '버전',
+            'disk' => '디스크',
+            'installed' => '설치',
+            'required' => '의존 대상',
+        ],
+        'yes' => '예',
+        'no' => '아니오',
+        'list_record_updated' => '기록 파일을 갱신했습니다 (미배치 :count개).',
+        'place_done' => '배치함: :label',
+        'place_already' => '이미 디스크에 있어 건너뜀: :label',
+        'place_summary' => ':count개를 배치했습니다. 설치는 관리자 화면 또는 php artisan {module|plugin|template}:install 로 하세요.',
+        'prune_preview_title' => '정리 대상 미리보기 (삭제하지 않음 — 실제로 지우려면 --force):',
+        'prune_none' => '정리할 번들이 없습니다.',
+        'prune_removed' => '삭제함: :label',
+        'prune_modified_kept' => '수정됨, 보존: :label (배포본과 다른 파일 :count개)',
+        'prune_modified_file' => '     :file',
+        'prune_modified_hint' => '수정된 폴더도 지우려면 --include-modified 를 함께 지정하세요.',
+        'prune_protected_dependency' => '의존 대상이라 보존: :label (:required_by)',
+        'prune_no_release_for_modified' => '배포본이 없어 수정 여부를 확인할 수 없습니다 — 수정 여부와 무관하게 지우려면 --include-modified 를 지정하세요.',
+        'prune_summary' => ':count개를 삭제했습니다.',
+        'unknown_action' => '알 수 없는 동작입니다: :action (list|place|prune)',
+
+        'errors' => [
+            'unknown_type' => '알 수 없는 번들 유형입니다: :type (module|plugin|template|language_pack)',
+            'not_in_release' => '배포본에 없는 공식 번들입니다: :identifier',
+            'ambiguous' => '식별자 :identifier 가 여러 유형에 있습니다. 유형을 붙여 지정하세요: :candidates',
+            'version_mismatch' => '배포본 코어 버전(:source)이 현재 코어 버전(:current)과 다릅니다. 같은 버전의 배포본을 지정하세요.',
+            'identifiers_required' => '배치할 번들 식별자를 하나 이상 지정하세요.',
+            'release_required' => '배포본을 읽지 못해 배치할 수 없습니다. --source 또는 --zip 으로 지정하세요.',
+            'not_unplaced_target' => '정리 대상이 아닙니다(설치됨 또는 배포본에 없음): :identifier',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | 신뢰 프록시 진단 (#124)
     |--------------------------------------------------------------------------
     |

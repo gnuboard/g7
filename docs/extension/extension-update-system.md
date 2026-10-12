@@ -760,6 +760,7 @@ Body: { "layout_strategy": "keep" }
 > `--force` (update): 버전 비교를 건너뛰고 강제 재설치 (파일 손상, 수동 수정 복원 시 사용)
 > `--force` (install): 이미 설치된 확장이라도 `_bundled`/`_pending` 원본으로 활성 디렉토리를 덮어쓰고 재설치 — 불완전 활성 디렉토리(manifest 누락 등) 복구 시 사용
 > 코어 업데이트 (`core:update`) 완료 후에는 `_bundled` 에 새 버전이 있는 확장을 감지하여 일괄 업데이트 인터랙티브 프롬프트가 자동으로 표시됨
+> 7.1.1+ 코어 업데이트는 새 배포본의 `_bundled` 를 통째로 배치하지 않는다 — 설치된 확장·그 의존 번들·이미 디스크에 있는 번들만 갱신하고, 나머지는 운영자가 고른 것만 배치한다(`--bundled-sources`). 일괄 업데이트 대상은 원래 DB 에 설치된 확장뿐이라 이 판정과 겹치지 않는다. 배치하지 않은 번들은 나중에 `php artisan core:bundled-sources place <id>` 로 `_bundled` 에 놓은 뒤 `{type}:install` 로 설치한다([코어 업데이트 시스템 — 공식 번들 배치 판정](../backend/core-update-system.md#공식-번들-배치-판정-711))
 > 활성 디렉토리 로드 시 manifest(`module.json`·`plugin.json`·`template.json`) 가 없으면 경고 로그 + 복구 힌트(`install {id} --force`) 가 출력됨
 > **CLI·어드민 UI 동일 훅**: 설치·활성화·업데이트·제거 커맨드는 어드민 UI 와 같은 완료 훅(`after_install`·`after_activate`·`after_update`/`after_version_update`·`after_uninstall`)을 한 번 발화한다 — 발화 주체가 Service 가 아니라 Manager 라서, 커맨드가 Manager 를 직접 불러도 큐 워커 재시작·활동 로그·언어팩 동기화가 똑같이 돈다(§12 훅 표)
 

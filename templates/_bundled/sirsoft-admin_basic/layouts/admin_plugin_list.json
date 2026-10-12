@@ -55,6 +55,27 @@
                 }
             },
             "comment": "코어 버전이 올라 자동 비활성된 확장 알림. 모듈 화면과 **같은 API** 를 부르고 여기서는\n       응답의 `plugins` 만 읽는다."
+        },
+        {
+            "id": "unplaced_bundled_notice",
+            "label_key": "$t:editor.data_source.unplaced_bundled_notice",
+            "type": "api",
+            "endpoint": "/api/admin/extensions/unplaced-bundled",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "fallback": {
+                "data": {
+                    "items": {
+                        "modules": [],
+                        "plugins": [],
+                        "templates": [],
+                        "language_packs": []
+                    },
+                    "core_version": ""
+                }
+            },
+            "comment": "코어 배포본에 있지만 이 프로젝트에 배치하지 않은 공식 번들 안내(#146). 모듈·템플릿·언어팩 화면과\n       **같은 API** 를 부르고 여기서는 응답의 `plugins` 만 읽는다. 숨김 샘플·설치·디스크·닫은 관리자는 서버가 거른다."
         }
     ],
     "initLocal": {
@@ -66,7 +87,8 @@
     "transition_overlay": {
         "wait_for": [
             "plugins",
-            "auto_deactivated_banner"
+            "auto_deactivated_banner",
+            "unplaced_bundled_notice"
         ]
     },
     "init_actions": [
@@ -540,6 +562,168 @@
                                                         ]
                                                     }
                                                 ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "미배치 공식 번들 안내(#146). [닫기]는 이 관리자에게서만 숨기고(다음 기록에서 다시 보임),\n        배치·정리하면 서버가 항목을 빼 모두에게서 사라진다. 명령은 클릭 한 번에 전체 선택된다.",
+                        "id": "unplaced_bundled_notice_wrapper",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{(unplaced_bundled_notice?.data?.items?.plugins?.length ?? 0) > 0}}",
+                        "props": {
+                            "className": "alert-info mb-4",
+                            "role": "status"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-start justify-between gap-4 w-full"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-start gap-3 flex-1 min-w-0"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "circle-info",
+                                                    "className": "text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex-1 min-w-0"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "unplaced_bundled_notice_title",
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "text-sm font-medium text-info-soft mb-1 break-words"
+                                                        },
+                                                        "text": "$t:extensions.unplaced_bundled.title_plugins|version={{unplaced_bundled_notice?.data?.core_version ?? ''}}|count={{unplaced_bundled_notice?.data?.items?.plugins?.length ?? 0}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "text-xs text-info-soft mb-2 break-words"
+                                                        },
+                                                        "text": "$t:extensions.unplaced_bundled.description"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "row-stack"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "iteration": {
+                                                                    "source": "{{unplaced_bundled_notice?.data?.items?.plugins ?? []}}",
+                                                                    "item_var": "notice_item"
+                                                                },
+                                                                "props": {
+                                                                    "className": "text-info-soft break-words"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "font-mono"
+                                                                        },
+                                                                        "text": "{{notice_item.identifier}}"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": " — {{notice_item.name}} ({{notice_item.version}})"
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "text-xs text-info-soft mt-2"
+                                                        },
+                                                        "text": "$t:extensions.unplaced_bundled.command_label"
+                                                    },
+                                                    {
+                                                        "id": "unplaced_bundled_notice_command",
+                                                        "type": "basic",
+                                                        "name": "Code",
+                                                        "props": {
+                                                            "className": "block mt-1 px-2 py-1 rounded font-mono text-xs break-all select-all bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                                                        },
+                                                        "text": "{{unplaced_bundled_notice?.data?.commands?.plugins ?? ''}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "unplaced_bundled_notice_dismiss",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "이 관리자에게서만 플러그인 안내를 닫는다(번들 자체는 그대로 미배치다).\n                   성공하면 안내 소스만 다시 받아 블록이 사라졌는지 확인한다.",
+                                                "type": "click",
+                                                "handler": "apiCall",
+                                                "target": "/api/admin/extensions/unplaced-bundled/plugin/dismiss",
+                                                "auth_required": true,
+                                                "params": {
+                                                    "method": "POST"
+                                                },
+                                                "onSuccess": {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "unplaced_bundled_notice"
+                                                    }
+                                                },
+                                                "onError": {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "shrink-0 text-info-soft hover:underline",
+                                            "aria-label": "$t:extensions.unplaced_bundled.dismiss"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "times",
+                                                    "size": "xs"
+                                                }
                                             }
                                         ]
                                     }

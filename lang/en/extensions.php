@@ -50,6 +50,8 @@ return [
         'recovered_success' => 'Extension has been re-activated.',
         'dismissed' => 'Alert dismissed.',
         'auto_deactivated_listed' => 'Auto-deactivated extensions listed.',
+        'unplaced_bundled_listed' => 'Official bundles not placed in this project.',
+        'unplaced_bundled_dismissed' => 'Notice dismissed.',
         'recover_action' => 'Re-activate',
         'dismiss_action' => 'Dismiss alert',
         'static_publish_failed_title' => 'Failed to generate startup files',

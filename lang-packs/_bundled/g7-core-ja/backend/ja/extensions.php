@@ -46,6 +46,8 @@ return [
         'recovered_success' => '拡張が再度有効化されました。',
         'dismissed' => '通知を閉じました。',
         'auto_deactivated_listed' => '自動無効化された拡張の一覧です。',
+        'unplaced_bundled_listed' => '配置していない公式バンドルの案内です。',
+        'unplaced_bundled_dismissed' => '案内を閉じました。',
         'recover_action' => '再度有効化',
         'dismiss_action' => '通知を閉じる',
         'static_publish_failed_title' => '初期画面ファイルの生成に失敗',

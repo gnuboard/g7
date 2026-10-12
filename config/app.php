@@ -326,10 +326,13 @@ return [
         // fast path 가 영구 꺼진다(사이트는 API 폴백으로 정상). 임시 산출물(사용자 데이터 아님)이므로
         // extension_backups 와 같은 근거로 chown 대상.
         //
+        // `storage/app/core_update`: 미배치 공식 번들 기록(`bundled_sources.json`, #146). sudo 업데이트가 root
+        // 소유로 쓰면 관리자 목록 안내 API(웹 계정)가 읽지 못하므로 업데이트 뒤 원래 소유자로 되돌린다.
+        //
         // 환경변수 `G7_UPDATE_RESTORE_OWNERSHIP` 로 공유 호스팅 등 축소 필요 시 재정의 가능.
         'restore_ownership' => array_filter(array_map('trim', explode(',', env(
             'G7_UPDATE_RESTORE_OWNERSHIP',
-            'storage/logs,storage/framework,storage/app/core_pending,storage/app/extension_backups,storage/app/core_backups,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending,public/build/ext'
+            'storage/logs,storage/framework,storage/app/core_pending,storage/app/extension_backups,storage/app/core_backups,storage/app/core_update,bootstrap/cache,vendor,modules,modules/_pending,plugins,plugins/_pending,templates,templates/_pending,lang-packs,lang-packs/_pending,public/build/ext'
         )))),
         // 7.0.0-beta.3+: 그룹 쓰기 권한 비대칭 정상화 대상.
         // sudo root 로 실행된 업데이트가 umask 022 로 신규 생성한 하위 디렉토리/파일이

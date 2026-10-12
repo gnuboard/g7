@@ -1,0 +1,100 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축 곱(도메인 4 × 설치 2 × 디스크 2 × 의존 4 × 선택 7 × 적용 모드 3 × 소스 5 …)은 수천 조합이라 개별 docblock 으로 전개하지 않는다. 각 축은 데이터 프로바이더(적용 모드 3종, 선택 4종, 잘못된 선택 3종, zip 접두사 2종, 옵션 3종)와 축별 대표 케이스로 검증하고, 후속 효과(effects)는 전부 테스트 docblock 에 매핑한다.
+
+feature: core_update_bundled_sources
+
+description: |
+  공개 #146. core:update 가 새 배포본의 `_bundled` 를 통째로 배치하던 동작을 바꾼다. 설치됐거나 디스크에 있는
+  공식 번들과 그 의존 번들(새 판 manifest 추이 폐포)은 항상 갱신하고, 디스크에도 없고 설치되지도 않은 번들은
+  [배치하지 않음 / 모두 배치 / 골라서 배치] 로 묻는다(비대화형은 --bundled-sources, 없으면 none).
+  --source/--zip/--local 은 유지보수 모드 전에, GitHub 경로는 다운로드 직후 경고와 함께 묻는다.
+  Step 6.5(롤백 manifest)·Step 7(파일 적용)은 증분·prune·백업 부재 세 모드 모두 skipPaths 로 미배치 경로를 건너뛴다.
+  언어팩은 core 팩 항상, 확장 팩은 대상이 배치·설치되거나 팩 자신이 설치·디스크에 있을 때만 배치한다.
+  결과는 storage/app/core_update/bundled_sources.json 에 기록하고(롤백 시 이전 기록 복원), 완료 요약은 4구분으로 출력한다.
+  core:bundled-sources list/place/prune 로 사후 보고·배치·정리를 한다(prune 기본 미리보기, 수정본 보존, 의존 보호,
+  사용자 자체 폴더 불가침). 관리자 목록 4화면은 미배치 안내와 관리자별 닫기(해시 30일 캐시)를 보인다.
+
+axes:
+  domain: [module, plugin, template, language_pack]
+  install_state: [installed, not_installed]
+  disk_state: [present, absent]
+  dependency: [none, direct, transitive, template_to_module, installed]
+  selection: [none, all, ids, pick, option, invalid, noninteractive_default, empty_candidates]
+  update_mode: [incremental, prune, no_backup]
+  source_kind: [source, zip, local, github, github_unavailable, version_mismatch]
+  hidden: [true, false]
+  action: [list, place, prune]
+  force: [true, false]
+  modified: [true, false]
+
+effects:
+  # skipPaths (CoreBackupHelper·FilePermissionHelper·CoreUpdateService)
+  - skip_paths_exclude_unplaced_bundle_from_apply_list
+  - skip_paths_do_not_match_same_name_at_other_depth
+  - new_files_manifest_honors_skip_paths
+  - copy_directory_skips_listed_paths
+  - copy_directory_default_unchanged
+  - unplaced_bundles_are_not_placed_in_every_mode
+  - on_disk_bundles_are_still_updated
+  - user_custom_bundled_dir_preserved
+  - auto_discovery_fallback_does_not_place_skipped
+  - apply_update_default_unchanged
+  # 판정 (BundledSourcePlanner)
+  - release_inventory_reads_manifests_and_core_version
+  - placement_follows_install_and_disk_state
+  - dependency_closure_is_placed_with_required_by
+  - selection_places_chosen_bundles_and_their_dependencies
+  - invalid_selection_is_rejected
+  - language_pack_follows_core_target_and_self_state
+  - hidden_bundle_recorded_with_flag
+  - zip_inventory_reads_names_without_extracting
+  - record_hash_is_stable_and_changes_with_items
+  - installed_falls_back_to_active_directory
+  # core:update
+  - source_question_before_maintenance
+  - pick_adds_dependencies_with_notice
+  - interactive_all_places_every_candidate
+  - zip_question_before_maintenance
+  - zip_listing_unreadable_defers_question_after_extract
+  - local_question_before_maintenance
+  - noninteractive_defaults_to_none
+  - option_applies_without_question
+  - invalid_option_fails_before_maintenance
+  - no_question_when_nothing_unplaced
+  - github_question_after_download_with_maintenance_warning
+  - github_invalid_option_aborts_cleanly
+  - skip_paths_reach_apply_and_record_written
+  - record_restored_on_rollback
+  - summary_prints_four_sections
+  - summary_counts_on_disk_bundles
+  - record_dir_in_restore_ownership
+  # core:bundled-sources
+  - list_shows_inventory_and_refreshes_record
+  - list_falls_back_to_record_then_disk
+  - place_copies_bundle_dependencies_and_language_pack
+  - mismatched_or_invalid_release_is_rejected
+  - prune_previews_by_default_and_deletes_with_force
+  - prune_never_touches_installed_or_user_dirs
+  - prune_keeps_modified_and_their_dependencies
+  # 관리자 안내 API
+  - notice_lists_unplaced_by_type_without_hidden
+  - notice_hides_types_without_read_permission
+  - notice_requires_auth_and_read_permission
+  - notice_empty_for_mismatch_missing_or_corrupt_record
+  - notice_excludes_now_on_disk_or_installed
+  - dismiss_is_per_admin_per_type_until_hash_changes
+  - dismiss_requires_type_read_permission
+  # 관리자 목록 4화면 안내 블록 (sirsoft-admin_basic)
+  - notice_block_renders_per_screen_type
+  - notice_dismiss_posts_refetches_and_toasts_on_failure
+  - notice_i18n_keys_exist
+
+test_files:
+  - tests/Unit/Extension/CoreBackupHelperApplyListTest.php
+  - tests/Unit/Helpers/FilePermissionHelperSkipPathsTest.php
+  - tests/Unit/Services/CoreUpdateServiceBundledSkipTest.php
+  - tests/Unit/Services/Core/BundledSourcePlannerTest.php
+  - tests/Feature/CoreUpdateBundledSourcesOptionTest.php
+  - tests/Feature/Console/CoreBundledSourcesCommandTest.php
+  - tests/Feature/Api/Admin/UnplacedBundledNoticeTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/unplacedBundledNotice.test.tsx
+  - tests/Playwright/specs/admin/unplaced-bundled-notice.spec.ts

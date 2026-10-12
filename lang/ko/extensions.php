@@ -50,6 +50,8 @@ return [
         'recovered_success' => '확장이 다시 활성화되었습니다.',
         'dismissed' => '알림을 닫았습니다.',
         'auto_deactivated_listed' => '자동 비활성화된 확장 목록입니다.',
+        'unplaced_bundled_listed' => '배치하지 않은 공식 번들 안내입니다.',
+        'unplaced_bundled_dismissed' => '안내를 닫았습니다.',
         'recover_action' => '다시 활성화',
         'dismiss_action' => '알림 닫기',
         'static_publish_failed_title' => '초기 화면 파일 생성 실패',

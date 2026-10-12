@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Core;
 
 use App\Console\Commands\Core\Concerns\BundledExtensionUpdatePrompt;
+use App\Console\Commands\Core\Concerns\BundledSourcePlacementPrompt;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Exceptions\UpgradeHandoffException;
 use App\Extension\CoreVersionChecker;
@@ -15,6 +16,7 @@ use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
 use App\Extension\Vendor\VendorMode;
+use App\Services\Core\BundledSourcePlanner;
 use App\Services\CoreUpdateService;
 use App\Support\ComposerInstallInfo;
 use App\Support\ConfigCacheHelper;
@@ -27,6 +29,7 @@ use Illuminate\Support\Facades\Log;
 class CoreUpdateCommand extends Command
 {
     use BundledExtensionUpdatePrompt;
+    use BundledSourcePlacementPrompt;
     use ClearsTemplateCaches;
     use HasUnifiedConfirm;
 
@@ -39,6 +42,7 @@ class CoreUpdateCommand extends Command
         {--source= : 수동 업데이트용 소스 디렉토리 경로 (GitHub 다운로드 대신 지정 디렉토리 사용)}
         {--zip= : 수동 업데이트용 ZIP 파일 경로 (GitHub 다운로드 대신 지정 ZIP 추출 사용)}
         {--vendor-mode=auto : vendor 설치 모드 (auto|composer|bundled)}
+        {--bundled-sources= : 설치되지 않았고 이 프로젝트에도 없는 공식 번들 소스 처리 (none|all|식별자 목록, 쉼표 구분, type:id 허용). 미지정 시 대화형은 묻고 비대화형은 none}
         {--rebuild-search-index : 번들 확장 일괄 업데이트 후 색인이 누락된 검색 인덱스를 재생성 (인덱스가 잠기거나 재색인됩니다 — 운영 중에는 유지보수 시간에 수행하세요)}';
 
     protected $description = '그누보드7 코어를 최신 버전으로 업데이트합니다';
@@ -68,6 +72,12 @@ class CoreUpdateCommand extends Command
         $secret = null;
         $logEntries = [];
         $ownershipSnapshot = [];
+        // 공식 번들 배치 판정(#146) — 설치·디스크에 있는 번들과 그 의존만 갱신, 나머지는 운영자 선택
+        $bundledPlan = null;
+        $bundledRecordBackup = null;
+        $bundledRecordWritten = false;
+        $planner = app(BundledSourcePlanner::class);
+        $bundledOption = is_string($this->option('bundled-sources')) ? $this->option('bundled-sources') : null;
 
         $log = function (string $message) use (&$logEntries) {
             $logEntries[] = '['.date('H:i:s').'] '.$message;
@@ -100,6 +110,15 @@ class CoreUpdateCommand extends Command
                     return Command::FAILURE;
                 }
                 $zipPath = $resolvedZip;
+            }
+
+            // --bundled-sources 문법(유형명) 검사 — 유지보수 모드 전에 실패시킨다
+            try {
+                $planner->resolveSelection(null, $bundledOption);
+            } catch (\InvalidArgumentException $selectionError) {
+                $this->error($selectionError->getMessage());
+
+                return Command::FAILURE;
             }
 
             // ── 시스템 요구사항 검증 (--source / --local 모드에서는 스킵, --zip 은 필요) ──
@@ -197,6 +216,31 @@ class CoreUpdateCommand extends Command
                 return Command::SUCCESS;
             }
 
+            // ── 공식 번들 배치 판정 (#146 D6) ──
+            // --source/--local 은 디렉토리, --zip 은 풀지 않고 목록만 읽어 유지보수 모드 전에 묻는다.
+            // GitHub 다운로드 경로와 zip 목록을 못 읽은 경우는 Step 4 직후(유지보수 중)에 묻는다.
+            $earlyInventory = null;
+            if ($sourceDir) {
+                $earlyInventory = $planner->readInventoryFromDirectory($sourceDir);
+            } elseif ($this->option('local')) {
+                $earlyInventory = $planner->readInventoryFromDirectory(base_path());
+            } elseif ($zipPath) {
+                $earlyInventory = $planner->readInventoryFromZip($zipPath);
+                if ($earlyInventory === null) {
+                    $this->line(__('settings.bundled_sources.inventory_deferred'));
+                }
+            }
+
+            if ($earlyInventory !== null) {
+                try {
+                    $bundledPlan = $this->decideBundledPlacement($planner, $earlyInventory, $bundledOption, false, $log);
+                } catch (\InvalidArgumentException $selectionError) {
+                    $this->error($selectionError->getMessage());
+
+                    return Command::FAILURE;
+                }
+            }
+
             // Step 2~10 프로그레스바 (9단계)
             $remainingSteps = self::TOTAL_STEPS - 1;
             $bar = $this->output->createProgressBar($remainingSteps);
@@ -281,6 +325,36 @@ class CoreUpdateCommand extends Command
                 $pendingPath = $service->downloadUpdate($toVersion, $onProgress);
                 $log('다운로드 및 검증 완료');
             }
+
+            // GitHub 다운로드 경로·zip 목록을 미리 못 읽은 경우: 받은 배포본으로 지금 판정한다(유지보수 중).
+            if ($bundledPlan === null) {
+                $bar->clear();
+                try {
+                    $bundledPlan = $this->decideBundledPlacement(
+                        $planner,
+                        $planner->readInventoryFromDirectory($pendingPath),
+                        $bundledOption,
+                        $maintenanceEnabled,
+                        $log,
+                    );
+                } catch (\InvalidArgumentException $selectionError) {
+                    // 아직 백업·파일 적용 전 — 받은 배포본만 지우고 유지보수를 풀어 깨끗이 끝낸다
+                    $this->newLine();
+                    $this->error($selectionError->getMessage());
+                    $log('공식 번들 선택 오류로 중단: '.$selectionError->getMessage());
+                    $service->cleanupPending($pendingPath);
+                    if ($maintenanceEnabled) {
+                        $service->disableMaintenanceMode();
+                        $maintenanceEnabled = false;
+                    }
+                    $this->warn(__('settings.bundled_sources.summary_selection_aborted'));
+                    $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, false);
+
+                    return Command::FAILURE;
+                }
+                $bar->display();
+            }
+            $bundledSkipPaths = $bundledPlan->skipPaths();
 
             // ── Step 5: 백업 ──
             $bar->setMessage(__('settings.core_update.step_backup'));
@@ -391,6 +465,7 @@ class CoreUpdateCommand extends Command
                         (array) config('app.update.excludes', []),
                         $fromVersion,
                         $toVersion,
+                        $bundledSkipPaths,
                     );
                     $log(sprintf(
                         '신규 파일 manifest 작성 완료 (files=%d, dirs=%d)',
@@ -415,6 +490,7 @@ class CoreUpdateCommand extends Command
                             (array) config('app.update.targets', []),
                             (array) config('app.update.protected_paths', []),
                             (array) config('app.update.excludes', []),
+                            $bundledSkipPaths,
                         );
                         $applyList = $applyStats['apply'];
                         $log(sprintf(
@@ -447,8 +523,14 @@ class CoreUpdateCommand extends Command
                 $log('코어 파일 덮어쓰기 시작 (백업 부재 — 전체 덮어쓰기로 회귀)');
             }
 
-            $service->applyUpdate($pendingPath, $onProgress, prune: $prune, applyList: $applyList);
-            $log('코어 파일 적용 완료');
+            $service->applyUpdate($pendingPath, $onProgress, prune: $prune, applyList: $applyList, skipPaths: $bundledSkipPaths);
+            $log(sprintf('코어 파일 적용 완료 (미배치 공식 번들 %d개 건너뜀)', count($bundledSkipPaths)));
+
+            // 미배치 공식 번들 기록 — 관리자 목록 안내와 core:bundled-sources 의 근거. 롤백 시 이전 기록으로 되돌린다.
+            $bundledRecordBackup = is_file($planner->recordPath()) ? (string) file_get_contents($planner->recordPath()) : null;
+            $planner->writeRecord($bundledPlan, $toVersion, 'core:update');
+            $bundledRecordWritten = true;
+            $log(sprintf('공식 번들 배치 기록 저장 (미배치 %d개)', count($bundledPlan->unplaced)));
 
             // ── Step 8: vendor 디렉토리 복사 (_pending → 운영) ──
             if ($composerSkipped) {
@@ -608,6 +690,9 @@ class CoreUpdateCommand extends Command
                 app(TemplateManager::class),
                 (bool) $this->option('force'),
             );
+
+            // 공식 번들 처리 결과 4구분 요약 (#146 제안 5)
+            $this->summarizeBundledPlacement($bundledPlan, $promptResult);
 
             $bundledFailed = (int) ($promptResult['failed'] ?? 0);
 
@@ -780,6 +865,11 @@ class CoreUpdateCommand extends Command
             // _pending 정리 (실패 시에도)
             if (! empty($pendingPath)) {
                 $service->cleanupPending($pendingPath);
+            }
+
+            // 공식 번들 배치 기록도 업데이트 전 상태로 되돌린다 (파일이 롤백됐으므로)
+            if ($bundledRecordWritten) {
+                $this->restoreBundledRecord($planner, $bundledRecordBackup, $log);
             }
 
             // 실패 리포트
@@ -1217,6 +1307,29 @@ class CoreUpdateCommand extends Command
         }
 
         return true;
+    }
+
+    /**
+     * 롤백 시 공식 번들 배치 기록을 업데이트 전 내용으로 되돌립니다(없었으면 지웁니다).
+     *
+     * @param  BundledSourcePlanner  $planner  판정 서비스 (기록 경로 제공)
+     * @param  string|null  $previous  업데이트 전 기록 내용 (없었으면 null)
+     * @param  \Closure  $log  업데이트 로그 수집 콜백
+     * @return void 반환값 없음
+     */
+    private function restoreBundledRecord(BundledSourcePlanner $planner, ?string $previous, \Closure $log): void
+    {
+        try {
+            $path = $planner->recordPath();
+            if ($previous === null) {
+                @unlink($path);
+            } else {
+                file_put_contents($path, $previous);
+            }
+            $log('공식 번들 배치 기록 복원');
+        } catch (\Throwable $e) {
+            $log('공식 번들 배치 기록 복원 실패 (계속 진행): '.$e->getMessage());
+        }
     }
 
     /**
