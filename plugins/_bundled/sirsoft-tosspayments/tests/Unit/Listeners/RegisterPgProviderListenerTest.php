@@ -14,6 +14,11 @@ class RegisterPgProviderListenerTest extends PluginTestCase
 {
     private RegisterPgProviderListener $listener;
 
+    /**
+     * 테스트 대상 리스너를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -22,6 +27,10 @@ class RegisterPgProviderListenerTest extends PluginTestCase
 
     /**
      * getSubscribedHooks가 올바른 훅 매핑을 반환하는지 확인
+     *
+     * @effects toss_provider_registered_with_payment_handler
+     *
+     * @return void 반환값 없음
      */
     public function test_get_subscribed_hooks_returns_correct_hooks(): void
     {
@@ -41,6 +50,10 @@ class RegisterPgProviderListenerTest extends PluginTestCase
 
     /**
      * registerProvider가 토스페이먼츠를 제공자 목록에 추가하는지 확인
+     *
+     * @effects toss_provider_registered_with_payment_handler
+     *
+     * @return void 반환값 없음
      */
     public function test_register_provider_adds_tosspayments(): void
     {
@@ -60,16 +73,19 @@ class RegisterPgProviderListenerTest extends PluginTestCase
         $this->assertIsString($toss['name']);
         $this->assertEquals('credit-card', $toss['icon']);
         $this->assertContains('card', $toss['supported_methods']);
-        // S4: 결제수단 4종으로 확장
-        $this->assertContains('virtual_account', $toss['supported_methods']);
-        $this->assertContains('bank_transfer', $toss['supported_methods']);
-        $this->assertContains('mobile', $toss['supported_methods']);
+        // S4: 결제수단 4종으로 확장 — 어휘는 코어 결제수단 ID 다(P18). 토스 API 이름(virtual_account 등)을 적으면
+        // 코어가 자기 수단 목록과 대조하지 못해 가상계좌·계좌이체·휴대폰에 토스를 PG 로 지정할 수 없다.
+        $this->assertSame(['card', 'vbank', 'bank', 'phone'], $toss['supported_methods']);
         // S4: payment_handler 선언 (PG 분기 발화 정공법)
         $this->assertSame('sirsoft-tosspayments.requestPayment', $toss['payment_handler']);
     }
 
     /**
      * registerProvider 페이로드가 name_key (lang key) 를 보유해 활성 언어팩 보강 가능한지 확인.
+     *
+     * @effects toss_provider_registered_with_payment_handler
+     *
+     * @return void 반환값 없음
      */
     public function test_register_provider_carries_name_key_for_lang_pack_resolution(): void
     {
@@ -80,6 +96,10 @@ class RegisterPgProviderListenerTest extends PluginTestCase
 
     /**
      * registerProvider가 기존 제공자를 유지하는지 확인
+     *
+     * @effects toss_provider_registered_with_payment_handler
+     *
+     * @return void 반환값 없음
      */
     public function test_register_provider_preserves_existing_providers(): void
     {
@@ -98,6 +118,10 @@ class RegisterPgProviderListenerTest extends PluginTestCase
 
     /**
      * registerProvider가 빈 배열에도 동작하는지 확인
+     *
+     * @effects toss_provider_registered_with_payment_handler
+     *
+     * @return void 반환값 없음
      */
     public function test_register_provider_works_with_empty_array(): void
     {
@@ -109,6 +133,10 @@ class RegisterPgProviderListenerTest extends PluginTestCase
 
     /**
      * getClientConfig가 다른 provider에 대해 원본 config를 반환하는지 확인
+     *
+     * @effects toss_provider_registered_with_payment_handler
+     *
+     * @return void 반환값 없음
      */
     public function test_get_client_config_ignores_other_providers(): void
     {

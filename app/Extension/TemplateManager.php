@@ -739,8 +739,10 @@ class TemplateManager implements TemplateManagerInterface
             // 조각이 통째로 빠진다(#712 — 새 관리자 템플릿 활성화 시 38 → 27행).
             // registerModuleLayouts/registerPluginLayouts는 모든 활성 템플릿을 조회하므로
             // 새로 활성화된 템플릿에도 자동으로 레이아웃이 등록됨 (keep 규칙 — 템플릿을 바꿨다 돌아와도 운영자 수정 보존, D3)
-            app(ModuleManager::class)->registerLayoutsForAllActiveModules();
-            app(PluginManager::class)->registerLayoutsForAllActivePlugins();
+            // 켜는 템플릿 종류의 화면만 처리하고 한 확장의 실패는 그 확장만 건너뛴다 — 무관한 확장의 다른 종류 화면 하나가
+            // 깨졌다고 활성화 전체가 되돌아가지 않게 한다(#725 D6).
+            app(ModuleManager::class)->registerLayoutsForAllActiveModules($template['type'], $templateName);
+            app(PluginManager::class)->registerLayoutsForAllActivePlugins($template['type'], $templateName);
 
             // 그 뒤에 활성 모듈/플러그인의 레이아웃 확장(조각)을 새 템플릿에 등록 (keep — 운영자가 고친 조각은 보존)
             $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($templateRecord->id);

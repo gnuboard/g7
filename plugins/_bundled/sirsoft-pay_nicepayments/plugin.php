@@ -214,7 +214,6 @@ class Plugin extends AbstractPlugin
             Listeners\AdjustEcommercePaymentMethodsLayoutListener::class,
             Listeners\ProvidePaymentMethodDisplayLabelListener::class,
             Listeners\EnsureAdminOrderDetailPaymentQueryLayoutListener::class,
-            Listeners\RestoreLayoutExtensionsAfterUpdateListener::class,
         ];
     }
 

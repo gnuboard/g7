@@ -35,7 +35,6 @@
 | `core.layout_extension.after_apply` | filter | `EnsureAdminOrderDetailTestModeLayoutListener` | `ensureTestModeLayout` | 65 |
 | `core.plugin_settings.before_save` | action (미선언) | `ValidateCbtSettingsListener` | `validateBeforeSave` | 10 |
 | `core.plugin_settings.update_validation_rules` | filter | `ValidateRedirectUrlSettingsListener` | `rules` | 10 |
-| `core.plugins.after_update` | action | `RestoreLayoutExtensionsAfterUpdateListener` | `restoreCurrentExtensionsAfterUpdate` | 20 |
 | `sirsoft-ecommerce.cash_receipt.cancel` | filter | `RegisterCashReceiptProviderListener` | `cancel` | 10 |
 | `sirsoft-ecommerce.cash_receipt.issue` | filter | `RegisterCashReceiptProviderListener` | `issue` | 10 |
 | `sirsoft-ecommerce.cash_receipt.registered_providers` | filter | `RegisterCashReceiptProviderListener` | `registerProvider` | 10 |
@@ -139,7 +138,6 @@ API 가 그 자리에서 환불하므로 `true` 입니다. 예외는 `kginicis_j
 | `RegisterCashReceiptProviderListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/RegisterCashReceiptProviderListener.php` |
 | `RegisterEasyPayMethodsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterEasyPayMethodsListener.php` |
 | `RegisterPgProviderListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/RegisterPgProviderListener.php` |
-| `RestoreLayoutExtensionsAfterUpdateListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RestoreLayoutExtensionsAfterUpdateListener.php` |
 | `RestrictPaymentMethodsForCurrencyListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RestrictPaymentMethodsForCurrencyListener.php` |
 | `ScrubEscrowRecipientOnOrderAnonymizeListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ScrubEscrowRecipientOnOrderAnonymizeListener.php` |
 | `ValidateCbtSettingsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ValidateCbtSettingsListener.php` |
@@ -185,11 +183,10 @@ id·확장점만 씁니다 — `mypage_order_payment_provider_slot`(템플릿), 
 여부도 읽지 않습니다(한 목록에 여러 PG 주문이 섞여도 PG 마다 자기 배지를 자기 주문에만 띄운다).
 
 조각의 **고유 키는 파일 이름**입니다(`fragment_key` — 확장자를 뗀 기본 이름). 같은 확장이 같은 대상
-화면에 조각을 둘 보낼 수 있어 DB 행이 대상만으로 갈리지 않기 때문입니다. 설치 경로와
-`RestoreLayoutExtensionsAfterUpdateListener` 가 **같은 키**를 써야 하므로, 리스너는
-`LayoutFragmentSourceHelper::readDirectoryKeyed()` 로 파일에서 키를 얻어 그대로 넘깁니다. 키 없이
-등록하면 대상 화면 이름이 키가 되어 두 경로가 갈리고, 그 뒤로는 같은 대상에 행이 둘 생겨 복원이
-어느 행인지 가리지 못한 채 조용히 멈춥니다.
+화면에 조각을 둘 보낼 수 있어 DB 행이 대상만으로 갈리지 않기 때문입니다. 설치·활성화·업데이트 뒤
+재등록은 모두 코어가 같은 키로 하므로 이 플러그인은 조각을 따로 등록하지 않습니다 — 업데이트 뒤
+조각 재등록을 맡던 플러그인 자체 리스너는 꺼진 템플릿에까지 행을 만들어 지웠고, 코어 업데이트 절차가
+켜진 템플릿 가운데 붙을 자리가 있는 곳에만 다시 등록합니다.
 `user_order_show.g7.html` 은 대상 레이아웃 이름이 아니라 **공용 확장 슬롯**
 (`mypage_order_payment_provider_slot`)을 겨냥합니다. 이 슬롯이 사는 결제 정보 카드
 (`partials/mypage/orders/_payment`)는 주문 상세 말고도 클레임 신청서 상세가 그대로 재사용하기

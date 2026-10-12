@@ -1553,7 +1553,8 @@ class TemplateService
         $sources = $this->collectLayoutDocumentSources($layoutDir, $partialsDirPrefix);
 
         foreach ($sources as $source) {
-            $decoded = $this->loadFragmentSource($source, ['context' => 'editor_tree_layout_scan']);
+            // 본 레이아웃 실패는 「레이아웃 소스」 로 남긴다 — 확장 조각 문구를 쓰면 확장 파일이 깨진 것으로 읽힌다(#725).
+            $decoded = $this->loadFragmentSource($source, ['context' => 'editor_tree_layout_scan'], null, '레이아웃 소스');
             if ($decoded === null) {
                 continue;
             }
@@ -1685,7 +1686,7 @@ class TemplateService
             return null;
         }
 
-        return $this->loadFragmentSource($source, ['context' => 'editor_tree_modal_partial']);
+        return $this->loadFragmentSource($source, ['context' => 'editor_tree_modal_partial'], null, '레이아웃 소스');
     }
 
     /**

@@ -39,6 +39,11 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
     private Template $template;
 
+    /**
+     * 편집 서비스와 활성 관리자 템플릿을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -53,10 +58,11 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
     /**
      * updateExtension - content 갱신 + 버전 2건 생성
-     */
-    /**
+     *
      * @effects update_extension_persists_content
      * @effects update_extension_creates_two_versions_prev_and_current
+     *
+     * @return void 반환값 없음
      */
     public function test_update_extension_saves_content_and_creates_two_versions(): void
     {
@@ -77,9 +83,10 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
     /**
      * updateExtension - original_content_hash 는 불변
-     */
-    /**
+     *
      * @effects update_extension_keeps_original_content_hash_unchanged
+     *
+     * @return void 반환값 없음
      */
     public function test_update_extension_keeps_original_content_hash(): void
     {
@@ -105,9 +112,10 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
     /**
      * hasModifiedExtensions - 사용자 수정 확장 감지
-     */
-    /**
+     *
      * @effects has_modified_extensions_detects_hash_mismatch
+     *
+     * @return void 반환값 없음
      */
     public function test_has_modified_extensions_detects_user_edits(): void
     {
@@ -134,9 +142,10 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
     /**
      * registerExtension preserveModified=true - 사용자 수정 확장은 SKIP
-     */
-    /**
+     *
      * @effects register_extension_preserve_modified_skips_user_edited_returns_skipped
+     *
+     * @return void 반환값 없음
      */
     public function test_register_extension_preserve_modified_skips_user_edited(): void
     {
@@ -177,9 +186,10 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
     /**
      * registerExtension preserveModified=true - 미수정 확장은 덮어쓰기 + 해시 갱신
-     */
-    /**
+     *
      * @effects register_extension_preserve_modified_overwrites_unmodified_and_refreshes_hash
+     *
+     * @return void 반환값 없음
      */
     public function test_register_extension_preserve_modified_overwrites_unmodified(): void
     {
@@ -214,9 +224,10 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
     /**
      * registerExtension - 신규 생성 시 original_content_hash 함께 저장
-     */
-    /**
+     *
      * @effects register_extension_creates_with_original_content_hash
+     *
+     * @return void 반환값 없음
      */
     public function test_register_extension_creates_with_original_hash(): void
     {
@@ -241,9 +252,10 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
     /**
      * getExtensionsByTemplateId - 출처별 그룹핑
-     */
-    /**
+     *
      * @effects index_returns_source_grouped_extensions
+     *
+     * @return void 반환값 없음
      */
     public function test_get_extensions_grouped_by_source(): void
     {
@@ -258,6 +270,7 @@ class LayoutExtensionServiceEditingTest extends TestCase
             'source_identifier' => 'plugin-b',
         ]);
 
+        $this->service = $this->treatRowSourcesAsActive();
         $groups = $this->service->getExtensionsByTemplateId($this->template->id);
 
         $this->assertCount(2, $groups);
@@ -271,9 +284,10 @@ class LayoutExtensionServiceEditingTest extends TestCase
      *
      * 오버라이드 행은 트리에서 일반 확장과 동일하게 출처 기준으로 묶이되,
      * is_override=true 로 오버라이드 상황이 별도 표시되어야 한다.
-     */
-    /**
+     *
      * @effects index_groups_override_rows_under_override_target_source
+     *
+     * @return void 반환값 없음
      */
     public function test_get_extensions_marks_override_rows(): void
     {
@@ -297,6 +311,7 @@ class LayoutExtensionServiceEditingTest extends TestCase
             'is_active' => true,
         ]);
 
+        $this->service = $this->treatRowSourcesAsActive();
         $groups = $this->service->getExtensionsByTemplateId($this->template->id);
 
         $allExtensions = collect($groups)->flatMap(fn ($g) => $g['extensions']);
@@ -311,9 +326,10 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
     /**
      * isExtensionApplicableToTemplate - overlay: 대상 레이아웃 존재 시 true
-     */
-    /**
+     *
      * @effects overlay_is_applicable_when_target_layout_exists
+     *
+     * @return void 반환값 없음
      */
     public function test_overlay_applicable_when_target_layout_exists(): void
     {
@@ -329,9 +345,10 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
     /**
      * isExtensionApplicableToTemplate - overlay: 대상 레이아웃 부재 시 false
-     */
-    /**
+     *
      * @effects overlay_is_not_applicable_when_target_layout_is_missing
+     *
+     * @return void 반환값 없음
      */
     public function test_overlay_not_applicable_when_target_layout_missing(): void
     {
@@ -343,9 +360,10 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
     /**
      * isExtensionApplicableToTemplate - extension_point: 확장점 정의 존재 시 true
-     */
-    /**
+     *
      * @effects extension_point_is_applicable_when_the_layout_defines_it
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_point_applicable_when_defined_in_layout(): void
     {
@@ -374,9 +392,10 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
     /**
      * isExtensionApplicableToTemplate - extension_point: 정의 부재 시 false
-     */
-    /**
+     *
      * @effects extension_point_is_not_applicable_when_undefined
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_point_not_applicable_when_undefined(): void
     {
@@ -400,9 +419,10 @@ class LayoutExtensionServiceEditingTest extends TestCase
      *
      * cross-template 가드: "이 템플릿엔 부재" 만으로 삭제하지 않는다. 같은 4키 확장이
      * 다른 템플릿(여기선 user, 대상 레이아웃 존재)엔 적용 가능하면 이 행이 오등록 → 삭제.
-     */
-    /**
+     *
      * @effects inapplicable_extension_row_is_soft_deleted
+     *
+     * @return void 반환값 없음
      */
     public function test_remove_inapplicable_extension_soft_deletes_orphan_row(): void
     {
@@ -448,9 +468,10 @@ class LayoutExtensionServiceEditingTest extends TestCase
      * cross-template 가드 핵심: 호스트 레이아웃이 전반적으로 구버전(슬롯 부재)이라 모든
      * 등록 템플릿에서 동시에 "부재" 가 될 때, 이는 오등록이 아니므로 정상 확장을 보존한다
      * (관리자 대시보드 위젯 소실 회귀 차단).
-     */
-    /**
+     *
      * @effects inapplicable_removal_is_skipped_when_every_template_is_stale
+     *
+     * @return void 반환값 없음
      */
     public function test_remove_inapplicable_extension_preserves_when_all_templates_stale(): void
     {
@@ -487,9 +508,10 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
     /**
      * removeInapplicableExtension - 해당 행이 없으면 false
-     */
-    /**
+     *
      * @effects inapplicable_removal_reports_false_when_there_is_no_row
+     *
+     * @return void 반환값 없음
      */
     public function test_remove_inapplicable_extension_returns_false_when_no_row(): void
     {
@@ -509,6 +531,8 @@ class LayoutExtensionServiceEditingTest extends TestCase
      * 조각 식별자(`fragment_key`)가 고유 키를 가른다 — 같은 대상에 조각 둘이면 두 행 (C13).
      *
      * @effects register_extension_keeps_two_rows_for_two_fragments_of_the_same_target
+     *
+     * @return void 반환값 없음
      */
     public function test_register_extension_keeps_two_rows_for_two_fragments_of_the_same_target(): void
     {
@@ -529,6 +553,8 @@ class LayoutExtensionServiceEditingTest extends TestCase
      * 키 없는 호환 호출은 같은 대상의 기존 행이 하나면 그 키를 잇는다 — 새 행을 만들지 않는다.
      *
      * @effects register_extension_without_key_reuses_the_single_existing_row
+     *
+     * @return void 반환값 없음
      */
     public function test_register_extension_without_key_reuses_the_single_existing_row(): void
     {
@@ -546,6 +572,8 @@ class LayoutExtensionServiceEditingTest extends TestCase
      * 키 없는 호환 호출은 같은 대상에 행이 둘 이상이면 어느 조각인지 알 수 없어 처리하지 않는다 (null).
      *
      * @effects register_extension_without_key_is_skipped_when_target_is_ambiguous
+     *
+     * @return void 반환값 없음
      */
     public function test_register_extension_without_key_is_skipped_when_target_is_ambiguous(): void
     {
@@ -563,6 +591,8 @@ class LayoutExtensionServiceEditingTest extends TestCase
      * 키 없는 호환 호출에 기존 행이 없으면 대상 이름을 키로 만든다 (갱신 경로가 파일 키로 정정한다).
      *
      * @effects register_extension_without_key_falls_back_to_target_name
+     *
+     * @return void 반환값 없음
      */
     public function test_register_extension_without_key_falls_back_to_target_name(): void
     {
@@ -572,5 +602,27 @@ class LayoutExtensionServiceEditingTest extends TestCase
 
         $this->assertSame('created', $result);
         $this->assertSame('admin.dashboard.widgets', LayoutExtension::firstOrFail()->fragment_key);
+    }
+
+    /**
+     * 확장 행의 출처를 모두 활성으로 보는 서비스를 고정합니다.
+     *
+     * 편집기 트리는 화면과 같은 판정(출처가 켜진 행만 · 호환 오버라이드 우선)을 쓴다(#725). 이 테스트들은 실재하지 않는
+     * 출처 식별자로 행을 만들므로, 판정 대상이 아닌 축(출처 활성 여부)을 「켜짐」 으로 고정해 각 테스트가 보려는 계약만 남긴다.
+     *
+     * @return LayoutExtensionService 활성 출처가 고정된 서비스 (컨테이너에도 바인딩)
+     */
+    private function treatRowSourcesAsActive(): LayoutExtensionService
+    {
+        $service = $this->app->make(LayoutExtensionService::class);
+        $modules = LayoutExtension::query()->where('source_type', LayoutSourceType::Module)->pluck('source_identifier')->all();
+        $plugins = LayoutExtension::query()->where('source_type', LayoutSourceType::Plugin)->pluck('source_identifier')->all();
+        $targets = LayoutExtension::query()->whereNotNull('override_target')->pluck('override_target')->all();
+
+        (new \ReflectionProperty(LayoutExtensionService::class, 'activeModules'))->setValue($service, array_values(array_unique([...$modules, ...$targets])));
+        (new \ReflectionProperty(LayoutExtensionService::class, 'activePlugins'))->setValue($service, array_values(array_unique([...$plugins, ...$targets])));
+        $this->app->instance(LayoutExtensionService::class, $service);
+
+        return $service;
     }
 }

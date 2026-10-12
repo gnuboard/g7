@@ -58,14 +58,14 @@ interface LayoutExtensionRepositoryInterface
     public function softDeleteBySource(LayoutSourceType $sourceType, string $identifier): int;
 
     /**
-     * 출처별 확장 복원
+     * 출처의 지워진(soft delete) 확장 행을 조회합니다 — 재활성화 복원 후보.
      *
      * @param  LayoutSourceType  $sourceType  출처 타입
      * @param  string  $identifier  출처 식별자
-     * @param  array<int, string>|null  $fragmentKeys  이 조각 키의 행만 복원 (null 이면 전부)
-     * @return int 복원된 레코드 수
+     * @param  array<int, string>|null  $fragmentKeys  이 조각 키의 행만 (null 이면 전부)
+     * @return Collection<int, LayoutExtension> 지워진 행
      */
-    public function restoreBySource(LayoutSourceType $sourceType, string $identifier, ?array $fragmentKeys = null): int;
+    public function getTrashedBySource(LayoutSourceType $sourceType, string $identifier, ?array $fragmentKeys = null): Collection;
 
     /**
      * 출처별 확장 영구 삭제
@@ -109,58 +109,12 @@ interface LayoutExtensionRepositoryInterface
     ): ?LayoutExtension;
 
     /**
-     * 오버라이드를 고려한 Extension Point 조회
-     *
-     * 템플릿 오버라이드가 있는 모듈 확장은 제외하고,
-     * 오버라이드된 버전과 원본 모듈 확장을 함께 반환합니다.
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $extensionPointName  확장점 이름
-     * @return Collection<int, LayoutExtension>
-     */
-    public function getResolvedExtensionPoints(int $templateId, string $extensionPointName): Collection;
-
-    /**
-     * 오버라이드를 고려한 Overlay 조회
-     *
-     * 템플릿 오버라이드가 있는 모듈 확장은 제외하고,
-     * 오버라이드된 버전과 원본 모듈 확장을 함께 반환합니다.
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @param  string  $layoutName  레이아웃 이름
-     * @return Collection<int, LayoutExtension>
-     */
-    public function getResolvedOverlays(int $templateId, string $layoutName): Collection;
-
-    /**
      * 특정 템플릿의 모든 확장 조회
      *
      * @param  int  $templateId  템플릿 ID
      * @return Collection<int, LayoutExtension>
      */
     public function getByTemplateId(int $templateId): Collection;
-
-    /**
-     * 특정 템플릿의 확장을 오버라이드 해석을 적용해 조회
-     *
-     * 템플릿 오버라이드에 가려져 화면에 적용되지 않는 모듈/플러그인 확장을
-     * 제외합니다. 레이아웃 편집 화면 트리가 실제 화면에 반영되는 확장만
-     * 보여주도록 사용합니다.
-     *
-     * @param  int  $templateId  템플릿 ID
-     * @return Collection<int, LayoutExtension>
-     */
-    public function getResolvedByTemplateId(int $templateId): Collection;
-
-    /**
-     * 템플릿 오버라이드 해석을 적용해 가려진 확장을 제거
-     *
-     * 동일한 (extension_type, target_name) 범위의 확장만 전달해야 합니다.
-     *
-     * @param  Collection<int, LayoutExtension>  $extensions  동일 범위 확장 컬렉션
-     * @return Collection<int, LayoutExtension>
-     */
-    public function resolveOverrides(Collection $extensions): Collection;
 
     /**
      * ID로 단일 확장 조회

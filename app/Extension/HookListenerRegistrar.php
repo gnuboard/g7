@@ -32,6 +32,13 @@ class HookListenerRegistrar
     private static array $registered = [];
 
     /**
+     * 클래스가 없어 건너뛴 리스너 — 경고는 프로세스에 한 번만 남긴다.
+     *
+     * @var array<string, true>
+     */
+    private static array $missingListenersReported = [];
+
+    /**
      * 리스너 클래스를 HookManager에 등록합니다.
      *
      * 런타임에 $listenerClass::getSubscribedHooks() 를 호출해 구독 훅을 조회한 뒤
@@ -114,13 +121,19 @@ class HookListenerRegistrar
 
             if ($type === 'filter') {
                 // Filter: 항상 동기 실행 (반환값 체인이므로 큐 불가)
-                HookManager::addFilter($hookName, function ($value, ...$args) use ($listenerClass, $method) {
+                HookManager::addFilter($hookName, function ($value, ...$args) use ($listenerClass, $method, $hookName) {
+                    if (! self::listenerClassExists($listenerClass, $hookName)) {
+                        return $value;
+                    }
+
                     return app($listenerClass)->{$method}($value, ...$args);
                 }, $priority);
             } elseif ($forceSync) {
                 // Action + sync: true → 동기 실행 (개발자가 명시적으로 opt-out)
-                HookManager::addAction($hookName, function (...$args) use ($listenerClass, $method) {
-                    app($listenerClass)->{$method}(...$args);
+                HookManager::addAction($hookName, function (...$args) use ($listenerClass, $method, $hookName) {
+                    if (self::listenerClassExists($listenerClass, $hookName)) {
+                        app($listenerClass)->{$method}(...$args);
+                    }
                 }, $priority);
             } else {
                 // Action 기본: 큐 디스패치 (큐 드라이버가 sync 면 Laravel 이 즉시 실행 → 하위호환)
@@ -194,7 +207,11 @@ class HookListenerRegistrar
         int $priority,
         array $boundArgs = [],
     ): void {
-        HookManager::addAction($hookName, function (...$args) use ($listenerClass, $method, $boundArgs) {
+        HookManager::addAction($hookName, function (...$args) use ($listenerClass, $method, $boundArgs, $hookName) {
+            if (! self::listenerClassExists($listenerClass, $hookName)) {
+                return;
+            }
+
             dispatch(new DispatchHookListenerJob(
                 $listenerClass,
                 $method,
@@ -202,6 +219,35 @@ class HookListenerRegistrar
                 HookContextCapture::capture(),
             ));
         }, $priority);
+    }
+
+    /**
+     * 구독한 리스너 클래스가 지금도 있는지 봅니다 — 없으면 경고를 한 번 남기고 false.
+     *
+     * 리스너는 훅이 발화할 때 지연 로딩한다. 확장 업데이트가 리스너 클래스를 지우면, 업데이트를 실행한 프로세스에는
+     * 부팅 때 등록한 옛 구독이 남아 그 뒤 같은 훅(예: 업데이트 완료 훅)이 발화할 때 「Target class … does not exist」 로
+     * 터졌다 — 업데이트는 끝났는데 실패로 보고되고, 같은 훅의 다른 리스너도 돌지 못했다(#725). 사라진 리스너는 그 구독만
+     * 건너뛴다. 다음 프로세스는 새 판의 구독으로 부팅하므로 이 경고는 업데이트를 실행한 프로세스에서만 난다.
+     *
+     * @param  string  $listenerClass  리스너 FQCN
+     * @param  string  $hookName  발화 중인 훅 이름 (경고 문맥)
+     * @return bool 클래스가 있으면 true
+     */
+    private static function listenerClassExists(string $listenerClass, string $hookName): bool
+    {
+        if (class_exists($listenerClass)) {
+            return true;
+        }
+
+        if (! isset(self::$missingListenersReported[$listenerClass])) {
+            self::$missingListenersReported[$listenerClass] = true;
+            Log::warning('구독은 남아 있는데 리스너 클래스가 없어 건너뜁니다 — 확장 업데이트가 리스너를 지운 경우 이 프로세스에서만 일어납니다', [
+                'listener' => $listenerClass,
+                'hook' => $hookName,
+            ]);
+        }
+
+        return false;
     }
 
     /**
@@ -215,5 +261,6 @@ class HookListenerRegistrar
     public static function clear(): void
     {
         self::$registered = [];
+        self::$missingListenersReported = [];
     }
 }

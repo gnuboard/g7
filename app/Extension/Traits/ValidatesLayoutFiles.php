@@ -84,6 +84,15 @@ trait ValidatesLayoutFiles
     protected bool $skipInvalidLayouts = false;
 
     /**
+     * 이 대상 템플릿 종류(`admin`·`user`)의 화면만 검증합니다 — null 이면 전부.
+     *
+     * 템플릿 활성화만 채운다. 사용자 템플릿을 켤 때 모듈의 **관리자** 화면까지 컴파일·검증하면, 무관한 관리자 화면
+     * 하나의 실패가 활성화 전체를 되돌렸다(#725 D6). 거르기는 파일 수집 단계에서 하고, 레이아웃 이름 산출 기준
+     * 경로(`$layoutsPath`)는 바꾸지 않는다({@see getLayoutTargetType()} 와 같은 판정).
+     */
+    protected ?string $onlyLayoutTargetType = null;
+
+    /**
      * {@see $skipInvalidLayouts} 가 켜진 검증에서 건너뛴 오류 목록.
      *
      * @var array<int, string>
@@ -145,6 +154,13 @@ trait ValidatesLayoutFiles
         // `.g7.html` 은 설치 시점에 메모리로 컴파일해 등록하고(디스크 산출 JSON 미기록), `.json` 은
         // 직접 등록한다(병존 · 선택 설치원). 두 SSoT 가 애초에 공존하지 않으므로 provenance 판별이 없다.
         $layoutSources = $this->collectLayoutSources($layoutsPath, $recursive);
+
+        if ($this->onlyLayoutTargetType !== null) {
+            $layoutSources = array_values(array_filter(
+                $layoutSources,
+                fn (array $source): bool => $this->getLayoutTargetType($layoutsPath, $source['path']) === $this->onlyLayoutTargetType
+            ));
+        }
 
         if (empty($layoutSources)) {
             return $validatedLayouts;

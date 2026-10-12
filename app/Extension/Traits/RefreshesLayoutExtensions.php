@@ -30,7 +30,7 @@ trait RefreshesLayoutExtensions
      * 확장(모듈/플러그인)의 레이아웃 확장을 파일에서 다시 읽어 DB에 갱신합니다.
      *
      * @param  ModuleInterface|PluginInterface  $extension  모듈 또는 플러그인 인스턴스
-     * @param  Collection  $adminTemplates  admin 템플릿 컬렉션
+     * @param  Collection  $templates  조각을 동기화할 템플릿 컬렉션 (붙을 자리가 없는 템플릿은 동기화가 건너뛴다)
      * @param  LayoutSourceType  $sourceType  소스 타입 (Module 또는 Plugin)
      * @param  bool  $preserveModified  관리자가 편집한 확장을 보존(병합)할지 여부 (--layout-strategy=keep)
      * @param  string|null  $backupPath  업데이트 백업 디렉토리 — 원본 본문이 없는 조각 행의 비교 기준을 만든다
@@ -39,7 +39,7 @@ trait RefreshesLayoutExtensions
      */
     protected function refreshExtensionLayoutExtensions(
         ModuleInterface|PluginInterface $extension,
-        Collection $adminTemplates,
+        Collection $templates,
         LayoutSourceType $sourceType,
         bool $preserveModified = false,
         ?string $backupPath = null,
@@ -49,7 +49,7 @@ trait RefreshesLayoutExtensions
         $extensionType = $sourceType === LayoutSourceType::Module ? 'module' : 'plugin';
         $stats = ['refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'skipped' => 0];
 
-        if ($adminTemplates->isEmpty()) {
+        if ($templates->isEmpty()) {
             return $stats;
         }
 
@@ -60,19 +60,14 @@ trait RefreshesLayoutExtensions
         // 컴파일에 실패한 조각의 행을 지우지 않는다(실패는 로그, 행은 보존).
         $liveKeys = $this->fragmentSourceKeys($extensionsPath, $jsonFiles);
 
-        // 각 템플릿에 대해 확장 동기화 — 정의 로드를 템플릿 루프 안에서 한다. 태그→컴포넌트 표가 템플릿마다
-        // 다르므로 조각은 붙을 템플릿의 표로 컴파일해야 한다 (C10). 색인은 조각 식별자(`fragment_key`) 기준이다 —
-        // 종전 대상(target) 색인은 같은 대상에 조각이 둘이면 하나를 잃었다 (C13).
+        // 정의·백업 기준은 템플릿 루프 밖에서 한 번만 읽는다 — 조각 컴파일은 템플릿과 무관하다(2026-09-28 결정, JSON 과
+        // 같다). 종전에는 템플릿마다 다시 읽어 깨진 조각 하나가 템플릿 수만큼 실패를 기록했다(#725). 색인은 조각 식별자
+        // (`fragment_key`) 기준이다 — 종전 대상(target) 색인은 같은 대상에 조각이 둘이면 하나를 잃었다 (C13).
         $synchronizer = $this->layoutSynchronizer();
+        $definitions = $this->loadFragmentDefinitions($extensionsPath, $jsonFiles, [$extensionType => $identifier]);
+        $backupFragments = $synchronizer->compileBackupFragments($backupPath, $identifier);
 
-        foreach ($adminTemplates as $template) {
-            $backupFragments = $synchronizer->compileBackupFragments($backupPath, $identifier, (string) $template->identifier);
-            $definitions = $this->loadFragmentDefinitions(
-                $extensionsPath,
-                $jsonFiles,
-                [$extensionType => $identifier, 'template' => $template->identifier],
-                (string) $template->identifier
-            );
+        foreach ($templates as $template) {
 
             // 등록 + 백필된 옛 키 행 잇기(운영자 수정본 유지) + 오등록·고아 행 정리 — 조각 행을 쓰는 모든 경로가 같은
             // 수렴 절차를 탄다 (#703). 종전에는 이 갱신 경로만 고아를 정리했고, 옛 키 행은 새 행에 밀려 지워져

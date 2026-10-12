@@ -50,7 +50,8 @@ class GateTestPopulation
     public const GATE_FILTERS = [
         'LayoutMarkup',
         'EnsureAdminOrder',
-        'RestoreLayoutExtensions',
+        // `RestoreLayoutExtensions` 는 #725 에서 뺐다 — 결제 플러그인 4종의 업데이트 복원 리스너와 그 테스트를 지웠고(코어 재등록이
+        // 같은 일을 한다), 그 관측은 `LayoutMarkup` 필터 안의 PaymentPluginUpdateFragmentConvergenceTest 가 진다.
         'ValidLayoutExtensionStructure',
         // ── 39차: 마킹 모집단을 저장소 전량으로 반전하자 드러난 셋 ──
         //

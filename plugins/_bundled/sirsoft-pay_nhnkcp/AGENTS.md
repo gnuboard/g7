@@ -95,8 +95,8 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 8개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 16개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 12개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 15개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 11개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 5개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -159,7 +159,7 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 48개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
+| PHPUnit | 47개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
 | Vitest | 27개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
 | 시나리오 매니페스트 | 41개 | `tests/scenarios` |
