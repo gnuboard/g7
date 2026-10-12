@@ -7,6 +7,7 @@ namespace App\Http\Resources;
 use App\Models\TemplateLayout;
 use App\Services\LayoutMarkupService;
 use App\Support\LayoutDescription;
+use App\Support\LayoutEmptyObjects;
 use Illuminate\Http\Request;
 
 class LayoutResource extends BaseApiResource
@@ -80,6 +81,8 @@ class LayoutResource extends BaseApiResource
     {
         $content = $this->getValue('content', []);
         $contentJson = is_array($content) ? json_encode($content, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '{}';
+        // 그대로 응답하는 보조 필드(components·data_sources·metadata)는 원문을 빈 객체 보존 디코드해 꺼낸다 (#758)
+        $preserved = $this->resource instanceof TemplateLayout ? LayoutEmptyObjects::rawPreserving($this->resource) : $content;
 
         // 편집기 JSON 탭이 처음 여는 본문 — 배열 캐스트를 거친 `$content` 는 `{}` 와 `[]` 를 같게 만들어
         // 저장된 `{}` 가 `[]` 로 보인다(한 글자 치면 컴파일 결과로 `{}` 로 바뀌어 탭이 스스로 어긋난다).
@@ -105,9 +108,9 @@ class LayoutResource extends BaseApiResource
             // 이 레이아웃을 사용하는 라우트의 path (routes.json 기준). 코드 편집기가
             // 파일 선택 시 ?route= 동기화 / 위지윅에서 넘어온 ?route= 복원에 사용.
             'route_path' => $this->routePathMap[$name] ?? null,
-            'components' => $content['components'] ?? [],
-            'data_sources' => $content['data_sources'] ?? [],
-            'metadata' => $content['metadata'] ?? [],
+            'components' => $preserved['components'] ?? [],
+            'data_sources' => $preserved['data_sources'] ?? [],
+            'metadata' => $preserved['metadata'] ?? [],
 
             // 레이아웃 편집 페이지용 필드
             'content' => $contentJson,

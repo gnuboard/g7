@@ -3,6 +3,8 @@
 namespace Tests\Unit\Support;
 
 use App\Support\LayoutEmptyObjects;
+use App\Support\LayoutMarkup\EmptyMap;
+use Illuminate\Database\Eloquent\Model;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 
@@ -121,5 +123,104 @@ class LayoutEmptyObjectsTest extends TestCase
         $this->assertSame(['x' => 1], LayoutEmptyObjects::decode(null, ['x' => 1]));
         $this->assertSame(['x' => 1], LayoutEmptyObjects::decode('[1,2]', ['x' => 1]));
         $this->assertSame(['x' => 1], LayoutEmptyObjects::decode('{bad', ['x' => 1]));
+    }
+
+    /**
+     * 화면이 그대로 받는 확대 자리(#758) — props 값·responsive props 값·isolatedState 값·data_sources data/headers 아래·
+     * defines·computed 값·overlay injections props 값·extensionPointProps 값의 빈 객체를 보존한다.
+     *
+     * @scenario position=expanded_value
+     *
+     * @effects expanded_value_positions_preserved
+     *
+     * @return void 반환값 없음
+     */
+    public function test_preserves_expanded_value_positions(): void
+    {
+        $layout = LayoutEmptyObjects::decode(
+            '{"defines":{"d":{}},"computed":{"c":{}},'
+            .'"data_sources":[{"id":"s","data":{"byId":{}},"headers":{"X-Map":{}}}],'
+            .'"injections":[{"target_id":"t","position":"inject_props","props":{"m":{}}}],'
+            .'"components":[{"id":"a","props":{"dataMap":{}},"isolatedState":{"sel":{}},'
+            .'"responsive":{"mobile":{"props":{"mm":{}}}},"extensionPointProps":{"h":{}}}]}',
+            []
+        );
+
+        $this->assertInstanceOf(stdClass::class, $layout['defines']['d'], 'defines 값');
+        $this->assertInstanceOf(stdClass::class, $layout['computed']['c'], 'computed 값');
+        $this->assertInstanceOf(stdClass::class, $layout['data_sources'][0]['data']['byId'], 'data 아래');
+        $this->assertInstanceOf(stdClass::class, $layout['data_sources'][0]['headers']['X-Map'], 'headers 아래');
+        $this->assertInstanceOf(stdClass::class, $layout['injections'][0]['props']['m'], 'injections props 값');
+        $this->assertInstanceOf(stdClass::class, $layout['components'][0]['props']['dataMap'], 'props 값');
+        $this->assertInstanceOf(stdClass::class, $layout['components'][0]['isolatedState']['sel'], 'isolatedState 값');
+        $this->assertInstanceOf(stdClass::class, $layout['components'][0]['responsive']['mobile']['props']['mm'], 'responsive props 값');
+        $this->assertInstanceOf(stdClass::class, $layout['components'][0]['extensionPointProps']['h'], 'extensionPointProps 값');
+    }
+
+    /**
+     * 구조 키 자기 자신이 빈 객체면 배열로 둔다 — PHP 병합 코드가 `props`·`params`·`isolatedState`·`data` 를 배열로 다룬다.
+     *
+     * @scenario position=expanded_value
+     *
+     * @effects structural_self_empty_stays_array
+     *
+     * @return void 반환값 없음
+     */
+    public function test_structural_self_empty_stays_array(): void
+    {
+        $layout = LayoutEmptyObjects::decode(
+            '{"data_sources":[{"id":"s","data":{},"headers":{},"params":{}}],"components":[{"id":"a","props":{},"isolatedState":{}}]}',
+            []
+        );
+
+        $this->assertSame([], $layout['data_sources'][0]['data']);
+        $this->assertSame([], $layout['data_sources'][0]['headers']);
+        $this->assertSame([], $layout['data_sources'][0]['params']);
+        $this->assertSame([], $layout['components'][0]['props']);
+        $this->assertSame([], $layout['components'][0]['isolatedState']);
+    }
+
+    /**
+     * 배열만 다루는 소비자용 되돌림은 원문 보존 디코드의 표식(EmptyMap)도 배열로 바꾼다.
+     *
+     * @scenario position=expanded_value
+     *
+     * @effects array_consumer_sees_arrays
+     *
+     * @return void 반환값 없음
+     */
+    public function test_to_arrays_reverts_empty_map_markers(): void
+    {
+        $layout = EmptyMap::decodePreserving('{"components":[{"props":{},"classMap":{"m":{}}}],"items":[]}');
+
+        $this->assertSame(['components' => [['props' => [], 'classMap' => ['m' => []]]], 'items' => []], LayoutEmptyObjects::toArrays($layout));
+    }
+
+    /**
+     * 모델 원문을 원문 보존 디코드로 읽고, 원문이 없거나 깨졌으면 캐스트 결과를 쓴다.
+     *
+     * @scenario position=expanded_value
+     *
+     * @effects unreadable_raw_falls_back_to_cast
+     *
+     * @return void 반환값 없음
+     */
+    public function test_raw_preserving_reads_model_raw_and_falls_back_to_cast(): void
+    {
+        $model = new class extends Model
+        {
+            /** @var array<string, string> */
+            protected $casts = ['content' => 'array'];
+        };
+
+        $model->setRawAttributes(['content' => '{"components":[{"props":{}}],"items":[]}'], true);
+        $this->assertSame('{"components":[{"props":{}}],"items":[]}', json_encode(LayoutEmptyObjects::rawPreserving($model)));
+
+        $model->setRawAttributes(['content' => '{bad'], true);
+        $this->assertSame([], LayoutEmptyObjects::rawPreserving($model), '깨진 원문은 캐스트 결과(빈 배열)');
+
+        $model->setRawAttributes(['content' => '{"a":{}}'], false);
+        $model->setRawAttributes(['content' => null], true);
+        $this->assertSame([], LayoutEmptyObjects::rawPreserving($model), '원문이 없으면 빈 배열');
     }
 }

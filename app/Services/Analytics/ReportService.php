@@ -369,7 +369,7 @@ class ReportService
             'pages_per_visit' => $visits > 0 ? round((int) $row->hits / $visits, 2) : 0.0,
             // 부가 값이 없는 차원이 대부분이다 — 그 자리는 빈 객체로 두어 화면이
             // 언제나 같은 모양을 읽게 한다.
-            'extra' => $extra[(string) $row->label_hash] ?? [],
+            'extra' => $extra[(string) $row->label_hash] ?? new \stdClass,
         ];
     }
 

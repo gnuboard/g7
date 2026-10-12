@@ -82,7 +82,8 @@ class SettingsController extends AdminBaseController
         return [
             'limits' => config('core.settings_limits', []),
             'env_priority_enabled' => EnvPriority::enabled(),
-            'env_locked' => $this->settingsService->envLockedMeta(),
+            // 키-값 맵이다 — 잠긴 키가 없으면 `[]` 가 아니라 `{}` 로 낸다(settings.md 의 약속, #758)
+            'env_locked' => (object) $this->settingsService->envLockedMeta(),
             'consent_providers' => array_values(array_map(
                 static fn (ConsentProviderInterface $provider): array => [
                     'id' => $provider->getId(),

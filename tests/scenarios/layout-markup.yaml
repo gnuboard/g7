@@ -118,6 +118,11 @@ effects:
   - action_params_empty_object_preserved
   - empty_list_stays_list
   - root_map_section_restored
+  # #758 — 같은 테스트 파일에 더한 보존 범위 확대(props 값·격리 상태·정적 데이터·헤더·defines·computed·확장 props)와 캐시 경유 응답.
+  # 소유 매니페스트는 layout-serving-empty-object.yaml 이고, 게이트 필터 `LayoutServing` 에 걸려 함께 돌므로 여기에도 등재한다.
+  - expanded_value_positions_preserved
+  - structural_self_empty_stays_array
+  - cached_response_keeps_empty_objects
   # --- S1 토큰 방출
   - start_tag_carries_name_attributes_and_source_position
   - end_tag_and_text_and_comment_tokens_are_emitted_in_authoring_order

@@ -136,6 +136,8 @@ effects:
   # 출력
   - csv_columns_filter_appends_extension_extra_columns
   - csv_row_filter_can_format_values
+  # #758 — 응답의 extra 는 빈 맵 `{}` 이지만 CSV 행 필터가 받는 행의 extra 는 종전대로 배열
+  - csv_row_filter_receives_array_extra
   - csv_filename_is_safe_for_ext_dimensions
   - diagnostics_sections_filter_adds_extension_sections
   - realtime_fields_filter_adds_extension_values

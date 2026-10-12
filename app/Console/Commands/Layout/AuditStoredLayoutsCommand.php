@@ -135,6 +135,7 @@ class AuditStoredLayoutsCommand extends Command
         $findings = [];
 
         foreach ($this->layoutFiles() as $path) {
+            // layout-assoc-decode-ok: 보안 재검사 전용 — 보고만 하고 쓰지 않는다
             $content = json_decode((string) file_get_contents($path), true);
 
             if (! is_array($content)) {

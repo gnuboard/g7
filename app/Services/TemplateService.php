@@ -22,6 +22,7 @@ use App\Models\Template;
 use App\Services\Extension\ExtensionIconResolver;
 use App\Support\CustomAssets;
 use App\Support\Filesystem\PathGuard;
+use App\Support\LayoutMarkup\EmptyMap;
 use App\Support\SafeExceptionMessage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -1174,9 +1175,11 @@ class TemplateService
      * 템플릿 routes.json 데이터를 활성화된 모듈의 routes와 병합하여 반환합니다.
      *
      * @param  string  $identifier  템플릿 식별자
+     * @param  bool  $preserveEmptyMaps  routes JSON 의 빈 맵 `{}` 를 보존할지 — 그대로 응답하는 경로만 true (#758).
+     *                                   SEO·사이트맵처럼 값을 배열로 읽는 PHP 소비자는 기본값(false)을 쓴다
      * @return array{success: bool, data: array|null, error: string|null}
      */
-    public function getRoutesDataWithModules(string $identifier): array
+    public function getRoutesDataWithModules(string $identifier, bool $preserveEmptyMaps = false): array
     {
         $this->routeMergeDegraded = false;
 
@@ -1213,8 +1216,10 @@ class TemplateService
         }
 
         // 5. 템플릿 routes.json 데이터 로드
+        //    응답용(`$preserveEmptyMaps`)이면 빈 맵 `{}` 를 보존해 읽는다 (#758). SEO·사이트맵처럼 값을 배열로 읽는
+        //    PHP 소비자는 기본값(연관 배열)을 그대로 쓴다.
         $templateRoutesContent = file_get_contents($routesFilePath);
-        $templateRoutesData = json_decode($templateRoutesContent, true);
+        $templateRoutesData = $this->decodeRoutesJson((string) $templateRoutesContent, $preserveEmptyMaps);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             return [
@@ -1228,16 +1233,20 @@ class TemplateService
         $templateType = $template->type;
 
         // 7. 템플릿 타입에 맞는 모듈 routes 데이터만 병합
-        $moduleRoutes = $this->loadActiveModulesRoutesData($templateType);
+        $moduleRoutes = $this->loadActiveModulesRoutesData($templateType, $preserveEmptyMaps);
 
         // 8. 플러그인 routes는 admin 템플릿에만 포함 (플러그인은 설정 페이지 등 admin 전용)
         $pluginRoutes = ($templateType === 'admin')
-            ? $this->loadActivePluginsRoutesData()
+            ? $this->loadActivePluginsRoutesData($preserveEmptyMaps)
             : [];
 
         // 9. 템플릿 자체 라우트에 source 태깅
         // 모듈/플러그인 라우트는 각 로더(loadActive*RoutesData)에서 이미 source 부여됨
         $templateRoutes = array_map(function ($route) {
+            if (! is_array($route)) {
+                return $route;
+            }
+
             $route['source'] = ['kind' => 'template', 'identifier' => null];
 
             return $route;
@@ -1261,7 +1270,7 @@ class TemplateService
         // (라우트 트리 그룹핑은 template/module/plugin 3종만 표시,
         // source.kind='core' 인 라우트는 트리에서 제외)
         $mergedRoutes = array_map(function ($route) {
-            if (! isset($route['source'])) {
+            if (is_array($route) && ! isset($route['source'])) {
                 $route['source'] = ['kind' => 'core', 'identifier' => null];
             }
 
@@ -1325,8 +1334,8 @@ class TemplateService
             return ['success' => false, 'data' => null, 'error' => 'routes_not_found'];
         }
 
-        // 2. routes.json 디코드
-        $templateRoutesData = json_decode((string) file_get_contents($routesFilePath), true);
+        // 2. routes.json 디코드 — 편집기 응답 전용이므로 빈 맵 `{}` 를 보존한다 (#758)
+        $templateRoutesData = $this->decodeRoutesJson((string) file_get_contents($routesFilePath), true);
         if (json_last_error() !== JSON_ERROR_NONE || ! is_array($templateRoutesData)) {
             return ['success' => false, 'data' => null, 'error' => 'invalid_json'];
         }
@@ -1339,14 +1348,18 @@ class TemplateService
 
         // 4. 템플릿 라우트에 source 태깅 (모듈/플러그인 로더는 자체 source 부여).
         $templateRoutes = array_map(function ($route) {
+            if (! is_array($route)) {
+                return $route;
+            }
+
             $route['source'] = ['kind' => 'template', 'identifier' => null];
 
             return $route;
         }, $templateRoutesData['routes'] ?? []);
 
-        $moduleRoutes = $this->loadActiveModulesRoutesData($templateType);
+        $moduleRoutes = $this->loadActiveModulesRoutesData($templateType, true);
         $pluginRoutes = ($templateType === 'admin')
-            ? $this->loadActivePluginsRoutesData()
+            ? $this->loadActivePluginsRoutesData(true)
             : [];
 
         $mergedRoutes = array_merge($templateRoutes, $moduleRoutes, $pluginRoutes);
@@ -1361,7 +1374,7 @@ class TemplateService
 
         // 6. source 미부여 라우트(필터 주입 시스템 라우트 등)에 core fallback.
         $mergedRoutes = array_map(function ($route) {
-            if (! isset($route['source'])) {
+            if (is_array($route) && ! isset($route['source'])) {
                 $route['source'] = ['kind' => 'core', 'identifier' => null];
             }
 
@@ -1779,9 +1792,10 @@ class TemplateService
      * 레거시 구조(routes.json)는 admin 타입에만 폴백으로 적용합니다.
      *
      * @param  string  $templateType  템플릿 타입 ('admin' 또는 'user')
+     * @param  bool  $preserveEmptyMaps  routes JSON 의 빈 맵 `{}` 를 보존할지 (응답 전용 경로만 true)
      * @return array 모든 모듈의 routes 배열
      */
-    private function loadActiveModulesRoutesData(string $templateType = 'admin'): array
+    private function loadActiveModulesRoutesData(string $templateType = 'admin', bool $preserveEmptyMaps = false): array
     {
         $routes = [];
         $activeModules = $this->moduleManager->getActiveModules();
@@ -1821,12 +1835,16 @@ class TemplateService
             }
 
             $content = file_get_contents($routesFilePath);
-            $data = json_decode($content, true);
+            $data = $this->decodeRoutesJson((string) $content, $preserveEmptyMaps);
 
             // JSON 파싱 성공 시 routes 배열 병합
             if (json_last_error() === JSON_ERROR_NONE && isset($data['routes']) && is_array($data['routes'])) {
                 // 모듈 routes의 layout 필드에 moduleIdentifier 접두사 추가 + source 태깅
                 $moduleRoutes = array_map(function ($route) use ($moduleIdentifier) {
+                    if (! is_array($route)) {
+                        return $route;
+                    }
+
                     if (isset($route['layout'])) {
                         $route['layout'] = $moduleIdentifier.'.'.$route['layout'];
                     }
@@ -1845,9 +1863,10 @@ class TemplateService
     /**
      * 활성화된 모든 플러그인의 routes 데이터를 로드합니다.
      *
+     * @param  bool  $preserveEmptyMaps  routes JSON 의 빈 맵 `{}` 를 보존할지 (응답 전용 경로만 true)
      * @return array 모든 플러그인의 routes 배열
      */
-    private function loadActivePluginsRoutesData(): array
+    private function loadActivePluginsRoutesData(bool $preserveEmptyMaps = false): array
     {
         $routes = [];
         $activePlugins = $this->pluginManager->getActivePlugins();
@@ -1859,12 +1878,16 @@ class TemplateService
             // routes.json 파일이 존재하는 경우에만 로드
             if (file_exists($routesFilePath)) {
                 $content = file_get_contents($routesFilePath);
-                $data = json_decode($content, true);
+                $data = $this->decodeRoutesJson((string) $content, $preserveEmptyMaps);
 
                 // JSON 파싱 성공 시 routes 배열 병합
                 if (json_last_error() === JSON_ERROR_NONE && isset($data['routes']) && is_array($data['routes'])) {
                     // 플러그인 routes의 layout 필드에 pluginIdentifier 접두사 추가 + source 태깅
                     $pluginRoutes = array_map(function ($route) use ($pluginIdentifier) {
+                        if (! is_array($route)) {
+                            return $route;
+                        }
+
                         if (isset($route['layout'])) {
                             $route['layout'] = $pluginIdentifier.'.'.$route['layout'];
                         }
@@ -1896,6 +1919,18 @@ class TemplateService
         }
 
         return $routes;
+    }
+
+    /**
+     * routes JSON 원문을 디코드합니다 — 응답용이면 빈 맵 `{}` 를 보존합니다 (#758).
+     *
+     * @param  string  $content  routes JSON 원문
+     * @param  bool  $preserveEmptyMaps  빈 맵을 보존할지 (응답 전용 경로만 true)
+     * @return mixed 디코드 결과 (JSON 이 아니면 null)
+     */
+    private function decodeRoutesJson(string $content, bool $preserveEmptyMaps): mixed
+    {
+        return $preserveEmptyMaps ? EmptyMap::decodePreserving($content) : json_decode($content, true);
     }
 
     /**

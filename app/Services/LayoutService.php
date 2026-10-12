@@ -1014,8 +1014,10 @@ class LayoutService
                 // 저장 시 클라이언트가 머지된 트리에서 원본을
                 // 추측 복원하지 않고, 본 메타에서 원본 그대로 가져다 PUT 한다.
                 if ($withSourceMeta) {
+                    // 원본은 빈 객체 전부를 보존한 원문이다 — 규칙 기반 디코드(`$layoutData`)는 값 자리 밖의 `{}` 를
+                    // `[]` 로 두므로, 편집기가 그것을 받아 저장하면 DB 원문에 그대로 굳는다 (#758)
                     $mergedLayout['__editor'] = [
-                        'original' => $layoutData,
+                        'original' => LayoutEmptyObjects::rawPreserving($layout),
                     ];
                 }
             } else {
@@ -1033,7 +1035,7 @@ class LayoutService
                     // 편집 모드: 독립 레이아웃도 원본 컨테이너를 보존해 저장 시 SSoT 로 사용.
                     // 합본/원본이 같지만 클라이언트의 저장 경로를 단일화하기 위해 항상 부착.
                     $mergedLayout['__editor'] = [
-                        'original' => $layoutData,
+                        'original' => LayoutEmptyObjects::rawPreserving($layout),
                     ];
                 }
             }
@@ -1510,7 +1512,9 @@ class LayoutService
         // content 키가 있으면 추출 (UpdateLayoutContentRequest 사용 시)
         $updateData = $data['content'] ?? $data;
 
-        $oldContent = $layout->content;
+        // 수정 전 원문 — 기준 버전·변경 요약에 쓴다. 캐스트(`$layout->content`)는 `{}` 를 `[]` 로 만들어
+        // 그 기준 버전을 복원하면 빈 객체가 사라진다 (#758)
+        $oldContent = LayoutEmptyObjects::rawPreserving($layout);
 
         // 레이아웃 업데이트 (lock_version 1 증가)
         $layout = $this->layoutRepository->updateContent($layout->id, $updateData, $currentVersion + 1);

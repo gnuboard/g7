@@ -7,6 +7,7 @@ use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\LayoutSourceType;
 use App\Extension\HookManager;
 use App\Http\Requests\Layout\Concerns\CompilesMarkupContent;
+use App\Http\Requests\Layout\Concerns\DecodesLayoutContentPreserving;
 use App\Rules\NoExternalUrls;
 use App\Rules\SafeLayoutExpressions;
 use App\Rules\ValidDataSourceMerge;
@@ -31,6 +32,7 @@ use Illuminate\Validation\Rule;
 class UpdateLayoutContentRequest extends FormRequest
 {
     use CompilesMarkupContent;
+    use DecodesLayoutContentPreserving;
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
@@ -63,15 +65,11 @@ class UpdateLayoutContentRequest extends FormRequest
 
         $content = $this->input('content');
 
-        // content가 JSON 문자열인 경우 배열로 변환
-        if (is_string($content)) {
-            $decoded = json_decode($content, true);
-
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                $this->merge(['content' => $decoded]);
-                $content = $decoded;
-            }
-            // JSON 파싱 실패 시 원본 유지 (검증에서 'array' 규칙으로 실패 처리)
+        // content 가 JSON 문자열이거나 JSON 객체 본문이면 빈 객체 `{}` 를 보존해 다시 읽는다 (#758).
+        // 파싱 실패 시 원본 유지 (검증에서 'array' 규칙으로 실패 처리)
+        if ($this->input('format') !== 'markup' && $content !== null) {
+            $content = $this->decodeContentPreserving();
+            $this->merge(['content' => $content]);
         }
 
         // 편집기 응답의 상속/주입/partial 노드 + 편집기 전용 메타 제거.
@@ -271,7 +269,8 @@ class UpdateLayoutContentRequest extends FormRequest
      */
     public function validated($key = null, $default = null): mixed
     {
-        $validated = parent::validated($key, $default);
+        // 검증은 빈 객체 표식을 배열로 낮춘 사본으로 했으므로 원문의 `{}` 자리를 먼저 되살린다 (#758)
+        $validated = $this->restoreValidatedContent(parent::validated($key, $default), $key);
 
         if ($key !== null || ! is_array($validated) || ! isset($validated['content']) || ! is_array($validated['content'])) {
             return $validated;
