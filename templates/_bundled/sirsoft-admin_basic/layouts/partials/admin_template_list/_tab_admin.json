@@ -425,6 +425,8 @@
                                                 "target": "global",
                                                 "selectedTemplate": "{{$args[0]}}",
                                                 "templateLayoutStrategy": "overwrite",
+                                                "templateLayoutSource": "auto",
+                                                "templateLayoutSourceOpen": false,
                                                 "templateForceUpdate": false,
                                                 "hasModifiedTemplateLayouts": false,
                                                 "modifiedTemplateLayoutsCount": 0,
@@ -513,7 +515,9 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",
-                                                "selectedTemplate": "{{$args[0]}}"
+                                                "selectedTemplate": "{{$args[0]}}",
+                                                "templateLayoutSource": "auto",
+                                                "templateLayoutSourceOpen": false
                                             }
                                         },
                                         {
@@ -592,6 +596,8 @@
                                                 "target": "global",
                                                 "selectedTemplate": "{{$args[1]}}",
                                                 "templateLayoutStrategy": "overwrite",
+                                                "templateLayoutSource": "auto",
+                                                "templateLayoutSourceOpen": false,
                                                 "templateForceUpdate": false,
                                                 "hasModifiedTemplateLayouts": false,
                                                 "modifiedTemplateLayoutsCount": 0,
@@ -669,7 +675,9 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",
-                                                "selectedTemplate": "{{$args[1]}}"
+                                                "selectedTemplate": "{{$args[1]}}",
+                                                "templateLayoutSource": "auto",
+                                                "templateLayoutSourceOpen": false
                                             }
                                         },
                                         {

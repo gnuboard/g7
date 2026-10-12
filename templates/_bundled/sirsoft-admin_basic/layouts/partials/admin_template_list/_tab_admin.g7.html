@@ -169,7 +169,7 @@
             </case>
             <case when="update">
               <sequence>
-                <set-state target="global" selectedTemplate="{{$args[0]}}" templateLayoutStrategy="overwrite" :templateForceUpdate="false" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]" :modifiedTemplateLayoutsCheckFailed="false"/>
+                <set-state target="global" selectedTemplate="{{$args[0]}}" templateLayoutStrategy="overwrite" templateLayoutSource="auto" :templateLayoutSourceOpen="false" :templateForceUpdate="false" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]" :modifiedTemplateLayoutsCheckFailed="false"/>
                 <api-call :auth_required="true" target="/api/admin/templates/{{$args[0].identifier}}/check-modified-layouts" method="GET">
                   <success>
                     <set-state target="global" hasModifiedTemplateLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedTemplateLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedTemplateLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedTemplateLayoutsCheckFailed="false"/>
@@ -198,7 +198,7 @@
           <switch on="{{$args[0].status === 'uninstalled' ? 'install' : 'edit'}}">
             <case when="install">
               <sequence>
-                <set-state target="global" selectedTemplate="{{$args[0]}}"/>
+                <set-state target="global" selectedTemplate="{{$args[0]}}" templateLayoutSource="auto" :templateLayoutSourceOpen="false"/>
                 <open-modal target="template_install_modal"/>
               </sequence>
             </case>
@@ -226,7 +226,7 @@
             </case>
             <case when="update">
               <sequence>
-                <set-state target="global" selectedTemplate="{{$args[1]}}" templateLayoutStrategy="overwrite" :templateForceUpdate="false" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]" :modifiedTemplateLayoutsCheckFailed="false"/>
+                <set-state target="global" selectedTemplate="{{$args[1]}}" templateLayoutStrategy="overwrite" templateLayoutSource="auto" :templateLayoutSourceOpen="false" :templateForceUpdate="false" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]" :modifiedTemplateLayoutsCheckFailed="false"/>
                 <api-call :auth_required="true" target="/api/admin/templates/{{$args[1].identifier}}/check-modified-layouts" method="GET">
                   <success>
                     <set-state target="global" hasModifiedTemplateLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedTemplateLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedTemplateLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedTemplateLayoutsCheckFailed="false"/>
@@ -248,7 +248,7 @@
               </sequence>
             </case>
             <case when="refresh_layouts">
-              <set-state target="global" selectedTemplate="{{$args[1]}}"/>
+              <set-state target="global" selectedTemplate="{{$args[1]}}" templateLayoutSource="auto" :templateLayoutSourceOpen="false"/>
               <open-modal target="template_refresh_layouts_modal"/>
             </case>
             <case when="manage_language_packs">

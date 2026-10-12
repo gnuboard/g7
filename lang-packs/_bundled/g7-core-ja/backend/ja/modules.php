@@ -182,6 +182,7 @@ return [
         'delete_directory_failed' => 'モジュールディレクトリの削除に失敗しました: :error',
         'update_failed' => 'モジュール ":module"のアップデートに失敗しました: :error',
         'invalid_layout_strategy' => '無効なレイアウト戦略です。(overwrite または keep のみ許可)',
+        'invalid_layout_source' => '無効なレイアウトインストールソースです。(auto または json のみ許可)',
         'invalid_vendor_mode' => '無効な Vendor インストールモードです。(auto、composer、bundled のみ許可)',
         'layout_validation_markup_error' => 'レイアウトファイル :file のマークアップコンパイルに失敗しました: :error',
     ],

@@ -8,6 +8,8 @@ use Illuminate\Console\Command;
 /**
  * `--layout-source=auto|json` 옵션으로 레이아웃 설치 소스를 선택하는 커맨드 공통 트레이트.
  *
+ * 옵션을 생략하면 설정(`template.layout_markup.install_source`, 환경 변수 `LAYOUT_INSTALL_SOURCE`)을 따른다.
+ *
  * 설치/업데이트/레이아웃 갱신 커맨드가 이 트레이트를 써서 값을 검증하고 실행 시점에
  * `config('template.layout_markup.install_source')` 를 오버라이드한다. 매니저 시그니처는 건드리지
  * 않으므로 3개 매니저 8개 호출처가 무수정으로 따라온다.
@@ -31,7 +33,9 @@ trait SelectsLayoutInstallSource
     {
         $raw = $this->option('layout-source');
 
-        if ($raw === null) {
+        // 생략(또는 빈 값)이면 설정(`LAYOUT_INSTALL_SOURCE`)을 그대로 따른다 — 옵션 기본값을 `auto` 로 두면
+        // 운영자가 .env 에 json 을 지정해도 명령마다 auto 로 덮였다(#144).
+        if ($raw === null || trim((string) $raw) === '') {
             return true;
         }
 

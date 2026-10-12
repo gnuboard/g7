@@ -123,6 +123,7 @@ return [
             ],
             'item_failed' => '  失敗: :message',
             'completed' => 'アップデート完了: 成功 :success、失敗 :failed',
+            'exit_failure' => 'コアは :version にアップデートされましたが、バンドル拡張 :failed 件のアップデートに失敗しました。上の失敗項目を確認してから、該当する拡張を再度アップデートしてください。',
             'search_index_result' => '検索インデックス: :summary',
             'manifest_required' => '--manifest オプションは必須で、存在するファイルを指定する必要があります。',
             'manifest_parse_failed' => 'マニフェスト JSON の解析に失敗しました: :path',

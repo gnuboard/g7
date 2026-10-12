@@ -1,0 +1,33 @@
+feature: 관리자 확장 설치·업데이트·레이아웃 갱신 창의 레이아웃 설치 소스 고급 설정
+
+description: |
+  #144(공개) / #770(내부) D10·D11. 템플릿·모듈·플러그인 × 설치·업데이트·레이아웃 갱신 = 9개 창에 기본 접힌 '고급 설정'을 두고
+  그 안에서 레이아웃 설치 소스 `자동(권장)`(auto) / `원본 JSON 우선(문제 해결용)`(json)을 고른다. 창을 열 때마다 auto 로
+  초기화되고, 요청 본문 `layout_source` 로 보낸다. 서버는 그 요청 동안만 설정(`template.layout_markup.install_source`)을 덮고
+  끝나면(실패해도) 되돌린다 — CLI `--layout-source` 와 같은 자리다. 허용 밖 값은 422 + 전용 문구, 권한 게이트는 그대로다.
+
+axes:
+  case:
+    - layout_source_scoped_to_request
+    - layout_source_invalid_rejected
+    - layout_source_permission_denied
+    - advanced_collapsed_by_default
+    - json_selection_updates_state
+    - request_body_carries_layout_source
+    - reset_after_success
+    - reset_on_open
+    - labels_translated
+
+effects:
+  - layout_source_reaches_service_and_is_restored_after_request
+  - invalid_layout_source_rejected_with_message
+  - layout_source_request_keeps_permission_gate
+  - advanced_section_collapsed_then_expands_with_auto_checked
+  - json_selection_stored_in_global_state
+  - layout_source_sent_in_request_body
+  - layout_source_reset_on_reopen_and_after_success
+  - layout_source_labels_use_group_keys
+
+test_files:
+  - tests/Feature/Api/Admin/ExtensionLayoutSourceRequestTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-layout-source.test.tsx

@@ -116,6 +116,7 @@ return [
         'delete_directory_failed' => 'Failed to delete plugin directory: :error',
         'update_failed' => 'Failed to update plugin ":plugin": :error',
         'invalid_layout_strategy' => 'Invalid layout strategy. (only overwrite or keep allowed)',
+        'invalid_layout_source' => 'Invalid layout install source. (Only auto or json allowed)',
         'invalid_vendor_mode' => 'Invalid vendor installation mode. (only auto, composer, bundled allowed)',
         'github_url_invalid' => 'Invalid GitHub URL format.',
         'github_download_failed' => 'Failed to download from GitHub: :error',

@@ -247,6 +247,10 @@ Artisan 커맨드와 동시 실행)를 오류 상자 없이 안내 토스트로 
 목록 제목·안내 문구(`layout_strategy_keep_desc`·`modified_layouts_list_title`·`modified_layouts_keep_notice`)도 그 뜻으로
 씁니다. 목록은 유지를 골랐고 수정본이 있을 때만 보이며, 병합 결과 요약은 서버가 성공 문구 뒤에 붙여 보내므로 모달 마크업이
 따로 그리지 않습니다(규칙: 코어 `docs/extension/extension-update-system.md` §10).
+설치·업데이트·레이아웃 갱신 창(템플릿·모듈·플러그인 9개)에는 기본 접힌 「고급 설정」이 있고, 그 안의 라디오가 레이아웃 설치
+소스(`자동(권장)` = auto / `원본 JSON 우선(문제 해결용)` = json)를 `layout_source` 로 요청 본문에 싣습니다. 값과 접힘은
+`_global.{template|module|plugin}LayoutSource`·`…LayoutSourceOpen` 에 두고, **창을 여는 모든 지점과 성공 뒤 초기화**에서
+auto·접힘으로 되돌립니다 — 한 곳이라도 빠지면 직전에 고른 json 이 다음 확장의 창으로 샙니다(1.1.1~, 코어 7.1.1 필요).
 
 **본인인증 메일 문구**(7.1.0~): 별도 편집 화면 없이 「알림 설정」 탭의 분류 칩 「본인인증」에서 일반 알림과 같은 카드·
 편집 모달로 다룹니다. 본인인증 탭의 「메시지」 하위 구획(`_tab_identity_messages`)은 그 자리로 가는 안내 상자만 남습니다.

@@ -1307,6 +1307,7 @@ return [
     'summary_more_errors' => '(and :count more errors)',
 
     'attributes' => [
+        'layout_source' => 'layout install source',
         'since' => 'reference time',
         'skip_waiting' => 'skip waiting period',
         'targets' => 'targets',

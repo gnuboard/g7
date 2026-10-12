@@ -2,7 +2,6 @@
 
 namespace App\Extension;
 
-use App\Exceptions\ExtensionUpdateFailedException;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Extension\PluginInterface;
 use App\Contracts\Extension\PluginManagerInterface;
@@ -21,18 +20,19 @@ use App\Enums\LayoutSourceType;
 use App\Enums\LayoutSyncMode;
 use App\Enums\PermissionType;
 use App\Exceptions\ExtensionOperationInProgressException;
+use App\Exceptions\ExtensionUpdateFailedException;
 use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Concerns\ResolvesExtensionSharedRecords;
 use App\Extension\Concerns\ResolvesUpdateCoreCompatibility;
 use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\DependencyVersionWarnings;
 use App\Extension\Helpers\ExtensionBackupHelper;
-use App\Extension\Helpers\ExtensionRollbackCacheRepair;
 use App\Extension\Helpers\ExtensionInstallRollbackHelper;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
+use App\Extension\Helpers\ExtensionRollbackCacheRepair;
 use App\Extension\Helpers\ExtensionStatusGuard;
 use App\Extension\Helpers\ExtensionUpgradeGuardHelper;
 use App\Extension\Helpers\FilePermissionHelper;
@@ -4857,6 +4857,8 @@ class PluginManager implements PluginManagerInterface
                 'from_version' => $fromVersion,
                 'to_version' => $toVersion,
                 'layout_strategy' => $layoutStrategy,
+                // 이번 실행의 레이아웃 설치 소스 — 활동 로그 리스너가 큐로 돌아도 실행 당시 값을 기록하게 결과에 싣는다.
+                'layout_source' => self::normalizeLayoutInstallSource(config('template.layout_markup.install_source')),
                 'layout_sync' => $layoutSync,
                 'layout_warnings' => $layoutWarnings,
                 'dependency_warnings' => $dependencyWarnings,

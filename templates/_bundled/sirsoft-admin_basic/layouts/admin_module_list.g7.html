@@ -346,13 +346,13 @@
             <switch on="{{$args[0].status === 'uninstalled' ? 'install' : 'update'}}">
               <case when="install">
                 <sequence>
-                  <set-state target="global" selectedModule="{{$args[0]}}"/>
+                  <set-state target="global" selectedModule="{{$args[0]}}" moduleLayoutSource="auto" :moduleLayoutSourceOpen="false"/>
                   <open-modal target="module_install_modal"/>
                 </sequence>
               </case>
               <case when="update">
                 <sequence>
-                  <set-state target="global" selectedModule="{{$args[0]}}" moduleLayoutStrategy="overwrite" :moduleForceUpdate="false" :hasModifiedModuleLayouts="false" :modifiedModuleLayoutsCount="0" :modifiedModuleLayouts="[]" :modifiedModuleLayoutsCheckFailed="false" :moduleRebuildSearchIndex="false"/>
+                  <set-state target="global" selectedModule="{{$args[0]}}" moduleLayoutStrategy="overwrite" moduleLayoutSource="auto" :moduleLayoutSourceOpen="false" :moduleForceUpdate="false" :hasModifiedModuleLayouts="false" :modifiedModuleLayoutsCount="0" :modifiedModuleLayouts="[]" :modifiedModuleLayoutsCheckFailed="false" :moduleRebuildSearchIndex="false"/>
                   <api-call :auth_required="true" target="/api/admin/modules/{{$args[0].identifier}}/check-modified-layouts" method="GET">
                     <success>
                       <set-state target="global" hasModifiedModuleLayouts="{{response.data?.has_modified_layouts ?? false}}" modifiedModuleLayoutsCount="{{response.data?.modified_count ?? 0}}" modifiedModuleLayouts="{{response.data?.modified_layouts ?? []}}" :modifiedModuleLayoutsCheckFailed="false"/>
@@ -380,7 +380,7 @@
                  — 무엇이 함께 지워지는지 보여 주기 위해서다. -->
             <switch>
               <case when="refresh_layouts">
-                <set-state target="global" selectedModule="{{$args[1]}}"/>
+                <set-state target="global" selectedModule="{{$args[1]}}" moduleLayoutSource="auto" :moduleLayoutSourceOpen="false"/>
                 <open-modal target="module_refresh_layouts_modal"/>
               </case>
               <case when="manage_language_packs">

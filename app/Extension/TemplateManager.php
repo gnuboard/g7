@@ -2,7 +2,6 @@
 
 namespace App\Extension;
 
-use App\Exceptions\ExtensionUpdateFailedException;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
@@ -15,6 +14,7 @@ use App\Enums\ExtensionStatus;
 use App\Enums\LayoutSourceType;
 use App\Enums\LayoutSyncMode;
 use App\Exceptions\ExtensionOperationInProgressException;
+use App\Exceptions\ExtensionUpdateFailedException;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Concerns\ResolvesUpdateCoreCompatibility;
@@ -1721,7 +1721,7 @@ class TemplateManager implements TemplateManagerInterface
             $validatedLayouts = $this->validateLayoutFiles($layoutsPath, $templateName, 'template', true);
             $this->rememberLayoutWarnings();
         } catch (\Exception $e) {
-            Log::error(__('templates.errors.layout_registration_failed'), [
+            Log::error(__('templates.errors.layout_registration_failed', ['error' => $e->getMessage()]), [
                 'template' => $templateName,
                 'error' => $e->getMessage(),
             ]);
@@ -1768,7 +1768,7 @@ class TemplateManager implements TemplateManagerInterface
                 ]);
 
             } catch (\Exception $e) {
-                Log::error(__('templates.errors.layout_registration_failed'), [
+                Log::error(__('templates.errors.layout_registration_failed', ['error' => $e->getMessage()]), [
                     'file' => $validatedLayout['file'],
                     'error' => $e->getMessage(),
                 ]);
@@ -1848,7 +1848,7 @@ class TemplateManager implements TemplateManagerInterface
                 $validatedLayouts = $this->validateLayoutFiles($moduleDirectory, $moduleIdentifier, 'template', true);
                 $this->rememberLayoutWarnings();
             } catch (\Exception $e) {
-                Log::error(__('templates.errors.override_layout_registration_failed'), [
+                Log::error(__('templates.errors.override_layout_registration_failed', ['error' => $e->getMessage()]), [
                     'template' => $templateName,
                     'module' => $moduleIdentifier,
                     'error' => $e->getMessage(),
@@ -1906,7 +1906,7 @@ class TemplateManager implements TemplateManagerInterface
                     ]);
 
                 } catch (\Exception $e) {
-                    Log::error(__('templates.errors.override_layout_registration_failed'), [
+                    Log::error(__('templates.errors.override_layout_registration_failed', ['error' => $e->getMessage()]), [
                         'file' => $validatedLayout['file'],
                         'template' => $templateName,
                         'module' => $moduleIdentifier,
@@ -2358,7 +2358,7 @@ class TemplateManager implements TemplateManagerInterface
             $validatedLayouts = $this->validateLayoutFiles($layoutsPath, $identifier, 'template', true);
             $this->rememberLayoutWarnings();
         } catch (\Exception $e) {
-            Log::error(__('templates.errors.layout_registration_failed'), [
+            Log::error(__('templates.errors.layout_registration_failed', ['error' => $e->getMessage()]), [
                 'template' => $identifier,
                 'error' => $e->getMessage(),
             ]);
@@ -2395,7 +2395,7 @@ class TemplateManager implements TemplateManagerInterface
                 $this->tallyLayoutSync($stats, $entry);
                 $report->add($entry);
             } catch (\Exception $e) {
-                Log::error(__('templates.errors.layout_registration_failed'), [
+                Log::error(__('templates.errors.layout_registration_failed', ['error' => $e->getMessage()]), [
                     'file' => $validatedLayout['file'],
                     'error' => $e->getMessage(),
                 ]);
@@ -3505,6 +3505,8 @@ class TemplateManager implements TemplateManagerInterface
                 'from_version' => $fromVersion,
                 'to_version' => $toVersion,
                 'layout_strategy' => $layoutStrategy,
+                // 이번 실행의 레이아웃 설치 소스 — 활동 로그 리스너가 큐로 돌아도 실행 당시 값을 기록하게 결과에 싣는다.
+                'layout_source' => self::normalizeLayoutInstallSource(config('template.layout_markup.install_source')),
                 'layout_sync' => $layoutSync,
                 'layout_warnings' => $layoutWarnings,
                 'dependency_warnings' => $dependencyWarnings,

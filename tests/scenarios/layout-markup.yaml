@@ -525,6 +525,7 @@ effects:
   # 계약의 양끝을 모두 잠근다 — 옵션 반영·정규화·invalid 즉시 실패(설정 불변).
   - layout_source_option_maps_to_runtime_config
   - invalid_layout_source_option_fails_without_config_change
+  - omitted_layout_source_option_keeps_configured_source
   # --- S18 P1 소비 경로 정합: 본 레이아웃·fragment 는 이미 마크업 우선인데 **조각(<include>) 해석과
   #     템플릿 활성화**만 .json 전용이라, 소스만 고치면 조용히 반영되지 않았다. 네 소비 경로를 같은
   #     우선순위 규약(ResolvesLayoutInstallSource::layoutSourceCandidates)으로 통일한다.
@@ -882,6 +883,7 @@ effects:
   - plugin_partial_resolution_matches_module_and_template
   - layout_root_detected_at_any_directory_depth
   - layout_root_falls_back_to_input_when_absent
+  - layouts_root_counts_only_segments_inside_project
   - extension_component_sources_are_classified_by_directory
   - for_variant_is_listed_only_in_the_for_map_not_duplicated_as_a_component
   - props_are_extracted_from_the_component_source_declaration
@@ -899,6 +901,7 @@ effects:
   - fixture_command_prefers_the_authoring_source
   - fixture_command_accepts_a_markup_path_argument
   - fixture_command_still_reads_json_only_layouts
+  - fixture_command_tolerates_missing_partial_in_json_layout
   # S18.5 축 A — 쌍둥이 기계화. 짝 `.json` 이 손유지에서 기계 산출물로 바뀌는 축이다.
   - decompile_sync_creates_missing_json_twin
   - decompile_sync_rewrites_stale_json_twin

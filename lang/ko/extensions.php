@@ -135,6 +135,7 @@ return [
             ],
             'item_failed' => '  실패: :message',
             'completed' => '업데이트 완료: 성공 :success, 실패 :failed',
+            'exit_failure' => '코어는 :version 으로 업데이트됐지만 번들 확장 :failed개 업데이트에 실패했습니다. 위 실패 항목을 확인한 뒤 해당 확장을 다시 업데이트하세요.',
             'search_index_result' => '검색 인덱스: :summary',
             'manifest_required' => '--manifest 옵션이 필수이며 존재하는 파일이어야 합니다.',
             'manifest_parse_failed' => '매니페스트 JSON 파싱 실패: :path',

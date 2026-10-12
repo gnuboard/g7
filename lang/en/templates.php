@@ -88,6 +88,7 @@ return [
         'delete_directory_failed' => 'Failed to delete template directory: :error',
         'update_failed' => 'Failed to update template ":template": :error',
         'invalid_layout_strategy' => 'Invalid layout strategy. (Only overwrite or keep allowed)',
+        'invalid_layout_source' => 'Invalid layout install source. (Only auto or json allowed)',
     ],
 
     'messages' => [

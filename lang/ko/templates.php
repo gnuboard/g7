@@ -88,6 +88,7 @@ return [
         'delete_directory_failed' => '템플릿 디렉토리 삭제에 실패했습니다: :error',
         'update_failed' => '템플릿 ":template" 업데이트에 실패했습니다: :error',
         'invalid_layout_strategy' => '유효하지 않은 레이아웃 전략입니다. (overwrite 또는 keep만 허용)',
+        'invalid_layout_source' => '유효하지 않은 레이아웃 설치 소스입니다. (auto 또는 json만 허용)',
     ],
 
     'messages' => [

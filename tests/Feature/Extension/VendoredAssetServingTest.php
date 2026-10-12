@@ -503,19 +503,27 @@ class VendoredAssetServingTest extends TestCase
         $method = new \ReflectionMethod($service, 'publishTemplate');
         $method->setAccessible(true);
 
-        // publishTemplate 이 custom 원본을 **자기 호출로** 게시하는지 — 소스에 두 번째
-        // publishDistAssets 호출이 있고 그 대상이 custom 루트임을 구조로 확인한다.
+        // publishTemplate 이 custom 원본을 **자기 호출로** 게시하는지 — 소스에 custom 전용 게시 호출이 있고
+        // 그 대상이 게시 루트의 `assets/custom` 임을 구조로 확인한다. #651 F7 부터 custom 게시는 dist 재귀 복사
+        // (`publishDistAssets(…, excludeCustom: false)`)가 아니라 변경 감지와 같은 열거자를 쓰는
+        // `publishCustomAssets()` 가 맡는다 — 종전 단언은 그 이전 소스 모양을 찾고 있었다.
         $source = file_get_contents(app_path('Services/ExtensionStaticCacheService.php'));
+        $body = substr($source, strpos($source, 'private function publishTemplate('), 6000);
 
         $this->assertStringContainsString(
-            'base_path("templates/{$identifier}/".CustomAssets::DIRECTORY)',
-            $source,
+            '$this->publishCustomAssets(',
+            $body,
             'custom 원본을 게시하는 호출이 없습니다 — 상대 url() 이 다시 깨집니다.'
         );
         $this->assertStringContainsString(
-            'excludeCustom: false',
+            "DIRECTORY_SEPARATOR.'assets'.DIRECTORY_SEPARATOR.CustomAssets::DIRECTORY",
+            $body,
+            'custom 원본이 게시 루트의 assets/custom 으로 실리지 않습니다.'
+        );
+        $this->assertStringContainsString(
+            'CustomAssets::publishableFiles(',
             $source,
-            'custom 원본 게시에서 custom 제외 가드가 꺼져 있지 않습니다 — 하위가 조용히 누락됩니다.'
+            'custom 게시 집합이 변경 감지와 같은 열거자를 쓰지 않습니다 — 게시와 감지가 어긋납니다.'
         );
     }
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\LayoutMarkup;
 
+use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
 /**
@@ -23,6 +24,11 @@ use Tests\TestCase;
  */
 class LayoutInstallSourceOptionTest extends TestCase
 {
+    /**
+     * 메시지 단언을 영어 문구로 고정합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -31,9 +37,13 @@ class LayoutInstallSourceOptionTest extends TestCase
     }
 
     /**
+     * `--layout-source=json` 이 런타임 설정에 닿고 진단용 경고를 출력한다.
+     *
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects layout_source_option_maps_to_runtime_config
+     *
+     * @return void 반환값 없음
      */
     public function test_json_option_reaches_runtime_config_and_warns(): void
     {
@@ -52,9 +62,13 @@ class LayoutInstallSourceOptionTest extends TestCase
     }
 
     /**
+     * 옵션 값은 설정 반영 전에 정규화된다(공백·대소문자).
+     *
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects layout_source_option_maps_to_runtime_config
+     *
+     * @return void 반환값 없음
      */
     public function test_option_value_is_normalized_before_config(): void
     {
@@ -73,9 +87,13 @@ class LayoutInstallSourceOptionTest extends TestCase
     }
 
     /**
+     * 알 수 없는 값은 설정을 건드리지 않고 즉시 실패한다.
+     *
      * @scenario compile_unit=install,source_health=invalid
      *
      * @effects invalid_layout_source_option_fails_without_config_change
+     *
+     * @return void 반환값 없음
      */
     public function test_unknown_option_fails_fast_without_touching_config(): void
     {
@@ -91,5 +109,58 @@ class LayoutInstallSourceOptionTest extends TestCase
 
         $this->assertSame($before, config('template.layout_markup.install_source'),
             '알 수 없는 --layout-source 값은 설정을 건드리기 전에 거부돼야 한다');
+    }
+
+    /**
+     * 옵션을 생략하면 설정(`LAYOUT_INSTALL_SOURCE`)을 그대로 따른다 — 종전에는 기본값 `auto` 가 설정을 덮었다 (#144).
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects omitted_layout_source_option_keeps_configured_source
+     *
+     * @return void 반환값 없음
+     */
+    public function test_omitted_option_keeps_configured_json_source(): void
+    {
+        config(['template.layout_markup.install_source' => 'json']);
+
+        $this->artisan('module:refresh-layout', [
+            'identifier' => 'nonexistent-module-for-option-probe',
+        ])->run();
+
+        $this->assertSame('json', config('template.layout_markup.install_source'),
+            '--layout-source 를 생략했는데 설정의 json 이 덮였다');
+
+        $this->artisan('module:refresh-layout', [
+            'identifier' => 'nonexistent-module-for-option-probe',
+            '--layout-source' => 'auto',
+        ])->run();
+
+        $this->assertSame('auto', config('template.layout_markup.install_source'),
+            '명시한 --layout-source=auto 는 설정보다 우선해야 한다');
+    }
+
+    /**
+     * 레이아웃 소스를 받는 9개 명령 모두 옵션 기본값이 비어 있다 (하나라도 `auto` 면 그 명령만 설정을 덮는다).
+     *
+     * @scenario compile_unit=install,source_health=valid
+     *
+     * @effects omitted_layout_source_option_keeps_configured_source
+     *
+     * @return void 반환값 없음
+     */
+    public function test_every_layout_source_command_has_no_default(): void
+    {
+        $commands = Artisan::all();
+
+        foreach (['module', 'plugin', 'template'] as $type) {
+            foreach (['install', 'update', 'refresh-layout'] as $action) {
+                $name = "{$type}:{$action}";
+                $this->assertArrayHasKey($name, $commands);
+                $option = $commands[$name]->getDefinition()->getOption('layout-source');
+
+                $this->assertNull($option->getDefault(), "{$name} 의 --layout-source 기본값이 설정을 덮습니다");
+            }
+        }
     }
 }

@@ -1024,7 +1024,9 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "global",
-                                                            "selectedPlugin": "{{$args[0]}}"
+                                                            "selectedPlugin": "{{$args[0]}}",
+                                                            "pluginLayoutSource": "auto",
+                                                            "pluginLayoutSourceOpen": false
                                                         }
                                                     },
                                                     {
@@ -1042,6 +1044,8 @@
                                                             "target": "global",
                                                             "selectedPlugin": "{{$args[0]}}",
                                                             "pluginLayoutStrategy": "overwrite",
+                                                            "pluginLayoutSource": "auto",
+                                                            "pluginLayoutSourceOpen": false,
                                                             "pluginForceUpdate": false,
                                                             "hasModifiedPluginLayouts": false,
                                                             "modifiedPluginLayoutsCount": 0,
@@ -1135,7 +1139,9 @@
                                                         "handler": "setState",
                                                         "params": {
                                                             "target": "global",
-                                                            "selectedPlugin": "{{$args[1]}}"
+                                                            "selectedPlugin": "{{$args[1]}}",
+                                                            "pluginLayoutSource": "auto",
+                                                            "pluginLayoutSourceOpen": false
                                                         }
                                                     },
                                                     {
