@@ -31,6 +31,19 @@
     "guide_link": "Core upgrade guide",
     "dismiss": "Close"
   },
+  "unplaced_bundled": {
+    "title_modules": "{{count}} official modules in the core {{version}} release are not placed in this project",
+    "title_modules_one": "{{count}} official module in the core {{version}} release is not placed in this project",
+    "title_plugins": "{{count}} official plugins in the core {{version}} release are not placed in this project",
+    "title_plugins_one": "{{count}} official plugin in the core {{version}} release is not placed in this project",
+    "title_templates": "{{count}} official templates in the core {{version}} release are not placed in this project",
+    "title_templates_one": "{{count}} official template in the core {{version}} release is not placed in this project",
+    "title_language_packs": "{{count}} official language packs in the core {{version}} release are not placed in this project",
+    "title_language_packs_one": "{{count}} official language pack in the core {{version}} release is not placed in this project",
+    "description": "Core updates ask before placing official bundles that are not installed and do not place them by default. If you need one, place its source on the server with the command below, then install it from this screen.",
+    "command_label": "Placement command",
+    "dismiss": "Dismiss this notice"
+  },
   "update_modal": {
     "compat_warning_title": "Core version compatibility warning",
     "compat_warning_message": "This update requires core version {{required}} (current: {{installed}})",

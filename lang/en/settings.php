@@ -212,6 +212,90 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Official bundled source placement (core:update --bundled-sources, core:bundled-sources) (#146)
+    |--------------------------------------------------------------------------
+    */
+    'bundled_sources' => [
+        'types' => [
+            'module' => 'Module',
+            'plugin' => 'Plugin',
+            'template' => 'Template',
+            'language_pack' => 'Language pack',
+        ],
+        'sample_suffix' => ' (sample)',
+        'item_line' => '  [:type] :identifier — :name (:version):sample',
+
+        // core:update prompt
+        'prompt_intro' => 'The new release contains :count official bundled extensions that are not in this project (installed extensions and their dependencies are updated automatically).',
+        'maintenance_warning' => 'The site is in maintenance mode — please answer quickly.',
+        'choice_question' => 'What would you like to do?',
+        'choice_none' => 'Do not place (default)',
+        'choice_all' => 'Place all',
+        'choice_pick' => 'Choose which to place',
+        'pick_question' => 'Choose the bundles to place (comma-separated for multiple)',
+        'dependency_added' => 'Also placed as dependencies: :items',
+        'noninteractive_default' => 'Non-interactive run without --bundled-sources: the :count official bundles not in this project will not be placed.',
+        'option_applied' => '--bundled-sources=:value applied: :unplaced not placed, :selected placed by selection',
+        'inventory_deferred' => 'Cannot read the ZIP listing; the bundled placement question will be asked after extraction.',
+
+        // core:update summary
+        'summary_title' => '── Official bundle results ──',
+        'summary_installed' => '1) Installed extension updates: :success succeeded, :failed failed, :skipped skipped',
+        'summary_installed_none' => '1) Installed extension updates: no new versions',
+        'summary_dependency' => '2) Bundles placed as dependencies: :count',
+        'summary_dependency_item' => '     :label ← :required_by',
+        'summary_selected' => '3) Bundles placed by your selection: :count',
+        'summary_selected_item' => '     :label',
+        'summary_unplaced' => '4) Bundles not placed: :count',
+        'summary_unplaced_item' => '     :label',
+        'summary_place_hint' => '   Place them when needed: php artisan core:bundled-sources place <identifier>',
+        'summary_on_disk' => ':count uninstalled bundles already on disk were updated to the new version.',
+        'summary_selection_aborted' => 'The update was stopped because the bundle selection is invalid. No files were changed and maintenance mode was turned off.',
+
+        // core:bundled-sources
+        'source_resolving_github' => 'Downloading the core :version release from GitHub to read the bundle list...',
+        'source_used' => 'Release: :source (core :version)',
+        'source_failed' => 'Could not read the release: :error',
+        'record_fallback' => 'Could not read the release; showing the record file (:recorded_at).',
+        'disk_db_only' => 'Neither a release nor a record file is available; showing disk and install state only. Use --source or --zip to compare with a release.',
+        'list_headers' => [
+            'type' => 'Type',
+            'identifier' => 'Identifier',
+            'version' => 'Version',
+            'disk' => 'On disk',
+            'installed' => 'Installed',
+            'required' => 'Required by',
+        ],
+        'yes' => 'Yes',
+        'no' => 'No',
+        'list_record_updated' => 'Record file updated (:count not placed).',
+        'place_done' => 'Placed: :label',
+        'place_already' => 'Already on disk, skipped: :label',
+        'place_summary' => 'Placed :count bundles. Install them from the admin screen or with php artisan {module|plugin|template}:install.',
+        'prune_preview_title' => 'Prune preview (nothing deleted — use --force to delete):',
+        'prune_none' => 'There are no bundles to prune.',
+        'prune_removed' => 'Deleted: :label',
+        'prune_modified_kept' => 'Modified, kept: :label (:count files differ from the release)',
+        'prune_modified_file' => '     :file',
+        'prune_modified_hint' => 'Add --include-modified to delete modified folders as well.',
+        'prune_protected_dependency' => 'Kept as a dependency: :label (:required_by)',
+        'prune_no_release_for_modified' => 'No release is available to check for modifications — add --include-modified to delete regardless of modifications.',
+        'prune_summary' => 'Deleted :count bundles.',
+        'unknown_action' => 'Unknown action: :action (list|place|prune)',
+
+        'errors' => [
+            'unknown_type' => 'Unknown bundle type: :type (module|plugin|template|language_pack)',
+            'not_in_release' => 'Not an official bundle in the release: :identifier',
+            'ambiguous' => 'Identifier :identifier exists in several types. Specify it with a type: :candidates',
+            'version_mismatch' => 'The release core version (:source) differs from the current core version (:current). Specify a release of the same version.',
+            'identifiers_required' => 'Specify at least one bundle identifier to place.',
+            'release_required' => 'Cannot place without a readable release. Specify it with --source or --zip.',
+            'not_unplaced_target' => 'Not a prune target (installed or not in the release): :identifier',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Trusted Proxy Diagnostic (#124)
     |--------------------------------------------------------------------------
     |

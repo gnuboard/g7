@@ -28,6 +28,21 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 코어 배포본에 있지만 이 프로젝트에 배치하지 않은 공식 번들 안내(#146). 모듈·플러그인·템플릿 화면과
+       **같은 API** 를 부르고 여기서는 응답의 `language_packs` 만 읽는다. 숨김 샘플·설치·디스크·닫은 관리자는 서버가 거른다. -->
+  <data-source id="unplaced_bundled_notice" label_key="$t:editor.data_source.unplaced_bundled_notice" type="api" endpoint="/api/admin/extensions/unplaced-bundled" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'language_packs'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="items">
+          <field name="modules" :value="[]"/>
+          <field name="plugins" :value="[]"/>
+          <field name="templates" :value="[]"/>
+          <field name="language_packs" :value="[]"/>
+        </field>
+        <field name="core_version" value=""/>
+      </field>
+    </fallback>
+  </data-source>
   <!-- 언어팩 상세 — 상세 창이 열릴 때만 따라 받는다(`_local.detailId` 에 매여 있다). -->
   <data-source id="language_pack_detail" label_key="$t:editor.data_source.language_pack_detail" type="api" endpoint="/api/admin/language-packs/{{_local.detailId}}" method="GET" :auto_fetch="false" :auth_required="true">
     <field name="depends_on">
@@ -311,6 +326,7 @@
     <wait-for>privacyManualRuns</wait-for>
     <wait-for>passwordExpiryPreview</wait-for>
     <wait-for>passwordExpiryManualRuns</wait-for>
+    <wait-for>unplaced_bundled_notice</wait-for>
   </transition-overlay>
   <init>
     <!-- 확장 목록 보기 방식(갤러리/목록) 복원 — 4화면이 같은 키를 공유한다.

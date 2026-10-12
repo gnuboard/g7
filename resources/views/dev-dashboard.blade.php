@@ -985,6 +985,10 @@ if (isset($_GET['ajax_action'])) {
                                     <span>코어 업데이트</span>
                                     <span class="text-[10px] opacity-60">(core:update --force) ⚠️</span>
                                 </button>
+                                <button onclick="runCommand('core:bundled-sources list')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-medium rounded transition-colors">
+                                    <span>공식 번들 소스 목록</span>
+                                    <span class="text-[10px] opacity-60">(core:bundled-sources list)</span>
+                                </button>
                                 <button onclick="runCommand('core:vendor-verify')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>코어 Vendor 검증</span>
                                     <span class="text-[10px] opacity-60">(core:vendor-verify)</span>

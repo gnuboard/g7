@@ -38,6 +38,21 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 코어 배포본에 있지만 이 프로젝트에 배치하지 않은 공식 번들 안내(#146). 플러그인·템플릿·언어팩 화면과
+       **같은 API** 를 부르고 여기서는 응답의 `modules` 만 읽는다. 숨김 샘플·설치·디스크·닫은 관리자는 서버가 거른다. -->
+  <data-source id="unplaced_bundled_notice" label_key="$t:editor.data_source.unplaced_bundled_notice" type="api" endpoint="/api/admin/extensions/unplaced-bundled" method="GET" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="items">
+          <field name="modules" :value="[]"/>
+          <field name="plugins" :value="[]"/>
+          <field name="templates" :value="[]"/>
+          <field name="language_packs" :value="[]"/>
+        </field>
+        <field name="core_version" value=""/>
+      </field>
+    </fallback>
+  </data-source>
   <init-local>
     <field name="searchQuery" value=""/>
   </init-local>
@@ -47,6 +62,7 @@
   <transition-overlay>
     <wait-for>modules</wait-for>
     <wait-for>auto_deactivated_banner</wait-for>
+    <wait-for>unplaced_bundled_notice</wait-for>
   </transition-overlay>
   <init>
     <!-- 확장 목록 보기 방식(갤러리/목록) 복원 — 4화면이 같은 키를 공유한다.
@@ -159,6 +175,40 @@
               </button>
             </div>
           </div>
+        </div>
+      </div>
+      <!-- 미배치 공식 번들 안내(#146). [닫기]는 이 관리자에게서만 숨기고(다음 기록에서 다시 보임),
+        배치·정리하면 서버가 항목을 빼 모두에게서 사라진다. 명령은 클릭 한 번에 전체 선택된다. -->
+      <div data-ref="unplaced_bundled_notice_wrapper" data-if="{{(unplaced_bundled_notice?.data?.items?.modules?.length ?? 0) > 0}}" class="alert-info mb-4" role="status">
+        <div class="flex-start justify-between gap-4 w-full">
+          <div class="flex-start gap-3 flex-1 min-w-0">
+            <icon name="circle-info" class="text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"/>
+            <div class="flex-1 min-w-0">
+              <p data-ref="unplaced_bundled_notice_title" class="text-sm font-medium text-info-soft mb-1 break-words">$t:extensions.unplaced_bundled.title_modules|version={{unplaced_bundled_notice?.data?.core_version ?? ''}}|count={{unplaced_bundled_notice?.data?.items?.modules?.length ?? 0}}</p>
+              <p class="text-xs text-info-soft mb-2 break-words">$t:extensions.unplaced_bundled.description</p>
+              <div class="row-stack">
+                <div data-each="notice_item in {{unplaced_bundled_notice?.data?.items?.modules ?? []}}" class="text-info-soft break-words">
+                  <span class="font-mono">{{notice_item.identifier}}</span>
+                  <span> — {{notice_item.name}} ({{notice_item.version}})</span>
+                </div>
+              </div>
+              <p class="text-xs text-info-soft mt-2">$t:extensions.unplaced_bundled.command_label</p>
+              <code data-ref="unplaced_bundled_notice_command" class="block mt-1 px-2 py-1 rounded font-mono text-xs break-all select-all bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-200">{{unplaced_bundled_notice?.data?.commands?.modules ?? ''}}</code>
+            </div>
+          </div>
+          <button data-ref="unplaced_bundled_notice_dismiss" type="button" class="shrink-0 text-info-soft hover:underline" aria-label="$t:extensions.unplaced_bundled.dismiss">
+            <on type="click">
+              <api-call :auth_required="true" target="/api/admin/extensions/unplaced-bundled/module/dismiss" method="POST">
+                <success>
+                  <refetch-data-source dataSourceId="unplaced_bundled_notice"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </on>
+            <icon name="times" size="xs"/>
+          </button>
         </div>
       </div>
       <div data-ref="search_bar_wrapper" class="flex flex-wrap items-center gap-x-4 gap-y-3 mb-6">

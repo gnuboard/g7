@@ -914,12 +914,16 @@ class CoreUpdateService
      * @param  bool  $prune  true 면 전체 덮어쓰기 + orphan 삭제(기존 동작), false 면 증분 적용
      * @param  array<int, string>|null  $applyList  적용 대상 상대경로 목록(target 접두사 포함).
      *                                              `CoreBackupHelper::computeApplyList()` 산출물. null 이면 증분 불가로 판단해 전체 덮어쓰기.
+     * @param  array<int, string>  $skipPaths  이번 업데이트가 배치하지 않는 경로(base 상대, 예 `plugins/_bundled/{id}`).
+     *                                         증분·prune·백업 부재 세 모드 모두에서 복사와 orphan 정리를 건너뛴다 —
+     *                                         설치되지 않았고 디스크에도 없는 공식 번들을 새로 깔지 않기 위함(#146).
      * @return void 반환값 없음
      */
-    public function applyUpdate(string $sourcePath, ?\Closure $onProgress = null, bool $prune = false, ?array $applyList = null): void
+    public function applyUpdate(string $sourcePath, ?\Closure $onProgress = null, bool $prune = false, ?array $applyList = null, array $skipPaths = []): void
     {
         $targets = config('app.update.targets', []);
         $excludes = config('app.update.excludes', []);
+        $skipPaths = array_values(array_filter(array_map(fn ($p) => $this->normalizeRelativePath((string) $p), $skipPaths)));
 
         // 증분 모드 여부: prune 이 아니고 적용 목록이 주어진 경우에만 증분 적용.
         // applyList 가 null 이면(백업 부재 등) 안전을 위해 전체 덮어쓰기로 회귀한다.
@@ -946,6 +950,12 @@ class CoreUpdateService
             }
 
             $normalizedTarget = $this->normalizeRelativePath($target);
+
+            if ($this->isWithinSkipPaths($normalizedTarget, $skipPaths)) {
+                $applied[$normalizedTarget] = true;
+
+                continue;
+            }
 
             $onProgress?->__invoke('apply', $target);
 
@@ -978,6 +988,7 @@ class CoreUpdateService
                     preserveTopLevelOrphans: $preserveTopLevelOrphans,
                     applyList: $targetApplyList,
                     preserveLinkPaths: $preserveLinkPaths,
+                    skipPaths: $this->stripTargetPrefix($skipPaths, $normalizedTarget),
                 );
             } else {
                 // 단일 파일 target — 증분 모드에서는 적용 목록에 있을 때만 복사.
@@ -1000,7 +1011,48 @@ class CoreUpdateService
         // source 디렉토리의 최상위 항목 중 targets 에 누락되었고 PROTECTED 에도 포함되지
         // 않은 항목은 동일 흐름으로 복사하며 경고 로그를 남긴다. 다음 코어 업데이트의
         // applyUpdate 는 이미 디스크에 반영된 신버전 config 의 targets 로 정상 처리한다.
-        $this->applyDiscoveredTopLevelPaths($sourcePath, $applied, $excludes, $onProgress);
+        $this->applyDiscoveredTopLevelPaths($sourcePath, $applied, $excludes, $onProgress, $skipPaths);
+    }
+
+    /**
+     * 정규화 경로가 skipPaths 중 하나와 같거나 그 하위인지 판정합니다.
+     *
+     * @param  string  $path  정규화된 상대 경로
+     * @param  array<int, string>  $skipPaths  정규화된 skipPaths
+     * @return bool 건너뛸 경로면 true
+     */
+    private function isWithinSkipPaths(string $path, array $skipPaths): bool
+    {
+        foreach ($skipPaths as $skip) {
+            if ($path === $skip || str_starts_with($path, $skip.'/')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * base 상대 skipPaths 중 target 하위 항목만 골라 target 접두사를 벗깁니다.
+     *
+     * `copyDirectory` 는 target 루트 기준 상대경로로 순회하므로 `buildTargetApplyList` 와 같은 방식으로
+     * 접두사를 제거해야 매칭된다.
+     *
+     * @param  array<int, string>  $skipPaths  정규화된 base 상대 skipPaths
+     * @param  string  $normalizedTarget  정규화된 target 경로 (예: `plugins/_bundled`)
+     * @return array<int, string> target 루트 기준 상대경로 목록
+     */
+    private function stripTargetPrefix(array $skipPaths, string $normalizedTarget): array
+    {
+        $prefix = $normalizedTarget.'/';
+        $out = [];
+        foreach ($skipPaths as $skip) {
+            if (str_starts_with($skip, $prefix)) {
+                $out[] = substr($skip, strlen($prefix));
+            }
+        }
+
+        return $out;
     }
 
     /**
@@ -1010,9 +1062,10 @@ class CoreUpdateService
      * @param  array<string, bool>  $applied  이미 처리된 normalize 된 상대 경로 맵
      * @param  array<int, string>  $excludes  copyDirectory 내부 제외 목록
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @param  array<int, string>  $skipPaths  배치하지 않는 정규화 경로(base 상대) — 폴백 복사에서도 건너뛴다
      * @return void 반환값 없음
      */
-    private function applyDiscoveredTopLevelPaths(string $sourcePath, array $applied, array $excludes, ?\Closure $onProgress): void
+    private function applyDiscoveredTopLevelPaths(string $sourcePath, array $applied, array $excludes, ?\Closure $onProgress, array $skipPaths = []): void
     {
         if (! File::isDirectory($sourcePath)) {
             return;
@@ -1044,6 +1097,9 @@ class CoreUpdateService
             if (isset($userExcludes[$normalized])) {
                 continue;
             }
+            if ($this->isWithinSkipPaths($normalized, $skipPaths)) {
+                continue;
+            }
 
             $dest = base_path($name);
             Log::channel('upgrade')->warning('[core-update] targets allowlist 누락 신규 항목 자동 적용', [
@@ -1057,7 +1113,7 @@ class CoreUpdateService
                 // 부모 프로세스의 stale targets 누락을 메우는 안전망이므로,
                 // base 의 활성 서브디렉토리(예: templates/sirsoft-basic) 가 source 에 없다고
                 // 해서 삭제하면 사용자 데이터 영구 손실 위험. orphan 처리는 정상 targets 분기만 수행.
-                FilePermissionHelper::copyDirectory($absPath, $dest, $onProgress, $excludes, removeOrphans: false);
+                FilePermissionHelper::copyDirectory($absPath, $dest, $onProgress, $excludes, removeOrphans: false, skipPaths: $this->stripTargetPrefix($skipPaths, $normalized));
             } else {
                 File::ensureDirectoryExists(dirname($dest));
                 FilePermissionHelper::copyFile($absPath, $dest);

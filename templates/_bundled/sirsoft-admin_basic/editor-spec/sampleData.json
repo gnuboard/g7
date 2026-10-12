@@ -2054,6 +2054,28 @@
         "current_core_version": "7.1.0"
       }
     },
+    "unplaced_bundled_notice": {
+      "data": {
+        "items": {
+          "modules": [],
+          "plugins": [
+            {
+              "identifier": "sirsoft-totp",
+              "name": "2단계 인증",
+              "version": "1.0.0"
+            }
+          ],
+          "templates": [],
+          "language_packs": []
+        },
+        "hash": "sample",
+        "core_version": "7.1.2",
+        "command": "php artisan core:bundled-sources place",
+        "commands": {
+          "plugins": "php artisan core:bundled-sources place sirsoft-totp"
+        }
+      }
+    },
     "clone_source": {
       "data": {
         "id": 2,
