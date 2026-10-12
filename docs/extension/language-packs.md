@@ -619,7 +619,7 @@ php artisan language-pack:install https://example.com/my-lang-pack-zh.zip --sour
 
 - 대기 표시는 **켜 달라는 요청으로 설치한 팩**에만 붙는다(설치 창 함께 설치·`language-pack:install`·`language-pack:provision`).
   언어팩 관리 화면의 개별 설치는 원래 켜지 않고 설치하므로 대기 표시가 없고, 확장을 켜도 그대로다 — 목록 스위치로 켠다.
-- 사용자가 끈 팩, 확장을 끌 때 함께 꺼진 팩(「언어팩 다시 켜기」 창이 따로 묻는다), 같은 언어 자리를 이미 다른 팩이 쓰는 경우는
+- 사용자가 끈 팩, 확장을 끌 때 함께 꺼진 팩(`deactivated_reason = host_deactivated` — 관리자 화면은 「언어팩 다시 켜기」 창이 따로 묻고, 활성화 명령은 기본으로 함께 켠다), 같은 언어 자리를 이미 다른 팩이 쓰는 경우는
   확장을 켜도 건드리지 않는다.
 - 설치되지 않은 확장의 언어팩은 종전처럼 설치할 수 없다.
 

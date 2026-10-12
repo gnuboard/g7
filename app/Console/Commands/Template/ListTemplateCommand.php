@@ -70,6 +70,8 @@ class ListTemplateCommand extends Command
 
         // 테이블 데이터 준비
         $tableData = [];
+        // 요약 집계용 원래 상태값 — 표시 문자열로 세면 한국어 「비활성」 에도 「활성」 이 들어 있어 잘못 센다(#137)
+        $rawStatuses = [];
 
         // 설치된 템플릿 추가
         foreach ($installedTemplates as $identifier => $template) {
@@ -99,6 +101,7 @@ class ListTemplateCommand extends Command
                 }
             }
 
+            $rawStatuses[] = $template['status'];
             $tableData[] = [
                 'identifier' => $identifier,
                 'name' => $template['name'],
@@ -126,6 +129,7 @@ class ListTemplateCommand extends Command
                     continue;
                 }
 
+                $rawStatuses[] = 'uninstalled';
                 $tableData[] = [
                     'identifier' => $identifier,
                     'name' => $template['name'],
@@ -157,8 +161,8 @@ class ListTemplateCommand extends Command
 
         // 요약 정보
         $totalCount = count($tableData);
-        $activeCount = count(array_filter($tableData, fn ($t) => str_contains($t['status'], __('templates.status.active'))));
-        $installedCount = count(array_filter($tableData, fn ($t) => ! str_contains($t['status'], __('templates.commands.list.status.uninstalled'))));
+        $activeCount = count(array_filter($rawStatuses, fn ($status) => $status === 'active'));
+        $installedCount = count(array_filter($rawStatuses, fn ($status) => $status !== 'uninstalled'));
 
         $this->newLine();
         $this->info(trans_choice('templates.commands.list.summary', $totalCount, [

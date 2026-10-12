@@ -245,6 +245,10 @@ return [
         ],
         'activate' => [
             'success' => '템플릿 ":template" 활성화 완료',
+            'language_packs_restored' => '언어팩 :count개를 함께 켰습니다: :list',
+            'language_packs_kept' => '다시 켜지 않은 언어팩: :list (관리자 화면에서 다시 켤 수 있습니다)',
+            'language_pack_restore_failed' => '언어팩 ":pack" 을(를) 다시 켜지 못했습니다: :error',
+            'option_without_language_packs' => '이 확장을 끌 때 함께 꺼진 언어팩을 다시 켜지 않습니다 (기본은 함께 켭니다)',
             'not_installed' => '":template" 템플릿이 설치되지 않았습니다.',
             'deactivated_previous' => '기존 :type 템플릿 ":previous" 비활성화',
         ],

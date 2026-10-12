@@ -34,6 +34,8 @@ return [
 
     'warnings' => [
         'auto_deactivated' => '코어 버전 호환성 문제로 :type ":identifier"의 활성 상태를 자동으로 해제했습니다.',
+        'auto_deactivate_blocked' => '코어 버전이 맞지 않는 확장을 자동으로 끄려 했지만 끄지 못했습니다. 의존하는 확장이 켜져 있거나 비활성화가 실패했습니다.',
+        'auto_deactivate_skipped_stale_version' => '현재 코어 버전 값이 설치된 코어 코드 버전보다 낮아 확장 자동 비활성화를 건너뛰었습니다. 이전 업데이트가 남긴 설정 캐시나 업데이트 전부터 실행 중인 프로세스가 원인일 수 있습니다. 설정 캐시가 있으면 비웁니다(config_cached 로 확인).',
         'dependency_version_unmet' => ':identifier :required 버전이 필요한데 지금 :installed 입니다',
         'dependency_not_installed' => ':identifier :required 버전이 필요한데 설치되어 있지 않습니다',
         'dependency_inactive' => ':identifier 확장이 꺼져 있습니다(필요 버전 :required)',

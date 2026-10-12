@@ -216,6 +216,10 @@ return [
         ],
         'activate' => [
             'success' => 'テンプレート「:template」の有効化完了',
+            'language_packs_restored' => ':count 個の言語パックを一緒に有効化しました: :list',
+            'language_packs_kept' => '再有効化しなかった言語パック: :list (管理画面から再度有効化できます)',
+            'language_pack_restore_failed' => '言語パック ":pack" を再有効化できませんでした: :error',
+            'option_without_language_packs' => 'この拡張を無効化したときに一緒に無効化された言語パックを再有効化しません (既定では一緒に有効化します)',
             'not_installed' => 'テンプレート「:template」はインストールされていません。',
             'deactivated_previous' => '既存の:typeテンプレート「:previous」を無効化',
         ],

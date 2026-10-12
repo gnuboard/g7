@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Template;
 
+use App\Console\Commands\Traits\RestoresHostLanguagePacks;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\TemplateManager;
 use Illuminate\Console\Command;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\Log;
 
 class ActivateTemplateCommand extends Command
 {
+    use RestoresHostLanguagePacks;
+
     /**
      * The name and signature of the console command.
      */
@@ -21,16 +24,23 @@ class ActivateTemplateCommand extends Command
 
     /**
      * 템플릿 관리자 및 리포지토리
+     *
+     * @param  TemplateManager  $templateManager  템플릿 활성화를 수행하는 매니저
+     * @param  TemplateRepositoryInterface  $templateRepository  설치 기록 조회 리포지토리
      */
     public function __construct(
         private TemplateManager $templateManager,
         private TemplateRepositoryInterface $templateRepository
     ) {
         parent::__construct();
+
+        $this->addLanguagePackRestoreOption('templates');
     }
 
     /**
      * Execute the console command.
+     *
+     * @return int 종료 코드
      */
     public function handle(): int
     {
@@ -95,6 +105,7 @@ class ActivateTemplateCommand extends Command
                 // 성공 메시지
                 $this->info('✅ '.__('templates.commands.activate.success', ['template' => $identifier]));
 
+                $this->restoreHostLanguagePacks('template', $identifier, 'templates');
                 Log::info(__('templates.commands.activate.success', ['template' => $identifier]));
 
                 return Command::SUCCESS;

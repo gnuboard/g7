@@ -1,0 +1,19 @@
+feature: config_cache_helper_rebuild
+
+description: |
+  ConfigCacheHelper::rebuild() 는 config:clear 로 낡은 캐시를 지운 뒤, 설치된 운영 환경에서만 config:cache 를 다시 만든다.
+  testing 환경(격리 보호)과 설치 미완료(불완전 config 박제 방지)에서는 clear 만 한다. clear() 는 어느 환경에서도 재생성하지 않는다.
+
+coverage_strategy: full
+
+axes:
+  case: [testing_env, installed, not_installed, clear_production, clear_testing]
+
+effects:
+  - rebuild_skips_cache_in_testing
+  - rebuild_recreates_cache_when_installed
+  - rebuild_skips_cache_when_not_installed
+  - clear_never_recreates_cache
+
+test_files:
+  - tests/Unit/Support/ConfigCacheHelperTest.php

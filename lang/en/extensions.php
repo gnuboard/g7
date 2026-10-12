@@ -34,6 +34,8 @@ return [
 
     'warnings' => [
         'auto_deactivated' => ':type ":identifier" has been automatically deactivated due to core version incompatibility.',
+        'auto_deactivate_blocked' => 'Tried to automatically deactivate an extension that does not match the core version, but it was not deactivated. A dependent extension is active or the deactivation failed.',
+        'auto_deactivate_skipped_stale_version' => 'Skipped automatic extension deactivation because the current core version value is lower than the installed core code version. It may be caused by a configuration cache left by a previous update or by a process started before the update. The configuration cache is cleared if present (see config_cached).',
         'dependency_version_unmet' => ':identifier :required is required, but :installed is installed',
         'dependency_not_installed' => ':identifier :required is required, but it is not installed',
         'dependency_inactive' => 'Extension :identifier is turned off (requires :required)',

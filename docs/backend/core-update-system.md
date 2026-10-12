@@ -283,8 +283,10 @@ config 캐시와 같은 문제가 **패키지 매니페스트**(`bootstrap/cache
 | ① 부모 선정리 | `CoreUpdateCommand::spawnUpgradeStepsProcess()` 가 `proc_open` 직전 `PackageManifestCacheHelper::clear()`. 지우지 못한 파일이 있으면 그 경로를 업그레이드 로그에 경고로 남긴다 — 권한·소유권 불일치면 자식의 계층 ② 도 같은 이유로 실패해 증상은 제보와 같은 「Class not found」 인데, 이 경고가 원인을 가리키는 유일한 흔적이다 | 7.0.11+ 부모가 띄우는 자식의 부팅 실패 | `CoreUpdateCommandStalePackageManifestTest` |
 | ② 자식 자가 치유 | `bootstrap/app.php` 가 `G7_UPDATE_IN_PROGRESS=1`(또는 명령줄 SAPI 에서의 업데이트 argv)이면 두 파일을 스스로 삭제 | **이미 배포된** 7.0.9·7.0.10 부모 아래에서 도는 신버전 자식 — 그 부모 코드는 고칠 수 없다 | 같은 테스트 (플래그 유·무 대조군 포함) |
 | ③ 버전 판독 범위 | `CoreVersionChecker::getCoreVersion()` 의 env 우선은 `CoreUpdateContext::isInProgress()` 트리 안에서만 | 업데이트 **전에** 뜬 `php artisan serve`·큐 워커가 옛 `APP_VERSION` 을 물고 확장을 `incompatible_core` 로 끄는 것 | `CoreVersionCheckerEnvPriorityTest` · `CoreUpdateContextTest` |
+| ④ APP_VERSION 정합 | `bootstrap/app.php` 가 계층 ②와 같은 조건에서 `bootstrap/g7-update-env.php` 의 `g7_reconcile_update_app_version()` 을 불러, 프로세스 env 의 `APP_VERSION` 이 디스크 `.env` 값보다 낮으면 `$_ENV`·`$_SERVER`·`putenv` 를 디스크 값으로 **올린다**(낮추지 않는다 — 업그레이드 스텝 자식은 `.env` 보다 높은 toVersion 을 받는다) | **이미 배포된** 7.0.0~7.0.10 부모는 `.env` 만 바꾸고 자기 env 는 옛 버전으로 둔다. 그 env 를 물려받은 자식과 부모 안의 `config:cache` 일회용 앱이 옛 버전을 config/hooks 캐시에 구워, 업데이트 뒤 첫 프로세스가 새 코어를 요구하는 확장을 `incompatible_core` 로 끄던 것(공개 #145·#137) | `UpdateAppVersionReconcileTest` · `UpdateAppVersionReconcileProcessTest` |
+| ⑤ 자식 env 고정 | 번들 일괄 업데이트 자식·언어팩 단계 새 프로세스·훅 캐시 새 프로세스의 env 를 `UpdateChildEnv::build()` 로 만든다 — 업데이트 트리 안이면 `APP_VERSION=getCoreVersion()`·`G7_UPDATE_IN_PROGRESS=1` 을 명시(트리 밖은 상속 그대로) | 부모 env 에만 기대 옛 버전이 다시 캐시에 구워지는 것 | `BundledSpawnPinsAppVersionTest` |
 
-계층 ②는 `config:cache`/`route:cache` 가 만드는 in-process 일회용 앱에도 발동한다 — 그 부팅도 `bootstrap/app.php` 를 다시 require 하고 플래그를 상속하기 때문이다. 웹 요청·`queue:work`·운영자 셸은 플래그가 없어 no-op 이다.
+계층 ②·④는 `config:cache`/`route:cache` 가 만드는 in-process 일회용 앱에도 발동한다 — 그 부팅도 `bootstrap/app.php` 를 다시 require 하고 플래그를 상속하기 때문이다. 웹 요청·`queue:work`·운영자 셸은 플래그가 없어 no-op 이다.
 
 argv 채널은 명령줄 SAPI(`cli`·`phpdbg`)에서만 읽는다. CGI/FPM 은 `register_argc_argv=On` 이면 `$_SERVER['argv']` 를 쿼리스트링을 `+` 로 쪼갠 값으로 채우므로(`GET /?x+core:update` → `argv[1] === 'core:update'`), 그 게이트가 없으면 비인증 웹 요청이 요청마다 매니페스트를 지우고 다시 만들게 된다. env 플래그 채널은 웹 요청으로 주입할 수 없어 그대로 두며, 웹 요청 안에서 시작되는 업데이트 흐름은 그 플래그를 프로세스 안에서 세워 판정된다.
 
@@ -637,7 +639,7 @@ CoreUpdateService::updateVersionInEnv($version)
 
 ### 부트스트랩 호환성 자동 검증
 
-> 파일: `app/Providers/CoreServiceProvider.php` — `validateAndDeactivateIncompatibleExtensions()`, `validateAndDeactivateIncompatibleTemplates()`
+> 파일: `app/Providers/CoreServiceProvider.php` — `validateAndDeactivateIncompatibleExtensions()`, `validateAndDeactivateIncompatibleTemplates()` (업데이트 트리 가드 뒤 `app/Extension/IncompatibleExtensionDeactivator.php` 에 위임)
 
 **애플리케이션 부트(boot) 시마다** CoreServiceProvider가 모든 활성 확장의 `g7_version` 요구사항을 검증합니다.
 `config('app.version')`이 확장의 요구 버전을 충족하지 않으면 **해당 확장을 자동으로 비활성화**합니다.
@@ -650,9 +652,16 @@ CoreUpdateService::updateVersionInEnv($version)
 3. 캐시 없으면 → 모든 활성 확장 순회
 4. 각 확장의 g7_version (예: ">=7.0.0-beta.1") 확인
 5. Semver::satisfies(config('app.version'), $constraint) 실행
-6. false 반환 시 → Manager::deactivateModule/Plugin/Template() 호출
-7. 캐시 저장 (1시간 유효)
+6. 비호환이 1건 이상이면 안전망 판정: 현재 버전 < 디스크 config/app.php 의 기본값(CoreVersionDiskReader::shippedVersion())
+   → 아무것도 끄지 않고, config 캐시가 있으면 비우고, 경고(auto_deactivate_skipped_stale_version)를 남기고 캐시를 저장하지 않는다
+7. 아니면 → Manager::deactivateModule/Plugin/Template() 호출 (config·라우트 캐시 재생성은 묶어서 끝에 한 번)
+8. 실제로 꺼진 확장만 알림·경고(auto_deactivated)에 넣는다. 의존 확장 때문에 꺼지지 않은 확장은 auto_deactivate_blocked 경고만
+9. 꺼지지 않은 확장이 없을 때만 캐시 저장 (1시간 유효) — 있으면 다음 부팅이 다시 시도
 ```
+
+안전망이 막는 경우: 이전 버전 업데이터가 옛 버전 번호로 구운 config 캐시, 업데이트 전에 뜬 상주 프로세스의 옛 env. 다음 요청은 `.env` 로 부팅해 올바른 버전으로 다시 판정한다. 진짜 비호환(디스크 코드 버전으로도 맞지 않는 확장)은 그대로 끈다.
+
+콘솔 프로세스(크론·큐 워커)는 성능을 위해 템플릿을 불러오지 않지만, 모듈·플러그인 비활성화의 역의존성 검사(`TemplateRepository::findActiveByModuleDependency()`·`findActiveByPluginDependency()`)는 `TemplateManager::ensureLoaded()` 로 템플릿을 불러온 뒤 판정한다 — 템플릿이 쓰는 확장을 콘솔이 끄지 않는다.
 
 #### 주의사항
 

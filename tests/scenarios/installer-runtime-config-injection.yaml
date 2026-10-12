@@ -1,0 +1,20 @@
+feature: installer_runtime_config_injection
+
+description: |
+  InstallerRuntimeServiceProvider 는 인스톨러 runtime 파일(storage/installer/runtime.php)이 있고 testing 이 아니면 DB 자격증명·APP_KEY 를
+  config 에 주입한다. beta.7 코어 한정 보정으로, 디스크 .env 가 정합(설치 완료·root 아님)이고 프로세스 env 가 stale(root·빈 값)이면
+  프로세스 env 를 디스크 값으로 복구한다. 디스크 코어 버전은 CoreVersionDiskReader 로 읽는다(격리 앱 루트에 beta.7 config 를 써서 검증).
+
+coverage_strategy: full
+
+axes:
+  case: [runtime_absent, testing_env, runtime_db, runtime_app_key, runtime_read_db, runtime_invalid, runtime_empty_app_key, beta7_stale_env, healthy_env, disk_stale, installer_incomplete, runtime_present]
+
+effects:
+  - runtime_config_skipped
+  - runtime_config_injected
+  - beta7_stale_env_recovered
+  - beta7_recovery_not_triggered
+
+test_files:
+  - tests/Unit/Providers/InstallerRuntimeServiceProviderTest.php

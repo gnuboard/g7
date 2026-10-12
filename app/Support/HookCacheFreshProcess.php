@@ -31,7 +31,8 @@ class HookCacheFreshProcess
         $command = [config('process.php_binary', PHP_BINARY), base_path('artisan'), ...$arguments];
         $commandLine = implode(' ', array_map('escapeshellarg', $command)).' 2>&1';
 
-        $process = proc_open($commandLine, [0 => ['pipe', 'r'], 1 => ['pipe', 'w']], $pipes, base_path(), array_merge(getenv(), $_ENV));
+        // 업데이트 트리 안이면 APP_VERSION·업데이트 플래그를 고정해 넘긴다 (#145 F10 — 훅 캐시의 core_version 표지).
+        $process = proc_open($commandLine, [0 => ['pipe', 'r'], 1 => ['pipe', 'w']], $pipes, base_path(), UpdateChildEnv::build());
         if (! is_resource($process)) {
             return ['ok' => false, 'exit_code' => null, 'output' => 'proc_open 자원 생성 실패'];
         }

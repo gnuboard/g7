@@ -11,6 +11,7 @@ use App\Extension\Vendor\VendorMode;
 use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
+use App\Support\UpdateChildEnv;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -360,8 +361,9 @@ trait BundledExtensionUpdatePrompt
                 2 => ['pipe', 'w'],
             ];
 
-            // ENV 합집합 (G7_UPDATE_IN_PROGRESS 등 핵심 플래그 자식에 전달)
-            $env = array_merge(getenv(), $_ENV);
+            // ENV 합집합 + 업데이트 트리면 APP_VERSION·G7_UPDATE_IN_PROGRESS 고정 (#145 F10 — 상속 env 의 옛 버전이
+            // 자식의 config/hooks 캐시에 구워지지 않게 한다)
+            $env = UpdateChildEnv::build();
 
             // audit:allow spawn-after-vendor-swap-clears-package-manifest 이 spawn 은 vendor 를 바꾸지 않고,
             // 두 호출처가 모두 clearAllCaches() 뒤다 — CoreUpdateCommand Step 11(패키지 매니페스트 재생성)

@@ -28,6 +28,43 @@ use Illuminate\Support\Facades\Log;
 class RouteCacheHelper
 {
     /**
+     * deferRebuilds() 중첩 깊이 — 0 보다 크면 rebuild() 는 대기 표시만 한다.
+     */
+    private static int $deferDepth = 0;
+
+    /**
+     * 묶는 동안 재생성 요청이 있었는지 여부.
+     */
+    private static bool $rebuildPending = false;
+
+    /**
+     * 콜백이 도는 동안의 재생성 요청을 모아 가장 바깥 호출이 끝날 때 한 번만 재생성합니다.
+     *
+     * 모듈·플러그인 비활성화는 1건마다 route:cache(일회용 앱 부팅)를 돌린다. 부팅 시 자동 비활성화 연쇄 17건에서
+     * MySQL 연결 151개가 고갈됐다(#145 F6). 여러 확장을 한꺼번에 바꾸는 경로는 이 래퍼로 감싼다.
+     * 예외가 나도 깊이는 복구하고, 대기 중인 재생성은 실행한다(이미 바뀐 라우트를 캐시에 반영해야 한다 — 낡은
+     * 라우트 캐시는 폴백이 없다).
+     *
+     * @param  callable  $callback  묶을 작업
+     * @return mixed 콜백 반환값
+     */
+    public static function deferRebuilds(callable $callback): mixed
+    {
+        self::$deferDepth++;
+
+        try {
+            return $callback();
+        } finally {
+            self::$deferDepth--;
+
+            if (self::$deferDepth === 0 && self::$rebuildPending) {
+                self::$rebuildPending = false;
+                self::rebuild();
+            }
+        }
+    }
+
+    /**
      * 라우트 캐시를 비우고 즉시 재생성합니다.
      *
      * `route:cache` 는 내부적으로 기존 캐시를 지운 뒤 새 애플리케이션 인스턴스를 부팅해
@@ -40,10 +77,18 @@ class RouteCacheHelper
      * clear 로 stale 캐시는 이미 제거되어 다음 요청이 fresh 라우트로 안전하게 부팅된다.
      * 비어 있으면 느릴 뿐 정확하지만, 낡으면 방금 설치한 확장이 통째로 동작하지 않는다.
      *
+     * deferRebuilds() 안에서는 대기 표시만 하고 즉시 돌아간다.
+     *
      * @return void
      */
     public static function rebuild(): void
     {
+        if (self::$deferDepth > 0) {
+            self::$rebuildPending = true;
+
+            return;
+        }
+
         // 항상 stale 캐시부터 제거 (변경 반영 보장).
         Artisan::call('route:clear');
 

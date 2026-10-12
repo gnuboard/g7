@@ -17,6 +17,13 @@ enum LanguagePackDeactivationReason: string
     case AwaitingHost = 'awaiting_host';
 
     /**
+     * 대상 확장(호스트)을 끌 때 함께 꺼진 상태 (`status=inactive`).
+     * 호스트를 다시 켤 때 관리자 화면은 「언어팩 다시 켜기」 창으로 묻고, CLI 는 기본으로 함께 켠다. 켜지면 사유가 지워진다.
+     * 예전에는 이 목록이 캐시에만 있어 캐시를 비우면 사라졌다(#145).
+     */
+    case HostDeactivated = 'host_deactivated';
+
+    /**
      * 모든 값 배열
      *
      * @return array<string> 사유 값 문자열 배열

@@ -1,0 +1,21 @@
+feature: upgrade_711_recover_auto_deactivated
+
+description: |
+  7.0.x → 7.1.0 업데이트 뒤 옛 APP_VERSION 이 구워진 config 캐시 때문에 「코어 버전 호환성 문제」 로 꺼진 확장을 7.1.1 데이터 스텝이
+  한 번 다시 켠다(공개 #145, #137, 일회성 복구). 기록된 요구 버전을 대상 버전이 충족하는 incompatible_core 행만 모듈 → 플러그인 →
+  템플릿 순서로 매니저 일반 활성화로 켜고, 진짜 비호환·수동 비활성은 그대로 둔다. 언어팩은 host_deactivated 표시 → 7.1.0 캐시 목록 →
+  호스트가 꺼진 시각 10분 창의 사유 없는 팩 순서로 찾는다. 실패는 경고만 남기고 계속하며, 다시 돌려도 바꿀 것이 없다.
+
+coverage_strategy: full
+
+axes:
+  case: [select_targets, language_pack_rules, activation_failure]
+
+effects:
+  - recovers_only_satisfiable_auto_deactivated_extensions
+  - recovery_step_is_idempotent
+  - recovers_host_language_packs_by_three_rules
+  - recovery_failure_is_logged_and_continues
+
+test_files:
+  - tests/Feature/Upgrades/Upgrade_7_1_1_RecoverAutoDeactivatedTest.php

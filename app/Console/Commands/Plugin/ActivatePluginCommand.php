@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Plugin;
 
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
+use App\Console\Commands\Traits\RestoresHostLanguagePacks;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Extension\PluginManager;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 class ActivatePluginCommand extends Command
 {
     use RendersLayoutSyncResult;
+    use RestoresHostLanguagePacks;
 
     /**
      * The name and signature of the console command.
@@ -34,6 +36,8 @@ class ActivatePluginCommand extends Command
         private PluginRepositoryInterface $pluginRepository
     ) {
         parent::__construct();
+
+        $this->addLanguagePackRestoreOption('plugins');
     }
 
     /**
@@ -99,6 +103,7 @@ class ActivatePluginCommand extends Command
                 $this->info('✅ '.__('plugins.commands.activate.success', ['plugin' => $identifier]));
                 $this->info('   - '.trans_choice('plugins.commands.activate.layouts_registered', (int) ($result['layouts_registered'] ?? 0)));
                 $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
+                $this->restoreHostLanguagePacks('plugin', $identifier, 'plugins');
                 Log::info(__('plugins.commands.activate.success', ['plugin' => $identifier]));
 
                 return Command::SUCCESS;
