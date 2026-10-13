@@ -1,0 +1,21 @@
+feature: 페이지 SEO 캐시 비우기의 동기 실행
+
+description: |
+  훅 리스너는 sync 를 선언하지 않으면 큐로 간다. 검색엔진용 캐시 비우기가 큐로 가면 워커가 돌 때까지
+  (워커가 없으면 TTL 까지) 봇이 고치기 전 페이지를 받는다. 페이지 리스너는 상세 재렌더가 없으므로
+  전 구독을 sync 로 돌리고 본문은 DB::afterCommit 으로 감싼다.
+
+axis_notes:
+  listener: 대상 리스너.
+  queue: sync 는 테스트 기본값이라 결함을 가린다. database 는 워커를 돌리지 않은 운영 상황을 재현한다.
+
+axes:
+  listener: [seo_page]
+  queue: [sync, database]
+
+effects:
+  - shared_cache_invalidated_without_worker   # 워커 없이 저장 직후 SEO 캐시가 비워진다
+  - invalidation_deferred_until_commit        # 트랜잭션 안 발화는 커밋 뒤에 비운다
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Feature/Seo/PageSeoCacheQueuedTest.php

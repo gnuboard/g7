@@ -1,0 +1,51 @@
+feature: 템플릿 자산(JS·CSS·이미지·글꼴·components.json) 공개 서빙
+
+description: |
+  활성 템플릿의 dist 아래 자산을 공개 API 로 내려준다. 경로 탈출·허용되지 않은 확장자는 막고, 응답에는 MIME·ETag·
+  환경별 캐싱 헤더를 싣는다. 비활성·없는 템플릿과 없는 파일은 404(경로 검증 실패면 JSON 422)로 끝난다.
+
+axis_notes:
+  case: |
+    serve 는 정상 서빙, missing 은 없는 템플릿·파일, traversal 은 경로 탈출 차단, file_type 은 확장자 화이트리스트,
+    mime 은 형식별 MIME, caching 은 ETag·환경별 캐시 헤더, components 는 components.json, nested_path 는 하위 경로·특수
+    문자 파일명, rate_limit 은 요청 제한이다.
+
+axes:
+  case: [serve, missing, traversal, file_type, mime, caching, components, nested_path, rate_limit]
+
+effects:
+  - template_asset_serves_js_file_from_active_template
+  - template_asset_serves_css_file_from_active_template
+  - template_asset_returns_404_for_inactive_template
+  - template_asset_returns_404_for_nonexistent_file
+  - template_asset_blocks_path_traversal_attack
+  - template_asset_blocks_path_traversal_with_backslash
+  - template_asset_blocks_double_slash_pattern
+  - template_asset_blocks_url_encoded_path_traversal
+  - template_asset_blocks_windows_absolute_path
+  - template_asset_blocks_linux_absolute_path
+  - template_asset_blocks_null_byte_attack
+  - template_asset_blocks_disallowed_file_types
+  - template_asset_blocks_various_disallowed_file_types
+  - template_asset_allows_all_whitelisted_file_types
+  - template_asset_sets_correct_mime_type_for_png
+  - template_asset_serves_various_image_formats
+  - template_asset_serves_font_files
+  - template_asset_sets_caching_headers
+  - template_asset_generates_etag_header
+  - template_asset_returns_304_when_etag_matches
+  - template_asset_returns_200_when_etag_does_not_match
+  - template_asset_etag_changes_when_file_is_modified
+  - template_asset_applies_immutable_caching_in_production
+  - template_asset_applies_no_cache_in_development
+  - template_asset_serves_components_json
+  - template_asset_components_json_returns_304_with_matching_etag
+  - template_asset_returns_404_for_components_of_inactive_template
+  - template_asset_returns_404_for_nonexistent_components
+  - template_asset_handles_nested_path_two_levels
+  - template_asset_handles_nested_path_three_levels
+  - template_asset_handles_special_characters_in_filename
+  - template_asset_applies_rate_limiting
+
+test_files:
+  - tests/Feature/Template/TemplateAssetServingTest.php

@@ -14,7 +14,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingPolicyRepositoryInt
  * 배송정책 해석의 단일 SSoT 로, 표시(Resource)·차단(Service)·계산(Calculation) 전 표면이
  * 동일한 폴백 규칙을 공유하도록 한다.
  *
- * 싱글톤으로 등록되어 요청 내 기본 배송정책 조회를 1회로 캐시한다.
+ * scoped 로 등록되어 요청(큐 작업) 내 기본 배송정책 조회를 1회로 캐시한다.
  */
 class ShippingPolicyResolver
 {
@@ -47,9 +47,11 @@ class ShippingPolicyResolver
     /**
      * 캐시된 기본 배송정책을 비웁니다.
      *
-     * 이 해석기는 싱글톤이라 요청 하나가 배송정책을 바꾼 뒤에도 같은 요청 안에서는
+     * 이 해석기는 요청 단위(scoped)로 공유되어 요청 하나가 배송정책을 바꾼 뒤에도 같은 요청 안에서는
      * 변경 전 정책을 계속 돌려준다. 배송정책을 바꾸는 모든 지점(생성/수정/삭제/기본지정/
      * 사용여부)이 이 메서드를 거쳐 캐시를 비운다.
+     *
+     * @return void 반환값 없음
      */
     public function flushCache(): void
     {

@@ -508,6 +508,18 @@ foreach (['modules', 'plugins'] as $extensionType) {
                 }
             }
 
+            // PSR-0 으로만 등록하는 패키지도 있다(HTMLPurifier). 최적화하지 않은 오토로드 — 번들 vendor
+            // 압축본을 풀어 깐 vendor 가 그렇다 — 에서는 classmap 이 비어 있어, 이 맵을 읽지 않으면
+            // 그 패키지 클래스가 통째로 오토로드되지 않는다.
+            $psr0File = $vendorDir.'/composer/autoload_namespaces.php';
+            if (file_exists($psr0File)) {
+                foreach (require $psr0File as $prefix => $paths) {
+                    if (! $isExtensionOwnSymbol($prefix)) {
+                        $extensionVendorLoader->add($prefix, $paths);
+                    }
+                }
+            }
+
             // 패키지가 요구하는 부트스트랩 파일(HTMLPurifier 의 HTMLPURIFIER_PREFIX 정의 등).
             // vendor 디렉토리 바깥의 항목(확장 자신의 helpers)은 제외한다.
             $filesFile = $vendorDir.'/composer/autoload_files.php';

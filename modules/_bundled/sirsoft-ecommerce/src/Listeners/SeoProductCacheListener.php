@@ -7,8 +7,8 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Enums\SitemapChangeFreq;
 use App\Jobs\GenerateSitemapJob;
 use App\Seo\Contracts\SeoCacheManagerInterface;
-use App\Seo\SeoCacheRegenerator;
 use App\Seo\SitemapIndexer;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
@@ -18,7 +18,10 @@ use Modules\Sirsoft\Ecommerce\Support\ShopPathResolver;
  *
  * 상품의 생성, 수정, 삭제 시 관련 SEO 캐시를 자동으로 무효화합니다.
  * 상품 상세, 쇼핑몰 메인, 카테고리 목록, 검색, 홈 페이지 등의 캐시가 대상입니다.
- * 생성/수정 시에는 해당 상품 상세 페이지의 캐시를 즉시 재생성합니다.
+ *
+ * 무효화와 사이트맵 색인 한 건은 저장한 요청 안에서 한다(sync) — 큐로 가면 워커가 돌 때까지(워커가 없으면
+ * TTL 까지) 봇이 옛 상품 정보를 받는다. 본문은 DB::afterCommit 으로 감싸 트랜잭션 안에서 발화하면 커밋 뒤에
+ * 비운다. 상세 페이지를 미리 다시 그리는 무거운 일은 {@see SeoProductDetailRegenerateListener}(큐)가 맡는다(#724).
  */
 class SeoProductCacheListener implements HookListenerInterface
 {
@@ -33,14 +36,17 @@ class SeoProductCacheListener implements HookListenerInterface
             'sirsoft-ecommerce.product.after_create' => [
                 'method' => 'onProductCreate',
                 'priority' => 20,
+                'sync' => true,
             ],
             'sirsoft-ecommerce.product.after_update' => [
                 'method' => 'onProductUpdate',
                 'priority' => 20,
+                'sync' => true,
             ],
             'sirsoft-ecommerce.product.after_delete' => [
                 'method' => 'onProductDelete',
                 'priority' => 20,
+                'sync' => true,
             ],
         ];
     }
@@ -49,6 +55,7 @@ class SeoProductCacheListener implements HookListenerInterface
      * 기본 훅 핸들러 (HookListenerInterface 필수 메서드)
      *
      * @param  mixed  ...$args  훅 인자
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -56,27 +63,31 @@ class SeoProductCacheListener implements HookListenerInterface
     }
 
     /**
-     * 상품 생성 시 SEO 캐시를 무효화하고 상세 페이지를 즉시 재생성합니다.
+     * 상품 생성 시 SEO 캐시를 무효화하고 사이트맵 색인을 갱신합니다 (상세 재생성은 큐 리스너).
      *
      * @param  mixed  ...$args  훅 인자 (첫 번째: Product 모델)
+     * @return void 반환값 없음
      */
     public function onProductCreate(...$args): void
     {
-        $this->invalidateRelatedCaches($args);
-        $this->regenerateDetailCache($args);
-        $this->syncSitemapIndex($args, false);
+        DB::afterCommit(function () use ($args) {
+            $this->invalidateRelatedCaches($args);
+            $this->syncSitemapIndex($args, false);
+        });
     }
 
     /**
-     * 상품 수정 시 SEO 캐시를 무효화하고 상세 페이지를 즉시 재생성합니다.
+     * 상품 수정 시 SEO 캐시를 무효화하고 사이트맵 색인을 갱신합니다 (상세 재생성은 큐 리스너).
      *
      * @param  mixed  ...$args  훅 인자 (첫 번째: Product 모델)
+     * @return void 반환값 없음
      */
     public function onProductUpdate(...$args): void
     {
-        $this->invalidateRelatedCaches($args);
-        $this->regenerateDetailCache($args);
-        $this->syncSitemapIndex($args, false);
+        DB::afterCommit(function () use ($args) {
+            $this->invalidateRelatedCaches($args);
+            $this->syncSitemapIndex($args, false);
+        });
     }
 
     /**
@@ -85,17 +96,21 @@ class SeoProductCacheListener implements HookListenerInterface
      * 삭제 시에는 재생성 없이 무효화만 수행합니다.
      *
      * @param  mixed  ...$args  훅 인자 (첫 번째: Product 모델)
+     * @return void 반환값 없음
      */
     public function onProductDelete(...$args): void
     {
-        $this->invalidateRelatedCaches($args);
-        $this->syncSitemapIndex($args, true);
+        DB::afterCommit(function () use ($args) {
+            $this->invalidateRelatedCaches($args);
+            $this->syncSitemapIndex($args, true);
+        });
     }
 
     /**
      * 상품 변경과 관련된 모든 SEO 캐시를 무효화합니다.
      *
      * @param  array  $args  훅 인자 배열
+     * @return void 반환값 없음
      */
     private function invalidateRelatedCaches(array $args): void
     {
@@ -144,6 +159,7 @@ class SeoProductCacheListener implements HookListenerInterface
      *
      * @param  array  $args  훅 인자 배열 (첫 번째: Product 모델)
      * @param  bool  $deleted  삭제 이벤트 여부
+     * @return void 반환값 없음
      */
     private function syncSitemapIndex(array $args, bool $deleted): void
     {
@@ -175,39 +191,6 @@ class SeoProductCacheListener implements HookListenerInterface
             GenerateSitemapJob::dispatch();
         } catch (\Throwable $e) {
             Log::warning('[SEO] Product sitemap index sync failed', [
-                'error' => $e->getMessage(),
-                'product_id' => $product->id ?? null,
-            ]);
-        }
-    }
-
-    /**
-     * 상품 상세 페이지의 SEO 캐시를 즉시 재생성합니다.
-     *
-     * URL 구성: {상점 기준 경로}/products/{id}
-     * 기준 경로는 상점 주소 설정(route_path / no_route)을 ShopPathResolver 가 해석한 값입니다.
-     *
-     * @param  array  $args  훅 인자 배열
-     */
-    private function regenerateDetailCache(array $args): void
-    {
-        $product = $args[0] ?? null;
-
-        if (! $product || ! isset($product->id)) {
-            return;
-        }
-
-        try {
-            $regenerator = app(SeoCacheRegenerator::class);
-            $url = ShopPathResolver::path("products/{$product->id}");
-            $regenerator->renderAndCache($url);
-
-            Log::debug('[SEO] Product detail cache regenerated', [
-                'product_id' => $product->id,
-                'url' => $url,
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('[SEO] Product detail cache regeneration failed', [
                 'error' => $e->getMessage(),
                 'product_id' => $product->id ?? null,
             ]);

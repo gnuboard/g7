@@ -36,13 +36,16 @@ class NotificationLogListener implements HookListenerInterface
      */
     public static function getSubscribedHooks(): array
     {
+        // sync: 발송과 같은 작업에서 기록해야 확장이 그 발송 사이클의 문맥(예: 메시지 플러그인의 refkey)을
+        // 이을 수 있다. 큐로 가면 마스킹 전 본문이 큐 인자로 직렬화돼 jobs 테이블에 남는다(#724).
+        // 기록 실패는 각 메서드의 try/catch 가 삼키므로 발송은 막히지 않는다.
         return [
             // 공통 채널 발송 훅 (NotificationDispatcher에서 실행)
-            'core.notification.after_channel_send' => ['method' => 'handleChannelSent', 'priority' => 15],
-            'core.notification.channel_send_failed' => ['method' => 'handleChannelFailed', 'priority' => 15],
+            'core.notification.after_channel_send' => ['method' => 'handleChannelSent', 'priority' => 15, 'sync' => true],
+            'core.notification.channel_send_failed' => ['method' => 'handleChannelFailed', 'priority' => 15, 'sync' => true],
 
             // 메일 전용 훅 (DbTemplateMail에서 실행) — skipped만 유지
-            'core.mail.send_skipped' => ['method' => 'handleMailSkipped', 'priority' => 15],
+            'core.mail.send_skipped' => ['method' => 'handleMailSkipped', 'priority' => 15, 'sync' => true],
         ];
     }
 

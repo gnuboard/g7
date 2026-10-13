@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\Product;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\ProductService;
 
@@ -20,29 +19,33 @@ class SyncOptionGroupsListener implements HookListenerInterface
     /**
      * @param  ProductService  $productService  rebuildOptionGroups 비즈니스 로직 진입점
      * @param  ProductRepositoryInterface  $productRepository  상품 ID → 모델 조회
-     * @param  ProductOptionRepositoryInterface  $productOptionRepository  옵션 ID → product_id 추출
      */
     public function __construct(
         protected ProductService $productService,
         protected ProductRepositoryInterface $productRepository,
-        protected ProductOptionRepositoryInterface $productOptionRepository,
     ) {}
 
     /**
      * 구독할 훅 목록 반환
+     *
+     * @return array 훅 이름 → 메서드/우선순위 매핑
      */
     public static function getSubscribedHooks(): array
     {
+        // sync: 옵션 그룹은 저장 응답과 바로 다시 연 화면에 보이는 파생 데이터다 — 큐로 가면 워커가 돌 때까지
+        // 옛 그룹이 보인다. 발화 지점이 트랜잭션 안이면 같은 트랜잭션에서 함께 커밋된다(#724).
         return [
             // 옵션 동기화 완료 후 (생성/수정/삭제 포함)
             'sirsoft-ecommerce.product.after_options_sync' => [
                 'method' => 'syncOptionGroupsFromOptions',
                 'priority' => 10,
+                'sync' => true,
             ],
             // 옵션 일괄 업데이트 후 (기존 훅 활용)
             'sirsoft-ecommerce.option.after_bulk_update' => [
                 'method' => 'syncOptionGroupsFromBulkUpdate',
                 'priority' => 10,
+                'sync' => true,
             ],
         ];
     }
@@ -51,6 +54,7 @@ class SyncOptionGroupsListener implements HookListenerInterface
      * 기본 훅 핸들러 (HookListenerInterface 필수 메서드)
      *
      * @param  mixed  ...$args  훅 인자
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -64,6 +68,7 @@ class SyncOptionGroupsListener implements HookListenerInterface
      * @param  int  $created  생성된 옵션 수
      * @param  int  $updated  수정된 옵션 수
      * @param  int  $deleted  삭제된 옵션 수
+     * @return void 반환값 없음
      */
     public function syncOptionGroupsFromOptions(Product $product, int $created, int $updated, int $deleted): void
     {
@@ -92,6 +97,7 @@ class SyncOptionGroupsListener implements HookListenerInterface
      *
      * @param  array  $result  업데이트 결과 (options_updated)
      * @param  array  $data  업데이트 데이터 (product_ids/ids, bulk_changes, items)
+     * @return void 반환값 없음
      */
     public function syncOptionGroupsFromBulkUpdate(array $result, array $data): void
     {
@@ -122,7 +128,14 @@ class SyncOptionGroupsListener implements HookListenerInterface
         if (! empty($data['product_ids'])) {
             $productIds = $data['product_ids'];
         } elseif (! empty($data['ids'])) {
-            $productIds = $this->productOptionRepository->pluckProductIds((array) $data['ids']);
+            // 옵션 API 의 ids 는 「상품ID-옵션ID」 형식이다 — 앞자리가 상품 ID 다(ProductOptionService::bulkUpdate 와 같은 해석).
+            // 옵션 ID 로 보고 옵션 테이블에서 찾으면 엉뚱한 상품을 고르거나 아무것도 고르지 못한다.
+            $productIds = collect((array) $data['ids'])
+                ->map(fn ($id) => (int) explode('-', (string) $id)[0])
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
         }
 
         foreach ($productIds as $productId) {

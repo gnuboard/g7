@@ -27,7 +27,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
  * 플러그인이 신규 키를 선언하지 않아도 기존 동작이 유지되고(하위호환), 선언하면 그
  * 값이 이긴다.
  *
- * 싱글톤으로 등록되어 요청 내 카탈로그 조회를 1회로 캐시한다.
+ * scoped 로 등록되어 요청(큐 작업) 내 카탈로그 조회를 1회로 캐시한다.
  *
  * @see https://github.com/gnuboard/dev-g7/issues/475
  */

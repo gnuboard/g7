@@ -7,7 +7,6 @@ use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Seo\SeoCacheRegenerator;
 use App\Seo\SitemapIndexer;
 use Illuminate\Support\Facades\Bus;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoProductCacheListener;
@@ -30,6 +29,11 @@ class SeoProductCacheListenerTest extends ModuleTestCase
 
     protected SeoCacheRegenerator $regeneratorMock;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -47,6 +51,11 @@ class SeoProductCacheListenerTest extends ModuleTestCase
         $this->listener = new SeoProductCacheListener;
     }
 
+    /**
+     * 테스트가 바꾼 상태를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();
@@ -57,6 +66,12 @@ class SeoProductCacheListenerTest extends ModuleTestCase
 
     /**
      * 리스너가 올바른 훅-메서드 매핑을 반환하는지 확인
+     *
+     * @scenario listener=seo_product, queue=sync
+     *
+     * @effects shared_cache_invalidated_without_worker
+     *
+     * @return void 반환값 없음
      */
     public function test_get_subscribed_hooks_returns_correct_mapping(): void
     {
@@ -78,18 +93,21 @@ class SeoProductCacheListenerTest extends ModuleTestCase
     // ─── onProductCreate ──────────────────────────────────
 
     /**
-     * 상품 생성 시 관련 캐시 무효화 + 단건 재생성이 수행되는지 확인
+     * 상품 생성 시 관련 캐시를 무효화하고, 상세 재생성은 하지 않는다 (큐 리스너가 맡는다, #724)
+     *
+     * @scenario listener=seo_product, queue=sync
+     *
+     * @effects shared_cache_invalidated_without_worker
+     *
+     * @return void 반환값 없음
      */
-    public function test_on_product_create_invalidates_caches_and_regenerates_detail(): void
+    public function test_on_product_create_invalidates_caches_without_regeneration(): void
     {
         $product = (object) ['id' => 42];
 
         $this->expectCommonInvalidations($product);
 
-        $this->regeneratorMock->shouldReceive('renderAndCache')
-            ->once()
-            ->with('/shop/products/42')
-            ->andReturn(true);
+        $this->regeneratorMock->shouldNotReceive('renderAndCache');
 
         Log::shouldReceive('debug')->atLeast()->once();
 
@@ -101,47 +119,21 @@ class SeoProductCacheListenerTest extends ModuleTestCase
     // ─── onProductUpdate ──────────────────────────────────
 
     /**
-     * 상품 수정 시 관련 캐시 무효화 + 단건 재생성이 수행되는지 확인
+     * 상품 수정 시 관련 캐시를 무효화하고, 상세 재생성은 하지 않는다 (큐 리스너가 맡는다, #724)
+     *
+     * @scenario listener=seo_product, queue=sync
+     *
+     * @effects shared_cache_invalidated_without_worker
+     *
+     * @return void 반환값 없음
      */
-    public function test_on_product_update_invalidates_caches_and_regenerates_detail(): void
+    public function test_on_product_update_invalidates_caches_without_regeneration(): void
     {
         $product = (object) ['id' => 10];
 
         $this->expectCommonInvalidations($product);
 
-        $this->regeneratorMock->shouldReceive('renderAndCache')
-            ->once()
-            ->with('/shop/products/10')
-            ->andReturn(true);
-
-        Log::shouldReceive('debug')->atLeast()->once();
-
-        $this->listener->onProductUpdate($product);
-
-        $this->addToAssertionCount(1);
-    }
-
-    /**
-     * 주소 없이 운영하는 상점(no_route)의 SEO 캐시 경로는 세그먼트 없이 루트에 붙는다 (공개 #85)
-     *
-     * 종전에는 route_path 만 읽고 no_route 를 무시해 `/shop/products/7` 을 재생성했다 —
-     * 실제 화면 주소는 `/products/7` 이므로 봇이 받는 캐시가 영원히 채워지지 않는다.
-     */
-    public function test_on_product_update_regenerates_root_path_when_no_route(): void
-    {
-        Config::set('g7_settings.modules.sirsoft-ecommerce.basic_info', [
-            'route_path' => 'shop',
-            'no_route' => true,
-        ]);
-
-        $product = (object) ['id' => 7];
-
-        $this->expectCommonInvalidations($product);
-
-        $this->regeneratorMock->shouldReceive('renderAndCache')
-            ->once()
-            ->with('/products/7')
-            ->andReturn(true);
+        $this->regeneratorMock->shouldNotReceive('renderAndCache');
 
         Log::shouldReceive('debug')->atLeast()->once();
 
@@ -152,6 +144,12 @@ class SeoProductCacheListenerTest extends ModuleTestCase
 
     /**
      * 상품 수정 시 home과 search/index 캐시도 무효화되는지 확인
+     *
+     * @scenario listener=seo_product, queue=sync
+     *
+     * @effects shared_cache_invalidated_without_worker
+     *
+     * @return void 반환값 없음
      */
     public function test_on_product_update_invalidates_home_and_search(): void
     {
@@ -166,7 +164,7 @@ class SeoProductCacheListenerTest extends ModuleTestCase
                 return 1;
             });
 
-        $this->regeneratorMock->shouldReceive('renderAndCache')->once()->andReturn(true);
+        $this->regeneratorMock->shouldNotReceive('renderAndCache');
         Log::shouldReceive('debug')->atLeast()->once();
 
         $this->listener->onProductUpdate($product);
@@ -181,6 +179,12 @@ class SeoProductCacheListenerTest extends ModuleTestCase
 
     /**
      * 상품 삭제 시 관련 캐시 무효화만 수행되고 재생성은 하지 않는지 확인
+     *
+     * @scenario listener=seo_product, queue=sync
+     *
+     * @effects shared_cache_invalidated_without_worker
+     *
+     * @return void 반환값 없음
      */
     public function test_on_product_delete_invalidates_caches_without_regeneration(): void
     {
@@ -199,6 +203,12 @@ class SeoProductCacheListenerTest extends ModuleTestCase
 
     /**
      * 상품이 null인 경우 아무 동작도 하지 않는지 확인
+     *
+     * @scenario listener=seo_product, queue=sync
+     *
+     * @effects shared_cache_invalidated_without_worker
+     *
+     * @return void 반환값 없음
      */
     public function test_on_product_update_does_nothing_when_product_is_null(): void
     {
@@ -215,6 +225,12 @@ class SeoProductCacheListenerTest extends ModuleTestCase
 
     /**
      * 캐시 무효화 중 예외 발생 시 graceful하게 처리하는지 확인
+     *
+     * @scenario listener=seo_product, queue=sync
+     *
+     * @effects shared_cache_invalidated_without_worker
+     *
+     * @return void 반환값 없음
      */
     public function test_handles_invalidation_exceptions_gracefully(): void
     {
@@ -223,8 +239,8 @@ class SeoProductCacheListenerTest extends ModuleTestCase
         $this->cacheMock->shouldReceive('invalidateByUrl')
             ->andThrow(new \RuntimeException('Cache connection failed'));
 
-        // invalidation 실패 후에도 regeneration은 시도됨
-        $this->regeneratorMock->shouldReceive('renderAndCache')->once()->andReturn(true);
+        // 재생성은 큐 리스너가 맡는다 — 무효화 실패와 무관하게 여기서는 다시 그리지 않는다
+        $this->regeneratorMock->shouldNotReceive('renderAndCache');
 
         Log::shouldReceive('warning')
             ->once()
@@ -232,7 +248,8 @@ class SeoProductCacheListenerTest extends ModuleTestCase
                 return $context['error'] === 'Cache connection failed'
                     && $context['product_id'] === 99;
             }));
-        Log::shouldReceive('debug')->atLeast()->once();
+        // 무효화가 실패하면 성공 debug 로그는 남지 않는다 (예전 debug 는 재생성 성공 로그였다)
+        Log::shouldReceive('debug')->zeroOrMoreTimes();
 
         $this->listener->onProductUpdate($product);
 
@@ -243,6 +260,12 @@ class SeoProductCacheListenerTest extends ModuleTestCase
 
     /**
      * handle 메서드가 존재하는지 확인 (HookListenerInterface 준수)
+     *
+     * @scenario listener=seo_product, queue=sync
+     *
+     * @effects shared_cache_invalidated_without_worker
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_method_exists_for_interface_compliance(): void
     {
@@ -257,6 +280,7 @@ class SeoProductCacheListenerTest extends ModuleTestCase
      * 공통 캐시 무효화 기대값을 설정합니다.
      *
      * @param  object  $product  상품 객체
+     * @return void 반환값 없음
      */
     private function expectCommonInvalidations(object $product): void
     {

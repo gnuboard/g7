@@ -10,6 +10,7 @@ use App\Support\LayoutMarkup\EmptyMap;
 use App\Support\LayoutMarkup\LayoutMarkupCompiler;
 use App\Support\LayoutMarkup\MarkupCompileContextResolver;
 use App\Support\SensitiveSettingMask;
+use App\Support\SettingsVersion;
 use App\Traits\FiltersFrontendSchema;
 use App\Traits\NormalizesSettingsData;
 use Illuminate\Support\Arr;
@@ -207,6 +208,9 @@ class PluginSettingsService
             // 같은 프로세스의 config 미러도 즉시 다시 채운다 (공개이슈 #109) —
             // 이 호출이 없으면 상주 프로세스가 저장 후에도 옛 값을 계속 읽는다.
             app(ExtensionSettingsMirror::class)->refreshPlugin($identifier);
+
+            // 큐 워커가 바뀐 것을 알 수 있도록 설정 버전을 올린다 — 워커는 작업 시작 전에 비교해 다시 읽는다(#724).
+            SettingsVersion::bump();
         }
 
         // After 훅
@@ -268,6 +272,7 @@ class PluginSettingsService
         // 초기화도 값을 바꾸는 쓰기다 — 미러를 두면 같은 프로세스가 초기화 전 값을
         // 계속 읽는다 (저장 경로와 동일 결함, 공개이슈 #109).
         app(ExtensionSettingsMirror::class)->refreshPlugin($identifier);
+        SettingsVersion::bump();
 
         // After 훅
         HookManager::doAction('core.plugin_settings.after_reset', $identifier);

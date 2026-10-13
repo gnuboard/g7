@@ -22,6 +22,10 @@ use Plugins\Sirsoft\Gdpr\Services\GdprConsentService;
  *
  * before_delete 시점에 삭제하는 이유: cascade race 회피 +
  * 다른 리스너가 user 데이터를 참조할 수 있도록 정합성 유지.
+ *
+ * before_delete 시점에 같은 트랜잭션에서 실행돼야 한다(sync) — 큐로 가면 커밋 뒤에 돌아, 외래키
+ * nullOnDelete 가 이력의 user_id 를 이미 지운 상태라 익명화가 0건이 된다(#724). 익명화가 실패하면 예외가
+ * 그대로 올라가 회원 삭제도 함께 롤백된다 — 여기서 예외를 삼키지 않는다.
  */
 class GdprUserDeleteListener implements HookListenerInterface
 {
@@ -47,6 +51,7 @@ class GdprUserDeleteListener implements HookListenerInterface
             'core.user.before_delete' => [
                 'method' => 'cascadePluginData',
                 'priority' => 10,
+                'sync' => true,
             ],
         ];
     }

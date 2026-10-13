@@ -26,6 +26,7 @@ use Modules\Sirsoft\Board\Listeners\PostReplySyncListener;
 use Modules\Sirsoft\Board\Listeners\PrivacyRetentionHandlerListener;
 use Modules\Sirsoft\Board\Listeners\SearchPostsListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardCacheListener;
+use Modules\Sirsoft\Board\Listeners\SeoBoardRegenerateListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardSettingsCacheListener;
 use Modules\Sirsoft\Board\Listeners\UserNotificationSettingsListener;
 use Modules\Sirsoft\Board\Listeners\UserReactionInfoListener;
@@ -542,6 +543,8 @@ class Module extends AbstractModule
             BoardActivityLogListener::class,
             ActivityLogDescriptionResolver::class,
             SeoBoardCacheListener::class,
+            // 상세 재렌더·재활성 대량 재색인은 큐 — 무효화(SeoBoardCacheListener, sync)가 먼저 돌고 커밋 뒤에 실행된다(#724)
+            SeoBoardRegenerateListener::class,
             SeoBoardSettingsCacheListener::class,
             EcommerceInquiryHookListener::class,
             PostCountSyncListener::class,

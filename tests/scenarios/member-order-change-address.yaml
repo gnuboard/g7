@@ -72,6 +72,7 @@ effects:
   - guest_confirm_option_has_no_domain_exception_so_generic_catch_returns_500
   - guest_action_5xx_responses_exclude_exception_message
   - generic_catch_contract_scanner_covers_core_and_bundled_extensions
+  - generic_catch_contract_scanner_stops_at_catch_block_end
   # 국내/해외 주소 조합 정합성 (부수 발견 F3)
   - shipping_address_country_code_is_the_axis_for_domestic_vs_intl_validation
   - shipping_address_intl_combination_without_country_code_returns_422_validation_errors

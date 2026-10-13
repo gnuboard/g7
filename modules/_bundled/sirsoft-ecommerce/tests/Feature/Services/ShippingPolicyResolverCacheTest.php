@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Services;
 
+use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\ChargePolicyEnum;
 use Modules\Sirsoft\Ecommerce\Listeners\ShippingPolicyCacheListener;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
@@ -51,6 +52,8 @@ class ShippingPolicyResolverCacheTest extends ModuleTestCase
      * @scenario mutation=none
      *
      * @effects default_policy_cached_within_request
+     *
+     * @return void 반환값 없음
      */
     public function test_default_policy_is_cached_within_request(): void
     {
@@ -74,6 +77,8 @@ class ShippingPolicyResolverCacheTest extends ModuleTestCase
      * @scenario mutation=manual_flush
      *
      * @effects resolver_cache_flushed
+     *
+     * @return void 반환값 없음
      */
     public function test_flush_cache_forces_refetch(): void
     {
@@ -96,6 +101,8 @@ class ShippingPolicyResolverCacheTest extends ModuleTestCase
      * @scenario mutation=set_default
      *
      * @effects resolver_cache_flushed
+     *
+     * @return void 반환값 없음
      */
     public function test_set_default_invalidates_resolver_cache(): void
     {
@@ -120,6 +127,8 @@ class ShippingPolicyResolverCacheTest extends ModuleTestCase
      * @scenario mutation=update
      *
      * @effects resolver_cache_flushed
+     *
+     * @return void 반환값 없음
      */
     public function test_update_invalidates_resolver_cache(): void
     {
@@ -158,6 +167,8 @@ class ShippingPolicyResolverCacheTest extends ModuleTestCase
      * @scenario mutation=delete
      *
      * @effects resolver_cache_flushed
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_invalidates_resolver_cache(): void
     {
@@ -179,6 +190,8 @@ class ShippingPolicyResolverCacheTest extends ModuleTestCase
      * @scenario mutation=hook_subscription
      *
      * @effects resolver_cache_flushed
+     *
+     * @return void 반환값 없음
      */
     public function test_listener_subscribes_every_mutation_hook(): void
     {
@@ -195,5 +208,84 @@ class ShippingPolicyResolverCacheTest extends ModuleTestCase
         ] as $event) {
             $this->assertContains('sirsoft-ecommerce.shipping_policy.'.$event, $hooks);
         }
+    }
+
+    /**
+     * 배송정책 변경 훅 7개가 모두 동기(sync) 실행으로 선언돼 있습니다. (실패-먼저)
+     *
+     * 요청 안 메모리(해석기 싱글톤)를 비우는 리스너는 그 요청 안에서 돌아야 한다 — 큐로 가면 워커 프로세스의
+     * 사본만 비우고 웹 요청 쪽 해석기는 옛 기본 배송정책을 계속 돌려준다.
+     *
+     * @scenario mutation=hook_subscription
+     *
+     * @effects resolver_flushed_in_request
+     *
+     * @return void 반환값 없음
+     */
+    public function test_every_mutation_hook_is_synchronous(): void
+    {
+        foreach (ShippingPolicyCacheListener::getSubscribedHooks() as $hook => $config) {
+            $this->assertTrue(($config['sync'] ?? false) === true, "{$hook} 가 sync 가 아닙니다 — 큐로 가면 웹 요청의 해석기 캐시가 비워지지 않습니다.");
+        }
+    }
+
+    /**
+     * 큐 드라이버가 database 여도 배송정책을 바꾼 같은 요청에서 해석기가 새 값을 돌려줍니다. (실패-먼저)
+     *
+     * 워커를 돌리지 않는다 — 운영에서 웹 요청과 워커는 다른 프로세스라, 워커가 비우는 것은 워커의 해석기다.
+     * 큐 작업 목록에 이 리스너가 하나도 없어야 한다.
+     *
+     * @scenario mutation=queued_request
+     *
+     * @effects resolver_flushed_in_request
+     *
+     * @return void 반환값 없음
+     */
+    public function test_resolver_is_flushed_in_request_when_queue_is_database(): void
+    {
+        config(['queue.default' => 'database']);
+
+        $service = app(ShippingPolicyService::class);
+        $resolver = app(ShippingPolicyResolver::class);
+
+        $old = $this->makePolicy(isDefault: true, baseFee: 600);
+        $candidate = $this->makePolicy(isDefault: false, baseFee: 900);
+
+        // setDefault
+        $this->assertSame($old->id, $resolver->getDefaultPolicy()?->id);
+        $service->setDefault($candidate);
+        $this->assertSame($candidate->id, $resolver->getDefaultPolicy()?->id, 'setDefault 후 같은 요청에서 옛 기본 배송정책이 반환됩니다.');
+
+        // update
+        $service->update($candidate->fresh(), [
+            'name' => ['ko' => '배송정책', 'en' => 'Policy'],
+            'is_default' => true,
+            'is_active' => true,
+            'country_settings' => [[
+                'country_code' => 'KR',
+                'shipping_method' => 'parcel',
+                'currency_code' => 'KRW',
+                'charge_policy' => ChargePolicyEnum::FIXED->value,
+                'base_fee' => 1500,
+                'is_active' => true,
+            ]],
+        ]);
+        $this->assertSame(1500, (int) $resolver->getDefaultPolicy()?->getCountrySetting('KR')?->base_fee, 'update 후 같은 요청에서 옛 배송비가 반환됩니다.');
+
+        // toggleActive
+        $this->assertTrue((bool) $resolver->getDefaultPolicy()?->is_active);
+        $service->toggleActive($candidate->fresh());
+        $this->assertFalse((bool) $resolver->getDefaultPolicy()?->is_active, 'toggleActive 후 같은 요청에서 옛 사용여부가 반환됩니다.');
+
+        // bulkToggleActive
+        $service->bulkToggleActive([$candidate->id], true);
+        $this->assertTrue((bool) $resolver->getDefaultPolicy()?->is_active, 'bulkToggleActive 후 같은 요청에서 옛 사용여부가 반환됩니다.');
+
+        // delete
+        $service->delete($candidate->fresh());
+        $this->assertNull($resolver->getDefaultPolicy(), 'delete 후 같은 요청에서 삭제된 배송정책이 반환됩니다.');
+
+        $queued = DB::table('jobs')->where('payload', 'like', '%ShippingPolicyCacheListener%')->count();
+        $this->assertSame(0, $queued, '해석기 캐시 비우기가 큐 작업으로 쌓였습니다 — 워커의 사본만 비웁니다.');
     }
 }

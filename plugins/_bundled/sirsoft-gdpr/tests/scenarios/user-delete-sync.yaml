@@ -1,0 +1,21 @@
+feature: 회원 완전 삭제 시 동의 이력 익명화의 같은 트랜잭션 실행
+
+description: |
+  core.user.before_delete 리스너가 큐로 가면 회원 삭제가 커밋된 뒤에 돈다. 그때는 외래키 nullOnDelete 가
+  동의 이력의 회원 ID 를 이미 지워 익명화 대상이 0건이 되고, IP·브라우저 정보가 남는다(개인정보 결함).
+  삭제 트랜잭션 안에서 sync 로 실행해 익명화가 실패하면 회원 삭제도 함께 취소한다.
+
+axis_notes:
+  path: service 는 UserService::deleteUser 로 지우는 운영 경로다.
+  queue: sync 는 테스트 기본값, database 는 운영처럼 큐 작업이 커밋 뒤로 밀리는 경우다.
+
+axes:
+  path: [service]
+  queue: [sync, database]
+
+effects:
+  - history_anonymized_in_delete_transaction   # 삭제와 같은 트랜잭션에서 IP·UA 가 지워지고 행은 남는다
+  - delete_rolled_back_when_anonymize_fails    # 익명화가 실패하면 회원 행이 남는다
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/GdprUserDeleteViaServiceTest.php

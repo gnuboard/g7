@@ -19,6 +19,12 @@ class NotificationLogListenerTest extends TestCase
 
     /**
      * handleChannelSent()가 sent 로그를 기록하는지 확인
+     *
+     * @scenario case=notification_log_sync
+     *
+     * @effects log_written_in_send_cycle
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_channel_sent_creates_log(): void
     {
@@ -41,6 +47,12 @@ class NotificationLogListenerTest extends TestCase
 
     /**
      * handleChannelSent()가 database 채널도 기록하는지 확인
+     *
+     * @scenario case=notification_log_sync
+     *
+     * @effects log_written_in_send_cycle
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_channel_sent_logs_database_channel(): void
     {
@@ -62,6 +74,12 @@ class NotificationLogListenerTest extends TestCase
 
     /**
      * handleChannelFailed()가 failed 로그를 기록하는지 확인
+     *
+     * @scenario case=notification_log_sync
+     *
+     * @effects log_written_in_send_cycle
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_channel_failed_creates_log(): void
     {
@@ -87,6 +105,12 @@ class NotificationLogListenerTest extends TestCase
 
     /**
      * handleMailSkipped()가 skipped 로그를 기록하는지 확인
+     *
+     * @scenario case=notification_log_sync
+     *
+     * @effects log_written_in_send_cycle
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_mail_skipped_creates_log(): void
     {
@@ -108,6 +132,12 @@ class NotificationLogListenerTest extends TestCase
 
     /**
      * handleChannelSent()가 context에 subject/body가 있으면 로그에 저장하는지 확인
+     *
+     * @scenario case=notification_log_sync
+     *
+     * @effects log_written_in_send_cycle
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_channel_sent_saves_subject_and_body(): void
     {
@@ -133,6 +163,12 @@ class NotificationLogListenerTest extends TestCase
 
     /**
      * handleChannelSent()가 context에 subject/body가 없으면 null로 저장하는지 확인
+     *
+     * @scenario case=notification_log_sync
+     *
+     * @effects log_written_in_send_cycle
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_channel_sent_saves_null_when_no_subject_body(): void
     {
@@ -152,6 +188,12 @@ class NotificationLogListenerTest extends TestCase
 
     /**
      * handleChannelFailed()가 context에 subject/body가 있으면 로그에 저장하는지 확인
+     *
+     * @scenario case=notification_log_sync
+     *
+     * @effects log_written_in_send_cycle
+     *
+     * @return void 반환값 없음
      */
     public function test_handle_channel_failed_saves_subject_and_body(): void
     {
@@ -178,6 +220,12 @@ class NotificationLogListenerTest extends TestCase
 
     /**
      * 정적 훅 목록이 공통 채널 훅 + mail skipped 훅을 구독하는지 확인
+     *
+     * @scenario case=notification_log_sync
+     *
+     * @effects log_written_in_send_cycle
+     *
+     * @return void 반환값 없음
      */
     public function test_subscribed_hooks_contains_channel_hooks(): void
     {
@@ -186,5 +234,22 @@ class NotificationLogListenerTest extends TestCase
         $this->assertArrayHasKey('core.notification.after_channel_send', $hooks);
         $this->assertArrayHasKey('core.notification.channel_send_failed', $hooks);
         $this->assertArrayHasKey('core.mail.send_skipped', $hooks);
+    }
+
+    /**
+     * 발송 로그 3훅이 모두 sync 다 — 발송과 같은 자리에서 기록해야 확장이 그 사이클의 문맥을 잇고,
+     * 마스킹 전 본문이 큐 인자로 직렬화되지 않는다. (실패-먼저)
+     *
+     * @scenario case=notification_log_sync
+     *
+     * @effects log_written_in_send_cycle
+     *
+     * @return void 반환값 없음
+     */
+    public function test_every_log_hook_is_synchronous(): void
+    {
+        foreach (NotificationLogListener::getSubscribedHooks() as $hook => $config) {
+            $this->assertTrue(($config['sync'] ?? false) === true, "{$hook} 가 sync 가 아닙니다.");
+        }
     }
 }

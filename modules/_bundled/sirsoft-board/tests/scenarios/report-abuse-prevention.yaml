@@ -1,0 +1,27 @@
+feature: 게시판 신고 남발 방지 (일일 한도·반려 누적 한도·쿨타임)
+
+description: |
+  회원이 게시글을 신고할 때 일일 신고 한도, 기간 안 반려 누적 한도, 연속 신고 쿨타임을 검사한다. 넘으면 422 로
+  막고, 각 값을 0 으로 두면 그 검사를 끈다. 신고 라우트는 그 게시판의 게시글 열람 권한을 요구하므로 신고자는
+  user 역할에 권한이 있어야 남발 검사까지 닿는다.
+
+axis_notes:
+  case: |
+    daily_limit 은 오늘 신고 건수, rejection_limit 은 기간 안 반려 건수, cooldown 은 직전 신고 뒤 대기 시간이다.
+
+axes:
+  case: [daily_limit, rejection_limit, cooldown]
+
+effects:
+  - report_allowed_under_daily_limit            # 한도 미만이면 남발 검사를 통과한다
+  - report_rejected_with_422_over_daily_limit   # 일일 한도에 닿으면 422
+  - daily_limit_zero_disables_check             # 일일 한도 0 은 제한 없음
+  - report_rejected_with_422_over_rejection_limit # 반려 누적 한도에 닿으면 422
+  - rejections_outside_period_not_counted       # 기간 밖 반려는 세지 않는다
+  - rejection_limit_zero_disables_check         # 반려 한도 0 은 제한 없음
+  - report_rejected_with_422_during_cooldown    # 쿨타임 안이면 422
+  - report_allowed_after_cooldown               # 쿨타임이 지나면 다시 신고할 수 있다
+  - cooldown_zero_disables_check                # 쿨타임 0 은 제한 없음
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/ReportAbusePreventionTest.php

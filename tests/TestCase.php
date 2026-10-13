@@ -188,6 +188,12 @@ abstract class TestCase extends BaseTestCase
             // 테스트는 자기 setUp 에서 `app.url` 을 명시한다.
             'app.url' => 'http://localhost',
             'g7_settings.core.general.site_url' => 'http://localhost',
+            // 방문자 통계의 개인정보 모드와 DNT 존중도 기본값(IP 저장·존중)으로 고정한다. 개발 사이트를 동의 모드로 두면
+            // 동의 제공자가 없는 테스트 환경에서는 익명으로 내려가 방문자 쿠키를 심지 않고, DNT 존중을 끄면 제외 판정 순서가
+            // 달라져, 쿠키 발급·제외 사유를 단언한 테스트가 그 환경에서만 깨진다. 다른 값을 검증하는 테스트는 자기 setUp 이나
+            // 본문에서 이 키를 명시한다.
+            'g7_settings.core.analytics.privacy_mode' => 'full',
+            'g7_settings.core.analytics.respect_dnt' => true,
             // 비밀번호 정책(#736)도 전부 기본값(꺼짐)으로 고정한다. 개발 사이트에서 만료·작성 규칙을 켜 두면
             // 로그인이 토큰 대신 변경 단계를 돌려주고, 가입·변경 테스트의 비밀번호가 조합·반복 규칙에 걸려
             // 그 환경에서만 무더기로 깨진다. 정책을 검증하는 테스트는 해당 키를 자기 setUp 에서 명시한다.

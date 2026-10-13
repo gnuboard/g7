@@ -428,7 +428,7 @@
 | `sirsoft-ecommerce.product.after_popular_list` | action | — | `src/Services/ProductService.php:179` |
 | `sirsoft-ecommerce.product.after_public_list` | action | — | `src/Services/ProductService.php:158` |
 | `sirsoft-ecommerce.product.after_read` | action | — | `src/Services/ProductService.php:242` |
-| `sirsoft-ecommerce.product.after_stock_sync` | action | — | `src/Listeners/SyncProductFromOptionListener.php:107` 외 1곳 |
+| `sirsoft-ecommerce.product.after_stock_sync` | action | — | `src/Listeners/SyncProductFromOptionListener.php:111` 외 1곳 |
 | `sirsoft-ecommerce.product.after_update` | action | — | `src/Services/ProductService.php:402` |
 | `sirsoft-ecommerce.product.before_bulk_price_update` | action | — | `src/Services/ProductService.php:576` |
 | `sirsoft-ecommerce.product.before_bulk_stock_update` | action | — | `src/Services/ProductService.php:610` |
@@ -1034,12 +1034,14 @@ data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습
 | `sirsoft-ecommerce.product.after_bulk_update` | action (미선언) | `ProductActivityLogListener` | `handleProductAfterBulkUpdate` | 20 |
 | `sirsoft-ecommerce.product.after_create` | action (미선언) | `ProductActivityLogListener` | `handleProductAfterCreate` | 20 |
 | `sirsoft-ecommerce.product.after_create` | action (미선언) | `SeoProductCacheListener` | `onProductCreate` | 20 |
+| `sirsoft-ecommerce.product.after_create` | action (미선언) | `SeoProductDetailRegenerateListener` | `onProductCreate` | 20 |
 | `sirsoft-ecommerce.product.after_delete` | action (미선언) | `ProductActivityLogListener` | `handleProductAfterDelete` | 20 |
 | `sirsoft-ecommerce.product.after_delete` | action (미선언) | `SeoProductCacheListener` | `onProductDelete` | 20 |
 | `sirsoft-ecommerce.product.after_options_sync` | action (미선언) | `SyncOptionGroupsListener` | `syncOptionGroupsFromOptions` | 10 |
 | `sirsoft-ecommerce.product.after_stock_sync` | action (미선언) | `ProductActivityLogListener` | `handleProductAfterStockSync` | 20 |
 | `sirsoft-ecommerce.product.after_update` | action (미선언) | `ProductActivityLogListener` | `handleProductAfterUpdate` | 20 |
 | `sirsoft-ecommerce.product.after_update` | action (미선언) | `SeoProductCacheListener` | `onProductUpdate` | 20 |
+| `sirsoft-ecommerce.product.after_update` | action (미선언) | `SeoProductDetailRegenerateListener` | `onProductUpdate` | 20 |
 | `sirsoft-ecommerce.product_inquiry.after_bulk_delete` | action (미선언) | `EcommerceAdminActivityLogListener` | `handleProductInquiryAfterBulkDelete` | 20 |
 | `sirsoft-ecommerce.product_option.after_bulk_price_update` | action (미선언) | `EcommerceAdminActivityLogListener` | `handleOptionAfterBulkPriceUpdate` | 20 |
 | `sirsoft-ecommerce.product_option.after_bulk_stock_update` | action (미선언) | `EcommerceAdminActivityLogListener` | `handleOptionAfterBulkStockUpdate` | 20 |
@@ -1139,6 +1141,7 @@ data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습
 | `SearchProductsListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/SearchProductsListener.php` |
 | `SeoCategoryCacheListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/SeoCategoryCacheListener.php` |
 | `SeoProductCacheListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/SeoProductCacheListener.php` |
+| `SeoProductDetailRegenerateListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/SeoProductDetailRegenerateListener.php` |
 | `SeoSettingsCacheListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/SeoSettingsCacheListener.php` |
 | `ShippingPolicyActivityLogListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/ShippingPolicyActivityLogListener.php` |
 | `ShippingPolicyCacheListener` | 0개 | 명시 등록 | ✅ | `src/Listeners/ShippingPolicyCacheListener.php` |
@@ -1156,7 +1159,7 @@ data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
-33개 리스너는 전부 `HookListenerInterface` 를 구현하고 `getSubscribedHooks()` 로 자기 구독을
+45개 리스너는 전부 `HookListenerInterface` 를 구현하고 `getSubscribedHooks()` 로 자기 구독을
 선언합니다(명시 등록). 역할별로 네 무리입니다:
 
 - **활동 로그 6종** (`EcommerceAdminActivityLogListener` 41훅 · `OrderActivityLogListener` 21 ·
@@ -1164,9 +1167,12 @@ data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습
   관리자·구매자 행위를 코어 `activity_logs` 단일 테이블에 기록합니다. 신규 `logActivity()` 를
   추가하면 코어 `lang/{ko,en}/activity_log.php` 의 action 라벨과 description 본문, 그리고
   번들 ja 팩까지 함께 정의해야 합니다.
-- **캐시·색인 5종** (`SearchProductsListener` · `SeoProductCacheListener` ·
+- **캐시·색인 7종** (`SearchProductsListener` · `SeoProductCacheListener` · `SeoProductDetailRegenerateListener` ·
   `SeoCategoryCacheListener` · `SeoSettingsCacheListener` · `CategoryTreeCacheListener` ·
   `ShippingPolicyCacheListener`): 도메인 변경 시 검색 색인과 봇 화면 캐시를 무효화합니다.
+  SEO·카테고리 트리·배송정책 캐시 비우기는 `'sync' => true` 로 저장한 요청 안에서 돌고(본문은
+  `DB::afterCommit` 으로 커밋 뒤에 비움), 상품 상세를 미리 다시 그리는 무거운 일만
+  `SeoProductDetailRegenerateListener` 가 큐에서 맡습니다 — 비우기가 큐로 가면 워커가 돌 때까지 옛 화면이 보입니다.
 - **금전·정합 5종** (`MileageTransactionListener` · `CouponUseListener` · `CouponRestoreListener` ·
   `UserMileageCleanupListener` · `IssueCashReceiptOnDepositListener`): 호출자 트랜잭션과 함께
   되돌아가야 하므로 `'sync' => true` 로 구독합니다.
@@ -1179,7 +1185,13 @@ data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습
   추가결제 수납/환급)과 알림 매핑 리스너 전체는 `'sync' => true` 입니다 — 큐 워커가 신청서를 다시
   읽으면 그 사이 옮겨 간 "지금" 상태가 과거 사건의 기록·알림에 실리기 때문입니다.
 - **연동·주입 나머지**: 장바구니 병합 · 가입 시 통화/배송국가 배정 · 문의 피벗 정리 · 옵션↔상품
-  대표값 동기화 · 회원 정보 화면에 마일리지/통화/배송국가 주입.
+  대표값 동기화 · 회원 정보 화면에 마일리지/통화/배송국가 주입. 가입 배정과 옵션↔상품 동기화는 저장 응답에
+  바로 보여야 하므로 `'sync' => true` 입니다.
+
+요청 단위로 한 번 읽어 들고 있는 서비스(`CurrencyConversionService` · `ShippingPolicyResolver` ·
+`PaymentMethodResolver` · `EcommerceSettingsService`)는 `scoped` 로 등록합니다 — 큐 워커는 작업마다
+scoped 인스턴스만 비우므로 싱글톤이면 재시작 전까지 옛 값을 씁니다. scoped 로 만들 수 없는 static 캐시
+(`CurrencySettingsCache` · `ShippingType` 코드 캐시)는 큐 작업 시작마다 비웁니다.
 
 구독 수가 0인 두 리스너(`CategoryTreeCacheListener` · `ShippingPolicyCacheListener`)는 훅
 이름을 상수·변수로 조립해 정적 수집에 잡히지 않을 뿐 실제로는 등록되어 있습니다.

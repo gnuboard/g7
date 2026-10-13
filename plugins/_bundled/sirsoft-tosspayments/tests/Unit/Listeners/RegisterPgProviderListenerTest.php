@@ -28,7 +28,7 @@ class RegisterPgProviderListenerTest extends PluginTestCase
     /**
      * getSubscribedHooks가 올바른 훅 매핑을 반환하는지 확인
      *
-     * @effects toss_provider_registered_with_payment_handler
+     * @effects toss_provider_hook_subscriptions_declared
      *
      * @return void 반환값 없음
      */
@@ -51,7 +51,7 @@ class RegisterPgProviderListenerTest extends PluginTestCase
     /**
      * registerProvider가 토스페이먼츠를 제공자 목록에 추가하는지 확인
      *
-     * @effects toss_provider_registered_with_payment_handler
+     * @effects toss_provider_registered_with_payment_handler, toss_provider_supported_methods_use_core_payment_ids
      *
      * @return void 반환값 없음
      */
@@ -83,7 +83,7 @@ class RegisterPgProviderListenerTest extends PluginTestCase
     /**
      * registerProvider 페이로드가 name_key (lang key) 를 보유해 활성 언어팩 보강 가능한지 확인.
      *
-     * @effects toss_provider_registered_with_payment_handler
+     * @effects toss_provider_carries_name_key_for_lang_pack
      *
      * @return void 반환값 없음
      */
@@ -97,7 +97,7 @@ class RegisterPgProviderListenerTest extends PluginTestCase
     /**
      * registerProvider가 기존 제공자를 유지하는지 확인
      *
-     * @effects toss_provider_registered_with_payment_handler
+     * @effects toss_provider_registration_preserves_existing_providers
      *
      * @return void 반환값 없음
      */
@@ -119,7 +119,7 @@ class RegisterPgProviderListenerTest extends PluginTestCase
     /**
      * registerProvider가 빈 배열에도 동작하는지 확인
      *
-     * @effects toss_provider_registered_with_payment_handler
+     * @effects toss_provider_registration_works_with_empty_list
      *
      * @return void 반환값 없음
      */
@@ -134,7 +134,7 @@ class RegisterPgProviderListenerTest extends PluginTestCase
     /**
      * getClientConfig가 다른 provider에 대해 원본 config를 반환하는지 확인
      *
-     * @effects toss_provider_registered_with_payment_handler
+     * @effects toss_client_config_ignores_other_providers
      *
      * @return void 반환값 없음
      */

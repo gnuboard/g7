@@ -83,6 +83,12 @@ exclusions:
 effects:
   - vbank_due_at_stored_in_app_timezone   # 가상계좌 dueDate(+09:00)를 앱 시간대(UTC)로 바꿔 저장 — 9시간 어긋남 방지(S4-D5 후속)
   - toss_provider_registered_with_payment_handler
+  - toss_provider_hook_subscriptions_declared
+  - toss_provider_supported_methods_use_core_payment_ids
+  - toss_provider_carries_name_key_for_lang_pack
+  - toss_provider_registration_preserves_existing_providers
+  - toss_provider_registration_works_with_empty_list
+  - toss_client_config_ignores_other_providers
   - enabled_methods_exposed_with_core_mapping
   - vbank_account_stored_without_completing
   - vbank_issue_clears_ordered_cart_items   # 가상계좌 계좌 발급 시 주문한 장바구니 항목 정리(입금 전) — KG·KCP·나이스와 같은 처리

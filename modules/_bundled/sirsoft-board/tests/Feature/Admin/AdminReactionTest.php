@@ -388,6 +388,9 @@ class AdminReactionTest extends BoardTestCase
         $member = $this->createUser();
         $postId = $this->createTestPost(['user_id' => $author->id]);
 
+        // 반응 라우트는 그 게시판의 게시글 열람 권한을 요구한다 — 회원(user 역할)에게 준다.
+        $this->grantUserRolePermissions(['posts.read']);
+
         $this->actingAs($member, 'sanctum')
             ->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/react", ['reaction_type_id' => $this->likeId])
             ->assertOk();

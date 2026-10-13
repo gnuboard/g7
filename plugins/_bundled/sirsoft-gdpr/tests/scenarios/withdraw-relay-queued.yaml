@@ -1,0 +1,20 @@
+feature: 큐 워커에서 처리한 탈퇴의 동의 철회 중계
+
+description: |
+  탈퇴 리스너는 큐에서 돈다. 중계 리스너가 요청 종료(app()->terminating) 때만 알리면 워커에서는 알림이 워커
+  종료까지 밀리거나 사라지고, 한 번 예약된 뒤에는 다시 예약하지 않아 이후 작업의 변경을 놓친다.
+  큐 작업이 끝날 때(JobProcessed) 모은 변경을 알리고, 작업이 예외로 끝나면(JobExceptionOccurred) 버린다.
+  sync 연결 작업은 웹 요청 종료 시 1회 알림을 그대로 쓴다.
+
+axis_notes:
+  case: 워커 한 작업, 같은 워커의 연속 두 작업, 실패한 작업.
+
+axes:
+  case: [queued_withdraw, queued_withdraw_twice, queued_job_failed]
+
+effects:
+  - consent_change_relayed_when_queue_job_ends     # 작업 종료 시 주체마다 한 번 알린다
+  - pending_changes_discarded_on_job_failure       # 실패한 작업의 변경은 다음 작업으로 새지 않는다
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/GdprWithdrawRelayQueuedTest.php

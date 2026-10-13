@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Mockery;
 use Modules\Sirsoft\Board\Listeners\SeoBoardCacheListener;
+use Modules\Sirsoft\Board\Listeners\SeoBoardRegenerateListener;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Seo\BoardSitemapContributor;
@@ -29,6 +30,11 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 class BoardSitemapLifecycleTest extends BoardTestCase
 {
     private SeoBoardCacheListener $listener;
+
+    /**
+     * 게시판 재활성 재색인을 맡는 큐 리스너 (운영에서는 커밋 뒤 워커가 같은 인자로 실행한다, #724)
+     */
+    private SeoBoardRegenerateListener $regenerate;
 
     private Board $otherBoard;
 
@@ -62,6 +68,7 @@ class BoardSitemapLifecycleTest extends BoardTestCase
         Storage::fake('attachments');
 
         $this->listener = new SeoBoardCacheListener;
+        $this->regenerate = new SeoBoardRegenerateListener;
 
         $this->otherBoard = Board::updateOrCreate(
             ['slug' => 'kve-sitemap-other'],
@@ -84,6 +91,7 @@ class BoardSitemapLifecycleTest extends BoardTestCase
         $this->listener->onPostCreate(Post::find($this->posts['public_b']), $this->board->slug);
         $this->listener->onPostCreate(Post::find($this->posts['other']), $this->otherBoard->slug);
         $this->listener->onBoardUpdate($this->board->fresh(), [], $this->board->toArray());
+        $this->regenerate->onBoardUpdate($this->board->fresh(), [], $this->board->toArray());
     }
 
     /**
@@ -115,6 +123,7 @@ class BoardSitemapLifecycleTest extends BoardTestCase
         $snapshot = $this->board->fresh()->toArray();
         $this->board->update(['is_active' => false]);
         $this->listener->onBoardUpdate($this->board->fresh(), ['is_active' => false], $snapshot);
+        $this->regenerate->onBoardUpdate($this->board->fresh(), ['is_active' => false], $snapshot);
 
         $this->assertSame([], $this->indexedPostIds($this->board), '비활성 게시판의 게시글 URL 이 색인에 남으면 안 됩니다.');
         $this->assertSame(0, $this->rowCount('board', (string) $this->board->id));
@@ -135,11 +144,13 @@ class BoardSitemapLifecycleTest extends BoardTestCase
         $snapshot = $this->board->fresh()->toArray();
         $this->board->update(['is_active' => false]);
         $this->listener->onBoardUpdate($this->board->fresh(), ['is_active' => false], $snapshot);
+        $this->regenerate->onBoardUpdate($this->board->fresh(), ['is_active' => false], $snapshot);
         $this->assertSame([], $this->indexedPostIds($this->board));
 
         $snapshot = $this->board->fresh()->toArray();
         $this->board->update(['is_active' => true]);
         $this->listener->onBoardUpdate($this->board->fresh(), ['is_active' => true], $snapshot);
+        $this->regenerate->onBoardUpdate($this->board->fresh(), ['is_active' => true], $snapshot);
 
         $this->assertSame(
             [$this->posts['public_a'], $this->posts['public_b']],
@@ -164,6 +175,7 @@ class BoardSitemapLifecycleTest extends BoardTestCase
         $snapshot = $this->board->fresh()->toArray();
         $this->board->update(['is_active' => false]);
         $this->listener->onBoardUpdate($this->board->fresh(), ['is_active' => false], $snapshot);
+        $this->regenerate->onBoardUpdate($this->board->fresh(), ['is_active' => false], $snapshot);
 
         $postInserts = 0;
         DB::listen(function ($query) use (&$postInserts) {
@@ -177,6 +189,7 @@ class BoardSitemapLifecycleTest extends BoardTestCase
         $snapshot = $this->board->fresh()->toArray();
         $this->board->update(['is_active' => true]);
         $this->listener->onBoardUpdate($this->board->fresh(), ['is_active' => true], $snapshot);
+        $this->regenerate->onBoardUpdate($this->board->fresh(), ['is_active' => true], $snapshot);
 
         $this->assertSame([$this->posts['public_a'], $this->posts['public_b']], $this->indexedPostIds($this->board));
         $this->assertSame(1, $postInserts, '공개 글 재색인은 묶음 삽입 1회여야 합니다(글마다 삽입 금지).');
@@ -199,6 +212,7 @@ class BoardSitemapLifecycleTest extends BoardTestCase
         $snapshot = $this->board->fresh()->toArray();
         $this->board->update(['name' => ['ko' => '이름만 변경', 'en' => 'Renamed']]);
         $this->listener->onBoardUpdate($this->board->fresh(), ['name' => '이름만 변경'], $snapshot);
+        $this->regenerate->onBoardUpdate($this->board->fresh(), ['name' => '이름만 변경'], $snapshot);
 
         $this->assertSame([$this->posts['public_a']], $this->indexedPostIds($this->board));
     }
@@ -241,6 +255,7 @@ class BoardSitemapLifecycleTest extends BoardTestCase
         $snapshot = $this->board->fresh()->toArray();
         $this->board->update(['is_active' => false]);
         $this->listener->onBoardUpdate($this->board->fresh(), ['is_active' => false], $snapshot);
+        $this->regenerate->onBoardUpdate($this->board->fresh(), ['is_active' => false], $snapshot);
 
         $this->listener->onPostUpdate(Post::find($this->posts['public_a']), $this->board->slug);
         $this->assertSame([], $this->indexedPostIds($this->board), '비활성 게시판 게시글이 게시글 수정으로 재색인되면 안 됩니다.');
@@ -264,11 +279,13 @@ class BoardSitemapLifecycleTest extends BoardTestCase
         $snapshot = $this->board->fresh()->toArray();
         $this->board->update(['is_active' => false]);
         $this->listener->onBoardUpdate($this->board->fresh(), ['is_active' => false], $snapshot);
+        $this->regenerate->onBoardUpdate($this->board->fresh(), ['is_active' => false], $snapshot);
         $this->assertSame($this->contributorLocs(), $this->storedLocs(), '비활성 직후 증분·전체 집합이 달라서는 안 됩니다.');
 
         $snapshot = $this->board->fresh()->toArray();
         $this->board->update(['is_active' => true]);
         $this->listener->onBoardUpdate($this->board->fresh(), ['is_active' => true], $snapshot);
+        $this->regenerate->onBoardUpdate($this->board->fresh(), ['is_active' => true], $snapshot);
         $this->assertSame($this->contributorLocs(), $this->storedLocs(), '재활성 직후 증분·전체 집합이 달라서는 안 됩니다.');
     }
 
