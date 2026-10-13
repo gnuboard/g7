@@ -81,7 +81,7 @@
               유입 경로>유입 사이트 하나가 쓴다 — 도메인 행을 누르면 그 도메인의 전체 유입 주소가 열린다.
               질의 키(`host`)는 `<query>` 가 정적 이름만 받아 여기 박아 두고, 켤지 말지만 화면이 정한다.
               켜지 않은 화면은 종전대로 글자다(#682 라운드 4, 검수 지적 ⑥). -->
-            <button data-ref="report_label_link" data-if="{{_local.labelDrilldownKey === 'host'}}" type="button" class="text-link whitespace-normal break-all text-left" title="{{row.label ?? ''}}">
+            <button data-ref="report_label_link" data-if="{{_local.labelDrilldownKey === 'host'}}" type="button" class="justify-start text-link whitespace-normal break-all text-left" title="{{row.label ?? ''}}">
               <on type="click">
                 <navigate path="{{_local.periodPath}}" :mergeQuery="true">
                   <query host="{{row.label ?? ''}}" :page="1"/>

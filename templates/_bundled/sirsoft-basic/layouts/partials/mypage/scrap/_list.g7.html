@@ -123,8 +123,8 @@
                 </input>
               </td>
               <td class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 whitespace-nowrap truncate">
-                <!-- 게시판명 클릭 → 게시판 목록 이동. 표 칸(w-32)은 글자 폭을 따라 늘어나므로 이름 자체에 폭 상한을 두고 한 줄 … 로 자른다(#143). -->
-                <span class="block truncate max-w-32 cursor-pointer hover:underline">
+                <!-- 게시판명 클릭 → 게시판 목록 이동 -->
+                <span class="cursor-pointer hover:underline">
                   <on type="click">
                     <!-- audit:allow layout-list-context-navigate-merge-query 게시판명 → 게시판 목록 이동. 스크랩 목록과 게시판 목록은 서로 다른 목록 정체성이라 병합하지 않는다. -->
                     <navigate path="{{`/board/${item.board_slug}`}}"/>
@@ -132,10 +132,9 @@
                   {{item.board_name ?? ''}}
                 </span>
               </td>
-              <!-- 제목 칸은 남는 폭에 맞춘다(w-full max-w-0) — 자동 표 배치가 긴 제목 폭만큼 칸을 늘려 「관리」 열이 잘렸다(#143). -->
-              <td class="w-full max-w-0 px-4 py-3 font-medium text-gray-900 dark:text-white">
+              <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
                 <!-- 제목 클릭 → 원글 상세 이동 -->
-                <span class="block truncate cursor-pointer hover:underline">
+                <span class="cursor-pointer hover:underline">
                   <on type="click">
                     <!-- audit:allow layout-list-context-navigate-merge-query 제목 → 원글 이동. 스크랩 목록과 게시판 상세는 서로 다른 목록 정체성이라 병합하지 않는다. -->
                     <navigate path="{{`/board/${item.board_slug}/${item.post_id}`}}"/>
@@ -173,11 +172,9 @@
                   </on>
                 </input>
               </td>
-              <td class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 whitespace-nowrap truncate">
-                <span class="block truncate max-w-32">{{item.board_name ?? ''}}</span>
-              </td>
-              <td class="w-full max-w-0 px-4 py-3">
-                <span class="block truncate font-medium text-gray-500 dark:text-gray-400">{{item.title ?? ''}}</span>
+              <td class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 whitespace-nowrap truncate">{{item.board_name ?? ''}}</td>
+              <td class="px-4 py-3">
+                <span class="font-medium text-gray-500 dark:text-gray-400">{{item.title ?? ''}}</span>
                 <span data-if="{{!item.board_deleted}}" class="ml-2 text-xs font-semibold px-2 py-1 rounded text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900">$t:mypage.scrap.disabled_flag</span>
                 <span data-if="{{item.board_deleted}}" class="ml-2 text-xs font-semibold px-2 py-1 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700">$t:mypage.scrap.board_deleted_flag</span>
               </td>
@@ -214,7 +211,7 @@
                 </input>
               </td>
               <td class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 whitespace-nowrap truncate">
-                <span data-if="{{!item.board_deleted}}" class="block truncate max-w-32">{{item.board_name ?? ''}}</span>
+                <span data-if="{{!item.board_deleted}}">{{item.board_name ?? ''}}</span>
                 <span data-if="{{item.board_deleted}}" data-testid="scrap-board-deleted-{{item.id}}" class="text-xs font-semibold px-2 py-1 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700">$t:mypage.scrap.board_deleted_flag</span>
               </td>
               <td class="px-4 py-3">
@@ -247,9 +244,9 @@
       <!-- 스크랩 카드 목록 (모바일) — PC 숨김. 표 컬럼이 좁은 화면에 안 맞아 카드형으로 별도 유지. PC 표와 모바일 카드가 DOM 에 동시에 존재하므로 data-testid 에 -m- 접미를 둔다(Playwright strict 모드 충돌 방지) -->
       <div data-if="{{scrap.data.data &amp;&amp; scrap.data.data.length > 0}}" class="hidden">
         <responsive on="portable" class="space-y-3"/>
-        <div data-each="item in {{scrap.data.data ?? []}}" data-testid="scrap-card-m-{{item.id}}" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-          <!-- 카드 선택 체크박스 — 카드 본문(클릭 시 원글 이동) **밖**에 둔다. 안에 두면 체크하려다 원글로 넘어간다 -->
-          <div class="flex items-center gap-2 mb-2">
+        <div data-each="item in {{scrap.data.data ?? []}}" data-testid="scrap-card-m-{{item.id}}" class="flex items-start gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+          <!-- 카드 선택 체크박스 — 「내 반응」·「알림」 카드처럼 왼쪽 칸에 두고 본문은 오른쪽 칸(한 줄을 따로 쓰지 않는다). 카드 본문(클릭 시 원글 이동) **밖**에 둔다. 안에 두면 체크하려다 원글로 넘어간다 -->
+          <div class="shrink-0 pt-1">
             <input data-testid="scrap-check-m-{{item.id}}" type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500" checked="{{(_local.scrapSelectedIds ?? []).includes(item.id)}}">
               <on type="change">
                 <!-- 행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다) -->
@@ -257,68 +254,70 @@
               </on>
             </input>
           </div>
-          <!-- 살아있는 원글 카드 — 게시판 뱃지+제목 한 줄, 작성자·댓글수·스크랩일. 클릭 시 원글 이동 -->
-          <div data-if="{{!item.is_deleted &amp;&amp; item.scrap_enabled}}" class="cursor-pointer">
-            <on type="click">
-              <!-- audit:allow layout-list-context-navigate-merge-query 스크랩 카드 → 원글 이동. 스크랩 목록과 게시판 상세는 서로 다른 목록 정체성이라 병합하지 않는다. -->
-              <navigate path="{{`/board/${item.board_slug}/${item.post_id}`}}"/>
-            </on>
-            <!-- 뱃지 + 제목 한 줄 -->
-            <div class="flex items-center gap-2 mb-1">
-              <span class="shrink-0 truncate max-w-32 text-xs font-semibold px-2 py-1 rounded text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900">{{item.board_name ?? ''}}</span>
-              <h3 class="min-w-0 text-sm font-medium text-gray-900 dark:text-white truncate hover:underline">{{item.title ?? ''}}</h3>
-            </div>
-            <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-              <span>{{item.author_name ?? ''}}</span>
-              <span>$t:mypage.scrap.comments|count={{item.comments_count ?? 0}}</span>
-              <span class="text-gray-400 dark:text-gray-500">{{item.scrapped_at ?? ''}}</span>
-            </div>
-          </div>
-          <!-- 스크랩이 중지된 게시판의 카드 — 톤다운 + 배지, 카드 클릭 이동 없음 -->
-          <div data-if="{{!item.is_deleted &amp;&amp; !item.scrap_enabled}}" class="opacity-50">
-            <div class="flex items-center gap-2 mb-1 flex-wrap">
-              <span data-if="{{!item.board_deleted}}" class="shrink-0 truncate max-w-32 text-xs font-semibold px-2 py-1 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700">{{item.board_name ?? ''}}</span>
-              <span data-if="{{item.board_deleted}}" class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700">$t:mypage.scrap.board_deleted_flag</span>
-              <h3 class="min-w-0 text-sm font-medium text-gray-500 dark:text-gray-400 truncate">{{item.title ?? ''}}</h3>
-              <span data-if="{{!item.board_deleted}}" class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900">$t:mypage.scrap.disabled_flag</span>
-            </div>
-            <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-              <span>{{item.author_name ?? ''}}</span>
-              <span>$t:mypage.scrap.comments|count={{item.comments_count ?? 0}}</span>
-              <span class="text-gray-400 dark:text-gray-500">{{item.scrapped_at ?? ''}}</span>
-            </div>
-          </div>
-          <!-- 삭제된 원글 카드 — 뱃지·작성자는 톤만 낮춰 유지 + '삭제됨' 표시. 제목 대신 '삭제된 게시글' 표기. 클릭 이동 없음. 게시판이 지워진 스크랩도 이 카드로 오므로 게시판 뱃지 자리에 「게시판 삭제됨」을 단다 -->
-          <div data-if="{{item.is_deleted}}">
-            <div class="flex items-center gap-2 mb-1">
-              <span data-if="{{!item.board_deleted}}" class="shrink-0 truncate max-w-32 text-xs font-semibold px-2 py-1 rounded text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700">{{item.board_name ?? ''}}</span>
-              <span data-if="{{item.board_deleted}}" data-testid="scrap-board-deleted-m-{{item.id}}" class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700">$t:mypage.scrap.board_deleted_flag</span>
-              <h3 class="shrink-0 text-sm font-medium text-gray-400 dark:text-gray-500 italic">$t:mypage.scrap.deleted_post</h3>
-              <span class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900">$t:mypage.scrap.deleted_flag</span>
-            </div>
-            <div class="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
-              <span>{{item.author_name ?? ''}}</span>
-              <span>{{item.scrapped_at ?? ''}}</span>
-            </div>
-          </div>
-          <!-- 스크랩 해제 버튼 줄 (카드 하단 우측 정렬, 확인 모달 경유) — 삭제된 카드도 동일하게 정리 가능(확정 13). PC 표와 동일하게 텍스트 버튼 -->
-          <div class="flex justify-end mt-1">
-            <button data-testid="scrap-remove-m-{{item.id}}" type="button" class="text-xs font-medium px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer whitespace-nowrap">
+          <div class="flex-1 min-w-0">
+            <!-- 살아있는 원글 카드 — 게시판 뱃지+제목 한 줄, 작성자·댓글수·스크랩일. 클릭 시 원글 이동 -->
+            <div data-if="{{!item.is_deleted &amp;&amp; item.scrap_enabled}}" class="cursor-pointer">
               <on type="click">
-                <!-- 해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다) -->
-                <sequence>
-                  <set-state target="global">
-                    <field name="scrapDeleteModal">
-                      <field name="id" value="{{item.id}}"/>
-                      <field name="title" value="{{item.is_deleted ? '' : (item.title ?? '')}}"/>
-                      <field name="isDeleted" value="{{item.is_deleted}}"/>
-                    </field>
-                  </set-state>
-                  <open-modal target="scrap_delete_modal"/>
-                </sequence>
+                <!-- audit:allow layout-list-context-navigate-merge-query 스크랩 카드 → 원글 이동. 스크랩 목록과 게시판 상세는 서로 다른 목록 정체성이라 병합하지 않는다. -->
+                <navigate path="{{`/board/${item.board_slug}/${item.post_id}`}}"/>
               </on>
-              $t:mypage.scrap.table.remove
-            </button>
+              <!-- 뱃지 + 제목 한 줄 -->
+              <div class="flex items-center gap-2 mb-1">
+                <span class="shrink-0 truncate max-w-32 text-xs font-semibold px-2 py-1 rounded text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900">{{item.board_name ?? ''}}</span>
+                <h3 class="min-w-0 text-sm font-medium text-gray-900 dark:text-white truncate hover:underline">{{item.title ?? ''}}</h3>
+              </div>
+              <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                <span>{{item.author_name ?? ''}}</span>
+                <span>$t:mypage.scrap.comments|count={{item.comments_count ?? 0}}</span>
+                <span class="text-gray-400 dark:text-gray-500">{{item.scrapped_at ?? ''}}</span>
+              </div>
+            </div>
+            <!-- 스크랩이 중지된 게시판의 카드 — 톤다운 + 배지, 카드 클릭 이동 없음 -->
+            <div data-if="{{!item.is_deleted &amp;&amp; !item.scrap_enabled}}" class="opacity-50">
+              <div class="flex items-center gap-2 mb-1 flex-wrap">
+                <span data-if="{{!item.board_deleted}}" class="shrink-0 truncate max-w-32 text-xs font-semibold px-2 py-1 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700">{{item.board_name ?? ''}}</span>
+                <span data-if="{{item.board_deleted}}" class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700">$t:mypage.scrap.board_deleted_flag</span>
+                <h3 class="min-w-0 text-sm font-medium text-gray-500 dark:text-gray-400 truncate">{{item.title ?? ''}}</h3>
+                <span data-if="{{!item.board_deleted}}" class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900">$t:mypage.scrap.disabled_flag</span>
+              </div>
+              <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                <span>{{item.author_name ?? ''}}</span>
+                <span>$t:mypage.scrap.comments|count={{item.comments_count ?? 0}}</span>
+                <span class="text-gray-400 dark:text-gray-500">{{item.scrapped_at ?? ''}}</span>
+              </div>
+            </div>
+            <!-- 삭제된 원글 카드 — 뱃지·작성자는 톤만 낮춰 유지 + '삭제됨' 표시. 제목 대신 '삭제된 게시글' 표기. 클릭 이동 없음. 게시판이 지워진 스크랩도 이 카드로 오므로 게시판 뱃지 자리에 「게시판 삭제됨」을 단다 -->
+            <div data-if="{{item.is_deleted}}">
+              <div class="flex items-center gap-2 mb-1">
+                <span data-if="{{!item.board_deleted}}" class="shrink-0 truncate max-w-32 text-xs font-semibold px-2 py-1 rounded text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700">{{item.board_name ?? ''}}</span>
+                <span data-if="{{item.board_deleted}}" data-testid="scrap-board-deleted-m-{{item.id}}" class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700">$t:mypage.scrap.board_deleted_flag</span>
+                <h3 class="shrink-0 text-sm font-medium text-gray-400 dark:text-gray-500 italic">$t:mypage.scrap.deleted_post</h3>
+                <span class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900">$t:mypage.scrap.deleted_flag</span>
+              </div>
+              <div class="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
+                <span>{{item.author_name ?? ''}}</span>
+                <span>{{item.scrapped_at ?? ''}}</span>
+              </div>
+            </div>
+            <!-- 스크랩 해제 버튼 줄 (카드 하단 우측 정렬, 확인 모달 경유) — 삭제된 카드도 동일하게 정리 가능(확정 13). PC 표와 동일하게 텍스트 버튼 -->
+            <div class="flex justify-end mt-1">
+              <button data-testid="scrap-remove-m-{{item.id}}" type="button" class="text-xs font-medium px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer whitespace-nowrap">
+                <on type="click">
+                  <!-- 해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다) -->
+                  <sequence>
+                    <set-state target="global">
+                      <field name="scrapDeleteModal">
+                        <field name="id" value="{{item.id}}"/>
+                        <field name="title" value="{{item.is_deleted ? '' : (item.title ?? '')}}"/>
+                        <field name="isDeleted" value="{{item.is_deleted}}"/>
+                      </field>
+                    </set-state>
+                    <open-modal target="scrap_delete_modal"/>
+                  </sequence>
+                </on>
+                $t:mypage.scrap.table.remove
+              </button>
+            </div>
           </div>
         </div>
       </div>

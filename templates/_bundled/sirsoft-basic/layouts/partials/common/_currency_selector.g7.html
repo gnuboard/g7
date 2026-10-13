@@ -13,7 +13,7 @@
     <!-- 드롭다운 메뉴 -->
     <div data-if="{{_local.showCurrencyDropdown}}" class="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-1 overflow-hidden">
       <div data-each="currency in {{_global.availableCurrencies ?? []}}">
-        <button class="w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}}">
+        <button class="justify-start w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}}">
           <on type="click">
             <!-- 통화 고르기 — 전역에 담아 화면의 값 표기가 즉시 따르게 하고, 브라우저에도 남겨 새로고침·재방문에 이어지게 한다. 로그인한 사람은 상속원이 계정에 저장된 통화로 이 값을 다시 덮으므로 여기 저장은 비회원·현재 세션용이다. -->
             <sequence>

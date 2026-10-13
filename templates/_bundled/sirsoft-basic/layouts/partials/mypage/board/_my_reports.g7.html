@@ -126,7 +126,7 @@
               <span data-if="{{report.target_deleted}}" class="inline-flex items-center px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded">$t:mypage.board_activities.reports.target_deleted</span>
             </div>
             <!-- 신고한 글·댓글. 글은 제목, 댓글은 본문 요약(댓글 스냅샷에는 제목이 없다). 살아 있으면 눌러서 원글로 간다 -->
-            <button data-if="{{!report.target_deleted &amp;&amp; !!report.board_slug &amp;&amp; !!report.post_id}}" class="text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2">
+            <button data-if="{{!report.target_deleted &amp;&amp; !!report.board_slug &amp;&amp; !!report.post_id}}" class="justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2">
               <on type="click">
                 <navigate path="/board/{{report.board_slug}}/{{report.post_id}}"/>
               </on>

@@ -148,7 +148,7 @@
     <div data-ref="mobile_header" class="hidden">
       <responsive on="portable" class="flex items-center justify-between h-14 px-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30"/>
       <!-- 모바일 헤더 좌측 - 로고. 이름이 길어도 우측 단추를 밀지 않도록 이 칸이 줄어들고(min-w-0 flex-1) 이름은 한 줄 … 로 자른다(#143 — 공백 없는 23자 이름에서 414px 까지 메뉴 단추가 화면 밖, 공백·한글 긴 이름은 4줄로 접혀 h-14 헤더를 위아래로 넘쳤다). -->
-      <button data-ref="mobile_header_left" class="flex items-center min-w-0 flex-1 cursor-pointer">
+      <button data-ref="mobile_header_left" class="justify-start flex items-center min-w-0 flex-1 cursor-pointer">
         <on type="click">
           <navigate path="/"/>
         </on>
@@ -339,8 +339,8 @@
         <!-- 통화 선택 — 이커머스 모듈 주입 슬롯(헤더에서 이동). 모듈 미설치 시 빈 슬롯 → 렌더 영향 0. 헤더는 가로 flex 였으나 드로어는 세로 블록이므로 block 으로 둔다(flex items-center 면 주입 루트가 콘텐츠 폭으로 줄어 펼친 목록이 좁아짐). 주입 루트가 portable 에서 스스로 w-full 을 갖는다. -->
         <slot-container data-type="composite" data-ref="mobile_drawer_currency_wrap" slotId="header_currency" class="block"/>
       </div>
-      <!-- 로그인된 사용자 정보 - 아코디언 토글 -->
-      <div data-if="{{_global.currentUser?.uuid}}" class="px-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <!-- 로그인된 사용자 정보 - 아코디언 토글. 위 설정 묶음의 구분선과 카드 사이에도 좌우·하단과 같은 여백(p-4)을 둔다. -->
+      <div data-if="{{_global.currentUser?.uuid}}" class="p-4 border-b border-gray-200 dark:border-gray-700">
         <!-- 사용자 프로필 버튼 (아코디언 토글) -->
         <button class="w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer">
           <on type="click">
@@ -390,7 +390,7 @@
               <span>$t:mypage.tabs.wishlist</span>
             </button>
             <!-- 로그아웃 버튼 -->
-            <button class="w-full flex items-center gap-3 px-4 py-2.5 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer">
+            <button class="justify-start w-full flex items-center gap-3 px-4 py-2.5 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer">
               <on type="click">
                 <logout>
                   <success>
@@ -405,7 +405,7 @@
         </div>
       </div>
       <!-- 비로그인 상태 - 로그인/회원가입 버튼 -->
-      <div data-if="{{!_global.currentUser?.uuid}}" class="px-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <div data-if="{{!_global.currentUser?.uuid}}" class="p-4 border-b border-gray-200 dark:border-gray-700">
         <div class="flex gap-2">
           <button class="flex-1 py-2.5 text-center bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm cursor-pointer">
             <on type="click">

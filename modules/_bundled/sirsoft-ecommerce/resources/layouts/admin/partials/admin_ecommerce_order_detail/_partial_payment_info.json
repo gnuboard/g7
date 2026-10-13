@@ -1452,7 +1452,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "flex items-center gap-1 w-full text-left text-xs font-semibold text-secondary mb-1.5 hover:text-gray-900 dark:hover:text-gray-100",
+                                                "className": "justify-start flex items-center gap-1 w-full text-left text-xs font-semibold text-secondary mb-1.5 hover:text-gray-900 dark:hover:text-gray-100",
                                                 "aria-expanded": "{{(_local.expandedCashReceiptHistory ?? []).includes(payIdx)}}",
                                                 "aria-controls": "payment_cash_receipt_history_body_{{payIdx}}"
                                             },

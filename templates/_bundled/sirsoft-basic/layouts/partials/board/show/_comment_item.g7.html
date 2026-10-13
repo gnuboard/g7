@@ -29,7 +29,7 @@
           <!-- 드롭다운 메뉴 -->
           <div data-if="{{_local.commentDropdownId === comment?.id}}" class="absolute right-0 top-full mt-1 bg-white dark:bg-gray-700 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 py-1 min-w-[120px] z-10">
             <!-- 답글 메뉴 아이템 (답글 기능 활성화 + 권한 + depth 제한) -->
-            <button data-if="{{comment?.abilities?.can_write &amp;&amp; (comment?.depth ?? 0) < (post?.data?.board?.max_comment_depth ?? 10) &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer">
+            <button data-if="{{comment?.abilities?.can_write &amp;&amp; (comment?.depth ?? 0) < (post?.data?.board?.max_comment_depth ?? 10) &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="justify-start w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer">
               <on type="click">
                 <set-state target="local" :commentDropdownId="null" :editingCommentId="null" :editingCommentContent="null"/>
                 <set-state target="local" replyToCommentId="{{comment?.id}}" replyToCommentDepth="{{comment?.depth ?? 0}}"/>
@@ -38,7 +38,7 @@
               <span>$t:board.reply</span>
             </button>
             <!-- 수정 메뉴 아이템 ((본인 + 권한) || 비회원 || manager) -->
-            <button data-if="{{(comment?.is_author &amp;&amp; post?.data?.abilities?.can_write_comments) || comment?.is_guest_comment || post?.data?.abilities?.can_manage}}" class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer">
+            <button data-if="{{(comment?.is_author &amp;&amp; post?.data?.abilities?.can_write_comments) || comment?.is_guest_comment || post?.data?.abilities?.can_manage}}" class="justify-start w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer">
               <on type="click">
                 <set-state target="local" :commentDropdownId="null"/>
                 <!-- 비회원 댓글 + manager가 아닌 경우에만 비밀번호 확인 모달 -->
@@ -69,7 +69,7 @@
               <span>$t:common.edit</span>
             </button>
             <!-- 삭제 메뉴 아이템 ((본인 + 권한) || 비회원 || manager) -->
-            <button data-if="{{(comment?.is_author &amp;&amp; post?.data?.abilities?.can_write_comments) || comment?.is_guest_comment || post?.data?.abilities?.can_manage}}" class="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer">
+            <button data-if="{{(comment?.is_author &amp;&amp; post?.data?.abilities?.can_write_comments) || comment?.is_guest_comment || post?.data?.abilities?.can_manage}}" class="justify-start w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer">
               <on type="click">
                 <set-state target="local" :commentDropdownId="null"/>
                 <!-- manager인 경우 isGuest를 false로 설정하여 비밀번호 확인 우회 -->
@@ -86,7 +86,7 @@
               <span>$t:common.delete</span>
             </button>
             <!-- 신고 메뉴 아이템 — 미신고 상태 (모달 오픈) -->
-            <button data-if="{{_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report &amp;&amp; !comment?.is_author &amp;&amp; !comment?.is_already_reported}}" class="w-full px-4 py-2 text-left text-sm text-orange-600 dark:text-orange-400 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer">
+            <button data-if="{{_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report &amp;&amp; !comment?.is_author &amp;&amp; !comment?.is_already_reported}}" class="justify-start w-full px-4 py-2 text-left text-sm text-orange-600 dark:text-orange-400 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2 cursor-pointer">
               <on type="click">
                 <set-state target="local" :commentDropdownId="null"/>
                 <set-state target="global">
@@ -112,7 +112,7 @@
               <span>$t:board.post.report</span>
             </button>
             <!-- 신고 메뉴 아이템 — 이미 신고한 상태 (클릭 불가) -->
-            <button data-if="{{_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report &amp;&amp; !comment?.is_author &amp;&amp; comment?.is_already_reported}}" :disabled="true" class="w-full px-4 py-2 text-left text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-not-allowed opacity-60">
+            <button data-if="{{_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report &amp;&amp; !comment?.is_author &amp;&amp; comment?.is_already_reported}}" :disabled="true" class="justify-start w-full px-4 py-2 text-left text-sm text-gray-400 dark:text-gray-500 flex items-center gap-2 cursor-not-allowed opacity-60">
               <icon name="flag" size="sm"/>
               <span>$t:board.post.reported</span>
             </button>

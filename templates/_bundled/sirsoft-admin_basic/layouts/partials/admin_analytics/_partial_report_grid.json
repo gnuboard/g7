@@ -260,7 +260,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "text-link whitespace-normal break-all text-left",
+                                            "className": "justify-start text-link whitespace-normal break-all text-left",
                                             "title": "{{row.label ?? ''}}"
                                         },
                                         "text": "{{row.label_display ?? row.label ?? '-'}}"

@@ -26,6 +26,7 @@
             },
             "children": [
                 {
+                    "comment": "배지·제목 묶음과 N·시각 묶음. 배지·제목은 늘 한 줄에 두고, 제목 자리가 안 남는 좁은 폭(297~320px·긴 게시판 이름)에서만 N·시각 묶음이 다음 줄로 내려간다 — 제목이 0px 로 사라지고 긴 이름이 화면을 옆으로 밀던 것을 막는다(#143).\n           제목은 최소 3rem(min-w-12)을 지키고 모자라면 배지가 줄어든다 — 배지가 128px 를 고정으로 차지하면 360px·긴 이름에서 제목이 2px 였다.",
                     "type": "basic",
                     "name": "Div",
                     "props": {
@@ -34,46 +35,64 @@
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Span",
+                            "name": "Div",
                             "props": {
-                                "className": "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-xs flex-shrink-0 truncate max-w-32"
+                                "className": "flex items-center gap-2 min-w-0 flex-1 basis-32"
                             },
-                            "text": "{{post.board_name}}"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
+                            "children": [
                                 {
-                                    "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/board/{{post.board_slug}}/{{post.id}}"
-                                    }
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-xs min-w-0 truncate max-w-32"
+                                    },
+                                    "text": "{{post.board_name}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/board/{{post.board_slug}}/{{post.id}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "className": "justify-start font-medium text-gray-900 dark:text-white min-w-12 truncate flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer"
+                                    },
+                                    "text": "{{post.title}}"
                                 }
-                            ],
-                            "props": {
-                                "className": "justify-start font-medium text-gray-900 dark:text-white min-w-0 truncate flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer"
-                            },
-                            "text": "{{post.title}}"
+                            ]
                         },
                         {
                             "type": "basic",
-                            "name": "Span",
-                            "if": "{{post.is_new}}",
+                            "name": "Div",
                             "props": {
-                                "className": "px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0"
+                                "className": "flex items-center gap-2 shrink-0"
                             },
-                            "text": "N"
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0",
-                                "title": "{{post.created_at ?? ''}}"
-                            },
-                            "text": "{{post.created_at_formatted ?? ''}}"
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{post.is_new}}",
+                                    "props": {
+                                        "className": "px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0"
+                                    },
+                                    "text": "N"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-gray-500 dark:text-gray-400 flex-shrink-0",
+                                        "title": "{{post.created_at ?? ''}}"
+                                    },
+                                    "text": "{{post.created_at_formatted ?? ''}}"
+                                }
+                            ]
                         }
                     ]
                 },

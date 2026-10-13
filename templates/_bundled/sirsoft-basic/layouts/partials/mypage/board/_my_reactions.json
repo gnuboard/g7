@@ -826,7 +826,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "w-full max-w-0 px-4 py-3"
+                                                "className": "px-4 py-3"
                                             },
                                             "children": [
                                                 {
@@ -849,7 +849,7 @@
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "className": "text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer truncate"
+                                                                "className": "justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer truncate"
                                                             },
                                                             "text": "{{reaction.excerpt ?? reaction.title}}"
                                                         },
@@ -878,7 +878,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "block truncate max-w-32 text-sm text-gray-500 dark:text-gray-400"
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "{{reaction.board_name ?? ''}}"
                                                 }
@@ -1051,7 +1051,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "w-full max-w-0 px-4 py-3"
+                                                "className": "px-4 py-3"
                                             },
                                             "children": [
                                                 {
@@ -1102,7 +1102,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "block truncate max-w-32 text-sm text-gray-500 dark:text-gray-400"
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "{{reaction.board_name ?? ''}}"
                                                 }
@@ -1275,7 +1275,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "w-full max-w-0 px-4 py-3"
+                                                "className": "px-4 py-3"
                                             },
                                             "children": [
                                                 {
@@ -1316,7 +1316,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "block truncate max-w-32 text-sm text-gray-500 dark:text-gray-400"
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "{{reaction.board_name ?? ''}}"
                                                 }
@@ -1537,7 +1537,7 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2"
+                                                "className": "justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2"
                                             },
                                             "text": "{{reaction.excerpt ?? reaction.title}}"
                                         },

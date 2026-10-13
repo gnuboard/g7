@@ -30,7 +30,7 @@
           <navigate path="{{post?.url}}"/>
         </on>
         <!-- 제목 라인 (게시판명 + 제목) -->
-        <div class="flex flex-wrap items-start gap-2 mb-1">
+        <div class="flex items-start gap-2 mb-1">
           <!-- 게시판명 배지 -->
           <span data-if="{{post?.board_name}}" class="flex-shrink-0 truncate max-w-32 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded">{{post?.board_name}}</span>
           <!-- 제목 (HTML 하이라이트 지원) -->

@@ -198,9 +198,9 @@
             <td class="px-4 py-3">
               <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{reaction.target_type === 'comment' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}}">{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.target.comment' : '$t:mypage.board_activities.target.post'}}</span>
             </td>
-            <td class="w-full max-w-0 px-4 py-3">
+            <td class="px-4 py-3">
               <div class="flex flex-col">
-                <button class="text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer truncate">
+                <button class="justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer truncate">
                   <on type="click">
                     <navigate path="/board/{{reaction.board_slug}}/{{reaction.post_id}}"/>
                   </on>
@@ -211,7 +211,7 @@
               </div>
             </td>
             <td class="px-4 py-3">
-              <span class="block truncate max-w-32 text-sm text-gray-500 dark:text-gray-400">{{reaction.board_name ?? ''}}</span>
+              <span class="text-sm text-gray-500 dark:text-gray-400">{{reaction.board_name ?? ''}}</span>
             </td>
             <td class="px-4 py-3">
               <span class="text-sm text-gray-500 dark:text-gray-400">{{reaction.reacted_at ?? ''}}</span>
@@ -255,7 +255,7 @@
             <td class="px-4 py-3">
               <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{reaction.target_type === 'comment' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}}">{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.target.comment' : '$t:mypage.board_activities.target.post'}}</span>
             </td>
-            <td class="w-full max-w-0 px-4 py-3">
+            <td class="px-4 py-3">
               <div class="flex flex-col gap-1">
                 <span class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">{{reaction.excerpt ?? reaction.title}}</span>
                 <span data-if="{{reaction.board_deleted}}" class="inline-flex w-fit items-center px-2 py-0.5 text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded">$t:mypage.board_activities.reactions.board_deleted</span>
@@ -263,7 +263,7 @@
               </div>
             </td>
             <td class="px-4 py-3">
-              <span class="block truncate max-w-32 text-sm text-gray-500 dark:text-gray-400">{{reaction.board_name ?? ''}}</span>
+              <span class="text-sm text-gray-500 dark:text-gray-400">{{reaction.board_name ?? ''}}</span>
             </td>
             <td class="px-4 py-3">
               <span class="text-sm text-gray-500 dark:text-gray-400">{{reaction.reacted_at ?? ''}}</span>
@@ -307,14 +307,14 @@
             <td class="px-4 py-3">
               <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{reaction.target_type === 'comment' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}}">{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.target.comment' : '$t:mypage.board_activities.target.post'}}</span>
             </td>
-            <td class="w-full max-w-0 px-4 py-3">
+            <td class="px-4 py-3">
               <div class="flex flex-col gap-1">
                 <span class="text-sm italic text-gray-400 dark:text-gray-500 truncate">{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.reactions.deleted_comment' : '$t:mypage.board_activities.reactions.deleted_post'}}</span>
                 <span class="inline-flex w-fit items-center px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded">$t:mypage.board_activities.reactions.deleted_flag</span>
               </div>
             </td>
             <td class="px-4 py-3">
-              <span class="block truncate max-w-32 text-sm text-gray-500 dark:text-gray-400">{{reaction.board_name ?? ''}}</span>
+              <span class="text-sm text-gray-500 dark:text-gray-400">{{reaction.board_name ?? ''}}</span>
             </td>
             <td class="px-4 py-3">
               <span class="text-sm text-gray-500 dark:text-gray-400">{{reaction.reacted_at ?? ''}}</span>
@@ -364,7 +364,7 @@
               <span data-if="{{reaction.target_deleted}}" class="inline-flex items-center px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded">$t:mypage.board_activities.reactions.deleted_flag</span>
             </div>
             <!-- 살아 있으면 눌러서 이동, 아니면 글자만 -->
-            <button data-if="{{reaction.reaction_enabled &amp;&amp; !reaction.target_deleted &amp;&amp; !reaction.board_deleted}}" class="text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2">
+            <button data-if="{{reaction.reaction_enabled &amp;&amp; !reaction.target_deleted &amp;&amp; !reaction.board_deleted}}" class="justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2">
               <on type="click">
                 <navigate path="/board/{{reaction.board_slug}}/{{reaction.post_id}}"/>
               </on>

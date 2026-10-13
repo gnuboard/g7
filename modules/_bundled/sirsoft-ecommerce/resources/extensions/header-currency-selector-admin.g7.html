@@ -50,7 +50,7 @@
         <div>
           <responsive on="portable" class="flex flex-wrap gap-2 pb-1"/>
           <div data-each="currency in {{_global.availableCurrencies ?? []}}">
-            <button class="w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{_global.preferredCurrency === currency.code}}">
+            <button class="justify-start w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{_global.preferredCurrency === currency.code}}">
               <responsive on="portable" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{_global.preferredCurrency === currency.code}}"/>
               <on type="click">
                 <!-- 통화 선택 — 화면 상태와 브라우저 저장소 둘 다 바꾼다. `_global` 만 바꾸면 새로고침에
@@ -87,7 +87,7 @@
           <div>
             <responsive on="portable" class="flex flex-wrap gap-2 pb-1"/>
             <div data-each="shipCountry in {{_global.availableShippingCountries ?? []}}">
-              <button class="w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}">
+              <button class="justify-start w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}">
                 <responsive on="portable" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-full cursor-pointer whitespace-nowrap transition-colors {{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'}}" role="option" aria-selected="{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}"/>
                 <on type="click">
                   <!-- 배송국가 선택 — 위 통화와 같은 두 자리(화면 상태 + 브라우저 저장소)만 건드린다.

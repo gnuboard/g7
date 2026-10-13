@@ -390,7 +390,7 @@ const Header: React.FC<HeaderProps> = ({
         <Div className="flex items-center justify-between h-16">
           {/* 로고 — 이름이 길면 이 칸이 줄어들고(min-w-0) 최대 20rem 에서 이름이 한 줄 … 로 잘린다. 우측 액션은 제자리를
               지키고 검색창은 12rem 아래로 줄지 않는다 — 52자 이름에서 로고 칸이 646px 를 차지해 검색창이 57px 로 눌렸다(#143). */}
-          <Button onClick={() => navigate('/')} className="flex items-center gap-2 min-w-0 max-w-xs cursor-pointer">
+          <Button onClick={() => navigate('/')} className="justify-start flex items-center gap-2 min-w-0 max-w-xs cursor-pointer">
             {logo ? (
               <Img src={logo} alt={siteName} className="h-8 max-w-full object-contain object-left" />
             ) : (
@@ -499,7 +499,7 @@ const Header: React.FC<HeaderProps> = ({
                           aria-selected={isActive}
                           tabIndex={isActive ? 0 : -1}
                           onClick={() => handleLocaleChange(locale)}
-                          className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors ${
+                          className={`justify-start w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors ${
                             isActive
                               ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
                               : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'

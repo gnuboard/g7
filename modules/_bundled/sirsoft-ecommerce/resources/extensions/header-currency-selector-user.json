@@ -268,7 +268,7 @@
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "className": "w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}",
+                                                                "className": "justify-start w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{_global.preferredCurrency === currency.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}",
                                                                 "data-testid": "currency-option-{{currency.code}}",
                                                                 "role": "option",
                                                                 "aria-selected": "{{_global.preferredCurrency === currency.code}}"
@@ -477,7 +477,7 @@
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "className": "w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}",
+                                                                "className": "justify-start w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 cursor-pointer transition-colors {{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}}",
                                                                 "role": "option",
                                                                 "aria-selected": "{{(_global.preferredShippingCountry ?? 'KR') === shipCountry.code}}"
                                                             },

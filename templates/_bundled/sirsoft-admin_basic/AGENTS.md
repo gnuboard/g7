@@ -128,6 +128,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | `CodeEditor` 에서 심기(prime)보다 먼저 `<Editor>` 를 렌더하거나 `loader.init()` 호출 | 심기가 끝난 뒤에 렌더·init 한다(`primed` 게이트) | `<Editor>` 는 렌더되자마자 자기 effect 에서 `init()` 을 부른다. 먼저 불리면 라이브러리가 **자기 AMD 로더 스크립트를 따로 주입**해 `_amdLoaderGlobal` 이 두 번 선언되고 그 판의 `require` 가 통째로 죽는다 (S3-D12) |
 | `CodeEditor` 의 중복 심기 가드를 모듈 수준 변수로 선언 | `window.__g7MonacoPriming` 에 둔다 | 이 번들은 화면마다 따로 평가될 수 있어 모듈 변수로는 같은 판에서 두 번 도는 것을 못 막는다 (실측: 로더 스크립트 태그가 3개까지 늘었다) |
 | 컴포넌트·핸들러가 `fetch` 로 직접 요청하며 대상 출처를 보지 않고 토큰(Bearer·XSRF)을 싣거나, prop 으로 받은 주소로 곧장 `location.href` 이동 | `src/support/sameOriginRequest.ts` 의 `isSameOriginRequest(url)` 이 true 일 때만 토큰을 싣고 이동한다 | 주소가 레이아웃 prop·응답 본문이면 레이아웃 편집 권한만으로 관리자 토큰을 외부로 보내거나 `javascript:` 를 실행시킬 수 있다(KVE-2026-2350) |
+| 메뉴·목록 단추에 `w-full`·`flex-1` 로 폭을 주면서 가로 정렬을 지정하지 않기 | 왼쪽에 둘 단추는 `justify-start` 를 함께 둔다(`text-left` 만으로는 부족) | 기본 `Button` 의 `.button` 클래스가 `inline-flex items-center justify-center` 라, 넓어진 단추의 글·아이콘이 가운데로 간다 — 언어 선택·다국어 입력 목록이 이렇게 가운데로 갔다 |
 <!-- @intent END -->
 
 ### Monaco 편집기 확보 계약 (S3-D12)

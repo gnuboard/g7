@@ -3,16 +3,22 @@
   <div class="group flex w-full text-left gap-4 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
     <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white {{index === 0 ? 'bg-orange-500 dark:bg-orange-500' : index === 1 ? 'bg-yellow-500 dark:bg-yellow-500' : index === 2 ? 'bg-yellow-400 dark:bg-yellow-400' : 'bg-gray-400 dark:bg-gray-500'}}">{{index + 1}}</div>
     <div class="flex-1 min-w-0 flex flex-col gap-1.5">
+      <!-- 배지·제목 묶음과 N·시각 묶음. 배지·제목은 늘 한 줄에 두고, 제목 자리가 안 남는 좁은 폭(297~320px·긴 게시판 이름)에서만 N·시각 묶음이 다음 줄로 내려간다 — 제목이 0px 로 사라지고 긴 이름이 화면을 옆으로 밀던 것을 막는다(#143).
+           제목은 최소 3rem(min-w-12)을 지키고 모자라면 배지가 줄어든다 — 배지가 128px 를 고정으로 차지하면 360px·긴 이름에서 제목이 2px 였다. -->
       <div class="flex flex-wrap items-center gap-2">
-        <span class="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-xs flex-shrink-0 truncate max-w-32">{{post.board_name}}</span>
-        <button class="justify-start font-medium text-gray-900 dark:text-white min-w-0 truncate flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer">
-          <on type="click">
-            <navigate path="/board/{{post.board_slug}}/{{post.id}}"/>
-          </on>
-          {{post.title}}
-        </button>
-        <span data-if="{{post.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0">N</span>
-        <span class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0" title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
+        <div class="flex items-center gap-2 min-w-0 flex-1 basis-32">
+          <span class="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-xs min-w-0 truncate max-w-32">{{post.board_name}}</span>
+          <button class="justify-start font-medium text-gray-900 dark:text-white min-w-12 truncate flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer">
+            <on type="click">
+              <navigate path="/board/{{post.board_slug}}/{{post.id}}"/>
+            </on>
+            {{post.title}}
+          </button>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span data-if="{{post.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0">N</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0" title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
+        </div>
       </div>
       <div class="flex items-center justify-between">
         <!-- 작성자 (Avatar + UserInfo) -->

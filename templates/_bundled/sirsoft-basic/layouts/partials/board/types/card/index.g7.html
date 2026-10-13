@@ -3,14 +3,14 @@
   <div>
     <!-- 헤더 (게시판명 + 설명 + 글쓰기 버튼)
          좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 J D-J12).
-         이름이 길어 둘이 한 줄에 못 들면 버튼 묶음이 다음 줄로 내린다(flex-wrap) — 297px 에서 제목 칸이 54px 로 눌려 26줄로 접혔다(#143). -->
+         제목 칸은 최소 8rem 을 지키며 남는 폭을 쓰고, 그 폭도 안 나오면 버튼 묶음이 다음 줄 오른쪽 끝(ml-auto)으로 내린다 — 297px 에서 제목 칸이 54px 로 눌려 26줄로 접혔다(#143). 보통 이름은 수정 전처럼 제목 옆 오른쪽에 둔다. -->
     <div class="flex flex-wrap justify-between items-start gap-3 mb-6">
-      <div class="min-w-0">
+      <div class="min-w-0 flex-1 basis-32">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white break-words">{{posts?.data?.board?.name ?? ''}}</h1>
         <p data-if="{{posts?.data?.board?.description}}" class="text-gray-600 dark:text-gray-400 mt-1 break-words">{{posts?.data?.board?.description}}</p>
       </div>
       <!-- 상단 액션 (관리자 진입 링크 + 글쓰기 버튼) -->
-      <div class="flex items-center gap-2 shrink-0 whitespace-nowrap">
+      <div class="flex items-center gap-2 shrink-0 whitespace-nowrap ml-auto">
         <!-- 관리자 진입 크로스링크 (권한 보유 시) -->
         <include src="../../index/_admin_links.g7.html"/>
         <!-- 상단 글쓰기 버튼 -->
@@ -66,7 +66,7 @@
       <responsive on="tablet" :cols="2" :gap="4" class="grid-cols-2"/>
       <responsive on="desktop" :cols="3" :gap="4" class="grid-cols-3"/>
       <!-- 카드 클릭 시 현재 목록 상태(category/search/page/del/filters)를 상세 URL 에 부착 (45-1 목록 복귀) -->
-      <button data-each="post in {{posts?.data?.data ?? []}}" class="flex flex-col w-full h-full text-left bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-200 group cursor-pointer overflow-hidden items-stretch">
+      <button data-each="post in {{posts?.data?.data ?? []}}" class="justify-start flex flex-col w-full h-full text-left bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-200 group cursor-pointer overflow-hidden items-stretch">
         <on type="click">
           <navigate path="/board/{{route.slug}}/{{post.id}}" :mergeQuery="true">
             <query/>

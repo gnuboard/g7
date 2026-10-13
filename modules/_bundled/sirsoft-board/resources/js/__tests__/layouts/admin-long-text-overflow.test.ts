@@ -44,11 +44,14 @@ describe('관리자 긴 글 넘침', () => {
    * @scenario surface=dashboard_latest_posts
    * @effects admin_content_no_overflow
    */
-  it('대시보드 최근 게시글 메타 줄은 truncate', () => {
+  it('대시보드 최근 게시글 메타 줄 — 게시판·작성자만 truncate, 시간은 shrink-0 로 항상 보인다(디자인 결정 2026-10-13)', () => {
     const layout = load('resources/extensions/admin_dashboard_community.json');
     const meta = findAll(layout, (n) => typeof n.id === 'string' && n.id.startsWith('latest_post_meta_'));
     expect(meta.length).toBe(1);
-    expect(tokens(meta[0])).toContain('truncate');
+    const [names, time] = meta[0].children ?? [];
+    expect(tokens(names)).toEqual(expect.arrayContaining(['min-w-0', 'truncate']));
+    expect(tokens(time)).toEqual(expect.arrayContaining(['shrink-0', 'whitespace-nowrap']));
+    expect(String(time.text)).toContain('created_at');
   });
 
   /**

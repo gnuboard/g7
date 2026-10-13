@@ -52,7 +52,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex flex-wrap items-start gap-2 mb-1"
+                                "className": "flex items-start gap-2 mb-1"
                             },
                             "children": [
                                 {

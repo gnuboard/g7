@@ -224,9 +224,12 @@ test.describe('긴 게시판 이름 — 홈·게시판 목록·서랍 메뉴', (
         return {
           docOver: doc.scrollWidth - doc.clientWidth,
           count: hosts.length,
+          // 화면 안에서 시작해 오른쪽 끝을 넘는 글만 센다 — 닫힌 서랍은 화면 오른쪽 밖에 대기하므로 그 안의 게시판 이름(서랍 메뉴 응답이
+          // 측정 전에 오면 그려진다)은 넘침이 아니다. 이걸 세면 응답 도착 순서에 따라 5회 중 1회 red 였다. 서랍을 연 상태는 아래 서랍 테스트가 잰다.
           overflowing: hosts
-            .filter((el) => el.getBoundingClientRect().width > 0)
-            .filter((el) => el.getBoundingClientRect().right > doc.clientWidth + 1).length,
+            .map((el) => el.getBoundingClientRect())
+            .filter((r) => r.width > 0 && r.left < doc.clientWidth)
+            .filter((r) => r.right > doc.clientWidth + 1).length,
         };
       }, LONG_TEXT);
       expect(m.count).toBeGreaterThan(0);

@@ -476,7 +476,7 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2"
+                                                "className": "justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2"
                                             },
                                             "text": "{{raw:report.title ?? report.excerpt ?? ''}}"
                                         },

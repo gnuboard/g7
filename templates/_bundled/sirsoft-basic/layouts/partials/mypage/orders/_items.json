@@ -269,7 +269,7 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "className": "text-left text-base font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1 cursor-pointer"
+                                                        "className": "justify-start text-left text-base font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1 cursor-pointer"
                                                     },
                                                     "text": "{{$localized(item.product_name)}}"
                                                 },

@@ -104,6 +104,9 @@ function expectTokens(node: Node, tokens: string[], label: string): void {
 }
 
 /** text 바인딩에 표현식 조각이 들어 있는 노드 술어. */
+/** className(반응형 문자열 포함) 의 토큰 전체 — 「없어야 하는 토큰」 단언용. */
+const tokens = (node: Node): string[] => classStrings(node).flatMap((s) => s.split(/\s+/));
+
 const textHas = (needle: string) => (n: Node) => typeof n.text === 'string' && n.text.includes(needle);
 
 /** className 토큰에 지정 토큰이 모두 있는 노드 술어. */
@@ -362,11 +365,11 @@ describe('U18·U19 마이페이지 스크랩·알림', () => {
    * @scenario case=mypage_scrap_board_badge
    * @effects narrow_label_ellipsis_with_cap
    */
-  it('스크랩 게시판 이름 6곳 모두 truncate max-w-32', () => {
+  it('스크랩 카드 배지(shrink-0) 3곳 truncate max-w-32 — PC 표 칸은 수정 전 자동 배치(디자인 결정 2026-10-13)', () => {
     const layout = loadLayout('partials/mypage/scrap/_list.json');
-    const names = findAll(layout, textHas('item.board_name'));
-    expect(names.length).toBe(6);
-    names.forEach((n, i) => expectTokens(n, ['truncate', 'max-w-32'], `스크랩 게시판 이름 ${i + 1}`));
+    const badges = findAll(layout, (n) => textHas('item.board_name')(n) && classStrings(n).some((c) => /(^|\s)shrink-0(\s|$)/.test(c)));
+    expect(badges.length).toBe(3);
+    badges.forEach((n, i) => expectTokens(n, ['truncate', 'max-w-32'], `스크랩 게시판 배지 ${i + 1}`));
   });
 
   /**
@@ -449,6 +452,8 @@ describe('게시판 이름 배지 전수 — 모집단을 레이아웃에서 파
       const nodes = findAll(JSON.parse(fs.readFileSync(file, 'utf-8')), (n) => typeof n.text === 'string' && /\bboard_name\b/.test(n.text) && typeof n.props?.className === 'string');
       for (const n of nodes) {
         count++;
+        // 마이페이지 PC 표(내 반응·스크랩)의 칸은 디자인 결정(2026-10-13)으로 수정 전 자동 배치 — 칸 안 이름은 줄임 대상이 아니다.
+        if (/^partials\/mypage\/(board\/_my_reactions|scrap\/_list)\.json$/.test(rel) && !classStrings(n).some((c) => /(^|\s)(flex-)?shrink-0(\s|$)|wrap-anywhere/.test(c))) continue;
         if (!/^\{\{[^}]*board_name[^}]*\}\}$/.test(n.text.trim())) {
           expectTokens(n, ['min-w-0', 'wrap-anywhere'], `${rel} 게시판 이름이 든 줄`);
           continue;
@@ -500,22 +505,24 @@ describe('실측 발견 — 하위 카테고리 칩 (2026-10-13 Chrome MCP)', ()
 
 describe.each(['partials/search/posts/_list.json', 'partials/search/posts/_section.json'])('실측 발견 — 통합 검색 제목 줄 %s', (file) => {
   /**
-   * 297px 에서 게시판 배지(128px) 옆 제목 칸이 81px 로 눌려 12줄로 접혔다 — 제목이 길면 배지 아래 줄로 내린다.
+   * 297px 에서 게시판 배지(128px) 옆 제목 칸이 81px 로 눌려 12줄로 접혔다. 배지와 제목은 한 줄에 두고(디자인 결정 2026-10-13 —
+   * 보통 제목에서 배지·제목이 두 줄로 갈라지지 않게) 배지는 폭 상한으로 줄이며, 제목은 줄어들며 줄을 바꾼다.
    *
    * @scenario case=search_result_long_title
    * @effects flex_text_shrinks_and_wraps
    */
-  it('배지·제목 줄은 flex-wrap', () => {
+  it('배지·제목 한 줄(flex-wrap 없음), 배지 truncate max-w-32', () => {
     const layout = loadLayout(file);
     const row = findOne(layout, (n) => (n.children ?? []).some((c: Node) => c.text === '{{post?.board_name}}'), '검색 제목 줄');
-    expectTokens(row, ['flex-wrap'], '검색 제목 줄');
+    expect(tokens(row)).not.toContain('flex-wrap');
+    expectTokens(findOne(row.children ?? [], (c: Node) => c.text === '{{post?.board_name}}', '검색 배지'), ['truncate', 'max-w-32'], '검색 배지');
   });
 });
 
 describe('실측 발견 — 마이페이지 표의 제목 칸 (2026-10-13 Chrome MCP)', () => {
   /**
-   * 자동 표 배치는 칸을 글자 폭만큼 늘리므로 제목에 truncate 만 있으면 줄지 않는다 — 1280px 스크랩 표가 1257px 로
-   * 컨테이너(1201px, overflow hidden)를 넘어 「관리」 열이 잘렸다. 제목 칸을 w-full max-w-0 으로 남는 폭에 맞춘다.
+   * 제목 칸을 w-full max-w-0 으로 남는 폭에 맞췄더니 보통 제목에서도 다른 칸(배지·날짜·해제·머리글)이 2~3줄로 눌렸다 —
+   * 디자인 결정(2026-10-13)으로 표는 수정 전 자동 배치로 되돌린다. 제목 칸에 폭 강제 클래스를 다시 넣지 않는다.
    *
    * @scenario case=mypage_scrap_board_badge
    * @effects narrow_label_ellipsis_with_cap
@@ -523,15 +530,13 @@ describe('실측 발견 — 마이페이지 표의 제목 칸 (2026-10-13 Chrome
   it.each([
     ['partials/mypage/scrap/_list.json', /item\.title/, 2],
     ['partials/mypage/board/_my_reactions.json', /reaction\.(excerpt|title)|deleted_comment/, 3],
-  ])('%s 제목 칸 w-full max-w-0, 제목 truncate', (file, needle, expected) => {
+  ])('%s 제목 칸은 수정 전 자동 배치(w-full max-w-0 없음)', (file, needle, expected) => {
     const layout = loadLayout(file as string);
     const cells = findAll(layout, (n) => n.name === 'Td' && findAll(n.children ?? [], (c) => typeof c.text === 'string' && (needle as RegExp).test(c.text) && c.name !== 'Td').length > 0
       && findAll(n.children ?? [], (c) => typeof c.text === 'string' && /board_name/.test(c.text)).length === 0);
     expect(cells.length).toBe(expected);
-    cells.forEach((td, i) => {
-      expectTokens(td, ['w-full', 'max-w-0'], `${file} 제목 칸 ${i + 1}`);
-      const title = findAll(td.children ?? [], (c) => typeof c.text === 'string' && (needle as RegExp).test(c.text))[0];
-      expectTokens(title, ['truncate'], `${file} 제목 ${i + 1}`);
+    cells.forEach((td) => {
+      expect(tokens(td)).not.toContain('max-w-0');
     });
   });
 });
@@ -545,11 +550,25 @@ describe('실측 발견 — 인기글·내 글·내 댓글 목록 (2026-10-13 Ch
    * @scenario case=mypage_scrap_board_badge
    * @effects flex_text_shrinks_and_wraps, narrow_label_ellipsis_with_cap, block_text_wraps_within_box
    */
-  it('인기글 제목 min-w-0 truncate, 배지·제목·시각 줄 flex-wrap(297px 에서 배지+N+시각만으로 칸을 넘어 제목이 0px 였다)', () => {
+  /**
+   * 배지·제목은 한 묶음으로 늘 한 줄(디자인 결정 2026-10-13), N·시각은 따로 묶어 좁은 폭에서만 다음 줄로 내린다(디자인 결정 2026-10-13
+   * validate-plan 라운드 3) — 한 줄 고정이던 때 297px 에서 제목이 0px 였고, 긴 게시판 이름이면 문서가 28px 넘쳤다.
+   * 제목은 최소 3rem 을 지키고 배지가 줄어든다 — 배지가 줄지 않으면 360px·긴 이름에서 제목이 2px 였다.
+   */
+  it('인기글 배지·제목 묶음은 한 줄(min-w-0 flex-1 basis-32), 제목 min-w-12·배지 줄어듦, 줄은 flex-wrap, N·시각 묶음 shrink-0', () => {
     const layout = loadLayout('partials/board/popular/_popular_item.json');
     const title = findOne(layout, (n) => n.text === '{{post.title}}', '인기글 제목');
-    expectTokens(title, ['min-w-0', 'truncate'], '인기글 제목');
-    expectTokens(findOne(layout, (n) => (n.children ?? []).includes(title), '인기글 제목 줄'), ['flex-wrap'], '인기글 제목 줄');
+    expectTokens(title, ['min-w-12', 'truncate', 'flex-1'], '인기글 제목');
+    const group = findOne(layout, (n) => (n.children ?? []).includes(title), '인기글 배지·제목 묶음');
+    expectTokens(group, ['min-w-0', 'flex-1', 'basis-32'], '인기글 배지·제목 묶음');
+    expect(tokens(group)).not.toContain('flex-wrap');
+    const badge = findOne(group.children ?? [], (c: Node) => c.text === '{{post.board_name}}', '인기글 배지');
+    expectTokens(badge, ['min-w-0', 'truncate', 'max-w-32'], '인기글 배지');
+    expect(tokens(badge)).not.toContain('flex-shrink-0');
+    const row = findOne(layout, (n) => (n.children ?? []).includes(group), '인기글 제목 줄');
+    expectTokens(row, ['flex-wrap'], '인기글 제목 줄');
+    const meta = findOne(row.children ?? [], (c: Node) => (c.children ?? []).some((k: Node) => String(k.text ?? '').includes('created_at_formatted')), '인기글 N·시각 묶음');
+    expectTokens(meta, ['shrink-0'], '인기글 N·시각 묶음');
   });
 
   /**
@@ -559,10 +578,10 @@ describe('실측 발견 — 인기글·내 글·내 댓글 목록 (2026-10-13 Ch
   it.each([
     ['partials/mypage/board/_my_posts.json', 'post.content_plain'],
     ['partials/mypage/board/_my_comments.json', 'comment.content'],
-  ])('%s 배지·제목 줄 flex-wrap, 미리보기 break-words', (file, preview) => {
+  ])('%s 배지·제목 한 줄(디자인 결정 2026-10-13 — flex-wrap 없음), 미리보기 break-words', (file, preview) => {
     const layout = loadLayout(file);
     const row = findOne(layout, classHas('flex-1', 'min-w-0', 'flex', 'items-center', 'gap-2'), '배지·제목 줄');
-    expectTokens(row, ['flex-wrap'], `${file} 배지·제목 줄`);
+    expect(tokens(row)).not.toContain('flex-wrap');
     expectTokens(findOne(layout, (n) => n.name === 'P' && typeof n.text === 'string' && n.text.includes(preview), '미리보기'), ['break-words'], `${file} 미리보기`);
   });
 });
