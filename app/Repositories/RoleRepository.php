@@ -7,6 +7,7 @@ use App\Enums\ExtensionOwnerType;
 use App\Models\Role;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 class RoleRepository implements RoleRepositoryInterface
 {
@@ -150,6 +151,47 @@ class RoleRepository implements RoleRepositoryInterface
 
         // 두 역할에 함께 속한 사용자를 한 번만 담는다 — 그대로 두면 같은 사람에게 두 통이 간다.
         return $users->unique('id')->values();
+    }
+
+    /**
+     * 여러 역할 식별자에 속한 사용자의 id 만 오름차순으로 조회합니다. (중복 제거, #139)
+     *
+     * 피벗(user_roles)과 역할 표만 조인한다 — 회원 행·권한 행을 읽지 않는다. 커서로 읽어 id 배열만 쌓는다.
+     *
+     * @param  array<int, string>  $identifiers  역할 식별자 목록
+     * @return array<int, int> 사용자 id (오름차순)
+     */
+    public function getUserIdsByIdentifiers(array $identifiers): array
+    {
+        $identifiers = array_values(array_filter(array_map(
+            static fn ($identifier) => is_string($identifier) ? trim($identifier) : '',
+            $identifiers,
+        ), static fn (string $identifier): bool => $identifier !== ''));
+
+        if ($identifiers === []) {
+            return [];
+        }
+
+        // 표 이름은 모델·관계에서 얻는다 — 하드코딩하면 표 이름이 바뀔 때 조용히 깨진다.
+        $role = new Role;
+        $roles = $role->getTable();
+        $relation = $role->users();
+        $pivot = $relation->getTable();
+        $userKey = $relation->getRelatedPivotKeyName();
+        $roleKey = $relation->getForeignPivotKeyName();
+
+        $ids = [];
+        foreach (DB::table($pivot)
+            ->join($roles, "{$roles}.id", '=', "{$pivot}.{$roleKey}")
+            ->whereIn("{$roles}.identifier", $identifiers)
+            ->select("{$pivot}.{$userKey}")
+            ->distinct()
+            ->orderBy("{$pivot}.{$userKey}")
+            ->cursor() as $row) {
+            $ids[] = (int) $row->{$userKey};
+        }
+
+        return $ids;
     }
 
     /**

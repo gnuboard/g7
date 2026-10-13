@@ -248,6 +248,7 @@ return [
         'alert_message' => 'プロキシヘッダー(:headers)を受信していますが、信頼するプロキシが設定されていないため、すべての訪問者が同じアドレス(:ip)として記録されています。.env に TRUSTED_PROXIES を指定してください。詳細: https://github.com/gnuboard/g7/blob/main/docs/backend/reverse-proxy.md',
     ],
     'static_cache_status_loaded' => 'ホーム画面の静的ファイルの状態を読み込みました。',
+    'queue_status_loaded' => 'キューワーカーの状態を読み込みました。',
     'static_cache_republished' => 'ホーム画面の静的ファイルを再作成しました。',
     'static_cache_republish_failed' => 'ホーム画面の静的ファイルを再作成できませんでした。サイトは正常に動作しています。',
 ];

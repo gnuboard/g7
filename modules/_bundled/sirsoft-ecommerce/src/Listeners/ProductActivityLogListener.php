@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\ActivityLog\ChangeDetector;
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 
@@ -77,7 +79,7 @@ class ProductActivityLogListener implements HookListenerInterface
     /**
      * 기본 훅 핸들러 (HookListenerInterface 필수 메서드)
      *
-     * @param mixed ...$args 훅 인자
+     * @param  mixed  ...$args  훅 인자
      * @return void
      */
     public function handle(...$args): void
@@ -92,7 +94,8 @@ class ProductActivityLogListener implements HookListenerInterface
     /**
      * 상품 생성 후 로그 기록
      *
-     * @param Product $product 생성된 상품
+     * @param  Product  $product  생성된 상품
+     * @return void 반환값 없음
      */
     public function handleProductAfterCreate(Product $product): void
     {
@@ -109,8 +112,9 @@ class ProductActivityLogListener implements HookListenerInterface
     /**
      * 상품 수정 후 로그 기록
      *
-     * @param Product $product 수정된 상품
-     * @param array|null $snapshot 수정 전 스냅샷 (Service에서 전달)
+     * @param  Product  $product  수정된 상품
+     * @param  array|null  $snapshot  수정 전 스냅샷 (Service에서 전달)
+     * @return void 반환값 없음
      */
     public function handleProductAfterUpdate(Product $product, ?array $snapshot = null): void
     {
@@ -127,7 +131,8 @@ class ProductActivityLogListener implements HookListenerInterface
     /**
      * 상품 삭제 후 로그 기록
      *
-     * @param Product $product 삭제된 상품
+     * @param  Product  $product  삭제된 상품
+     * @return void 반환값 없음
      */
     public function handleProductAfterDelete(Product $product): void
     {
@@ -153,9 +158,10 @@ class ProductActivityLogListener implements HookListenerInterface
      * bulkUpdateStatus(): ($ids, $updatedCount, $snapshots)
      * bulkUpdate(): ($result, $data, $snapshots)
      *
-     * @param mixed $idsOrResult ID 배열 또는 결과 배열
-     * @param mixed $countOrData 업데이트 수 또는 원본 데이터
-     * @param array $snapshots 변경 전 스냅샷 배열 (Service에서 전달)
+     * @param  mixed  $idsOrResult  ID 배열 또는 결과 배열
+     * @param  mixed  $countOrData  업데이트 수 또는 원본 데이터
+     * @param  array  $snapshots  변경 전 스냅샷 배열 (Service에서 전달)
+     * @return void 반환값 없음
      */
     public function handleProductAfterBulkUpdate(mixed $idsOrResult, mixed $countOrData = null, array $snapshots = []): void
     {
@@ -174,82 +180,105 @@ class ProductActivityLogListener implements HookListenerInterface
 
         $products = $this->productRepository->findByIdsKeyed($ids);
 
-        foreach ($ids as $productId) {
-            $product = $products->get($productId);
-            if (! $product) {
-                continue;
-            }
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($ids, $products, $snapshots) {
+                foreach ($ids as $productId) {
+                    $product = $products->get($productId);
+                    if (! $product) {
+                        continue;
+                    }
 
-            $snapshot = $snapshots[$productId] ?? null;
-            $changes = $snapshot ? ChangeDetector::detect($product, $snapshot) : null;
+                    $snapshot = $snapshots[$productId] ?? null;
+                    $changes = $snapshot ? ChangeDetector::detect($product, $snapshot) : null;
 
-            $this->logActivity('product.bulk_update', [
-                'loggable' => $product,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.product_bulk_update',
-                'description_params' => ['count' => 1],
-                'properties' => ['product_id' => $productId],
-                'changes' => $changes,
-            ]);
+                    $this->logActivity('product.bulk_update', [
+                        'loggable' => $product,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.product_bulk_update',
+                        'description_params' => ['count' => 1],
+                        'properties' => ['product_id' => $productId],
+                        'changes' => $changes,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
     /**
      * 상품 일괄 가격 변경 후 per-item 로그 기록
      *
-     * @param array $ids 상품 ID 배열
-     * @param int $updatedCount 변경된 수
-     * @param array $snapshots 변경 전 스냅샷 배열 (Service에서 전달)
+     * @param  array  $ids  상품 ID 배열
+     * @param  int  $updatedCount  변경된 수
+     * @param  array  $snapshots  변경 전 스냅샷 배열 (Service에서 전달)
+     * @return void 반환값 없음
      */
     public function handleProductAfterBulkPriceUpdate(array $ids, int $updatedCount, array $snapshots = []): void
     {
         $products = $this->productRepository->findByIdsKeyed($ids);
 
-        foreach ($ids as $productId) {
-            $product = $products->get($productId);
-            if (! $product) {
-                continue;
-            }
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($ids, $products, $snapshots) {
+                foreach ($ids as $productId) {
+                    $product = $products->get($productId);
+                    if (! $product) {
+                        continue;
+                    }
 
-            $snapshot = $snapshots[$productId] ?? null;
-            $changes = $snapshot ? ChangeDetector::detect($product, $snapshot) : null;
+                    $snapshot = $snapshots[$productId] ?? null;
+                    $changes = $snapshot ? ChangeDetector::detect($product, $snapshot) : null;
 
-            $this->logActivity('product.bulk_price_update', [
-                'loggable' => $product,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.product_bulk_price_update',
-                'description_params' => ['count' => 1],
-                'properties' => ['product_id' => $productId],
-                'changes' => $changes,
-            ]);
+                    $this->logActivity('product.bulk_price_update', [
+                        'loggable' => $product,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.product_bulk_price_update',
+                        'description_params' => ['count' => 1],
+                        'properties' => ['product_id' => $productId],
+                        'changes' => $changes,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
     /**
      * 상품 일괄 재고 변경 후 per-item 로그 기록
      *
-     * @param array $ids 상품 ID 배열
-     * @param int $updatedCount 변경된 수
-     * @param array $snapshots 변경 전 스냅샷 배열 (Service에서 전달)
+     * @param  array  $ids  상품 ID 배열
+     * @param  int  $updatedCount  변경된 수
+     * @param  array  $snapshots  변경 전 스냅샷 배열 (Service에서 전달)
+     * @return void 반환값 없음
      */
     public function handleProductAfterBulkStockUpdate(array $ids, int $updatedCount, array $snapshots = []): void
     {
         $products = $this->productRepository->findByIdsKeyed($ids);
 
-        foreach ($ids as $productId) {
-            $product = $products->get($productId);
-            if (! $product) {
-                continue;
-            }
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($ids, $products, $snapshots) {
+                foreach ($ids as $productId) {
+                    $product = $products->get($productId);
+                    if (! $product) {
+                        continue;
+                    }
 
-            $snapshot = $snapshots[$productId] ?? null;
-            $changes = $snapshot ? ChangeDetector::detect($product, $snapshot) : null;
+                    $snapshot = $snapshots[$productId] ?? null;
+                    $changes = $snapshot ? ChangeDetector::detect($product, $snapshot) : null;
 
-            $this->logActivity('product.bulk_stock_update', [
-                'loggable' => $product,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.product_bulk_stock_update',
-                'description_params' => ['count' => 1],
-                'properties' => ['product_id' => $productId],
-                'changes' => $changes,
-            ]);
+                    $this->logActivity('product.bulk_stock_update', [
+                        'loggable' => $product,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.product_bulk_stock_update',
+                        'description_params' => ['count' => 1],
+                        'properties' => ['product_id' => $productId],
+                        'changes' => $changes,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -262,8 +291,8 @@ class ProductActivityLogListener implements HookListenerInterface
      *
      * SyncProductFromOptionListener에서 재고 동기화 후 발행한 훅을 수신합니다.
      *
-     * @param Product $product 재고가 변경된 상품
-     * @param array|null $snapshot 변경 전 스냅샷
+     * @param  Product  $product  재고가 변경된 상품
+     * @param  array|null  $snapshot  변경 전 스냅샷
      * @return void
      */
     public function handleProductAfterStockSync(Product $product, ?array $snapshot = null): void
@@ -282,5 +311,4 @@ class ProductActivityLogListener implements HookListenerInterface
             'changes' => $changes,
         ]);
     }
-
 }

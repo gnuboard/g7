@@ -157,6 +157,44 @@
             "comment": "초기 화면 정적 파일 상태 — 일반 탭에서만 받는다. 게시가 켜져 있는지·지금 게시할 수 있는 환경인지·\n    현재 버전·파일 수·마지막 게시 시각·최근 실패·게시 프로세스의 실행 계정을 서버가 판정해 돌려준다.\n    응답이 없으면 fallback 의 publishable=false 로 떨어져 「지금 다시 만들기」 버튼이 잠긴 채 그려진다 —\n    상태를 모르는 채로 재게시를 누르게 두지 않기 위해서다."
         },
         {
+            "id": "queueStatus",
+            "label_key": "$t:editor.data_source.queueStatus",
+            "type": "api",
+            "endpoint": "/api/admin/settings/queue-status",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeSettingsTab || 'general') === 'drivers'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "fallback": {
+                "data": {
+                    "driver": "sync",
+                    "rows": [],
+                    "commands": [],
+                    "long_worker": null
+                }
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "queueStatusFailed": false
+                    }
+                }
+            ],
+            "onError": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "queueStatusFailed": true
+                    }
+                }
+            ],
+            "comment": "큐 워커 상태 (#139) — 드라이버 탭에서만 받는다. 저장된 큐 드라이버 기준으로 등록 연결·큐마다 대기 건수·마지막 워커 신호·\n       경고, 긴 작업 전용 워커 등록 단계, Supervisor 실행 명령을 서버가 판정해 돌려준다. progressive 로 받고 탭 전환 덮개는\n       다른 progressive 소스와 같이 이 응답을 기다린다. 실패하면 구역에 실패 안내를 띄운다(응답이 없을 때 「신호 없음」으로\n       오해하지 않게) — 실패 표식은 _global 에 둔다: 데이터소스 핸들러가 세운 _local 키는 이후 입력 변경의 setState 에\n       초기값으로 되돌아가 편집 중 「새로 고침」 실패가 사라진다.\n       계산값 queueConnectionList 는 연결별 큐 칸을 그릴 연결 목록(비었으면 지금 고른 드라이버 연결 하나),\n       queueErrors 는 서버 422 오류를 연결 칸·연결별 큐 칸·큐 목록 전체로 나눈 값이다(연결 간 오류가 섞이지 않게)."
+        },
+        {
             "id": "trustedProxy",
             "label_key": "$t:editor.data_source.trustedProxy",
             "type": "api",
@@ -587,6 +625,8 @@
     "computed": {
         "isReadOnly": "{{_global.settingsAbilities?.can_update !== true}}",
         "envLocked": "{{_local.form?._meta?.env_locked ?? null}}",
+        "queueConnectionList": "{{(function() { const d = _local.form?.drivers ?? {}; const list = Array.isArray(d.queue_connections) ? d.queue_connections.filter(c => typeof c === 'string') : []; if (list.length > 0) return list; return d.queue_driver && d.queue_driver !== 'sync' ? [d.queue_driver] : []; })()}}",
+        "queueErrors": "{{(function() { const e = _local.errors; const empty = { connections: [], namesRoot: [], names: {} }; if (!e || typeof e !== 'object') return empty; return Object.entries(e).reduce((out, [k, v]) => { const msgs = Array.isArray(v) ? v : [v]; if (k === 'drivers.queue_connections' || k.startsWith('drivers.queue_connections.')) return { ...out, connections: [...out.connections, ...msgs] }; if (k === 'drivers.queue_names') return { ...out, namesRoot: [...out.namesRoot, ...msgs] }; if (k.startsWith('drivers.queue_names.')) { const conn = k.slice('drivers.queue_names.'.length).split('.')[0]; return { ...out, names: { ...out.names, [conn]: [...(out.names[conn] ?? []), ...msgs] } }; } return out; }, empty); })()}}",
         "errorsWithoutIpRules": "{{(function() { const e = _local.errors; if (!e || typeof e !== 'object') return e ?? null; const rest = Object.entries(e).filter(([k]) => !k.startsWith('security.ip_restriction_rules')); return rest.length > 0 ? Object.fromEntries(rest) : null; })()}}",
         "ipRestrictionEnabled": "{{!!_local.form?.security?.ip_restriction_enabled && _local.form?.security?.ip_restriction_enabled !== '0' && _local.form?.security?.ip_restriction_enabled !== 'false'}}"
     },
@@ -611,6 +651,7 @@
             "sitemap_status",
             "staticCacheStatus",
             "trustedProxy",
+            "queueStatus",
             "privacyPreview",
             "privacyManualRuns",
             "passwordExpiryPreview",
@@ -1211,6 +1252,13 @@
                                                                 "if": "{{(_global.activeSettingsTab || query.tab) === 'security'}}",
                                                                 "params": {
                                                                     "dataSourceId": "passwordExpiryPreview"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "if": "{{(_global.activeSettingsTab || query.tab) === 'drivers'}}",
+                                                                "params": {
+                                                                    "dataSourceId": "queueStatus"
                                                                 }
                                                             }
                                                         ],

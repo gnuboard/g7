@@ -21,7 +21,13 @@ use Illuminate\Support\Facades\Log;
  * 실제 생성 로직은 SitemapManager 서비스에 위임합니다.
  *
  * 대용량(수백만 URL) 생성은 수 분~수십 분이 걸리므로 동시 실행을 막고(ShouldBeUnique)
- * 타임아웃/재시도 한계를 넉넉히 잡되, 재시도가 무한히 누적되지 않도록 retryUntil 로 제한합니다.
+ * 타임아웃/재시도 한계를 넉넉히 잡습니다. 재시도는 tries(3)·backoff(120초)로 끝이 정해진다.
+ *
+ * retryUntil 을 두지 않는다(#139) — 라라벨은 retryUntil 이 있으면 tries 를 무시하고, 마감(30분)이 timeout(30분)과
+ * 같아 시간 초과 뒤에는 재시도할 수 없었으며, 큐에서 30분 넘게 기다리면 한 번도 돌지 못하고 실패로 끝났다.
+ * 중복 방지 잠금(uniqueFor)은 재시도 전체 기간(timeout×tries + backoff×(tries−1) + 대기 여유)을 덮는다 —
+ * 짧으면 첫 시도가 도는 중에 잠금이 풀려 같은 생성이 또 큐에 들어간다. 워커가 강제 종료되면 최대 그 시간
+ * 동안 재생성이 막히는 것은 감수한다(설계 결정).
  */
 class GenerateSitemapJob implements ShouldBeUnique, ShouldQueue
 {
@@ -37,24 +43,46 @@ class GenerateSitemapJob implements ShouldBeUnique, ShouldQueue
     public const QUEUE = 'sitemap';
 
     /**
-     * @var int 최대 재시도 횟수
-     */
-    public int $tries = 3;
-
-    /**
      * @var int 타임아웃 (초) — 대용량 스트리밍 생성 대응
      */
-    public int $timeout = 1800;
+    public const TIMEOUT_SECONDS = 1800;
+
+    /**
+     * @var int 최대 시도 횟수
+     */
+    public const MAX_TRIES = 3;
 
     /**
      * @var int 재시도 대기 시간 (초)
      */
-    public int $backoff = 120;
+    public const BACKOFF_SECONDS = 120;
 
     /**
-     * @var int 유니크 락 유지 시간 (초) — 잡이 비정상 종료해도 이 시간 후 자동 해제
+     * @var int 큐 대기 여유 (초) — 앞선 잡 뒤에서 기다리는 시간
      */
-    public int $uniqueFor = 900;
+    public const QUEUE_WAIT_ALLOWANCE_SECONDS = 1800;
+
+    /**
+     * @var int 최대 재시도 횟수
+     */
+    public int $tries = self::MAX_TRIES;
+
+    /**
+     * @var int 타임아웃 (초) — 대용량 스트리밍 생성 대응
+     */
+    public int $timeout = self::TIMEOUT_SECONDS;
+
+    /**
+     * @var int 재시도 대기 시간 (초)
+     */
+    public int $backoff = self::BACKOFF_SECONDS;
+
+    /**
+     * @var int 유니크 락 유지 시간 (초) — 재시도 전체 기간(7440초 ≈ 2시간). 잡이 비정상 종료해도 이 시간 후 자동 해제
+     */
+    public int $uniqueFor = self::TIMEOUT_SECONDS * self::MAX_TRIES
+        + self::BACKOFF_SECONDS * (self::MAX_TRIES - 1)
+        + self::QUEUE_WAIT_ALLOWANCE_SECONDS;
 
     /**
      * GenerateSitemapJob 생성자
@@ -83,21 +111,10 @@ class GenerateSitemapJob implements ShouldBeUnique, ShouldQueue
     }
 
     /**
-     * 재시도 마감 시각을 반환합니다.
-     *
-     * timeout(1800초) × tries(3) 만큼 재시도가 누적되는 것을 막습니다.
-     *
-     * @return \DateTime 재시도 마감 시각
-     */
-    public function retryUntil(): \DateTime
-    {
-        return now()->addMinutes(30)->toDateTime();
-    }
-
-    /**
      * Sitemap 을 생성하고 캐시에 저장합니다.
      *
      * @param  SitemapManager  $manager  Sitemap 매니저 서비스
+     * @return void 반환값 없음
      */
     public function handle(SitemapManager $manager): void
     {
@@ -123,6 +140,7 @@ class GenerateSitemapJob implements ShouldBeUnique, ShouldQueue
      * 잡 실패 시 로그를 기록합니다.
      *
      * @param  \Throwable  $exception  발생한 예외
+     * @return void 반환값 없음
      */
     public function failed(\Throwable $exception): void
     {

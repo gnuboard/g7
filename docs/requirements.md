@@ -338,7 +338,8 @@ Composer 로 직접 설치한다면 `composer install --no-dev --optimize-autolo
 
 | 프로세스 | 명령어 | 관리 도구 |
 |---------|--------|----------|
-| 큐 워커 | `php artisan queue:work` | Supervisor 등 |
+| 큐 워커 | `php artisan queue:work {연결} --queue={큐,…}` (환경설정 → 드라이버 → 「큐 워커」 등록대로. 큐 드라이버가 `sync` 면 등록·워커 모두 필요 없음) | Supervisor 등 |
+| 긴 작업 워커(등록 시) | `php artisan queue:work database-long --queue=long --timeout=3600` | Supervisor 등 (`numprocs=1`) |
 | 스케줄러 | `php artisan schedule:run` | cron (매분 실행) |
 | WebSocket | `php artisan reverb:start` | Supervisor 등 |
 

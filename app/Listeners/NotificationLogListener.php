@@ -19,6 +19,12 @@ use Illuminate\Support\Facades\Log;
  *
  * 플러그인/모듈이 별도 조치 없이도 모든 채널 발송이 자동 기록됩니다.
  * 커스텀 로깅이 필요하면 동일 훅을 별도 리스너에서 구독하면 됩니다.
+ *
+ * 구독하는 세 훅 모두 **동기**(`'sync' => true`)로 기록한다(#139·#724). 큐로 돌리면 발송 이력이 별도 잡으로 밀려
+ * 늦게 보이고, 그 로그에 자기 발송건을 잇는 확장(예: 비즈뿌리오의 `core.notification_log.after_log_*` 연결)이
+ * 발송 프로세스 안에서 남긴 표식을 다른 프로세스(워커)에서 찾지 못해 연결이 항상 실패한다. 발송 자체가
+ * 이미 큐 잡 안에서 돌므로 요청 스레드를 막지 않는다. `core.mail.send_skipped` 도 마스킹 전 본문이 큐 인자로
+ * 남지 않도록 동기로 기록한다(#724).
  */
 class NotificationLogListener implements HookListenerInterface
 {

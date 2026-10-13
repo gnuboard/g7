@@ -28,6 +28,7 @@ return [
     'restore_error' => '설정 복원 중 오류가 발생했습니다.',
     'save_individual_failed' => '설정 저장에 실패했습니다: :error',
     'static_cache_status_loaded' => '초기 화면 정적 파일 상태를 불러왔습니다.',
+    'queue_status_loaded' => '큐 워커 상태를 불러왔습니다.',
     'static_cache_republished' => '초기 화면 정적 파일을 다시 만들었습니다.',
     'static_cache_republish_failed' => '초기 화면 정적 파일을 다시 만들지 못했습니다. 사이트는 정상 동작합니다.',
 

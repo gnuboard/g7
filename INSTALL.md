@@ -740,7 +740,8 @@ G7_ENV_PRIORITY=true
 
 | 프로세스 | 명령어 | 용도 |
 |---------|--------|------|
-| 큐 워커 | `php artisan queue:work` | 비동기 작업 처리 |
+| 큐 워커 | `php artisan queue:work {연결} --queue={큐,…}` | 비동기 작업 처리 — 환경설정 → 드라이버 → 「큐 워커」에 등록한 연결·큐마다(화면이 명령을 보여 줍니다). 큐 드라이버가 `sync` 면 필요 없음 |
+| 긴 작업 워커(등록 시) | `php artisan queue:work database-long --queue=long --timeout=3600` | 통계 재집계·익명화·개인정보 직권 실행. 「큐 워커」에 `database-long`(또는 `redis-long`) 연결과 `long` 큐를 등록했을 때만 |
 | WebSocket | `php artisan reverb:start` | 실시간 알림 |
 
 ### 스케줄러

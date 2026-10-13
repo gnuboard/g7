@@ -2038,7 +2038,66 @@
           "redis": "Redis"
         },
         "worker_notice": "Queue worker must be running when using database or redis.",
-        "redis_shared_notice": "Uses Redis settings from cache when Redis is selected."
+        "redis_shared_notice": "Uses Redis settings from cache when Redis is selected.",
+        "worker": {
+          "title": "Queue workers",
+          "not_required": "The sync driver runs jobs inside the request, so no queue worker is needed.",
+          "connections": {
+            "label": "Queue connections with workers",
+            "desc": "Register only the connections this server actually runs queue workers for. Jobs aimed at an unregistered connection go to the default connection.",
+            "placeholder": "Select connections",
+            "no_options": "No connections can be registered",
+            "default_missing": "The current queue driver ({{driver}}) connection is missing from the list. Saving will fail."
+          },
+          "queues": {
+            "label": "Queues per connection",
+            "desc": "Queue names the workers on each connection process. Jobs aimed at an unregistered queue go to that connection's default queue.",
+            "placeholder": "Type a queue name and press Enter"
+          },
+          "status": {
+            "title": "Status per queue",
+            "measured_at": "Measured {{at}}",
+            "refresh": "Refresh",
+            "col": {
+              "connection": "Connection",
+              "queue": "Queue",
+              "pending": "Pending",
+              "last_heartbeat": "Last worker signal",
+              "warnings": "Warnings"
+            },
+            "not_measurable": "Not measurable",
+            "no_heartbeat_yet": "No signal",
+            "empty": "No queues registered.",
+            "load_failed": "Could not load the queue worker status. Please press Refresh in a moment.",
+            "saved_driver_differs": "You changed the queue driver. The status below reflects the saved settings and updates after you save."
+          },
+          "warnings": {
+            "no_heartbeat": "No signal for {{minutes}} min",
+            "pending_without_worker": "Pending with no worker",
+            "clamped_timeout": "Timeout adjusted {{count}}",
+            "long_queue_hint": "Run on the long-job connection"
+          },
+          "fallback": {
+            "title": "{{count}} jobs aimed at an unregistered connection or queue were sent to the default instead",
+            "title_one": "{{count}} job aimed at an unregistered connection or queue was sent to the default instead",
+            "last": "Last: {{listener}} targeted connection {{connection}} · queue {{queue}}",
+            "hint": "Register this connection and queue above and run a worker so the listener runs where it asked. The count is kept for 24 hours after the last occurrence.",
+            "default": "(default)"
+          },
+          "long": {
+            "title": "Long-job worker",
+            "registered": "Registered",
+            "partial": "Partial",
+            "not_registered": "Not registered",
+            "desc_registered": "Long jobs such as analytics re-aggregation, anonymization and privacy manual runs go to the {{queue}} queue on the {{connection}} connection.",
+            "desc_partial": "The {{connection}} connection is registered but the {{queue}} queue is not. Long jobs go to the default queue.",
+            "desc_not_registered": "Long jobs run on the default queue. With several default workers the same job can be picked up again (it still runs only once); registering the {{connection}} connection with the {{queue}} queue and running a separate worker is recommended."
+          },
+          "supervisor": {
+            "title": "Supervisor commands",
+            "desc": "Start a worker for each registered connection with the commands below. Long-job connections must be started under that connection name."
+          }
+        }
       },
       "log": {
         "title": "Logging",

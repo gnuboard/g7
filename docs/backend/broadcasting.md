@@ -583,14 +583,30 @@ redirect_stderr=true
 stdout_logfile=/var/log/reverb.log
 
 [program:queue-worker]
-command=php /var/www/g7/artisan queue:work --sleep=3 --tries=3
+; 환경설정 → 드라이버 → 「큐 워커」에 등록한 연결·큐 그대로 (화면이 명령을 보여 준다)
+command=php /var/www/g7/artisan queue:work database --queue=default --sleep=3 --tries=3 --max-time=3600
 directory=/var/www/g7
 user=www-data
 autostart=true
 autorestart=true
 redirect_stderr=true
 stdout_logfile=/var/log/queue-worker.log
+
+[program:queue-worker-long]
+; 긴 작업 전용(등록 시) — 통계 재집계·익명화·개인정보 직권 실행. 반드시 *-long 연결 이름으로 띄운다
+; (같은 jobs 표라 `database --queue=long` 으로 띄우면 retry_after 90 이 적용돼 실행 중인 잡을 다시 집는다)
+command=php /var/www/g7/artisan queue:work database-long --queue=long --sleep=3 --tries=3 --timeout=3600 --max-time=7200
+directory=/var/www/g7
+user=www-data
+numprocs=1
+stopwaitsecs=3660
+autostart=true
+autorestart=true
+redirect_stderr=true
+stdout_logfile=/var/log/queue-worker-long.log
 ```
+
+드라이버 탭을 저장하면 서버가 `queue:restart` 를 보낸다 — 워커는 지금 잡을 마치고 종료하며 Supervisor 가 새 설정으로 다시 띄운다. 큐 드라이버가 `sync` 면 워커가 필요 없다.
 
 ---
 

@@ -1,5 +1,7 @@
 <?php
 
+// audit:allow job-generator-needs-scale-test 큐 배치·단일 실행 가드만 추가 — 처리 규모 경로 무변경
+
 namespace App\Jobs\Analytics;
 
 use App\Analytics\AnalyticsClock;
@@ -7,12 +9,18 @@ use App\Enums\Analytics\ArchiveRunStatus;
 use App\Enums\Analytics\ArchiveRunType;
 use App\Services\Analytics\ArchiveService;
 use App\Services\Analytics\StaleRunService;
+use App\Services\Queue\QueueWorkerRegistry;
+use App\Support\Queue\JobSingleFlight;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Queue\TimeoutExceededException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
 
@@ -37,10 +45,31 @@ class ArchiveRangeJob implements ShouldQueue
     /**
      * 재시도 횟수
      *
-     * 집계는 멱등이지만, 실패 원인이 대개 데이터·설정이라 자동 재시도로는 풀리지
-     * 않는다. 실패를 이력에 남기고 운영자가 다시 누르게 한다.
+     * 진짜 예외는 재시도하지 않는다(maxExceptions = 1) — 집계는 멱등이지만 실패 원인이 대개 데이터·설정이라
+     * 자동 재시도로는 풀리지 않는다. 실패를 이력에 남기고 운영자가 다시 누르게 한다.
+     *
+     * 1 이 아니라 3 인 이유(#139): 실행이 연결의 retry_after 를 넘기면 다른 워커가 같은 잡을 다시 집는다.
+     * tries 가 1 이면 그 사본은 handle 에 들어오지도 못하고 MaxAttemptsExceeded 로 실패 처리돼 failed() 가
+     * 아직 도는 실행의 이력을 「실패」로 닫았다. 이제 사본은 handle 에 들어와 단일 실행 잠금에 막혀 조용히 끝난다.
      */
-    public int $tries = 1;
+    public int $tries = 3;
+
+    /**
+     * 실패로 처리할 예외 횟수 — 재예약 사본은 예외가 아니라 세지 않는다
+     */
+    public int $maxExceptions = 1;
+
+    /**
+     * 제한 시간 초과는 재시도 없이 실패로 — 같은 프로세스의 failed() 가 이력을 닫는다
+     */
+    public bool $failOnTimeout = true;
+
+    /**
+     * 디스패치 때 만든 단일 실행 ID
+     *
+     * 옛 payload(이 프로퍼티가 없던 판)는 '' 로 읽혀 가드 없이 종전처럼 돈다.
+     */
+    public string $dispatchId = '';
 
     /**
      * 잡을 큐에 올린 시각 (UTC, Y-m-d H:i:s)
@@ -65,15 +94,53 @@ class ArchiveRangeJob implements ShouldQueue
         private readonly ?int $triggeredBy = null,
     ) {
         $this->queuedAt = AnalyticsClock::now()->toDateTimeString();
+        $this->dispatchId = (string) Str::uuid();
+
+        // 긴 작업 연결·큐가 등록돼 있으면 그쪽으로 — retry_after 가 최장 실행보다 길어 다시 집히지 않는다 (#139)
+        if (($placement = app(QueueWorkerRegistry::class)->longPlacement()) !== null) {
+            $this->onConnection($placement['connection']);
+            $this->onQueue($placement['queue']);
+        }
     }
 
     /**
      * 잡을 실행합니다.
      *
+     * 다른 워커가 같은 잡을 다시 집었으면(재예약 사본) 단일 실행 잠금에 막혀 아무 일도 하지 않고 끝난다.
+     *
      * @param  ArchiveService  $service  집계 서비스
      * @return void 없음
      */
     public function handle(ArchiveService $service): void
+    {
+        if ($this->dispatchId === '') {
+            $this->process($service);
+
+            return;
+        }
+
+        $ran = JobSingleFlight::run(
+            JobSingleFlight::key(self::class, $this->dispatchId),
+            $this->timeout + 120,
+            fn () => $this->process($service),
+        );
+
+        if (! $ran) {
+            Log::info('기간 재집계 잡: 다른 워커가 아직 실행 중인 사본이라 조용히 끝냅니다', [
+                'from' => $this->from,
+                'to' => $this->to,
+                'dispatch_id' => $this->dispatchId,
+            ]);
+        }
+    }
+
+    /**
+     * 기간 재집계를 수행합니다.
+     *
+     * @param  ArchiveService  $service  집계 서비스
+     * @return void 없음
+     */
+    private function process(ArchiveService $service): void
     {
         $runs = $service->archiveRange($this->from, $this->to, [
             'run_type' => ArchiveRunType::Reaggregate->value,
@@ -118,6 +185,19 @@ class ArchiveRangeJob implements ShouldQueue
      */
     public function failed(Throwable $exception): void
     {
+        // 재예약이 거듭돼 시도 횟수가 다 찬 사본은 원본이 아직 도는 중이다 — 도는 실행의 이력을 닫지 않는다(#139).
+        // 시간 초과는 원본 자신의 실패라(같은 프로세스가 잠금을 쥔 채) 아래로 내려가 닫는다.
+        if ($exception instanceof MaxAttemptsExceededException
+            && ! $exception instanceof TimeoutExceededException
+            && $this->dispatchId !== ''
+            && JobSingleFlight::isHeld(JobSingleFlight::key(self::class, $this->dispatchId))) {
+            Log::info('기간 재집계 잡: 다른 워커가 아직 실행 중인 사본의 시도 초과라 실행 이력을 닫지 않습니다', [
+                'dispatch_id' => $this->dispatchId,
+            ]);
+
+            return;
+        }
+
         // 이 잡이 맡은 기간의 행만 닫는다 — 같은 관리자가 다른 기간을 따로 재집계하는 중일 수 있다.
         [$periodStart] = AnalyticsClock::dayRangeUtc($this->from);
         [, $periodEnd] = AnalyticsClock::dayRangeUtc($this->to);

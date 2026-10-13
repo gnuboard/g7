@@ -6,6 +6,8 @@ use App\ActivityLog\ChangeDetector;
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Models\Menu;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\BoardType;
@@ -686,22 +688,29 @@ class BoardActivityLogListener implements HookListenerInterface
     {
         $reports = $this->reportRepository->findByIdsKeyed($ids);
 
-        foreach ($ids as $reportId) {
-            $report = $reports->get($reportId);
-            if (! $report) {
-                continue;
-            }
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($data, $ids, $reports, $snapshots) {
+                foreach ($ids as $reportId) {
+                    $report = $reports->get($reportId);
+                    if (! $report) {
+                        continue;
+                    }
 
-            $snapshot = $snapshots[$reportId] ?? null;
-            $changes = $snapshot ? ChangeDetector::detect($report, $snapshot) : null;
+                    $snapshot = $snapshots[$reportId] ?? null;
+                    $changes = $snapshot ? ChangeDetector::detect($report, $snapshot) : null;
 
-            $this->logActivity('report.bulk_update_status', [
-                'loggable' => $report,
-                'description_key' => 'sirsoft-board::activity_log.description.report_bulk_update_status',
-                'description_params' => ['count' => 1],
-                'properties' => ['report_id' => $reportId, 'data' => $data],
-                'changes' => $changes,
-            ]);
+                    $this->logActivity('report.bulk_update_status', [
+                        'loggable' => $report,
+                        'description_key' => 'sirsoft-board::activity_log.description.report_bulk_update_status',
+                        'description_params' => ['count' => 1],
+                        'properties' => ['report_id' => $reportId, 'data' => $data],
+                        'changes' => $changes,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 

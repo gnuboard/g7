@@ -1,0 +1,20 @@
+# audit:allow scenario-scale-axis-required reason: 일괄 핸들러의 기록 루프를 트랜잭션으로 감쌀 뿐 — 처리 규모 경로 무변경
+
+feature: activity_log_bulk_atomic
+
+description: |
+  큐로 도는 활동 로그 일괄 핸들러(회원·역할·스케줄·첨부 일괄 처리 등)는 항목마다 로그 1행을 남긴다(#139).
+  잡이 중간에 끊겨 재실행되면 앞부분이 두 번 기록됐다. 기록 루프를 한 트랜잭션으로 감싸 끊긴 묶음은
+  커밋되지 않게 한다(트랜잭션 실패는 Log::error 1건, 잡은 예외 없이 끝난다. 항목 하나의 저장 실패는 logActivity 가 종전대로 건너뛴다).
+
+  화면 건수로는 원자성을 판별할 수 없다(수정 전후 같은 건수) — 기록 순간의 트랜잭션 깊이가 모두 「호출 전 + 1」인지로 본다.
+  모듈 핸들러(게시판·이커머스)는 각 모듈 tests/scenarios 의 같은 이름 매니페스트가 맡는다.
+
+axes:
+  handler: [user_bulk_update, user_bulk_roles, schedule_bulk_update, schedule_bulk_delete, attachment_bulk_delete]
+
+effects:
+  - bulk_activity_log_atomic
+
+test_files:
+  - tests/Unit/Listeners/CoreActivityLogListenerBulkAtomicTest.php

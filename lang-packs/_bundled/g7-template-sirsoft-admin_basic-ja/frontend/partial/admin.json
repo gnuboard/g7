@@ -2010,7 +2010,65 @@
           "redis": "Redis"
         },
         "worker_notice": "databaseまたはredis使用時、キューワーカーを実行する必要があります。",
-        "redis_shared_notice": "Redis選択時、キャッシュのRedis設定を共有します。"
+        "redis_shared_notice": "Redis選択時、キャッシュのRedis設定を共有します。",
+        "worker": {
+          "title": "キューワーカー",
+          "not_required": "同期(sync)ドライバーはリクエスト内ですぐに処理するため、キューワーカーは不要です。",
+          "connections": {
+            "label": "ワーカーを動かすキュー接続",
+            "desc": "このサーバーで実際にキューワーカーを起動している接続だけを登録してください。登録されていない接続を指すジョブはデフォルト接続に送られます。",
+            "placeholder": "接続を選択",
+            "no_options": "登録できる接続がありません",
+            "default_missing": "現在のキュードライバー({{driver}})の接続がリストにありません。保存するとエラーになります。"
+          },
+          "queues": {
+            "label": "接続ごとのキュー",
+            "desc": "各接続でワーカーが処理するキュー名です。登録されていないキューを指すジョブはその接続のデフォルトキューに送られます。",
+            "placeholder": "キュー名を入力してEnter"
+          },
+          "status": {
+            "title": "キューごとの状態",
+            "measured_at": "測定 {{at}}",
+            "refresh": "再読み込み",
+            "col": {
+              "connection": "接続",
+              "queue": "キュー",
+              "pending": "待機",
+              "last_heartbeat": "最後のワーカー信号",
+              "warnings": "警告"
+            },
+            "not_measurable": "測定不可",
+            "no_heartbeat_yet": "信号なし",
+            "empty": "登録されたキューがありません。",
+            "load_failed": "キューワーカーの状態を読み込めませんでした。しばらくしてから再読み込みを押してください。",
+            "saved_driver_differs": "キュードライバーを変更しました。下の状態は保存済みの設定に基づき、保存後に反映されます。"
+          },
+          "warnings": {
+            "no_heartbeat": "{{minutes}}分間信号なし",
+            "pending_without_worker": "待機中なのにワーカーなし",
+            "clamped_timeout": "タイムアウト調整 {{count}}件",
+            "long_queue_hint": "長時間ジョブ接続で起動してください"
+          },
+          "fallback": {
+            "title": "未登録の接続・キューに送ろうとした作業 {{count}}件を既定に送りました",
+            "last": "直近: {{listener}} が接続 {{connection}} · キュー {{queue}} を指定しました",
+            "hint": "この接続・キューを上で登録してワーカーを起動すると、リスナーが指定した場所で実行されます。件数は最後の発生から24時間保持されます。",
+            "default": "(既定)"
+          },
+          "long": {
+            "title": "長時間ジョブ専用ワーカー",
+            "registered": "登録済み",
+            "partial": "一部のみ",
+            "not_registered": "未登録",
+            "desc_registered": "統計の再集計・匿名化・個人情報の職権実行のような長時間ジョブを{{connection}}接続の{{queue}}キューに送ります。",
+            "desc_partial": "{{connection}}接続は登録されていますが{{queue}}キューがありません。長時間ジョブはデフォルトキューに送られます。",
+            "desc_not_registered": "長時間ジョブがデフォルトキューで動きます。デフォルトキューのワーカーが複数あると同じジョブを再取得することがあるため(実行は一度だけです)、{{connection}}接続と{{queue}}キューを登録して別のワーカーを起動することをお勧めします。"
+          },
+          "supervisor": {
+            "title": "Supervisor実行コマンド",
+            "desc": "登録した接続ごとに以下のコマンドでワーカーを起動してください。長時間ジョブ接続は必ずその接続名で起動する必要があります。"
+          }
+        }
       },
       "log": {
         "title": "ログ",

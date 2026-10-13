@@ -2010,7 +2010,65 @@
           "redis": "Redis"
         },
         "worker_notice": "database 또는 redis 사용 시 큐 워커를 실행해야 합니다.",
-        "redis_shared_notice": "Redis 선택 시 캐시의 Redis 설정을 공유합니다."
+        "redis_shared_notice": "Redis 선택 시 캐시의 Redis 설정을 공유합니다.",
+        "worker": {
+          "title": "큐 워커",
+          "not_required": "동기(sync) 드라이버는 요청 안에서 바로 처리하므로 큐 워커가 필요 없습니다.",
+          "connections": {
+            "label": "워커를 돌리는 큐 연결",
+            "desc": "이 서버가 실제로 큐 워커를 띄워 두는 연결만 등록하세요. 등록하지 않은 연결을 가리키는 작업은 기본 연결로 보냅니다.",
+            "placeholder": "연결 선택",
+            "no_options": "등록할 수 있는 연결이 없습니다",
+            "default_missing": "현재 큐 드라이버({{driver}}) 연결이 목록에 없습니다. 저장하면 오류가 납니다."
+          },
+          "queues": {
+            "label": "연결별 큐",
+            "desc": "각 연결에서 워커가 처리하는 큐 이름입니다. 등록하지 않은 큐를 가리키는 작업은 그 연결의 기본 큐로 보냅니다.",
+            "placeholder": "큐 이름 입력 후 Enter"
+          },
+          "status": {
+            "title": "큐별 상태",
+            "measured_at": "측정 {{at}}",
+            "refresh": "새로 고침",
+            "col": {
+              "connection": "연결",
+              "queue": "큐",
+              "pending": "대기",
+              "last_heartbeat": "마지막 워커 신호",
+              "warnings": "경고"
+            },
+            "not_measurable": "측정 불가",
+            "no_heartbeat_yet": "신호 없음",
+            "empty": "등록된 큐가 없습니다.",
+            "load_failed": "큐 워커 상태를 불러오지 못했습니다. 잠시 뒤 새로 고침을 눌러 주세요.",
+            "saved_driver_differs": "큐 드라이버를 바꾸셨습니다. 아래 상태는 저장된 설정 기준이며, 저장한 뒤에 반영됩니다."
+          },
+          "warnings": {
+            "no_heartbeat": "{{minutes}}분간 신호 없음",
+            "pending_without_worker": "대기 중인데 워커 없음",
+            "clamped_timeout": "제한 시간 조정 {{count}}건",
+            "long_queue_hint": "긴 작업 연결로 띄우세요"
+          },
+          "fallback": {
+            "title": "등록되지 않은 연결·큐로 보내려던 작업 {{count}}건을 기본값으로 보냈습니다",
+            "last": "마지막: {{listener}} 가 연결 {{connection}} · 큐 {{queue}} 를 가리켰습니다",
+            "hint": "이 연결·큐를 위에 등록하고 워커를 띄우면 리스너가 지정한 곳에서 실행됩니다. 횟수는 마지막 발생 뒤 24시간 보관됩니다.",
+            "default": "(기본)"
+          },
+          "long": {
+            "title": "긴 작업 전용 워커",
+            "registered": "등록됨",
+            "partial": "일부만",
+            "not_registered": "미등록",
+            "desc_registered": "통계 재집계·익명화·개인정보 직권 실행 같은 긴 작업을 {{connection}} 연결의 {{queue}} 큐로 보냅니다.",
+            "desc_partial": "{{connection}} 연결은 등록했지만 {{queue}} 큐가 없습니다. 긴 작업은 기본 큐로 갑니다.",
+            "desc_not_registered": "긴 작업이 기본 큐에서 돕니다. 기본 큐의 워커가 여럿이면 같은 작업을 다시 집을 수 있어(실행은 한 번만 됩니다) {{connection}} 연결과 {{queue}} 큐를 등록하고 워커를 따로 띄우기를 권장합니다."
+          },
+          "supervisor": {
+            "title": "Supervisor 실행 명령",
+            "desc": "등록한 연결마다 아래 명령으로 워커를 띄우세요. 긴 작업 연결은 반드시 그 연결 이름으로 띄워야 합니다."
+          }
+        }
       },
       "log": {
         "title": "로그",

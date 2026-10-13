@@ -44,7 +44,9 @@ Models (SoftDeletes 적용 — Post/Comment/Attachment/Report)
 Listeners(`src/Listeners/`)는 이 흐름과 별도 레인입니다 — Service 가 발행한 훅을 받아 카운트
 동기화(`*CountSyncListener`)·활동 로그·SEO 캐시·검색 색인·알림 데이터 추출을 수행하며, Service
 자신은 이 부가효과를 알지 못합니다. 이 분리 덕분에 새 부가효과(예: 신규 카운트 컬럼 동기화)는
-Service 를 건드리지 않고 리스너 추가만으로 끝납니다.
+Service 를 건드리지 않고 리스너 추가만으로 끝납니다. 큐로 도는 **일괄** 활동 로그 핸들러(신고 일괄 처리)는
+항목별 기록 루프를 `DB::transaction` 으로 감쌉니다 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을
+막는다(코어 `docs/backend/activity-log.md` 「일괄 핸들러 트랜잭션 패턴」).
 <!-- @intent END -->
 
 ## 디렉토리

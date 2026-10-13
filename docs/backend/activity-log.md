@@ -290,6 +290,7 @@ $this->logActivity('schedule.auto_run', [
 | after_xxx priority 20 | 실제 로직 완료 후 기록 |
 | `log_type` 하드코딩 금지 | 트레이트가 `Auth::user()` 기반으로 자동 결정 (필요 시 명시 가능) |
 | 스냅샷 사용 후 `unset` | 메모리 누수 방지 |
+| 큐로 도는 일괄 핸들러는 기록 루프를 `DB::transaction` 으로 | 재시도·재예약 때 앞부분이 두 번 남지 않게 — [Bulk 로깅 패턴의 해당 절](#큐로-도는-일괄-핸들러는-기록-루프를-트랜잭션으로-감싼다-139) |
 
 ### 다국어 키 커버리지
 
@@ -813,6 +814,26 @@ public function handleAfterBulkStatusUpdate(array $ids, int $updatedCount, array
     }
 }
 ```
+
+#### 큐로 도는 일괄 핸들러는 기록 루프를 트랜잭션으로 감싼다 (#139)
+
+일괄 핸들러는 큐 워커에서 돈다(`'sync' => true` 가 아니면). 잡이 중간에 끊겨(제한 시간·워커 종료·재예약) 다시 실행되면 앞부분 항목의 로그가 한 번 더 기록된다. 항목별 기록 루프를 `DB::transaction` 으로 감싸 **중간에 끊긴 묶음은 커밋되지 않게** 한다 — 다시 실행되면 항목마다 한 번만 남는다. 트랜잭션 자체가 실패하면(커밋 실패 등) 묶음 전체가 되돌려지고 오류 로그만 남는다. 다만 항목 하나의 저장 실패는 `logActivity()` 가 종전대로 잡아 오류 로그를 남기고 건너뛰므로(활동 로그는 부수 기록 — 호출자 작업을 실패시키지 않는다) 이 패턴이 「항목 실패 시 묶음 전체 취소」를 보장하지는 않는다. 그렇게 하려면 `logActivity()` 가 트랜잭션 안에서 예외를 다시 던져야 하는데, 다른 트랜잭션 안에서 부르는 호출자까지 실패시키므로 하지 않는다.
+
+```php
+try {
+    DB::transaction(function () use ($ids, $models, $snapshots) {
+        foreach ($ids as $id) {
+            // … 위 패턴 그대로 $this->logActivity(...)
+        }
+    });
+} catch (\Throwable $e) {
+    Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
+}
+```
+
+- 리스너는 DB 파사드를 직접 쓰지 않는 것이 원칙이지만 `DB::transaction` 은 허용된다(하네스 `listener-direct-db-facade`).
+- `'sync' => true` 구독은 재실행 경로가 없어 대상이 아니다. 기록이 한 줄인 핸들러(루프는 변경 목록만 만드는 경우)도 대상이 아니다.
+- 확장이 코어 신버전에 의존하지 않도록 헬퍼를 두지 않고 각 리스너에 이 패턴을 직접 쓴다.
 
 ### 패턴 3: Bulk Delete — 삭제된 엔티티의 per-item 로깅
 

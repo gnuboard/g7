@@ -7,6 +7,8 @@ use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\Brand;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
@@ -708,19 +710,26 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
      */
     public function handleExtraFeeAfterBulkDelete(array $ids, int $count, array $snapshots = []): void
     {
-        foreach ($ids as $id) {
-            $snapshot = $snapshots[$id] ?? null;
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($ids, $snapshots) {
+                foreach ($ids as $id) {
+                    $snapshot = $snapshots[$id] ?? null;
 
-            $this->logActivity('extra_fee_template.bulk_delete', [
-                'loggable_type' => ExtraFeeTemplate::class,
-                'loggable_id' => $id,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.extra_fee_template_bulk_delete',
-                'description_params' => ['count' => 1],
-                'properties' => [
-                    'extra_fee_template_id' => $id,
-                    'snapshot' => $snapshot,
-                ],
-            ]);
+                    $this->logActivity('extra_fee_template.bulk_delete', [
+                        'loggable_type' => ExtraFeeTemplate::class,
+                        'loggable_id' => $id,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.extra_fee_template_bulk_delete',
+                        'description_params' => ['count' => 1],
+                        'properties' => [
+                            'extra_fee_template_id' => $id,
+                            'snapshot' => $snapshot,
+                        ],
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -737,25 +746,32 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     {
         $templates = $this->extraFeeTemplateRepository->findByIdsKeyed($ids);
 
-        foreach ($ids as $id) {
-            $template = $templates->get($id);
-            if (! $template) {
-                continue;
-            }
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($ids, $isActive, $snapshots, $templates) {
+                foreach ($ids as $id) {
+                    $template = $templates->get($id);
+                    if (! $template) {
+                        continue;
+                    }
 
-            $snapshot = $snapshots[$id] ?? null;
-            $changes = $snapshot ? ChangeDetector::detect($template, $snapshot) : null;
+                    $snapshot = $snapshots[$id] ?? null;
+                    $changes = $snapshot ? ChangeDetector::detect($template, $snapshot) : null;
 
-            $this->logActivity('extra_fee_template.bulk_toggle_active', [
-                'loggable' => $template,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.extra_fee_template_bulk_toggle_active',
-                'description_params' => ['count' => 1],
-                'properties' => [
-                    'template_id' => $id,
-                    'is_active' => $isActive,
-                ],
-                'changes' => $changes,
-            ]);
+                    $this->logActivity('extra_fee_template.bulk_toggle_active', [
+                        'loggable' => $template,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.extra_fee_template_bulk_toggle_active',
+                        'description_params' => ['count' => 1],
+                        'properties' => [
+                            'template_id' => $id,
+                            'is_active' => $isActive,
+                        ],
+                        'changes' => $changes,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -770,15 +786,22 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     public function handleExtraFeeAfterBulkCreate(array $items, int $count, $createdTemplates = null): void
     {
         if ($createdTemplates && $createdTemplates->isNotEmpty()) {
-            foreach ($createdTemplates as $template) {
-                $this->logActivity('extra_fee_template.bulk_create', [
-                    'loggable' => $template,
-                    'description_key' => 'sirsoft-ecommerce::activity_log.description.extra_fee_template_bulk_create',
-                    'description_params' => ['count' => 1],
-                    'properties' => [
-                        'extra_fee_template_id' => $template->id,
-                    ],
-                ]);
+            // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+            try {
+                DB::transaction(function () use ($createdTemplates) {
+                    foreach ($createdTemplates as $template) {
+                        $this->logActivity('extra_fee_template.bulk_create', [
+                            'loggable' => $template,
+                            'description_key' => 'sirsoft-ecommerce::activity_log.description.extra_fee_template_bulk_create',
+                            'description_params' => ['count' => 1],
+                            'properties' => [
+                                'extra_fee_template_id' => $template->id,
+                            ],
+                        ]);
+                    }
+                });
+            } catch (\Throwable $e) {
+                Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
             }
 
             return;
@@ -807,19 +830,26 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
      */
     public function handleShippingPolicyAfterBulkDelete(array $ids, int $count, array $snapshots = []): void
     {
-        foreach ($ids as $id) {
-            $snapshot = $snapshots[$id] ?? null;
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($ids, $snapshots) {
+                foreach ($ids as $id) {
+                    $snapshot = $snapshots[$id] ?? null;
 
-            $this->logActivity('shipping_policy.bulk_delete', [
-                'loggable_type' => ShippingPolicy::class,
-                'loggable_id' => $id,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.shipping_policy_bulk_delete',
-                'description_params' => ['count' => 1],
-                'properties' => [
-                    'shipping_policy_id' => $id,
-                    'snapshot' => $snapshot,
-                ],
-            ]);
+                    $this->logActivity('shipping_policy.bulk_delete', [
+                        'loggable_type' => ShippingPolicy::class,
+                        'loggable_id' => $id,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.shipping_policy_bulk_delete',
+                        'description_params' => ['count' => 1],
+                        'properties' => [
+                            'shipping_policy_id' => $id,
+                            'snapshot' => $snapshot,
+                        ],
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -836,25 +866,32 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     {
         $policies = $this->shippingPolicyRepository->findByIdsKeyed($ids);
 
-        foreach ($ids as $id) {
-            $policy = $policies->get($id);
-            if (! $policy) {
-                continue;
-            }
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($ids, $isActive, $policies, $snapshots) {
+                foreach ($ids as $id) {
+                    $policy = $policies->get($id);
+                    if (! $policy) {
+                        continue;
+                    }
 
-            $snapshot = $snapshots[$id] ?? null;
-            $changes = $snapshot ? ChangeDetector::detect($policy, $snapshot) : null;
+                    $snapshot = $snapshots[$id] ?? null;
+                    $changes = $snapshot ? ChangeDetector::detect($policy, $snapshot) : null;
 
-            $this->logActivity('shipping_policy.bulk_toggle_active', [
-                'loggable' => $policy,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.shipping_policy_bulk_toggle_active',
-                'description_params' => ['count' => 1],
-                'properties' => [
-                    'shipping_policy_id' => $id,
-                    'is_active' => $isActive,
-                ],
-                'changes' => $changes,
-            ]);
+                    $this->logActivity('shipping_policy.bulk_toggle_active', [
+                        'loggable' => $policy,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.shipping_policy_bulk_toggle_active',
+                        'description_params' => ['count' => 1],
+                        'properties' => [
+                            'shipping_policy_id' => $id,
+                            'is_active' => $isActive,
+                        ],
+                        'changes' => $changes,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -1056,23 +1093,30 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     {
         $options = $this->productOptionRepository->findByIdsKeyed($optionIds);
 
-        foreach ($optionIds as $optionId) {
-            $snapshot = $snapshots[$optionId] ?? null;
-            $option = $options->get($optionId);
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($action, $descriptionKeySuffix, $optionIds, $options, $snapshots) {
+                foreach ($optionIds as $optionId) {
+                    $snapshot = $snapshots[$optionId] ?? null;
+                    $option = $options->get($optionId);
 
-            if (! $option) {
-                continue;
-            }
+                    if (! $option) {
+                        continue;
+                    }
 
-            $changes = $snapshot ? ChangeDetector::detect($option, $snapshot) : null;
+                    $changes = $snapshot ? ChangeDetector::detect($option, $snapshot) : null;
 
-            $this->logActivity($action, [
-                'loggable' => $option,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.'.$descriptionKeySuffix,
-                'description_params' => ['option_id' => $optionId],
-                'properties' => ['option_id' => $optionId, 'product_id' => $option->product_id],
-                'changes' => $changes,
-            ]);
+                    $this->logActivity($action, [
+                        'loggable' => $option,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.'.$descriptionKeySuffix,
+                        'description_params' => ['option_id' => $optionId],
+                        'properties' => ['option_id' => $optionId, 'product_id' => $option->product_id],
+                        'changes' => $changes,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -1121,19 +1165,26 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
      */
     public function handleReviewAfterBulkDelete(array $ids, array $snapshots = []): void
     {
-        foreach ($ids as $id) {
-            $snapshot = $snapshots[$id] ?? null;
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($ids, $snapshots) {
+                foreach ($ids as $id) {
+                    $snapshot = $snapshots[$id] ?? null;
 
-            $this->logActivity('product_review.bulk_delete', [
-                'loggable_type' => ProductReview::class,
-                'loggable_id' => $id,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.review_bulk_delete',
-                'description_params' => ['count' => 1],
-                'properties' => [
-                    'review_id' => $id,
-                    'snapshot' => $snapshot,
-                ],
-            ]);
+                    $this->logActivity('product_review.bulk_delete', [
+                        'loggable_type' => ProductReview::class,
+                        'loggable_id' => $id,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.review_bulk_delete',
+                        'description_params' => ['count' => 1],
+                        'properties' => [
+                            'review_id' => $id,
+                            'snapshot' => $snapshot,
+                        ],
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -1156,17 +1207,24 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     {
         $byId = $this->indexSnapshotsById($snapshots);
 
-        foreach ($ids as $id) {
-            $this->logActivity('wishlist.bulk_delete', [
-                'loggable_type' => ProductWishlist::class,
-                'loggable_id' => $id,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.wishlist_bulk_delete',
-                'description_params' => ['count' => 1],
-                'properties' => array_merge(
-                    ['id' => $id, 'bulk_total' => $count],
-                    $byId[(int) $id] ?? []
-                ),
-            ]);
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($byId, $count, $ids) {
+                foreach ($ids as $id) {
+                    $this->logActivity('wishlist.bulk_delete', [
+                        'loggable_type' => ProductWishlist::class,
+                        'loggable_id' => $id,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.wishlist_bulk_delete',
+                        'description_params' => ['count' => 1],
+                        'properties' => array_merge(
+                            ['id' => $id, 'bulk_total' => $count],
+                            $byId[(int) $id] ?? []
+                        ),
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -1185,17 +1243,24 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     {
         $byId = $this->indexSnapshotsById($snapshots);
 
-        foreach ($ids as $id) {
-            $this->logActivity('cart.bulk_delete', [
-                'loggable_type' => Cart::class,
-                'loggable_id' => $id,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.cart_bulk_delete',
-                'description_params' => ['count' => 1],
-                'properties' => array_merge(
-                    ['id' => $id, 'bulk_total' => $count],
-                    $byId[(int) $id] ?? []
-                ),
-            ]);
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($byId, $count, $ids) {
+                foreach ($ids as $id) {
+                    $this->logActivity('cart.bulk_delete', [
+                        'loggable_type' => Cart::class,
+                        'loggable_id' => $id,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.cart_bulk_delete',
+                        'description_params' => ['count' => 1],
+                        'properties' => array_merge(
+                            ['id' => $id, 'bulk_total' => $count],
+                            $byId[(int) $id] ?? []
+                        ),
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -1214,17 +1279,24 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
     {
         $byId = $this->indexSnapshotsById($snapshots);
 
-        foreach ($ids as $id) {
-            $this->logActivity('user_address.bulk_delete', [
-                'loggable_type' => UserAddress::class,
-                'loggable_id' => $id,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.user_address_bulk_delete',
-                'description_params' => ['count' => 1],
-                'properties' => array_merge(
-                    ['id' => $id, 'bulk_total' => $count],
-                    $byId[(int) $id] ?? []
-                ),
-            ]);
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($byId, $count, $ids) {
+                foreach ($ids as $id) {
+                    $this->logActivity('user_address.bulk_delete', [
+                        'loggable_type' => UserAddress::class,
+                        'loggable_id' => $id,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.user_address_bulk_delete',
+                        'description_params' => ['count' => 1],
+                        'properties' => array_merge(
+                            ['id' => $id, 'bulk_total' => $count],
+                            $byId[(int) $id] ?? []
+                        ),
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -1262,14 +1334,21 @@ class EcommerceAdminActivityLogListener implements HookListenerInterface
      */
     public function handleProductInquiryAfterBulkDelete(array $ids, int $count): void
     {
-        foreach ($ids as $id) {
-            $this->logActivity('product_inquiry.bulk_delete', [
-                'loggable_type' => ProductInquiry::class,
-                'loggable_id' => $id,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.product_inquiry_bulk_delete',
-                'description_params' => ['count' => 1],
-                'properties' => ['id' => $id, 'bulk_total' => $count],
-            ]);
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($count, $ids) {
+                foreach ($ids as $id) {
+                    $this->logActivity('product_inquiry.bulk_delete', [
+                        'loggable_type' => ProductInquiry::class,
+                        'loggable_id' => $id,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.product_inquiry_bulk_delete',
+                        'description_params' => ['count' => 1],
+                        'properties' => ['id' => $id, 'bulk_total' => $count],
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 }

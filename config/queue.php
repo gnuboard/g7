@@ -43,6 +43,19 @@ return [
             'after_commit' => false,
         ],
 
+        // 긴 작업 전용 연결 — 통계 재집계·익명화·개인정보 직권 실행처럼 최대 1시간 도는 잡을 위한 것이다.
+        // retry_after 는 연결 단위라 기본 연결(90초)에 두면 실행 중인 잡을 다른 워커가 다시 집는다.
+        // 같은 jobs 표를 쓰므로 워커는 반드시 이 연결 이름으로 띄운다(`queue:work database-long --queue=long`).
+        // 3900 = 최장 잡 timeout 3600 + 여유 300.
+        'database-long' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION'),
+            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue' => 'long',
+            'retry_after' => (int) env('DB_QUEUE_LONG_RETRY_AFTER', 3900),
+            'after_commit' => false,
+        ],
+
         'beanstalkd' => [
             'driver' => 'beanstalkd',
             'host' => env('BEANSTALKD_QUEUE_HOST', 'localhost'),
@@ -72,6 +85,39 @@ return [
             'after_commit' => false,
         ],
 
+        // 긴 작업 전용 Redis 연결 — database-long 과 같은 이유. 워커는 `queue:work redis-long --queue=long`.
+        'redis-long' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
+            'queue' => 'long',
+            'retry_after' => (int) env('REDIS_QUEUE_LONG_RETRY_AFTER', 3900),
+            'block_for' => null,
+            'after_commit' => false,
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 큐 워커 레지스트리 (#139)
+    |--------------------------------------------------------------------------
+    |
+    | 훅 리스너·코어 잡이 쓰는 큐는 운영자가 환경설정 → 드라이버 탭 「큐 워커」에 등록한
+    | 연결·큐만 허용한다(App\Services\Queue\QueueWorkerRegistry). 아래는 그 판단에 쓰는 값이다.
+    |
+    | heartbeat_interval_seconds: 워커 생존 신호를 캐시에 쓰는 최소 간격(프로세스당)
+    | heartbeat_stale_seconds: 이 시간 넘게 신호가 없으면 화면에 「신호 없음」 경고
+    | timeout_margin_seconds: 리스너 timeout 이 연결 retry_after 이상이면 retry_after − 이 값으로 줄인다
+    | long_connection_suffix·long_queue: 긴 작업 배치 대상 — 「{기본 연결}{접미사}」 연결의 이 큐
+    |
+    */
+
+    'worker_registry' => [
+        'heartbeat_interval_seconds' => 30,
+        'heartbeat_stale_seconds' => 300,
+        'timeout_margin_seconds' => 10,
+        'long_connection_suffix' => '-long',
+        'long_queue' => 'long',
     ],
 
     /*
