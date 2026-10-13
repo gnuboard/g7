@@ -32,9 +32,10 @@
           </div>
           <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
             <responsive on="portable" class="flex flex-wrap items-center justify-between gap-2 mb-3"/>
-            <div class="flex flex-wrap items-center gap-2">
-              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white"/>
+            <!-- 제목은 판 번호 배지와 같은 flex 줄이라 줄어들 수 있게(min-w-0) 하고 아무 데서나 줄을 바꾼다(#143). -->
+            <div class="flex flex-wrap items-center gap-2 min-w-0">
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere">
+                <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere"/>
                 {{page?.data?.title ?? ''}}
               </h1>
               <span data-if="{{page?.data?.abilities?.can_update === true}}" class="px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">v{{page?.data?.current_version ?? 1}}</span>

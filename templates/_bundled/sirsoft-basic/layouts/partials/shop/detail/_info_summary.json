@@ -270,7 +270,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 w-16"
+                                        "className": "text-sm text-gray-500 dark:text-gray-400 w-16 shrink-0 truncate"
                                     },
                                     "text": "{{group.name_localized ?? group.name}}"
                                 },

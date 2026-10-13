@@ -173,6 +173,7 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan module:update sirsoft-board --force`
 - [ ] 개인정보 보유기간 핸들러(`src/Privacy/`)를 고칠 때는 건수(`preview()`)·대상 명단(`targets()`)·실행(`process()`)이 **같은 조건식**을 쓰는지, 명단 권한(`targetPermissions()` = 설정 읽기 + 게시판 관리 읽기)과 식별 최소 열(본문·첨부 제외)을 지키는지 확인 — 계약 전체는 [코어 개인정보 보유기간 처리 가이드](../../../docs/backend/privacy-retention.md)
 - [ ] 새 `.g7.html` 을 만들었다면 저작 트랙 종료 게이트(`LayoutMarkup` PHPUnit 스위트)의 코퍼스 목록에 등재하고, 파일 헤더·데이터소스·모달·액션 블록 주석(S21, `docs/frontend/layout-markup.md` §10.5)을 채운다 — 굽기·왕복이 초록이어도 이 스위트만 미등재·미주석을 잡는다(2026-09-26 develop-7.1.0 1차 병합 판독: 게시판 개인정보 조치 창이 미등재·미주석으로 들어왔다).
+- [ ] 게시판 이름·글 제목처럼 입력값을 그리는 관리자 화면 글은 넘침을 막는다 — 단추·배지와 같은 flex 줄의 글은 감싼 칸 `min-w-0` + 글 `min-w-0 wrap-anywhere`, 카드의 한 줄 요약(게시판 · 작성자 · 시각)은 `truncate`. `.admin_layout_root` 가 `overflow-hidden` 이라 문서 넘침은 늘 0 이므로 `#right_content_area` 초과분으로 잰다 (#143)
 - [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_board_form`·`admin_board_post_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비우고, 생성 모드에서도 폼을 채우는 데이터소스(`boards` form-data·`form_data`)의 `initLocal` 은 `{"_merge":"replace","form":"{{data}}"}` 맵으로 둔다 — 문자열형 `initLocal` 은 엔진이 기존 form 과 깊은 병합해 직전 글의 id·게시판 다국어 이름이 등록 폼에 남는다(트러블슈팅 state-global 사례 7)
 
 ## 6. 금지 패턴
@@ -190,6 +191,7 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 | 게시판 권한(role_permissions)이나 게시판 관리자·스텝 명단을 바꾸는 새 경로를 `BoardPermissionService::assignRolesToPermission()`·`syncBoardRoleUsers()` 를 거치지 않고 직접 `attach`/`sync` | 기존 두 지점을 재사용하거나, 새 지점에서 `PermissionEscalationGuard`(권한은 `assertGrantWithinActorCeiling`, 역할 배정은 `assertRoleAssignmentWithinActorCeiling`)를 쓰기 전에 호출 | 한 경로만 상한을 걸면 나머지가 자기부여 우회로가 된다 — 권한 저장만 막았을 때 담당자 지정·일괄 적용이 같은 결과를 냈다 (KVE-2026-2367) |
 | 요청의 `temp_key` 를 형식 검증 없이 임시 경로(`{slug}/temp/{temp_key}`)에 넣거나, 조회된 임시 첨부가 없는데도 그 디렉토리를 `deleteDirectory` | `ValidatesTempKey`(UUID 만) + 현재 사용자가 올린 임시 첨부가 있을 때만 이동·정리 | `../../..` 같은 키가 정리 경로를 모듈 저장소 루트로 끌어올려 전 모듈 파일이 지워진다 (KVE-2026-2349 — 응답은 201 이라 드러나지 않았다) |
 | 임시 첨부를 본경로로 옮긴 뒤 임시 디렉토리 정리(`deleteDirectory`)의 예외를 그대로 던지게 두기 | `AttachmentService::linkTempAttachmentsWithMove()` 처럼 정리만 `try/catch` 로 감싸 경고 로그(`게시판 임시 첨부 디렉토리 정리 실패`)를 남기고 연결 결과는 그대로 반환 | 정리는 부수 작업이다. 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던지고, 그 예외가 글 저장 전체를 「게시글 등록에 실패했습니다」(500)로 되돌려 파일은 본경로·DB 는 임시 경로를 가리키는 어긋남이 남았다(#703). 정리에 실패해 남는 것은 빈 임시 디렉토리뿐이다 |
+| 레이아웃·확장 조각의 메뉴·목록·제목 단추에 폭(`w-full`·`flex-1`)만 주고 가로 정렬을 지정하지 않기 | 왼쪽에 둘 단추는 `justify-start` 를 함께 둔다 | 템플릿 기본 단추가 가운데 정렬을 넣는다(사용자 `Button` 의 `justify-center` 병합, 관리자 `.button`) — 넓어진 단추의 글이 가운데로 간다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -198,9 +200,9 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 234개 | `modules/_bundled/sirsoft-board/tests` |
-| Vitest | 83개 | `vitest.config.ts` |
+| Vitest | 84개 | `vitest.config.ts` |
 | Playwright | 36개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 139개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 140개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

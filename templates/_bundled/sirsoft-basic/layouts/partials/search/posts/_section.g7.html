@@ -32,9 +32,9 @@
         <!-- 제목 라인 (게시판명 + 제목) -->
         <div class="flex items-start gap-2 mb-1">
           <!-- 게시판명 배지 -->
-          <span data-if="{{post?.board_name}}" class="flex-shrink-0 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded">{{post?.board_name}}</span>
+          <span data-if="{{post?.board_name}}" class="flex-shrink-0 truncate max-w-32 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded">{{post?.board_name}}</span>
           <!-- 제목 (HTML 하이라이트 지원) -->
-          <html-content data-type="composite" content="{{post?.title_highlighted ?? post?.title}}" class="font-medium text-gray-900 dark:text-white [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>
+          <html-content data-type="composite" content="{{post?.title_highlighted ?? post?.title}}" class="min-w-0 wrap-anywhere font-medium text-gray-900 dark:text-white [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>
         </div>
         <!-- 발췌 내용 (HTML 하이라이트 지원) -->
         <html-content data-type="composite" data-if="{{post?.content_preview}}" content="{{post?.content_preview_highlighted ?? post?.content_preview}}" class="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2 [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>

@@ -7,15 +7,16 @@
     </on>
     <!-- 헤더 (아이콘 + 제목 + 게시글 수) -->
     <div class="flex items-start justify-between mb-2">
-      <div class="flex items-center gap-2">
+      <!-- 이름 칸은 줄어들며 줄을 바꾸고 글 수 배지는 제 폭을 지킨다 — 공백 없는 긴 게시판 이름이 카드를 넘쳤다(#143). -->
+      <div class="flex items-center gap-2 min-w-0">
         <icon name="file-text" size="lg" class="text-gray-600 dark:text-gray-400 flex-shrink-0"/>
-        <h3 class="font-semibold text-gray-900 dark:text-white">{{board.name}}</h3>
+        <h3 class="font-semibold text-gray-900 dark:text-white min-w-0 wrap-anywhere">{{board.name}}</h3>
       </div>
       <!-- 게시글 수 배지 -->
-      <span class="px-2 py-0.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded">$t:board.post_count|count={{board.posts_count ?? 0}}</span>
+      <span class="shrink-0 px-2 py-0.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded">$t:board.post_count|count={{board.posts_count ?? 0}}</span>
     </div>
     <!-- 설명 -->
-    <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">{{board.description ?? ''}}</p>
+    <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 break-words mb-3">{{board.description ?? ''}}</p>
     <!-- 게시판으로 이동 버튼 -->
     <div class="flex items-center justify-end gap-2 text-sm font-medium text-blue-600 dark:text-blue-400">
       <span>$t:board.view_board</span>

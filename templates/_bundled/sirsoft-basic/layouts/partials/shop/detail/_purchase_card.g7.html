@@ -16,7 +16,7 @@
       <!-- 옵션 그룹별 Select -->
       <div data-each="group, groupIndex in {{product.data?.option_groups ?? []}}">
         <div class="mb-3">
-          <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">{{group.name_localized}}</label>
+          <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1 break-words">{{group.name_localized}}</label>
           <select name="option_{{groupIndex}}" data-testid="option-group-{{groupIndex}}" class="w-full" value="{{_local.currentSelection?.[group.name_localized] ?? ''}}" placeholder="{{groupIndex === 0 || _local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + '$t:shop.product.select_option_suffix' : '$t:shop.product.select_upper_option_first'}}" disabled="{{groupIndex > 0 &amp;&amp; !_local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized]}}" options="{{[{ value: '', label: groupIndex === 0 || _local.currentSelection?.[product.data?.option_groups[groupIndex - 1]?.name_localized] ? group.name_localized + $t('shop.product.select_option_suffix') : $t('shop.product.select_upper_option_first') }, ...($computed.optionChoices?.[groupIndex] ?? (group.values_localized ?? []).map(v => ({ value: v, label: v })))] ?? []}}">
             <on type="change">
               <!-- 옵션을 한 칸 고를 때마다 «다 골랐는지» 를 판정해, 마지막 칸이 채워지는 순간 한 줄을 추가한다.

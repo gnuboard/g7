@@ -426,7 +426,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded"
+                                                        "className": "inline-block truncate max-w-32 px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded"
                                                     },
                                                     "text": "{{report.board_name ?? ''}}"
                                                 },
@@ -476,7 +476,7 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2"
+                                                "className": "justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2"
                                             },
                                             "text": "{{raw:report.title ?? report.excerpt ?? ''}}"
                                         },

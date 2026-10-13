@@ -200,7 +200,7 @@
             </td>
             <td class="px-4 py-3">
               <div class="flex flex-col">
-                <button class="text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer truncate">
+                <button class="justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer truncate">
                   <on type="click">
                     <navigate path="/board/{{reaction.board_slug}}/{{reaction.post_id}}"/>
                   </on>
@@ -364,7 +364,7 @@
               <span data-if="{{reaction.target_deleted}}" class="inline-flex items-center px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded">$t:mypage.board_activities.reactions.deleted_flag</span>
             </div>
             <!-- 살아 있으면 눌러서 이동, 아니면 글자만 -->
-            <button data-if="{{reaction.reaction_enabled &amp;&amp; !reaction.target_deleted &amp;&amp; !reaction.board_deleted}}" class="text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2">
+            <button data-if="{{reaction.reaction_enabled &amp;&amp; !reaction.target_deleted &amp;&amp; !reaction.board_deleted}}" class="justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2">
               <on type="click">
                 <navigate path="/board/{{reaction.board_slug}}/{{reaction.post_id}}"/>
               </on>
@@ -373,7 +373,7 @@
             <span data-if="{{reaction.target_deleted}}" class="block text-sm italic text-gray-400 dark:text-gray-500">{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.reactions.deleted_comment' : '$t:mypage.board_activities.reactions.deleted_post'}}</span>
             <span data-if="{{!reaction.target_deleted &amp;&amp; (!reaction.reaction_enabled || reaction.board_deleted)}}" class="block text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{{reaction.excerpt ?? reaction.title}}</span>
             <div class="mt-2 flex items-center justify-between gap-2">
-              <span class="text-xs text-gray-400 dark:text-gray-500">{{reaction.board_name ?? ''}} · {{reaction.reacted_at ?? ''}}</span>
+              <span class="min-w-0 wrap-anywhere text-xs text-gray-400 dark:text-gray-500">{{reaction.board_name ?? ''}} · {{reaction.reacted_at ?? ''}}</span>
               <button data-testid="my-reaction-remove-m-{{reaction.id}}" class="px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                 <on type="click">
                   <!-- 해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다) -->

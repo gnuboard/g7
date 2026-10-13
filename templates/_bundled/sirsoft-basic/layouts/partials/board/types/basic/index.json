@@ -8,25 +8,25 @@
     "name": "Div",
     "children": [
         {
-            "comment": "헤더 (게시판명 + 설명 + 글쓰기 버튼)\n         좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 J D-J12).",
+            "comment": "헤더 (게시판명 + 설명 + 글쓰기 버튼)\n         좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 J D-J12).\n         제목 칸은 최소 8rem 을 지키며 남는 폭을 쓰고, 그 폭도 안 나오면 버튼 묶음이 다음 줄 오른쪽 끝(ml-auto)으로 내린다 — 297px 에서 제목 칸이 54px 로 눌려 26줄로 접혔다(#143). 보통 이름은 수정 전처럼 제목 옆 오른쪽에 둔다.",
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex justify-between items-start gap-3 mb-6"
+                "className": "flex flex-wrap justify-between items-start gap-3 mb-6"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "min-w-0"
+                        "className": "min-w-0 flex-1 basis-32"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H1",
                             "props": {
-                                "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                "className": "text-2xl font-bold text-gray-900 dark:text-white break-words"
                             },
                             "text": "{{posts?.data?.board?.name ?? ''}}"
                         },
@@ -35,7 +35,7 @@
                             "name": "P",
                             "if": "{{posts?.data?.board?.description}}",
                             "props": {
-                                "className": "text-gray-600 dark:text-gray-400 mt-1"
+                                "className": "text-gray-600 dark:text-gray-400 mt-1 break-words"
                             },
                             "text": "{{posts?.data?.board?.description}}"
                         }
@@ -46,7 +46,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex items-center gap-2 shrink-0 whitespace-nowrap"
+                        "className": "flex items-center gap-2 shrink-0 whitespace-nowrap ml-auto"
                     },
                     "children": [
                         {
@@ -407,7 +407,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm font-medium truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}"
+                                                                "className": "text-sm font-medium min-w-0 truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}"
                                                             },
                                                             "text": "{{post?.title}}"
                                                         },
@@ -640,10 +640,11 @@
                                                                             }
                                                                         },
                                                                         {
+                                                                            "comment": "제목은 한 줄 … — 공백 없는 긴 제목이 N 배지·댓글 수를 화면 밖으로 밀었다(#143)",
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "text-sm font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}"
+                                                                                "className": "text-sm font-medium min-w-0 truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}"
                                                                             },
                                                                             "text": "{{post?.title}}"
                                                                         },

@@ -1,4 +1,4 @@
-<!-- 관리자 대시보드의 커뮤니티 구획(카드 데이터 API 가 모두 게시판 대시보드 조회 권한을 요구해 그 권한으로 구획 전체를 그린다) — 오늘 배지 · 글/댓글 추이 차트 · 최신 글 · 대기 중 신고 넷을 한 그리드로 얹는다. 카드마다 데이터소스를 따로 두고 progressive 로 읽어, 느린 하나가 나머지를 붙잡지 않는다 -->
+<!-- 관리자 대시보드의 커뮤니티 구획(카드 데이터 API 가 모두 게시판 대시보드 조회 권한을 요구해 그 권한으로 구획 전체를 그린다) — 오늘 배지 · 글/댓글 추이 차트 · 최신 글 · 대기 중 신고 넷을 한 그리드로 얹는다. 카드마다 데이터소스를 따로 두고 progressive 로 읽어, 느린 하나가 나머지를 붙잡지 않는다 e2e:allow 최신 글 메타 줄을 이름·시각 두 칸으로 나눈 표시 배치 변경 — 데이터·동작 무변경이라 화면 확인으로 대신한다(#777). -->
 <extension extension-point="admin_dashboard_community" mode="append" priority="100">
   <div data-ref="community_section_wrapper" class="mb-4 md:mb-6 lg:mb-8">
     <permissions>
@@ -72,7 +72,10 @@
               <navigate path="/admin/board/{{post?.board_slug}}/post/{{post?.id}}"/>
             </on>
             <p data-ref="latest_post_title_{{i}}" class="text-sm font-medium text-slate-900 dark:text-white truncate">{{post?.title ?? ''}}</p>
-            <p data-ref="latest_post_meta_{{i}}" class="text-xs text-slate-500 dark:text-slate-400">{{(post?.board_name ?? '') + ' · ' + (post?.author_name ?? '') + ' · ' + (post?.created_at ?? '')}}</p>
+            <div data-ref="latest_post_meta_{{i}}" class="flex items-center min-w-0 text-xs text-slate-500 dark:text-slate-400">
+              <span class="min-w-0 truncate">{{(post?.board_name ?? '') + ' · ' + (post?.author_name ?? '')}}</span>
+              <span class="shrink-0 whitespace-nowrap">{{' · ' + (post?.created_at ?? '')}}</span>
+            </div>
           </div>
         </div>
       </div>

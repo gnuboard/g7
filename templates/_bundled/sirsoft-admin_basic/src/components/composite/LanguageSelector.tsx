@@ -288,7 +288,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         <Button
           onClick={() => setShowMenu(!showMenu)}
           disabled={isChanging}
-          className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors"
+          className="justify-start w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors"
         >
           <Icon
             name={IconName.Globe}

@@ -53,19 +53,19 @@
             ]
         },
         {
-            "comment": "게시판 이름 (가운데)",
+            "comment": "게시판 이름 (가운데). 공백 없는 긴 이름도 한 줄 … 로 자른다(#143).",
             "type": "basic",
             "name": "Span",
             "responsive": {
                 "mobile": {
                     "comment": "order-first + w-full 로 첫 줄 전체를 차지. 이 노드가 형제를 압착하던 원인이므로 폭 경쟁에서 아예 빼낸다.",
                     "props": {
-                        "className": "order-first w-full text-center text-lg font-semibold text-gray-900 dark:text-white"
+                        "className": "order-first w-full text-center text-lg font-semibold text-gray-900 dark:text-white min-w-0 truncate"
                     }
                 }
             },
             "props": {
-                "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                "className": "text-lg font-semibold text-gray-900 dark:text-white min-w-0 truncate"
             },
             "text": "{{post?.data?.board?.name ?? ''}}"
         },

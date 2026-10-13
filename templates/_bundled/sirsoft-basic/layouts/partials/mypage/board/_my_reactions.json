@@ -849,7 +849,7 @@
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "className": "text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer truncate"
+                                                                "className": "justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer truncate"
                                                             },
                                                             "text": "{{reaction.excerpt ?? reaction.title}}"
                                                         },
@@ -1537,7 +1537,7 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2"
+                                                "className": "justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2"
                                             },
                                             "text": "{{reaction.excerpt ?? reaction.title}}"
                                         },
@@ -1570,7 +1570,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                        "className": "min-w-0 wrap-anywhere text-xs text-gray-400 dark:text-gray-500"
                                                     },
                                                     "text": "{{reaction.board_name ?? ''}} · {{reaction.reacted_at ?? ''}}"
                                                 },

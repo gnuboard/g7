@@ -938,7 +938,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "user_info"
+                                                        "className": "user_info min-w-0"
                                                     },
                                                     "children": [
                                                         {
@@ -946,7 +946,7 @@
                                                             "type": "basic",
                                                             "name": "P",
                                                             "props": {
-                                                                "className": "text-primary text-sm font-bold leading-none"
+                                                                "className": "text-primary text-sm font-bold leading-none truncate max-w-xs"
                                                             },
                                                             "text": "{{current_user.data?.name ?? '관리자'}}"
                                                         },
@@ -955,7 +955,7 @@
                                                             "type": "basic",
                                                             "name": "P",
                                                             "props": {
-                                                                "className": "text-tertiary text-[11px] mt-1"
+                                                                "className": "text-tertiary text-[11px] mt-1 truncate max-w-xs"
                                                             },
                                                             "text": "{{current_user.data?.email ?? ''}}"
                                                         }

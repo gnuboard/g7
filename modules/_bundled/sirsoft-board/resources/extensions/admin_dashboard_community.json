@@ -1,5 +1,5 @@
 {
-    "comment": "관리자 대시보드의 커뮤니티 구획(카드 데이터 API 가 모두 게시판 대시보드 조회 권한을 요구해 그 권한으로 구획 전체를 그린다) — 오늘 배지 · 글/댓글 추이 차트 · 최신 글 · 대기 중 신고 넷을 한 그리드로 얹는다. 카드마다 데이터소스를 따로 두고 progressive 로 읽어, 느린 하나가 나머지를 붙잡지 않는다",
+    "comment": "관리자 대시보드의 커뮤니티 구획(카드 데이터 API 가 모두 게시판 대시보드 조회 권한을 요구해 그 권한으로 구획 전체를 그린다) — 오늘 배지 · 글/댓글 추이 차트 · 최신 글 · 대기 중 신고 넷을 한 그리드로 얹는다. 카드마다 데이터소스를 따로 두고 progressive 로 읽어, 느린 하나가 나머지를 붙잡지 않는다 e2e:allow 최신 글 메타 줄을 이름·시각 두 칸으로 나눈 표시 배치 변경 — 데이터·동작 무변경이라 화면 확인으로 대신한다(#777).",
     "extension_point": "admin_dashboard_community",
     "mode": "append",
     "priority": 100,
@@ -474,11 +474,28 @@
                                                 {
                                                     "id": "latest_post_meta_{{i}}",
                                                     "type": "basic",
-                                                    "name": "P",
+                                                    "name": "Div",
                                                     "props": {
-                                                        "className": "text-xs text-slate-500 dark:text-slate-400"
+                                                        "className": "flex items-center min-w-0 text-xs text-slate-500 dark:text-slate-400"
                                                     },
-                                                    "text": "{{(post?.board_name ?? '') + ' · ' + (post?.author_name ?? '') + ' · ' + (post?.created_at ?? '')}}"
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "min-w-0 truncate"
+                                                            },
+                                                            "text": "{{(post?.board_name ?? '') + ' · ' + (post?.author_name ?? '')}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "shrink-0 whitespace-nowrap"
+                                                            },
+                                                            "text": "{{' · ' + (post?.created_at ?? '')}}"
+                                                        }
+                                                    ]
                                                 }
                                             ]
                                         }

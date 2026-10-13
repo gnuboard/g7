@@ -170,7 +170,7 @@
                                             "type": "basic",
                                             "name": "H1",
                                             "props": {
-                                                "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                                "className": "text-2xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere"
                                             },
                                             "text": "{{post?.data?.title ?? ''}}"
                                         },
@@ -936,10 +936,17 @@
                     ]
                 },
                 {
-                    "comment": "게시글 하단 바 — 반응(추천/비추천) 영역과 액션 버튼(답변/신고/수정/삭제)을 한 줄에 좌우로 배치. 반응은 왼쪽, 액션은 오른쪽. 둘 중 하나만 표시될 때도 justify-between 으로 정렬 유지. 둘 다 없으면 바 자체 미노출.",
+                    "comment": "게시글 하단 바 — 반응(추천/비추천) 영역과 액션 버튼(답변/신고/수정/삭제)을 한 줄에 좌우로 배치. 반응은 왼쪽, 액션은 오른쪽. 휴대폰 폭에서는 두 묶음을 풀어(contents) 단추가 한 흐름으로 이어 채우게 한다 — 묶음마다 줄을 따로 써 3줄이 되던 것을 2줄로. 둘 중 하나만 표시될 때도 justify-between 으로 정렬 유지. 둘 다 없으면 바 자체 미노출.",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{(post?.data?.board?.use_reaction && (post?.data?.board?.reaction_type_options ?? []).length > 0) || post?.data?.is_guest_post || post?.data?.is_author || post?.data?.abilities?.can_manage || post?.data?.board?.use_reply || (_global.currentUser?.uuid && post?.data?.board?.use_report)}}",
+                    "responsive": {
+                        "portable": {
+                            "props": {
+                                "className": "flex flex-wrap items-center gap-2 px-6 py-4 border-t border-gray-200 dark:border-gray-700"
+                            }
+                        }
+                    },
                     "props": {
                         "className": "flex flex-wrap items-center justify-between gap-2 px-6 py-4 border-t border-gray-200 dark:border-gray-700"
                     },
@@ -949,6 +956,13 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{post?.data?.board?.use_reaction && (post?.data?.board?.reaction_type_options ?? []).length > 0 && (!post?.data?.is_secret || post?.data?.content !== null)}}",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "contents"
+                                    }
+                                }
+                            },
                             "props": {
                                 "className": "flex flex-wrap items-center gap-2"
                             },
@@ -1119,8 +1133,15 @@
                             "type": "basic",
                             "name": "Div",
                             "if": "{{post?.data?.is_guest_post || post?.data?.is_author || post?.data?.abilities?.can_manage || post?.data?.board?.use_reply || (_global.currentUser?.uuid && post?.data?.board?.use_report) || post?.data?.board?.use_scrap}}",
+                            "responsive": {
+                                "portable": {
+                                    "props": {
+                                        "className": "contents"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "flex items-center justify-end gap-2 ml-auto"
+                                "className": "flex flex-wrap items-center justify-end gap-2 ml-auto"
                             },
                             "children": [
                                 {

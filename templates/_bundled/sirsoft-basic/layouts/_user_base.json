@@ -378,7 +378,7 @@
                     },
                     "children": [
                         {
-                            "comment": "모바일 헤더 좌측 - 로고",
+                            "comment": "모바일 헤더 좌측 - 로고. 이름이 길어도 우측 단추를 밀지 않도록 이 칸이 줄어들고(min-w-0 flex-1) 이름은 한 줄 … 로 자른다(#143 — 공백 없는 23자 이름에서 414px 까지 메뉴 단추가 화면 밖, 공백·한글 긴 이름은 4줄로 접혀 h-14 헤더를 위아래로 넘쳤다).",
                             "id": "mobile_header_left",
                             "type": "basic",
                             "name": "Button",
@@ -392,13 +392,16 @@
                                 }
                             ],
                             "props": {
-                                "className": "flex items-center cursor-pointer"
+                                "className": "justify-start flex items-center min-w-0 flex-1 cursor-pointer"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "if": "{{_global.settings?.general?.site_logo_url}}",
+                                    "props": {
+                                        "className": "min-w-0"
+                                    },
                                     "children": [
                                         {
                                             "type": "basic",
@@ -406,7 +409,7 @@
                                             "props": {
                                                 "src": "{{_global.settings?.general?.site_logo_url}}",
                                                 "alt": "{{_global.settings?.general?.site_name ?? 'Site'}}",
-                                                "className": "h-8 w-auto"
+                                                "className": "h-8 w-auto max-w-full object-contain object-left"
                                             }
                                         }
                                     ]
@@ -416,7 +419,7 @@
                                     "name": "Span",
                                     "if": "{{!_global.settings?.general?.site_logo_url}}",
                                     "props": {
-                                        "className": "text-lg font-bold text-gray-900 dark:text-white"
+                                        "className": "text-lg font-bold text-gray-900 dark:text-white truncate"
                                     },
                                     "text": "{{_global.settings?.general?.site_name ?? 'Site'}}"
                                 }
@@ -428,7 +431,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-center gap-1"
+                                "className": "flex items-center gap-1 shrink-0"
                             },
                             "children": [
                                 {
@@ -1091,12 +1094,12 @@
                             ]
                         },
                         {
-                            "comment": "로그인된 사용자 정보 - 아코디언 토글",
+                            "comment": "로그인된 사용자 정보 - 아코디언 토글. 위 설정 묶음의 구분선과 카드 사이에도 좌우·하단과 같은 여백(p-4)을 둔다.",
                             "type": "basic",
                             "name": "Div",
                             "if": "{{_global.currentUser?.uuid}}",
                             "props": {
-                                "className": "px-4 pb-4 border-b border-gray-200 dark:border-gray-700"
+                                "className": "p-4 border-b border-gray-200 dark:border-gray-700"
                             },
                             "children": [
                                 {
@@ -1357,7 +1360,7 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "className": "w-full flex items-center gap-3 px-4 py-2.5 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
+                                                        "className": "justify-start w-full flex items-center gap-3 px-4 py-2.5 mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -1387,7 +1390,7 @@
                             "name": "Div",
                             "if": "{{!_global.currentUser?.uuid}}",
                             "props": {
-                                "className": "px-4 pb-4 border-b border-gray-200 dark:border-gray-700"
+                                "className": "p-4 border-b border-gray-200 dark:border-gray-700"
                             },
                             "children": [
                                 {
@@ -1647,6 +1650,9 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
+                                                    "props": {
+                                                        "className": "min-w-0 truncate"
+                                                    },
                                                     "text": "{{board.name}}"
                                                 },
                                                 {
@@ -1654,7 +1660,7 @@
                                                     "name": "Span",
                                                     "if": "{{board.post_count > 0}}",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400 shrink-0"
                                                     },
                                                     "text": "{{board.post_count}}"
                                                 }

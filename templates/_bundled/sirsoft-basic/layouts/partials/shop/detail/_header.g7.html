@@ -3,10 +3,11 @@
 <partial description="상품명, 카테고리, 찜하기">
   <div>
     <div class="flex items-start justify-between">
-      <div>
-        <span class="text-sm text-gray-500 dark:text-gray-400">{{product.data?.category_name}}</span>
+      <!-- 상품명 칸은 줄어들 수 있고(min-w-0) 이름은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 상품명이 찜하기 단추를 밀어냈다(#143). -->
+      <div class="min-w-0">
+        <span class="block truncate text-sm text-gray-500 dark:text-gray-400">{{product.data?.category_name}}</span>
         <div class="flex items-center gap-2 mt-1">
-          <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{product.data?.name_localized}}</h1>
+          <h1 class="text-xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere">{{product.data?.name_localized}}</h1>
           <!-- 라벨 뱃지 -->
           <div data-if="{{product.data?.labels?.length > 0}}" class="flex items-center gap-1 flex-wrap">
             <span data-each="labelItem in {{product.data?.labels ?? []}}" class="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium text-white" style="background-color: {{labelItem.color ?? '#6B7280'}}">{{labelItem.name}}</span>

@@ -1,0 +1,17 @@
+feature: 게시판 관리자 화면 긴 게시판 이름·글 제목 넘침 방지 (#143)
+
+description: |
+  공백 없는 긴 게시판 이름·글 제목이어도 관리자 대시보드 「최근 게시글」 카드와 게시판 글 관리 목록이 화면 폭을 넘지 않는다.
+  카드의 메타 줄(게시판 · 작성자 · 시각)은 한 줄 … 로 자르고, 글 목록 제목은 칸 안에서 줄을 바꿔 모두 보인다.
+  `.admin_layout_root` 가 overflow-hidden 이라 문서 넘침은 늘 0 이므로 `#right_content_area` 초과분으로 잰다.
+
+axes:
+  surface:
+    - dashboard_latest_posts
+    - posts_index_title
+
+effects:
+  - admin_content_no_overflow
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-long-text-overflow.test.ts

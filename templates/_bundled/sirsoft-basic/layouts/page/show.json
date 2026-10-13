@@ -135,10 +135,11 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "제목은 판 번호 배지와 같은 flex 줄이라 줄어들 수 있게(min-w-0) 하고 아무 데서나 줄을 바꾼다(#143).",
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex flex-wrap items-center gap-2"
+                                                    "className": "flex flex-wrap items-center gap-2 min-w-0"
                                                 },
                                                 "children": [
                                                     {
@@ -147,12 +148,12 @@
                                                         "responsive": {
                                                             "portable": {
                                                                 "props": {
-                                                                    "className": "text-xl font-bold text-gray-900 dark:text-white"
+                                                                    "className": "text-xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere"
                                                                 }
                                                             }
                                                         },
                                                         "props": {
-                                                            "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                                            "className": "text-2xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere"
                                                         },
                                                         "text": "{{page?.data?.title ?? ''}}"
                                                     },

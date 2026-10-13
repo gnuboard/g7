@@ -309,16 +309,16 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "w-full space-y-3 text-center"
+                                        "className": "w-full min-w-0 space-y-3 text-center"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "flex-1 space-y-3 py-2"
+                                "className": "flex-1 min-w-0 space-y-3 py-2"
                             },
                             "children": [
                                 {
-                                    "comment": "이름 + 닉네임 (하단 정렬)",
+                                    "comment": "이름 + 닉네임 (하단 정렬). 이름·닉네임은 줄어들 수 있고 아무 데서나 줄을 바꾼다 — 공백 없는 긴 이름이 카드를 넘쳤다(#143).",
                                     "type": "basic",
                                     "name": "Div",
                                     "responsive": {
@@ -338,12 +338,12 @@
                                             "responsive": {
                                                 "portable": {
                                                     "props": {
-                                                        "className": "text-xl font-semibold text-gray-900 dark:text-white leading-none"
+                                                        "className": "text-xl font-semibold text-gray-900 dark:text-white leading-none min-w-0 wrap-anywhere"
                                                     }
                                                 }
                                             },
                                             "props": {
-                                                "className": "text-2xl font-semibold text-gray-900 dark:text-white leading-none"
+                                                "className": "text-2xl font-semibold text-gray-900 dark:text-white leading-none min-w-0 wrap-anywhere"
                                             },
                                             "text": "{{user.data?.name ?? '-'}}"
                                         },
@@ -353,7 +353,7 @@
                                             "name": "Span",
                                             "if": "{{user.data?.nickname}}",
                                             "props": {
-                                                "className": "text-base text-gray-500 dark:text-gray-400 leading-none"
+                                                "className": "text-base text-gray-500 dark:text-gray-400 leading-none min-w-0 wrap-anywhere"
                                             },
                                             "text": "({{user.data?.nickname}})"
                                         },
@@ -363,7 +363,7 @@
                                             "name": "Span",
                                             "if": "{{user.data?.status && user.data?.status !== 'active'}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', secondary: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', danger: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', warning: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', info: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'})[user.data?.status_variant] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}}"
+                                                "className": "inline-flex items-center shrink-0 px-2 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', secondary: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', danger: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', warning: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', info: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'})[user.data?.status_variant] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}}"
                                             },
                                             "text": "{{user.data?.status_label}}"
                                         }
@@ -376,12 +376,12 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-sm text-gray-600 dark:text-gray-300"
+                                                "className": "text-sm text-gray-600 dark:text-gray-300 break-all"
                                             }
                                         }
                                     },
                                     "props": {
-                                        "className": "text-base text-gray-600 dark:text-gray-300"
+                                        "className": "text-base text-gray-600 dark:text-gray-300 break-all"
                                     },
                                     "text": "{{user.data?.email ?? '-'}}"
                                 },
@@ -740,7 +740,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-gray-900 dark:text-white text-right max-w-[60%]"
+                                                "className": "text-sm text-gray-900 dark:text-white text-right max-w-[60%] break-words"
                                             },
                                             "text": "{{user.data?.zipcode || user.data?.address || user.data?.address_detail ? ((user.data?.zipcode ? '(' + user.data.zipcode + ') ' : '') + (user.data?.address ?? '') + (user.data?.address_detail ? ' ' + user.data.address_detail : '')) : '-'}}"
                                         }

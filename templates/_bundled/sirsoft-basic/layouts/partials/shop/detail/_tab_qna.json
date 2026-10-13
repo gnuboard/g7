@@ -248,7 +248,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "w-full text-left flex items-start px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                                        "className": "justify-start w-full text-left flex items-start px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
                                     },
                                     "children": [
                                         {

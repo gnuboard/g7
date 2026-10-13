@@ -54,7 +54,7 @@
       <div data-if="{{qna.data.items &amp;&amp; qna.data.items.length > 0}}" class="divide-y divide-gray-100 dark:divide-gray-700">
         <div data-each="item, idx in {{qna.data.items ?? []}}">
           <!-- Q행 - 비밀글 비소유자: 토스트 / 그 외: 인라인 토글 -->
-          <button type="button" class="w-full text-left flex items-start px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+          <button type="button" class="justify-start w-full text-left flex items-start px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
             <responsive on="portable" class="w-full text-left flex flex-col items-start gap-1.5 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"/>
             <on type="click">
               <set-state if="{{!item.is_secret || item.is_owner || !!(qna.data.meta.abilities.can_update)}}" target="local" qnaOpenId="{{_local.qnaOpenId === item.id ? null : item.id}}"/>

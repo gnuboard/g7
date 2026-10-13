@@ -15,14 +15,18 @@
             },
             "children": [
                 {
+                    "comment": "상품명 칸은 줄어들 수 있고(min-w-0) 이름은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 상품명이 찜하기 단추를 밀어냈다(#143).",
                     "type": "basic",
                     "name": "Div",
+                    "props": {
+                        "className": "min-w-0"
+                    },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "block truncate text-sm text-gray-500 dark:text-gray-400"
                             },
                             "text": "{{product.data?.category_name}}"
                         },
@@ -37,7 +41,7 @@
                                     "type": "basic",
                                     "name": "H1",
                                     "props": {
-                                        "className": "text-xl font-bold text-gray-900 dark:text-white"
+                                        "className": "text-xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere"
                                     },
                                     "text": "{{product.data?.name_localized}}"
                                 },

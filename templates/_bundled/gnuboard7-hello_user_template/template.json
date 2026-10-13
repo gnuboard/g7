@@ -5,7 +5,7 @@
         "ko": "Hello 사용자 템플릿",
         "en": "Hello User Template"
     },
-    "version": "0.2.0",
+    "version": "0.2.1",
     "license": "MIT",
     "description": {
         "ko": "학습용 최소 샘플 사용자 템플릿 (Basic 8개 컴포넌트)",
@@ -22,7 +22,7 @@
         "email": "contact@gnuboard.com",
         "url": "https://gnuboard.com"
     },
-    "release_date": "2026-10-10",
+    "release_date": "2026-10-12",
     "g7_version": ">=7.1.0",
     "dependencies": {
         "modules": {

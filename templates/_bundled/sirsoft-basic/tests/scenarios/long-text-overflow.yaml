@@ -1,0 +1,51 @@
+feature: sirsoft-basic 긴 텍스트 넘침 방지 (#143)
+
+description: |
+  운영자·사용자가 입력하는 텍스트(사이트 이름, 게시판·상품·회원 이름, 글 제목·본문·댓글, 알림)가 공백 없이 길거나
+  한글로 길어도 297~1280px 화면에서 문서 가로 스크롤·우측 단추 밀림·고정 높이 헤더 세로 넘침을 만들지 않는다.
+  상단 바(모바일 헤더·PC 헤더)의 사이트 이름은 한 줄로 자르고 … 로 표시하며 우측 아이콘은 항상 제자리다.
+  제목·본문·이름처럼 읽어야 하는 글은 줄바꿈해 모두 보이고, 배지·메뉴 라벨·목록 옆 좁은 칸은 한 줄 … 이다.
+  표시 규칙: R1 상단 바 이름(min-w-0 flex-1 + truncate + 우측 shrink-0) · R2 블록 글(break-words) ·
+  R3 flex 줄 안 글(min-w-0 + wrap-anywhere) · R4 좁은 칸(truncate + 폭 상한).
+
+axes:
+  case:
+    - mobile_header_long_site_name
+    - home_welcome_card_long_site_name
+    - product_detail_long_name
+    - mypage_profile_long_name
+    - comment_long_url
+    - search_result_long_title
+    - shop_category_long_name
+    - board_card_long_name
+    - home_board_summary_long_name
+    - drawer_board_menu_long_name
+    - post_navigation_long_board_name
+    - post_title_long
+    - board_index_header_long
+    - page_title_long
+    - public_profile_long_name
+    - home_popular_boards_long_name
+    - home_recent_posts_board_badge
+    - mypage_scrap_board_badge
+    - mypage_notification_long_body
+    - desktop_header_long_site_name
+    - footer_long_site_name
+    - html_content_long_url
+    - user_info_long_name
+    - mobile_nav_long_names
+# 폭(297/320/375/414/768/1024/1280)은 축이 아니라 각 테스트의 측정 조건이다 — E2E 가 폭별로 반복하고, 전 폭 매트릭스는 Chrome MCP 실측이 맡는다.
+
+effects:
+  - document_no_horizontal_overflow
+  - header_right_buttons_in_viewport
+  - menu_button_hit_target
+  - site_name_single_line_ellipsis
+  - block_text_wraps_within_box
+  - flex_text_shrinks_and_wraps
+  - narrow_label_ellipsis_with_cap
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/long-text-overflow-guards.test.ts
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/LongTextOverflowGuards.test.tsx
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/long-text-overflow.spec.ts
