@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.1] - 2026-10-12
+
+### Fixed
+
+- 큐 워커를 쓰는 사이트에서 알림톡·문자 발송 이력이 코어 알림 발송 로그와 연결되지 않던 문제를 고쳤습니다.
+
 ## [1.1.0] - 2026-10-10
 
 ### Added

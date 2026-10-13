@@ -19,6 +19,21 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
 class CommentTruncationDisclosureTest extends BoardTestCase
 {
     /**
+     * 비회원에게 게시글·댓글 열람 권한을 줍니다.
+     *
+     * 상세 응답은 댓글 열람 권한(comments.read)이 없으면 댓글을 싣지 않으므로, 절단 공시를 보려면
+     * 기본 비회원 권한(posts.read 등)에 comments.read 를 더해야 한다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->setGuestPermissions(['posts.read', 'comments.read']);
+    }
+
+    /**
      * 게시글 하나와 댓글 N 건을 만듭니다.
      *
      * @param  int  $commentCount  만들 댓글 수
@@ -50,6 +65,12 @@ class CommentTruncationDisclosureTest extends BoardTestCase
 
     /**
      * 상한 이하면 댓글 전량이 나오고 절단 표시가 없는지 확인
+     *
+     * @scenario case=repository
+     *
+     * @effects comments_not_truncated_under_cap
+     *
+     * @return void 반환값 없음
      */
     public function test_comments_are_not_truncated_under_cap(): void
     {
@@ -69,6 +90,12 @@ class CommentTruncationDisclosureTest extends BoardTestCase
 
     /**
      * 상한을 넘으면 목록이 그 지점에서 끊기고 총 건수가 "이상" 으로 보고되는지 확인
+     *
+     * @scenario case=repository
+     *
+     * @effects comment_count_reports_truncation_over_cap
+     *
+     * @return void 반환값 없음
      */
     public function test_comment_count_reports_truncation_over_cap(): void
     {
@@ -90,6 +117,12 @@ class CommentTruncationDisclosureTest extends BoardTestCase
      * 상세 응답이 절단 사실을 필드로 알리는지 확인
      *
      * 저장소가 정확도를 돌려줘도 화면까지 도달하지 않으면 아무 소용이 없다.
+     *
+     * @scenario case=post_detail
+     *
+     * @effects post_detail_discloses_comment_truncation
+     *
+     * @return void 반환값 없음
      */
     public function test_post_detail_response_discloses_truncation(): void
     {
@@ -106,6 +139,12 @@ class CommentTruncationDisclosureTest extends BoardTestCase
 
     /**
      * 끊기지 않은 경우에는 절단 플래그가 서지 않는지 확인
+     *
+     * @scenario case=post_detail
+     *
+     * @effects post_detail_reports_no_truncation_under_cap
+     *
+     * @return void 반환값 없음
      */
     public function test_post_detail_response_reports_no_truncation_when_under_cap(): void
     {

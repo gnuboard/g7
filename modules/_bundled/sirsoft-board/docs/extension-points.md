@@ -175,6 +175,7 @@
 | `sirsoft-board.board.after_remove_from_menu` | action (미선언) | `BoardActivityLogListener` | `handleBoardAfterRemoveFromMenu` | 20 |
 | `sirsoft-board.board.after_update` | action (미선언) | `BoardActivityLogListener` | `handleBoardAfterUpdate` | 20 |
 | `sirsoft-board.board.after_update` | action (미선언) | `SeoBoardCacheListener` | `onBoardUpdate` | 20 |
+| `sirsoft-board.board.after_update` | action (미선언) | `SeoBoardRegenerateListener` | `onBoardUpdate` | 20 |
 | `sirsoft-board.board.posts.before_force_delete` | action (미선언) | `SeoBoardCacheListener` | `onBoardPostsForceDelete` | 20 |
 | `sirsoft-board.board_type.after_create` | action (미선언) | `BoardActivityLogListener` | `handleBoardTypeAfterCreate` | 20 |
 | `sirsoft-board.board_type.after_delete` | action (미선언) | `BoardActivityLogListener` | `handleBoardTypeAfterDelete` | 20 |
@@ -203,10 +204,12 @@
 | `sirsoft-board.notification.personalize_data` | filter | `BoardNotificationDataListener` | `personalizeBoardData` | 20 |
 | `sirsoft-board.post.after_blind` | action (미선언) | `BoardActivityLogListener` | `handlePostAfterBlind` | 20 |
 | `sirsoft-board.post.after_blind` | action (미선언) | `SeoBoardCacheListener` | `onPostUpdate` | 20 |
+| `sirsoft-board.post.after_blind` | action (미선언) | `SeoBoardRegenerateListener` | `onPostChange` | 20 |
 | `sirsoft-board.post.after_create` | action (미선언) | `BoardActivityLogListener` | `handlePostAfterCreate` | 20 |
 | `sirsoft-board.post.after_create` | action (미선언) | `BoardPostsCountSyncListener` | `syncPostsCount` | 10 |
 | `sirsoft-board.post.after_create` | action (미선언) | `PostReplySyncListener` | `syncRepliesCount` | 10 |
 | `sirsoft-board.post.after_create` | action (미선언) | `SeoBoardCacheListener` | `onPostCreate` | 20 |
+| `sirsoft-board.post.after_create` | action (미선언) | `SeoBoardRegenerateListener` | `onPostChange` | 20 |
 | `sirsoft-board.post.after_delete` | action (미선언) | `BoardActivityLogListener` | `handlePostAfterDelete` | 20 |
 | `sirsoft-board.post.after_delete` | action (미선언) | `BoardPostsCountSyncListener` | `syncPostsCount` | 10 |
 | `sirsoft-board.post.after_delete` | action (미선언) | `PostReplySyncListener` | `syncRepliesCount` | 10 |
@@ -215,8 +218,10 @@
 | `sirsoft-board.post.after_restore` | action (미선언) | `BoardPostsCountSyncListener` | `syncPostsCount` | 10 |
 | `sirsoft-board.post.after_restore` | action (미선언) | `PostReplySyncListener` | `syncRepliesCount` | 10 |
 | `sirsoft-board.post.after_restore` | action (미선언) | `SeoBoardCacheListener` | `onPostUpdate` | 20 |
+| `sirsoft-board.post.after_restore` | action (미선언) | `SeoBoardRegenerateListener` | `onPostChange` | 20 |
 | `sirsoft-board.post.after_update` | action (미선언) | `BoardActivityLogListener` | `handlePostAfterUpdate` | 20 |
 | `sirsoft-board.post.after_update` | action (미선언) | `SeoBoardCacheListener` | `onPostUpdate` | 20 |
+| `sirsoft-board.post.after_update` | action (미선언) | `SeoBoardRegenerateListener` | `onPostChange` | 20 |
 | `sirsoft-board.reaction.after_react` | action (미선언) | `BoardActivityLogListener` | `handleReactionAfterReact` | 20 |
 | `sirsoft-board.report.after_blind_content` | action (미선언) | `BoardActivityLogListener` | `handleReportAfterBlindContent` | 20 |
 | `sirsoft-board.report.after_bulk_update_status` | action (미선언) | `BoardActivityLogListener` | `handleReportAfterBulkUpdateStatus` | 20 |
@@ -269,6 +274,11 @@ Post CRUD 를 재사용하는 위임 지점입니다 — 이커머스가 훅을 
 1,000건 묶음(`SitemapIndexer::indexResources`)으로 재색인합니다. 글마다 색인하면 공개 글이 수만 건인
 게시판에서 큐 작업 시간 제한을 넘겨 앞쪽 글만 색인된 채 실패합니다. 삭제 훅 둘은 삭제 트랜잭션과
 원자적이도록 동기(sync) 실행입니다.
+
+`SeoBoardCacheListener` 의 나머지 구독(글·댓글·게시판 수정)도 sync 입니다 — 캐시 무효화와 행 한 건의
+색인은 저장한 요청 안에서 하고, 본문은 `DB::afterCommit` 으로 커밋 뒤에 비웁니다. 글 상세를 미리 다시
+그리는 일과 게시판 활성 상태가 바뀔 때의 게시글 대량 재색인은 `SeoBoardRegenerateListener`(큐)가 맡습니다
+— 무거운 일이 저장 응답을 늦추지 않게 하면서, 비우기가 큐로 밀려 워커가 돌 때까지 옛 화면이 보이는 일을 막습니다.
 <!-- @intent END -->
 
 ## 훅 리스너
@@ -291,6 +301,7 @@ Post CRUD 를 재사용하는 위임 지점입니다 — 이커머스가 훅을 
 | `PrivacyRetentionHandlerListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/PrivacyRetentionHandlerListener.php` |
 | `SearchPostsListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/SearchPostsListener.php` |
 | `SeoBoardCacheListener` | 13개 | 명시 등록 | ✅ | `src/Listeners/SeoBoardCacheListener.php` |
+| `SeoBoardRegenerateListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/SeoBoardRegenerateListener.php` |
 | `SeoBoardSettingsCacheListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/SeoBoardSettingsCacheListener.php` |
 | `UserNotificationSettingsListener` | 7개 | 명시 등록 | ✅ | `src/Listeners/UserNotificationSettingsListener.php` |
 | `UserReactionInfoListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/UserReactionInfoListener.php` |

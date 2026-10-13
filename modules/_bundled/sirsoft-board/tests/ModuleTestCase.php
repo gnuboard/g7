@@ -397,4 +397,27 @@ abstract class ModuleTestCase extends TestCase
 
         return $user;
     }
+
+    /**
+     * user 역할에 한 게시판의 권한을 줍니다.
+     *
+     * 게시글 신고·반응 라우트는 그 게시판의 게시글 열람 권한(`permission:user,sirsoft-board.{slug}.posts.read`)을
+     * 요구한다. 게시판을 서비스가 아니라 모델로 바로 만드는 테스트에는 권한 행이 없으므로 여기서 만든다.
+     *
+     * @param  Board  $board  대상 게시판
+     * @param  array  $permissionKeys  권한 키 (예: ['posts.read'])
+     * @return void 반환값 없음
+     */
+    protected function grantUserRoleBoardPermissions(Board $board, array $permissionKeys = ['posts.read']): void
+    {
+        $userRole = Role::where('identifier', 'user')->first();
+
+        foreach ($permissionKeys as $key) {
+            $permission = Permission::firstOrCreate(
+                ['identifier' => "sirsoft-board.{$board->slug}.{$key}"],
+                ['name' => ['ko' => $key, 'en' => $key], 'type' => 'user']
+            );
+            $userRole->permissions()->syncWithoutDetaching([$permission->id]);
+        }
+    }
 }

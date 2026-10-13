@@ -2,6 +2,8 @@
 
 namespace Modules\Sirsoft\Board\Tests\Feature\Privacy;
 
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\User;
 use App\Support\ExtensionStoragePath;
 use Illuminate\Support\Facades\File;
@@ -31,6 +33,12 @@ class BoardPrivacyRetentionSettingsTest extends ModuleTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 공용 admin 역할에 다른 테스트가 남긴 게시판 관리 조회 권한이 있으면 「설정 열람만으로는 명단을 못 본다」
+        // 전제가 실행 순서에 따라 깨진다 — 이 클래스의 관리자는 그 권한 없이 시작한다.
+        Role::where('identifier', 'admin')->first()?->permissions()->detach(
+            Permission::where('identifier', 'sirsoft-board.boards.read')->pluck('id')
+        );
 
         $this->admin = $this->createAdminUser([
             'sirsoft-board.settings.read',

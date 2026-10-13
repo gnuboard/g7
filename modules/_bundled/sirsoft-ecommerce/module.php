@@ -47,6 +47,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\PurgeCashReceiptIdentifierListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SearchProductsListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoCategoryCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoProductCacheListener;
+use Modules\Sirsoft\Ecommerce\Listeners\SeoProductDetailRegenerateListener;
 use Modules\Sirsoft\Ecommerce\Listeners\SeoSettingsCacheListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ShippingPolicyActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\ShippingPolicyCacheListener;
@@ -3722,6 +3723,8 @@ class Module extends AbstractModule
             CloseUnpaidVbankOnCancelListener::class,
             CouponUseListener::class,
             SeoProductCacheListener::class,
+            // 상세 재렌더는 큐 — 무효화(SeoProductCacheListener, sync)가 먼저 돌고 커밋 뒤에 다시 그린다(#724)
+            SeoProductDetailRegenerateListener::class,
             SeoCategoryCacheListener::class,
             CategoryTreeCacheListener::class,
             SeoSettingsCacheListener::class,

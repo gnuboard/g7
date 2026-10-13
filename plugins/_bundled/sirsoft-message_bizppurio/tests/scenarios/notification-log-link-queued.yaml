@@ -1,0 +1,19 @@
+feature: 큐 드라이버와 무관한 비즈뿌리오 발송 이력 ↔ 코어 발송 로그 연결
+
+description: |
+  연결은 「드라이버 send(refkey 기억) → after_channel_send → 코어 로그 생성 → after_log_sent → refkey 로 연결」 이
+  수신자·채널마다 한 사이클로 이어져야 한다. 코어 NotificationLogListener 와 LinkNotificationLogListener 가 큐로
+  가면 refkey 를 든 요청 단위 표식(DispatchLinkContext, scoped)이 작업 경계에서 사라져 연결이 한 건도 되지 않고,
+  큐 인자에 마스킹 전 본문이 실린다. 두 리스너를 sync 로 돌린다.
+
+axis_notes:
+  queue: sync 는 테스트 기본값, database 는 운영처럼 큐 작업이 워커에서 도는 경우다.
+
+axes:
+  queue: [sync, database]
+
+effects:
+  - dispatch_linked_to_own_log   # 수신자마다 자기 코어 로그 id 로 연결된다
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Notification/NotificationLogLinkQueuedTest.php

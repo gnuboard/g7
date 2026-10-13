@@ -7,19 +7,23 @@ use App\Contracts\Extension\HookListenerInterface;
 use App\Enums\SitemapChangeFreq;
 use App\Jobs\GenerateSitemapJob;
 use App\Seo\Contracts\SeoCacheManagerInterface;
-use App\Seo\SeoCacheRegenerator;
 use App\Seo\SitemapIndexer;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
-use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 
 /**
  * 게시글 변경 시 SEO 캐시 무효화 리스너
  *
  * 게시글의 생성, 수정, 삭제 시 관련 SEO 캐시를 자동으로 무효화합니다.
  * 게시글 상세, 게시판 목록, 검색, 홈 페이지 등의 캐시가 대상입니다.
- * 생성/수정 시에는 해당 게시글 상세 페이지의 캐시를 즉시 재생성합니다.
+ *
+ * 무효화와 색인 한 건(게시글·게시판 행)은 저장한 요청 안에서 한다(sync) — 큐로 가면 워커가 돌 때까지(워커가 없으면
+ * TTL 까지) 봇이 고치기 전 글·블라인드한 글을 받는다. 본문은 DB::afterCommit 으로 감싸 트랜잭션 안에서 발화하면
+ * 커밋 뒤에 비운다. 상세 페이지 미리 다시 그리기와 게시판 재활성화 때의 게시글 대량 재색인은
+ * {@see SeoBoardRegenerateListener}(큐)가 맡는다(#724). 삭제 트랜잭션 안에서 색인을 걷어내는 두 훅
+ * (`board.posts.before_force_delete`·`board.after_delete`)은 그 트랜잭션과 함께 롤백돼야 하므로 감싸지 않는다.
  *
  * 사이트맵 색인은 부모(게시판)와 자식(게시글)의 생명주기를 함께 따른다 (KVE-2026-2133).
  * 게시판이 비활성화·삭제되면 그 게시판의 게시글 URL 도 색인에서 빠지고, 재활성화되면
@@ -27,11 +31,6 @@ use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
  */
 class SeoBoardCacheListener implements HookListenerInterface
 {
-    /**
-     * 게시판 재활성화 시 게시글 사이트맵을 한 번에 색인하는 묶음 크기
-     */
-    private const REINDEX_BATCH_SIZE = 1000;
-
     /**
      * 구독할 훅 목록 반환
      *
@@ -43,49 +42,60 @@ class SeoBoardCacheListener implements HookListenerInterface
             'sirsoft-board.post.after_create' => [
                 'method' => 'onPostCreate',
                 'priority' => 20,
+                'sync' => true,
             ],
             'sirsoft-board.post.after_update' => [
                 'method' => 'onPostUpdate',
                 'priority' => 20,
+                'sync' => true,
             ],
             'sirsoft-board.post.after_delete' => [
                 'method' => 'onPostDelete',
                 'priority' => 20,
+                'sync' => true,
             ],
             // 관리자 블라인드·복구는 after_update 가 아니라 이 두 훅을 발화한다 — 구독하지 않으면 블라인드한 글이
             // 사이트맵에 남고, 검색엔진·SNS 용으로 캐시해 둔 상세 화면이 원문을 계속 내보낸다(2026-10-07 실측).
             'sirsoft-board.post.after_blind' => [
                 'method' => 'onPostUpdate',
                 'priority' => 20,
+                'sync' => true,
             ],
             'sirsoft-board.post.after_restore' => [
                 'method' => 'onPostUpdate',
                 'priority' => 20,
+                'sync' => true,
             ],
             // 댓글은 게시글 상세의 검색엔진용 화면에 함께 실린다 — 댓글이 바뀌면 그 글의 상세 캐시를 지운다.
             'sirsoft-board.comment.after_create' => [
                 'method' => 'onCommentChange',
                 'priority' => 20,
+                'sync' => true,
             ],
             'sirsoft-board.comment.after_update' => [
                 'method' => 'onCommentChange',
                 'priority' => 20,
+                'sync' => true,
             ],
             'sirsoft-board.comment.after_delete' => [
                 'method' => 'onCommentChange',
                 'priority' => 20,
+                'sync' => true,
             ],
             'sirsoft-board.comment.after_blind' => [
                 'method' => 'onCommentChange',
                 'priority' => 20,
+                'sync' => true,
             ],
             'sirsoft-board.comment.after_restore' => [
                 'method' => 'onCommentChange',
                 'priority' => 20,
+                'sync' => true,
             ],
             'sirsoft-board.board.after_update' => [
                 'method' => 'onBoardUpdate',
                 'priority' => 20,
+                'sync' => true,
             ],
             // 게시판 삭제 트랜잭션 안에서 1,000건 청크마다 발화 — 같은 트랜잭션에서 색인을 걷어내야
             // 삭제가 롤백될 때 색인도 함께 남는다. 저비용 whereIn 삭제라 동기 실행한다.
@@ -114,35 +124,33 @@ class SeoBoardCacheListener implements HookListenerInterface
     }
 
     /**
-     * 게시글 생성 시 SEO 캐시를 무효화하고 상세 페이지를 즉시 재생성합니다.
+     * 게시글 생성 시 SEO 캐시를 무효화하고 사이트맵 색인을 갱신합니다 (상세 재생성은 큐 리스너).
      *
      * @param  mixed  ...$args  훅 인자 (첫 번째: Post 모델, 두 번째: 게시판 slug)
      * @return void
      */
     public function onPostCreate(...$args): void
     {
-        $this->invalidateRelatedCaches($args);
+        DB::afterCommit(function () use ($args) {
+            $this->invalidateRelatedCaches($args);
 
-        // 게시글 상세 페이지 캐시 즉시 재생성
-        $this->regenerateDetailCache($args);
-
-        $this->syncPostSitemapIndex($args, false);
+            $this->syncPostSitemapIndex($args, false);
+        });
     }
 
     /**
-     * 게시글 수정 시 SEO 캐시를 무효화하고 상세 페이지를 즉시 재생성합니다.
+     * 게시글 수정 시 SEO 캐시를 무효화하고 사이트맵 색인을 갱신합니다 (상세 재생성은 큐 리스너).
      *
      * @param  mixed  ...$args  훅 인자 (첫 번째: Post 모델, 두 번째: 게시판 slug)
      * @return void
      */
     public function onPostUpdate(...$args): void
     {
-        $this->invalidateRelatedCaches($args);
+        DB::afterCommit(function () use ($args) {
+            $this->invalidateRelatedCaches($args);
 
-        // 게시글 상세 페이지 캐시 즉시 재생성
-        $this->regenerateDetailCache($args);
-
-        $this->syncPostSitemapIndex($args, false);
+            $this->syncPostSitemapIndex($args, false);
+        });
     }
 
     /**
@@ -155,9 +163,11 @@ class SeoBoardCacheListener implements HookListenerInterface
      */
     public function onPostDelete(...$args): void
     {
-        $this->invalidateRelatedCaches($args);
+        DB::afterCommit(function () use ($args) {
+            $this->invalidateRelatedCaches($args);
 
-        $this->syncPostSitemapIndex($args, true);
+            $this->syncPostSitemapIndex($args, true);
+        });
     }
 
     /**
@@ -171,22 +181,24 @@ class SeoBoardCacheListener implements HookListenerInterface
      */
     public function onCommentChange(...$args): void
     {
-        $comment = $args[0] ?? null;
-        $slug = $args[1] ?? null;
-        $postId = is_object($comment) ? ($comment->post_id ?? null) : null;
+        DB::afterCommit(function () use ($args) {
+            $comment = $args[0] ?? null;
+            $slug = $args[1] ?? null;
+            $postId = is_object($comment) ? ($comment->post_id ?? null) : null;
 
-        if (! $postId || ! $slug) {
-            return;
-        }
+            if (! $postId || ! $slug) {
+                return;
+            }
 
-        try {
-            app(SeoCacheManagerInterface::class)->invalidateByUrl("/board/{$slug}/{$postId}");
-        } catch (\Throwable $e) {
-            Log::warning('[SEO] Board post cache invalidation on comment change failed', [
-                'error' => $e->getMessage(),
-                'post_id' => $postId,
-            ]);
-        }
+            try {
+                app(SeoCacheManagerInterface::class)->invalidateByUrl("/board/{$slug}/{$postId}");
+            } catch (\Throwable $e) {
+                Log::warning('[SEO] Board post cache invalidation on comment change failed', [
+                    'error' => $e->getMessage(),
+                    'post_id' => $postId,
+                ]);
+            }
+        });
     }
 
     /**
@@ -202,46 +214,47 @@ class SeoBoardCacheListener implements HookListenerInterface
      */
     public function onBoardUpdate(...$args): void
     {
-        $board = $args[0] ?? null;
-        $slug = is_object($board) ? ($board->slug ?? null) : null;
+        DB::afterCommit(function () use ($args) {
+            $board = $args[0] ?? null;
+            $slug = is_object($board) ? ($board->slug ?? null) : null;
 
-        if (! $slug) {
-            return;
-        }
+            if (! $slug) {
+                return;
+            }
 
-        try {
-            $cache = app(SeoCacheManagerInterface::class);
+            try {
+                $cache = app(SeoCacheManagerInterface::class);
 
-            // 해당 게시판 목록 페이지 (title/description 직접 노출).
-            // 봇 캐시 키는 쿼리스트링 변종(`?`, `?page=2`, `?_escaped_fragment_=` 등)을
-            // 포함해 저장되므로(SeoMiddleware::buildCacheUrl), 와일드카드로 변종까지 무효화한다.
-            // matchesPattern 이 ^...$ 정확 매칭이라 와일드카드 없이는 `/board/{slug}?` 가 누락된다.
-            $cache->invalidateByUrl("/board/{$slug}");
-            $cache->invalidateByUrl("/board/{$slug}?*");
+                // 해당 게시판 목록 페이지 (title/description 직접 노출).
+                // 봇 캐시 키는 쿼리스트링 변종(`?`, `?page=2`, `?_escaped_fragment_=` 등)을
+                // 포함해 저장되므로(SeoMiddleware::buildCacheUrl), 와일드카드로 변종까지 무효화한다.
+                // matchesPattern 이 ^...$ 정확 매칭이라 와일드카드 없이는 `/board/{slug}?` 가 누락된다.
+                $cache->invalidateByUrl("/board/{$slug}");
+                $cache->invalidateByUrl("/board/{$slug}?*");
 
-            // 게시판 인덱스 페이지 (게시판명 목록 노출 가능)
-            $cache->invalidateByUrl('/boards');
-            $cache->invalidateByUrl('/boards?*');
+                // 게시판 인덱스 페이지 (게시판명 목록 노출 가능)
+                $cache->invalidateByUrl('/boards');
+                $cache->invalidateByUrl('/boards?*');
 
-            // 홈 / 검색 페이지 (게시판명이 함께 노출될 수 있음)
-            $cache->invalidateByLayout('home');
-            $cache->invalidateByLayout('search/index');
+                // 홈 / 검색 페이지 (게시판명이 함께 노출될 수 있음)
+                $cache->invalidateByLayout('home');
+                $cache->invalidateByLayout('search/index');
 
-            // Sitemap 캐시 무효화 (게시판 lastmod 갱신 반영)
-            app(CacheInterface::class)->forget('seo.sitemap');
+                // Sitemap 캐시 무효화 (게시판 lastmod 갱신 반영)
+                app(CacheInterface::class)->forget('seo.sitemap');
 
-            Log::debug('[SEO] Board cache invalidated on board update', [
-                'board_slug' => $slug,
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('[SEO] Board cache invalidation on board update failed', [
-                'error' => $e->getMessage(),
-                'board_slug' => $slug,
-            ]);
-        }
+                Log::debug('[SEO] Board cache invalidated on board update', [
+                    'board_slug' => $slug,
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('[SEO] Board cache invalidation on board update failed', [
+                    'error' => $e->getMessage(),
+                    'board_slug' => $slug,
+                ]);
+            }
 
-        $this->syncBoardSitemapIndex($board);
-        $this->syncBoardPostsSitemapIndex($board, $args[2] ?? null);
+            $this->syncBoardSitemapIndex($board);
+        });
     }
 
     /**
@@ -392,77 +405,6 @@ class SeoBoardCacheListener implements HookListenerInterface
     }
 
     /**
-     * 게시판 활성 상태 변화에 맞춰 그 게시판 게시글들의 사이트맵 색인을 맞춥니다.
-     *
-     * - 비활성: 게시글 색인을 모두 제거 (삭제글 포함 전체 ID 를 청크로 순회)
-     * - 비활성 → 활성 전환: 공개 게시글(게시 상태·비밀글 아님)만 다시 색인
-     * 활성 상태가 그대로면 게시글 색인은 건드리지 않는다(게시판 정보 수정마다 전량 재색인 방지).
-     *
-     * @param  mixed  $board  Board 모델 (현재 상태)
-     * @param  mixed  $snapshot  수정 전 게시판 스냅샷 배열 (없으면 null)
-     * @return void
-     */
-    private function syncBoardPostsSitemapIndex(mixed $board, mixed $snapshot): void
-    {
-        if (! is_object($board) || ! isset($board->id) || ! isset($board->slug)) {
-            return;
-        }
-
-        $isActive = (bool) ($board->is_active ?? false);
-        $wasActive = is_array($snapshot) && array_key_exists('is_active', $snapshot)
-            ? (bool) $snapshot['is_active']
-            : null;
-
-        try {
-            $indexer = app(SitemapIndexer::class);
-            $postRepository = app(PostRepositoryInterface::class);
-
-            if (! $isActive) {
-                $postRepository->eachIdChunkByBoardId((int) $board->id, 1000, function (array $postIds) use ($indexer) {
-                    $indexer->deindexResources('board_post', $postIds);
-                });
-
-                GenerateSitemapJob::dispatch();
-
-                return;
-            }
-
-            // 활성 유지(또는 스냅샷 없음)는 게시글 색인 변화 없음
-            if ($wasActive !== false) {
-                return;
-            }
-
-            if ((bool) g7_module_settings('sirsoft-board', 'seo.seo_post_detail', true)) {
-                // 1,000건씩 묶어 색인한다 — 글마다 색인하면 수만 건 게시판에서 큐 작업 시간 제한(60초)을
-                // 넘겨 앞쪽 글만 색인된 채 실패한다(공개 글 27,000건 실측: 건별 255초 / 묶음 3초).
-                $batch = [];
-                foreach ($postRepository->streamPublishedForSitemap((int) $board->id) as $post) {
-                    $batch[$post->id] = [[
-                        'url' => "/board/{$board->slug}/{$post->id}",
-                        'lastmod' => $post->updated_at?->toW3cString(),
-                        'changefreq' => SitemapChangeFreq::Monthly->value,
-                        'priority' => 0.5,
-                    ]];
-
-                    if (count($batch) >= self::REINDEX_BATCH_SIZE) {
-                        $indexer->indexResources('board_post', 'sirsoft-board', $batch);
-                        $batch = [];
-                    }
-                }
-
-                $indexer->indexResources('board_post', 'sirsoft-board', $batch);
-            }
-
-            GenerateSitemapJob::dispatch();
-        } catch (\Throwable $e) {
-            Log::warning('[SEO] Board posts sitemap index sync failed', [
-                'error' => $e->getMessage(),
-                'board_id' => $board->id,
-            ]);
-        }
-    }
-
-    /**
      * 게시판이 존재하고 활성 상태인지 확인합니다.
      *
      * @param  string  $slug  게시판 슬러그
@@ -522,40 +464,6 @@ class SeoBoardCacheListener implements HookListenerInterface
             Log::warning('[SEO] Board post cache invalidation failed', [
                 'error' => $e->getMessage(),
                 'post_id' => is_object($post) ? ($post->id ?? null) : null,
-            ]);
-        }
-    }
-
-    /**
-     * 게시글 상세 페이지의 SEO 캐시를 즉시 재생성합니다.
-     *
-     * URL 구성: /board/{slug}/{id}
-     *
-     * @param  array  $args  훅 인자 배열
-     * @return void
-     */
-    private function regenerateDetailCache(array $args): void
-    {
-        $post = $args[0] ?? null;
-        $slug = $args[1] ?? null;
-
-        if (! $post || ! isset($post->id) || ! $slug) {
-            return;
-        }
-
-        try {
-            $regenerator = app(SeoCacheRegenerator::class);
-            $url = "/board/{$slug}/{$post->id}";
-            $regenerator->renderAndCache($url);
-
-            Log::debug('[SEO] Board post detail cache regenerated', [
-                'post_id' => $post->id,
-                'url' => $url,
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('[SEO] Board post detail cache regeneration failed', [
-                'error' => $e->getMessage(),
-                'post_id' => $post->id ?? null,
             ]);
         }
     }

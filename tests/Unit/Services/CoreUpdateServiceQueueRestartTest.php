@@ -22,6 +22,8 @@ class CoreUpdateServiceQueueRestartTest extends TestCase
      * `queue:restart` 를 정확히 한 번 호출한다.
      *
      * @effects core_update_step11_signals_queue_restart
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function signal_queue_restart_는_queue_restart_를_한_번_호출한다(): void
@@ -35,6 +37,10 @@ class CoreUpdateServiceQueueRestartTest extends TestCase
 
     /**
      * 신호 전송 실패는 업데이트를 되돌리지 않는다 — 예외를 삼키고 계속한다.
+     *
+     * @effects core_update_queue_restart_failure_does_not_abort_update
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function signal_queue_restart_는_실패해도_예외를_전파하지_않는다(): void
@@ -61,6 +67,8 @@ class CoreUpdateServiceQueueRestartTest extends TestCase
      * 재기동시킬 이유가 없다.
      *
      * @effects core_update_step11_signals_queue_restart
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 캐시_정리_뒤_큐_신호를_보내는_지점이_셋이고_롤백은_제외된다(): void
@@ -71,21 +79,33 @@ class CoreUpdateServiceQueueRestartTest extends TestCase
             'app/Console/Commands/Core/CoreUpdateCommand.php',
             'app/Console/Commands/Core/ExecuteUpgradeStepsCommand.php',
         ] as $relative) {
-            $source = (string) file_get_contents(base_path($relative));
+            $lines = file(base_path($relative), FILE_IGNORE_NEW_LINES);
 
-            $offset = 0;
-            while (($pos = strpos($source, '$service->clearAllCaches();', $offset)) !== false) {
-                // 정리 직후 구간(다음 400자)에 신호가 있는지 본다 — 사이에 낀 주석은 허용하되
-                // 다른 마무리 단계를 한참 지나 붙는 것은 "직후" 가 아니다.
-                $window = substr($source, $pos, 400);
+            foreach ($lines as $index => $line) {
+                if (! str_contains($line, '$service->clearAllCaches();')) {
+                    continue;
+                }
+
+                // 정리 직후의 코드 문장 3개 안에 신호가 있는지 본다. 사이에 낀 주석·빈 줄은 세지 않는다 —
+                // 글자 수로 창을 자르면 주석이나 재굽기 호출 하나가 끼는 것만으로 직후 신호를 놓친다.
+                // 다른 마무리 단계를 여럿 지나 붙는 것은 "직후" 가 아니다.
+                $statements = [];
+                for ($j = $index + 1; $j < count($lines) && count($statements) < 3; $j++) {
+                    $code = trim($lines[$j]);
+                    if ($code === '' || str_starts_with($code, '//') || str_starts_with($code, '*') || str_starts_with($code, '/*')) {
+                        continue;
+                    }
+                    $statements[] = $code;
+                }
+                $window = implode("\n", $statements);
+
                 $sites[] = [
                     'file' => $relative,
-                    'line' => substr_count(substr($source, 0, $pos), "\n") + 1,
+                    'line' => $index + 1,
                     'signals' => str_contains($window, '$service->signalQueueRestart();'),
                     // 롤백 지점은 백업 복원 직후라 바로 뒤에 "롤백 후 캐시 정리 완료" 로그가 온다.
                     'is_rollback' => str_contains($window, '롤백 후 캐시 정리'),
                 ];
-                $offset = $pos + 1;
             }
         }
 

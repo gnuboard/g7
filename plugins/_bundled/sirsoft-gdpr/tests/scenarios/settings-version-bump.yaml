@@ -1,0 +1,19 @@
+feature: 플러그인 설정 저장 시 설정 버전 상향
+
+description: |
+  큐 워커는 부팅 때 읽은 플러그인 설정을 들고 있다. 저장 공통 지점(PluginSettingsService)이 공유 캐시의 설정 버전을
+  올리면 워커는 다음 작업 시작 전에 비교해 설정 미러를 다시 채운다. 플러그인이 로드되는 이 테스트에서 저장 경로를 본다.
+
+axis_notes:
+  path: service 는 PluginSettingsService::save 저장 경로다.
+  queue: database 는 워커가 별도 프로세스인 운영 상황이다.
+
+axes:
+  path: [service]
+  queue: [database]
+
+effects:
+  - settings_version_bumped   # 저장 후 설정 버전이 생긴다
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/PluginSettingsVersionBumpTest.php

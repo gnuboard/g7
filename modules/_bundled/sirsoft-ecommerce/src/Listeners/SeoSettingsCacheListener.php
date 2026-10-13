@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Seo\Contracts\SeoCacheManagerInterface;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -12,6 +13,10 @@ use Illuminate\Support\Facades\Log;
  *
  * 이커머스 모듈 환경설정에서 SEO 관련 키(meta 템플릿, 토글)가 변경되면
  * 영향받는 레이아웃의 캐시만 선별적으로 무효화합니다.
+ *
+ * 비우기는 저장한 요청 안에서 한다(sync) — 큐로 가면 워커가 돌 때까지(워커가 없으면 TTL 까지) 봇이 옛 화면을
+ * 받는다. 본문은 DB::afterCommit 으로 감싸 트랜잭션 안에서 발화하면 커밋 뒤에 비운다 — 커밋 전에 비우면
+ * 다른 요청이 옛 데이터로 다시 채울 틈이 생긴다(#724). 트랜잭션 밖이면 즉시 비운다.
  */
 class SeoSettingsCacheListener implements HookListenerInterface
 {
@@ -53,6 +58,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
             'core.module_settings.after_save' => [
                 'method' => 'onModuleSettingsSave',
                 'priority' => 20,
+                'sync' => true,
             ],
         ];
     }
@@ -61,6 +67,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
      * 기본 훅 핸들러 (HookListenerInterface 필수 메서드)
      *
      * @param  mixed  ...$args  훅 인자
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -74,55 +81,58 @@ class SeoSettingsCacheListener implements HookListenerInterface
      * SEO 관련 키가 변경된 경우에만 해당 레이아웃 캐시를 선별 무효화합니다.
      *
      * @param  mixed  ...$args  훅 인자 ($identifier, $mergedSettings, $result)
+     * @return void 반환값 없음
      */
     public function onModuleSettingsSave(...$args): void
     {
-        $identifier = $args[0] ?? null;
-        $mergedSettings = $args[1] ?? [];
+        DB::afterCommit(function () use ($args) {
+            $identifier = $args[0] ?? null;
+            $mergedSettings = $args[1] ?? [];
 
-        // 이커머스 모듈이 아니면 무시
-        if ($identifier !== 'sirsoft-ecommerce') {
-            return;
-        }
+            // 이커머스 모듈이 아니면 무시
+            if ($identifier !== 'sirsoft-ecommerce') {
+                return;
+            }
 
-        try {
-            $cache = app(SeoCacheManagerInterface::class);
-            $invalidatedLayouts = [];
-            $sitemapAffected = false;
+            try {
+                $cache = app(SeoCacheManagerInterface::class);
+                $invalidatedLayouts = [];
+                $sitemapAffected = false;
 
-            // SEO 관련 키가 존재하는지 확인 후 해당 레이아웃 무효화
-            foreach (self::SEO_KEY_LAYOUT_MAP as $key => $layouts) {
-                if ($this->hasNestedKey($mergedSettings, $key)) {
-                    foreach ($layouts as $layout) {
-                        if (! in_array($layout, $invalidatedLayouts, true)) {
-                            $cache->invalidateByLayout($layout);
-                            $invalidatedLayouts[] = $layout;
+                // SEO 관련 키가 존재하는지 확인 후 해당 레이아웃 무효화
+                foreach (self::SEO_KEY_LAYOUT_MAP as $key => $layouts) {
+                    if ($this->hasNestedKey($mergedSettings, $key)) {
+                        foreach ($layouts as $layout) {
+                            if (! in_array($layout, $invalidatedLayouts, true)) {
+                                $cache->invalidateByLayout($layout);
+                                $invalidatedLayouts[] = $layout;
+                            }
+                        }
+
+                        // 토글 키인 경우 sitemap도 무효화
+                        if (in_array($key, self::SITEMAP_TOGGLE_KEYS, true)) {
+                            $sitemapAffected = true;
                         }
                     }
-
-                    // 토글 키인 경우 sitemap도 무효화
-                    if (in_array($key, self::SITEMAP_TOGGLE_KEYS, true)) {
-                        $sitemapAffected = true;
-                    }
                 }
-            }
 
-            // SEO 관련 변경이 있었으면 sitemap 캐시 삭제
-            if (! empty($invalidatedLayouts) || $sitemapAffected) {
-                app(CacheInterface::class)->forget('seo.sitemap');
-            }
+                // SEO 관련 변경이 있었으면 sitemap 캐시 삭제
+                if (! empty($invalidatedLayouts) || $sitemapAffected) {
+                    app(CacheInterface::class)->forget('seo.sitemap');
+                }
 
-            if (! empty($invalidatedLayouts)) {
-                Log::info('[SEO] Ecommerce SEO settings changed — selective cache cleared', [
-                    'layouts' => $invalidatedLayouts,
-                    'sitemap_affected' => $sitemapAffected,
+                if (! empty($invalidatedLayouts)) {
+                    Log::info('[SEO] Ecommerce SEO settings changed — selective cache cleared', [
+                        'layouts' => $invalidatedLayouts,
+                        'sitemap_affected' => $sitemapAffected,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('[SEO] Ecommerce SEO settings cache invalidation failed', [
+                    'error' => $e->getMessage(),
                 ]);
             }
-        } catch (\Throwable $e) {
-            Log::warning('[SEO] Ecommerce SEO settings cache invalidation failed', [
-                'error' => $e->getMessage(),
-            ]);
-        }
+        });
     }
 
     /**

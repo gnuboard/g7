@@ -4,8 +4,12 @@ namespace Plugins\Sirsoft\Gdpr\Providers;
 
 use App\Extension\BasePluginServiceProvider;
 use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Queue\Events\JobExceptionOccurred;
+use Illuminate\Queue\Events\JobProcessed;
+use Illuminate\Support\Facades\Queue;
 use Plugins\Sirsoft\Gdpr\Console\Commands\PlaywrightSeedGdprGuestLogin;
 use Plugins\Sirsoft\Gdpr\Console\Commands\SendAnnualNotices;
+use Plugins\Sirsoft\Gdpr\Listeners\GdprConsentChangeRelayListener;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprPolicyVersionRepositoryInterface;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprPrivacyNoticeRepositoryInterface;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprUserConsentHistoryRepositoryInterface;
@@ -54,11 +58,41 @@ class GdprServiceProvider extends BasePluginServiceProvider
         // 이 플러그인이 서명으로 검증하므로 암호화 대상에서 뺀다(#682 S3 라운드 13).
         EncryptCookies::except(self::GUEST_SESSION_COOKIE);
 
+        $this->registerQueueRelayHooks();
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 SendAnnualNotices::class,
                 PlaywrightSeedGdprGuestLogin::class,
             ]);
         }
+    }
+
+    /**
+     * 큐 작업이 끝날 때 동의 변경 중계 버퍼를 비우도록 큐 이벤트를 구독합니다.
+     *
+     * 동의 변경 중계는 웹 요청 종료 때 모아서 알린다. 큐 워커는 요청이 끝나지 않으므로 작업 종료(`JobProcessed`)에
+     * 모은 변경을 알리고, 작업이 예외로 끝나면(`JobExceptionOccurred`) 버린다(#724). sync 연결 작업은 웹 요청
+     * 안에서 돌므로 요청 종료 1회 알림을 그대로 쓴다.
+     *
+     * @return void 반환값 없음
+     */
+    private function registerQueueRelayHooks(): void
+    {
+        Queue::after(function (JobProcessed $event) {
+            if ($event->connectionName === 'sync') {
+                return;
+            }
+
+            app(GdprConsentChangeRelayListener::class)->drainAfterQueueJob();
+        });
+
+        Queue::exceptionOccurred(function (JobExceptionOccurred $event) {
+            if ($event->connectionName === 'sync') {
+                return;
+            }
+
+            app(GdprConsentChangeRelayListener::class)->discardPending();
+        });
     }
 }

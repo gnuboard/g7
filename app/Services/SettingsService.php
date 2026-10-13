@@ -14,6 +14,7 @@ use App\Support\EnvPriority;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\OpcacheStatus;
 use App\Support\ProcessOutputEncoding;
+use App\Support\SettingsVersion;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -67,6 +68,10 @@ class SettingsService
         // 이 호출이 없으면 상주 프로세스(큐 워커·schedule:work·Reverb)는 저장 후에도
         // 부팅 시점의 옛 값을 영원히 읽는다 — FPM 에서만 드러나지 않는 결함이다.
         app(ExtensionSettingsMirror::class)->refreshCore();
+
+        // 다른 상주 프로세스(큐 워커)가 바뀐 것을 알 수 있도록 설정 버전을 올린다 — 워커는 작업 시작 전에
+        // 비교해 다시 읽는다(#724).
+        SettingsVersion::bump();
     }
 
     /**
