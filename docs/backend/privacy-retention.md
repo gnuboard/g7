@@ -302,6 +302,11 @@ class NoticeManualRunner implements PrivacyManualRunnerInterface
 }
 ```
 
+
+### 큐 배치와 재예약 사본 (#139)
+
+직권 실행 잡(`RunPrivacyManualActionJob`)은 「큐 워커」에 긴 작업 연결과 `long` 큐가 등록돼 있으면 그쪽으로 가고, 재시도 마감도 240분으로 늘린다(기본 큐 120분 — 둘 다 버려진 기록 판정 360분보다 짧다). 다른 워커가 같은 잡을 다시 집으면 그 사본은 단일 실행 잠금에 막혀 서비스를 부르지 않고 조용히 끝나며 기록을 바꾸지 않는다. 새벽 배치와 락이 겹치면(busy) 잠금을 먼저 놓고 1분 뒤로 되돌린다.
+
 ## 11. 관련 코드 진입점
 
 - **계약**: `app/Privacy/Contracts/PrivacyRetentionHandlerInterface.php`

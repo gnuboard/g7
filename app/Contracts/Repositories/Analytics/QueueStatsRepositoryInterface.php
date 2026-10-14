@@ -30,4 +30,13 @@ interface QueueStatsRepositoryInterface
      * @return bool 데이터베이스 큐라서 셀 수 있으면 true
      */
     public function isCountable(): bool;
+
+    /**
+     * 큐 이름별로 처리를 기다리는 일의 수를 셉니다.
+     *
+     * 데이터베이스 큐 표(jobs)만 셀 수 있다 — 긴 작업 연결(database-long)도 같은 표를 쓰므로 큐 이름으로 갈린다.
+     *
+     * @return array<string, int> 큐 이름 => 대기 중인 일의 수 (셀 수 없으면 빈 배열)
+     */
+    public function pendingJobsByQueue(): array;
 }

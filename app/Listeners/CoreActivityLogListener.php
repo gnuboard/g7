@@ -20,6 +20,8 @@ use App\Models\PrivacyManualRun;
 use App\Models\Schedule;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 코어 서비스 훅 구독 리스너
@@ -335,22 +337,29 @@ class CoreActivityLogListener implements HookListenerInterface
     {
         $users = $this->userRepository->findManyByUuidsKeyed($uuids);
 
-        foreach ($uuids as $uuid) {
-            $user = $users->get($uuid);
-            if (! $user) {
-                continue;
-            }
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($snapshots, $status, $users, $uuids) {
+                foreach ($uuids as $uuid) {
+                    $user = $users->get($uuid);
+                    if (! $user) {
+                        continue;
+                    }
 
-            $snapshot = $snapshots[$uuid] ?? null;
-            $changes = $snapshot ? ChangeDetector::detect($user, $snapshot) : null;
+                    $snapshot = $snapshots[$uuid] ?? null;
+                    $changes = $snapshot ? ChangeDetector::detect($user, $snapshot) : null;
 
-            $this->logActivity('user.bulk_update_status', [
-                'loggable' => $user,
-                'description_key' => 'activity_log.description.user_bulk_update_status',
-                'description_params' => ['count' => 1],
-                'properties' => ['uuid' => $uuid, 'status' => $status],
-                'changes' => $changes,
-            ]);
+                    $this->logActivity('user.bulk_update_status', [
+                        'loggable' => $user,
+                        'description_key' => 'activity_log.description.user_bulk_update_status',
+                        'description_params' => ['count' => 1],
+                        'properties' => ['uuid' => $uuid, 'status' => $status],
+                        'changes' => $changes,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -367,22 +376,29 @@ class CoreActivityLogListener implements HookListenerInterface
     {
         $users = $this->userRepository->findManyByIdsKeyed($userIds);
 
-        foreach ($changes as $change) {
-            $user = $users->get($change['user_id']);
-            if (! $user) {
-                continue;
-            }
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($changes, $mode, $users) {
+                foreach ($changes as $change) {
+                    $user = $users->get($change['user_id']);
+                    if (! $user) {
+                        continue;
+                    }
 
-            $this->logActivity('user.bulk_roles', [
-                'loggable' => $user,
-                'description_key' => 'activity_log.description.user_bulk_roles',
-                'description_params' => ['user_id' => $user->id],
-                'properties' => [
-                    'mode' => $mode,
-                    'added' => array_values($change['added']),
-                    'removed' => array_values($change['removed']),
-                ],
-            ]);
+                    $this->logActivity('user.bulk_roles', [
+                        'loggable' => $user,
+                        'description_key' => 'activity_log.description.user_bulk_roles',
+                        'description_params' => ['user_id' => $user->id],
+                        'properties' => [
+                            'mode' => $mode,
+                            'added' => array_values($change['added']),
+                            'removed' => array_values($change['removed']),
+                        ],
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -1083,22 +1099,29 @@ class CoreActivityLogListener implements HookListenerInterface
     {
         $schedules = $this->scheduleRepository->findManyByIdsKeyed($ids);
 
-        foreach ($ids as $id) {
-            $schedule = $schedules->get($id);
-            if (! $schedule) {
-                continue;
-            }
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($ids, $isActive, $schedules, $snapshots) {
+                foreach ($ids as $id) {
+                    $schedule = $schedules->get($id);
+                    if (! $schedule) {
+                        continue;
+                    }
 
-            $snapshot = $snapshots[$id] ?? null;
-            $changes = $snapshot ? ChangeDetector::detect($schedule, $snapshot) : null;
+                    $snapshot = $snapshots[$id] ?? null;
+                    $changes = $snapshot ? ChangeDetector::detect($schedule, $snapshot) : null;
 
-            $this->logActivity('schedule.bulk_update', [
-                'loggable' => $schedule,
-                'description_key' => 'activity_log.description.schedule_bulk_update_status',
-                'description_params' => ['count' => 1],
-                'properties' => ['schedule_id' => $id, 'is_active' => $isActive],
-                'changes' => $changes,
-            ]);
+                    $this->logActivity('schedule.bulk_update', [
+                        'loggable' => $schedule,
+                        'description_key' => 'activity_log.description.schedule_bulk_update_status',
+                        'description_params' => ['count' => 1],
+                        'properties' => ['schedule_id' => $id, 'is_active' => $isActive],
+                        'changes' => $changes,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -1112,19 +1135,26 @@ class CoreActivityLogListener implements HookListenerInterface
      */
     public function handleScheduleAfterBulkDelete(array $ids, int $deletedCount, array $snapshots = []): void
     {
-        foreach ($ids as $id) {
-            $snapshot = $snapshots[$id] ?? null;
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($ids, $snapshots) {
+                foreach ($ids as $id) {
+                    $snapshot = $snapshots[$id] ?? null;
 
-            $this->logActivity('schedule.bulk_delete', [
-                'loggable_type' => Schedule::class,
-                'loggable_id' => $id,
-                'description_key' => 'activity_log.description.schedule_bulk_delete',
-                'description_params' => ['count' => 1],
-                'properties' => [
-                    'schedule_id' => $id,
-                    'snapshot' => $snapshot,
-                ],
-            ]);
+                    $this->logActivity('schedule.bulk_delete', [
+                        'loggable_type' => Schedule::class,
+                        'loggable_id' => $id,
+                        'description_key' => 'activity_log.description.schedule_bulk_delete',
+                        'description_params' => ['count' => 1],
+                        'properties' => [
+                            'schedule_id' => $id,
+                            'snapshot' => $snapshot,
+                        ],
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -1170,20 +1200,27 @@ class CoreActivityLogListener implements HookListenerInterface
      */
     public function handleAttachmentAfterBulkDelete(string $identifier, int $count, array $ids = [], array $snapshots = []): void
     {
-        foreach ($ids as $id) {
-            $snapshot = $snapshots[$id] ?? null;
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($identifier, $ids, $snapshots) {
+                foreach ($ids as $id) {
+                    $snapshot = $snapshots[$id] ?? null;
 
-            $this->logActivity('attachment.bulk_delete', [
-                'loggable_type' => Attachment::class,
-                'loggable_id' => $id,
-                'description_key' => 'activity_log.description.attachment_bulk_delete',
-                'description_params' => ['count' => 1],
-                'properties' => [
-                    'attachment_id' => $id,
-                    'identifier' => $identifier,
-                    'snapshot' => $snapshot,
-                ],
-            ]);
+                    $this->logActivity('attachment.bulk_delete', [
+                        'loggable_type' => Attachment::class,
+                        'loggable_id' => $id,
+                        'description_key' => 'activity_log.description.attachment_bulk_delete',
+                        'description_params' => ['count' => 1],
+                        'properties' => [
+                            'attachment_id' => $id,
+                            'identifier' => $identifier,
+                            'snapshot' => $snapshot,
+                        ],
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 

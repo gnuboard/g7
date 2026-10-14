@@ -763,6 +763,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         // 초기 화면 정적 파일(정적 게시) 상태 + 관리자 수동 복구 (#651). 상태는 `{key}` 와일드카드보다 먼저.
         Route::get('static-cache', [AdminSettingsController::class, 'staticCacheStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.static-cache');
         Route::post('static-cache/republish', [AdminSettingsController::class, 'republishStaticCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.settings.static-cache.republish');
+        // 큐 워커 상태(연결·큐별 대기·워커 신호, #139) — 읽기 전용. `{key}` 와일드카드보다 먼저.
+        Route::get('queue-status', [AdminSettingsController::class, 'queueStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.queue-status');
         // 개인정보 보유기간·휴면 dry-run 건수 — 읽기 전용이라 settings.read 로 충분하다.
         Route::get('privacy-preview', [AdminSettingsController::class, 'privacyPreview'])->middleware('permission:admin,core.settings.read')->name('api.admin.settings.privacy-preview');
         // 비밀번호 만료 사전 안내·만료 처리 대상 건수 (#736) — 읽기 전용. `{key}` 와일드카드보다 먼저.

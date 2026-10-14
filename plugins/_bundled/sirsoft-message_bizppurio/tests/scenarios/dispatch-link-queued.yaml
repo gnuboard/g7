@@ -1,0 +1,33 @@
+# audit:allow scenario-scale-axis-required reason: 발송 1건의 로그 연결·재발송 가드 — 처리 규모 경로 무변경
+
+feature: dispatch_link_queued
+
+description: |
+  큐 드라이버가 database·redis 면 문자 발송은 워커에서 일어난다(#139). 종전에는 코어 발송 로그 기록과 이 플러그인의
+  로그 연결 리스너가 각각 별도 큐 잡으로 밀려, 드라이버가 발송 프로세스에 남긴 refkey 표식(요청 단위 싱글턴)을
+  찾지 못해 dispatch.notification_log_id 가 늘 비었다. 또 재시도·재예약된 SendMessageJob 사본이 이미 접수된 문자를
+  한 번 더 접수시킬 수 있었다.
+
+  핵심 동작:
+    - 코어(7.1.1~)가 발송 로그를 발송 프로세스 안에서 동기로 기록하고, 연결 리스너도 동기(sync)로 같은 프로세스에서 돈다.
+    - SendMessageJob 은 이력 상태가 pending 이 아니면(이미 접수·확정) 보내지 않고 끝낸다. 이력이 없는 옛 건은 종전처럼 보낸다.
+    - 접수 성공 뒤 이력 갱신이 실패해도 예외를 올리지 않는다(올리면 큐가 재시도해 같은 문자를 또 보낸다).
+
+axes:
+  process: [queue_worker]
+  dispatch_state: [pending, sent, missing]
+
+effects:
+  - queued_send_links_log
+  - driver_uses_current_link_context
+  - resend_guarded
+  - accepted_marks_sent
+  - retryable_code_rethrown
+  - permanent_failure_marks_failed
+  - job_retry_settings
+  - final_failure_closes_pending
+  - final_failure_idempotent
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Notification/NotificationLogLinkQueuedWorkerTest.php
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Unit/Jobs/SendMessageJobTest.php

@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\ActivityLog\ChangeDetector;
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Listeners\Concerns\BuildsEnumFieldChange;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -187,22 +189,29 @@ class OrderActivityLogListener implements HookListenerInterface
     {
         $orders = $this->orderRepository->findByIdsKeyed($ids);
 
-        foreach ($ids as $id) {
-            $order = $orders->get($id);
-            if (! $order) {
-                continue;
-            }
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($ids, $orders, $snapshots, $updatedCount) {
+                foreach ($ids as $id) {
+                    $order = $orders->get($id);
+                    if (! $order) {
+                        continue;
+                    }
 
-            $snapshot = $snapshots[$id] ?? null;
-            $changes = $snapshot ? ChangeDetector::detect($order, $snapshot) : null;
+                    $snapshot = $snapshots[$id] ?? null;
+                    $changes = $snapshot ? ChangeDetector::detect($order, $snapshot) : null;
 
-            $this->logActivity('order.bulk_update', [
-                'loggable' => $order,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.order_bulk_update',
-                'description_params' => ['order_id' => $id, 'count' => $updatedCount],
-                'properties' => ['order_id' => $id, 'order_number' => $order->order_number],
-                'changes' => $changes,
-            ]);
+                    $this->logActivity('order.bulk_update', [
+                        'loggable' => $order,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.order_bulk_update',
+                        'description_params' => ['order_id' => $id, 'count' => $updatedCount],
+                        'properties' => ['order_id' => $id, 'order_number' => $order->order_number],
+                        'changes' => $changes,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -218,22 +227,29 @@ class OrderActivityLogListener implements HookListenerInterface
     {
         $orders = $this->orderRepository->findByIdsKeyed($ids);
 
-        foreach ($ids as $id) {
-            $order = $orders->get($id);
-            if (! $order) {
-                continue;
-            }
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($ids, $orders, $snapshots, $updatedCount) {
+                foreach ($ids as $id) {
+                    $order = $orders->get($id);
+                    if (! $order) {
+                        continue;
+                    }
 
-            $snapshot = $snapshots[$id] ?? null;
-            $changes = $snapshot ? ChangeDetector::detect($order, $snapshot) : null;
+                    $snapshot = $snapshots[$id] ?? null;
+                    $changes = $snapshot ? ChangeDetector::detect($order, $snapshot) : null;
 
-            $this->logActivity('order.bulk_status_update', [
-                'loggable' => $order,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.order_bulk_status_update',
-                'description_params' => ['order_id' => $id, 'count' => $updatedCount],
-                'properties' => ['order_id' => $id, 'order_number' => $order->order_number],
-                'changes' => $changes,
-            ]);
+                    $this->logActivity('order.bulk_status_update', [
+                        'loggable' => $order,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.order_bulk_status_update',
+                        'description_params' => ['order_id' => $id, 'count' => $updatedCount],
+                        'properties' => ['order_id' => $id, 'order_number' => $order->order_number],
+                        'changes' => $changes,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -249,22 +265,29 @@ class OrderActivityLogListener implements HookListenerInterface
     {
         $orders = $this->orderRepository->findByIdsKeyed($ids);
 
-        foreach ($ids as $id) {
-            $order = $orders->get($id);
-            if (! $order) {
-                continue;
-            }
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($ids, $orders, $snapshots, $updatedCount) {
+                foreach ($ids as $id) {
+                    $order = $orders->get($id);
+                    if (! $order) {
+                        continue;
+                    }
 
-            $snapshot = $snapshots[$id] ?? null;
-            $changes = $snapshot ? ChangeDetector::detect($order, $snapshot) : null;
+                    $snapshot = $snapshots[$id] ?? null;
+                    $changes = $snapshot ? ChangeDetector::detect($order, $snapshot) : null;
 
-            $this->logActivity('order.bulk_shipping_update', [
-                'loggable' => $order,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.order_bulk_shipping_update',
-                'description_params' => ['order_id' => $id, 'count' => $updatedCount],
-                'properties' => ['order_id' => $id, 'order_number' => $order->order_number],
-                'changes' => $changes,
-            ]);
+                    $this->logActivity('order.bulk_shipping_update', [
+                        'loggable' => $order,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.order_bulk_shipping_update',
+                        'description_params' => ['order_id' => $id, 'count' => $updatedCount],
+                        'properties' => ['order_id' => $id, 'order_number' => $order->order_number],
+                        'changes' => $changes,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -449,46 +472,53 @@ class OrderActivityLogListener implements HookListenerInterface
         $targetIds = array_unique(array_filter($targetIds));
         $options = $this->orderOptionRepository->findByIdsKeyed($targetIds);
 
-        foreach ($results as $result) {
-            $originalId = $result['order_option_id'] ?? null;
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($newStatus, $options, $results, $snapshots) {
+                foreach ($results as $result) {
+                    $originalId = $result['order_option_id'] ?? null;
 
-            // 실제 상태가 변경된 대상 결정
-            if (! empty($result['merged_into_order_option_id'])) {
-                $targetId = $result['merged_into_order_option_id'];
-            } elseif (! empty($result['split_order_option_id'])) {
-                $targetId = $result['split_order_option_id'];
-            } else {
-                $targetId = $originalId;
-            }
+                    // 실제 상태가 변경된 대상 결정
+                    if (! empty($result['merged_into_order_option_id'])) {
+                        $targetId = $result['merged_into_order_option_id'];
+                    } elseif (! empty($result['split_order_option_id'])) {
+                        $targetId = $result['split_order_option_id'];
+                    } else {
+                        $targetId = $originalId;
+                    }
 
-            $option = $options->get($targetId);
-            if (! $option) {
-                continue;
-            }
+                    $option = $options->get($targetId);
+                    if (! $option) {
+                        continue;
+                    }
 
-            $snapshot = $snapshots[$originalId] ?? null;
-            $changes = $snapshot ? ChangeDetector::detect($option, $snapshot) : null;
+                    $snapshot = $snapshots[$originalId] ?? null;
+                    $changes = $snapshot ? ChangeDetector::detect($option, $snapshot) : null;
 
-            $properties = [
-                'order_option_id' => $targetId,
-                'order_id' => $option->order_id,
-                'new_status' => $newStatus->value,
-            ];
+                    $properties = [
+                        'order_option_id' => $targetId,
+                        'order_id' => $option->order_id,
+                        'new_status' => $newStatus->value,
+                    ];
 
-            // 분할/병합 시 원본 ID와 유형을 추가 기록
-            if ($targetId !== $originalId) {
-                $properties['original_order_option_id'] = $originalId;
-                $properties['change_type'] = ! empty($result['merged_into_order_option_id']) ? 'merged' : 'split';
-                $properties['quantity_changed'] = $result['quantity_changed'] ?? null;
-            }
+                    // 분할/병합 시 원본 ID와 유형을 추가 기록
+                    if ($targetId !== $originalId) {
+                        $properties['original_order_option_id'] = $originalId;
+                        $properties['change_type'] = ! empty($result['merged_into_order_option_id']) ? 'merged' : 'split';
+                        $properties['quantity_changed'] = $result['quantity_changed'] ?? null;
+                    }
 
-            $this->logActivity('order_option.bulk_status_change', [
-                'loggable' => $option,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.order_option_bulk_status_change',
-                'description_params' => ['order_option_id' => $targetId, 'count' => count($results)],
-                'properties' => $properties,
-                'changes' => $changes,
-            ]);
+                    $this->logActivity('order_option.bulk_status_change', [
+                        'loggable' => $option,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.order_option_bulk_status_change',
+                        'description_params' => ['order_option_id' => $targetId, 'count' => count($results)],
+                        'properties' => $properties,
+                        'changes' => $changes,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -524,42 +554,49 @@ class OrderActivityLogListener implements HookListenerInterface
         // 그 수만큼 쿼리가 늘어난다(N+1).
         $orders = $this->orderRepository->findByIdsKeyed(array_keys($byOrder));
 
-        foreach ($byOrder as $orderId => $rows) {
-            $order = $orders->get($orderId);
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($byOrder, $newStatus, $orders, $source) {
+                foreach ($byOrder as $orderId => $rows) {
+                    $order = $orders->get($orderId);
 
-            if (! $order) {
-                continue;
-            }
+                    if (! $order) {
+                        continue;
+                    }
 
-            $bulkChanges = [];
+                    $bulkChanges = [];
 
-            foreach ($rows as $row) {
-                $bulkChanges[(int) $row['order_option_id']] = [
-                    $this->enumFieldChange(
-                        'option_status',
-                        'sirsoft-ecommerce::activity_log.fields.option_status',
-                        OrderStatusEnum::class,
-                        $row['previous'] ?? null,
-                        $row['new'] ?? null,
-                    ),
-                ];
-            }
+                    foreach ($rows as $row) {
+                        $bulkChanges[(int) $row['order_option_id']] = [
+                            $this->enumFieldChange(
+                                'option_status',
+                                'sirsoft-ecommerce::activity_log.fields.option_status',
+                                OrderStatusEnum::class,
+                                $row['previous'] ?? null,
+                                $row['new'] ?? null,
+                            ),
+                        ];
+                    }
 
-            $this->logActivity('order_option.sync_status', [
-                'loggable' => $order,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.order_option_sync_status',
-                'description_params' => [
-                    'order_number' => (string) $order->order_number,
-                    'count' => (string) count($rows),
-                ],
-                'properties' => [
-                    'order_id' => $orderId,
-                    'new_status' => $newStatus,
-                    'source' => $source,
-                    'options' => $rows,
-                ],
-                'changes' => $bulkChanges,
-            ]);
+                    $this->logActivity('order_option.sync_status', [
+                        'loggable' => $order,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.order_option_sync_status',
+                        'description_params' => [
+                            'order_number' => (string) $order->order_number,
+                            'count' => (string) count($rows),
+                        ],
+                        'properties' => [
+                            'order_id' => $orderId,
+                            'new_status' => $newStatus,
+                            'source' => $source,
+                            'options' => $rows,
+                        ],
+                        'changes' => $bulkChanges,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 
@@ -715,42 +752,48 @@ class OrderActivityLogListener implements HookListenerInterface
      */
     public function handleOrderAfterPartialCancel(Order $order, ?array $cancelSnapshot = null, ?array $orderSnapshot = null): void
     {
-        // Order 레벨 로그 (합산액 변경 기록)
-        $this->logActivity('order.partial_cancel', [
-            'loggable' => $order,
-            'description_key' => 'sirsoft-ecommerce::activity_log.description.order_partial_cancel',
-            'description_params' => ['order_number' => $order->order_number],
-            'properties' => [
-                'cancel_type' => $cancelSnapshot['cancel_type'] ?? null,
-                'cancel_items' => $cancelSnapshot['cancel_items'] ?? [],
-            ],
-            'changes' => ChangeDetector::detect($order, $orderSnapshot),
-        ]);
-
-        // 취소된 각 OrderOption에 대한 per-item 로그
         $cancelItems = $cancelSnapshot['cancel_items'] ?? [];
-        if (! empty($cancelItems)) {
-            $optionIds = array_column($cancelItems, 'order_option_id');
-            $options = $this->orderOptionRepository->findByIdsKeyed($optionIds);
+        $options = ! empty($cancelItems)
+            ? $this->orderOptionRepository->findByIdsKeyed(array_column($cancelItems, 'order_option_id'))
+            : null;
 
-            foreach ($cancelItems as $item) {
-                $optionId = $item['order_option_id'] ?? null;
-                $option = $optionId ? $options->get($optionId) : null;
-                if (! $option) {
-                    continue;
-                }
-
-                $this->logActivity('order_option.partial_cancel', [
-                    'loggable' => $option,
-                    'description_key' => 'sirsoft-ecommerce::activity_log.description.order_option_partial_cancel',
-                    'description_params' => ['option_id' => $optionId],
+        // 주문 행과 옵션별 행을 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($order, $cancelSnapshot, $orderSnapshot, $cancelItems, $options) {
+                // Order 레벨 로그 (합산액 변경 기록)
+                $this->logActivity('order.partial_cancel', [
+                    'loggable' => $order,
+                    'description_key' => 'sirsoft-ecommerce::activity_log.description.order_partial_cancel',
+                    'description_params' => ['order_number' => $order->order_number],
                     'properties' => [
-                        'order_id' => $order->id,
-                        'option_id' => $optionId,
-                        'cancel_quantity' => $item['cancel_quantity'] ?? null,
+                        'cancel_type' => $cancelSnapshot['cancel_type'] ?? null,
+                        'cancel_items' => $cancelSnapshot['cancel_items'] ?? [],
                     ],
+                    'changes' => ChangeDetector::detect($order, $orderSnapshot),
                 ]);
-            }
+
+                // 취소된 각 OrderOption에 대한 per-item 로그
+                foreach ($cancelItems as $item) {
+                    $optionId = $item['order_option_id'] ?? null;
+                    $option = $optionId ? $options?->get($optionId) : null;
+                    if (! $option) {
+                        continue;
+                    }
+
+                    $this->logActivity('order_option.partial_cancel', [
+                        'loggable' => $option,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.order_option_partial_cancel',
+                        'description_params' => ['option_id' => $optionId],
+                        'properties' => [
+                            'order_id' => $order->id,
+                            'option_id' => $optionId,
+                            'cancel_quantity' => $item['cancel_quantity'] ?? null,
+                        ],
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 

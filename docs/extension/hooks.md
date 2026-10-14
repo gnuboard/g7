@@ -848,15 +848,15 @@ class SyncDatabaseTranslations
 
 ## 큐 자동 실행
 
-Action 훅 리스너는 환경설정의 **큐 드라이버** 설정에 따라 자동으로 동기/비동기 실행됩니다. 리스너 개발자가 별도로 설정할 필요 없습니다.
+Action 훅 리스너는 환경설정의 **큐 드라이버** 설정에 따라 자동으로 동기/비동기 실행됩니다. 리스너 개발자가 별도로 설정할 필요 없습니다 — 큐 실행 조건(큐 이름·재시도·제한 시간 등)을 바꿔야 할 때만 아래 [큐 옵션](#큐-옵션--등록-큐만-허용폴백timeout-클램프)을 선언합니다.
 
 ### 큐 드라이버별 동작
 
 | 큐 드라이버 | 리스너 실행 방식 | 큐 워커 필요 |
 |------------|-----------------|-------------|
 | `sync` | 즉시 실행 (동기) | 불필요 |
-| `database` | jobs 테이블 저장 → 워커 처리 | 필요 (`php artisan queue:work`) |
-| `redis` | Redis 큐 저장 → 워커 처리 | 필요 (`php artisan queue:work`) |
+| `database` | jobs 테이블 저장 → 워커 처리 | 필요 — 환경설정 → 드라이버 → 「큐 워커」에 등록한 연결·큐마다 `php artisan queue:work {연결} --queue={큐,…}` (화면이 명령을 보여 준다) |
+| `redis` | Redis 큐 저장 → 워커 처리 | 필요 — 위와 같음 |
 | 커스텀 (플러그인 추가) | 해당 드라이버 큐 → 워커 처리 | 필요 |
 
 > **Filter 훅**은 반환값 체인이므로 **항상 동기 실행**됩니다 (큐 드라이버 무관).
@@ -904,12 +904,52 @@ public static function getSubscribedHooks(): array
 | `priority` | int | `10` | 실행 우선순위 (낮을수록 먼저) |
 | `type` | string | `'action'` | `'action'` 또는 `'filter'` |
 | `sync` | bool | `false` | `true`: 큐 드라이버 무관하게 동기 실행 |
+| `queue` | array | `[]` | 큐로 도는 Action 의 실행 옵션(아래 10개 키). Filter·`sync: true` 와 함께 쓰면 무시하고 경고한다 |
+
+#### 큐 옵션 키 (`'queue' => [...]`)
+
+라라벨 큐 리스너와 같은 10개 키다. 적지 않은 키는 종전 기본값(재시도 3·제한 시간 없음·커밋 후 실행·기본 연결/큐)을 쓴다. 허용 범위를 벗어난 키는 **그 키만** 버리고 경고 로그를 남긴다(다른 키는 살린다).
+
+| 키 | 허용 값 | 설명 |
+| --- | --- | --- |
+| `connection` | 64자 이하 문자열 | 큐 연결. **운영자가 등록한 연결만** 쓴다 — 미등록이면 기본 연결 + 경고 |
+| `queue` | `[A-Za-z0-9_.:-]` 1~64자 | 큐 이름. **등록된 큐만** 쓴다 — 미등록이면 그 연결의 기본 큐 + 경고 |
+| `delay` | 0 이상 정수(초) | 처음 실행까지 지연 |
+| `after_commit` | bool | `false` 면 호출자 트랜잭션 커밋을 기다리지 않는다(기본 `true`). 호출자가 롤백하면 결과가 드라이버마다 다르다 — database 큐는 잡이 같은 트랜잭션에 적재돼 함께 사라지고(실행 안 됨), redis 큐는 이미 넣은 잡이 남아 실행되며, sync 는 롤백 전에 이미 실행됐다 |
+| `tries` | 1~25 정수 | 최대 시도 횟수(0=무제한은 허용하지 않는다) |
+| `timeout` | 1 이상 정수(초) | 제한 시간. 연결의 `retry_after` 이상이면 줄인다(아래) |
+| `backoff` | 0 이상 정수 또는 그 목록 | 재시도 간격 |
+| `retry_until` | 1 이상 정수(초) | 디스패치 시점부터 이 시간까지 재시도(있으면 `tries` 는 무시된다 — 라라벨 규칙) |
+| `max_exceptions` | 1 이상 정수 | 이 횟수만큼 예외가 나면 실패(재예약·release 는 세지 않는다) |
+| `fail_on_timeout` | bool | 제한 시간 초과를 재시도 없이 실패로 |
+
+```php
+public static function getSubscribedHooks(): array
+{
+    return [
+        'sirsoft-board.post.after_create' => [
+            'method' => 'handlePostCreated',
+            'queue' => ['queue' => 'notifications', 'tries' => 5, 'timeout' => 60, 'backoff' => [10, 60]],
+        ],
+    ];
+}
+```
+
+동적 구독(`HookListenerRegistrar::registerDynamicAction()`)은 마지막 인자 `queueOptions` 로 같은 배열을 넘긴다.
+
+### 큐 옵션 — 등록 큐만 허용·폴백·timeout 클램프
+
+- **등록 큐만 허용** — 큐·연결 이름은 자유지만 실제로 쓰이는 것은 운영자가 환경설정 → 드라이버 → 「큐 워커」에 등록한 것뿐이다. 아무 워커도 보지 않는 큐에 잡을 쌓아 두면 그 일은 영영 실행되지 않기 때문이다. 미등록이면 기본값으로 보내고 경고를 남긴다(같은 경고는 1시간에 한 번). 보낸 횟수와 마지막 사례(리스너·가리킨 연결·큐)는 「큐 워커」 구역에 경고 안내로 뜨고(마지막 발생 뒤 24시간 보관), 상태 API `placement.fallback` 에도 실린다.
+- **timeout 클램프** — `timeout` 이 해석된 연결의 `retry_after` 이상이면 `retry_after − 10` 초로 줄여 보내고 경고한다. 그대로 두면 실행이 끝나기 전에 다른 워커가 같은 잡을 다시 집어 같은 일을 두 번 한다. 화면에 「제한 시간 조정 n건」이 뜬다. 정말 오래 도는 일은 긴 작업 연결(`database-long`·`redis-long`, `retry_after` 3900초)과 `long` 큐를 쓰라고 운영자에게 안내한다.
+- **다시 실행 요청** — 리스너가 「다른 사본이 같은 일을 처리 중이라 지금은 끝낼 수 없다」면 `App\Exceptions\RetryHookListenerLaterException($delaySeconds)` 를 던진다. 큐 잡이면 그 시간 뒤로 되돌리고(실패가 아니다 — 시도 횟수 1을 쓴다), sync 드라이버면 경고만 남긴다.
+- **이벤트 ID** — 리스너 잡마다 디스패치 때 uuid 가 붙고 재시도·재예약된 사본도 같은 값이다. 실행 중에 `App\Extension\HookContextCapture::eventId()` 로 읽어 「이 사건에서 이미 한 일」을 가려낸다(알림 수신자별 중복 방지가 이 값을 쓴다). 큐를 거치지 않는 동기 실행에서는 null 이다.
+- **큐 안에서 또 잡을 띄우는 리스너** — SEO 캐시 리스너처럼 큐 잡 안에서 다시 잡(사이트맵 생성 등)을 디스패치하면 큐를 두 번 거친다. 지연이 문제면 `'queue'` 옵션으로 첫 잡의 큐·지연을 조정한다.
 
 ### 내부 구현
 
 `HookListenerRegistrar`가 리스너 등록 시 큐/동기 분기를 처리합니다:
 
-- Action + `sync: false` (기본) → `DispatchHookListenerJob`으로 래핑하여 `dispatch()`
+- Action + `sync: false` (기본) → `DispatchHookListenerJob`으로 래핑하여 `dispatch()` — `'queue'` 옵션이 있으면 디스패치 직전에 `ListenerQueueOptions::apply()` 가 잡 프로퍼티(연결·큐·tries·timeout 등)를 채운다. 라라벨은 이 값을 디스패치 시점에 payload 로 굳히므로 재시도 중 설정이 바뀌어도 그 잡은 처음 값을 유지한다. 옵션이 없으면 종전과 같은 payload 다
 - Action + `sync: true` → 기존 방식 동기 실행
 - Filter → 항상 동기 실행
 
@@ -1359,7 +1399,7 @@ HookManager::doAction('...payment_completed', $claim, $payment);
 
 | 장치 | 위치 | 하는 일 |
 |------|------|---------|
-| 공개 훅 목록 | [hook-catalog.md](hook-catalog.md) (자동 생성) | 코어가 발화하는 훅 이름·유형·인자 개수. 기본 제공 확장의 훅은 각 확장의 확장 지점 문서(`docs/extension-points.md` 「발행 훅」)에 있다 |
+| 공개 훅 목록 | [hook-catalog.md](hook-catalog.md) (자동 생성) | 코어가 발화하는 훅 이름·유형·인자 개수. 기본 제공 확장의 훅은 각 확장의 확장 지점 문서(예: `modules/_bundled/sirsoft-board/docs/extension-points.md` 「발행 훅」)에 있다 |
 | 옛 이름 병행 발화 | `HookManager::doActionWithLegacyName()` · `applyFiltersWithLegacyName()` | 표준 이름을 먼저 발화하고, 옛 이름에 구독자가 있을 때만 같은 인자로 한 번 더 발화한다 |
 | 변경 검사 | G7 개발 과정(공개판에는 포함하지 않는다) | 직전 공개 릴리스와 현재 코드를 각각 훑어, 공개 훅의 이름 삭제·인자 개수 감소를 막는다. 아직 배포되지 않은 훅은 개발 중에 바꿀 수 있다 |
 

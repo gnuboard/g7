@@ -89,6 +89,7 @@ return [
             'identity:prune-logs' => ['options' => ['days']],
             'activity-log:prune' => ['options' => ['days']],
             'notification-log:prune' => ['options' => ['days']],
+            'notification-delivery:prune' => ['options' => ['days']],
             // 실삭제가 기본이나 사용자 파일 파기는 커맨드 자체가 설정 토글·보존기간으로 이중 확인한다.
             'attachments:prune-orphans' => ['options' => ['dry-run', 'limit', 'days', 'scheduled']],
             // 잔존물 정리 — 최신 백업 1개 상시 보존 가드는 커맨드 내부 소유(옵션으로 무력화 불가).

@@ -700,6 +700,78 @@ class UserRepository implements UserRepositoryInterface
     }
 
     /**
+     * 특정 권한을 가진 역할에 소속된 사용자의 id 만 오름차순으로 조회합니다 (#139).
+     *
+     * 회원 행 전체를 싣지 않고 id 열만 커서로 읽는다.
+     *
+     * @param  string  $permissionIdentifier  권한 identifier
+     * @return array<int, int> 사용자 id (오름차순, 중복 없음)
+     */
+    public function findIdsByPermissionIdentifier(string $permissionIdentifier): array
+    {
+        $ids = [];
+
+        foreach (User::query()
+            ->select('users.id')
+            ->whereHas('roles.permissions', function ($query) use ($permissionIdentifier) {
+                $query->where('permissions.identifier', $permissionIdentifier);
+            })
+            ->orderBy('users.id')
+            ->toBase()
+            ->cursor() as $row) {
+            $ids[] = (int) $row->id;
+        }
+
+        return $ids;
+    }
+
+    /**
+     * UUID 목록에 해당하는 사용자의 id 만 오름차순으로 조회합니다 (#139).
+     *
+     * @param  array<int, string>  $uuids  사용자 UUID 목록
+     * @return array<int, int> 사용자 id (오름차순)
+     */
+    public function findIdsByUuids(array $uuids): array
+    {
+        if ($uuids === []) {
+            return [];
+        }
+
+        return User::query()
+            ->whereIn('uuid', array_values($uuids))
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+    }
+
+    /**
+     * 알림 발송에 쓸 사용자들을 id 순으로 다시 싣습니다 (#139).
+     *
+     * @param  array<int, int>  $ids  사용자 id 목록
+     * @return Collection<int, User> id 오름차순 사용자
+     */
+    public function findNotifiablesByIds(array $ids): Collection
+    {
+        if ($ids === []) {
+            return new Collection;
+        }
+
+        return User::query()
+            ->whereIn('id', array_values($ids))
+            ->with([
+                'roles',
+                'roles.permissions' => fn ($query) => $query->select([
+                    'permissions.id',
+                    'permissions.identifier',
+                    'permissions.type',
+                ]),
+            ])
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
      * 사용자의 연속 로그인 실패 카운터를 1 증가시킵니다.
      *
      * 직전 실패가 `$windowMinutes` 보다 오래됐으면 1 부터 다시 센다. 이 기간이 없으면 며칠에 걸친

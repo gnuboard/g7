@@ -1157,6 +1157,10 @@ if (isset($_GET['ajax_action'])) {
                                     <span>알림 발송 이력 정리</span>
                                     <span class="text-[10px] opacity-60">(notification-log:prune)</span>
                                 </button>
+                                <button onclick="runCommand('notification-delivery:prune')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>알림 중복 방지 기록 정리</span>
+                                    <span class="text-[10px] opacity-60">(notification-delivery:prune)</span>
+                                </button>
                                 <button onclick="runCommand('attachments:prune-orphans --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>고아 첨부 정리 (미리보기)</span>
                                     <span class="text-[10px] opacity-60">(attachments:prune-orphans --dry-run)</span>

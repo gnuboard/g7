@@ -1734,6 +1734,7 @@
     "sitemap_progress_ws": "Sitemap Generation Progress (Live)",
     "sitemap_status": "Sitemap Generation Status",
     "staticCacheStatus": "Startup static file status",
+    "queueStatus": "Queue worker status",
     "systemInfo": "System Info",
     "templateDetail": "Template Detail",
     "templateInstallPreview": "Template Install Preview",

@@ -40,6 +40,7 @@ use App\Contracts\Repositories\MemberNotificationRepositoryInterface;
 use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\NotificationDefinitionRepositoryInterface;
+use App\Contracts\Repositories\NotificationDeliveryRepositoryInterface;
 use App\Contracts\Repositories\NotificationLogRepositoryInterface;
 use App\Contracts\Repositories\NotificationRepositoryInterface;
 use App\Contracts\Repositories\NotificationTemplateRepositoryInterface;
@@ -102,6 +103,7 @@ use App\Repositories\MemberNotificationRepository;
 use App\Repositories\MenuRepository;
 use App\Repositories\ModuleRepository;
 use App\Repositories\NotificationDefinitionRepository;
+use App\Repositories\NotificationDeliveryRepository;
 use App\Repositories\NotificationLogRepository;
 use App\Repositories\NotificationRepository;
 use App\Repositories\NotificationTemplateRepository;
@@ -292,6 +294,8 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(UserPasswordHistoryRepositoryInterface::class, UserPasswordHistoryRepository::class);
         $this->app->bind(NotificationDefinitionRepositoryInterface::class, NotificationDefinitionRepository::class);
         $this->app->bind(NotificationLogRepositoryInterface::class, NotificationLogRepository::class);
+        // 알림 수신자별 발송 기록 — 재시도·재예약 시 이미 보낸 수신자 건너뛰기 (#139)
+        $this->app->bind(NotificationDeliveryRepositoryInterface::class, NotificationDeliveryRepository::class);
         $this->app->bind(NotificationRepositoryInterface::class, NotificationRepository::class);
         // 회원 알림함(관리자 전 회원 조회)은 사용자 스코프 저장소와 목적이 달라 별도 계약이다 (#524 §4.1)
         $this->app->bind(MemberNotificationRepositoryInterface::class, MemberNotificationRepository::class);

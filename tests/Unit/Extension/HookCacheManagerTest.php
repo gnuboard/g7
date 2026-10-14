@@ -145,6 +145,47 @@ class HookCacheManagerTest extends TestCase
     }
 
     /**
+     * 리스너의 'queue' 옵션이 훅 캐시를 거쳐도 스캔 경로와 같은 잡 프로퍼티를 만든다 (#139).
+     *
+     * 캐시는 getSubscribedHooks() 배열을 통째로 var_export 해 저장한다 — 같은 형식으로 왕복시켜 비교한다.
+     *
+     * @scenario cache_state=present_valid, listener_type=action_queued, regeneration_trigger=extension_update, registration_source=core
+     *
+     * @effects queue_options_survive_cache_round_trip
+     *
+     * @return void 반환값 없음
+     */
+    public function test_queue_options_round_trip_through_cache(): void
+    {
+        Queue::fake();
+        config([
+            'queue.default' => 'database',
+            'g7_settings.core.drivers.queue_connections' => ['database'],
+            'g7_settings.core.drivers.queue_names' => ['database' => ['default', 'notifications']],
+        ]);
+
+        $props = fn (DispatchHookListenerJob $job): array => [
+            $job->connection, $job->queue, $job->tries, $job->timeout, $job->backoff, $job->maxExceptions, $job->failOnTimeout, $job->afterCommit,
+        ];
+
+        HookManager::resetAll();
+        HookListenerRegistrar::clear();
+        HookListenerRegistrar::register(HookCacheStubQueued::class, 'stub-source');
+        HookManager::doAction('test.hookcache.queued');
+
+        $hooks = eval('return '.var_export(HookCacheStubQueued::getSubscribedHooks(), true).';');
+        HookManager::resetAll();
+        HookListenerRegistrar::clear();
+        HookListenerRegistrar::registerFromCache(HookCacheStubQueued::class, $hooks, 'stub-source');
+        HookManager::doAction('test.hookcache.queued');
+
+        $pushed = Queue::pushed(DispatchHookListenerJob::class)->values();
+        $this->assertCount(2, $pushed);
+        $this->assertSame($props($pushed[0]), $props($pushed[1]));
+        $this->assertSame(['database', 'notifications', 4, 30, [5, 15], 1, true, true], $props($pushed[1]));
+    }
+
+    /**
      * registerFromCache 로 등록한 action 리스너가 큐 디스패치되는지 검증합니다.
      *
      * 캐시 경로도 register 와 동일한 큐 정책(DispatchHookListenerJob)을 따라야 한다.
@@ -313,7 +354,7 @@ class HookCacheManagerTest extends TestCase
     public function test_clear_removes_cache_file(): void
     {
         File::ensureDirectoryExists(dirname($this->tmpCachePath));
-        File::put($this->tmpCachePath, $this->markedCacheFile("[]"));
+        File::put($this->tmpCachePath, $this->markedCacheFile('[]'));
 
         $manager = new HookCacheManagerWithPath($this->tmpCachePath);
         $this->assertTrue($manager->isCached());
@@ -479,6 +520,35 @@ class HookCacheManagerTest extends TestCase
 
 /**
  * 큐 디스패치 액션 리스너 스텁.
+ */
+class HookCacheStubQueued implements HookListenerInterface
+{
+    /**
+     * 큐 옵션을 선언한 구독 훅을 돌려줍니다 (#139).
+     *
+     * @return array<string, array<string, mixed>> 훅 이름 => 구독 설정
+     */
+    public static function getSubscribedHooks(): array
+    {
+        return [
+            'test.hookcache.queued' => [
+                'method' => 'handle',
+                'queue' => ['connection' => 'database', 'queue' => 'notifications', 'tries' => 4, 'timeout' => 30, 'backoff' => [5, 15], 'max_exceptions' => 1, 'fail_on_timeout' => true],
+            ],
+        ];
+    }
+
+    /**
+     * 인터페이스 기본 처리 — 스텁은 아무것도 하지 않습니다.
+     *
+     * @param  mixed  ...$args  훅 인자
+     * @return void 반환값 없음
+     */
+    public function handle(...$args): void {}
+}
+
+/**
+ * 액션 리스너 스텁.
  */
 class HookCacheStubAction implements HookListenerInterface
 {

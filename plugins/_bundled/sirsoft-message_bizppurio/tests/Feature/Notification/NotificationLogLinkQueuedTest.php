@@ -21,7 +21,6 @@ use Plugins\Sirsoft\MessageBizppurio\Models\BizppurioTemplate;
 use Plugins\Sirsoft\MessageBizppurio\Repositories\BizppurioDispatchRepository;
 use Plugins\Sirsoft\MessageBizppurio\Repositories\Contracts\BizppurioTemplateRepositoryInterface;
 use Plugins\Sirsoft\MessageBizppurio\Services\AlimtalkPayloadMapper;
-use Plugins\Sirsoft\MessageBizppurio\Services\DispatchLinkContext;
 use Plugins\Sirsoft\MessageBizppurio\Services\MessagePayloadBuilder;
 use Plugins\Sirsoft\MessageBizppurio\Services\SmsChannelDriver;
 use Plugins\Sirsoft\MessageBizppurio\Services\SmsTypeResolver;
@@ -61,7 +60,7 @@ class NotificationLogLinkQueuedTest extends PluginTestCase
     }
 
     /**
-     * 실제 SMS 드라이버를 만듭니다 (템플릿·설정만 대역, refkey 표식은 컨테이너 인스턴스).
+     * 실제 SMS 드라이버를 만듭니다 (템플릿·설정만 대역, refkey 표식은 드라이버가 발송마다 컨테이너에서 꺼낸다 — #139).
      *
      * @return SmsChannelDriver 드라이버
      */
@@ -90,7 +89,6 @@ class NotificationLogLinkQueuedTest extends PluginTestCase
             new SmsTypeResolver,
             app(MessagePayloadBuilder::class),
             new BizppurioDispatchRepository,
-            app(DispatchLinkContext::class),
             $pluginSettings,
         );
     }

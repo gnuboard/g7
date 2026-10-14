@@ -107,12 +107,13 @@ _단건 응답: `data` 객체의 필드._
 | identity | object | `{"default_provider":"g7:core.mail","purpose_providers":{"…` | 본인인증(IDV) 탭 설정 그룹 (기본 provider·목적별 provider 매핑(purpose_providers)·챌린지 유효시간(분)·최대 시도 횟수) |
 | privacy | object | `{"withdrawn_retention_enabled":false,"withdrawn_retention_…` | 개인정보 탭 설정 그룹 (탈퇴 회원 잔여정보 2차 파기 사용 여부·보유일, 휴면 전환 사용 여부·전환 기준일·사전 통지 선행일, 휴면 후 자동 탈퇴 사용 여부·기준일). 전 항목 기본 꺼짐 |
 | available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/public_asset/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공. `public_asset` 은 공개 자산 직접 URL 서빙 디스크 선택지 (코어 none/public/s3 + 플러그인 훅 등록분) |
-| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 다섯 필드로 구성 |
+| _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 여섯 필드로 구성 |
 | _meta.limits | object | `{"upload_max_file_size_min":1,"upload_max_file_size_max":1024,…}` | 각 설정 항목의 min/max 경계값 맵 (`config/core.php` 의 `settings_limits` 가 SSoT, 화면 입력 힌트와 FormRequest 검증이 같은 값을 공유) |
 | _meta.env_priority_enabled | boolean | `false` | `.env` 키 단위 우선 모드(`G7_ENV_PRIORITY`) 활성 여부. 화면은 이 값으로 안내 배너 표시를 판정한다. 기본값 false (스위치 미설정 시 종전 동작) |
 | _meta.env_locked | object | `{"general.site_name":true,"advanced.debug_mode":true}` | `.env` 에 값이 명시되어 편집이 잠긴 필드 목록. 키는 **화면이 쓰는 프론트엔드 키**(`frontend_key`/`merge_into` 변환 후 — 예: `debug.mode` → `advanced.debug_mode`)이며 값은 항상 true. 병합 대상 카테고리와 원본 카테고리 양쪽에 실린다(설정값 자체가 두 위치에 실리는 것과 같은 규칙). 스위치가 꺼져 있으면 빈 객체. 잠긴 필드는 저장 요청에 포함되어도 서버가 제거하므로 값이 반영되지 않는다. 잠긴 필드의 값은 저장값이 아니라 실제로 적용 중인 값으로 내려가되, 비밀번호·시크릿·토큰 등 민감 항목은 그 대체를 하지 않는다 |
 | _meta.consent_providers | array | `[{"id":"sirsoft-gdpr","label":"쿠키 동의 배너 (sirsoft-gdpr)"}]` | 등록된 동의 관리 제공자 `{id, label}` 목록 — 개인정보 탭 「동의 관리 제공자」 선택 상자의 항목. 동의 수집을 꺼 둔 제공자도 실린다(고를 수 있다) |
 | _meta.consent_selection | object | `{"state":"auto","reason":null,"provider_id":"sirsoft-gdpr","provider_label":"GDPR …"}` | 지금 선택 상태. `state` 는 `none`·`auto`·`selected`·`ambiguous`·`missing`, `reason` 은 `none` 의 사유(`no_provider`·`provider_unavailable`) |
+| _meta.queue_connection_options | array | `[{"name":"database","driver":"database"},{"name":"database-long","driver":"database"},{"name":"redis","driver":"redis"}]` | 드라이버 탭 「큐 워커」 의 등록 연결 선택지 — `config/queue.php` 연결 중 드라이버가 `sync`·`null` 이 아닌 것 (#139) |
 | abilities | object | `{"can_update":true}` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 
 **응답 예시**
@@ -334,6 +335,8 @@ HTTP/1.1 200
 | drivers.session_driver | body | string | 아니오 | — | 세션 드라이버 (file/database/redis) |
 | drivers.session_lifetime | body | integer | 아니오 | min 1, max 43200 | 세션 유효 시간 (분) |
 | drivers.queue_driver | body | string | 아니오 | — | 큐 드라이버 (sync/database/redis) |
+| drivers.queue_connections | body | string[] | 아니오 | 각 원소 `_meta.queue_connection_options` 의 name, 중복 불가, 현재 큐 드라이버 연결 포함 | 이 서버가 워커를 돌리는 큐 연결 (#139). 빈 배열이면 현재 큐 드라이버 연결 하나로 저장된다 |
+| drivers.queue_names | body | object | 아니오 | `{연결: string[]}`, 연결당 1~20개, 큐 이름 `^[A-Za-z0-9][A-Za-z0-9_.-]*$`·64자 이하·연결 안 중복 불가 | 연결별로 워커가 보는 큐 이름 (#139). 키가 없는 등록 연결은 기본값(`*-long` 은 `long`, 그 밖은 `default`)으로 저장되고, 등록하지 않은 연결의 키는 버려진다 |
 | drivers.websocket_enabled | body | boolean | 아니오 | — | WebSocket 사용 여부 |
 | drivers.websocket_app_id | body | string | 아니오 | max 255 | drivers.websocket app 식별자 |
 | drivers.websocket_app_key | body | string | 아니오 | max 255 | WebSocket 앱 키 |
@@ -524,6 +527,8 @@ Content-Type: application/json
     "drivers.session_driver": "예시값",
     "drivers.session_lifetime": 1,
     "drivers.queue_driver": "예시값",
+    "drivers.queue_connections": ["database", "database-long"],
+    "drivers.queue_names": {"database": ["default", "notifications"], "database-long": ["long"]},
     "drivers.websocket_enabled": true,
     "drivers.websocket_app_id": "예시값",
     "drivers.websocket_app_key": "예시값",
@@ -609,6 +614,22 @@ _단건 응답: `data` 객체의 필드._
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 보안 탭에서는 **저장하면 요청자 자신이 잠기는 IP 접근 제한**(현재 IP 가 관리자 영역 허용 목록 밖이거나, 설정 화면 경로를 막는 규칙에 걸림)도 422 — `security.admin_allowed_ips` 또는 `security.ip_restriction_rules` 에 현재 IP 가 담긴 문구 |
 
 <!-- @generated:end -->
+
+**큐 워커 등록 검증 (#139, `drivers` 탭)**
+
+| # | 경우 | 오류 키 | 메시지 키 (`validation.settings.*`) |
+| --- | --- | --- | --- |
+| V1 | 등록할 수 없는(정의되지 않았거나 sync·null) 연결 | `drivers.queue_connections.N` | `queue_connection_invalid` |
+| V2 | 같은 연결이 두 번 (두 번째 칸) | `drivers.queue_connections.N` | `queue_connection_duplicate` |
+| V3 | 현재 큐 드라이버(sync 아님) 연결을 목록에서 뺌 — 빈 목록은 통과(현재 드라이버 연결 하나로 저장) | `drivers.queue_connections` | `queue_connection_default_required` (`:driver`) |
+| V4 | 큐 목록 키가 정의되지 않은 연결 (화면 밖 직접 요청 방어) | `drivers.queue_names` | `queue_names_connection_unknown` (`:connection`) |
+| V5 | 등록한 연결의 큐 목록이 빈 배열 | `drivers.queue_names.{연결}` | `queue_names_required` (`:connection`) |
+| V6 | 빈 큐 이름 | `drivers.queue_names.{연결}.N` | `queue_name_required` |
+| V7 | 허용 외 문자·첫 글자 | `drivers.queue_names.{연결}.N` | `queue_name_invalid` |
+| V8 | 64자 초과 | `drivers.queue_names.{연결}.N` | `queue_name_max` |
+| V9 | 한 연결 안에서 같은 큐 이름 두 번 (연결이 다르면 허용) | `drivers.queue_names.{연결}` | `queue_name_duplicate` (`:connection`, `:name`) |
+
+연결당 20개 초과는 `queue_names_max`. 조회·저장 응답의 `drivers.queue_names` 는 비어 있어도 객체(`{}`)로 내려간다 — 배열(`[]`)이면 화면이 붙인 키가 저장 본문에서 사라진다(#758 과 같은 결함군).
 
 **설명**
 
@@ -1450,6 +1471,117 @@ HTTP/1.1 200
 부트스트랩 리소스 정적 게시(초기 화면 정적 파일)의 상태를 돌려줍니다. 판정은 서비스 한 곳이 소유하며 CLI `php artisan ext-static:status` 와 관리자 > 환경설정 > 일반 「초기 화면 정적 파일」 카드가 같은 값을 소비합니다. 읽기 전용이며 입력이 없습니다.
 
 `publishable` 이 `false` 이면 게시가 쓰이지 않는 환경(kill-switch 꺼짐 또는 비프로덕션)이라 화면은 [지금 다시 만들기] 를 비활성으로 두고 그 이유를 안내합니다. `failure` 는 게시가 거듭 실패했을 때만 채워지며, 대시보드 알림과 같은 마커를 읽습니다. 상세: [static-asset-publishing.md](../static-asset-publishing.md) "5-1. 관리자 화면에서의 수동 복구".
+
+
+### GET /api/admin/settings/queue-status
+<!-- @generated:start:api.admin.settings.queue-status -->
+- **라우트명**: `api.admin.settings.queue-status`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\SettingsController@queueStatus`
+- **인증/권한**: `auth:sanctum` + `permission:core.settings.read`
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/admin/settings/queue-status HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| driver | string | `database` | 저장된 큐 드라이버(기본 연결) |
+| measured_at | string | `2026-10-12T16:41:55+00:00` | 측정 시각 (ISO 8601) |
+| heartbeat_stale_after_minutes | integer | `5` | 이 시간 넘게 워커 신호가 없으면 경고 (`queue.worker_registry.heartbeat_stale_seconds` ÷ 60) |
+| rows | array | `[{"connection":"database","queue":"default",…}]` | 등록된 연결·큐 쌍마다 1행. 드라이버가 sync 면 빈 배열 |
+| rows[].connection | string | `database` | 연결 이름 |
+| rows[].queue | string | `default` | 큐 이름 |
+| rows[].driver | string | `database` | 연결의 드라이버 |
+| rows[].pending | integer\|null | `0` | 대기 건수 — 셀 수 없는 드라이버(redis 등)는 `null` |
+| rows[].pending_measurable | boolean | `true` | 대기 건수를 셀 수 있는지 (database 드라이버만 true) |
+| rows[].last_heartbeat_at | string\|null | `null` | 마지막 워커 신호 시각 — 이 서버의 기본 캐시 기준(다중 서버 파일 캐시면 다른 서버 워커는 보이지 않는다) |
+| rows[].warnings | string[] | `["no_heartbeat"]` | `no_heartbeat`(신호가 없거나 오래됨) · `pending_without_worker`(대기가 있는데 신호 없음) — 둘 중 하나 |
+| rows[].clamped_timeout_count | integer | `0` | 이 연결·큐로 디스패치된 리스너의 timeout 을 retry_after 아래로 줄인 횟수(24시간 보관) |
+| rows[].long_queue_hint | boolean | `false` | 긴 작업 큐(`long`)를 retry_after 가 짧은 일반 연결에 등록했으면 true — `*-long` 연결로 띄우라는 안내 |
+| long_worker | object | `{"connection":"database-long","queue":"long","status":"registered"}` | 긴 작업 전용 워커 등록 단계 — `registered`(연결·큐 둘 다) · `partial`(연결만) · `not_registered` |
+| commands | array | `[{"connection":"database","queues":"default,notifications","command":"php artisan queue:work database --queue=default,notifications --sleep=3 --tries=3 --max-time=3600"}]` | 등록 연결별 Supervisor 실행 명령. 긴 작업 연결은 `--timeout=3600` 이 붙는다 |
+| placement | object | `{"timeout_clamped":{"count":0,"last":null},"fallback":{"count":0,"last":null}}` | 리스너 timeout 축소·미등록 연결/큐 폴백의 누적 횟수와 마지막 사례(마지막 발생 뒤 24시간 보관). 관리자 화면은 `fallback.count` 가 1 이상이면 「큐 워커」 구역에 경고 안내와 `fallback.last`(리스너·요청 연결·요청 큐)를 그린다 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "큐 워커 상태를 불러왔습니다.",
+    "data": {
+        "driver": "database",
+        "measured_at": "2026-10-12T16:41:55+00:00",
+        "heartbeat_stale_after_minutes": 5,
+        "rows": [
+            {
+                "connection": "database",
+                "queue": "default",
+                "driver": "database",
+                "pending": 0,
+                "pending_measurable": true,
+                "last_heartbeat_at": null,
+                "warnings": [
+                    "no_heartbeat"
+                ],
+                "clamped_timeout_count": 0,
+                "long_queue_hint": false
+            }
+        ],
+        "long_worker": {
+            "connection": "database-long",
+            "queue": "long",
+            "status": "not_registered"
+        },
+        "commands": [
+            {
+                "connection": "database",
+                "queues": "default",
+                "command": "php artisan queue:work database --queue=default --sleep=3 --tries=3 --max-time=3600"
+            }
+        ],
+        "placement": {
+            "timeout_clamped": {
+                "count": 0,
+                "last": null
+            },
+            "fallback": {
+                "count": 0,
+                "last": null
+            }
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.settings.read`)이 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명**
+
+환경설정 → 드라이버 탭 「큐 워커」 구역이 읽는 상태입니다(#139). 판정은 **운영자가 등록한 연결·큐 목록**으로 하고, 워커 생존 신호(하트비트)는 큐별로 표시만 합니다. 신호는 워커 루프(`Illuminate\Queue\Events\Looping`)와 잡 시작(`JobProcessing` — `--once` 워커용)마다 프로세스당 30초에 한 번 캐시(`queue:heartbeat:{connection}:{queue}`)에 남습니다. 읽기 전용이며 입력이 없습니다. 등록 규칙은 위 `POST /api/admin/settings` 의 「큐 워커 등록 검증」, 리스너가 큐를 고르는 방법은 [hooks.md](../../extension/hooks.md) 「큐 옵션 — 등록 큐만 허용·폴백·timeout 클램프」 를 보세요.
 
 
 ### POST /api/admin/settings/static-cache/republish

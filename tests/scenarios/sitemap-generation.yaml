@@ -35,6 +35,7 @@ effects:
   - child_split_at_threshold
   - stale_served_on_miss
   - job_unique_lock
+  - retry_window_covers_timeouts
   - async_dispatch_from_admin
   # ── 재생성 모드 (P2) ──
   - admin_regen_is_always_full

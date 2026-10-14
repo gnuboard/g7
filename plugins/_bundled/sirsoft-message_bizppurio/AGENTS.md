@@ -115,7 +115,9 @@ trait 의 전체 규칙과 조건부 검증(`validateContentConditionals`)을 �
 **알림 이력 연결**: 코어가 알림 발송 성공·실패를 기록하면
 (`core.notification_log.after_log_sent` / `after_log_failed`) `LinkNotificationLogListener`
 가 그 로그와 이 플러그인의 발송 기록을 연결합니다. 관리자 "알림 발송 이력" 화면에서 문자·
-알림톡 결과가 함께 보이는 것이 이 연결 덕분입니다.
+알림톡 결과가 함께 보이는 것이 이 연결 덕분입니다. 이 리스너는 **동기**(`'sync' => true`)로 둡니다 —
+드라이버가 같은 프로세스에 남긴 refkey 를 꺼내 쓰므로 큐로 보내면 연결이 항상 실패합니다(코어 7.1.1 부터
+코어 발송 로그도 동기 기록). `SendMessageJob` 은 이미 접수·확정된 refkey 를 다시 보내지 않습니다(재시도 중복 방지).
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -211,10 +213,10 @@ HookManager::addAction(
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 44개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
+| PHPUnit | 45개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
 | Vitest | 19개 | `vitest.config.ts` |
 | Playwright | 3개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 20개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 21개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

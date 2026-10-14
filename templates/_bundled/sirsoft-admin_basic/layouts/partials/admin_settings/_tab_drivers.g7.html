@@ -1,7 +1,8 @@
 <!-- 드라이버 탭 — 저장소·캐시·세션·큐·웹소켓을 무엇으로 돌릴지 고른다.
   이 탭만의 규칙이 하나 있다 — **접속 정보를 바꾸면 연결 시험을 통과해야 저장 버튼이 풀린다**.
   판정은 이 조각이 아니라 부모 화면의 저장 버튼 잠금 조건에 있고, 그쪽이 처음 값(`originalDrivers`)과
-  지금 값을 견줘 "바뀐 항목인데 시험 성공 기록이 없다" 를 본다. 여기서는 시험을 눌러 그 기록을 남긴다. -->
+  지금 값을 견줘 "바뀐 항목인데 시험 성공 기록이 없다" 를 본다. 여기서는 시험을 눌러 그 기록을 남긴다.
+  큐 카드의 「큐 워커」 구역(#139)은 워커를 돌리는 연결·큐를 등록하고 상태(queueStatus 데이터 소스)를 보여 준다 — 등록 판정·오류는 서버가 한다. -->
 <partial description="환경설정 드라이버 탭 콘텐츠">
   <div data-ref="tab_content_drivers" data-if="{{(_global.activeSettingsTab || query.tab) === 'drivers'}}">
     <div data-ref="card_storage_settings" class="admin-card">
@@ -380,19 +381,176 @@
               <span>$t:admin.settings.drivers.common.unavailable_saved_value_suffix</span>
             </p>
           </div>
-          <div data-if="{{_local.form?.drivers?.queue_driver === 'database' || _local.form?.drivers?.queue_driver === 'redis'}}" class="alert-warning">
-            <div class="flex-start gap-2">
-              <icon name="triangle-exclamation" class="text-base text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"/>
-              <div>
-                <p class="text-warning-soft">$t:admin.settings.drivers.queue.worker_notice</p>
-                <code class="block mt-1 text-xs bg-amber-100 dark:bg-amber-900/40 px-2 py-1 rounded font-mono text-warning-soft">php artisan queue:work</code>
-              </div>
-            </div>
-          </div>
           <p data-if="{{_local.form?.drivers?.queue_driver === 'redis'}}" class="flex-center text-xs text-blue-500 dark:text-blue-400 mt-2 gap-1">
             <icon name="info-circle" class="text-xs"/>
             <span>$t:admin.settings.drivers.queue.redis_shared_notice</span>
           </p>
+        </div>
+        <!-- 큐 워커 구역 (#139) — 이 서버가 실제로 워커를 돌리는 연결·큐를 등록하고, 등록한 큐마다 대기 건수·마지막 워커 신호를 본다.
+          훅 리스너·코어 잡은 등록된 연결·큐만 쓰고 미등록이면 기본값으로 보낸다(판정은 서버). 입력은 폼 값을, 상태는 **저장된** 드라이버
+          기준 응답(queueStatus)을 그린다 — 폼만 바꾼 상태면 「저장 뒤 반영」 안내를 띄운다. 오류는 서버 422 키를 그대로 칸 아래에 단다. -->
+        <div data-ref="queue_worker_section" data-testid="queue-worker-section" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 row-stack">
+          <h4 class="text-heading">$t:admin.settings.drivers.queue.worker.title</h4>
+          <p data-if="{{(_local.form?.drivers?.queue_driver ?? 'sync') === 'sync'}}" data-testid="queue-worker-not-required" class="text-label-subtle">$t:admin.settings.drivers.queue.worker.not_required</p>
+          <div data-if="{{(_local.form?.drivers?.queue_driver ?? 'sync') !== (_local.originalDrivers?.queue_driver ?? 'sync')}}" data-testid="queue-status-saved-driver-differs" class="alert-info">
+            <div class="flex-start gap-2">
+              <icon name="info-circle" class="text-base text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0"/>
+              <p class="text-sm text-blue-700 dark:text-blue-300">$t:admin.settings.drivers.queue.worker.status.saved_driver_differs</p>
+            </div>
+          </div>
+          <div data-if="{{(_local.form?.drivers?.queue_driver ?? 'sync') !== 'sync'}}" class="row-stack">
+            <p class="text-label-subtle">$t:admin.settings.drivers.queue.worker_notice</p>
+            <div data-ref="field_queue_connections">
+              <label class="form-label">$t:admin.settings.drivers.queue.worker.connections.label</label>
+              <p class="form-hint">$t:admin.settings.drivers.queue.worker.connections.desc</p>
+              <div data-testid="queue-connections-input" class="w-full md:w-2/3">
+                <tag-input data-type="composite" name="drivers.queue_connections" options="{{(_local.form?._meta?.queue_connection_options ?? []).map(o => ({value: o.name, label: o.name}))}}" placeholder="$t:admin.settings.drivers.queue.worker.connections.placeholder" noOptionsMessage="$t:admin.settings.drivers.queue.worker.connections.no_options" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}"/>
+              </div>
+              <p data-if="{{(_local.form?.drivers?.queue_connections ?? []).length > 0 &amp;&amp; !(_local.form?.drivers?.queue_connections ?? []).includes(_local.form?.drivers?.queue_driver)}}" data-testid="queue-default-missing" class="text-warning-soft mt-2">$t:admin.settings.drivers.queue.worker.connections.default_missing|driver={{_local.form?.drivers?.queue_driver ?? ''}}</p>
+              <span data-if="{{(_computed.queueErrors?.connections ?? []).length > 0}}" data-testid="queue-connections-error" class="form-error">{{_computed.queueErrors?.connections?.[0] ?? ''}}</span>
+            </div>
+            <div data-ref="field_queue_names">
+              <label class="form-label">$t:admin.settings.drivers.queue.worker.queues.label</label>
+              <p class="form-hint">$t:admin.settings.drivers.queue.worker.queues.desc</p>
+              <span data-if="{{(_computed.queueErrors?.namesRoot ?? []).length > 0}}" data-testid="queue-names-root-error" class="form-error">{{_computed.queueErrors?.namesRoot?.[0] ?? ''}}</span>
+              <div data-each="conn in _computed.queueConnectionList" data-testid="{{'queue-names-' + conn}}" class="flex flex-col md:flex-row md:items-start gap-2 py-2 border-l-2 border-blue-200 dark:border-blue-800 pl-3 mt-2">
+                <span class="text-sm font-mono text-gray-700 dark:text-gray-300 md:w-40 shrink-0 break-all">{{conn}}</span>
+                <div class="flex-1 min-w-0">
+                  <tag-input data-type="composite" value="{{_local.form?.drivers?.queue_names?.[conn] ?? (conn.endsWith('-long') ? ['long'] : ['default'])}}" :creatable="true" placeholder="$t:admin.settings.drivers.queue.worker.queues.placeholder" class="w-full" defaultVariant="green" disabled="{{_computed.isReadOnly}}">
+                    <on type="change">
+                      <!-- 연결별 큐 — 맵 하나를 통째로 다시 만든다(배열로 굳은 옛 값이면 빈 맵에서 시작한다). 키가 없으면 기본값을 그렸으므로 첫 변경에 기본값이 함께 담긴다 -->
+                      <set-state target="local" form.drivers.queue_names="{{({...(Array.isArray(_local.form?.drivers?.queue_names) ? {} : (_local.form?.drivers?.queue_names ?? {})), [conn]: $event.target.value})}}" :hasChanges="true"/>
+                    </on>
+                  </tag-input>
+                  <span data-if="{{(_computed.queueErrors?.names?.[conn] ?? []).length > 0}}" data-testid="{{'queue-names-error-' + conn}}" class="form-error">{{_computed.queueErrors?.names?.[conn]?.[0] ?? ''}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div data-ref="queue_status_block" data-if="{{(_local.originalDrivers?.queue_driver ?? 'sync') !== 'sync'}}" class="row-stack">
+            <div class="flex-start justify-between gap-3 flex-wrap">
+              <div>
+                <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:admin.settings.drivers.queue.worker.status.title</div>
+                <p data-if="{{!!queueStatus?.data?.measured_at}}" class="text-label-subtle">$t:admin.settings.drivers.queue.worker.status.measured_at|at={{queueStatus?.data?.measured_at | datetime | default('-')}}</p>
+              </div>
+              <button type="button" data-testid="queue-status-refresh" class="btn btn-secondary btn-sm flex-center gap-1.5">
+                <on type="click">
+                  <refetch-data-source dataSourceId="queueStatus"/>
+                </on>
+                <icon name="rotate" class="text-xs"/>
+                <span>$t:admin.settings.drivers.queue.worker.status.refresh</span>
+              </button>
+            </div>
+            <div data-if="{{_global.queueStatusFailed === true}}" data-testid="queue-status-load-failed" class="alert-danger">
+              <p class="text-sm">$t:admin.settings.drivers.queue.worker.status.load_failed</p>
+            </div>
+            <p data-if="{{_global.queueStatusFailed !== true &amp;&amp; (queueStatus?.data?.rows ?? []).length === 0}}" class="text-label-subtle">$t:admin.settings.drivers.queue.worker.status.empty</p>
+            <div data-ref="queue_status_table_desktop" data-testid="queue-status-table" data-if="{{(queueStatus?.data?.rows ?? []).length > 0}}" class="overflow-x-auto">
+              <responsive on="mobile" data-if="{{false}}"/>
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                  <tr>
+                    <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.settings.drivers.queue.worker.status.col.connection</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.settings.drivers.queue.worker.status.col.queue</th>
+                    <th class="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.settings.drivers.queue.worker.status.col.pending</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.settings.drivers.queue.worker.status.col.last_heartbeat</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.settings.drivers.queue.worker.status.col.warnings</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-each="row in queueStatus?.data?.rows ?? []" data-testid="queue-status-row" class="border-t border-gray-200 dark:border-gray-700">
+                    <td class="px-3 py-2 font-mono text-xs text-gray-700 dark:text-gray-300">{{row.connection}}</td>
+                    <td class="px-3 py-2 font-mono text-xs text-gray-700 dark:text-gray-300">{{row.queue}}</td>
+                    <td data-testid="queue-status-pending" class="px-3 py-2 text-right tabular-nums text-gray-700 dark:text-gray-300">{{row.pending_measurable ? String(row.pending ?? 0) : $t('admin.settings.drivers.queue.worker.status.not_measurable')}}</td>
+                    <td data-testid="queue-status-heartbeat" class="px-3 py-2 text-gray-700 dark:text-gray-300">
+                      <span data-if="{{!!row.last_heartbeat_at}}" title="{{row.last_heartbeat_at | datetime}}">{{row.last_heartbeat_at | relativeTime}}</span>
+                      <span data-if="{{!row.last_heartbeat_at}}">$t:admin.settings.drivers.queue.worker.status.no_heartbeat_yet</span>
+                    </td>
+                    <td class="px-3 py-2">
+                      <div class="flex flex-wrap gap-1">
+                        <div data-if="{{(row.warnings ?? []).includes('no_heartbeat')}}" data-testid="queue-warning-no_heartbeat" class="inline-flex">
+                          <badge data-type="composite" color="yellow" size="sm" text="$t:admin.settings.drivers.queue.worker.warnings.no_heartbeat|minutes={{queueStatus?.data?.heartbeat_stale_after_minutes ?? 5}}"/>
+                        </div>
+                        <div data-if="{{(row.warnings ?? []).includes('pending_without_worker')}}" data-testid="queue-warning-pending_without_worker" class="inline-flex">
+                          <badge data-type="composite" color="red" size="sm" text="$t:admin.settings.drivers.queue.worker.warnings.pending_without_worker"/>
+                        </div>
+                        <div data-if="{{(row.clamped_timeout_count ?? 0) > 0}}" data-testid="queue-warning-clamped_timeout" class="inline-flex">
+                          <badge data-type="composite" color="yellow" size="sm" text="$t:admin.settings.drivers.queue.worker.warnings.clamped_timeout|count={{row.clamped_timeout_count ?? 0}}"/>
+                        </div>
+                        <div data-if="{{row.long_queue_hint === true}}" data-testid="queue-warning-long_queue_hint" class="inline-flex">
+                          <badge data-type="composite" color="blue" size="sm" text="$t:admin.settings.drivers.queue.worker.warnings.long_queue_hint"/>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div data-ref="queue_status_cards_mobile" data-testid="queue-status-cards" data-if="{{false}}" class="divider-list">
+              <responsive on="mobile" data-if="{{(queueStatus?.data?.rows ?? []).length > 0}}"/>
+              <div data-each="row in queueStatus?.data?.rows ?? []" data-testid="queue-status-row" class="p-3 row-stack">
+                <div class="font-mono text-xs text-gray-800 dark:text-gray-200 break-all">{{row.connection}} · {{row.queue}}</div>
+                <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
+                  <span class="inline-flex gap-1">
+                    <span>$t:admin.settings.drivers.queue.worker.status.col.pending</span>
+                    <span data-testid="queue-status-pending" class="tabular-nums font-medium text-gray-800 dark:text-gray-200">{{row.pending_measurable ? String(row.pending ?? 0) : $t('admin.settings.drivers.queue.worker.status.not_measurable')}}</span>
+                  </span>
+                  <span class="inline-flex gap-1">
+                    <span>$t:admin.settings.drivers.queue.worker.status.col.last_heartbeat</span>
+                    <span data-testid="queue-status-heartbeat" class="font-medium text-gray-800 dark:text-gray-200">
+                      <span data-if="{{!!row.last_heartbeat_at}}">{{row.last_heartbeat_at | relativeTime}}</span>
+                      <span data-if="{{!row.last_heartbeat_at}}">$t:admin.settings.drivers.queue.worker.status.no_heartbeat_yet</span>
+                    </span>
+                  </span>
+                </div>
+                <div class="flex flex-wrap gap-1">
+                  <div data-if="{{(row.warnings ?? []).includes('no_heartbeat')}}" data-testid="queue-warning-no_heartbeat" class="inline-flex">
+                    <badge data-type="composite" color="yellow" size="sm" text="$t:admin.settings.drivers.queue.worker.warnings.no_heartbeat|minutes={{queueStatus?.data?.heartbeat_stale_after_minutes ?? 5}}"/>
+                  </div>
+                  <div data-if="{{(row.warnings ?? []).includes('pending_without_worker')}}" data-testid="queue-warning-pending_without_worker" class="inline-flex">
+                    <badge data-type="composite" color="red" size="sm" text="$t:admin.settings.drivers.queue.worker.warnings.pending_without_worker"/>
+                  </div>
+                  <div data-if="{{(row.clamped_timeout_count ?? 0) > 0}}" data-testid="queue-warning-clamped_timeout" class="inline-flex">
+                    <badge data-type="composite" color="yellow" size="sm" text="$t:admin.settings.drivers.queue.worker.warnings.clamped_timeout|count={{row.clamped_timeout_count ?? 0}}"/>
+                  </div>
+                  <div data-if="{{row.long_queue_hint === true}}" data-testid="queue-warning-long_queue_hint" class="inline-flex">
+                    <badge data-type="composite" color="blue" size="sm" text="$t:admin.settings.drivers.queue.worker.warnings.long_queue_hint"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- 리스너가 등록 안 된 연결·큐를 가리켜 기본값으로 보낸 횟수(placement.fallback) — 행이 아니라 구역 단위다
+              (가리킨 큐는 등록이 안 됐으니 표에 행이 없다). 운영자가 보고 그 큐를 등록하도록 마지막 사례를 함께 보여 준다. -->
+            <div data-ref="queue_fallback_notice" data-testid="queue-fallback-notice" data-if="{{_global.queueStatusFailed !== true &amp;&amp; (queueStatus?.data?.placement?.fallback?.count ?? 0) > 0}}" class="alert-warning">
+              <div class="flex-start gap-3">
+                <icon name="exclamation-triangle" class="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0"/>
+                <div class="flex-1 min-w-0 space-y-1">
+                  <p class="text-sm font-medium text-warning-soft">$t:admin.settings.drivers.queue.worker.fallback.title|count={{queueStatus?.data?.placement?.fallback?.count ?? 0}}</p>
+                  <p data-if="{{!!queueStatus?.data?.placement?.fallback?.last}}" data-testid="queue-fallback-last" class="text-sm text-warning-soft break-all">$t:admin.settings.drivers.queue.worker.fallback.last|listener={{queueStatus?.data?.placement?.fallback?.last?.listener ?? '-'}}|connection={{queueStatus?.data?.placement?.fallback?.last?.requested_connection ?? $t('admin.settings.drivers.queue.worker.fallback.default')}}|queue={{queueStatus?.data?.placement?.fallback?.last?.requested_queue ?? $t('admin.settings.drivers.queue.worker.fallback.default')}}</p>
+                  <p class="text-sm text-warning-soft">$t:admin.settings.drivers.queue.worker.fallback.hint</p>
+                </div>
+              </div>
+            </div>
+            <div data-ref="queue_long_worker" data-testid="queue-long-worker" data-if="{{!!queueStatus?.data?.long_worker}}" class="flex-start gap-2 text-sm">
+              <icon name="info-circle" class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 flex-shrink-0"/>
+              <div class="row-stack">
+                <div class="flex-center gap-2 flex-wrap">
+                  <span class="font-medium text-gray-800 dark:text-gray-200">$t:admin.settings.drivers.queue.worker.long.title</span>
+                  <div data-testid="queue-long-worker-badge" class="inline-flex">
+                    <badge data-type="composite" size="sm" color="{{queueStatus?.data?.long_worker?.status === 'registered' ? 'green' : (queueStatus?.data?.long_worker?.status === 'partial' ? 'yellow' : 'gray')}}" text="{{$t('admin.settings.drivers.queue.worker.long.' + (['registered', 'partial'].includes(queueStatus?.data?.long_worker?.status) ? queueStatus?.data?.long_worker?.status : 'not_registered'))}}"/>
+                  </div>
+                </div>
+                <p data-if="{{queueStatus?.data?.long_worker?.status === 'registered'}}" class="text-label-subtle">$t:admin.settings.drivers.queue.worker.long.desc_registered|connection={{queueStatus?.data?.long_worker?.connection ?? ''}}|queue={{queueStatus?.data?.long_worker?.queue ?? 'long'}}</p>
+                <p data-if="{{queueStatus?.data?.long_worker?.status === 'partial'}}" class="text-label-subtle">$t:admin.settings.drivers.queue.worker.long.desc_partial|connection={{queueStatus?.data?.long_worker?.connection ?? ''}}|queue={{queueStatus?.data?.long_worker?.queue ?? 'long'}}</p>
+                <p data-if="{{(queueStatus?.data?.long_worker?.status ?? 'not_registered') === 'not_registered'}}" class="text-label-subtle">$t:admin.settings.drivers.queue.worker.long.desc_not_registered|connection={{queueStatus?.data?.long_worker?.connection ?? ''}}|queue={{queueStatus?.data?.long_worker?.queue ?? 'long'}}</p>
+              </div>
+            </div>
+            <div data-ref="queue_supervisor_commands" data-testid="queue-supervisor-commands" data-if="{{(queueStatus?.data?.commands ?? []).length > 0}}" class="row-stack">
+              <span class="text-sm font-medium text-gray-800 dark:text-gray-200">$t:admin.settings.drivers.queue.worker.supervisor.title</span>
+              <p class="text-label-subtle">$t:admin.settings.drivers.queue.worker.supervisor.desc</p>
+              <code data-each="cmd in queueStatus?.data?.commands ?? []" data-testid="queue-supervisor-command" class="block text-xs bg-gray-100 dark:bg-gray-900/50 text-gray-800 dark:text-gray-200 px-2 py-1 rounded font-mono break-all">{{cmd.command}}</code>
+            </div>
+          </div>
         </div>
       </div>
     </div>
