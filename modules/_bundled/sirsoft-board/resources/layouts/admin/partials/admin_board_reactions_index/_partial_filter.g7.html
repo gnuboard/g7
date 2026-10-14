@@ -16,7 +16,7 @@
     <!-- 1층 — 검색어. 무엇을 찾을지 고르고 낱말을 넣는 자리다. -->
     <div data-ref="search_row" class="mb-4">
       <div class="flex-center gap-2">
-        <select data-ref="search_field_select" name="searchField" class="select-composite w-44" value="{{_local.searchField || 'all'}}">
+        <select data-ref="search_field_select" aria-label="$t:common.search_field" name="searchField" class="select-composite w-44" value="{{_local.searchField || 'all'}}">
           <responsive on="portable" class="select-composite w-32"/>
           <options>
             <option value="all">$t:sirsoft-board.admin.reactions.search_fields.all</option>

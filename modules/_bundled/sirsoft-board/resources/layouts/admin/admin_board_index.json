@@ -315,6 +315,7 @@
                                                                     "props": {
                                                                         "checked": "{{row.is_active}}",
                                                                         "name": "is_active",
+                                                                        "ariaLabel": "$t:defer:common.item_enabled|name={{row.name}}",
                                                                         "size": "sm",
                                                                         "disabled": "{{row.abilities?.can_update !== true}}"
                                                                     }

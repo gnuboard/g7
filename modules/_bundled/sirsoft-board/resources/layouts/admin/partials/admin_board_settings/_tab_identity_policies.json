@@ -76,7 +76,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-warning-soft"
+                                "className": "text-xs board-tone-warning"
                             },
                             "text": "$t:sirsoft-board.admin.settings.identity.read_only_notice"
                         }
@@ -285,6 +285,7 @@
                             ],
                             "props": {
                                 "name": "filter.scope",
+                                "aria-label": "$t:admin.identity.policies.col.scope",
                                 "autoBinding": false,
                                 "value": "{{query.scope ?? ''}}",
                                 "className": "text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
@@ -686,6 +687,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "checked": "{{Boolean(policy.enabled)}}",
+                                                                        "ariaLabel": "$t:common.row_cell|row={{policy.key ?? ''}}|column={{$t('admin.identity.policies.col.enabled')}}",
                                                                         "size": "sm",
                                                                         "disabled": "{{policy.abilities?.can_update !== true}}"
                                                                     }
@@ -703,7 +705,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft'}}"
+                                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-xs board-tone-info' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-xs board-tone-warning'}}"
                                                                     },
                                                                     "text": "$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}"
                                                                 }
@@ -895,7 +897,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft flex-shrink-0' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft flex-shrink-0'}}"
+                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-xs board-tone-info flex-shrink-0' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-xs board-tone-warning flex-shrink-0'}}"
                                                     },
                                                     "text": "$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}"
                                                 }
@@ -1020,6 +1022,7 @@
                                                     ],
                                                     "props": {
                                                         "checked": "{{Boolean(policy.enabled)}}",
+                                                        "ariaLabel": "$t:common.row_cell|row={{policy.key ?? ''}}|column={{$t('admin.identity.policies.col.enabled')}}",
                                                         "size": "sm",
                                                         "disabled": "{{policy.abilities?.can_update !== true}}"
                                                     }

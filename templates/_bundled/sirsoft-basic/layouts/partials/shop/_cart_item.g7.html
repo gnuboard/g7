@@ -5,7 +5,7 @@
   <div data-testid="cart-item" class="flex gap-4 p-4">
     <!-- 체크박스 -->
     <div class="flex items-center">
-      <checkbox name="cart_item_{{item.id}}" checked="{{_local.selectedItems?.includes(item.id) ?? true}}" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 accent-gray-900 focus:ring-gray-500">
+      <checkbox name="cart_item_{{item.id}}" aria-label="$t:common.select_item|name={{item.product.name ?? ''}}" checked="{{_local.selectedItems?.includes(item.id) ?? true}}" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 accent-gray-900 focus:ring-gray-500">
         <on type="change">
           <!-- 선택을 바꾸면 합계가 달라지므로 전용 핸들러가 선택 목록을 갱신하고 금액을 다시 받는다 -->
           <action handler="toggleCartItemSelection" itemId="{{item.id}}" selectedItems="{{_local.selectedItems}}"/>

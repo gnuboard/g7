@@ -122,6 +122,7 @@
                     ],
                     "props": {
                         "name": "issueHistoryPerPage",
+                        "aria-label": "$t:common.per_page",
                         "className": "w-20",
                         "value": "{{String(_global.issueHistoryPerPage || 10)}}",
                         "options": [

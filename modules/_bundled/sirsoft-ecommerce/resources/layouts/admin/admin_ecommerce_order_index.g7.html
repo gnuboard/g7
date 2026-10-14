@@ -122,7 +122,7 @@
           <button type="button" class="text-secondary px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800">$t:sirsoft-ecommerce.admin.order.preset.bank_pending</button>
         </div>
         <div data-ref="search_row" class="flex-center flex-wrap gap-3 mb-6">
-          <select name="searchField" class="w-32" value="{{_local.searchField}}">
+          <select name="searchField" aria-label="$t:common.search_field" class="w-32" value="{{_local.searchField}}">
             <options>
               <option value="all">$t:sirsoft-ecommerce.admin.order.search.field.all</option>
               <option value="order_number">$t:sirsoft-ecommerce.admin.order.search.field.order_number</option>
@@ -158,7 +158,7 @@
         <div data-ref="filter_date_row" class="flex-center flex-wrap gap-3 mb-4">
           <responsive on="portable" class="row-stack mb-4"/>
           <span class="text-label w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.date</span>
-          <select name="dateType" class="w-32" value="{{_local.dateType}}">
+          <select name="dateType" aria-label="$t:sirsoft-ecommerce.admin.order.filter.date" class="w-32" value="{{_local.dateType}}">
             <options>
               <option value="order_date">$t:sirsoft-ecommerce.admin.order.filter.date_type.order_date</option>
               <option value="payment_date">$t:sirsoft-ecommerce.admin.order.filter.date_type.payment_date</option>
@@ -412,16 +412,16 @@
           <responsive on="portable" class="row-stack mb-4"/>
           <span class="text-label w-20 flex-shrink-0">$t:sirsoft-ecommerce.admin.order.filter.category</span>
           <div class="flex flex-wrap gap-2">
-            <select name="category1" class="w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=1">
+            <select aria-label="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=1" name="category1" class="w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=1">
               <prop name="options">[]</prop>
             </select>
-            <select name="category2" class="w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=2">
+            <select aria-label="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=2" name="category2" class="w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=2">
               <prop name="options">[]</prop>
             </select>
-            <select name="category3" class="w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=3">
+            <select aria-label="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=3" name="category3" class="w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=3">
               <prop name="options">[]</prop>
             </select>
-            <select name="category4" class="w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=4">
+            <select aria-label="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=4" name="category4" class="w-36" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=4">
               <prop name="options">[]</prop>
             </select>
           </div>
@@ -443,7 +443,7 @@
                 <set-state target="_local" maxPrice="{{$event.target.value}}"/>
               </on>
             </input>
-            <select name="currency" class="w-20" value="krw">
+            <select name="currency" aria-label="$t:sirsoft-ecommerce.admin.order.filter.currency" class="w-20" value="krw">
               <options>
                 <option value="krw">$t:sirsoft-ecommerce.admin.order.filter.currency</option>
               </options>
@@ -509,7 +509,7 @@
       <div data-ref="batch_bar" class="bg-slate-100 dark:bg-slate-800 p-4 rounded-xl mb-6 flex-between flex-wrap gap-4">
         <div class="flex-center flex-wrap gap-4">
           <span class="font-bold text-sm text-secondary">$t:sirsoft-ecommerce.admin.order.batch.selected_count|count=0</span>
-          <select name="batchAction" class="w-40" placeholder="$t:sirsoft-ecommerce.admin.order.batch.status_change" value="{{_local.batchAction}}">
+          <select aria-label="$t:sirsoft-ecommerce.admin.order.batch.status_change" name="batchAction" class="w-40" placeholder="$t:sirsoft-ecommerce.admin.order.batch.status_change" value="{{_local.batchAction}}">
             <options>
               <option value="preparing">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.preparing</option>
               <option value="shipping_ready">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.shipping_ready</option>
@@ -523,7 +523,7 @@
           </select>
           <span class="text-gray-300 dark:text-gray-600">|</span>
           <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.order.batch.shipping_process:</span>
-          <select name="carrier_id" class="w-32" placeholder="$t:sirsoft-ecommerce.admin.order.batch.carrier" value="{{_local.carrier_id}}" options="{{active_carriers?.data ?? []}}">
+          <select aria-label="$t:sirsoft-ecommerce.admin.order.batch.carrier" name="carrier_id" class="w-32" placeholder="$t:sirsoft-ecommerce.admin.order.batch.carrier" value="{{_local.carrier_id}}" options="{{active_carriers?.data ?? []}}">
             <on type="change">
               <!-- 일괄 출고에 쓸 택배사 — 옆 운송장번호와 짝을 이룬다 -->
               <set-state target="_local" carrier_id="{{$event.target.value}}"/>
@@ -543,7 +543,7 @@
         <div data-ref="table_header" class="flex-between flex-wrap gap-4 mb-6">
           <span class="text-primary font-bold">$t:sirsoft-ecommerce.admin.order.table.total_count|count=12</span>
           <div class="flex-center gap-3">
-            <select name="sortBy" class="w-36" value="{{_local.sortBy}}">
+            <select name="sortBy" aria-label="$t:common.sort_order" class="w-36" value="{{_local.sortBy}}">
               <options>
                 <option value="latest">$t:sirsoft-ecommerce.admin.order.table.sort.latest</option>
                 <option value="oldest">$t:sirsoft-ecommerce.admin.order.table.sort.oldest</option>
@@ -555,7 +555,7 @@
                 <set-state target="_local" sortBy="{{$event.target.value}}"/>
               </on>
             </select>
-            <select name="perPage" class="w-24" value="{{_local.perPage}}">
+            <select name="perPage" aria-label="$t:common.per_page" class="w-24" value="{{_local.perPage}}">
               <options>
                 <option :value="10">$t:sirsoft-ecommerce.admin.order.table.per_page|count=10</option>
                 <option :value="20">$t:sirsoft-ecommerce.admin.order.table.per_page|count=20</option>
@@ -582,10 +582,10 @@
             <div class="row-stack">
               <div class="admin-card">
                 <div class="flex-between mb-2">
-                  <div class="flex-center gap-2">
+                  <label class="flex-center gap-2 cursor-pointer">
                     <input type="checkbox" class="w-4 h-4"/>
                     <span class="text-sm font-bold text-primary">ord251010567890</span>
-                  </div>
+                  </label>
                   <button type="button" class="text-tertiary text-lg">⋮</button>
                 </div>
                 <div class="text-xs text-tertiary mb-4">2024-10-10 18:25:00</div>
@@ -622,7 +622,7 @@
             <thead>
               <tr class="border-b border-gray-200 dark:border-gray-700">
                 <th class="text-table-header py-3 px-4 text-left w-10">
-                  <input type="checkbox" class="w-4 h-4"/>
+                  <input type="checkbox" aria-label="$t:common.select_all" class="w-4 h-4"/>
                 </th>
                 <th class="text-table-header py-3 px-4 text-center">$t:sirsoft-ecommerce.admin.order.table.columns.order_date</th>
                 <th class="text-table-header py-3 px-4 text-center">$t:sirsoft-ecommerce.admin.order.table.columns.order_number</th>
@@ -639,7 +639,7 @@
             <tbody>
               <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800">
                 <td class="py-4 px-4">
-                  <input type="checkbox" class="w-4 h-4"/>
+                  <input type="checkbox" aria-label="$t:common.select_item|name=ord251010567890" class="w-4 h-4"/>
                 </td>
                 <td class="empty-state-cell text-sm text-secondary whitespace-nowrap">2024-10-10
 18:25:00</td>

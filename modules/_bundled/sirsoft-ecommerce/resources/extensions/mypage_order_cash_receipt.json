@@ -470,6 +470,7 @@
                                     ],
                                     "props": {
                                         "name": "identifier_type",
+                                        "aria-label": "$t:sirsoft-ecommerce.order.cash_receipt.identifier_type",
                                         "value": "{{_global.ecommerceCashReceiptForm?.identifier_type ?? 'phone'}}",
                                         "options": "{{(_global.ecommerceCashReceiptForm?.receipt_type === 'expense' ? [{ value: 'business', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_business') }] : []).concat([{ value: 'phone', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_phone') }, { value: 'card', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_card') }])}}",
                                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
@@ -507,6 +508,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "identifier",
+                                        "aria-label": "$t:sirsoft-ecommerce.order.cash_receipt.identifier",
                                         "value": "{{_global.ecommerceCashReceiptForm?.identifier ?? ''}}",
                                         "placeholder": "$t:sirsoft-ecommerce.order.cash_receipt.identifier_placeholder",
                                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"

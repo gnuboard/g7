@@ -12,7 +12,7 @@
       <div data-ref="log_filters" class="flex-center justify-end gap-4 mb-4">
         <div class="flex-center gap-2">
           <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.activity_log.sort.label</span>
-          <select value="{{_local.logsSort}}" class="w-auto min-w-40">
+          <select value="{{_local.logsSort}}" aria-label="$t:sirsoft-ecommerce.admin.order.detail.activity_log.sort.label" class="w-auto min-w-40">
             <options>
               <option value="date_desc">$t:sirsoft-ecommerce.admin.order.detail.activity_log.sort.date_desc</option>
               <option value="date_asc">$t:sirsoft-ecommerce.admin.order.detail.activity_log.sort.date_asc</option>
@@ -28,7 +28,7 @@
         </div>
         <div class="flex-center gap-2">
           <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.activity_log.per_page</span>
-          <select value="{{String(_local.logsPerPage)}}" class="w-auto min-w-20">
+          <select value="{{String(_local.logsPerPage)}}" aria-label="$t:sirsoft-ecommerce.admin.order.detail.activity_log.per_page" class="w-auto min-w-20">
             <options>
               <option value="5">$t:sirsoft-ecommerce.admin.order.detail.activity_log.per_page_option|count=5</option>
               <option value="10">$t:sirsoft-ecommerce.admin.order.detail.activity_log.per_page_option|count=10</option>
@@ -72,7 +72,7 @@
                 </on>
                 <div class="flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
                   <div class="flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
-                    <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.user?.name ?? 'S').charAt(0).toUpperCase()}}</span>
+                    <span aria-hidden="true" class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.user?.name ?? 'S').charAt(0).toUpperCase()}}</span>
                   </div>
                   <span class="text-primary text-sm">{{log.user?.name ?? ''}}</span>
                 </div>
@@ -132,7 +132,7 @@
                 </on>
                 <div class="flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
                   <div class="flex-center w-5 h-5 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
-                    <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.user?.name ?? 'S').charAt(0).toUpperCase()}}</span>
+                    <span aria-hidden="true" class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.user?.name ?? 'S').charAt(0).toUpperCase()}}</span>
                   </div>
                   <span class="text-primary text-xs font-medium">{{log.user?.name ?? ''}}</span>
                 </div>

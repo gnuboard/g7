@@ -16,8 +16,8 @@
       <div data-ref="field_meta_title">
         <div>
           <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.meta_title</label>
-          <input data-ref="meta_title_synced" data-if="{{_local.form.seo_sync_title}}" value="{{$localized(_local.form.name) || ''}}" :disabled="true" :maxLength="70" class="rounded-md"/>
-          <multilingual-input data-type="composite" data-ref="meta_title_custom" data-if="{{!_local.form.seo_sync_title}}" name="meta_title" layout="tabs" inputType="text" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.meta_title" :maxLength="70" error="{{_local.errors?.meta_title?.[0] ?? _local.errors?.['meta_title.ko']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}"/>
+          <input data-ref="meta_title_synced" aria-label="$t:sirsoft-ecommerce.admin.product.fields.meta_title" data-if="{{_local.form.seo_sync_title}}" value="{{$localized(_local.form.name) || ''}}" :disabled="true" :maxLength="70" class="rounded-md"/>
+          <multilingual-input data-type="composite" data-ref="meta_title_custom" ariaLabel="$t:sirsoft-ecommerce.admin.product.fields.meta_title" data-if="{{!_local.form.seo_sync_title}}" name="meta_title" layout="tabs" inputType="text" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.meta_title" :maxLength="70" error="{{_local.errors?.meta_title?.[0] ?? _local.errors?.['meta_title.ko']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}"/>
           <span data-if="{{_local.errors?.meta_title}}" class="form-error-xs">{{_local.errors?.meta_title?.[0]}}</span>
           <div class="flex-between text-xs">
             <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.seo.title_hint</span>
@@ -40,8 +40,8 @@
       <div data-ref="field_meta_description">
         <div>
           <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.meta_description</label>
-          <textarea data-ref="meta_desc_synced" data-if="{{_local.form.seo_sync_description}}" value="{{($localized(_local.form.description) || '').substring(0, 160)}}" :disabled="true" :rows="3" :maxLength="160" class="w-full rounded-md bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-3"/>
-          <multilingual-input data-type="composite" data-ref="meta_desc_custom" data-if="{{!_local.form.seo_sync_description}}" name="meta_description" layout="tabs" inputType="textarea" :rows="3" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.meta_description" :maxLength="160" error="{{_local.errors?.meta_description?.[0] ?? _local.errors?.['meta_description.ko']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}"/>
+          <textarea data-ref="meta_desc_synced" aria-label="$t:sirsoft-ecommerce.admin.product.fields.meta_description" data-if="{{_local.form.seo_sync_description}}" value="{{($localized(_local.form.description) || '').substring(0, 160)}}" :disabled="true" :rows="3" :maxLength="160" class="w-full rounded-md bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-3"/>
+          <multilingual-input data-type="composite" data-ref="meta_desc_custom" ariaLabel="$t:sirsoft-ecommerce.admin.product.fields.meta_description" data-if="{{!_local.form.seo_sync_description}}" name="meta_description" layout="tabs" inputType="textarea" :rows="3" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.meta_description" :maxLength="160" error="{{_local.errors?.meta_description?.[0] ?? _local.errors?.['meta_description.ko']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}"/>
           <span data-if="{{_local.errors?.meta_description}}" class="form-error-xs">{{_local.errors?.meta_description?.[0]}}</span>
           <p class="text-hint text-right">{{_local.form.seo_sync_description ? ($localized(_local.form.description) || '').substring(0, 160).length : ($localized(_local.form.meta_description) || '').length}}/160</p>
           <label data-ref="seo_sync_description_checkbox" class="flex-center gap-2 cursor-pointer">

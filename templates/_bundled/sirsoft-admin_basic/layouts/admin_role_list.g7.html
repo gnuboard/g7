@@ -135,7 +135,7 @@
         </column>
         <column field="is_active" header="$t:admin.roles.columns.status" :sortable="false">
           <cell>
-            <toggle data-type="composite" checked="{{row.is_active}}" disabled="{{row.abilities?.can_toggle_status !== true}}" size="sm">
+            <toggle data-type="composite" checked="{{row.is_active}}" ariaLabel="$t:defer:common.row_cell|row={{row.name}}|column={{$t('admin.roles.columns.status')}}" disabled="{{row.abilities?.can_toggle_status !== true}}" size="sm">
               <on type="change">
                 <!-- 사용 여부 토글. 성공 문구는 **누른 뒤의 상태**(`$event.target.checked`)로 고르고,
                      목록을 다시 받아 서버가 실제로 저장한 값으로 스위치를 되맞춘다.

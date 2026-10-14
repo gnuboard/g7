@@ -8,6 +8,12 @@ import { Span } from '../basic/Span';
 import { Select } from '../basic/Select';
 import type { EditorAttrs } from '../../types';
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
 export interface Tab {
   id: string | number;
   label: string;
@@ -53,6 +59,11 @@ export interface TabNavigationProps {
   id?: string;
   /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
   editorAttrs?: EditorAttrs;
+  /**
+   * 좁은 화면에서 탭 대신 그리는 선택 상자의 이름(「{이름} {현재 탭}」으로 읽힌다).
+   * 없으면 공용 문구 「섹션 이동」 — 종전에는 이름이 없어 현재 탭 글자(「기본정보」)만 읽혔다(#757)
+   */
+  'aria-label'?: string;
 }
 
 /**
@@ -100,6 +111,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   mobileBreakpoint = 768,
   id,
   editorAttrs,
+  'aria-label': ariaLabel,
 }) => {
   // G7Core.useResponsive를 통해 반응형 상태 구독 (G7 표준)
   const G7Core = (window as any).G7Core;
@@ -189,6 +201,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
             disabled: tab.disabled,
           }))}
           className="w-full"
+          aria-label={ariaLabel || tOr('common.section_navigation', 'Section navigation')}
         />
       </Div>
     );

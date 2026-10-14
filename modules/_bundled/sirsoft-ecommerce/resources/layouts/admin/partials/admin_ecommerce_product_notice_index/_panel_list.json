@@ -300,6 +300,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "ariaLabel": "$t:common.item_enabled|name={{$localized(template.name)}}",
                                                         "size": "sm",
                                                         "checked": "{{template.is_active}}",
                                                         "disabled": "{{!template.abilities?.can_update}}"

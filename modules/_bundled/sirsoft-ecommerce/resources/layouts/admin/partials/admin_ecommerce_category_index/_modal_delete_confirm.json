@@ -81,7 +81,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-sm font-semibold text-warning-soft mb-2"
+                                                        "className": "text-sm font-semibold ecommerce-tone-warning-soft mb-2"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.category.delete_modal.cannot_delete_title"
                                                 },
@@ -89,7 +89,7 @@
                                                     "type": "basic",
                                                     "name": "Ul",
                                                     "props": {
-                                                        "className": "list-disc list-inside space-y-1 text-warning-soft"
+                                                        "className": "list-disc list-inside space-y-1 ecommerce-tone-warning-soft text-xs"
                                                     },
                                                     "children": [
                                                         {

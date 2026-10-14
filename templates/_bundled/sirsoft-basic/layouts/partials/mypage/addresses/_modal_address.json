@@ -81,6 +81,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:mypage.addresses.form.label",
                                 "type": "text",
                                 "value": "{{$localized(_global.editingAddress?.name) ?? ''}}",
                                 "placeholder": "$t:mypage.addresses.form.label_placeholder",
@@ -130,6 +131,7 @@
                             ],
                             "props": {
                                 "name": "country_code",
+                                "aria-label": "$t:shop.checkout.shipping_country",
                                 "value": "{{_global.editingAddress?.country_code ?? 'KR'}}",
                                 "options": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}",
                                 "className": "w-full"
@@ -194,6 +196,7 @@
                                         }
                                     },
                                     "props": {
+                                        "aria-label": "$t:mypage.addresses.form.recipient",
                                         "type": "text",
                                         "name": "recipient_name",
                                         "placeholder": "$t:mypage.addresses.form.recipient_placeholder",
@@ -255,6 +258,7 @@
                                         }
                                     },
                                     "props": {
+                                        "aria-label": "$t:mypage.addresses.form.phone",
                                         "type": "tel",
                                         "name": "recipient_phone",
                                         "placeholder": "$t:mypage.addresses.form.phone_placeholder",
@@ -416,6 +420,7 @@
                             "type": "basic",
                             "name": "Input",
                             "props": {
+                                "aria-label": "$t:mypage.addresses.form.address",
                                 "type": "text",
                                 "name": "address_line_1",
                                 "placeholder": "$t:shop.checkout.intl_address1_placeholder",
@@ -510,6 +515,7 @@
                                 }
                             },
                             "props": {
+                                "aria-label": "$t:mypage.addresses.form.detail_address",
                                 "type": "text",
                                 "name": "address_detail",
                                 "placeholder": "$t:mypage.addresses.form.detail_placeholder",

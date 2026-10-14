@@ -155,7 +155,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-warning-soft"
+                                    "className": "text-xs bizppurio-tone-warning"
                                 },
                                 "text": "$t:sirsoft-message_bizppurio.plugin_read_only"
                             }
@@ -652,7 +652,7 @@
                                                         "type": "basic",
                                                         "name": "H3",
                                                         "props": {
-                                                            "className": "text-sm font-semibold text-warning-soft"
+                                                            "className": "text-sm font-semibold bizppurio-tone-warning"
                                                         },
                                                         "text": "$t:sirsoft-message_bizppurio.settings.live_mode_warning_title"
                                                     },
@@ -660,7 +660,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "mt-1 text-warning-soft"
+                                                            "className": "mt-1 text-xs bizppurio-tone-warning"
                                                         },
                                                         "text": "$t:sirsoft-message_bizppurio.settings.live_mode_warning_body"
                                                     }
@@ -1313,6 +1313,7 @@
                                                                 "props": {
                                                                     "type": "text",
                                                                     "readOnly": true,
+                                                                    "aria-label": "$t:sirsoft-message_bizppurio.settings.report.section_title",
                                                                     "value": "{{report_url?.data?.url ?? '/api/plugins/sirsoft-message_bizppurio/webhook'}}",
                                                                     "className": "input-readonly flex-1 font-mono",
                                                                     "disabled": "{{_computed.isPluginReadOnly}}"
@@ -1556,7 +1557,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-warning-soft"
+                                            "className": "text-xs bizppurio-tone-warning"
                                         },
                                         "text": "$t:sirsoft-message_bizppurio.messaging_read_only"
                                     }
@@ -1764,6 +1765,7 @@
                                                             }
                                                         ],
                                                         "props": {
+                                                            "aria-label": "$t:sirsoft-message_bizppurio.manage.columns.status",
                                                             "className": "w-40 text-sm flex-shrink-0",
                                                             "value": "{{query.bz_status ?? ''}}",
                                                             "options": "{{[{value: '', label: $t('sirsoft-message_bizppurio.manage.filter_all')}, ...['draft','requested','approved','rejected','stopped','blocked','dormant'].map(s => ({value: s, label: $t('sirsoft-message_bizppurio.template.status.' + s)}))]}}"
@@ -3537,6 +3539,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: itmIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.item_title')}}",
                                                 "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                 "maxLength": 6,
                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.item_title",
@@ -3559,6 +3562,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: itmIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.item_description')}}",
                                                 "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                 "maxLength": 23,
                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.item_description",
@@ -3950,6 +3954,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.button_name')}}",
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.button_name",
                                                         "value": "{{buttonsItem.name ?? ''}}",
@@ -4012,6 +4017,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_mo')}}",
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_mo",
                                                         "value": "{{buttonsItem.linkMo ?? ''}}",
@@ -4034,6 +4040,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_pc')}}",
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_pc",
                                                         "value": "{{buttonsItem.linkPc ?? ''}}",
@@ -4056,6 +4063,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_and')}}",
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_and",
                                                         "value": "{{buttonsItem.linkAnd ?? ''}}",
@@ -4078,6 +4086,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_ios')}}",
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_ios",
                                                         "value": "{{buttonsItem.linkIos ?? ''}}",
@@ -4100,6 +4109,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.tel_number')}}",
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.tel_number",
                                                         "value": "{{buttonsItem.telNumber ?? ''}}",
@@ -4122,6 +4132,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.plugin_id')}}",
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.plugin_id",
                                                         "value": "{{buttonsItem.pluginId ?? ''}}",
@@ -4235,6 +4246,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.button_name')}}",
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.button_name",
                                                         "value": "{{quickRepliesItem.name ?? ''}}",
@@ -4297,6 +4309,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_mo')}}",
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_mo",
                                                         "value": "{{quickRepliesItem.linkMo ?? ''}}",
@@ -4319,6 +4332,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_pc')}}",
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_pc",
                                                         "value": "{{quickRepliesItem.linkPc ?? ''}}",
@@ -4341,6 +4355,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_and')}}",
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_and",
                                                         "value": "{{quickRepliesItem.linkAnd ?? ''}}",
@@ -4363,6 +4378,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_ios')}}",
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_ios",
                                                         "value": "{{quickRepliesItem.linkIos ?? ''}}",
@@ -4385,6 +4401,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.tel_number')}}",
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.tel_number",
                                                         "value": "{{quickRepliesItem.telNumber ?? ''}}",
@@ -4407,6 +4424,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.plugin_id')}}",
                                                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.plugin_id",
                                                         "value": "{{quickRepliesItem.pluginId ?? ''}}",
@@ -4946,6 +4964,7 @@
                             ],
                             "props": {
                                 "name": "bz_sms_body",
+                                "aria-label": "{{($locales ?? []).length > 1 ? $t('common.field_in_language', {label: $t('sirsoft-message_bizppurio.template.sms.body_label'), language: _global.appConfig?.localeNames?.[_global.bz_sms_modal?.editLang ?? $locale] ?? (_global.bz_sms_modal?.editLang ?? $locale)}) : $t('sirsoft-message_bizppurio.template.sms.body_label')}}",
                                 "rows": 4,
                                 "maxLength": 2000,
                                 "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100",

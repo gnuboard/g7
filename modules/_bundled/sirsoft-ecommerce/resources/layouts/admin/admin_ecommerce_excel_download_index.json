@@ -390,6 +390,7 @@
                                         ],
                                         "props": {
                                             "name": "categoryFilter",
+                                            "aria-label": "$t:sirsoft-ecommerce.admin.excel_download.filter.category",
                                             "className": "w-40",
                                             "value": "{{_local.categoryFilter}}",
                                             "options": [
@@ -439,6 +440,7 @@
                                         "name": "Select",
                                         "props": {
                                             "name": "dateType",
+                                            "aria-label": "$t:sirsoft-ecommerce.admin.excel_download.filter.date_search",
                                             "className": "w-32",
                                             "value": "{{_local.dateType}}",
                                             "options": [
@@ -583,6 +585,7 @@
                                                 "name": "Select",
                                                 "props": {
                                                     "name": "sortBy",
+                                                    "aria-label": "$t:common.sort_order",
                                                     "className": "w-44",
                                                     "value": "{{_local.sortBy}}",
                                                     "options": [
@@ -609,6 +612,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "perPage",
+                                                    "aria-label": "$t:common.per_page",
                                                     "className": "w-24",
                                                     "value": "{{_local.perPage}}",
                                                     "options": [

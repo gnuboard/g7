@@ -92,7 +92,7 @@
         <!-- 발급수단 — 지출증빙일 때만 사업자등록번호 추가 (D10) -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-ecommerce.order.cash_receipt.identifier_type</label>
-          <select name="identifier_type" value="{{_global.ecommerceCashReceiptForm?.identifier_type ?? 'phone'}}" options="{{(_global.ecommerceCashReceiptForm?.receipt_type === 'expense' ? [{ value: 'business', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_business') }] : []).concat([{ value: 'phone', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_phone') }, { value: 'card', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_card') }])}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+          <select name="identifier_type" aria-label="$t:sirsoft-ecommerce.order.cash_receipt.identifier_type" value="{{_global.ecommerceCashReceiptForm?.identifier_type ?? 'phone'}}" options="{{(_global.ecommerceCashReceiptForm?.receipt_type === 'expense' ? [{ value: 'business', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_business') }] : []).concat([{ value: 'phone', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_phone') }, { value: 'card', label: $t('sirsoft-ecommerce.order.cash_receipt.identifier_card') }])}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             <on type="change">
               <!-- 발급수단 변경 시 번호를 비운다 (형식이 달라 검증 실패를 유발) -->
               <set-state target="global" ecommerceCashReceiptForm.identifier_type="{{$event.target.value}}" ecommerceCashReceiptForm.identifier=""/>
@@ -102,7 +102,7 @@
         <!-- 번호 -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-ecommerce.order.cash_receipt.identifier</label>
-          <input type="text" name="identifier" value="{{_global.ecommerceCashReceiptForm?.identifier ?? ''}}" placeholder="$t:sirsoft-ecommerce.order.cash_receipt.identifier_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+          <input type="text" name="identifier" aria-label="$t:sirsoft-ecommerce.order.cash_receipt.identifier" value="{{_global.ecommerceCashReceiptForm?.identifier ?? ''}}" placeholder="$t:sirsoft-ecommerce.order.cash_receipt.identifier_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             <on type="change">
               <!-- 식별번호. 소득공제면 휴대폰번호나 현금영수증카드, 지출증빙이면 사업자등록번호다 -->
               <set-state target="global" ecommerceCashReceiptForm.identifier="{{$event.target.value}}"/>

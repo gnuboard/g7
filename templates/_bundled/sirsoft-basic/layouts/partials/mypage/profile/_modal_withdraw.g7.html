@@ -25,7 +25,8 @@
         <!-- 확장이 경고 항목을 덧붙이는 자리. 모달 안이라 target-id 오버레이는 닿지 않고, 확장점 주입만 모달 트리까지 순회한다. -->
         <extension-point name="withdraw_warnings" data-ref="withdraw_warnings_slot"/>
       </ul>
-      <div class="flex items-center gap-2 mb-4">
+      <!-- 체크박스와 동의 문장을 한 label 로 감싼다 — 문장을 눌러도 체크되고 낭독기가 문장을 이름으로 읽는다 -->
+      <label class="flex items-center gap-2 mb-4 cursor-pointer">
         <checkbox name="confirmWithdraw" checked="{{_local.form?.confirmWithdraw ?? false}}">
           <on type="change">
             <!-- 이 체크가 곧 아래 탈퇴 버튼의 잠금 해제 조건이다 -->
@@ -36,8 +37,8 @@
             </set-state>
           </on>
         </checkbox>
-        <label class="text-sm text-gray-700 dark:text-gray-300">$t:mypage.withdraw.confirm_checkbox</label>
-      </div>
+        <span class="text-sm text-gray-700 dark:text-gray-300">$t:mypage.withdraw.confirm_checkbox</span>
+      </label>
       <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
         <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <on type="click">

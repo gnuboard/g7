@@ -80,7 +80,7 @@
                 <span>$t:shop.guest_order_form.order_number</span>
                 <span class="text-red-500 dark:text-red-400 ml-1">*</span>
               </label>
-              <input type="text" name="order_number" value="{{_local.form?.order_number ?? ''}}" placeholder="$t:shop.guest_order_form.order_number_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" :required="true" disabled="{{_local.isSubmitting}}">
+              <input aria-label="$t:shop.guest_order_form.order_number" type="text" name="order_number" value="{{_local.form?.order_number ?? ''}}" placeholder="$t:shop.guest_order_form.order_number_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" :required="true" disabled="{{_local.isSubmitting}}">
                 <on type="change">
                   <!-- 폼 자동 바인딩을 쓰지 않고 로컬에 직접 담는다 — 아래 제출 버튼의 비활성 조건이 세 칸을 함께 보기 때문 -->
                   <set-state target="local" form.order_number="{{$event.target.value}}"/>
@@ -94,7 +94,7 @@
                 <span>$t:shop.guest_order_form.orderer_phone</span>
                 <span class="text-red-500 dark:text-red-400 ml-1">*</span>
               </label>
-              <input type="tel" name="orderer_phone" value="{{_local.form?.orderer_phone ?? ''}}" placeholder="$t:shop.guest_order_form.orderer_phone_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" :required="true" disabled="{{_local.isSubmitting}}">
+              <input aria-label="$t:shop.guest_order_form.orderer_phone" type="tel" name="orderer_phone" value="{{_local.form?.orderer_phone ?? ''}}" placeholder="$t:shop.guest_order_form.orderer_phone_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" :required="true" disabled="{{_local.isSubmitting}}">
                 <on type="change">
                   <!-- 주문 시 남긴 번호와 대조하는 값 — 서버가 정규화하므로 화면에서는 그대로 담는다 -->
                   <set-state target="local" form.orderer_phone="{{$event.target.value}}"/>
@@ -108,7 +108,7 @@
                 <span>$t:shop.guest_order_form.password</span>
                 <span class="text-red-500 dark:text-red-400 ml-1">*</span>
               </label>
-              <password-input name="guest_lookup_password" value="{{_local.form?.guest_lookup_password ?? ''}}" placeholder="$t:shop.guest_order_form.password_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" :required="true" disabled="{{_local.isSubmitting}}" :showToggle="true">
+              <password-input aria-label="$t:shop.guest_order_form.password" name="guest_lookup_password" value="{{_local.form?.guest_lookup_password ?? ''}}" placeholder="$t:shop.guest_order_form.password_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" :required="true" disabled="{{_local.isSubmitting}}" :showToggle="true">
                 <on type="change">
                   <!-- 주문할 때 정한 조회 비밀번호. 로그인 비밀번호와 무관한 값이다 -->
                   <set-state target="local" form.guest_lookup_password="{{$event.target.value}}"/>

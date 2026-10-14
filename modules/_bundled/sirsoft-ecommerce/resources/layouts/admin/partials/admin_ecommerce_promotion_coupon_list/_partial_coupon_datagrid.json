@@ -43,6 +43,7 @@
                     ],
                     "props": {
                         "name": "bulkIssueStatus",
+                        "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_status",
                         "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                         "value": "{{_local.bulkIssueStatus || ''}}",
                         "disabled": "{{coupons?.data?.abilities?.can_update !== true}}",
@@ -149,6 +150,7 @@
                             ],
                             "props": {
                                 "name": "sortBy",
+                                "aria-label": "$t:common.sort_order",
                                 "className": "w-40",
                                 "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
                                 "options": [
@@ -201,6 +203,7 @@
                             ],
                             "props": {
                                 "name": "perPage",
+                                "aria-label": "$t:common.per_page",
                                 "className": "w-20",
                                 "value": "{{query.per_page || '10'}}",
                                 "options": [
@@ -349,6 +352,7 @@
                 }
             ],
             "props": {
+                "rowLabelField": "localized_name",
                 "data": "{{coupons?.data?.data || []}}",
                 "pagination": true,
                 "serverSidePagination": true,

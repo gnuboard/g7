@@ -45,7 +45,7 @@
         <span class="text-label-subtle">$t:sirsoft-board.admin.settings.notification_definitions.total_count|count={{boardNotificationDefinitions?.data?.pagination?.total ?? 0}}</span>
         <div class="flex-center gap-2">
           <span class="text-label-subtle">$t:sirsoft-board.admin.settings.notification_definitions.per_page_label</span>
-          <select name="notifPerPage" class="w-20 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{String(query.per_page || 20)}}">
+          <select name="notifPerPage" aria-label="$t:sirsoft-board.admin.settings.notification_definitions.per_page_label" class="w-20 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{String(query.per_page || 20)}}">
             <options>
               <option value="10">10</option>
               <option value="20">20</option>
@@ -100,7 +100,7 @@
                   <extension-point name="notification_definition_row_footer" definition="{{def}}" activeChannel="{{query.channel ?? 'mail'}}"/>
                 </div>
                 <div class="flex-center gap-3 flex-shrink-0">
-                  <toggle data-type="composite" data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" checked="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}" disabled="{{_computed.isNotificationReadOnly}}">
+                  <toggle data-type="composite" data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" ariaLabel="$t:common.item_enabled|name={{$t('sirsoft-board.admin.settings.notification_definitions.types.' + def.type)}}" checked="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}" disabled="{{_computed.isNotificationReadOnly}}">
                     <on type="change">
                       <!-- 이 채널의 알림 사용 여부를 뒤집는다. 지금 보고 있는 채널의 템플릿을 골라 보내며, 성공하면 정의 목록을 다시 받아 표시를 맞춘다 -->
                       <api-call :auth_required="true" target="{{'/api/admin/notification-templates/' + (def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.id + '/toggle-active'}}" method="PATCH">

@@ -212,6 +212,8 @@ describe('확장 제거 결과 화면 렌더링', () => {
         );
         const Checkbox: React.FC<any> = (props) => <input type="checkbox" readOnly checked={!!props.checked} />;
         const Fragment: React.FC<any> = ({ children }) => <>{children}</>;
+        // 데이터 삭제 선택은 체크박스와 글자를 한 label 로 감싼다(#757 — 글자를 눌러도 체크)
+        const Label: React.FC<any> = ({ className, children }) => <label className={className}>{children}</label>;
 
         (registry as any).registry = {
             Div: { component: Div, metadata: { name: 'Div', type: 'basic' } },
@@ -221,6 +223,7 @@ describe('확장 제거 결과 화면 렌더링', () => {
             Button: { component: Button, metadata: { name: 'Button', type: 'basic' } },
             Checkbox: { component: Checkbox, metadata: { name: 'Checkbox', type: 'basic' } },
             Fragment: { component: Fragment, metadata: { name: 'Fragment', type: 'layout' } },
+            Label: { component: Label, metadata: { name: 'Label', type: 'basic' } },
         };
     }
 

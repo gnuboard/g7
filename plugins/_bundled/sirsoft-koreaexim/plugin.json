@@ -5,7 +5,7 @@
         "ko": "수출입은행 환율",
         "en": "Korea Eximbank Exchange Rates"
     },
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": {
         "ko": "공식 환율 자동 갱신과 갱신 이력·실패 알림을 제공합니다.",
         "en": "Automatic official exchange rates, history and failure notifications."

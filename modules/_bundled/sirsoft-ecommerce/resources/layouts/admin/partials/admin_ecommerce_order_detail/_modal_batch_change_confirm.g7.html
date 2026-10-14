@@ -56,7 +56,7 @@
               </div>
               <div class="col-span-2 flex justify-center">
                 <responsive on="portable" class="flex justify-start"/>
-                <input type="number" class="w-16 text-center rounded px-1" min="1" max="{{confirmItem.quantity}}" value="{{_local.changeQuantities?.[confirmItem.id] ?? $parent._local.changeQuantities?.[confirmItem.id] ?? confirmItem.quantity}}">
+                <input type="number" class="w-16 text-center rounded px-1" aria-label="$t:common.row_cell|row={{[confirmItem.product_name, confirmItem.product_option_name].filter(Boolean).join(' ')}}|column={{$t('sirsoft-ecommerce.admin.order.detail.modal.batch_change.change_quantity_col')}}" min="1" max="{{confirmItem.quantity}}" value="{{_local.changeQuantities?.[confirmItem.id] ?? $parent._local.changeQuantities?.[confirmItem.id] ?? confirmItem.quantity}}">
                   <on type="change">
                     <!-- 부분 처리 수량. 화면이 직접 상태에 쓰지 않고 핸들러에 맡긴다 — 상한 검사와 항목별 맵 갱신이 함께 필요하고, 그 맵이 아래 실행 액션으로 그대로 넘어간다. -->
                     <action handler="sirsoft-ecommerce.updateChangeQuantity" optionId="{{confirmItem.id}}" maxQuantity="{{confirmItem.quantity}}" value="{{$event.target.value}}"/>

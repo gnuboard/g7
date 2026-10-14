@@ -12,7 +12,7 @@
       <!-- ========== 페이지 안내 배너 ========== -->
       <div data-ref="page_info_banner" class="alert-info">
         <icon name="circle-info" class="text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5" size="sm"/>
-        <p class="text-info-soft">$t:sirsoft-board.admin.settings.page_info</p>
+        <p class="text-xs board-tone-info">$t:sirsoft-board.admin.settings.page_info</p>
       </div>
       <div class="row-stack">
         <div data-ref="field_type" class="">
@@ -52,7 +52,7 @@
               </div>
               <p class="text-field-hint pl-6">$t:sirsoft-board.admin.settings.fields.descriptions.type</p>
             </div>
-            <select name="basic_defaults.type" options="{{board_types?.data?.map(t => ({value: t.slug, label: (t.name[$locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}"/>
+            <select name="basic_defaults.type" aria-label="$t:sirsoft-board.admin.settings.fields.type" options="{{board_types?.data?.map(t => ({value: t.slug, label: (t.name[$locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
         <div data-ref="field_secret_mode" class="">

@@ -15,9 +15,9 @@
           <div class="flex gap-2">
             <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
             <div class="flex-1">
-              <p class="text-error-strong">{{_global.identity_policy_form_modal?.errors?.message ?? '$t:common.validation_error'}}</p>
+              <p class="ecommerce-tone-error-strong text-sm font-medium">{{_global.identity_policy_form_modal?.errors?.message ?? '$t:common.validation_error'}}</p>
               <ul data-if="{{_global.identity_policy_form_modal?.errors?.errors &amp;&amp; Object.keys(_global.identity_policy_form_modal.errors.errors).length > 0}}" data-each="msg in Object.entries(_global.identity_policy_form_modal?.errors?.errors ?? {}).flatMap(([f, m]) => Array.isArray(m) ? m : [m])" class="mt-1 list-disc list-inside space-y-0.5">
-                <li class="text-danger-soft">{{msg}}</li>
+                <li class="ecommerce-tone-error-soft text-xs">{{msg}}</li>
               </ul>
             </div>
           </div>
@@ -158,7 +158,7 @@
           </select>
           <p class="text-hint mt-1">$t:admin.identity.policies.form.signup_stage_desc</p>
         </div>
-        <div data-if="{{!_global.identity_policy_form_modal?.isNew &amp;&amp; _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}" class="alert-warning text-warning-soft">$t:admin.identity.policies.form.declared_policy_notice</div>
+        <div data-if="{{!_global.identity_policy_form_modal?.isNew &amp;&amp; _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}" class="alert-warning ecommerce-tone-warning-soft text-xs">$t:admin.identity.policies.form.declared_policy_notice</div>
       </div>
       <div data-ref="policy_form_footer" class="flex-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
         <button type="button" disabled="{{_global.identity_policy_form_modal?.isSaving ?? false}}" class="px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">

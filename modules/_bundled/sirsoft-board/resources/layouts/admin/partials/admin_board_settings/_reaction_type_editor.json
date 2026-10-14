@@ -284,6 +284,7 @@
                                                 ],
                                                 "props": {
                                                     "value": "{{row.name ?? {}}}",
+                                                    "ariaLabel": "$t:common.row_cell|row={{row.code}}|column={{$t('sirsoft-board.admin.settings.reaction_types.columns.name')}}",
                                                     "layout": "compact",
                                                     "placeholder": "$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder",
                                                     "error": "{{_local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name']?.[0] ?? ''}}",
@@ -436,6 +437,7 @@
                                                         ],
                                                         "props": {
                                                             "checked": "{{row.is_active ?? false}}",
+                                                            "ariaLabel": "$t:common.row_cell|row={{row.code}}|column={{$t('sirsoft-board.admin.settings.reaction_types.columns.is_active')}}",
                                                             "size": "sm",
                                                             "disabled": "{{_computed.isReadOnly}}"
                                                         }
@@ -589,6 +591,7 @@
                                                     "props": {
                                                         "data-testid": "reaction-type-form-code",
                                                         "type": "text",
+                                                        "aria-label": "$t:sirsoft-board.admin.settings.reaction_types.columns.code",
                                                         "value": "{{_local.reactionTypeForm?.code ?? ''}}",
                                                         "className": "{{_local.reactionTypeFormErrors?.code ? 'input input-error font-mono w-full' : 'input font-mono w-full'}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
@@ -646,6 +649,7 @@
                                                     ],
                                                     "props": {
                                                         "value": "{{_local.reactionTypeForm?.name ?? {}}}",
+                                                        "ariaLabel": "$t:sirsoft-board.admin.settings.reaction_types.columns.name",
                                                         "layout": "compact",
                                                         "placeholder": "$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder",
                                                         "error": "{{_local.reactionTypeFormErrors?.name ? '$t:sirsoft-board.admin.settings.reaction_types.validation.name_required' : ''}}",
@@ -771,6 +775,7 @@
                                                             ],
                                                             "props": {
                                                                 "checked": "{{_local.reactionTypeForm?.is_active ?? true}}",
+                                                                "ariaLabel": "$t:sirsoft-board.admin.settings.reaction_types.columns.is_active",
                                                                 "size": "sm",
                                                                 "disabled": "{{_computed.isReadOnly}}"
                                                             }

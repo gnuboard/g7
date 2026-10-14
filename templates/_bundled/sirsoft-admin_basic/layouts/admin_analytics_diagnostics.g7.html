@@ -412,7 +412,7 @@
           <h2 class="section-heading">$t:admin.analytics.diagnostics.failures_title</h2>
           <div class="flex-center gap-2">
             <span class="text-label-subtle">$t:admin.analytics.diagnostics.failures_24h|count={{(analytics_diagnostics?.data?.failures_24h ?? 0) | number}}</span>
-            <select data-ref="failure_reason" name="analytics_failure_reason" class="w-40" value="{{query.reason || ''}}">
+            <select data-ref="failure_reason" aria-label="$t:admin.analytics.diagnostics.failure_columns.reason" name="analytics_failure_reason" class="w-40" value="{{query.reason || ''}}">
               <options>
                 <option value="">$t:admin.analytics.diagnostics.failure_reasons.all</option>
                 <option value="validation">$t:admin.analytics.diagnostics.failure_reasons.validation</option>

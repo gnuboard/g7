@@ -191,6 +191,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.qna.category",
                                 "className": "{{(_global.qnaErrors?.category) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500'}}",
                                 "value": "{{_global.qnaForm.category ?? ''}}",
                                 "options": "{{[{ value: '', label: $t('shop.qna.category_placeholder') }].concat(((_global.qnaModalBoardSettings)?.categories ?? []).map(function(c) { return typeof c === 'object' ? { value: c.value, label: c.label ?? c.value } : { value: c, label: c }; }))}}",
@@ -241,6 +242,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.qna.title",
                                 "type": "text",
                                 "className": "{{(_global.qnaErrors?.title) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500'}}",
                                 "placeholder": "$t:shop.qna.title_placeholder",
@@ -292,6 +294,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.qna.content",
                                 "className": "{{(_global.qnaErrors?.content) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none'}}",
                                 "placeholder": "$t:shop.qna.content_placeholder",
                                 "rows": 5,

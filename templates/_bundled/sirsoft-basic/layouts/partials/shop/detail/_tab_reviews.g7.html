@@ -35,14 +35,14 @@
     <!-- 옵션 필터 행 (옵션 키별 동적 Select들 + 별점 Select + 초기화) -->
     <div class="flex flex-wrap items-center gap-2 mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
       <!-- 옵션 키별 Select (동적 생성, 건수 포함) -->
-      <select data-each="optionFilter in {{reviews.data?.option_filters ?? []}}" value="{{_local.reviewOptionFilters?.[optionFilter.key] ?? ''}}" options="{{[{ value: '', label: optionFilter.key }].concat((optionFilter.values ?? []).map(v => ({ value: v.value, label: v.value + ' (' + v.count + ')' })))}}" class="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+      <select data-each="optionFilter in {{reviews.data?.option_filters ?? []}}" aria-label="{{optionFilter.key}}" value="{{_local.reviewOptionFilters?.[optionFilter.key] ?? ''}}" options="{{[{ value: '', label: optionFilter.key }].concat((optionFilter.values ?? []).map(v => ({ value: v.value, label: v.value + ' (' + v.count + ')' })))}}" class="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">
         <on type="change">
           <set-state target="local" reviewOptionFilters="{{Object.assign(Object.create(null), _local.reviewOptionFilters, { [optionFilter.key]: $event.target.value })}}" :reviewsPage="1"/>
           <refetch-data-source dataSourceId="reviews"/>
         </on>
       </select>
       <!-- 별점 필터 Select (정적, min-w는 가장 긴 항목 기준으로 고정) -->
-      <select value="{{_local.reviewRating ?? ''}}" class="w-40 text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+      <select aria-label="$t:shop.product.rating" value="{{_local.reviewRating ?? ''}}" class="w-40 text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">
         <options>
           <option value="">$t:shop.product.filter_all_rating</option>
           <option value="5">$t:shop.product.filter_rating_5</option>
@@ -77,7 +77,7 @@
         <span>$t:shop.product.photo_reviews_only</span>
       </button>
       <!-- 정렬 선택 -->
-      <select value="{{_local.reviewSortBy ?? 'created_at_desc'}}" class="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+      <select aria-label="$t:common.sort_order" value="{{_local.reviewSortBy ?? 'created_at_desc'}}" class="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300">
         <options>
           <option value="created_at_desc">$t:shop.product.sort_latest</option>
           <option value="rating_desc">$t:shop.product.sort_rating_high</option>

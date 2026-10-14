@@ -87,6 +87,7 @@
         }
     ],
     "props": {
+        "rowLabelField": "name_localized",
         "data": "{{shipping_policies?.data?.data || []}}",
         "idField": "id",
         "selectable": true,
@@ -159,6 +160,7 @@
                             }
                         ],
                         "props": {
+                            "ariaLabel": "$t:defer:common.row_cell|row={{$rowLabel}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.table.column.is_default_header')}}",
                             "checked": "{{row.is_default}}",
                             "size": "sm",
                             "disabled": "{{row.is_default || row.abilities?.can_update !== true}}"
@@ -267,6 +269,7 @@
                             }
                         ],
                         "props": {
+                            "ariaLabel": "$t:defer:common.row_cell|row={{$rowLabel}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.table.column.is_active')}}",
                             "checked": "{{row.is_active}}",
                             "size": "sm",
                             "disabled": "{{row.abilities?.can_update !== true}}"

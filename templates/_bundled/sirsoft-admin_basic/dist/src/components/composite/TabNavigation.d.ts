@@ -29,6 +29,11 @@ export interface TabNavigationProps {
     id?: string;
     /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
     editorAttrs?: EditorAttrs;
+    /**
+     * 좁은 화면에서 탭 대신 그리는 선택 상자의 이름(「{이름} {현재 탭}」으로 읽힌다).
+     * 없으면 공용 문구 「섹션 이동」 — 종전에는 이름이 없어 현재 탭 글자(「기본정보」)만 읽혔다(#757)
+     */
+    'aria-label'?: string;
 }
 /**
  * TabNavigation 집합 컴포넌트

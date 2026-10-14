@@ -62,7 +62,8 @@
       "tracking_only": "송장만 저장",
       "tracking_only_description": "고른 상품에 {{direction}} 송장만 저장합니다. 상태는 바뀌지 않습니다.",
       "quantity_split_hint": "수량을 줄이면 그 상품이 나뉩니다 — 예: 셔츠 3개 중 1개에만 적용하면 1개와 2개로 나뉩니다.",
-      "tracking_mixed_address": "회수지가 다른 상품은 한 운송장으로 묶을 수 없습니다. 회수지별로 나눠 저장해 주세요."
+      "tracking_mixed_address": "회수지가 다른 상품은 한 운송장으로 묶을 수 없습니다. 회수지별로 나눠 저장해 주세요.",
+      "tracking_direction_label": "송장 방향"
     },
     "completion": {
       "title": "완료 처리",

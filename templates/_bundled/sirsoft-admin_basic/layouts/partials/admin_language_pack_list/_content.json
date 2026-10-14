@@ -586,6 +586,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:admin.language_packs.columns.scope",
                                 "value": "{{query.scope ?? ''}}",
                                 "className": "w-full sm:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100",
                                 "options": [
@@ -641,6 +642,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:admin.language_packs.columns.status",
                                 "value": "{{query.status ?? ''}}",
                                 "className": "w-full sm:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100",
                                 "options": [
@@ -1146,6 +1148,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:common.per_page",
                                         "value": "{{query.per_page || 10}}",
                                         "className": "border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded px-2 py-1 text-sm",
                                         "options": [

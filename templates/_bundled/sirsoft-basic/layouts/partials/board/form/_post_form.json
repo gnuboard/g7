@@ -310,6 +310,7 @@
                                             "name": "Input",
                                             "props": {
                                                 "type": "checkbox",
+                                                "aria-label": "$t:board.form.secret_post",
                                                 "checked": true,
                                                 "disabled": true,
                                                 "className": "mt-0.5 w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 opacity-50 cursor-not-allowed"
@@ -405,6 +406,7 @@
                             "type": "basic",
                             "name": "Input",
                             "props": {
+                                "aria-label": "$t:board.guest_author_name",
                                 "type": "text",
                                 "name": "author_name",
                                 "placeholder": "$t:board.guest_author_name_placeholder",
@@ -452,6 +454,7 @@
                             "type": "basic",
                             "name": "Input",
                             "props": {
+                                "aria-label": "$t:board.guest_password",
                                 "type": "password",
                                 "name": "password",
                                 "placeholder": "$t:board.guest_password_placeholder",
@@ -504,6 +507,7 @@
                     ],
                     "props": {
                         "name": "category",
+                        "aria-label": "$t:board.form.category",
                         "value": "{{_local.form?.category ?? ''}}",
                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500",
                         "options": "{{[{value: '', label: $t('board.form.select_category')}, ...(form_meta?.data?.board?.categories ?? []).map(c => ({value: c, label: c}))]}}"
@@ -542,6 +546,7 @@
                     "type": "basic",
                     "name": "Input",
                     "props": {
+                        "aria-label": "$t:board.form.title",
                         "type": "text",
                         "name": "title",
                         "placeholder": "$t:board.form.title_placeholder",

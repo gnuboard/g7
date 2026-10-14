@@ -243,11 +243,13 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
       {/* 토글 스위치 — 선택 모드에서는 숨긴다(행 클릭이 선택 토글이라 상태 전환과 섞이지 않게) */}
       {!selectable && (
         <Div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+          {/* 이름 — 앞 형제가 없어 「스위치, 켬」만 읽혔다(메뉴·브랜드·카테고리, #757) */}
           <Toggle
             checked={item.isActive}
             onChange={() => onToggle?.(new MouseEvent('click') as unknown as React.MouseEvent)}
             size="sm"
             disabled={toggleDisabled}
+            ariaLabel={tOr('common.item_enabled', `${item.name} enabled`, { name: item.name })}
           />
         </Div>
       )}

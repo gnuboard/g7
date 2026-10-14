@@ -78,6 +78,7 @@
                             ],
                             "props": {
                                 "name": "perPage",
+                                "aria-label": "$t:common.per_page",
                                 "className": "w-24",
                                 "value": "{{_local.perPage ?? '20'}}",
                                 "options": [
@@ -161,6 +162,7 @@
                         }
                     ],
                     "props": {
+                        "rowLabelField": "claim_number",
                         "data": "{{claims?.data?.data ?? []}}",
                         "selectable": "{{(query.type ?? 'exchange') !== 'cancel' && claims?.data?.abilities?.can_update_status === true}}",
                         "selectionScope": "page",

@@ -103,3 +103,30 @@
 .dark .board-confirm-button:hover {
     background-color: color-mix(in oklab, var(--color-green-900, oklch(39.3% 0.095 152.535)) 20%, transparent); /* green-900/20 */
 }
+
+/* 경고 글자색 — 관리자 템플릿 의미 클래스(text-warning-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
+.board-tone-warning {
+    color: var(--color-yellow-700, oklch(55.4% 0.135 66.442)); /* yellow-700 */
+}
+
+.dark .board-tone-warning {
+    color: var(--color-yellow-300, oklch(90.5% 0.182 98.111)); /* yellow-300 */
+}
+
+/* 위험 글자색 — 관리자 템플릿 의미 클래스(text-danger-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
+.board-tone-danger {
+    color: var(--color-red-700, oklch(50.5% 0.213 27.518)); /* red-700 */
+}
+
+.dark .board-tone-danger {
+    color: var(--color-red-300, oklch(80.8% 0.114 19.571)); /* red-300 */
+}
+
+/* 안내 글자색 — 관리자 템플릿 의미 클래스(text-info-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
+.board-tone-info {
+    color: var(--color-blue-700, oklch(48.8% 0.243 264.376)); /* blue-700 */
+}
+
+.dark .board-tone-info {
+    color: var(--color-blue-300, oklch(80.9% 0.105 251.813)); /* blue-300 */
+}

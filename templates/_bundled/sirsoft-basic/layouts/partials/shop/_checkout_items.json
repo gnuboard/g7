@@ -544,6 +544,7 @@
                                                     ],
                                                     "props": {
                                                         "name": "item_coupon_1",
+                                                        "aria-label": "$t:common.row_cell|row={{item.product.name ?? ''}}|column={{$t('shop.checkout.product_coupon_1')}}",
                                                         "value": "{{_local.checkout?.item_coupons?.[item.product_option_id]?.[0] ?? ''}}",
                                                         "className": "w-48 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500"
                                                     },
@@ -640,6 +641,7 @@
                                                     ],
                                                     "props": {
                                                         "name": "item_coupon_2",
+                                                        "aria-label": "$t:common.row_cell|row={{item.product.name ?? ''}}|column={{$t('shop.checkout.product_coupon_2')}}",
                                                         "value": "{{_local.checkout?.item_coupons?.[item.product_option_id]?.[1] ?? ''}}",
                                                         "className": "w-48 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500"
                                                     },

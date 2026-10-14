@@ -529,6 +529,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "bulkSalesStatus",
+                                                    "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.sales_status",
                                                     "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                                                     "value": "{{_local.bulkSalesStatus || ''}}",
                                                     "disabled": "{{products?.data?.abilities?.can_update !== true}}",
@@ -569,6 +570,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "bulkDisplayStatus",
+                                                    "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.display_status",
                                                     "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                                                     "value": "{{_local.bulkDisplayStatus || ''}}",
                                                     "disabled": "{{products?.data?.abilities?.can_update !== true}}",
@@ -610,7 +612,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "{{_global.bulkPriceCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}",
+                                                    "className": "{{_global.bulkPriceCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 ecommerce-tone-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}",
                                                     "disabled": "{{products?.data?.abilities?.can_update !== true}}"
                                                 },
                                                 "children": [
@@ -644,7 +646,7 @@
                                                 "props": {
                                                     "type": "button",
                                                     "data-testid": "product-bulk-stock-open",
-                                                    "className": "{{_global.bulkStockCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}",
+                                                    "className": "{{_global.bulkStockCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 ecommerce-tone-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}",
                                                     "disabled": "{{products?.data?.abilities?.can_update !== true}}"
                                                 },
                                                 "children": [
@@ -776,6 +778,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "sortBy",
+                                                    "aria-label": "$t:common.sort_order",
                                                     "className": "w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                                     "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
                                                     "options": [
@@ -836,6 +839,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "perPage",
+                                                    "aria-label": "$t:common.per_page",
                                                     "className": "w-24 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                                     "value": "{{query.per_page || '20'}}",
                                                     "options": [

@@ -92,7 +92,7 @@
           <!-- 취소수량 입력 -->
           <div class="col-span-3 flex justify-center">
             <responsive on="portable" class="flex justify-start"/>
-            <input type="number" class="input w-20 text-center" value="{{cancelItem.cancel_quantity ?? cancelItem.quantity}}" min="1" max="{{cancelItem.quantity}}">
+            <input type="number" class="input w-20 text-center" aria-label="$t:common.row_cell|row={{[cancelItem.product_name, cancelItem.product_option_name].filter(Boolean).join(' ')}}|column={{$t('sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_quantity_col')}}" value="{{cancelItem.cancel_quantity ?? cancelItem.quantity}}" min="1" max="{{cancelItem.quantity}}">
               <on type="change">
                 <!-- 취소 수량. 상한 검사와 항목별 반영에 더해 **환불 예상액 재조회**까지 딸려 있어 핸들러가 맡는다 — 아래 금액 비교가 이 한 번의 입력으로 함께 움직인다. -->
                 <action handler="sirsoft-ecommerce.updateCancelQuantity" optionId="{{cancelItem.id}}" maxQuantity="{{cancelItem.quantity}}" orderId="{{route.orderNumber}}" value="{{$event.target.value}}"/>
@@ -110,7 +110,7 @@
       <!-- 취소 사유 드롭다운 -->
       <div>
         <span class="text-body font-medium block mb-2">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_reason_type_label</span>
-        <select class="{{_local.cancelValidationErrors?.reason ? 'select w-full text-sm border-2 border-red-500 dark:border-red-500' : 'select w-full text-sm'}}" value="{{_local.cancelReason ?? ''}}">
+        <select aria-label="$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_reason_type_label" class="{{_local.cancelValidationErrors?.reason ? 'select w-full text-sm border-2 border-red-500 dark:border-red-500' : 'select w-full text-sm'}}" value="{{_local.cancelReason ?? ''}}">
           <on type="change">
             <!-- 취소 사유. 사유를 고치는 순간 이전 검증 오류와 실행 오류를 함께 지운다 — 방금 고친 값에 대한 빨간 표시가 남아 있으면 무엇이 문제인지 읽을 수 없다. 선택지는 환불 사유 설정에서 온다. -->
             <set-state target="local" cancelReason="{{$event.target.value}}" :cancelValidationErrors="null" :cancelError="null"/>
@@ -138,7 +138,7 @@
         <!-- 은행 / 계좌번호 / 예금주 — 기본 3열, portable 1열 (마크업 구조 변경이므로 responsive 속성 사용) -->
         <div class="grid grid-cols-3 gap-3">
           <responsive on="portable" class="grid grid-cols-1 gap-3"/>
-          <select data-ref="cancel_refund_bank_code" name="refund_bank_code" value="{{_local.refundBankCode ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_select') }].concat((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+          <select data-ref="cancel_refund_bank_code" aria-label="$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_name" name="refund_bank_code" value="{{_local.refundBankCode ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_select') }].concat((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
             <on type="change">
               <!-- 환불 계좌 은행. 가상계좌·무통장 주문을 취소할 때만 쓰이며, 세 칸(은행·계좌·예금주)이 다 차야 취소 요청이 나간다 -->
               <set-state target="local" refundBankCode="{{$event.target.value}}"/>
@@ -380,7 +380,7 @@
           <!-- 취소 불가 경고 배너 — 쿠폰 조건 미달로 결제금액 증가 시 -->
           <div data-if="{{_local.refundEstimate?.cancel_blocked}}" class="alert-danger">
             <icon name="circle-exclamation" class="text-red-600 dark:text-red-400 mt-0.5" size="sm"/>
-            <span class="text-danger-soft">{{_local.refundEstimate?.cancel_blocked_reason ?? ''}}</span>
+            <span class="ecommerce-tone-error-soft text-xs">{{_local.refundEstimate?.cancel_blocked_reason ?? ''}}</span>
           </div>
           <!-- 구분선 + 최종 환불 예정액 -->
           <div class="flex justify-between text-sm font-semibold border-t-2 border-gray-300 dark:border-gray-600">

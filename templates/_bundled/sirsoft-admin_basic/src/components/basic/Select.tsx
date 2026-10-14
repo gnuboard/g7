@@ -1,5 +1,5 @@
 // e2e:allow편집기 passthrough 결함#1 수정(커스텀 드롭다운 루트 data-editor-* spread). 라이브 검증은 Chrome MCP T1~T7 매트릭스(에디터 추가/선택/저장 200/reload/게스트 사용자화면)로 수행, 단위 회귀는 Select.test.tsx passthrough describe. 라벨 자동 연결(후속 B7)은 전용 Chrome 접근성 트리 재실측 + LabelAutoLink.test.tsx.
-import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useCallback, useId } from 'react';
 import { useAdjacentLabel } from '../../hooks/useAdjacentLabel';
 import { createPortal } from 'react-dom';
 import { Div } from './Div';
@@ -105,6 +105,7 @@ export const Select: React.FC<SelectProps> = ({
   placeholder,
   editorAttrs,
   'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
   ...props
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -147,6 +148,27 @@ export const Select: React.FC<SelectProps> = ({
     const selected = normalizedOptions.find(opt => String(opt.value) === String(value));
     return selected?.label || '';
   }, [normalizedOptions, value]);
+
+  // 목록형 단추 이름 — 「{이름} {현재 값}」. 종전에는 aria-label 이 단추 이름을 덮어 고른 값이 빠지고,
+  // aria-labelledby 는 단추가 아니라 바깥 상자에 붙어 읽히지 않았다(#757). 숨은 이름 span + 값 span 을 잇는다.
+  const domId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
+  const nameId = `${domId}-name`;
+  const valueId = `${domId}-value`;
+  // 고른 값이 없으면 값 span 은 placeholder(안내 글자)를 보이므로 이름에 잇지 않는다 — 「상태 변경 상태 변경」처럼 겹친다.
+  // 값이 빈 자리표시 선택지(`<option value="" disabled>주문상태 변경</option>`, 「판매 상태 선택」)도 고른 값이 아니다 —
+  // disabled 이거나 글자가 이름으로 시작하면 잇지 않는다. 「언어 전체」처럼 뜻 있는 빈 값은 그대로 잇는다(수정 후 브라우저 실측)
+  const selectedOption = normalizedOptions?.find((opt) => String(opt.value) === String(value));
+  const isPlaceholderOption =
+    !!selectedOption &&
+    String(selectedOption.value) === '' &&
+    (!!selectedOption.disabled ||
+      (!!ariaLabel && selectedOption.label.trim().startsWith(String(ariaLabel).trim())));
+  const valuePart = selectedLabel && !isPlaceholderOption ? ` ${valueId}` : '';
+  const buttonLabelledBy = ariaLabel
+    ? `${nameId}${valuePart}`
+    : ariaLabelledBy
+      ? `${ariaLabelledBy}${valuePart}`
+      : undefined;
 
   // searchable 모드에서 검색어로 필터링된 옵션
   const visibleOptions = useMemo((): SelectOption[] | null => {
@@ -303,6 +325,7 @@ export const Select: React.FC<SelectProps> = ({
         onChange={onChange as React.ChangeEventHandler<HTMLSelectElement>}
         disabled={disabled}
         aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
         {...editorAttrs}
         {...props}
       >
@@ -342,6 +365,11 @@ export const Select: React.FC<SelectProps> = ({
 
   return (
     <Div ref={containerRef} className={`relative ${widthClass}`.trim()} {...rootDomProps}>
+      {ariaLabel && (
+        <Span id={nameId} className="sr-only">
+          {ariaLabel}
+        </Span>
+      )}
       <Button
         ref={buttonRef}
         type="button"
@@ -350,11 +378,11 @@ export const Select: React.FC<SelectProps> = ({
         className={`${baseButtonClass} flex items-center justify-between gap-2 text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        aria-label={ariaLabel}
+        aria-labelledby={buttonLabelledBy}
       >
         {/* 고른 값이 없으면 placeholder 를 흐린 글자로 보인다 — 종전에는 placeholder 가 바깥 div 속성으로 새고
             버튼은 빈칸이라, 일괄 처리 선택 상자 두 개가 이름도 글자도 없는 빈 상자로 보였다(7.1.0 J D-J11). */}
-        <Span className={selectedLabel ? 'truncate' : 'truncate text-gray-400 dark:text-gray-500'}>{selectedLabel || placeholder || '\u00A0'}</Span>
+        <Span id={valueId} className={selectedLabel ? 'truncate' : 'truncate text-gray-400 dark:text-gray-500'}>{selectedLabel || placeholder || '\u00A0'}</Span>
         <Svg
           className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"

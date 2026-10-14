@@ -90,7 +90,7 @@
       <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">$t:sirsoft-ecommerce.admin.claim.detail.transition.title</h2>
       <div data-ref="claim_status_transition_bar" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 flex-wrap gap-3">
         <!-- 옮길 상태를 고르기만 하는 칸이다 — 서버에는 옆 [일괄 적용] 을 눌러야 가고, 반려를 고르면 그 사이에 사유 입력칸이 열린다. -->
-        <select data-ref="cts_001_status_select" name="claimBulkStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.claimBulkStatus ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_status !== true}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.bulk.status_placeholder'), disabled: true }].concat(claim?.data?.transition_options ?? [])}}">
+        <select data-ref="cts_001_status_select" aria-label="$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder" name="claimBulkStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.claimBulkStatus ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_status !== true}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.bulk.status_placeholder'), disabled: true }].concat(claim?.data?.transition_options ?? [])}}">
           <on type="change">
             <set-state target="local" claimBulkStatus="{{$event.target.value}}"/>
           </on>
@@ -124,7 +124,7 @@
         <span data-ref="ci_001_selected_count" class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.claim.bulk.selected_count|count={{(_local.selectedClaimItems ?? []).length}}</span>
         <div class="flex-center flex-wrap gap-2">
           <!-- 선택지는 **서버가 행마다 실어 준 어휘**(`transition_options`)의 교집합이다 — 핸들러가 계산해 `_local.itemTransitionOptions` 에 깐다. 화면이 상태 목록을 리터럴로 들면 전이표가 바뀔 때 화면과 서버가 갈리고, 그 사이 운영자는 '가끔 안 되는 버튼' 을 본다. 결제대기는 서버가 상품 축에서 이미 뺀다(결제는 신청서 단위 축이다). -->
-          <select data-ref="ci_002_item_status" data-if="{{(_local.itemTransitionOptions ?? []).length > 0}}" name="itemBulkStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.itemBulkStatus ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_status !== true}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.bulk.status_placeholder'), disabled: true }].concat(_local.itemTransitionOptions ?? [])}}">
+          <select data-ref="ci_002_item_status" aria-label="$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder" data-if="{{(_local.itemTransitionOptions ?? []).length > 0}}" name="itemBulkStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.itemBulkStatus ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_status !== true}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.bulk.status_placeholder'), disabled: true }].concat(_local.itemTransitionOptions ?? [])}}">
             <on type="change">
               <!-- 회수중·발송중을 고르면 **고른 행들이 이미 가진 송장**을 미리 채운다 — 모든 행이 같은 송장일 때만이다(P1). 송장은 상품 행마다 있어 행마다 다르면 비워 두고 새로 적게 한다. 판정은 핸들러가 한다(회수중 = 회수 송장, 발송중 = 재발송 송장). -->
               <action handler="sirsoft-ecommerce.selectClaimItemBulkStatus" status="{{$event.target.value}}" rows="{{claim?.data?.claim?.items ?? []}}"/>
@@ -142,12 +142,12 @@
         <!-- 회수중·발송중 송장 (#599 후속 운영 결정). 그 두 상태는 택배가 물건을 싣고 가는 중이라는 사실이라 송장 없이 들어가면 고객 알림의 운송장 칸이 비어서 나간다 — 서버도 422 로 막는다. 송장은 고른 상품 행마다 남는다(회수중은 회수 송장, 발송중은 재발송 송장 — 수량을 줄이면 그 행이 쪼개져 고른 수량에만 붙는다). 선택지는 상세 응답이 나른다 — 배송사 엔드포인트는 `settings.read` 게이트다. -->
         <div data-ref="ci_006_tracking_row" data-if="{{['collecting', 'redelivering'].includes(_local.itemBulkStatus ?? '') || _local.itemTrackingMode === true}}" class="flex-center flex-wrap gap-2">
           <!-- 「송장만 저장」 의 방향 — 교환만 회수·재발송 둘이다(반품은 회수뿐). 방향을 바꾸면 그 방향의 공통 송장을 다시 미리 채운다. -->
-          <select data-ref="ci_010_direction" data-if="{{_local.itemTrackingMode === true &amp;&amp; (claim?.data?.claim?.claim_type ?? '') === 'exchange'}}" name="itemTrackingDirection" class="w-32 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{_local.itemTrackingDirection ?? 'collection'}}" options="{{[{ value: 'collection', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.collection_title') }, { value: 'redelivery', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.redelivery_title') }]}}">
+          <select data-ref="ci_010_direction" aria-label="$t:sirsoft-ecommerce.admin.claim.detail.items.tracking_direction_label" data-if="{{_local.itemTrackingMode === true &amp;&amp; (claim?.data?.claim?.claim_type ?? '') === 'exchange'}}" name="itemTrackingDirection" class="w-32 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{_local.itemTrackingDirection ?? 'collection'}}" options="{{[{ value: 'collection', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.collection_title') }, { value: 'redelivery', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.redelivery_title') }]}}">
             <on type="change">
               <action handler="sirsoft-ecommerce.selectClaimItemTrackingDirection" direction="{{$event.target.value}}" rows="{{claim?.data?.claim?.items ?? []}}"/>
             </on>
           </select>
-          <select data-ref="ci_007_carrier" name="itemCarrierId" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{_local.itemCarrierId ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder') }].concat(claim?.data?.carriers ?? [])}}">
+          <select data-ref="ci_007_carrier" aria-label="$t:sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder" name="itemCarrierId" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{_local.itemCarrierId ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder') }].concat(claim?.data?.carriers ?? [])}}">
             <on type="change">
               <!-- 상품별 송장 입력의 택배사 선택을 이 화면 로컬 상태에 둔다 — [송장만 저장] 이 함께 읽는다 -->
               <set-state target="_local" itemCarrierId="{{$event.target.value}}"/>
@@ -194,7 +194,7 @@
         </button>
       </div>
       <!-- 선택은 화면 밖(로컬 상태)에 저장되므로 범위를 명시한다 — 이 표는 일괄 처리 대상이라 `page`(지금 화면에 보이고 체크된 행)다. 페이지네이션이 없어 한 화면이 곧 전체이며, 신청서를 갈아타면 셸의 `init_actions` 가 선택을 비운다. -->
-      <data-grid data-type="composite" data-ref="claim_items_datagrid" data="{{claim?.data?.claim?.items ?? []}}" idField="id" selectable="{{(claim?.data?.claim?.claim_type ?? '') !== 'cancel'}}" selectionScope="page" selectedIds="{{_local.selectedClaimItems ?? []}}" :pagination="false" :showColumnSelector="false" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.claim.detail.items.empty">
+      <data-grid data-type="composite" data-ref="claim_items_datagrid" rowLabelField="product_name" data="{{claim?.data?.claim?.items ?? []}}" idField="id" selectable="{{(claim?.data?.claim?.claim_type ?? '') !== 'cancel'}}" selectionScope="page" selectedIds="{{_local.selectedClaimItems ?? []}}" :pagination="false" :showColumnSelector="false" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.claim.detail.items.empty">
         <column field="product_info" header="$t:sirsoft-ecommerce.admin.claim.detail.items.columns.product" width="auto" :sortable="false" :required="true">
           <cell>
             <div class="flex items-start gap-3">

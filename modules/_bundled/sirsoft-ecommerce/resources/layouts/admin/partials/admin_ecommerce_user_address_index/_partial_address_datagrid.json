@@ -125,6 +125,7 @@
                             ],
                             "props": {
                                 "name": "sort",
+                                "aria-label": "$t:common.sort_order",
                                 "className": "w-40",
                                 "value": "{{query.sort || 'created_at_desc'}}",
                                 "options": [
@@ -173,6 +174,7 @@
                             ],
                             "props": {
                                 "name": "perPage",
+                                "aria-label": "$t:common.per_page",
                                 "className": "w-20",
                                 "value": "{{query.per_page || '20'}}",
                                 "options": [
@@ -305,6 +307,7 @@
                 }
             ],
             "props": {
+                "rowLabelField": "recipient_name",
                 "data": "{{addresses?.data?.data || []}}",
                 "pagination": true,
                 "serverSidePagination": true,

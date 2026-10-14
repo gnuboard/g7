@@ -77,7 +77,7 @@
     <!-- 상태 필터 (셀렉트박스) -->
     <div class="flex justify-end mb-4">
       <responsive on="portable" class="flex justify-end mb-3"/>
-      <select value="{{_local.ordersStatus || ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select aria-label="$t:mypage.orders.status_filter_label" value="{{_local.ordersStatus || ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <responsive on="portable" value="{{_local.ordersStatus || ''}}" class="min-w-[100px] px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"/>
         <on type="change">
           <!-- 주문 상태 필터. 셀렉트가 읽는 폼 값과 목록이 읽는 주소를 함께 맞춘다 -->

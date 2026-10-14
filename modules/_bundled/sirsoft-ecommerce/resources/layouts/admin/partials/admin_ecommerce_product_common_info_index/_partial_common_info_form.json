@@ -140,9 +140,9 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Label",
                                     "props": {
-                                        "className": "flex-center gap-2"
+                                        "className": "flex-center gap-2 cursor-pointer"
                                     },
                                     "children": [
                                         {

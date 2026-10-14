@@ -8,6 +8,7 @@ import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import type { EditorAttrs } from '../../types';
 import { getSiteLocale } from '../../support/siteLocale';
+import { linkAdjacentLabel } from '../../hooks/useAdjacentLabel';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -109,6 +110,13 @@ export interface MultilingualInputProps {
   id?: string;
   /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
   editorAttrs?: EditorAttrs;
+  /**
+   * 입력칸 접근 가능한 이름. 켜진 언어가 둘 이상이면 각 칸이 「{이름} ({언어명})」으로 읽힌다.
+   * 없으면 바깥 상자 곁의 라벨(`form-label` 등)을 잇는다(#757).
+   */
+  ariaLabel?: string;
+  /** ariaLabel 과 같은 뜻 — 레이아웃이 `aria-label` 로 줘도 된다 */
+  'aria-label'?: string;
 }
 
 /**
@@ -136,7 +144,11 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
   error,
   id,
   editorAttrs,
+  ariaLabel,
+  'aria-label': ariaLabelAttr,
 }) => {
+  const nameBase = ariaLabel ?? ariaLabelAttr;
+  const rootRef = useRef<HTMLDivElement>(null);
 
   // 에러 상태 여부
   const hasError = !!error;
@@ -325,6 +337,22 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
     return locale?.nativeName || locale?.name || localeCode.toUpperCase();
   }, [actualAvailableLocales]);
 
+  // 입력칸 이름 — 언어가 둘 이상 켜져 있으면 언어명을 붙인다(D7). 종전에는 이름 prop 이 없어 placeholder 로만 읽혔다(#757)
+  const fieldName = useCallback((localeCode: string): string | undefined => {
+    if (!nameBase) return undefined;
+    if (actualAvailableLocales.length < 2) return nameBase;
+    const language = getLocaleName(localeCode);
+    return tOr('common.field_in_language', `${nameBase} (${language})`, { label: nameBase, language });
+  }, [nameBase, actualAvailableLocales, getLocaleName]);
+
+  // 이름 prop 이 없으면 바깥 상자 곁의 라벨을 잇는다 — 입력칸이 바깥 라벨에서 3단계 넘게 떨어져 칸 자신의 훅은 못 닿는다
+  useEffect(() => {
+    if (nameBase || !rootRef.current) return;
+    rootRef.current
+      .querySelectorAll<HTMLElement>('input:not([type="hidden"]), textarea')
+      .forEach((el) => linkAdjacentLabel(el, false, rootRef.current));
+  });
+
   // 입력 필드가 채워져 있는지 확인
   const hasValue = useCallback((localeCode: string) => {
     return Boolean(localValue[localeCode]?.trim());
@@ -411,6 +439,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             value={localValue[localeCode] || ''}
             onChange={(e) => handleInputChange(localeCode, e.target.value)}
             placeholder={localizedPlaceholder}
+            aria-label={fieldName(localeCode)}
             required={required && isDefault}
             disabled={disabled}
             maxLength={maxLength}
@@ -424,6 +453,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             value={localValue[localeCode] || ''}
             onChange={(e) => handleInputChange(localeCode, e.target.value)}
             placeholder={localizedPlaceholder}
+            aria-label={fieldName(localeCode)}
             required={required && isDefault}
             disabled={disabled}
             maxLength={maxLength}
@@ -432,7 +462,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
         )}
       </Div>
     );
-  }, [name, localValue, handleInputChange, placeholder, required, disabled, maxLength, rows, inputType, getLocaleName, actualDefaultLocale, handleRemoveLocale, renderAddLocaleButtonCompact, hasError]);
+  }, [name, localValue, handleInputChange, placeholder, required, disabled, maxLength, rows, inputType, getLocaleName, actualDefaultLocale, handleRemoveLocale, renderAddLocaleButtonCompact, hasError, fieldName]);
 
   // 입력 필드 렌더링 (라벨 없음 버전 - tabs용)
   const renderInputField = useCallback((localeCode: string) => {
@@ -448,6 +478,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             value={localValue[localeCode] || ''}
             onChange={(e) => handleInputChange(localeCode, e.target.value)}
             placeholder={localizedPlaceholder}
+            aria-label={fieldName(localeCode)}
             required={required && localeCode === actualDefaultLocale}
             disabled={disabled}
             maxLength={maxLength}
@@ -461,6 +492,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             value={localValue[localeCode] || ''}
             onChange={(e) => handleInputChange(localeCode, e.target.value)}
             placeholder={localizedPlaceholder}
+            aria-label={fieldName(localeCode)}
             required={required && localeCode === actualDefaultLocale}
             disabled={disabled}
             maxLength={maxLength}
@@ -469,7 +501,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
         )}
       </Div>
     );
-  }, [name, localValue, handleInputChange, placeholder, required, disabled, maxLength, rows, inputType, actualDefaultLocale, getLocaleName, hasError]);
+  }, [name, localValue, handleInputChange, placeholder, required, disabled, maxLength, rows, inputType, actualDefaultLocale, getLocaleName, hasError, fieldName]);
 
   // Inline 레이아웃 렌더링
   const renderInlineLayout = () => (
@@ -603,6 +635,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 value={localValue[currentLocale] || ''}
                 onChange={(e) => handleInputChange(currentLocale, e.target.value)}
                 placeholder={placeholder}
+                aria-label={fieldName(currentLocale)}
                 required={required && currentLocale === actualDefaultLocale}
                 disabled={disabled}
                 maxLength={maxLength}
@@ -616,6 +649,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
                 value={localValue[currentLocale] || ''}
                 onChange={(e) => handleInputChange(currentLocale, e.target.value)}
                 placeholder={placeholder}
+                aria-label={fieldName(currentLocale)}
                 required={required && currentLocale === actualDefaultLocale}
                 disabled={disabled}
                 maxLength={maxLength}
@@ -630,7 +664,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
 
   // 레이아웃에 따라 렌더링
   return (
-    <Div className={disabled ? 'opacity-50 cursor-not-allowed' : undefined} id={id} {...editorAttrs}>
+    <Div ref={rootRef} className={disabled ? 'opacity-50 cursor-not-allowed' : undefined} id={id} {...editorAttrs}>
       {layout === 'compact' ? renderCompactLayout() : layout === 'tabs' ? renderTabsLayout() : renderInlineLayout()}
       {/* 에러 메시지 표시 */}
       {hasError && error && (

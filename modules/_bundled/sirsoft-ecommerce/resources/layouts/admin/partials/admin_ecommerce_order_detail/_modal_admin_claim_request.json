@@ -74,6 +74,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:common.row_cell|row={{reqRow.label ?? ''}}|column={{$t('sirsoft-ecommerce.admin.order.claim_request.exchange_option_label')}}",
                                         "className": "w-56 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
                                         "value": "{{reqRow.newProductOptionId ?? ''}}",
                                         "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.claim_request.same_option') }].concat(reqRow.optionChoices ?? [])}}"
@@ -104,6 +105,7 @@
                                                 "type": "number",
                                                 "min": "1",
                                                 "max": "{{reqRow.max}}",
+                                                "aria-label": "$t:common.row_cell|row={{reqRow.label ?? ''}}|column={{$t('sirsoft-ecommerce.admin.claim.detail.items.columns.quantity')}}",
                                                 "className": "w-20 px-2 py-1 text-sm text-right rounded",
                                                 "value": "{{reqRow.quantity}}"
                                             }
@@ -672,6 +674,7 @@
                                     ],
                                     "props": {
                                         "type": "number",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.order.claim_request.shipping_fee",
                                         "min": "0",
                                         "className": "w-32 px-2 py-1 text-sm text-right rounded disabled:opacity-50",
                                         "disabled": "{{_global.adminClaimRequest?.chargeMethod === 'free'}}",

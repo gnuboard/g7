@@ -45,6 +45,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder",
                         "name": "bulkClaimStatus",
                         "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                         "value": "{{_local.bulkClaimStatus ?? ''}}",
@@ -119,6 +120,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder",
                         "name": "bulkClaimStatus",
                         "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                         "value": "{{_local.bulkClaimStatus ?? ''}}",
@@ -181,6 +183,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder",
                         "name": "bulkClaimStatus",
                         "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                         "value": "{{_local.bulkClaimStatus ?? ''}}",

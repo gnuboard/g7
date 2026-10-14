@@ -119,7 +119,7 @@
                     "name": "P",
                     "if": "{{_global.privacyRun?.preview?.mode === 'delete'}}",
                     "props": {
-                        "className": "text-error-soft"
+                        "className": "ecommerce-tone-error-soft text-sm"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.delete_warning"
                 },
@@ -127,7 +127,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-error-soft"
+                        "className": "ecommerce-tone-error-soft text-sm"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.irreversible"
                 },

@@ -37,7 +37,7 @@
             <!-- 넓은 화면용 정책 고르기 -->
             <set-state target="local" form.shipping_policy_id="{{policy.id}}"/>
           </on>
-          <span data-if="{{policy.is_default}}" class="{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-500 text-white' : 'bg-blue-100 dark:bg-blue-900 text-info-soft'}} px-1.5 py-0.5 text-xs rounded">$t:sirsoft-ecommerce.admin.product.shipping.default_badge</span>
+          <span data-if="{{policy.is_default}}" class="{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-500 text-white' : 'bg-blue-100 dark:bg-blue-900 ecommerce-tone-info-soft text-xs'}} px-1.5 py-0.5 text-xs rounded">$t:sirsoft-ecommerce.admin.product.shipping.default_badge</span>
           <span>{{$localized(policy.name)}}</span>
         </button>
       </div>
@@ -48,7 +48,7 @@
             <!-- 좁은 화면용 정책 고르기 — 위 목록과 같은 값을 다른 배치로 세운 것이다 -->
             <set-state target="local" form.shipping_policy_id="{{policy.id}}"/>
           </on>
-          <span data-if="{{policy.is_default}}" class="{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-500 text-white' : 'bg-blue-100 dark:bg-blue-900 text-info-soft'}} px-1.5 py-0.5 text-xs rounded">$t:sirsoft-ecommerce.admin.product.shipping.default_badge</span>
+          <span data-if="{{policy.is_default}}" class="{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-500 text-white' : 'bg-blue-100 dark:bg-blue-900 ecommerce-tone-info-soft text-xs'}} px-1.5 py-0.5 text-xs rounded">$t:sirsoft-ecommerce.admin.product.shipping.default_badge</span>
           <span class="truncate">{{$localized(policy.name)}}</span>
         </button>
       </div>

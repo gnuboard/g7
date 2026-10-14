@@ -399,6 +399,7 @@
                             }
                         ],
                         "props": {
+                            "rowLabelField": "target_title",
                             "data": "{{reactions?.data?.data}}",
                             "sortable": true,
                             "sortField": "created_at",

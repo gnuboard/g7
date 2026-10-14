@@ -214,6 +214,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "text",
+                                                                "aria-label": "$t:common.row_cell|row={{payment.transaction_id}}|column={{$t('sirsoft-pay_nicepayments.admin.escrow_delivery_company')}}",
                                                                 "placeholder": "$t:sirsoft-pay_nicepayments.admin.escrow_delivery_company_placeholder",
                                                                 "className": "text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent",
                                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
@@ -249,6 +250,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "text",
+                                                                "aria-label": "$t:common.row_cell|row={{payment.transaction_id}}|column={{$t('sirsoft-pay_nicepayments.admin.escrow_tracking_number')}}",
                                                                 "placeholder": "$t:sirsoft-pay_nicepayments.admin.escrow_tracking_number_placeholder",
                                                                 "className": "text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:border-transparent",
                                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
@@ -284,6 +286,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "text",
+                                                                "aria-label": "$t:common.row_cell|row={{payment.transaction_id}}|column={{$t('sirsoft-pay_nicepayments.admin.escrow_register_name')}}",
                                                                 "className": "text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent",
                                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                                             }
@@ -321,6 +324,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "text",
+                                                                "aria-label": "$t:common.row_cell|row={{payment.transaction_id}}|column={{$t('sirsoft-pay_nicepayments.admin.escrow_buyer_address')}}",
                                                                 "className": "text-gray-900 dark:text-white w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent",
                                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                                             }

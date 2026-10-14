@@ -778,12 +778,44 @@ describe('lifecycle UI — 바인딩 브레이스 위생 (회귀: 프리필 끝 
         }
     });
 
-    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
-    it('표현식 $t 를 2-인자(파라미터 객체)로 호출하지 않는다 — 엔진은 단일 인자만 지원', () => {
-        for (const [name, json] of FILES) {
-            const offenders = collectStrings(json).filter((v) => /\$t\([^)]*,\s*\{/.test(v));
-            expect(offenders, `${name} 2-인자 $t 호출: ${offenders.join(' | ')}`).toEqual([]);
-        }
+    /**
+     * 표현식 안 `$t('키', {인자})` 는 engine-v1.80.1 부터 인자를 치환한다(그 전에는 인자를 버려 금지했다).
+     * 인자 객체의 `}` 가 바인딩 끝 `}}` 와 붙어 짝이 어긋나면 프리필 끝 잔재와 같은 깨진 식이 되므로,
+     * 2-인자 호출은 따옴표 밖 괄호·중괄호가 모두 짝을 이루는지 본다.
+     *
+     * @effects edit_modal_hosts_alimtalk_and_sms_sections
+     */
+    it('표현식 $t 의 2-인자(파라미터 객체) 호출은 괄호·중괄호 짝이 맞는다', () => {
+        /** 따옴표 안을 건너뛰고 ( ) · { } 의 짝이 맞는지 본다. */
+        const balanced = (v: string): boolean => {
+            const stack: string[] = [];
+            let quote: string | null = null;
+            for (let i = 0; i < v.length; i++) {
+                const c = v[i];
+                if (quote) {
+                    if (c === '\\') i++;
+                    else if (c === quote) quote = null;
+                    continue;
+                }
+                if (c === "'" || c === '"' || c === '`') quote = c;
+                else if (c === '(' || c === '{') stack.push(c);
+                else if (c === ')' || c === '}') {
+                    if (stack.pop() !== (c === ')' ? '(' : '{')) return false;
+                }
+            }
+            return stack.length === 0 && quote === null;
+        };
+        // 판정식 자체 — 짝 맞는 식은 통과, 인자 객체 뒤 `}` 가 남는 식은 걸린다
+        expect(balanced("{{$t('k', {n: 1})}}")).toBe(true);
+        expect(balanced("{{$t('k', {n: 1})}}}")).toBe(false);
+
+        const calls = FILES.flatMap(([name, json]) =>
+            collectStrings(json).filter((v) => /\$t\([^)]*,\s*\{/.test(v)).map((v) => [name, v] as const),
+        );
+        // 모집단: SMS 본문 이름(언어가 둘 이상이면 「SMS 본문 (한국어)」)이 실제로 2-인자 호출을 쓴다
+        expect(calls.some(([, v]) => v.includes("$t('common.field_in_language', {"))).toBe(true);
+        const broken = calls.filter(([, v]) => !balanced(v));
+        expect(broken.map(([name, v]) => `${name}: ${v}`), '짝이 어긋난 2-인자 $t 호출').toEqual([]);
     });
 });
 

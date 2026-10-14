@@ -265,6 +265,7 @@
                                                                         }
                                                                     ],
                                                                     "props": {
+                                                                        "aria-label": "$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.type_label')}}",
                                                                         "value": "{{rcpt.type ?? ''}}",
                                                                         "className": "w-full text-sm",
                                                                         "options": "{{[{ value: 'trigger_user', label: '$t:admin.settings.notification_definitions.recipients.types.trigger_user' }, ...(((_global.board_notification_template_form_modal?.definition?.relations ?? []).length > 0) ? [{ value: 'related_user', label: '$t:admin.settings.notification_definitions.recipients.types.related_user' }] : []), { value: 'role', label: '$t:admin.settings.notification_definitions.recipients.types.role' }, { value: 'specific_users', label: '$t:admin.settings.notification_definitions.recipients.types.specific_users' }]}}"
@@ -304,6 +305,7 @@
                                                                                 }
                                                                             ],
                                                                             "props": {
+                                                                                "aria-label": "$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.relation_label')}}",
                                                                                 "value": "{{rcpt.relation ?? ''}}",
                                                                                 "className": "w-full text-sm",
                                                                                 "options": "{{[{ value: '', label: '$t:admin.settings.notification_definitions.recipients.relation_placeholder', disabled: true }, ...(_global.board_notification_template_form_modal?.definition?.relations ?? []).map(r => ({ value: r, label: _global.board_notification_template_form_modal?.definition?.relation_labels?.[r] ?? r }))]}}"
@@ -315,7 +317,7 @@
                                                                             "name": "P",
                                                                             "if": "{{((rcpt.relation ?? '') !== '') && !(_global.board_notification_template_form_modal?.definition?.relations ?? []).includes(rcpt.relation)}}",
                                                                             "props": {
-                                                                                "className": "text-warning-soft mt-1"
+                                                                                "className": "text-xs board-tone-warning mt-1"
                                                                             },
                                                                             "text": "$t:admin.settings.notification_definitions.recipients.relation_undeclared|relation={{rcpt.relation}}"
                                                                         }
@@ -446,6 +448,7 @@
                                                                                 }
                                                                             ],
                                                                             "props": {
+                                                                                "aria-label": "$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.role_label')}}",
                                                                                 "multiple": true,
                                                                                 "value": "{{rcpt.value ?? []}}",
                                                                                 "options": "{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((rid, i) => ({ value: rid, label: String((rcpt.display_names ?? [])[i] ?? rid), description: String(rid) })) : []), ...(_global.board_notification_template_form_modal?.roleSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}",
@@ -584,6 +587,7 @@
                                                                                 }
                                                                             ],
                                                                             "props": {
+                                                                                "aria-label": "$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.users_label')}}",
                                                                                 "multiple": true,
                                                                                 "value": "{{rcpt.value ?? []}}",
                                                                                 "options": "{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((uid, i) => ({ value: uid, label: String((rcpt.display_names ?? [])[i] ?? uid) })) : []), ...(_global.board_notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}",
@@ -624,6 +628,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "label": "$t:admin.settings.notification_definitions.recipients.exclude_trigger_user",
+                                                                        "ariaLabel": "$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.exclude_trigger_user')}}",
                                                                         "checked": "{{rcpt.exclude_trigger_user ?? false}}"
                                                                     }
                                                                 }

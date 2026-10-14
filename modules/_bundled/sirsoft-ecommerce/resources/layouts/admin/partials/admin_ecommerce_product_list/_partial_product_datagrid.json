@@ -166,6 +166,7 @@
                 }
             ],
             "props": {
+                "rowLabelField": "name_localized",
                 "data": "{{products?.data?.data}}",
                 "idField": "id",
                 "sortable": true,
@@ -294,6 +295,7 @@
                                                     }
                                                 ],
                                                 "props": {
+                                                    "ariaLabel": "$t:defer:common.row_cell|row={{$rowLabel}}|column={{$t('sirsoft-ecommerce.admin.product.table.column.product_name')}}",
                                                     "value": "{{row.name}}",
                                                     "availableLocales": "{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ code: l, name: _global.appConfig?.localeNames?.[l] ?? l, nativeName: _global.appConfig?.localeNames?.[l] ?? l }))}}",
                                                     "layout": "tabs",
@@ -381,6 +383,7 @@
                                 ],
                                 "props": {
                                     "type": "number",
+                                    "aria-label": "$t:defer:common.row_cell|row={{$rowLabel}}|column={{$t('sirsoft-ecommerce.admin.product.table.column.original_price')}}",
                                     "min": "0",
                                     "step": "100",
                                     "value": "{{row.list_price}}",
@@ -422,6 +425,7 @@
                                         ],
                                         "props": {
                                             "type": "number",
+                                            "aria-label": "$t:defer:common.row_cell|row={{$rowLabel}}|column={{$t('sirsoft-ecommerce.admin.product.table.column.selling_price')}}",
                                             "min": "0",
                                             "step": "100",
                                             "max": "{{row.list_price || ''}}",
@@ -498,6 +502,7 @@
                                         ],
                                         "props": {
                                             "type": "number",
+                                            "aria-label": "$t:defer:common.row_cell|row={{$rowLabel}}|column={{$t('sirsoft-ecommerce.admin.product.table.column.stock')}}",
                                             "min": "0",
                                             "value": "{{row.stock_quantity}}",
                                             "disabled": "{{row.has_options || row.abilities?.can_update !== true}}",
@@ -560,6 +565,7 @@
                                 ],
                                 "props": {
                                     "name": "salesStatus_{{row.id}}",
+                                    "aria-label": "$t:defer:common.row_cell|row={{$rowLabel}}|column={{$t('sirsoft-ecommerce.admin.product.table.column.sales_status')}}",
                                     "className": "w-full text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed",
                                     "value": "{{row.sales_status}}",
                                     "disabled": "{{row.abilities?.can_update !== true}}",
@@ -609,6 +615,7 @@
                                 ],
                                 "props": {
                                     "name": "displayStatus_{{row.id}}",
+                                    "aria-label": "$t:defer:common.row_cell|row={{$rowLabel}}|column={{$t('sirsoft-ecommerce.admin.product.table.column.display_status')}}",
                                     "className": "w-full text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed",
                                     "value": "{{row.display_status}}",
                                     "disabled": "{{row.abilities?.can_update !== true}}",
@@ -836,7 +843,8 @@
                                                 "name": "Div",
                                                 "iteration": {
                                                     "source": "row.options || []",
-                                                    "item_var": "option"
+                                                    "item_var": "option",
+                                                    "index_var": "optIdx"
                                                 },
                                                 "props": {
                                                     "data-testid": "option-row-{{option.id}}",
@@ -867,6 +875,7 @@
                                                                     }
                                                                 ],
                                                                 "props": {
+                                                                    "aria-label": "$t:defer:common.select_item|name={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}",
                                                                     "checked": "{{(selectedOptionIds || []).includes(row.id + '-' + option.id)}}",
                                                                     "className": "w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded"
                                                                 }
@@ -894,6 +903,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "radio",
+                                                                            "aria-label": "$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.is_default')}}",
                                                                             "name": "default_option_portable_{{row.id}}",
                                                                             "checked": "{{option.is_default}}",
                                                                             "disabled": "{{row.abilities?.can_update !== true}}",
@@ -953,6 +963,7 @@
                                                                     }
                                                                 ],
                                                                 "props": {
+                                                                    "ariaLabel": "$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.name')}}",
                                                                     "value": "{{option.option_name ?? {} }}",
                                                                     "layout": "compact",
                                                                     "inputType": "text",
@@ -1001,6 +1012,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "number",
+                                                                            "aria-label": "$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.list_price')}}",
                                                                             "value": "{{option.list_price}}",
                                                                             "min": "0",
                                                                             "step": "100",
@@ -1042,6 +1054,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "number",
+                                                                            "aria-label": "$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.selling_price')}}",
                                                                             "value": "{{option.selling_price}}",
                                                                             "min": "0",
                                                                             "step": "100",
@@ -1097,6 +1110,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "text",
+                                                                    "aria-label": "$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.sku')}}",
                                                                     "value": "{{option.sku}}",
                                                                     "placeholder": "-",
                                                                     "disabled": "{{row.abilities?.can_update !== true}}",
@@ -1143,6 +1157,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "number",
+                                                                            "aria-label": "$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.stock')}}",
                                                                             "value": "{{option.stock_quantity}}",
                                                                             "min": "0",
                                                                             "disabled": "{{row.abilities?.can_update !== true}}",
@@ -1182,6 +1197,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "number",
+                                                                            "aria-label": "$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.safe_stock')}}",
                                                                             "value": "{{option.safe_stock_quantity}}",
                                                                             "min": "0",
                                                                             "disabled": "{{row.abilities?.can_update !== true}}",
@@ -1224,6 +1240,7 @@
                                                                     }
                                                                 ],
                                                                 "props": {
+                                                                    "ariaLabel": "$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.active')}}",
                                                                     "checked": "{{option.is_active}}",
                                                                     "size": "sm",
                                                                     "disabled": "{{row.abilities?.can_update !== true}}"
@@ -1282,6 +1299,7 @@
                                                                             }
                                                                         ],
                                                                         "props": {
+                                                                            "aria-label": "$t:defer:common.select_all_in|name={{row.name_localized ?? ''}}",
                                                                             "checked": "{{(row.options || []).length > 0 && (row.options || []).every(opt => (selectedOptionIds || []).includes(row.id + '-' + opt.id))}}",
                                                                             "indeterminate": "{{(row.options || []).some(opt => (selectedOptionIds || []).includes(row.id + '-' + opt.id)) && !(row.options || []).every(opt => (selectedOptionIds || []).includes(row.id + '-' + opt.id))}}",
                                                                             "className": "w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded"
@@ -1372,7 +1390,8 @@
                                                         "name": "Tr",
                                                         "iteration": {
                                                             "source": "row.options || []",
-                                                            "item_var": "option"
+                                                            "item_var": "option",
+                                                            "index_var": "optIdx"
                                                         },
                                                         "props": {
                                                             "data-testid": "option-row-{{option.id}}",
@@ -1403,6 +1422,7 @@
                                                                             }
                                                                         ],
                                                                         "props": {
+                                                                            "aria-label": "$t:defer:common.select_item|name={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}",
                                                                             "checked": "{{(selectedOptionIds || []).includes(row.id + '-' + option.id)}}",
                                                                             "className": "w-4 h-4 text-blue-600 dark:text-blue-400 border-gray-300 dark:border-gray-600 rounded"
                                                                         }
@@ -1433,6 +1453,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "radio",
+                                                                            "aria-label": "$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.is_default')}}",
                                                                             "name": "default_option_{{row.id}}",
                                                                             "checked": "{{option.is_default}}",
                                                                             "disabled": "{{row.abilities?.can_update !== true}}",
@@ -1466,6 +1487,7 @@
                                                                             }
                                                                         ],
                                                                         "props": {
+                                                                            "ariaLabel": "$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.name')}}",
                                                                             "value": "{{option.option_name ?? {} }}",
                                                                             "layout": "compact",
                                                                             "inputType": "text",
@@ -1501,6 +1523,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "number",
+                                                                            "aria-label": "$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.list_price')}}",
                                                                             "min": "0",
                                                                             "step": "100",
                                                                             "value": "{{option.list_price}}",
@@ -1551,6 +1574,7 @@
                                                                                         ],
                                                                                         "props": {
                                                                                             "type": "number",
+                                                                                            "aria-label": "$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.selling_price')}}",
                                                                                             "min": "0",
                                                                                             "step": "100",
                                                                                             "max": "{{option.list_price || ''}}",
@@ -1632,6 +1656,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "text",
+                                                                            "aria-label": "$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.sku')}}",
                                                                             "value": "{{option.sku}}",
                                                                             "placeholder": "-",
                                                                             "disabled": "{{row.abilities?.can_update !== true}}",
@@ -1666,6 +1691,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "number",
+                                                                            "aria-label": "$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.stock')}}",
                                                                             "min": "0",
                                                                             "value": "{{option.stock_quantity}}",
                                                                             "data-testid": "option-stock-{{option.id}}",
@@ -1701,6 +1727,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "number",
+                                                                            "aria-label": "$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.safe_stock')}}",
                                                                             "min": "0",
                                                                             "value": "{{option.safe_stock_quantity}}",
                                                                             "disabled": "{{row.abilities?.can_update !== true}}",
@@ -1733,6 +1760,7 @@
                                                                             }
                                                                         ],
                                                                         "props": {
+                                                                            "ariaLabel": "$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.active')}}",
                                                                             "checked": "{{option.is_active}}",
                                                                             "size": "sm",
                                                                             "disabled": "{{row.abilities?.can_update !== true}}"

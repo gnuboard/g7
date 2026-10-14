@@ -4,7 +4,7 @@
     <span data-ref="cb_001_selected_count" class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.claim.bulk.selected_count|count={{(_local.selectedItems ?? []).length}}</span>
     <div class="flex-center flex-wrap gap-2">
       <!-- 상태 어휘는 유형이 정한다 — 게이트가 `ExchangeStatusEnum::adminAssignableValues()`(신청·결제완료·철회 제외 11종)로 거르므로, 다른 유형의 값을 보내면 목록이 아니라 요청 전체가 422 가 된다. 유형마다 셀렉트를 따로 두어 어휘가 섞이지 않게 한다. -->
-      <select data-ref="cb_002_status_select_exchange" data-if="{{(query.type ?? 'exchange') === 'exchange'}}" name="bulkClaimStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkClaimStatus ?? ''}}" disabled="{{claims?.data?.abilities?.can_update_status !== true}}">
+      <select data-ref="cb_002_status_select_exchange" aria-label="$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder" data-if="{{(query.type ?? 'exchange') === 'exchange'}}" name="bulkClaimStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkClaimStatus ?? ''}}" disabled="{{claims?.data?.abilities?.can_update_status !== true}}">
         <options>
           <option value="" disabled>$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder</option>
           <option value="payment_pending">$t:sirsoft-ecommerce.enums.exchange_status.payment_pending</option>
@@ -24,7 +24,7 @@
         </on>
       </select>
       <!-- 반품 탭의 상태 어휘 — 게이트가 받는 반품 관리자 지정 8종이며, 반품에는 재발송이 없어 교환 셀렉트에서 재발송 3단계가 빠진다. 신청·결제완료·철회는 각자 만드는 경로가 따로 있어 목록에서 고를 수 없다. -->
-      <select data-ref="cb_003_status_select_return" data-if="{{(query.type ?? 'exchange') === 'return'}}" name="bulkClaimStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkClaimStatus ?? ''}}" disabled="{{claims?.data?.abilities?.can_update_status !== true}}">
+      <select data-ref="cb_003_status_select_return" aria-label="$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder" data-if="{{(query.type ?? 'exchange') === 'return'}}" name="bulkClaimStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkClaimStatus ?? ''}}" disabled="{{claims?.data?.abilities?.can_update_status !== true}}">
         <options>
           <option value="" disabled>$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder</option>
           <option value="payment_pending">$t:sirsoft-ecommerce.enums.return_status.payment_pending</option>
@@ -41,7 +41,7 @@
         </on>
       </select>
       <!-- 환불의 관리자 지정 어휘는 승인·보류·반려 3종뿐이다 — `processing`(PG 요청 중)·`completed` 는 환불 실행이 옮기는 상태라 목록에서 지정할 수 없다. -->
-      <select data-ref="cb_004_status_select_refund" data-if="{{(query.type ?? 'exchange') === 'refund'}}" name="bulkClaimStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkClaimStatus ?? ''}}" disabled="{{claims?.data?.abilities?.can_update_status !== true}}">
+      <select data-ref="cb_004_status_select_refund" aria-label="$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder" data-if="{{(query.type ?? 'exchange') === 'refund'}}" name="bulkClaimStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkClaimStatus ?? ''}}" disabled="{{claims?.data?.abilities?.can_update_status !== true}}">
         <options>
           <option value="" disabled>$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder</option>
           <option value="approved">$t:sirsoft-ecommerce.enums.refund_status.approved</option>

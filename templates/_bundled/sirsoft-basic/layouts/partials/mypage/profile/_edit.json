@@ -666,6 +666,7 @@
                                                     "name": "Input",
                                                     "props": {
                                                         "type": "email",
+                                                        "aria-label": "$t:mypage.profile.email",
                                                         "value": "{{user.data?.email}}",
                                                         "readOnly": true,
                                                         "className": "w-full px-4 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
@@ -752,6 +753,7 @@
                                                     "props": {
                                                         "type": "text",
                                                         "name": "name",
+                                                        "aria-label": "$t:mypage.profile.name",
                                                         "value": "{{user.data?.name ?? ''}}",
                                                         "placeholder": "$t:mypage.profile.name_placeholder",
                                                         "required": true,
@@ -791,6 +793,7 @@
                                                     "props": {
                                                         "type": "text",
                                                         "name": "nickname",
+                                                        "aria-label": "$t:mypage.profile.nickname",
                                                         "value": "{{user.data?.nickname ?? ''}}",
                                                         "placeholder": "$t:mypage.profile.nickname_placeholder",
                                                         "className": "{{_local.profileErrors?.nickname ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent'}}"
@@ -880,6 +883,7 @@
                                                     "props": {
                                                         "type": "tel",
                                                         "name": "mobile",
+                                                        "aria-label": "$t:mypage.profile.mobile",
                                                         "value": "{{user.data?.mobile ?? ''}}",
                                                         "placeholder": "$t:mypage.profile.mobile_placeholder",
                                                         "className": "{{_local.profileErrors?.mobile ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"
@@ -918,6 +922,7 @@
                                                     "props": {
                                                         "type": "tel",
                                                         "name": "phone",
+                                                        "aria-label": "$t:mypage.profile.phone",
                                                         "value": "{{user.data?.phone ?? ''}}",
                                                         "placeholder": "$t:mypage.profile.phone_placeholder",
                                                         "className": "{{_local.profileErrors?.phone ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"
@@ -956,6 +961,7 @@
                                                     "props": {
                                                         "type": "url",
                                                         "name": "homepage",
+                                                        "aria-label": "$t:mypage.profile.homepage",
                                                         "value": "{{user.data?.homepage ?? ''}}",
                                                         "placeholder": "$t:mypage.profile.homepage_placeholder",
                                                         "className": "{{_local.profileErrors?.homepage ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"
@@ -1027,6 +1033,7 @@
                                                     "name": "Select",
                                                     "props": {
                                                         "name": "country",
+                                                        "aria-label": "$t:mypage.profile.country",
                                                         "value": "{{user.data?.country ?? ''}}",
                                                         "className": "w-full",
                                                         "options": "{{[{ label: $t('mypage.profile.country_placeholder'), value: '' }].concat((_defines?.countryList ?? []).map(c => ({ value: c.code, label: $t('countries.' + c.code) })))}}"
@@ -1064,6 +1071,7 @@
                                                     "name": "Select",
                                                     "props": {
                                                         "name": "language",
+                                                        "aria-label": "$t:mypage.profile.language",
                                                         "value": "{{user.data?.language ?? ''}}",
                                                         "className": "w-full",
                                                         "options": "{{[{ label: $t('mypage.profile.language_placeholder'), value: '' }].concat((_global.appConfig?.supportedLocales ?? []).map(l => ({ value: l, label: $t('languages.' + l) })))}}"
@@ -1101,6 +1109,7 @@
                                                     "name": "Select",
                                                     "props": {
                                                         "name": "timezone",
+                                                        "aria-label": "$t:mypage.profile.timezone",
                                                         "value": "{{user.data?.timezone ?? ''}}",
                                                         "className": "w-full",
                                                         "options": "{{_global.appConfig?.supportedTimezones ?? []}}",
@@ -1149,6 +1158,7 @@
                                                             "props": {
                                                                 "type": "text",
                                                                 "name": "zipcode",
+                                                                "aria-label": "$t:mypage.profile.zipcode",
                                                                 "value": "{{user.data?.zipcode ?? ''}}",
                                                                 "placeholder": "$t:mypage.profile.zipcode_placeholder",
                                                                 "className": "{{_local.profileErrors?.zipcode ? 'w-28 px-4 py-2.5 border border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-28 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}",
@@ -1181,6 +1191,7 @@
                                                     "props": {
                                                         "type": "text",
                                                         "name": "address",
+                                                        "aria-label": "$t:mypage.profile.address",
                                                         "value": "{{user.data?.address ?? ''}}",
                                                         "placeholder": "$t:mypage.profile.address_placeholder",
                                                         "className": "{{_local.profileErrors?.address ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}",
@@ -1194,6 +1205,7 @@
                                                     "props": {
                                                         "type": "text",
                                                         "name": "address_detail",
+                                                        "aria-label": "$t:mypage.profile.address_detail",
                                                         "value": "{{user.data?.address_detail ?? ''}}",
                                                         "placeholder": "$t:mypage.profile.address_detail_placeholder",
                                                         "className": "{{_local.profileErrors?.address_detail ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"
@@ -1268,6 +1280,7 @@
                                             "name": "Textarea",
                                             "props": {
                                                 "name": "signature",
+                                                "aria-label": "$t:mypage.profile.signature",
                                                 "rows": 3,
                                                 "value": "{{user.data?.signature ?? ''}}",
                                                 "placeholder": "$t:mypage.profile.signature_placeholder",
@@ -1314,6 +1327,7 @@
                                             "name": "Textarea",
                                             "props": {
                                                 "name": "bio",
+                                                "aria-label": "$t:mypage.profile.bio",
                                                 "rows": 5,
                                                 "value": "{{user.data?.bio ?? ''}}",
                                                 "placeholder": "$t:mypage.profile.bio_placeholder",
@@ -1682,6 +1696,7 @@
                             "name": "Select",
                             "props": {
                                 "name": "ecommerce_preferred_currency",
+                                "aria-label": "$t:mypage.currency_settings.title",
                                 "value": "{{user.data?.ecommerce_preferred_currency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}",
                                 "options": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0).map(c => ({ value: c.code, label: c.code + ' (' + (c.symbol ?? c.code) + ')' }))}}",
                                 "className": "w-full sm:w-64"
@@ -1753,6 +1768,7 @@
                             "name": "Select",
                             "props": {
                                 "name": "ecommerce_preferred_shipping_country",
+                                "aria-label": "$t:mypage.shipping_country_settings.title",
                                 "value": "{{user.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}",
                                 "options": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}",
                                 "className": "w-full sm:w-64"

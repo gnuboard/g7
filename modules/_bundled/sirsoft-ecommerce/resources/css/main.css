@@ -16,6 +16,31 @@
 
 @layer properties, theme, base, components, utilities;
 
+/*
+ * 의미 색 — 템플릿 의미 색 클래스(`text-error`·`text-*-soft`·`border-error` 등) 대신 이 모듈 화면이 쓰는 접두 클래스.
+ * 템플릿이 자기 화면에 맞춰 의미 클래스의 이름·색을 바꾸면 모듈 화면 색이 오류 없이 따라 바뀌므로 모듈이 직접 싣는다
+ * (docs/extension/module-assets.md 「확장 화면의 의미 색은 확장 CSS 가 싣는다」, #757).
+ *
+ * - 색만 맡는다. 템플릿의 `-soft`(text-xs·text-sm)·`-strong`(text-sm font-medium)이 품던 크기·굵기는 레이아웃이
+ *   유틸리티로 함께 단다.
+ * - 템플릿 정의와 같은 `components` 층 — 같은 요소의 색 유틸리티(`text-gray-500` 등)가 이기던 우선순위를 그대로 둔다.
+ * - 색 값은 관리자 템플릿 정의와 같다(라이트 / `.dark` 조상).
+ */
+@layer components {
+    .ecommerce-tone-error { color: var(--color-red-600, oklch(57.7% 0.245 27.325)); } /* text-error */
+    .dark .ecommerce-tone-error { color: var(--color-red-400, oklch(70.4% 0.191 22.216)); }
+    .ecommerce-tone-error-soft { color: var(--color-red-700, oklch(50.5% 0.213 27.518)); } /* text-error-soft·text-danger-soft */
+    .dark .ecommerce-tone-error-soft { color: var(--color-red-300, oklch(80.8% 0.114 19.571)); }
+    .ecommerce-tone-error-strong { color: var(--color-red-800, oklch(44.4% 0.177 26.899)); } /* text-error-strong */
+    .dark .ecommerce-tone-error-strong { color: var(--color-red-200, oklch(88.5% 0.062 18.334)); }
+    .ecommerce-tone-info-soft { color: var(--color-blue-700, oklch(48.8% 0.243 264.376)); } /* text-info-soft */
+    .dark .ecommerce-tone-info-soft { color: var(--color-blue-300, oklch(80.9% 0.105 251.813)); }
+    .ecommerce-tone-warning-soft { color: var(--color-yellow-700, oklch(55.4% 0.135 66.442)); } /* text-warning-soft */
+    .dark .ecommerce-tone-warning-soft { color: var(--color-yellow-300, oklch(90.5% 0.182 98.111)); }
+    .ecommerce-tone-border-error { border-color: var(--color-red-200, oklch(88.5% 0.062 18.334)); } /* border-error */
+    .dark .ecommerce-tone-border-error { border-color: var(--color-red-800, oklch(44.4% 0.177 26.899)); }
+}
+
 @layer utilities {
     /* ── 크기 ─────────────────────────────────────────────────────── */
     .aspect-\[3\/1\] { aspect-ratio: 3 / 1; } /* 메인 배너 미리보기·등록 */

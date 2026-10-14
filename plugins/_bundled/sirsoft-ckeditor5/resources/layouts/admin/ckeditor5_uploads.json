@@ -359,6 +359,7 @@
                                         ],
                                         "props": {
                                             "name": "referenced",
+                                            "aria-label": "$t:sirsoft-ckeditor5.admin.uploads.col.referenced",
                                             "value": "{{_local.filter.referenced || 'all'}}",
                                             "options": [
                                                 {
@@ -584,6 +585,7 @@
                             }
                         ],
                         "props": {
+                            "rowLabelField": "original_name",
                             "data": "{{ckeditor5Uploads?.data?.data ?? []}}",
                             "pagination": true,
                             "serverSidePagination": true,

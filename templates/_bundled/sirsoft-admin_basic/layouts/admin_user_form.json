@@ -1320,6 +1320,7 @@
                                                             }
                                                         ],
                                                         "props": {
+                                                            "aria-label": "$t:admin.users.form.fields.country",
                                                             "options": "{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}",
                                                             "value": "{{_local.form?.country ?? ''}}",
                                                             "triggerLabel": "$t:admin.users.form.fields.country_select",

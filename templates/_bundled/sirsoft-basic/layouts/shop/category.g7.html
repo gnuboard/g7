@@ -113,7 +113,7 @@
       <!-- 정렬 바 -->
       <div class="flex items-center justify-between py-3 bg-gray-50 dark:bg-gray-800/50">
         <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">$t:shop.total_count|count={{products?.data?.pagination?.total ?? 0}}</span>
-        <select name="sort" value="{{query.sort ?? 'latest'}}" class="h-9 w-32">
+        <select name="sort" aria-label="$t:common.sort_order" value="{{query.sort ?? 'latest'}}" class="h-9 w-32">
           <options>
             <option value="latest">$t:shop.sort.latest</option>
             <option value="sales">$t:shop.sort.sales</option>

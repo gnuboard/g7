@@ -20,7 +20,7 @@
     <!-- 필터 바 (카테고리 필터 + 검색) -->
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
       <!-- 카테고리 필터 (카테고리가 있을 때만 표시) -->
-      <select data-if="{{posts?.data?.board?.categories &amp;&amp; posts?.data?.board?.categories.length > 0}}" value="{{query.category || 'all'}}" class="w-full sm:w-auto sm:min-w-48 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" options="{{[{value:'all', label:'$t:board.filter.category_all'},{value:'unclassified', label:'$t:board.filter.category_unclassified'}].concat((posts?.data?.board?.categories ?? []).map(function(c){return{value:c,label:c};}))}}">
+      <select data-if="{{posts?.data?.board?.categories &amp;&amp; posts?.data?.board?.categories.length > 0}}" aria-label="$t:board.form.category" value="{{query.category || 'all'}}" class="w-full sm:w-auto sm:min-w-48 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" options="{{[{value:'all', label:'$t:board.filter.category_all'},{value:'unclassified', label:'$t:board.filter.category_unclassified'}].concat((posts?.data?.board?.categories ?? []).map(function(c){return{value:c,label:c};}))}}">
         <on type="change">
           <navigate path="/board/{{route.slug}}" :mergeQuery="true">
             <query category="{{$event.target.value === 'all' ? '' : $event.target.value}}" :page="1"/>
@@ -39,7 +39,7 @@
       </button>
       <!-- 검색 줄 (오른쪽 정렬) — 검색 대상 셀렉트 + 검색 바. 셀렉트는 담아만 두고(_local.boardSearchField) 제출 시 URL 의 search_field 로 옮긴다. URL 에 값이 있으면 그것이 초기값이라 뒤로가기·링크 공유에서 고른 대상이 그대로 살아난다 -->
       <div class="w-full sm:w-auto sm:ml-auto flex gap-2">
-        <select data-ref="board_search_field_select" value="{{_local.boardSearchField ?? query.search_field ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <select data-ref="board_search_field_select" aria-label="$t:common.search_field" value="{{_local.boardSearchField ?? query.search_field ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
           <options>
             <option value="title_content">$t:board.search_fields.title_content</option>
             <option value="title">$t:board.search_fields.title</option>

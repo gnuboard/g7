@@ -168,6 +168,7 @@
                                     ],
                                     "props": {
                                         "value": "{{_local.shippingTypeForm?.name ?? {}}}",
+                                        "ariaLabel": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name",
                                         "layout": "inline",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder",
                                         "error": "{{_local.shippingTypeFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.shipping.types.validation.name_required' : ''}}",
@@ -503,6 +504,7 @@
                                                 ],
                                                 "props": {
                                                     "value": "{{$type.name ?? {}}}",
+                                                    "ariaLabel": "$t:common.row_cell|row={{$type.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.types.columns.name')}}",
                                                     "layout": "compact",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.types.form.name_ko_placeholder",
                                                     "error": "{{_local.errors?.['shipping.types.' + $type._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.types.' + $type._idx + '.name']?.[0] ?? ''}}",
@@ -535,6 +537,7 @@
                                                 ],
                                                 "props": {
                                                     "value": "{{$type.category ?? 'domestic'}}",
+                                                    "aria-label": "$t:common.row_cell|row={{$type.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.types.columns.category')}}",
                                                     "className": "w-full",
                                                     "disabled": "{{_computed.isReadOnly}}",
                                                     "options": [
@@ -579,6 +582,7 @@
                                                 ],
                                                 "props": {
                                                     "checked": "{{$type.is_active ?? false}}",
+                                                    "ariaLabel": "$t:common.row_cell|row={{$type.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.types.columns.is_active')}}",
                                                     "size": "sm",
                                                     "disabled": "{{_computed.isReadOnly}}"
                                                 }

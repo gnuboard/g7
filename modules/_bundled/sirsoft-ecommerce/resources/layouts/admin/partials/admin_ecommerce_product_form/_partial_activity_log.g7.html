@@ -86,7 +86,7 @@
                   </on>
                   <div class="flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
                     <div class="flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
-                      <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.actor_name ?? 'S').charAt(0).toUpperCase()}}</span>
+                      <span aria-hidden="true" class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.actor_name ?? 'S').charAt(0).toUpperCase()}}</span>
                     </div>
                     <span class="text-primary text-sm">{{log.actor_name ?? ''}}</span>
                   </div>
@@ -156,7 +156,7 @@
                 </on>
                 <div class="flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
                   <div class="flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
-                    <span class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.actor_name ?? 'S').charAt(0).toUpperCase()}}</span>
+                    <span aria-hidden="true" class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.actor_name ?? 'S').charAt(0).toUpperCase()}}</span>
                   </div>
                   <span class="text-heading">{{log.actor_name ?? ''}}</span>
                 </div>

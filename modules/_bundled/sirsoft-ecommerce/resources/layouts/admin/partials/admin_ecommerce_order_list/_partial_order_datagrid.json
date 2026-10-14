@@ -75,6 +75,7 @@
                             ],
                             "props": {
                                 "name": "sortBy",
+                                "aria-label": "$t:common.sort_order",
                                 "className": "w-40",
                                 "value": "{{_local.sortBy || 'ordered_at_desc'}}",
                                 "options": [
@@ -147,6 +148,7 @@
                             ],
                             "props": {
                                 "name": "perPage",
+                                "aria-label": "$t:common.per_page",
                                 "className": "w-24",
                                 "value": "{{_local.perPage || '20'}}",
                                 "options": [
@@ -292,6 +294,7 @@
                         }
                     ],
                     "props": {
+                        "rowLabelField": "order_number",
                         "data": "{{orders?.data?.data || []}}",
                         "selectable": true,
                         "selectionScope": "page",

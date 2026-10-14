@@ -27,7 +27,13 @@ describe('DataGrid 접근성 — 선택 체크박스 이름', () => {
   beforeEach(() => {
     (window as any).G7Core = {
       t: (key: string, params?: Record<string, string>) =>
-        key === 'common.select_item' ? `${params?.name} 선택` : (DICT[key] ?? key),
+        key === 'common.select_item'
+          ? `${params?.name} 선택`
+          : key === 'common.select_row_n'
+            ? `${params?.n}번째 행 선택`
+            : key === 'common.row_n'
+              ? `${params?.n}번째 행`
+              : (DICT[key] ?? key),
     };
   });
   afterEach(() => {
@@ -38,12 +44,12 @@ describe('DataGrid 접근성 — 선택 체크박스 이름', () => {
    * @scenario control=datagrid_checkbox
    * @effects datagrid_checkboxes_named_by_locale
    */
-  it('머리 체크박스는 「전체 선택」, 행 체크박스는 첫 열 값으로 「회원A 선택」, 값이 없으면 「행 선택」', () => {
+  it('머리 체크박스는 「전체 선택」, 행 체크박스는 첫 열 값으로 「회원A 선택」, 값이 없으면 「N번째 행 선택」(#757 — 「행 선택」 뭉침 방지)', () => {
     render(<DataGrid columns={columns} data={rows} selectable selectedIds={[]} onSelectionChange={vi.fn()} idField="id" />);
 
     expect(screen.getByRole('checkbox', { name: '전체 선택' })).toBeTruthy();
     expect(screen.getByRole('checkbox', { name: '회원A 선택' })).toBeTruthy();
-    expect(screen.getByRole('checkbox', { name: '행 선택' })).toBeTruthy();
+    expect(screen.getByRole('checkbox', { name: '2번째 행 선택' })).toBeTruthy();
   });
 
   /**

@@ -59,7 +59,7 @@
       </div>
       <div data-ref="filter_card" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex flex-col gap-2 md:flex-row md:items-center">
         <!-- 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 G2 실측). 값은 쿼리로만 다룬다. -->
-        <select name="filter.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
+        <select name="filter.scope" aria-label="$t:admin.identity.policies.col.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
           <options>
             <option value="">$t:admin.identity.policies.all_scopes</option>
             <option value="route">$t:admin.identity.policies.scope.route</option>
@@ -80,7 +80,7 @@
             </navigate>
           </on>
         </select>
-        <select name="filter.source_type" :autoBinding="false" value="{{query.source_type ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
+        <select name="filter.source_type" aria-label="$t:admin.identity.policies.col.source_type" :autoBinding="false" value="{{query.source_type ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
           <options>
             <option value="">$t:admin.identity.policies.all_sources</option>
             <option value="core">$t:admin.identity.policies.source.core</option>
@@ -181,7 +181,7 @@
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300 text-right">{{policy.grace_minutes ?? 0}}</td>
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300 text-right tabular-nums">{{policy.priority ?? 100}}</td>
                 <td class="px-3 py-2">
-                  <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
+                  <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" ariaLabel="$t:common.row_cell|row={{policy.key ?? ''}}|column={{$t('admin.identity.policies.col.enabled')}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
                     <on type="change">
                       <!-- 사용 여부 토글(표 판). **성공이든 실패든 목록을 다시 받는다** — 실패 쪽에서도
                            받아야 스위치가 눌린 모양으로 남지 않는다. 좁은 화면 카드 판에 같은 배선이 있다. -->
@@ -279,7 +279,7 @@
                 <span>$t:admin.identity.policies.col.priority</span>
                 <span class="ml-1 font-medium text-gray-700 dark:text-gray-300 tabular-nums">{{policy.priority ?? 100}}</span>
               </div>
-              <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
+              <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" ariaLabel="$t:common.row_cell|row={{policy.key ?? ''}}|column={{$t('admin.identity.policies.col.enabled')}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
                 <on type="change">
                   <!-- 사용 여부 토글(좁은 화면 카드 판) — 표 판과 같은 배선이다. -->
                   <api-call :auth_required="true" target="/api/admin/identity/policies/{{policy.id}}" method="PUT">

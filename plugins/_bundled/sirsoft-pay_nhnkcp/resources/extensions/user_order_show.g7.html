@@ -88,20 +88,20 @@
       <form method="post" action="{{nhnkcp_mock_deposit.data.mock_url ?? ''}}" target="_blank" class="space-y-2">
         <div class="flex items-center gap-2 text-sm">
           <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400 text-xs">$t:sirsoft-pay_nhnkcp.user.mock_trade_no</span>
-          <input type="text" name="e_trade_no" value="{{nhnkcp_mock_deposit.data.trade_no ?? ''}}" :readOnly="true" class="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"/>
+          <input type="text" name="e_trade_no" aria-label="$t:sirsoft-pay_nhnkcp.user.mock_trade_no" value="{{nhnkcp_mock_deposit.data.trade_no ?? ''}}" :readOnly="true" class="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"/>
         </div>
         <div class="flex items-center gap-2 text-sm">
           <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400 text-xs">$t:sirsoft-pay_nhnkcp.user.mock_deposit_no</span>
-          <input type="text" name="deposit_no" value="{{nhnkcp_mock_deposit.data.account_no ?? ''}}" :readOnly="true" class="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"/>
+          <input type="text" name="deposit_no" aria-label="$t:sirsoft-pay_nhnkcp.user.mock_deposit_no" value="{{nhnkcp_mock_deposit.data.account_no ?? ''}}" :readOnly="true" class="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"/>
         </div>
         <div class="flex items-center gap-2 text-sm">
           <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400 text-xs">$t:sirsoft-pay_nhnkcp.user.mock_depositor</span>
           <!-- 입금자명 — 테스트 입금통보에 실을 이름이라 직접 고칠 수 있다 -->
-          <input type="text" name="req_name" value="NHN KCP" class="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono"/>
+          <input type="text" name="req_name" aria-label="$t:sirsoft-pay_nhnkcp.user.mock_depositor" value="NHN KCP" class="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono"/>
         </div>
         <div class="flex items-center gap-2 text-sm">
           <span class="w-28 flex-shrink-0 text-gray-500 dark:text-gray-400 text-xs">$t:sirsoft-pay_nhnkcp.user.mock_notify_url</span>
-          <input type="text" name="noti_url" value="{{nhnkcp_mock_deposit.data.notify_url ?? ''}}" :readOnly="true" class="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"/>
+          <input type="text" name="noti_url" aria-label="$t:sirsoft-pay_nhnkcp.user.mock_notify_url" value="{{nhnkcp_mock_deposit.data.notify_url ?? ''}}" :readOnly="true" class="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"/>
         </div>
         <div class="pt-1">
           <button type="submit" class="w-full py-1.5 text-xs font-semibold rounded border border-orange-400 dark:border-orange-600 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors">$t:sirsoft-pay_nhnkcp.user.mock_submit</button>

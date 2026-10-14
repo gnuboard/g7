@@ -78,7 +78,7 @@
               <span class="text-primary text-sm font-medium truncate">{{$localized(item.name)}}</span>
               <span data-if="{{item.is_default}}" class="text-secondary px-1.5 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 flex-shrink-0">$t:sirsoft-ecommerce.admin.common_info.list.default</span>
             </div>
-            <toggle data-type="composite" size="sm" checked="{{item.is_active}}" disabled="{{!item.abilities?.can_update}}">
+            <toggle data-type="composite" ariaLabel="$t:common.item_enabled|name={{$localized(item.name)}}" size="sm" checked="{{item.is_active}}" disabled="{{!item.abilities?.can_update}}">
               <on type="change">
                 <!-- 행의 노출 스위치. `stopPropagation` 이 없으면 이 클릭이 행 선택으로 번져, 스위치를 눌렀을 뿐인데 오른쪽 패널이 바뀐다. -->
                 <api-call :stopPropagation="true" :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/product-common-infos/{{item.id}}/toggle-active" method="PATCH">

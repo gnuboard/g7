@@ -634,6 +634,7 @@
                     ],
                     "props": {
                         "value": "{{_local.edit_comment_content ?? comment.content}}",
+                        "aria-label": "$t:sirsoft-board.attributes.comment.content",
                         "rows": 3,
                         "className": "text-primary w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 mb-2"
                     }

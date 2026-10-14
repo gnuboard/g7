@@ -54,6 +54,7 @@
         }
     ],
     "props": {
+        "rowLabelField": "localized_description",
         "data": "{{activityLogs?.data?.data}}",
         "pagination": true,
         "serverSidePagination": true,

@@ -28,6 +28,8 @@
 7. [RadioGroup](#radiogroup)
 8. [SearchBar](#searchbar)
 9. [HtmlContent](#htmlcontent)
+10. [SearchableDropdown](#searchabledropdown)
+11. [TabNavigation · TabNavigationScroll](#tabnavigation--tabnavigationscroll)
 
 ---
 
@@ -297,6 +299,10 @@
 | `defaultVariant` | string | - | 기본 태그 색상 |
 | `name` | string | - | 폼 필드 이름 |
 | `className` | string | - | 추가 CSS 클래스 |
+| `aria-label` | string | - | 입력칸 접근 가능한 이름. 있으면 곁 라벨을 잇지 않는다. 보이는 제목이 없는 자리에서는 반드시 준다 |
+| `aria-labelledby` | string | - | 입력칸 이름이 될 요소 id |
+
+> **MultilingualTagInput** 도 같은 `aria-label`·`aria-labelledby` 를 받는다. 이름 차례는 `aria-label` → `aria-labelledby` → 곁 라벨(`form-label` 등) → (마지막 수단) `placeholder` 다 — placeholder 는 입력하면 사라지므로 곁 라벨이 없는 자리에서는 `aria-label` 을 준다.
 
 ### TagOption 구조
 
@@ -398,6 +404,7 @@
 | `name` | string | - | 폼 필드 이름 |
 | `showCodeOnMobile` | boolean | `false` | 모바일에서 언어 코드로 표시 |
 | `className` | string | - | 추가 CSS 클래스 |
+| `ariaLabel` | string | - | 입력칸 접근 가능한 이름(`aria-label` 로 줘도 같다). 켜진 언어가 둘 이상이면 각 언어 칸이 「{이름} ({언어명})」, 하나면 「{이름}」으로 읽힌다. 없으면 컴포넌트 바깥 곁의 라벨(`form-label` 등)을 잇는다 — 표 안처럼 곁 라벨이 없는 자리에서는 반드시 준다 |
 
 ### 레이아웃 모드
 
@@ -770,6 +777,35 @@ G7에서는 콘텐츠의 렌더링 모드를 DB의 `*_mode` 컬럼(`'text'` / `'
 - `isHtml=true`: DOMPurify FORBID 방식 — `script`, `iframe`, `form` 등 위험 태그 차단, 나머지 허용
 - 외부 링크(`http://`, `https://`)에 `rel="noopener noreferrer"` 자동 추가
 - `purifyConfig`로 커스터마이징 가능하나, 보안 기본값(`FORBID_TAGS`, `FORBID_ATTR`)은 항상 유지
+
+---
+
+## SearchableDropdown
+
+**템플릿**: `sirsoft-admin_basic`
+
+검색어로 옵션을 좁혀 고르는 드롭다운(단일·다중). 트리거 단추는 「{이름} {현재 값}」으로 읽힌다.
+
+### 접근 가능한 이름
+
+| Prop | 타입 | 기본값 | 설명 |
+| ---- | ---- | ------ | ---- |
+| `aria-label` | string | - | 트리거 단추 이름. 단추는 「{이름} {현재 값}」(예: 「작성자 홍길동」)으로 읽힌다. 고른 값이 없으면(값이 빈 문자열이거나 옵션에 없는 값도 포함) 안내 글자(`triggerLabel`)는 잇지 않고 이름만 읽힌다 |
+| `aria-labelledby` | string | - | 이름이 될 요소 id. 단추는 「{그 요소 글자} {현재 값}」으로 읽힌다 |
+
+둘 다 없으면 단추 앞의 곁 라벨(`form-label`·`filter-label` 등)을 이름으로 잇고 현재 값을 뒤에 붙인다. 곁 라벨도 없으면 고른 값만 읽혀 무엇을 고르는 칸인지 알 수 없으므로, 라벨 없는 자리에서는 `aria-label` 을 준다. 펼친 목록의 검색칸은 「검색」으로 읽힌다.
+
+---
+
+## TabNavigation · TabNavigationScroll
+
+**템플릿**: `sirsoft-admin_basic`
+
+넓은 화면에서는 탭 단추, 좁은 화면(반응형 기준 미만)에서는 선택 상자 하나로 그린다. 좁은 화면 선택 상자는 「{이름} {현재 탭}」으로 읽힌다.
+
+| Prop | 타입 | 기본값 | 설명 |
+| ---- | ---- | ------ | ---- |
+| `aria-label` | string | 「섹션 이동」 | 좁은 화면 선택 상자의 이름. 없으면 공용 문구 「섹션 이동」(`common.section_navigation`)이 이름이 된다 — 이름이 없으면 현재 탭 글자만 읽혀 무엇을 고르는 칸인지 알 수 없다 |
 
 ---
 

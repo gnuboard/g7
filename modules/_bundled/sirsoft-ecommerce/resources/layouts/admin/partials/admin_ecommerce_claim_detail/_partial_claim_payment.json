@@ -838,6 +838,7 @@
                                             ],
                                             "props": {
                                                 "name": "claimShippingFee",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.claim_shipping_fee_exchange",
                                                 "type": "number",
                                                 "min": 0,
                                                 "step": "any",
@@ -881,6 +882,7 @@
                                             ],
                                             "props": {
                                                 "name": "claimShippingFee",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.claim_shipping_fee_return",
                                                 "type": "number",
                                                 "min": 0,
                                                 "step": "any",
@@ -992,6 +994,7 @@
                                             ],
                                             "props": {
                                                 "name": "chargeMethod",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.charge_method",
                                                 "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                                                 "value": "{{_local.chargeMethod ?? ''}}",
                                                 "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true}}",
@@ -2095,6 +2098,7 @@
                                                             ],
                                                             "props": {
                                                                 "name": "refundAmount",
+                                                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.cash_amount",
                                                                 "type": "number",
                                                                 "min": 0,
                                                                 "step": "any",
@@ -2182,6 +2186,7 @@
                                                             ],
                                                             "props": {
                                                                 "name": "refundPointsAmount",
+                                                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_amount",
                                                                 "type": "number",
                                                                 "min": 0,
                                                                 "step": "any",
@@ -2220,6 +2225,10 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "props": {
+                                                "role": "radiogroup",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",

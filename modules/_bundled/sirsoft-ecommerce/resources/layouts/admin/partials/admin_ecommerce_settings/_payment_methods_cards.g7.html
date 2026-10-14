@@ -28,7 +28,7 @@
           </div>
           <div class="flex-center gap-2">
             <!-- 고객이 고를 수 없는 수단(customer_selectable === false)은 목록 표와 같이 잠근다 — 켜도 주문 생성이 422 로 거절된다. -->
-            <toggle data-type="composite" data-if="{{!$method._orphaned}}" value="{{$method.is_active}}" disabled="{{_computed.isReadOnly || $method.customer_selectable === false || (!$method.pg_locked &amp;&amp; $method.needs_pg &amp;&amp; !$method.pg_provider &amp;&amp; !_local.form?.order_settings?.default_pg_provider)}}">
+            <toggle data-type="composite" ariaLabel="$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.is_active')}}" data-if="{{!$method._orphaned}}" value="{{$method.is_active}}" disabled="{{_computed.isReadOnly || $method.customer_selectable === false || (!$method.pg_locked &amp;&amp; $method.needs_pg &amp;&amp; !$method.pg_provider &amp;&amp; !_local.form?.order_settings?.default_pg_provider)}}">
               <on type="change">
                 <!-- 사용 여부. 끄면 쇼핑몰 결제창에서 사라지고 설정은 남는다 — 이미 그 수단으로 결제된 주문에는 영향이 없다. -->
                 <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, is_active: !m.is_active} : m)}}" :hasChanges="true"/>
@@ -49,7 +49,7 @@
               <label class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_provider</label>
               <!-- PG 고정 수단(간편결제 등) — 플러그인이 자기 PG 로 고정 선언했으므로 관리자가 바꿀 수 없다. PG 이름을 읽기전용으로 표시. -->
               <span data-if="{{$method.pg_locked}}" data-testid="{{'pg-locked-badge-' + $method.id}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_fixed') + ' · ' + (((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider))?.name ? $localized(((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider)).name) : ($method.pg_provider ?? ''))}}</span>
-              <select data-if="{{!$method.pg_locked &amp;&amp; $method.needs_pg &amp;&amp; (_local.form?.available_pg_providers ?? []).length > 0}}" data-testid="{{'pg-select-' + $method.id}}" value="{{$method.pg_provider ?? ''}}" class="w-full" options="{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).filter(p => (p.supported_methods ?? []).includes($method.id)).map(p => ({value: p.id, label: $localized(p.name)})))}}" disabled="{{_computed.isReadOnly}}">
+              <select data-if="{{!$method.pg_locked &amp;&amp; $method.needs_pg &amp;&amp; (_local.form?.available_pg_providers ?? []).length > 0}}" data-testid="{{'pg-select-' + $method.id}}" aria-label="$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_provider')}}" value="{{$method.pg_provider ?? ''}}" class="w-full" options="{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).filter(p => (p.supported_methods ?? []).includes($method.id)).map(p => ({value: p.id, label: $localized(p.name)})))}}" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 연동 플러그인(PG). 어느 결제사로 보낼지를 정한다 — 설치·활성화된 플러그인만 선택지에 뜬다. -->
                   <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, pg_provider: $event.target.value || null} : m)}}" :hasChanges="true"/>
@@ -60,7 +60,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.stock_deduction_timing</label>
-              <select value="{{$method.stock_deduction_timing ?? 'payment_complete'}}" class="w-full" disabled="{{_computed.isReadOnly}}">
+              <select value="{{$method.stock_deduction_timing ?? 'payment_complete'}}" aria-label="$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.stock_deduction_timing')}}" class="w-full" disabled="{{_computed.isReadOnly}}">
                 <options>
                   <option value="order_placed">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_order_placed</option>
                   <option value="payment_complete">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_payment_complete</option>
@@ -74,7 +74,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing</label>
-              <select value="{{$method.mileage_deduction_timing ?? 'payment_complete'}}" class="w-full" disabled="{{_computed.isReadOnly || !(_local.form?.mileage?.enabled)}}">
+              <select value="{{$method.mileage_deduction_timing ?? 'payment_complete'}}" aria-label="$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing')}}" class="w-full" disabled="{{_computed.isReadOnly || !(_local.form?.mileage?.enabled)}}">
                 <options>
                   <option value="order_placed">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_order_placed</option>
                   <option value="payment_complete">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.timing_payment_complete</option>
@@ -88,7 +88,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.min_order_amount</label>
-              <input type="number" value="{{$method.min_order_amount ?? 0}}" :min="0" class="input" disabled="{{_computed.isReadOnly}}">
+              <input type="number" value="{{$method.min_order_amount ?? 0}}" aria-label="$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.min_order_amount')}}" :min="0" class="input" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 표시 이름. 비워 두면 기본 이름이 쓰인다. -->
                   <set-state target="local" form.order_settings.payment_methods="{{(_local.form?.order_settings?.payment_methods ?? []).map((m, i) => i === $methodIndex ? {...m, min_order_amount: Number($event.target.value) || 0} : m)}}" :hasChanges="true"/>

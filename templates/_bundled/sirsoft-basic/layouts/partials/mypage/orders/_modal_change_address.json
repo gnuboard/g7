@@ -257,6 +257,7 @@
                                             "type": "basic",
                                             "name": "Input",
                                             "props": {
+                                                "aria-label": "$t:mypage.addresses.form.recipient",
                                                 "type": "text",
                                                 "name": "recipient_name",
                                                 "placeholder": "$t:mypage.addresses.form.recipient_placeholder",
@@ -296,6 +297,7 @@
                                             "type": "basic",
                                             "name": "Input",
                                             "props": {
+                                                "aria-label": "$t:mypage.addresses.form.phone",
                                                 "type": "tel",
                                                 "name": "recipient_phone",
                                                 "placeholder": "$t:mypage.addresses.form.phone_placeholder",
@@ -416,6 +418,7 @@
                                     "type": "basic",
                                     "name": "Input",
                                     "props": {
+                                        "aria-label": "$t:mypage.addresses.form.detail_address",
                                         "type": "text",
                                         "name": "address_detail",
                                         "placeholder": "$t:mypage.addresses.form.detail_placeholder",

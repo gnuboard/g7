@@ -166,9 +166,9 @@
       <div data-ref="validation_error_banner" data-if="{{_local.errors}}" class="alert-danger">
         <icon name="triangle-exclamation" size="sm" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
         <div>
-          <h3 class="text-error-strong">$t:common.validation_error</h3>
+          <h3 class="ecommerce-tone-error-strong text-sm font-medium">$t:common.validation_error</h3>
           <ul data-if="{{typeof _local.errors === 'object'}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-            <li class="text-error-soft">{{message}}</li>
+            <li class="ecommerce-tone-error-soft text-sm">{{message}}</li>
           </ul>
         </div>
       </div>

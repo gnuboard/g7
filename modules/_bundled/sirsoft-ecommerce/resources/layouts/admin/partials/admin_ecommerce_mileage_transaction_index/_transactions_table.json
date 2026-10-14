@@ -131,6 +131,7 @@
                 }
             ],
             "props": {
+                "rowLabelField": "number",
                 "data": "{{transactions?.data?.data || []}}",
                 "selectable": true,
                 "selectionScope": "page",

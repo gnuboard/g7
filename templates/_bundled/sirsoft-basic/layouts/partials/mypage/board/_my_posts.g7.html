@@ -6,7 +6,7 @@
     <!-- 필터 영역 -->
     <div class="flex flex-col sm:flex-row gap-3 mb-4">
       <!-- 게시판 필터 -->
-      <select value="{{_global.myPostsBoard ?? ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select aria-label="$t:mypage.board_activities.reactions.table.board" value="{{_global.myPostsBoard ?? ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <on type="change">
           <set-state target="global" myPostsBoard="{{$event.target.value}}" :myPostsPage="1"/>
           <refetch-data-source dataSourceId="myPosts"/>
@@ -15,7 +15,7 @@
         <option data-each="board in {{boards?.data ?? []}}" value="{{board.slug}}">{{board.name}}</option>
       </select>
       <!-- 정렬 필터 -->
-      <select value="{{_global.myPostsSort ?? 'latest'}}" class="min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select aria-label="$t:common.sort_order" value="{{_global.myPostsSort ?? 'latest'}}" class="min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <on type="change">
           <set-state target="global" myPostsSort="{{$event.target.value}}" :myPostsPage="1"/>
           <refetch-data-source dataSourceId="myPosts"/>
@@ -27,7 +27,7 @@
       <!-- 검색 영역 -->
       <div class="flex-1 flex gap-2">
         <!-- 검색 대상 — 제목만/내용만을 백엔드가 갈라 준다. 담아만 두고 조회는 검색 버튼이 한다 -->
-        <select data-ref="my_posts_search_field_select" value="{{_global.myPostsSearchField ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <select data-ref="my_posts_search_field_select" aria-label="$t:common.search_field" value="{{_global.myPostsSearchField ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
           <options>
             <option value="title_content">$t:mypage.board_activities.search_fields.title_content</option>
             <option value="title">$t:mypage.board_activities.search_fields.title</option>

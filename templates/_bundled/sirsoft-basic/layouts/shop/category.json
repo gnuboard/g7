@@ -418,6 +418,7 @@
                                 ],
                                 "props": {
                                     "name": "sort",
+                                    "aria-label": "$t:common.sort_order",
                                     "value": "{{query.sort ?? 'latest'}}",
                                     "className": "h-9 w-32",
                                     "options": [

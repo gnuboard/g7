@@ -45,6 +45,7 @@
                     ],
                     "props": {
                         "name": "searchField",
+                        "aria-label": "$t:common.search_field",
                         "className": "w-36 text-sm",
                         "value": "{{_local.filter.searchField ?? 'member'}}",
                         "options": [
@@ -144,6 +145,7 @@
                     ],
                     "props": {
                         "name": "type",
+                        "aria-label": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.label_type",
                         "className": "w-32 text-sm",
                         "value": "{{_local.filter.type ?? ''}}",
                         "options": [
@@ -196,6 +198,7 @@
                     ],
                     "props": {
                         "name": "currency",
+                        "aria-label": "$t:sirsoft-ecommerce.admin.mileage_transactions.filter.label_currency",
                         "className": "w-32 text-sm",
                         "value": "{{_local.filter.currency ?? ''}}",
                         "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.mileage_transactions.filter.currency_all') }, ...((transactions?.data?.currencies ?? ['KRW']).map(c => ({ value: c, label: c })))]}}"

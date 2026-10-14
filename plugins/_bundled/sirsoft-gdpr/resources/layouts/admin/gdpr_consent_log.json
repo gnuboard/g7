@@ -260,6 +260,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "searchType",
+                                                    "aria-label": "$t:common.search_field",
                                                     "className": "w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
                                                     "value": "{{_local.filter.searchType || 'email'}}",
                                                     "options": [

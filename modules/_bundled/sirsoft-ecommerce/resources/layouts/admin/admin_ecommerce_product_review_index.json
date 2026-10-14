@@ -236,6 +236,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "searchField",
+                                                    "aria-label": "$t:common.search_field",
                                                     "className": "w-36 text-sm",
                                                     "value": "{{_local.filter.searchField ?? 'product_name'}}",
                                                     "options": [
@@ -1441,6 +1442,7 @@
                                         ],
                                         "props": {
                                             "name": "batchAction",
+                                            "aria-label": "$t:sirsoft-ecommerce.admin.product_review.batch.status_change",
                                             "className": "w-48",
                                             "value": "{{_local.batchAction ?? ''}}",
                                             "disabled": "{{reviews.data?.abilities?.can_update !== true}}",
@@ -1541,6 +1543,7 @@
                                         ],
                                         "props": {
                                             "name": "sortBy",
+                                            "aria-label": "$t:common.sort_order",
                                             "className": "w-40 text-sm",
                                             "value": "{{query.sort || 'created_at_desc'}}",
                                             "options": [
@@ -1585,6 +1588,7 @@
                                         ],
                                         "props": {
                                             "name": "perPage",
+                                            "aria-label": "$t:common.per_page",
                                             "className": "w-32 text-sm",
                                             "value": "{{query.per_page || '20'}}",
                                             "options": [
@@ -1648,6 +1652,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "rowLabelField": "product.name",
                                     "selectedCountText": "",
                                     "data": "{{reviews.data?.data ?? []}}",
                                     "idField": "id",
@@ -2716,6 +2721,7 @@
                                                                                         }
                                                                                     ],
                                                                                     "props": {
+                                                                                        "aria-label": "$t:defer:common.row_cell|row={{row.product?.name ?? ''}}|column={{$t('sirsoft-ecommerce.admin.product_review.detail.reply_form.title')}}",
                                                                                         "placeholder": "$t:sirsoft-ecommerce.admin.product_review.detail.reply_form.placeholder",
                                                                                         "className": "textarea w-full h-24 resize-none p-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600",
                                                                                         "value": "{{_local.editReplyContent ?? ''}}",
@@ -2887,6 +2893,7 @@
                                                                                         }
                                                                                     ],
                                                                                     "props": {
+                                                                                        "aria-label": "$t:defer:common.row_cell|row={{row.product?.name ?? ''}}|column={{$t('sirsoft-ecommerce.admin.product_review.detail.reply_form.title')}}",
                                                                                         "placeholder": "$t:sirsoft-ecommerce.admin.product_review.detail.reply_form.placeholder",
                                                                                         "className": "textarea w-full h-24 resize-none p-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600",
                                                                                         "value": "{{_local.replyText ?? ''}}",

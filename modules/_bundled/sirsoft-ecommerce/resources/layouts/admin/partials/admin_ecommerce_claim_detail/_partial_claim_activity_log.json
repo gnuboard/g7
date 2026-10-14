@@ -79,6 +79,7 @@
                                     ],
                                     "props": {
                                         "value": "{{_local.logsSort}}",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.activity_log.sort.label",
                                         "className": "w-auto min-w-40",
                                         "options": [
                                             {
@@ -137,6 +138,7 @@
                                     ],
                                     "props": {
                                         "value": "{{String(_local.logsPerPage)}}",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.activity_log.per_page",
                                         "className": "w-auto min-w-20",
                                         "options": [
                                             {
@@ -305,6 +307,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
+                                                                                "aria-hidden": "true",
                                                                                 "className": "text-xs font-medium text-gray-600 dark:text-gray-300"
                                                                             },
                                                                             "text": "{{(log.user?.name ?? 'S').charAt(0).toUpperCase()}}"
@@ -629,6 +632,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
+                                                                                "aria-hidden": "true",
                                                                                 "className": "text-xs font-medium text-gray-600 dark:text-gray-300"
                                                                             },
                                                                             "text": "{{(log.user?.name ?? 'S').charAt(0).toUpperCase()}}"

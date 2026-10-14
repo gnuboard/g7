@@ -39,8 +39,8 @@
       </div>
       <p class="text-tertiary mb-2">$t:admin.plugins.modals.cascade_dependencies_hint</p>
       <p data-if="{{_global.installPreview.dependencies.some(x => x.available &amp;&amp; x.can_select !== true)}}" class="text-danger-soft mb-2">$t:admin.plugins.modals.cascade_no_permission_hint</p>
-      <div data-each="dep in _global.installPreview.dependencies" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1">
-        <input type="checkbox" checked="{{dep.can_select === true &amp;&amp; ((_global.installSelectedDeps ?? []).includes(dep.identifier) || ((_global.installSelectedDeps === undefined || _global.installSelectedDeps === null) &amp;&amp; dep.default_selected))}}" disabled="{{!dep.available || dep.can_select !== true}}" class="w-4 h-4">
+      <label data-each="dep in _global.installPreview.dependencies" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1 cursor-pointer">
+        <input type="checkbox" aria-label="{{dep.name || dep.identifier}} ({{dep.identifier}})" checked="{{dep.can_select === true &amp;&amp; ((_global.installSelectedDeps ?? []).includes(dep.identifier) || ((_global.installSelectedDeps === undefined || _global.installSelectedDeps === null) &amp;&amp; dep.default_selected))}}" disabled="{{!dep.available || dep.can_select !== true}}" class="w-4 h-4">
           <on type="change">
             <!-- 의존 확장 하나를 더하거나 뺀다. 위 규칙 ⑴ 대로 아직 고른 적이 없으면 서버 기본 선택에서 출발하고, 같은 식별자를 먼저 걸러 낸 뒤 다시 넣어 중복을 막는다. -->
             <set-state target="global" installSelectedDeps="{{ $event.target.checked ? [ ...((_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier))).filter(id => id !== dep.identifier), dep.identifier ] : ((_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier))).filter(id => id !== dep.identifier) }}"/>
@@ -54,7 +54,7 @@
         <span data-if="{{!dep.is_installed}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.plugins.modals.dependency_not_installed</span>
         <span data-if="{{dep.is_installed &amp;&amp; !dep.is_active}}" class="text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded">$t:admin.plugins.modals.dependency_inactive</span>
         <span data-if="{{dep.available &amp;&amp; dep.can_select !== true}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.plugins.modals.cascade_no_permission</span>
-      </div>
+      </label>
     </div>
     <div data-ref="cascade_language_packs_section" data-if="{{_global.installPreview?.language_packs &amp;&amp; _global.installPreview.language_packs.length > 0}}" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
       <div class="flex-center gap-2 mb-2">
@@ -63,8 +63,8 @@
       </div>
       <p class="text-tertiary mb-2">$t:admin.plugins.modals.cascade_language_packs_hint</p>
       <p data-if="{{_global.installPreview.language_packs.some(x => x.can_select !== true)}}" class="text-danger-soft mb-2">$t:admin.plugins.modals.cascade_no_permission_hint</p>
-      <div data-each="lp in _global.installPreview.language_packs" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1">
-        <input type="checkbox" checked="{{lp.can_select === true &amp;&amp; (((_global.installSelectedLPs ?? []).includes(lp.bundled_identifier) || ((_global.installSelectedLPs === undefined || _global.installSelectedLPs === null) &amp;&amp; lp.default_selected)) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension)))}}" disabled="{{lp.can_select !== true || (lp.depends_on_extension &amp;&amp; !(_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))}}" class="w-4 h-4">
+      <label data-each="lp in _global.installPreview.language_packs" class="flex-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1 cursor-pointer">
+        <input type="checkbox" aria-label="{{lp.locale_native_name}} ({{lp.locale}})" checked="{{lp.can_select === true &amp;&amp; (((_global.installSelectedLPs ?? []).includes(lp.bundled_identifier) || ((_global.installSelectedLPs === undefined || _global.installSelectedLPs === null) &amp;&amp; lp.default_selected)) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension)))}}" disabled="{{lp.can_select !== true || (lp.depends_on_extension &amp;&amp; !(_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))}}" class="w-4 h-4">
           <on type="change">
             <!-- 언어팩 하나를 더하거나 뺀다. 켜 두더라도 기대는 확장이 선택에서 빠지면 위 규칙 ⑵ 로 다시 꺼지므로, 이 자리의 선택은 「그 확장이 함께 깔릴 때」라는 조건부다. -->
             <set-state target="global" installSelectedLPs="{{ $event.target.checked ? [ ...((_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier))).filter(id => id !== lp.bundled_identifier), lp.bundled_identifier ] : ((_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier))).filter(id => id !== lp.bundled_identifier) }}"/>
@@ -74,7 +74,7 @@
         <span class="text-tertiary font-mono">v{{lp.version}}</span>
         <span data-if="{{(lp.depends_on_extension ?? lp.target_identifier) &amp;&amp; (lp.depends_on_extension ?? lp.target_identifier) !== _global.installPreview?.target?.identifier}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.plugins.modals.cascade_lp_depends_on|target={{lp.depends_on_extension ?? lp.target_identifier}}</span>
         <span data-if="{{lp.can_select !== true}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.plugins.modals.cascade_no_permission</span>
-      </div>
+      </label>
     </div>
     <!-- 고급 설정 — 레이아웃 설치 소스(#144). 평소에는 자동(.g7.html 우선)이고, 새 형식 처리에 문제가 있을 때만
          원본 JSON 우선을 고른다. 값은 요청 본문 layout_source 로 보내고 서버는 그 요청 동안만 적용한다.

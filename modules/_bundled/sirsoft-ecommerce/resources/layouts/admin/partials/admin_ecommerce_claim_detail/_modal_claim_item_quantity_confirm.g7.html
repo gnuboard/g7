@@ -11,7 +11,7 @@
           <span class="text-sm text-gray-900 dark:text-gray-100 flex-1 min-w-0 truncate">{{qtyRow.label}}</span>
           <div class="flex-center gap-2 whitespace-nowrap">
             <!-- 나눌 수 없는 행(끝난 행·수량 1)은 입력을 잠근다 — 발송된 교환 행도 후속 주문옵션이 함께 쪼개지므로 나눌 수 있다(R10) — 서버만 막으면 운영자는 입력해 놓고 [확인] 에서야 422 를 본다. 판정은 서버가 `is_splittable` 로 실어 준다. -->
-            <input type="number" min="1" max="{{qtyRow.quantity}}" class="w-20 px-2 py-1 text-sm text-right rounded" disabled="{{qtyRow.splittable !== true}}" value="{{_global.claimItemQuantityContext?.quantities?.[qtyRow.id] ?? qtyRow.quantity}}">
+            <input type="number" min="1" max="{{qtyRow.quantity}}" aria-label="$t:common.row_cell|row={{qtyRow.label ?? ''}}|column={{$t('sirsoft-ecommerce.admin.claim.detail.items.columns.quantity')}}" class="w-20 px-2 py-1 text-sm text-right rounded" disabled="{{qtyRow.splittable !== true}}" value="{{_global.claimItemQuantityContext?.quantities?.[qtyRow.id] ?? qtyRow.quantity}}">
               <on type="change">
                 <action handler="sirsoft-ecommerce.updateClaimItemQuantity" itemId="{{qtyRow.id}}" value="{{$event.target.value}}"/>
               </on>

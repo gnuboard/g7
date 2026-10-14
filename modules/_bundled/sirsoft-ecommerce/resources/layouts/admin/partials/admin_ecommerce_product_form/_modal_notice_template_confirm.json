@@ -39,7 +39,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-sm font-medium text-warning-soft"
+                                        "className": "text-sm font-medium ecommerce-tone-warning-soft"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.notice.confirm_change_warning"
                                 },
@@ -47,7 +47,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-warning-soft"
+                                        "className": "ecommerce-tone-warning-soft text-xs"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.notice.confirm_change_description"
                                 }

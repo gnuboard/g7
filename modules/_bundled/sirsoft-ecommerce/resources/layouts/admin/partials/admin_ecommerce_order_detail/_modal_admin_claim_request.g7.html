@@ -7,14 +7,14 @@
       <div data-ref="acr_002_rows" class="border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-200 dark:divide-gray-700">
         <div data-each="reqRow, reqRowIdx in {{_global.adminClaimRequest?.rows ?? []}}" class="flex-between gap-3 p-3 flex-wrap">
           <span class="text-sm text-gray-900 dark:text-gray-100 flex-1 min-w-0 truncate">{{reqRow.label}}</span>
-          <select data-if="{{_global.adminClaimRequest?.type === 'exchange'}}" class="w-56 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{reqRow.newProductOptionId ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.claim_request.same_option') }].concat(reqRow.optionChoices ?? [])}}">
+          <select data-if="{{_global.adminClaimRequest?.type === 'exchange'}}" aria-label="$t:common.row_cell|row={{reqRow.label ?? ''}}|column={{$t('sirsoft-ecommerce.admin.order.claim_request.exchange_option_label')}}" class="w-56 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{reqRow.newProductOptionId ?? ''}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.claim_request.same_option') }].concat(reqRow.optionChoices ?? [])}}">
             <on type="change">
               <!-- 교환 신청 행의 교환 옵션을 고른다 — 행 단위 값은 전용 핸들러가 행 배열 안에서 고친다 -->
               <action handler="sirsoft-ecommerce.setAdminClaimRequestRow" optionId="{{reqRow.id}}" newProductOptionId="{{$event.target.value}}"/>
             </on>
           </select>
           <div class="flex-center gap-2 whitespace-nowrap">
-            <input type="number" min="1" max="{{reqRow.max}}" class="w-20 px-2 py-1 text-sm text-right rounded" value="{{reqRow.quantity}}">
+            <input type="number" min="1" max="{{reqRow.max}}" aria-label="$t:common.row_cell|row={{reqRow.label ?? ''}}|column={{$t('sirsoft-ecommerce.admin.claim.detail.items.columns.quantity')}}" class="w-20 px-2 py-1 text-sm text-right rounded" value="{{reqRow.quantity}}">
               <on type="change">
                 <!-- 신청 수량을 행에 반영한다 — 핸들러가 1 ~ 신청 가능 수량 범위로 맞춘다 -->
                 <action handler="sirsoft-ecommerce.setAdminClaimRequestRow" optionId="{{reqRow.id}}" quantity="{{$event.target.value}}"/>
@@ -155,7 +155,7 @@
       <div data-ref="acr_007_charge" class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-2">
         <div class="flex-center gap-2 flex-wrap">
           <span class="text-sm text-secondary w-28">$t:sirsoft-ecommerce.admin.order.claim_request.shipping_fee</span>
-          <input data-ref="acr_008_shipping_fee" type="number" min="0" class="w-32 px-2 py-1 text-sm text-right rounded disabled:opacity-50" disabled="{{_global.adminClaimRequest?.chargeMethod === 'free'}}" value="{{_global.adminClaimRequest?.chargeMethod === 'free' ? '0' : (_global.adminClaimRequest?.shippingFee ?? '')}}">
+          <input data-ref="acr_008_shipping_fee" type="number" aria-label="$t:sirsoft-ecommerce.admin.order.claim_request.shipping_fee" min="0" class="w-32 px-2 py-1 text-sm text-right rounded disabled:opacity-50" disabled="{{_global.adminClaimRequest?.chargeMethod === 'free'}}" value="{{_global.adminClaimRequest?.chargeMethod === 'free' ? '0' : (_global.adminClaimRequest?.shippingFee ?? '')}}">
             <on type="change">
               <!-- 운영자가 정한 반품·교환 배송비(원) — 과금 방식이 무료면 잠긴다 -->
               <action handler="sirsoft-ecommerce.setAdminClaimRequestField" field="shippingFee" value="{{$event.target.value}}"/>

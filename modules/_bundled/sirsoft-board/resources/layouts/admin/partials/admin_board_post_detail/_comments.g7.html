@@ -24,7 +24,7 @@
                   <icon name="turn-up" class="text-sm rotate-90 mt-1 text-gray-500 dark:text-gray-400"/>
                   <span class="text-label">$t:sirsoft-board.admin.posts.detail.replying_to|name={{comment.author.name}}</span>
                 </div>
-                <textarea value="{{_local.reply_comment_content ?? ''}}" placeholder="$t:sirsoft-board.admin.posts.detail.reply_placeholder" :rows="2" disabled="{{post?.data?.abilities?.can_write_comments !== true}}" class="text-primary w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 mb-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <textarea value="{{_local.reply_comment_content ?? ''}}" aria-label="$t:sirsoft-board.admin.posts.detail.replying_to|name={{comment.author.name}}" placeholder="$t:sirsoft-board.admin.posts.detail.reply_placeholder" :rows="2" disabled="{{post?.data?.abilities?.can_write_comments !== true}}" class="text-primary w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 mb-2 disabled:opacity-50 disabled:cursor-not-allowed">
                   <on type="input">
                     <!-- 답글 입력을 담는다 — 답글 칸은 한 번에 하나만 열리므로 어느 댓글에 다는지는 이 값이 아니라 `replyingTo` 가 들고 있다 -->
                     <set-state target="local" reply_comment_content="{{$event.target.value}}"/>

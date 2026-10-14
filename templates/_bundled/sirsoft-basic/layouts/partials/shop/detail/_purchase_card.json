@@ -121,6 +121,7 @@
                                     ],
                                     "props": {
                                         "name": "option_{{groupIndex}}",
+                                        "aria-label": "{{group.name_localized}}",
                                         "data-testid": "option-group-{{groupIndex}}",
                                         "className": "w-full",
                                         "value": "{{_local.currentSelection?.[group.name_localized] ?? ''}}",
@@ -359,6 +360,7 @@
                                                     ],
                                                     "props": {
                                                         "name": "add_option_{{itemIndex}}_{{addGroup.id}}",
+                                                        "aria-label": "{{addGroup.name}}",
                                                         "data-testid": "add-option-{{itemIndex}}-{{addGroup.id}}",
                                                         "className": "w-full",
                                                         "value": "{{item.additionalOptionSelections?.[addGroup.id] ?? ''}}",
@@ -403,6 +405,7 @@
                                                                 }
                                                             ],
                                                             "props": {
+                                                                "aria-label": "$t:common.row_cell|row={{addGroup.name ?? ''}}|column={{$t('shop.additional_option_custom_text_label')}}",
                                                                 "type": "text",
                                                                 "name": "add_option_text_{{itemIndex}}_{{addGroup.id}}",
                                                                 "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500",

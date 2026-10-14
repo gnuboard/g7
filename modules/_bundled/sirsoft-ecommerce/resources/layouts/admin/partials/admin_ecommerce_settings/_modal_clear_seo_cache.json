@@ -74,7 +74,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-warning-soft"
+                                "className": "ecommerce-tone-warning-soft text-xs"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.seo.seo_friendly.clear_cache_confirm"
                         }

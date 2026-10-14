@@ -296,7 +296,8 @@
       "issue_period": "발급기간",
       "reissue": "재발급 (중복 다운로드)",
       "coupon_overlap": "타 쿠폰과 중복 사용",
-      "apply_target": "적용 대상"
+      "apply_target": "적용 대상",
+      "per_user_limit_label": "회원당 발급 한도"
     },
     "option": {
       "target_type_product_amount": "상품금액",

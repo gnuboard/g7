@@ -36,7 +36,9 @@
       "1_month": "1개월",
       "3_months": "3개월",
       "all": "전체"
-    }
+    },
+    "benefit_amount_min": "혜택금액 최소",
+    "benefit_amount_max": "혜택금액 최대"
   },
   "benefit_type": {
     "all": "전체",

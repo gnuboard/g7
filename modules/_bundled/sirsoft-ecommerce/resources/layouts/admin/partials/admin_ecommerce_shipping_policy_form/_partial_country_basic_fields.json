@@ -79,6 +79,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.shipping_policy.form.shipping_method",
                                                 "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method'] ? 'input input-error w-full' : 'input w-full'}}",
                                                 "value": "{{_computed.activeCountrySetting?.shipping_method ?? (ecommerce_settings?.data?.shipping?.types ?? []).find(t => t.is_active)?.code ?? 'parcel'}}",
                                                 "options": "{{_computed.shippingMethodOptions ?? []}}",
@@ -125,6 +126,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "ariaLabel": "$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name",
                                                         "value": "{{_computed.activeCountrySetting?.custom_shipping_name ?? {}}}",
                                                         "layout": "inline",
                                                         "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name_placeholder",

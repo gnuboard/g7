@@ -68,7 +68,7 @@
           <responsive on="portable" class="row-stack">
             <div class="row-stack">
               <div data-ref="mobile_search_row" class="flex flex-row gap-2 items-center">
-                <select data-ref="mobile_search_field_select" value="{{_local.searchField || 'all'}}" class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
+                <select data-ref="mobile_search_field_select" aria-label="$t:common.search_field" value="{{_local.searchField || 'all'}}" class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
                   <options>
                     <option value="all">$t:sirsoft-page.admin.page.search_fields.all</option>
                     <option value="title">$t:sirsoft-page.admin.page.search_fields.title</option>
@@ -101,7 +101,7 @@
               </button>
             </div>
           </responsive>
-          <select data-ref="search_field_select" value="{{_local.searchField || 'all'}}" class="select-composite w-28">
+          <select data-ref="search_field_select" aria-label="$t:common.search_field" value="{{_local.searchField || 'all'}}" class="select-composite w-28">
             <options>
               <option value="all">$t:sirsoft-page.admin.page.search_fields.all</option>
               <option value="title">$t:sirsoft-page.admin.page.search_fields.title</option>
@@ -136,7 +136,7 @@
       <div data-ref="list_toolbar" class="flex-between mb-4">
         <span data-ref="total_count" class="text-secondary text-sm">$t:sirsoft-page.admin.page.total_count|count={{pages?.data?.meta?.total ?? 0}}</span>
         <div data-ref="list_options" class="flex-center gap-3">
-          <select data-ref="published_filter_select" value="{{query.published ?? ''}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
+          <select data-ref="published_filter_select" aria-label="$t:sirsoft-page.admin.page.columns.published" value="{{query.published ?? ''}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
             <options>
               <option value="">$t:sirsoft-page.admin.page.published_filter.all</option>
               <option value="1">$t:sirsoft-page.admin.page.published_filter.published</option>
@@ -149,7 +149,7 @@
               </navigate>
             </on>
           </select>
-          <select data-ref="sort_select" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
+          <select data-ref="sort_select" aria-label="$t:common.sort_order" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
             <options>
               <option value="created_at_desc">$t:sirsoft-page.admin.page.sort.created_at_desc</option>
               <option value="created_at_asc">$t:sirsoft-page.admin.page.sort.created_at_asc</option>
@@ -163,7 +163,7 @@
               </navigate>
             </on>
           </select>
-          <select data-ref="per_page_select" value="{{query.per_page || '20'}}" class="w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
+          <select data-ref="per_page_select" aria-label="$t:common.per_page" value="{{query.per_page || '20'}}" class="w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
             <options>
               <option value="10">$t:sirsoft-page.admin.page.per_page|count=10</option>
               <option value="20">$t:sirsoft-page.admin.page.per_page|count=20</option>
@@ -197,7 +197,7 @@
           </button>
         </div>
       </div>
-      <data-grid data-type="composite" data-ref="pages_data_grid" :data-blur-until-loaded="true" data="{{pages?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{pages?.data?.meta?.current_page ?? 1}}" serverTotalPages="{{pages?.data?.meta?.last_page ?? null}}" serverHasMorePages="{{pages?.data?.meta?.has_more_pages ?? false}}" selectable="{{pages?.data?.abilities?.can_update === true}}" selectionScope="page" selectedCountText="" selectedIds="{{_global.selectedIds_admin_pages || []}}" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+      <data-grid data-type="composite" data-ref="pages_data_grid" rowLabelField="title" :data-blur-until-loaded="true" data="{{pages?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{pages?.data?.meta?.current_page ?? 1}}" serverTotalPages="{{pages?.data?.meta?.last_page ?? null}}" serverHasMorePages="{{pages?.data?.meta?.has_more_pages ?? false}}" selectable="{{pages?.data?.abilities?.can_update === true}}" selectionScope="page" selectedCountText="" selectedIds="{{_global.selectedIds_admin_pages || []}}" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
         <column field="title" header="$t:sirsoft-page.admin.page.columns.title" :sortable="false" :required="true">
           <cell>
             <div class="stack-flush gap-0.5">

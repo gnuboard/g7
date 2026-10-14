@@ -30,12 +30,15 @@ class SeoLayoutDataSourceDeclarationTest extends TestCase
     private const EXEMPT = [
         'shop/index::recentProducts' => '브라우저에 저장된 열람 이력이 필요해 봇에게는 늘 빈 값',
         'shop/show::productDownloadableCoupons' => '로그인 사용자 전용 쿠폰이라 봇에게 의미 없음',
+        'home::visitor_summary' => '방문 수는 수시로 바뀌는 실시간 숫자라 검색 노출 가치가 없고, 봇 렌더마다 통계 API 를 부르지 않도록 일부러 뺌(운영자 설정으로 꺼질 수도 있다)',
     ];
 
     /**
      * 봇 대상 레이아웃은 화면이 참조하는 데이터소스를 모두 선언해야 합니다.
      *
      * @effects every_used_data_source_is_declared
+     *
+     * @return void 반환값 없음
      */
     public function test_seo_layouts_declare_every_data_source_they_use(): void
     {
@@ -85,6 +88,8 @@ class SeoLayoutDataSourceDeclarationTest extends TestCase
      * 면제 목록에 죽은 항목이 남아 있지 않은지 확인합니다.
      *
      * @effects intentional_exclusions_are_documented
+     *
+     * @return void 반환값 없음
      */
     public function test_exempt_entries_still_exist(): void
     {

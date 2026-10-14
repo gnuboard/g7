@@ -80,7 +80,8 @@
     "shipping_policy_options": {
       "all": "すべて"
     },
-    "detail_filter_label": "詳細検索フィルター"
+    "detail_filter_label": "詳細検索フィルター",
+    "category_step": "カテゴリ{{n}}段階"
   },
   "action": {
     "edit": "編集",
@@ -890,7 +891,9 @@
     "additional_value_price_label": "追加料金",
     "additional_value_default": "デフォルト",
     "additional_value_active": "使用",
-    "additional_value_allow_custom_text": "直接入力"
+    "additional_value_allow_custom_text": "直接入力",
+    "option_group_name_n": "オプショングループ{{n}}の名前",
+    "option_group_values_n": "オプショングループ{{n}}の値"
   },
   "notice": {
     "tab_existing_template": "テンプレート選択",

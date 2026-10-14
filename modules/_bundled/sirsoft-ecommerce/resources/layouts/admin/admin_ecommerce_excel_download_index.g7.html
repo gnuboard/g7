@@ -95,7 +95,7 @@
         </div>
         <div data-ref="category_filter_row" class="flex-center flex-wrap gap-3 mb-4">
           <span class="text-label w-16">$t:sirsoft-ecommerce.admin.excel_download.filter.category</span>
-          <select name="categoryFilter" class="w-40" value="{{_local.categoryFilter}}">
+          <select name="categoryFilter" aria-label="$t:sirsoft-ecommerce.admin.excel_download.filter.category" class="w-40" value="{{_local.categoryFilter}}">
             <options>
               <option value="">$t:sirsoft-ecommerce.admin.excel_download.category_options.all</option>
               <option value="product">$t:sirsoft-ecommerce.admin.excel_download.category_options.product</option>
@@ -111,7 +111,7 @@
         </div>
         <div data-ref="date_filter_row" class="flex-center flex-wrap gap-3">
           <span class="text-label w-16">$t:sirsoft-ecommerce.admin.excel_download.filter.date_search</span>
-          <select name="dateType" class="w-32" value="{{_local.dateType}}">
+          <select name="dateType" aria-label="$t:sirsoft-ecommerce.admin.excel_download.filter.date_search" class="w-32" value="{{_local.dateType}}">
             <options>
               <option value="request_date">$t:sirsoft-ecommerce.admin.excel_download.filter.request_date</option>
             </options>
@@ -144,12 +144,12 @@
         <div data-ref="table_header" class="flex-between flex-wrap gap-4 mb-6">
           <span class="text-secondary">$t:sirsoft-ecommerce.admin.excel_download.table.total_count|count=11</span>
           <div class="flex-center gap-3">
-            <select name="sortBy" class="w-44" value="{{_local.sortBy}}">
+            <select name="sortBy" aria-label="$t:common.sort_order" class="w-44" value="{{_local.sortBy}}">
               <options>
                 <option value="request_date_desc">$t:sirsoft-ecommerce.admin.excel_download.table.sort_by</option>
               </options>
             </select>
-            <select name="perPage" class="w-24" value="{{_local.perPage}}">
+            <select name="perPage" aria-label="$t:common.per_page" class="w-24" value="{{_local.perPage}}">
               <options>
                 <option :value="10">$t:sirsoft-ecommerce.admin.excel_download.table.per_page|count=10</option>
                 <option :value="20">$t:sirsoft-ecommerce.admin.excel_download.table.per_page|count=20</option>

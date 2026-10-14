@@ -183,7 +183,7 @@
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-ecommerce.admin.settings.title" description="$t:sirsoft-ecommerce.admin.settings.description"/>
       <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
         <icon name="fas fa-lock" class="text-yellow-600 dark:text-yellow-400"/>
-        <span class="text-warning-soft">$t:sirsoft-ecommerce.common.read_only_notice</span>
+        <span class="ecommerce-tone-warning-soft text-xs">$t:sirsoft-ecommerce.common.read_only_notice</span>
       </div>
       <!-- className 은 sticky-tab-nav-responsive 를 쓴다 — 이 화면의 콘텐츠 래퍼가 admin-page-content-responsive(p-4 sm:p-6 lg:p-8) 라 뷰포트마다 좌우 패딩이 다르기 때문. 고정 24px 를 가정하는 sticky-tab-nav(-mx-6 px-6)를 쓰면 폰(p-4=16px)에서 좌우로 8px 씩 과다 bleed 되어 콘텐츠 영역을 넘친다. -->
       <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}}" variant="default" class="sticky-tab-nav-responsive">
@@ -234,10 +234,10 @@
           <div class="flex gap-3">
             <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
             <div>
-              <h3 class="text-error-strong">$t:sirsoft-ecommerce.admin.settings.validation_error</h3>
-              <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>
+              <h3 class="ecommerce-tone-error-strong text-sm font-medium">$t:sirsoft-ecommerce.admin.settings.validation_error</h3>
+              <p data-if="{{typeof _local.errors === 'string'}}" class="ecommerce-tone-error-soft mt-2 text-sm">{{_local.errors}}</p>
               <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-                <li class="text-error-soft">{{message}}</li>
+                <li class="ecommerce-tone-error-soft text-sm">{{message}}</li>
               </ul>
             </div>
           </div>

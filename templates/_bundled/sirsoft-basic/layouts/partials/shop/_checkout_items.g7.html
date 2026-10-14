@@ -94,7 +94,7 @@
             <div data-if="{{_global.currentUser?.uuid}}" class="mt-2 flex flex-wrap gap-2">
               <responsive on="portable" class="mt-1.5 flex flex-col gap-1.5"/>
               <!-- 상품 쿠폰 1 -->
-              <select name="item_coupon_1" value="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[0] ?? ''}}" class="w-48 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500">
+              <select name="item_coupon_1" aria-label="$t:common.row_cell|row={{item.product.name ?? ''}}|column={{$t('shop.checkout.product_coupon_1')}}" value="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[0] ?? ''}}" class="w-48 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500">
                 <responsive on="portable" class="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500"/>
                 <on type="change">
                   <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { item_coupons: Object.assign({}, _local.checkout?.item_coupons ?? {}, { [item.product_option_id]: [$event.target.value || null, (_local.checkout?.item_coupons?.[item.product_option_id]?.[1] ?? null)].filter(Boolean) }) })}}"/>
@@ -116,7 +116,7 @@
                 <option data-each="pcoupon in {{item.available_coupons ?? []}}" value="{{pcoupon.id}}" disabled="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[1] == pcoupon.id || (item.disabled_coupon_ids ?? []).includes(pcoupon.id)}}">{{(item.disabled_coupon_ids ?? []).includes(pcoupon.id) ? '[' + pcoupon.target_type_short_label + '] ' + pcoupon.localized_name + ' (' + '$t:shop.checkout.coupon_already_used' + ')' : '[' + pcoupon.target_type_short_label + '] ' + pcoupon.localized_name + ' (' + pcoupon.benefit_formatted + ')'}}</option>
               </select>
               <!-- 상품 쿠폰 2 (첫 번째 쿠폰 선택 시에만 표시) -->
-              <select data-if="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[0]}}" name="item_coupon_2" value="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[1] ?? ''}}" class="w-48 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500">
+              <select data-if="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[0]}}" name="item_coupon_2" aria-label="$t:common.row_cell|row={{item.product.name ?? ''}}|column={{$t('shop.checkout.product_coupon_2')}}" value="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[1] ?? ''}}" class="w-48 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500">
                 <responsive on="portable" class="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500"/>
                 <on type="change">
                   <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { item_coupons: Object.assign({}, _local.checkout?.item_coupons ?? {}, { [item.product_option_id]: [(_local.checkout?.item_coupons?.[item.product_option_id]?.[0] ?? null), $event.target.value || null].filter(Boolean) }) })}}"/>

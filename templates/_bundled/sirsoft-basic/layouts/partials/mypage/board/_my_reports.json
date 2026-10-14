@@ -42,6 +42,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:mypage.board_activities.reactions.table.board",
                         "value": "{{_global.myReportsBoard ?? ''}}",
                         "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     },
@@ -96,6 +97,7 @@
                     ],
                     "props": {
                         "data-testid": "my-reports-status-filter",
+                        "aria-label": "$t:mypage.board_activities.reports.filter.status_label",
                         "value": "{{_global.myReportsStatus ?? ''}}",
                         "className": "min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
                         "options": [
@@ -150,6 +152,7 @@
                     ],
                     "props": {
                         "data-testid": "my-reports-target-filter",
+                        "aria-label": "$t:mypage.board_activities.reactions.table.target",
                         "value": "{{_global.myReportsTargetType ?? ''}}",
                         "className": "min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
                         "options": [
@@ -195,6 +198,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:common.sort_order",
                         "value": "{{_global.myReportsSort ?? 'latest'}}",
                         "className": "min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     },
@@ -242,6 +246,7 @@
                             ],
                             "props": {
                                 "data-testid": "my-reports-search-field",
+                                "aria-label": "$t:common.search_field",
                                 "value": "{{_global.myReportsSearchField ?? 'title_content'}}",
                                 "className": "px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
                                 "options": [

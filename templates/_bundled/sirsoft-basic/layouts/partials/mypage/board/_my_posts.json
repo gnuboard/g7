@@ -42,6 +42,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:mypage.board_activities.reactions.table.board",
                         "value": "{{_global.myPostsBoard ?? ''}}",
                         "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     },
@@ -95,6 +96,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:common.sort_order",
                         "value": "{{_global.myPostsSort ?? 'latest'}}",
                         "className": "min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     },
@@ -149,6 +151,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:common.search_field",
                                 "value": "{{_global.myPostsSearchField ?? 'title_content'}}",
                                 "className": "px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
                                 "options": [

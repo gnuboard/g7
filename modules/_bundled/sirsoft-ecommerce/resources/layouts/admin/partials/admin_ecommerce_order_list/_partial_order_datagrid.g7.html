@@ -15,7 +15,7 @@
       <!-- 우측: 정렬, 페이지당 개수, 엑셀 다운로드 -->
       <div class="flex-center gap-2">
         <!-- D-050 ~ D-057 정렬 -->
-        <select name="sortBy" class="w-40" value="{{_local.sortBy || 'ordered_at_desc'}}">
+        <select name="sortBy" aria-label="$t:common.sort_order" class="w-40" value="{{_local.sortBy || 'ordered_at_desc'}}">
           <options>
             <option value="ordered_at_desc">$t:sirsoft-ecommerce.admin.order.sort.latest_order</option>
             <option value="ordered_at_asc">$t:sirsoft-ecommerce.admin.order.sort.oldest_order</option>
@@ -34,7 +34,7 @@
           </on>
         </select>
         <!-- D-060 ~ D-063 페이지당 개수 -->
-        <select name="perPage" class="w-24" value="{{_local.perPage || '20'}}">
+        <select name="perPage" aria-label="$t:common.per_page" class="w-24" value="{{_local.perPage || '20'}}">
           <options>
             <option value="10">10</option>
             <option value="20">20</option>
@@ -63,7 +63,7 @@
       </div>
     </div>
     <div data-ref="order_datagrid_card" class="p-0 md:p-0">
-      <data-grid data-type="composite" data-ref="order_datagrid" data="{{orders?.data?.data || []}}" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.order.message.no_orders" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{orders?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{orders?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{orders?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
+      <data-grid data-type="composite" data-ref="order_datagrid" rowLabelField="order_number" data="{{orders?.data?.data || []}}" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.order.message.no_orders" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{orders?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{orders?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{orders?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
         <column field="no" header="NO" width="60px" :sortable="false" :required="false">
           <cell>
             <span>{{row.no}}</span>

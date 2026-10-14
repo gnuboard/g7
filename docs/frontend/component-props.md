@@ -87,7 +87,8 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 | `required` | `boolean` | ❌ | `false` | 필수 입력 |
 | `className` | `string` | ❌ | - | CSS 클래스 |
 | `placeholder` | `string` | ❌ | - | 값이 비었을 때(고른 옵션이 없을 때) 버튼에 흐리게 보이는 안내 글자. 화면 낭독기도 이 글자를 버튼 이름으로 읽는다 |
-| `aria-label` | `string` | ❌ | - | 버튼(children 모드는 `<select>`)의 읽기 이름. 바깥 상자에 달리지 않는다 |
+| `aria-label` | `string` | ❌ | - | 칸 이름. 목록형(options 모드) 버튼은 「{이름} {현재 값}」(예: 「정렬 기준 최신순」)으로 읽힌다 — 이름이 고른 값을 덮지 않는다. 고른 값이 없으면 단추에 보이는 `placeholder` 는 값으로 잇지 않고 이름만 읽힌다. children 모드는 `<select>` 의 이름. 바깥 상자에 달리지 않는다 |
+| `aria-labelledby` | `string` | ❌ | - | 이름이 될 요소 id. 목록형 버튼은 「{그 요소 글자} {현재 값}」으로 읽힌다. 바깥 상자가 아니라 버튼(children 모드는 `<select>`)에 닿는다 |
 | `searchable` | `boolean` | ❌ | `false` | 드롭다운 내 검색 input 활성화 (label/value 부분일치 필터링, engine-v1.40.0+) |
 | `searchPlaceholder` | `string` | ❌ | `'Search...'` | 검색 input placeholder (searchable=true일 때) |
 
@@ -493,6 +494,7 @@ export interface DataGridProps {
 | `data` | `any[]` | ✅ | - | 테이블에 표시할 데이터 배열 |
 | `columns` | `DataGridColumn[]` | ✅ | - | 컬럼 정의 배열 |
 | `idField` | `string` | ❌ | `'id'` | 행 고유 키로 사용할 필드명 |
+| `rowLabelField` | `string` | ❌ | - | 행 이름으로 쓸 필드(점 경로, 다국어 객체면 현재 언어 값). 셀 문맥 `$rowLabel` 과 행 선택 체크박스 이름(「{행 이름} 선택」)에 쓰인다. 이 prop 을 **주지 않았을 때만** 첫 표시 열의 글자 값(숫자·날짜 모양은 제외)을 쓰고, 그것도 없으면 「N번째 행」. 주었는데 그 행의 값이 비면 첫 열로 넘어가지 않고 바로 「N번째 행」이다(첫 열의 날짜 원문이 이름이 되지 않게). 행 선택(`selectable`)을 켜거나 셀에서 `$rowLabel` 을 쓰면 사람이 읽는 식별자(이름·제목·주문번호)로 지정한다 |
 | `selectable` | `boolean` | ❌ | `false` | 체크박스 선택 기능 활성화 |
 | `selectedIds` | `(string\|number)[]` | ❌ | `[]` | 선택된 행 ID 배열 |
 | `selectionScope` | `'page' \| 'free'` | ❌ | `'free'` | 선택의 유효 범위 (아래 참조) |
@@ -764,6 +766,11 @@ interface DataGridCellChild {
 - `row`: 현재 행 데이터 객체
 - `value` / `$value`: 현재 셀 값 (column.field에 해당)
 - `$index`: 현재 행 인덱스
+- `$rowLabel`: 행 이름 — `rowLabelField` 를 주면 그 값(비면 「N번째 행」), 주지 않으면 첫 표시 열의 글자 값(숫자·날짜 모양 제외, 없으면 「N번째 행」)
+- `$rowNumber`: 1부터 세는 행 번호
+- `$column`: 그 열의 (번역된) 머리 글자
+
+표 안 입력칸은 이 셋으로 「{행} {열}」 이름을 단다 — `aria-label="$t:defer:common.row_cell|row={{$rowLabel}}|column={{$column}}"`(셀 문맥이 생긴 뒤 번역하도록 `$t:defer:`). 768px 미만 카드 보기도 같은 문맥을 받는다. 펼침 영역(`expandChildren`)도 셀과 같이 행 문맥 없이 먼저 번역되므로, 펼침 안에서 `row` 를 쓰는 이름도 `$t:defer:` 로 쓴다.
 
 ```json
 {

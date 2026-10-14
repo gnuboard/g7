@@ -131,6 +131,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.orderer_name",
                                 "type": "text",
                                 "name": "orderer_name",
                                 "value": "{{_local.orderer?.name ?? _global.currentUser?.name ?? ''}}",
@@ -208,6 +209,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.orderer_phone",
                                 "type": "tel",
                                 "name": "orderer_phone",
                                 "value": "{{_local.orderer?.phone ?? _global.currentUser?.phone ?? ''}}",
@@ -278,6 +280,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:shop.checkout.orderer_email",
                         "type": "email",
                         "name": "orderer_email",
                         "value": "{{_local.orderer?.email ?? _global.currentUser?.email ?? ''}}",
@@ -402,6 +405,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:shop.checkout.guest_lookup_password",
                                         "name": "guest_lookup_password",
                                         "value": "{{_local.guestLookupPassword ?? ''}}",
                                         "placeholder": "$t:shop.checkout.guest_lookup_password_placeholder",
@@ -465,6 +469,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:shop.checkout.guest_lookup_password_confirmation",
                                         "name": "guest_lookup_password_confirmation",
                                         "value": "{{_local.guestLookupPasswordConfirmation ?? ''}}",
                                         "placeholder": "$t:shop.checkout.guest_lookup_password_confirmation_placeholder",

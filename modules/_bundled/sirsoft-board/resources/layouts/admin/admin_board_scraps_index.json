@@ -393,6 +393,7 @@
                             }
                         ],
                         "props": {
+                            "rowLabelField": "post_title",
                             "data": "{{scraps?.data?.data}}",
                             "sortable": true,
                             "sortField": "created_at",

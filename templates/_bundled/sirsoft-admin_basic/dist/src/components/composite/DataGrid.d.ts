@@ -105,6 +105,11 @@ export interface DataGridProps {
     onSelectionChange?: (ids: (string | number)[]) => void;
     idField?: string;
     /**
+     * 행 이름으로 쓸 필드(점 경로, 다국어 객체면 현재 언어 값). 셀 렌더 문맥 `$rowLabel` 과 행 선택 체크박스 이름에 쓰인다.
+     * 없으면 첫 표시 열의 글자 값, 그것도 없으면 「N번째 행」(#757).
+     */
+    rowLabelField?: string;
+    /**
      * 선택의 유효 범위.
      *
      * - `'page'`: 선택은 지금 그려진 행에서만 유효하다. 검색·필터·페이지 이동으로

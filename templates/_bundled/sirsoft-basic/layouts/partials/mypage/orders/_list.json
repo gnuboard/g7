@@ -300,6 +300,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:mypage.orders.status_filter_label",
                         "value": "{{_local.ordersStatus || ''}}",
                         "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     },

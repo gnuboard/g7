@@ -54,6 +54,7 @@
         }
     ],
     "props": {
+        "rowLabelField": "subject",
         "data": "{{memberNotifications?.data?.data}}",
         "pagination": true,
         "serverSidePagination": true,

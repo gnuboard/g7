@@ -42,7 +42,7 @@
         <div data-each="group, groupIndex in {{$parent._local.optionProduct?.option_groups ?? []}}">
           <div class="mb-3">
             <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">{{group.name_localized ?? group.name}}</label>
-            <select class="{{$parent._local.optionErrors?.product_option_id ? 'w-full border-red-500 focus:ring-red-500 focus:border-red-500' : 'w-full'}}" value="{{$parent._local.selectedOptions?.[group.name_localized] ?? ''}}" placeholder="$t:shop.select" disabled="{{groupIndex > 0 &amp;&amp; !$parent._local.selectedOptions?.[$parent._local.optionProduct?.option_groups[groupIndex - 1]?.name_localized]}}" options="{{(group.values_localized ?? group.values ?? []).map(v => ({ value: v, label: v }))}}">
+            <select aria-label="{{group.name_localized ?? group.name}}" class="{{$parent._local.optionErrors?.product_option_id ? 'w-full border-red-500 focus:ring-red-500 focus:border-red-500' : 'w-full'}}" value="{{$parent._local.selectedOptions?.[group.name_localized] ?? ''}}" placeholder="$t:shop.select" disabled="{{groupIndex > 0 &amp;&amp; !$parent._local.selectedOptions?.[$parent._local.optionProduct?.option_groups[groupIndex - 1]?.name_localized]}}" options="{{(group.values_localized ?? group.values ?? []).map(v => ({ value: v, label: v }))}}">
               <on type="change">
                 <!-- 옵션을 한 칸 고를 때마다 조합을 다시 찾는다. 방금 고른 값을 상태에서 읽지 않고 그 자리에서
                      합쳐 넘기는 이유는, 바로 위 `set-state` 가 아직 반영되기 전이라 상태를 읽으면 한 박자 뒤진
@@ -71,7 +71,7 @@
               <span>{{addGroup.name}}</span>
               <span data-if="{{addGroup.is_required}}" class="text-red-500 dark:text-red-400 ml-0.5">*</span>
             </label>
-            <select data-testid="modal-add-option-{{addGroup.id}}" class="w-full" value="{{$parent._local.additionalSelections?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}">
+            <select data-testid="modal-add-option-{{addGroup.id}}" aria-label="{{addGroup.name}}" class="w-full" value="{{$parent._local.additionalSelections?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(addGroup.values ?? []).map(v => ({ value: v.id, label: v.price_adjustment > 0 ? v.name + ' (' + (v.multi_currency_price_adjustment?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? v.price_adjustment_formatted ?? ('+' + v.price_adjustment.toLocaleString())) + ')' : v.name }))]}}">
               <on type="change">
                 <!-- 추가옵션을 비우면 그 그룹의 선택과 직접입력 글자를 함께 지운다 — 선택을 지웠는데 딸린
                      문구만 남아 주문에 실려 가는 것을 막는다 -->
@@ -81,7 +81,7 @@
             <!-- 직접입력 칸 — 선택된 선택지가 allow_custom_text 일 때만 노출. 입력란임이 명확하도록 라벨 + 테두리/배경 스타일 적용 -->
             <div data-if="{{(addGroup.values ?? []).find(v => v.id === Number($parent._local.additionalSelections?.[addGroup.id]))?.allow_custom_text === true}}" class="mt-2">
               <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:shop.additional_option_custom_text_label</label>
-              <input type="text" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{$parent._local.additionalCustomTexts?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_custom_text_placeholder" :maxLength="255">
+              <input aria-label="$t:common.row_cell|row={{addGroup.name ?? ''}}|column={{$t('shop.additional_option_custom_text_label')}}" type="text" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500" value="{{$parent._local.additionalCustomTexts?.[addGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_custom_text_placeholder" :maxLength="255">
                 <on type="input">
                   <!-- 공백만 남으면 키 자체를 지운다 — 빈 문자열을 «입력했다» 로 저장하지 않기 위해서다 -->
                   <set-state target="$parent._local" additionalCustomTexts="{{$event.target.value.trim() === '' ? Object.fromEntries(Object.entries($parent._local.additionalCustomTexts ?? {}).filter(([k]) => Number(k) !== Number(addGroup.id))) : Object.assign({}, $parent._local.additionalCustomTexts ?? {}, { [addGroup.id]: $event.target.value })}}"/>

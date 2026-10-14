@@ -331,7 +331,7 @@
           <div class="row-stack">
             <div data-ref="field_country">
               <label class="form-label">$t:admin.users.form.fields.country</label>
-              <searchable-dropdown data-type="composite" options="{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}" value="{{_local.form?.country ?? ''}}" triggerLabel="$t:admin.users.form.fields.country_select" searchPlaceholder="$t:admin.users.form.fields.country_search" noResultsText="$t:common.no_results" class="w-full">
+              <searchable-dropdown data-type="composite" aria-label="$t:admin.users.form.fields.country" options="{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}" value="{{_local.form?.country ?? ''}}" triggerLabel="$t:admin.users.form.fields.country_select" searchPlaceholder="$t:admin.users.form.fields.country_search" noResultsText="$t:common.no_results" class="w-full">
                 <on type="change" event="onChange">
                   <!-- 국가 선택. 2026-03-31 에 노출을 막았다가 #705 에서 되살렸다 — 회원 목록의 국가 필터가
                        이 값을 찾으므로 선택지는 목록 화면의 `countryList` 와 같아야 한다. -->

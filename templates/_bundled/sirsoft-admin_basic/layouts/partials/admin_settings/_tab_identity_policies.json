@@ -214,6 +214,7 @@
                             ],
                             "props": {
                                 "name": "filter.scope",
+                                "aria-label": "$t:admin.identity.policies.col.scope",
                                 "autoBinding": false,
                                 "value": "{{query.scope ?? ''}}",
                                 "className": "text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
@@ -267,6 +268,7 @@
                             ],
                             "props": {
                                 "name": "filter.source_type",
+                                "aria-label": "$t:admin.identity.policies.col.source_type",
                                 "autoBinding": false,
                                 "value": "{{query.source_type ?? ''}}",
                                 "className": "text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
@@ -673,6 +675,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "checked": "{{Boolean(policy.enabled)}}",
+                                                                        "ariaLabel": "$t:common.row_cell|row={{policy.key ?? ''}}|column={{$t('admin.identity.policies.col.enabled')}}",
                                                                         "size": "sm",
                                                                         "disabled": "{{policy.abilities?.can_update !== true}}"
                                                                     }
@@ -1007,6 +1010,7 @@
                                                     ],
                                                     "props": {
                                                         "checked": "{{Boolean(policy.enabled)}}",
+                                                        "ariaLabel": "$t:common.row_cell|row={{policy.key ?? ''}}|column={{$t('admin.identity.policies.col.enabled')}}",
                                                         "size": "sm",
                                                         "disabled": "{{policy.abilities?.can_update !== true}}"
                                                     }

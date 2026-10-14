@@ -71,7 +71,7 @@
               <span class="font-mono text-body">{{row.code}}</span>
             </td>
             <td class="px-4 py-2">
-              <multilingual-input data-type="composite" value="{{row.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+              <multilingual-input data-type="composite" value="{{row.name ?? {}}}" ariaLabel="$t:common.row_cell|row={{row.code}}|column={{$t('sirsoft-board.admin.settings.reaction_types.columns.name')}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 기존 행 — 이름(언어별). -->
                   <set-state target="local" form.basic_defaults.reaction_types="{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, name: $event.target.value} : r)}}" :hasChanges="true"/>
@@ -111,7 +111,7 @@
             </td>
             <td class="px-4 py-2 text-center">
               <div data-testid="reaction-type-active-{{row.code}}">
-                <toggle data-type="composite" checked="{{row.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                <toggle data-type="composite" checked="{{row.is_active ?? false}}" ariaLabel="$t:common.row_cell|row={{row.code}}|column={{$t('sirsoft-board.admin.settings.reaction_types.columns.is_active')}}" size="sm" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 끄면 회원 화면의 반응 버튼에서 빠진다. 이미 쌓인 반응 행은 그대로다. -->
                     <set-state target="local" form.basic_defaults.reaction_types="{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, is_active: !(r.is_active)} : r)}}" :hasChanges="true"/>
@@ -153,7 +153,7 @@
                 <icon name="fa-solid fa-plus" class="text-sm text-blue-500 dark:text-blue-400"/>
               </td>
               <td class="px-4 py-2 align-top">
-                <input data-testid="reaction-type-form-code" type="text" value="{{_local.reactionTypeForm?.code ?? ''}}" class="{{_local.reactionTypeFormErrors?.code ? 'input input-error font-mono w-full' : 'input font-mono w-full'}}" disabled="{{_computed.isReadOnly}}">
+                <input data-testid="reaction-type-form-code" type="text" aria-label="$t:sirsoft-board.admin.settings.reaction_types.columns.code" value="{{_local.reactionTypeForm?.code ?? ''}}" class="{{_local.reactionTypeFormErrors?.code ? 'input input-error font-mono w-full' : 'input font-mono w-full'}}" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 코드는 소문자·앞뒤 공백 없는 형태로 맞춰 둔다. 저장한 뒤엔 바꿀 수 없다. -->
                     <set-state target="local" reactionTypeForm.code="{{($event.target.value ?? '').trim().toLowerCase()}}"/>
@@ -164,7 +164,7 @@
                 <span data-if="{{_local.reactionTypeFormErrors?.code === 'format'}}" class="form-error">$t:sirsoft-board.admin.settings.reaction_types.validation.code_format</span>
               </td>
               <td class="px-4 py-2 align-top">
-                <multilingual-input data-type="composite" value="{{_local.reactionTypeForm?.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.reactionTypeFormErrors?.name ? '$t:sirsoft-board.admin.settings.reaction_types.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
+                <multilingual-input data-type="composite" value="{{_local.reactionTypeForm?.name ?? {}}}" ariaLabel="$t:sirsoft-board.admin.settings.reaction_types.columns.name" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.reactionTypeFormErrors?.name ? '$t:sirsoft-board.admin.settings.reaction_types.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 유형 이름(언어별). 회원 화면의 반응 버튼 문구가 된다. -->
                     <set-state target="local" reactionTypeForm.name="{{$event.target.value}}"/>
@@ -201,7 +201,7 @@
               </td>
               <td class="px-4 py-2 text-center align-top">
                 <div data-testid="reaction-type-active-new">
-                  <toggle data-type="composite" checked="{{_local.reactionTypeForm?.is_active ?? true}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                  <toggle data-type="composite" checked="{{_local.reactionTypeForm?.is_active ?? true}}" ariaLabel="$t:sirsoft-board.admin.settings.reaction_types.columns.is_active" size="sm" disabled="{{_computed.isReadOnly}}">
                     <on type="change">
                       <!-- 새 유형은 「사용」으로 시작한다. 여기서 바로 꺼 둘 수도 있다. -->
                       <set-state target="local" reactionTypeForm.is_active="{{!(_local.reactionTypeForm?.is_active ?? true)}}"/>

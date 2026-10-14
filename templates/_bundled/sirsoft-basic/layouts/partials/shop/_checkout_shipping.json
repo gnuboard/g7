@@ -394,6 +394,7 @@
                     ],
                     "props": {
                         "name": "country_code",
+                        "aria-label": "$t:shop.checkout.shipping_country",
                         "value": "{{_local.shipping?.country_code ?? _local.checkout?.country_code ?? 'KR'}}",
                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500",
                         "options": "{{(shippingSettings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: $localized(c.name) || c.code }))}}"
@@ -475,6 +476,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.recipient_name",
                                 "type": "text",
                                 "name": "recipient_name",
                                 "value": "{{_local.shipping?.recipient_name ?? ''}}",
@@ -552,6 +554,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.recipient_phone",
                                 "type": "tel",
                                 "name": "recipient_phone",
                                 "value": "{{_local.shipping?.recipient_phone ?? ''}}",
@@ -812,6 +815,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.detail_address",
                                 "type": "text",
                                 "name": "address_detail",
                                 "value": "{{_local.shipping?.address_detail ?? ''}}",
@@ -1008,6 +1012,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:shop.checkout.intl_city",
                                         "type": "text",
                                         "name": "intl_city",
                                         "value": "{{_local.shipping?.intl_city ?? ''}}",
@@ -1060,6 +1065,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:shop.checkout.intl_state",
                                         "type": "text",
                                         "name": "intl_state",
                                         "value": "{{_local.shipping?.intl_state ?? ''}}",
@@ -1120,6 +1126,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.intl_postal_code",
                                 "type": "text",
                                 "name": "intl_postal_code",
                                 "value": "{{_local.shipping?.intl_postal_code ?? ''}}",
@@ -1186,6 +1193,7 @@
                     ],
                     "props": {
                         "name": "shipping_memo",
+                        "aria-label": "$t:shop.checkout.shipping_memo",
                         "value": "{{_local.shippingMemo ?? ''}}",
                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                     },

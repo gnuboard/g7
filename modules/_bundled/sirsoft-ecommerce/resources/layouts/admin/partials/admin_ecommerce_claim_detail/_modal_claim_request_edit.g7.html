@@ -3,7 +3,7 @@
   <modal data-type="composite" data-ref="modal_claim_request_edit" title="$t:sirsoft-ecommerce.admin.claim.detail.request_edit.title" size="md">
     <div class="space-y-4">
       <p data-ref="cre_001_description" class="text-label">$t:sirsoft-ecommerce.admin.claim.detail.request_edit.description</p>
-      <select data-ref="cre_002_reason" name="reasonCode" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{_global.claimRequestEditReasonCode ?? ''}}" options="{{_global.claimRequestEditContext?.reasonOptions ?? []}}">
+      <select data-ref="cre_002_reason" aria-label="$t:sirsoft-ecommerce.admin.claim.detail.reason.reason_label" name="reasonCode" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" value="{{_global.claimRequestEditReasonCode ?? ''}}" options="{{_global.claimRequestEditContext?.reasonOptions ?? []}}">
         <on type="change">
           <!-- 고른 신청 사유를 _global 에 둔다 — 저장 핸들러가 _global 에서 읽는다(모달은 부모 _local 을 읽지 못한다) -->
           <set-state target="global" claimRequestEditReasonCode="{{$event.target.value}}"/>

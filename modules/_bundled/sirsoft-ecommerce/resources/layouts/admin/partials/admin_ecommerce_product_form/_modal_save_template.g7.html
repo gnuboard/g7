@@ -36,15 +36,15 @@
             </select>
           </div>
         </div>
-        <div data-ref="template_set_default" class="flex-center gap-3">
+        <label data-ref="template_set_default" class="flex-center gap-3 cursor-pointer">
           <checkbox name="is_default" checked="{{_global.ui.saveTemplateData?.is_default ?? false}}">
             <on type="change">
               <!-- 기본 템플릿으로 지정 — 다음 상품 등록에서 자동으로 불려 온다 -->
               <set-state target="global" ui.saveTemplateData.is_default="{{$event.target.checked}}"/>
             </on>
           </checkbox>
-          <label class="text-label cursor-pointer">$t:sirsoft-ecommerce.admin.product.modal.save_template.set_as_default</label>
-        </div>
+          <span class="text-label cursor-pointer">$t:sirsoft-ecommerce.admin.product.modal.save_template.set_as_default</span>
+        </label>
       </div>
       <div data-ref="save_template_preview" class="toggle-group">
         <div class="p-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
@@ -66,7 +66,7 @@
       <div data-ref="save_template_info" class="alert-info">
         <div class="flex-start gap-2">
           <icon name="info-circle" class="text-base text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
-          <p class="text-info-soft">$t:sirsoft-ecommerce.admin.product.modal.save_template.info</p>
+          <p class="ecommerce-tone-info-soft text-xs">$t:sirsoft-ecommerce.admin.product.modal.save_template.info</p>
         </div>
       </div>
       <div class="flex justify-end gap-3 mt-6">

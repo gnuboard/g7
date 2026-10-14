@@ -11,7 +11,7 @@
       <div data-if="{{(boards_list?.data?.data ?? []).length > 0}}" class="flex flex-col gap-3 mt-2">
         <div class="alert-warning">
           <icon name="triangle-exclamation" class="text-amber-600 dark:text-amber-400 flex-shrink-0" size="sm"/>
-          <p class="text-warning-soft">$t:sirsoft-board.admin.settings.bulk_apply.checked_fields_notice</p>
+          <p class="text-xs board-tone-warning">$t:sirsoft-board.admin.settings.bulk_apply.checked_fields_notice</p>
         </div>
       </div>
       <div data-ref="no_boards_notice" data-if="{{!(boards_list?.data?.data ?? []).length}}" class="flex-center p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg gap-3">
@@ -52,7 +52,7 @@
         </div>
         <div data-if="{{_local.bulkApplyAll === false}}" class="mt-3 p-3 rounded-lg board-bulk-apply-scope border border-gray-200 dark:border-gray-700">
           <p class="text-tertiary mb-2">$t:sirsoft-board.admin.settings.bulk_apply.select_boards_hint</p>
-          <tag-input data-type="composite" value="{{_local._bulkApplyBoardIds ?? []}}" options="{{$computed.boardOptions ?? []}}" placeholder="$t:sirsoft-board.admin.settings.bulk_apply.select_boards_placeholder" class="w-full" disabled="{{!_computed.canBulkApply}}">
+          <tag-input data-type="composite" aria-label="$t:sirsoft-board.admin.settings.bulk_apply.target_boards" value="{{_local._bulkApplyBoardIds ?? []}}" options="{{$computed.boardOptions ?? []}}" placeholder="$t:sirsoft-board.admin.settings.bulk_apply.select_boards_placeholder" class="w-full" disabled="{{!_computed.canBulkApply}}">
             <on type="change">
               <!-- 적용할 게시판을 고른다 — 이 값은 폼과 함께 저장되는 설정이 아니라 이번 적용에만 쓰는 것이라 `_` 로 시작하는 임시 키에 담는다 -->
               <set-state target="local" _bulkApplyBoardIds="{{$event.target.value}}"/>

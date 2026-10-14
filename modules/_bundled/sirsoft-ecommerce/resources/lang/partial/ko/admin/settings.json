@@ -246,7 +246,9 @@
       "days_suffix": "일 이후 자동 취소됩니다.",
       "pending_minutes_prefix": "결제창까지 갔으나 결제가 끝나지 않은 주문은",
       "pending_minutes_suffix": "분 이후 자동 취소됩니다.",
-      "pending_minutes_hint": "0 으로 두면 이 부류는 자동 취소하지 않습니다. 최대 20160분(14일)."
+      "pending_minutes_hint": "0 으로 두면 이 부류는 자동 취소하지 않습니다. 최대 20160분(14일).",
+      "days_label": "입금대기 주문 자동 취소 일수",
+      "pending_minutes_label": "결제 미완료 주문 자동 취소 시간(분)"
     },
     "cart_expiry": {
       "title": "장바구니 유효기간",

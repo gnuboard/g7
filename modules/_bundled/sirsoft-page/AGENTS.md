@@ -175,9 +175,9 @@
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 49개 | `modules/_bundled/sirsoft-page/tests` |
-| Vitest | 11개 | `vitest.config.ts` |
+| Vitest | 12개 | `vitest.config.ts` |
 | Playwright | 7개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 36개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 37개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

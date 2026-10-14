@@ -41,7 +41,7 @@
     </div>
     <div data-ref="search_filter_area" class="admin-card">
       <div data-ref="search_header_row" class="flex-center flex-wrap gap-3 mb-4">
-        <select data-ref="search_type_select" name="search_type" class="w-28" value="{{_local.searchType || ''}}">
+        <select data-ref="search_type_select" name="search_type" aria-label="$t:common.search_field" class="w-28" value="{{_local.searchType || ''}}">
           <options>
             <option value="">$t:admin.schedules.search_fields.all</option>
             <option value="name">$t:admin.schedules.search_fields.name</option>
@@ -257,7 +257,7 @@
         </div>
         <div data-ref="module_filter_row" class="flex-center flex-wrap gap-3">
           <span class="text-body font-medium min-w-[80px]">$t:admin.schedules.filters.module</span>
-          <select name="module_filter" class="w-48" value="{{query.module || ''}}">
+          <select name="module_filter" aria-label="$t:admin.schedules.filters.module" class="w-48" value="{{query.module || ''}}">
             <options>
               <option value="">$t:admin.schedules.filters.all</option>
             </options>
@@ -305,7 +305,7 @@
     <div data-ref="bulk_actions_area" class="flex-between flex-wrap gap-4 mb-4">
       <div data-ref="bulk_actions_left" class="flex-center gap-3">
         <span class="text-label">$t:admin.schedules.selected_count|count={{_global.selectedScheduleIds?.length ?? 0}}</span>
-        <select name="bulk_status" class="w-32" placeholder="$t:admin.schedules.bulk.status_change" value="" disabled="{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_update !== true}}">
+        <select name="bulk_status" aria-label="$t:admin.schedules.bulk.status_change" class="w-32" placeholder="$t:admin.schedules.bulk.status_change" value="" disabled="{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_update !== true}}">
           <options>
             <option value="active">$t:admin.schedules.status.active</option>
             <option value="inactive">$t:admin.schedules.status.inactive</option>
@@ -315,7 +315,7 @@
             <set-state target="global" bulkStatusAction="{{$event.target.value}}"/>
           </on>
         </select>
-        <select name="bulk_action" class="w-32" placeholder="$t:admin.schedules.bulk.action_run" value="" disabled="{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_run !== true}}">
+        <select name="bulk_action" aria-label="$t:admin.schedules.bulk.action_run" class="w-32" placeholder="$t:admin.schedules.bulk.action_run" value="" disabled="{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_run !== true}}">
           <options>
             <option value="run">$t:admin.schedules.actions.run</option>
           </options>
@@ -348,7 +348,7 @@
       </div>
       <div data-ref="list_info_right" class="flex-center gap-3 py-3">
         <span class="text-body font-medium">$t:admin.schedules.total_count|count={{schedules?.data?.pagination?.total ?? 0}}</span>
-        <select name="sort_by" class="w-40" value="{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'created_at_desc'}}">
+        <select name="sort_by" aria-label="$t:common.sort_order" class="w-40" value="{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'created_at_desc'}}">
           <options>
             <option value="created_at_desc">$t:admin.schedules.sort.created_at_desc</option>
             <option value="created_at_asc">$t:admin.schedules.sort.created_at_asc</option>
@@ -364,7 +364,7 @@
             </navigate>
           </on>
         </select>
-        <select name="per_page" class="w-24" value="{{query.per_page ?? '20'}}">
+        <select name="per_page" aria-label="$t:common.per_page" class="w-24" value="{{query.per_page ?? '20'}}">
           <options>
             <option value="10">$t:admin.schedules.per_page.10</option>
             <option value="20">$t:admin.schedules.per_page.20</option>
@@ -380,7 +380,7 @@
         </select>
       </div>
     </div>
-    <data-grid data-type="composite" selectedCountText="" data-ref="schedules_data_grid" :data-blur-until-loaded="true" data="{{schedules?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{schedules?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{schedules?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{schedules?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{schedules?.data?.abilities?.can_update === true}}" selectionScope="page" :showColumnSelector="true" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+    <data-grid data-type="composite" selectedCountText="" data-ref="schedules_data_grid" rowLabelField="name" :data-blur-until-loaded="true" data="{{schedules?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{schedules?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{schedules?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{schedules?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{schedules?.data?.abilities?.can_update === true}}" selectionScope="page" :showColumnSelector="true" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
       <column field="name" header="$t:admin.schedules.columns.name" :sortable="false">
         <cell>
           <div>

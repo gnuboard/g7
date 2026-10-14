@@ -110,7 +110,7 @@
             <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-gdpr.settings.title" description="$t:sirsoft-gdpr.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
             <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!gdprSettings?.data}}" role="status" class="alert-warning mt-6">
               <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-              <span class="text-warning-soft">$t:sirsoft-gdpr.plugin_read_only</span>
+              <span class="text-xs gdpr-tone-warning">$t:sirsoft-gdpr.plugin_read_only</span>
             </div>
           </div>
           <!-- 상단 탭 스크롤 — settings_main_content(p-4 sm:p-6 lg:p-8) 안 카드들과 좌우 정렬을 맞추기 위해 header_content 패딩을 그대로 물려받는다(자체 좌우 패딩 없음). 클릭 시 해당 카드로 자동 스크롤 + 스크롤 시 활성 탭 자동 갱신. -->
@@ -190,7 +190,7 @@
               <h3 class="section-heading-md">$t:sirsoft-gdpr.settings.section.cookie_banner</h3>
               <p class="form-hint">$t:sirsoft-gdpr.settings.section.cookie_banner_desc</p>
             </div>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ml-3 {{_local.form?.banner_enabled ? 'bg-green-100 dark:bg-green-900 text-success-soft' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}}">{{_local.form?.banner_enabled ? '$t:sirsoft-gdpr.settings.status.enabled' : '$t:sirsoft-gdpr.settings.status.disabled'}}</span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ml-3 {{_local.form?.banner_enabled ? 'bg-green-100 dark:bg-green-900 text-xs gdpr-tone-success' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}}">{{_local.form?.banner_enabled ? '$t:sirsoft-gdpr.settings.status.enabled' : '$t:sirsoft-gdpr.settings.status.disabled'}}</span>
           </div>
           <div data-ref="card_cookie_banner_fields" class="p-6 space-y-6">
             <h4 data-ref="subsection_banner_settings" class="text-body font-semibold">$t:sirsoft-gdpr.settings.section.cookie_banner_settings</h4>
@@ -240,7 +240,7 @@
                       <div class="flex items-baseline gap-2">
                         <span class="uppercase tracking-wide text-gray-500 dark:text-gray-400">$t:sirsoft-gdpr.settings.policy_version.current_label</span>
                         <span class="text-lg font-semibold text-gray-900 dark:text-gray-100">v{{gdprPolicyVersionCurrent?.data?.data?.version ?? '?'}}</span>
-                        <button data-ref="policy_version_current_snapshot_view_button" data-if="{{gdprPolicyVersionCurrent?.data?.data?.version}}" type="button" class="text-info-soft px-2 py-0.5 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors" title="$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{gdprPolicyVersionCurrent?.data?.data?.version ?? '?'}}">
+                        <button data-ref="policy_version_current_snapshot_view_button" data-if="{{gdprPolicyVersionCurrent?.data?.data?.version}}" type="button" class="text-xs gdpr-tone-info px-2 py-0.5 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors" title="$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{gdprPolicyVersionCurrent?.data?.data?.version ?? '?'}}">
                           <on type="click">
                             <!-- 현재 정책 본문 보기 — 볼 버전을 전역에 심고 스냅샷을 다시 받은 뒤 창을 연다 -->
                             <sequence>
@@ -310,7 +310,7 @@
                             <td class="px-3 py-2 text-xs text-gray-600 dark:text-gray-300 break-all">{{row?.memo ?? '-'}}</td>
                             <!-- 본문 액션 셀 — 클릭 시 setState global.viewingPolicyVersion → refetch → openModal 시퀀스로 snapshot 모달 노출 -->
                             <td class="px-3 py-2 text-xs">
-                              <button type="button" class="text-info-soft px-2 py-1 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors" title="$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{row?.version ?? '?'}}">
+                              <button type="button" class="text-xs gdpr-tone-info px-2 py-1 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors" title="$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{row?.version ?? '?'}}">
                                 <on type="click">
                                   <!-- 이력 표의 그 버전 본문 보기 — 위 배지와 같은 흐름을 행 단위로 태운다 -->
                                   <sequence>
@@ -379,7 +379,7 @@
                     </div>
                   </div>
                   <div class="flex-center gap-2 flex-shrink-0">
-                    <span data-if="{{category?.required === true}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 dark:bg-red-800 text-danger-soft">$t:sirsoft-gdpr.settings.fields.cookie_categories.category_required_badge</span>
+                    <span data-if="{{category?.required === true}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 dark:bg-red-800 text-xs gdpr-tone-danger">$t:sirsoft-gdpr.settings.fields.cookie_categories.category_required_badge</span>
                     <span data-if="{{category?.required !== true}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">$t:sirsoft-gdpr.settings.fields.cookie_categories.category_optional_badge</span>
                     <!-- 펼침 토글 버튼 -->
                     <button type="button" class="ml-1 inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline">
@@ -420,7 +420,7 @@
               <h3 class="section-heading-md">$t:sirsoft-gdpr.settings.section.auto_blocking</h3>
               <p class="form-hint">$t:sirsoft-gdpr.settings.section.auto_blocking_desc</p>
             </div>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ml-3 {{_local.form?.banner_enabled ? 'bg-green-100 dark:bg-green-900 text-success-soft' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}}">{{_local.form?.banner_enabled ? '$t:sirsoft-gdpr.settings.status.enabled' : '$t:sirsoft-gdpr.settings.status.disabled'}}</span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ml-3 {{_local.form?.banner_enabled ? 'bg-green-100 dark:bg-green-900 text-xs gdpr-tone-success' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}}">{{_local.form?.banner_enabled ? '$t:sirsoft-gdpr.settings.status.enabled' : '$t:sirsoft-gdpr.settings.status.disabled'}}</span>
           </div>
           <div data-ref="card_auto_blocking_policy_fields" class="p-6 space-y-6">
             <!-- 쿠키 배너 노출 (banner_enabled) OFF 시 안내 박스. ON 으로 전환하면 배너 + 자동 차단이 함께 활성됨 (마이페이지 카드는 이 토글과 무관, 항상 노출) -->
@@ -707,7 +707,7 @@
             </div>
             <div>
               <label class="form-label">$t:sirsoft-gdpr.annual_notice.introduction</label>
-              <multilingual-input data-type="composite" name="annual_notice.introduction" inputType="textarea" :maxLength="2000" disabled="{{_computed.isPluginReadOnly || (!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0')}}"/>
+              <multilingual-input data-type="composite" name="annual_notice.introduction" ariaLabel="$t:sirsoft-gdpr.annual_notice.introduction" inputType="textarea" :maxLength="2000" disabled="{{_computed.isPluginReadOnly || (!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0')}}"/>
               <!-- 서문 오류는 언어별 키(annual_notice.introduction.ko 등)로 온다 — 첫 오류를 칸 아래에 보인다(상단 알림·토스트에만 나오던 것, M1-O4). -->
               <span data-if="{{!!_local.errors &amp;&amp; Object.keys(_local.errors).some((key) => key === 'annual_notice.introduction' || key.startsWith('annual_notice.introduction.'))}}" class="form-error">{{_local.errors ? Object.entries(_local.errors).find(([key]) => key === 'annual_notice.introduction' || key.startsWith('annual_notice.introduction.'))?.[1]?.[0] : ''}}</span>
             </div>

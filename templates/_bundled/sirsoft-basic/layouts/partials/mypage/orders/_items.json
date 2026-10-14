@@ -177,6 +177,7 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "id": "order_item_check_{{item.id}}",
+                                                        "aria-label": "$t:common.select_item|name={{item.product_name ?? ''}}",
                                                         "checked": "{{(_local.selectedItemIds ?? []).includes(item.id)}}",
                                                         "disabled": "{{!(item.option_status !== 'cancelled' && (((claimable?.data?.options ?? []).find(o => o.option?.id === item.id)?.claimable_types) ?? []).length > 0)}}",
                                                         "className": "{{(item.option_status !== 'cancelled' && (((claimable?.data?.options ?? []).find(o => o.option?.id === item.id)?.claimable_types) ?? []).length > 0) ? 'w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500 cursor-pointer' : 'w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500 opacity-40 cursor-not-allowed'}}"

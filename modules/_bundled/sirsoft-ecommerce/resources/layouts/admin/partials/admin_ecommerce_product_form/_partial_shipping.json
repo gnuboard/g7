@@ -194,7 +194,7 @@
                                     "name": "Span",
                                     "if": "{{policy.is_default}}",
                                     "props": {
-                                        "className": "{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-500 text-white' : 'bg-blue-100 dark:bg-blue-900 text-info-soft'}} px-1.5 py-0.5 text-xs rounded"
+                                        "className": "{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-500 text-white' : 'bg-blue-100 dark:bg-blue-900 ecommerce-tone-info-soft text-xs'}} px-1.5 py-0.5 text-xs rounded"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.shipping.default_badge"
                                 },
@@ -250,7 +250,7 @@
                                     "name": "Span",
                                     "if": "{{policy.is_default}}",
                                     "props": {
-                                        "className": "{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-500 text-white' : 'bg-blue-100 dark:bg-blue-900 text-info-soft'}} px-1.5 py-0.5 text-xs rounded"
+                                        "className": "{{_local.form.shipping_policy_id === policy.id ? 'bg-blue-500 text-white' : 'bg-blue-100 dark:bg-blue-900 ecommerce-tone-info-soft text-xs'}} px-1.5 py-0.5 text-xs rounded"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.shipping.default_badge"
                                 },

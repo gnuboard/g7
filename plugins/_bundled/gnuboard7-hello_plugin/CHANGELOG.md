@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [0.2.1] - 2026-10-14
+
+### Fixed
+
+- 설정 화면의 「로그 기록 사용」 체크박스가 화면 낭독기에서 이름 없이 읽히고 옆 글자를 눌러도 체크되지 않던 문제를 고쳤습니다.
+
 ## [0.2.0] - 2026-10-10
 
 ### Added

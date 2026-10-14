@@ -416,6 +416,7 @@
                                             "props": {
                                                 "type": "number",
                                                 "className": "input w-20 text-center",
+                                                "aria-label": "$t:common.row_cell|row={{[cancelItem.product_name, cancelItem.product_option_name].filter(Boolean).join(' ')}}|column={{$t('sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_quantity_col')}}",
                                                 "value": "{{cancelItem.cancel_quantity ?? cancelItem.quantity}}",
                                                 "min": "1",
                                                 "max": "{{cancelItem.quantity}}"
@@ -485,6 +486,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_reason_type_label",
                                 "className": "{{_local.cancelValidationErrors?.reason ? 'select w-full text-sm border-2 border-red-500 dark:border-red-500' : 'select w-full text-sm'}}",
                                 "value": "{{_local.cancelReason ?? ''}}"
                             },
@@ -613,6 +615,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_name",
                                         "name": "refund_bank_code",
                                         "value": "{{_local.refundBankCode ?? ''}}",
                                         "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_select') }].concat((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))}}",
@@ -1891,7 +1894,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-danger-soft"
+                                                "className": "ecommerce-tone-error-soft text-xs"
                                             },
                                             "text": "{{_local.refundEstimate?.cancel_blocked_reason ?? ''}}"
                                         }

@@ -105,7 +105,8 @@ export const ChipCheckbox: React.FC<ChipCheckboxProps> = ({
 }) => {
   const [isHovered, setIsHovered] = React.useState(false);
 
-  const baseStyles = `inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+  // 포커스 표시 — 실제 체크박스는 화면에서만 숨기므로(sr-only) 키보드 포커스는 칩 테두리에 보인다(#757)
+  const baseStyles = `relative inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border transition-all has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-blue-500 has-[:focus-visible]:ring-offset-1 dark:has-[:focus-visible]:ring-offset-gray-800 ${
     disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
   }`;
 
@@ -144,7 +145,7 @@ export const ChipCheckbox: React.FC<ChipCheckboxProps> = ({
           checked={checked}
           disabled={disabled}
           onChange={(e) => { if (!disabled) onChange?.(e); }}
-          className="hidden"
+          className="sr-only"
         />
         {icon && (
           <Icon
@@ -189,7 +190,7 @@ export const ChipCheckbox: React.FC<ChipCheckboxProps> = ({
         checked={checked}
         disabled={disabled}
         onChange={(e) => { if (!disabled) onChange?.(e); }}
-        className="hidden"
+        className="sr-only"
       />
       {icon && (
         <Icon

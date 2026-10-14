@@ -101,6 +101,7 @@
                                     "name": "Toggle",
                                     "props": {
                                         "name": "{{'order_settings.bank_accounts.' + account._idx + '.is_active'}}",
+                                        "ariaLabel": "$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.is_active')}}",
                                         "value": "{{account.is_active}}",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
@@ -172,6 +173,7 @@
                                             "name": "Select",
                                             "props": {
                                                 "name": "{{'order_settings.bank_accounts.' + account._idx + '.bank_code'}}",
+                                                "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.bank')}}",
                                                 "value": "{{account.bank_code}}",
                                                 "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code'] ? 'w-full input-error' : 'w-full'}}",
                                                 "options": "{{(_local.form?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: typeof b.name === 'object' ? $localized(b.name) : b.name }))}}",
@@ -210,6 +212,7 @@
                                             "props": {
                                                 "type": "text",
                                                 "name": "{{'order_settings.bank_accounts.' + account._idx + '.account_number'}}",
+                                                "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number')}}",
                                                 "value": "{{account.account_number ?? ''}}",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number_placeholder",
                                                 "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number'] ? 'input input-error' : 'input'}}",
@@ -248,6 +251,7 @@
                                             "props": {
                                                 "type": "text",
                                                 "name": "{{'order_settings.bank_accounts.' + account._idx + '.account_holder'}}",
+                                                "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder')}}",
                                                 "value": "{{account.account_holder ?? ''}}",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder_placeholder",
                                                 "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder'] ? 'input input-error' : 'input'}}",

@@ -24,9 +24,9 @@
                 {
                     "comment": "신청 체크박스 — 해제 시 하위 3필드를 if 로 숨기고 확장 칸을 비운다. 표시 게이트는 모듈 스크래치(cashReceiptRequested)와 제출 payload(checkoutExtraPayload.cash_receipt_requested)의 **합의**를 본다: 해제는 스크래치를 false 로 내려 꺼지고, 결제수단 전환은 템플릿이 payload 를 통째로 치환해 꺼진다. 한쪽만 보면 다른 경로에서 화면과 제출 내용이 갈린다 — 전환 후에는 화면이 신청 켜짐인데 payload 는 비어 있었다.",
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Label",
                     "props": {
-                        "className": "flex items-center gap-2"
+                        "className": "flex items-center gap-2 cursor-pointer"
                     },
                     "children": [
                         {
@@ -58,7 +58,7 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Label",
+                            "name": "Span",
                             "props": {
                                 "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
                             },
@@ -228,6 +228,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.order.cash_receipt.identifier_type",
                                         "name": "cash_receipt_identifier_type",
                                         "value": "{{_local.cashReceiptIdentifierType ?? 'phone'}}",
                                         "options": "{{(_local.cashReceiptType === 'expense' ? [{ value: 'business', label: $t('sirsoft-ecommerce.checkout.cash_receipt.identifier_business') }] : []).concat([{ value: 'phone', label: $t('sirsoft-ecommerce.checkout.cash_receipt.identifier_phone') }, { value: 'card', label: $t('sirsoft-ecommerce.checkout.cash_receipt.identifier_card') }])}}",

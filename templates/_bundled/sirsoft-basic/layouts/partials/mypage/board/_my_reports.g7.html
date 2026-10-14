@@ -10,7 +10,7 @@
     <!-- 필터 영역 -->
     <div class="flex flex-col sm:flex-row gap-3 mb-4">
       <!-- 게시판 필터 -->
-      <select value="{{_global.myReportsBoard ?? ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select aria-label="$t:mypage.board_activities.reactions.table.board" value="{{_global.myReportsBoard ?? ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <on type="change">
           <sequence>
             <set-state target="global" myReportsBoard="{{$event.target.value}}" :myReportsPage="1"/>
@@ -21,7 +21,7 @@
         <option data-each="board in {{boards?.data ?? []}}" value="{{board.slug}}">{{board.name}}</option>
       </select>
       <!-- 처리 상태 필터 -->
-      <select data-testid="my-reports-status-filter" value="{{_global.myReportsStatus ?? ''}}" class="min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select data-testid="my-reports-status-filter" aria-label="$t:mypage.board_activities.reports.filter.status_label" value="{{_global.myReportsStatus ?? ''}}" class="min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <options>
           <option value="">$t:mypage.board_activities.reports.filter.all_statuses</option>
           <option value="pending">$t:mypage.board_activities.reports.status.pending</option>
@@ -37,7 +37,7 @@
         </on>
       </select>
       <!-- 대상 필터 -->
-      <select data-testid="my-reports-target-filter" value="{{_global.myReportsTargetType ?? ''}}" class="min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select data-testid="my-reports-target-filter" aria-label="$t:mypage.board_activities.reactions.table.target" value="{{_global.myReportsTargetType ?? ''}}" class="min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <options>
           <option value="">$t:mypage.board_activities.reports.filter.all_targets</option>
           <option value="post">$t:mypage.board_activities.target.post</option>
@@ -51,7 +51,7 @@
         </on>
       </select>
       <!-- 정렬 필터 -->
-      <select value="{{_global.myReportsSort ?? 'latest'}}" class="min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select aria-label="$t:common.sort_order" value="{{_global.myReportsSort ?? 'latest'}}" class="min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <on type="change">
           <sequence>
             <set-state target="global" myReportsSort="{{$event.target.value}}" :myReportsPage="1"/>
@@ -64,7 +64,7 @@
       <!-- 검색 영역 -->
       <div class="flex-1 flex gap-2">
         <!-- 검색 대상 — 형제 탭(내 글·내 댓글·내 반응)과 같은 자리·같은 모양. 'reason' 은 신고할 때 적은 사유 설명을 찾는다 -->
-        <select data-testid="my-reports-search-field" data-ref="my_reports_search_field_select" value="{{_global.myReportsSearchField ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <select data-testid="my-reports-search-field" data-ref="my_reports_search_field_select" aria-label="$t:common.search_field" value="{{_global.myReportsSearchField ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
           <options>
             <option value="title_content">$t:mypage.board_activities.search_fields.title_content</option>
             <option value="title">$t:mypage.board_activities.search_fields.title</option>

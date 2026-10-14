@@ -222,7 +222,7 @@
               </div>
               <!-- 답변 인라인 수정 폼 (can_update + 수정 버튼 클릭 시) -->
               <div data-if="{{_local.qnaReplyEditId === item.id &amp;&amp; !!(qna.data.meta.abilities.can_update)}}" class="space-y-2">
-                <textarea class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" :rows="4" placeholder="$t:shop.qna.reply_inline_placeholder" value="{{_local.qnaReplyContent ?? ''}}" disabled="{{_local.qnaReplySubmitting ?? false}}">
+                <textarea aria-label="$t:common.row_cell|row={{item.title ?? ''}}|column={{$t('shop.qna.reply_content')}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" :rows="4" placeholder="$t:shop.qna.reply_inline_placeholder" value="{{_local.qnaReplyContent ?? ''}}" disabled="{{_local.qnaReplySubmitting ?? false}}">
                   <on event="onChange">
                     <!-- 인라인 수정 폼의 본문 — 창이 아니라 이 조각 안이므로 값이 `_local` 에 산다 -->
                     <set-state target="local" qnaReplyContent="{{$event.target.value}}"/>
@@ -282,7 +282,7 @@
               <span data-if="{{_local.qnaReplyInputId !== item.id}}" class="text-sm text-gray-400 dark:text-gray-500">$t:shop.qna.no_reply_yet</span>
               <!-- 답변 인라인 작성 폼 (can_update + 등록 버튼 클릭 후) -->
               <div data-if="{{!!(qna.data.meta.abilities.can_update) &amp;&amp; _local.qnaReplyInputId === item.id}}" class="space-y-2">
-                <textarea class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" :rows="4" placeholder="$t:shop.qna.reply_inline_placeholder" value="{{_local.qnaNewReplyContent ?? ''}}" disabled="{{_local.qnaNewReplySubmitting ?? false}}">
+                <textarea aria-label="$t:common.row_cell|row={{item.title ?? ''}}|column={{$t('shop.qna.reply_content')}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" :rows="4" placeholder="$t:shop.qna.reply_inline_placeholder" value="{{_local.qnaNewReplyContent ?? ''}}" disabled="{{_local.qnaNewReplySubmitting ?? false}}">
                   <on event="onChange">
                     <!-- 새 답변 본문 — 수정 폼과 담는 자리를 나눠, 한쪽을 쓰다 다른 쪽을 열어도 글이 섞이지 않게 한다 -->
                     <set-state target="local" qnaNewReplyContent="{{$event.target.value}}"/>

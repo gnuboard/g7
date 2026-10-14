@@ -8,8 +8,8 @@
   <modal data-type="composite" data-ref="modal_bulk_confirm" title="$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.title" size="md">
     <div class="space-y-4 max-h-96 overflow-y-auto">
       <div data-if="{{_global.bulkConfirmData?.summary?.hasBulkChanges}}" class="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
-        <h4 class="font-semibold text-info-soft mb-2">$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.bulk_changes_section</h4>
-        <ul class="space-y-1 text-info-soft">
+        <h4 class="font-semibold ecommerce-tone-info-soft mb-2 text-xs">$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.bulk_changes_section</h4>
+        <ul class="space-y-1 ecommerce-tone-info-soft text-xs">
           <li data-if="{{_global.bulkSalesStatus}}">$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.sales_status|value={{_global.bulkSalesStatus === 'on_sale' ? '$t:sirsoft-ecommerce.enums.sales_status.on_sale' : (_global.bulkSalesStatus === 'suspended' ? '$t:sirsoft-ecommerce.enums.sales_status.suspended' : (_global.bulkSalesStatus === 'coming_soon' ? '$t:sirsoft-ecommerce.enums.sales_status.coming_soon' : '$t:sirsoft-ecommerce.enums.sales_status.sold_out'))}}</li>
           <li data-if="{{_global.bulkDisplayStatus}}">$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.display_status|value={{_global.bulkDisplayStatus === 'visible' ? '$t:sirsoft-ecommerce.enums.display_status.visible' : '$t:sirsoft-ecommerce.enums.display_status.hidden'}}</li>
           <li data-if="{{_global.bulkPriceCondition}}">$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.price_change</li>

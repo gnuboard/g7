@@ -119,6 +119,7 @@
                             "props": {
                                 "name": "slug",
                                 "type": "text",
+                                "aria-label": "$t:sirsoft-board.admin.form.fields.slug",
                                 "placeholder": "$t:sirsoft-board.admin.form.placeholders.slug",
                                 "required": true,
                                 "disabled": "{{!!route?.slug || _computed.isReadOnly}}",

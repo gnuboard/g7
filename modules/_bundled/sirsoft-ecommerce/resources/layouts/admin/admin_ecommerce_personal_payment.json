@@ -167,6 +167,7 @@
                                         ],
                                         "props": {
                                             "name": "searchField",
+                                            "aria-label": "$t:common.search_field",
                                             "className": "search-bar-select",
                                             "value": "{{_local.searchField}}",
                                             "options": [
@@ -636,6 +637,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "date",
+                                                            "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.personal_payment.filter.date_search')}}",
                                                             "className": "input md:w-36",
                                                             "placeholder": "$t:sirsoft-ecommerce.admin.personal_payment.filter.start_date",
                                                             "value": "{{_local.startDate}}"
@@ -682,6 +684,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "date",
+                                                            "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.personal_payment.filter.date_search')}}",
                                                             "className": "input md:w-36",
                                                             "placeholder": "$t:sirsoft-ecommerce.admin.personal_payment.filter.end_date",
                                                             "value": "{{_local.endDate}}"
@@ -808,6 +811,7 @@
                                                 "name": "Select",
                                                 "props": {
                                                     "name": "sortBy",
+                                                    "aria-label": "$t:common.sort_order",
                                                     "className": "w-44",
                                                     "value": "{{_local.sortBy}}",
                                                     "options": [
@@ -846,6 +850,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "perPage",
+                                                    "aria-label": "$t:common.per_page",
                                                     "className": "w-32",
                                                     "value": "{{_local.perPage}}",
                                                     "options": [

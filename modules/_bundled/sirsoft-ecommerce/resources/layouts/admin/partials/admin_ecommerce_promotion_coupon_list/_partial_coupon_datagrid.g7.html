@@ -11,7 +11,7 @@
   <div data-ref="coupon_datagrid_section" class="mt-6">
     <div data-ref="bulk_action_bar" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
       <span class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.promotion_coupon.table.selected_count|count={{(_local.selectedItems || []).length}}</span>
-      <select name="bulkIssueStatus" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkIssueStatus || ''}}" disabled="{{coupons?.data?.abilities?.can_update !== true}}">
+      <select name="bulkIssueStatus" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_status" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkIssueStatus || ''}}" disabled="{{coupons?.data?.abilities?.can_update !== true}}">
         <options>
           <option value="" disabled>$t:sirsoft-ecommerce.admin.promotion_coupon.bulk.select_status</option>
           <option value="issuing">$t:sirsoft-ecommerce.enums.coupon_issue_status.issuing</option>
@@ -37,7 +37,7 @@
     <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
       <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.table.total_count|count={{coupons?.data?.pagination?.total || 0}}</span>
       <div class="flex-center gap-3">
-        <select name="sortBy" class="w-40" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}">
+        <select name="sortBy" aria-label="$t:common.sort_order" class="w-40" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}">
           <options>
             <option value="created_at_desc">$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.created_at_desc</option>
             <option value="created_at_asc">$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.created_at_asc</option>
@@ -53,7 +53,7 @@
             </navigate>
           </on>
         </select>
-        <select name="perPage" class="w-20" value="{{query.per_page || '10'}}">
+        <select name="perPage" aria-label="$t:common.per_page" class="w-20" value="{{query.per_page || '10'}}">
           <options>
             <option value="10">10</option>
             <option value="20">20</option>
@@ -69,7 +69,7 @@
         </select>
       </div>
     </div>
-    <data-grid data-type="composite" data-ref="pc_data_table" data="{{coupons?.data?.data || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{coupons?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{coupons?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{coupons?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 10)}}" :alwaysShowPagination="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" visibleColumns="{{_local.visibleColumns}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.table.empty" actionsColumnHeader="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.actions">
+    <data-grid data-type="composite" rowLabelField="localized_name" data-ref="pc_data_table" data="{{coupons?.data?.data || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{coupons?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{coupons?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{coupons?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 10)}}" :alwaysShowPagination="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" visibleColumns="{{_local.visibleColumns}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.table.empty" actionsColumnHeader="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.actions">
       <blur-until-loaded sources="coupons"/>
       <prop name="rowActions">
         <item id="edit" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>

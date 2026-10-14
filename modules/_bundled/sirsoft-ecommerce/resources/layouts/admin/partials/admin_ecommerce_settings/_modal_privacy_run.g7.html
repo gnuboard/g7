@@ -18,8 +18,8 @@
         </div>
       </div>
       <p data-ref="privacy_run_disabled_notice" data-if="{{_global.privacyRun?.preview &amp;&amp; _global.privacyRun?.preview?.enabled === false}}" class="alert-info">$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.disabled_notice</p>
-      <p data-ref="privacy_run_delete_warning" data-if="{{_global.privacyRun?.preview?.mode === 'delete'}}" class="text-error-soft">$t:sirsoft-ecommerce.admin.settings.privacy_retention.delete_warning</p>
-      <p class="text-error-soft">$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.irreversible</p>
+      <p data-ref="privacy_run_delete_warning" data-if="{{_global.privacyRun?.preview?.mode === 'delete'}}" class="ecommerce-tone-error-soft text-sm">$t:sirsoft-ecommerce.admin.settings.privacy_retention.delete_warning</p>
+      <p class="ecommerce-tone-error-soft text-sm">$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.irreversible</p>
       <p class="text-hint">$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.queue_hint</p>
     </div>
     <div class="modal-footer-buttons">

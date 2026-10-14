@@ -6,7 +6,7 @@
   <div data-ref="filter_section" class="admin-card">
     <div data-ref="search_row" class="mb-4">
       <div class="flex-center gap-2">
-        <select name="searchType" class="w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500" value="{{_local.filter.searchType || 'all'}}">
+        <select name="searchType" aria-label="$t:common.search_field" class="w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500" value="{{_local.filter.searchType || 'all'}}">
           <options>
             <option value="all">$t:admin.activity_log.filter.search_type_all</option>
             <option value="action">$t:admin.activity_log.filter.search_type_action</option>
@@ -79,7 +79,7 @@
       <div data-ref="actor_filter" class="filter-row">
         <span class="filter-label w-32">$t:admin.activity_log.filter.actor_label</span>
         <div class="flex-center gap-2">
-          <searchable-dropdown data-type="composite" options="{{_local.actorSearchResults ?? []}}" value="{{_local.filter.createdBy || ''}}" triggerLabel="$t:admin.activity_log.filter.actor_select" searchPlaceholder="$t:admin.activity_log.filter.actor_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:admin.activity_log.filter.actor_search_initial" class="w-64">
+          <searchable-dropdown data-type="composite" aria-label="$t:admin.activity_log.filter.actor_label" options="{{_local.actorSearchResults ?? []}}" value="{{_local.filter.createdBy || ''}}" triggerLabel="$t:admin.activity_log.filter.actor_select" searchPlaceholder="$t:admin.activity_log.filter.actor_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:admin.activity_log.filter.actor_search_initial" class="w-64">
             <on event="onSearch">
               <!-- 행위자는 목록이 아니라 **검색해서 고른다** — 회원 수가 많아 전건을 미리 받아 둘 수 없다.
                 타이핑이 멎기를 잠깐 기다렸다 찾고, 받은 회원을 드롭다운이 읽는 모양(값·이름·부가설명)으로

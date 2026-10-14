@@ -35,6 +35,7 @@
                     ],
                     "props": {
                         "name": "cart_item_{{item.id}}",
+                        "aria-label": "$t:common.select_item|name={{item.product.name ?? ''}}",
                         "checked": "{{_local.selectedItems?.includes(item.id) ?? true}}",
                         "className": "w-5 h-5 rounded border-gray-300 dark:border-gray-600 accent-gray-900 focus:ring-gray-500"
                     }

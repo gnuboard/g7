@@ -30,3 +30,12 @@
 .bizppurio-scroll-panel {
     max-height: 65vh;
 }
+
+/* 경고 글자색 — 관리자 템플릿 의미 클래스(text-warning-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
+.bizppurio-tone-warning {
+    color: var(--color-yellow-700, oklch(55.4% 0.135 66.442)); /* yellow-700 */
+}
+
+.dark .bizppurio-tone-warning {
+    color: var(--color-yellow-300, oklch(90.5% 0.182 98.111)); /* yellow-300 */
+}

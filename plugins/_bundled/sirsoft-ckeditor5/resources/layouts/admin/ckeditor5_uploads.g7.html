@@ -117,7 +117,7 @@
               </on>
             </input>
           </div>
-          <select name="referenced" value="{{_local.filter.referenced || 'all'}}">
+          <select name="referenced" aria-label="$t:sirsoft-ckeditor5.admin.uploads.col.referenced" value="{{_local.filter.referenced || 'all'}}">
             <options>
               <option value="all">$t:sirsoft-ckeditor5.admin.uploads.filter.referenced_all</option>
               <option value="referenced">$t:sirsoft-ckeditor5.admin.uploads.filter.referenced_only</option>
@@ -168,7 +168,7 @@
           <span>$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.button</span>
         </button>
       </div>
-      <data-grid data-type="composite" data-ref="ckeditor5_uploads_datagrid" data="{{ckeditor5Uploads?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{ckeditor5Uploads?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{ckeditor5Uploads?.data?.pagination?.last_page ?? null}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" :sortable="true" sortField="{{query.sort_by || 'created_at'}}" sortDirection="{{query.sort_order || 'desc'}}" idField="id" selectable="{{ckeditor5Uploads?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_ckeditor5_uploads || []}}" emptyMessage="$t:sirsoft-ckeditor5.admin.uploads.empty" actionsColumnHeader="$t:common.actions">
+      <data-grid data-type="composite" data-ref="ckeditor5_uploads_datagrid" rowLabelField="original_name" data="{{ckeditor5Uploads?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{ckeditor5Uploads?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{ckeditor5Uploads?.data?.pagination?.last_page ?? null}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" :sortable="true" sortField="{{query.sort_by || 'created_at'}}" sortDirection="{{query.sort_order || 'desc'}}" idField="id" selectable="{{ckeditor5Uploads?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_ckeditor5_uploads || []}}" emptyMessage="$t:sirsoft-ckeditor5.admin.uploads.empty" actionsColumnHeader="$t:common.actions">
         <blur-until-loaded sources="ckeditor5Uploads"/>
         <prop name="rowActions">
           <item id="delete" label="$t:sirsoft-ckeditor5.admin.uploads.delete.button" iconName="trash" variant="danger" disabled="{{ckeditor5Uploads?.data?.abilities?.can_delete !== true}}"/>

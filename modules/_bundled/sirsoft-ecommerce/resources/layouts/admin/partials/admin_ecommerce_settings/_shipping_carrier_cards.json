@@ -86,6 +86,7 @@
                                     ],
                                     "props": {
                                         "checked": "{{$carrier.is_active ?? false}}",
+                                        "ariaLabel": "$t:common.row_cell|row={{$carrier.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.carriers.columns.is_active')}}",
                                         "size": "sm",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
@@ -108,7 +109,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-icon text-error disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "btn-icon ecommerce-tone-error disabled:opacity-50 disabled:cursor-not-allowed",
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "aria-label": "$t:common.delete"
                                     },
@@ -167,6 +168,7 @@
                                     "props": {
                                         "type": "text",
                                         "value": "{{$carrier.code ?? ''}}",
+                                        "aria-label": "$t:common.row_cell|row={{$carrier.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.carriers.columns.code')}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.code_placeholder",
                                         "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code'] ? 'input input-error font-mono' : 'input font-mono'}}",
                                         "disabled": "{{_computed.isReadOnly}}"
@@ -215,6 +217,7 @@
                                     ],
                                     "props": {
                                         "value": "{{$carrier.name ?? {}}}",
+                                        "ariaLabel": "$t:common.row_cell|row={{$carrier.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.carriers.columns.name')}}",
                                         "layout": "compact",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder",
                                         "error": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}",
@@ -255,6 +258,7 @@
                                     ],
                                     "props": {
                                         "value": "{{$carrier.type ?? 'domestic'}}",
+                                        "aria-label": "$t:common.row_cell|row={{$carrier.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.carriers.columns.type')}}",
                                         "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.type'] ? 'input-error w-full' : 'w-full'}}",
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "options": [
@@ -304,6 +308,7 @@
                                     "props": {
                                         "type": "text",
                                         "value": "{{$carrier.tracking_url ?? ''}}",
+                                        "aria-label": "$t:common.row_cell|row={{$carrier.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.carriers.columns.tracking_url')}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.tracking_url_placeholder",
                                         "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url'] ? 'input input-error' : 'input'}}",
                                         "disabled": "{{_computed.isReadOnly}}"

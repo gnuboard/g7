@@ -323,6 +323,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_name",
                                 "name": "claimRefundExecuteBankCode",
                                 "value": "{{_global.claimRefundExecuteBankCode ?? ''}}",
                                 "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_select') }].concat((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))}}",

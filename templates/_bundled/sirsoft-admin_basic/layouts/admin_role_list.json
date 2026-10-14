@@ -594,6 +594,7 @@
                                             ],
                                             "props": {
                                                 "checked": "{{row.is_active}}",
+                                                "ariaLabel": "$t:defer:common.row_cell|row={{row.name}}|column={{$t('admin.roles.columns.status')}}",
                                                 "disabled": "{{row.abilities?.can_toggle_status !== true}}",
                                                 "size": "sm"
                                             }

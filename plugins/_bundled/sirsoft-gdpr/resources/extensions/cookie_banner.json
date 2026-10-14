@@ -623,6 +623,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "{{category?.label?.[$locale] ?? category?.label?.ko ?? category?.label?.en ?? category?.key ?? ''}}",
                                                         "checked": "{{(_global.gdprConsent ?? {})[category?.key] === true || category?.required === true}}",
                                                         "disabled": "{{category?.required === true}}",
                                                         "className": "h-5 w-5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"

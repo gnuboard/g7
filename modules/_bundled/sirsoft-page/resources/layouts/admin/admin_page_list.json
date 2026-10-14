@@ -218,6 +218,7 @@
                                                                     }
                                                                 ],
                                                                 "props": {
+                                                                    "aria-label": "$t:common.search_field",
                                                                     "value": "{{_local.searchField || 'all'}}",
                                                                     "className": "w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
                                                                     "options": [
@@ -333,6 +334,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:common.search_field",
                                             "value": "{{_local.searchField || 'all'}}",
                                             "className": "select-composite w-28",
                                             "options": [
@@ -474,6 +476,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:sirsoft-page.admin.page.columns.published",
                                             "value": "{{query.published ?? ''}}",
                                             "className": "w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                             "options": [
@@ -515,6 +518,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:common.sort_order",
                                             "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
                                             "className": "w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                             "options": [
@@ -559,6 +563,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:common.per_page",
                                             "value": "{{query.per_page || '20'}}",
                                             "className": "w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                             "options": [
@@ -762,6 +767,7 @@
                             }
                         ],
                         "props": {
+                            "rowLabelField": "title",
                             "data": "{{pages?.data?.data}}",
                             "sortable": true,
                             "sortField": "{{query.sort_by}}",

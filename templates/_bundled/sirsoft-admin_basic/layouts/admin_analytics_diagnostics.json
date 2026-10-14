@@ -1482,6 +1482,7 @@
                                                     }
                                                 ],
                                                 "props": {
+                                                    "aria-label": "$t:admin.analytics.diagnostics.failure_columns.reason",
                                                     "name": "analytics_failure_reason",
                                                     "className": "w-40",
                                                     "value": "{{query.reason || ''}}",

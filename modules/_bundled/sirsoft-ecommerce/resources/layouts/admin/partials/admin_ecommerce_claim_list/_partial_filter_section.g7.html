@@ -22,7 +22,7 @@
       <div data-ref="date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('date') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- 편집모드 체크박스 — date -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('date')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.date" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('date')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('date') ? (_local.visibleFilters || []).filter(f => f !== 'date') : [...(_local.visibleFilters || []), 'date']}}"/>
           </on>
@@ -98,7 +98,7 @@
       <div data-ref="claimStatus_filter_row" data-slot="{{(_local.visibleFilters || []).includes('claimStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- 편집모드 체크박스 — claimStatus -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('claimStatus')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.claim_status" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('claimStatus')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('claimStatus') ? (_local.visibleFilters || []).filter(f => f !== 'claimStatus') : [...(_local.visibleFilters || []), 'claimStatus']}}"/>
           </on>
@@ -325,7 +325,7 @@
       <div data-ref="faultType_filter_row" data-slot="{{(_local.visibleFilters || []).includes('faultType') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="4" data-if="{{(query.type || 'exchange') !== 'cancel'}}" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- 편집모드 체크박스 — faultType -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('faultType')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.fault_type" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('faultType')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('faultType') ? (_local.visibleFilters || []).filter(f => f !== 'faultType') : [...(_local.visibleFilters || []), 'faultType']}}"/>
           </on>
@@ -365,7 +365,7 @@
       <div data-ref="chargeMethod_filter_row" data-slot="{{(_local.visibleFilters || []).includes('chargeMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" data-if="{{(query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return'}}" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- 편집모드 체크박스 — chargeMethod -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('chargeMethod')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.charge_method" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('chargeMethod')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('chargeMethod') ? (_local.visibleFilters || []).filter(f => f !== 'chargeMethod') : [...(_local.visibleFilters || []), 'chargeMethod']}}"/>
           </on>
@@ -405,7 +405,7 @@
       <div data-ref="reasonCode_filter_row" data-slot="{{(_local.visibleFilters || []).includes('reasonCode') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- 편집모드 체크박스 — reasonCode -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('reasonCode')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.reason" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('reasonCode')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('reasonCode') ? (_local.visibleFilters || []).filter(f => f !== 'reasonCode') : [...(_local.visibleFilters || []), 'reasonCode']}}"/>
           </on>
@@ -422,7 +422,7 @@
       <div data-ref="requesterType_filter_row" data-slot="{{(_local.visibleFilters || []).includes('requesterType') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- 편집모드 체크박스 — requesterType -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('requesterType')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.requester_type" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('requesterType')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('requesterType') ? (_local.visibleFilters || []).filter(f => f !== 'requesterType') : [...(_local.visibleFilters || []), 'requesterType']}}"/>
           </on>
@@ -444,7 +444,7 @@
       <div data-ref="amount_filter_row" data-slot="{{(_local.visibleFilters || []).includes('amount') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- 편집모드 체크박스 — amount -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('amount')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.amount" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('amount')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('amount') ? (_local.visibleFilters || []).filter(f => f !== 'amount') : [...(_local.visibleFilters || []), 'amount']}}"/>
           </on>
@@ -476,7 +476,7 @@
       <div data-ref="chargePaymentMethod_filter_row" data-slot="{{(_local.visibleFilters || []).includes('chargePaymentMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" data-if="{{(query.type || 'exchange') === 'exchange' || (query.type || 'exchange') === 'return'}}" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- 편집모드 체크박스 — chargePaymentMethod -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('chargePaymentMethod')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.charge_payment_method" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('chargePaymentMethod')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('chargePaymentMethod') ? (_local.visibleFilters || []).filter(f => f !== 'chargePaymentMethod') : [...(_local.visibleFilters || []), 'chargePaymentMethod']}}"/>
           </on>
@@ -500,7 +500,7 @@
       <div data-ref="claimFlags_filter_row" data-slot="{{(_local.visibleFilters || []).includes('claimFlags') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- 편집모드 체크박스 — claimFlags -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('claimFlags')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.claim_flags" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('claimFlags')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('claimFlags') ? (_local.visibleFilters || []).filter(f => f !== 'claimFlags') : [...(_local.visibleFilters || []), 'claimFlags']}}"/>
           </on>
@@ -587,7 +587,7 @@
       <!-- 검색 필드 + 검색어 입력 -->
       <div data-ref="search_row_line1" class="flex-1 flex-center gap-2">
         <!-- 검색 드롭다운 4종 (D27) — 이 4축은 상세 필터에 중복 배치하지 않는다. 게이트(`search_field`)에 'all' 이 없으므로 전체 옵션도 두지 않는다 -->
-        <select data-ref="f_001_search_field_select" name="searchField" class="w-80 shrink-0" value="{{_local.filter.searchField || 'claim_number'}}">
+        <select data-ref="f_001_search_field_select" name="searchField" aria-label="$t:common.search_field" class="w-80 shrink-0" value="{{_local.filter.searchField || 'claim_number'}}">
           <responsive on="portable" class="w-24 shrink-0"/>
           <options>
             <option value="claim_number">$t:sirsoft-ecommerce.admin.claim.search.field.claim_number</option>

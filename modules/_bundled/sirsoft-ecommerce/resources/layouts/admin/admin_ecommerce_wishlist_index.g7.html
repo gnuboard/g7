@@ -185,7 +185,7 @@
       <div data-ref="table_header" class="flex flex-wrap items-center justify-between gap-4 mb-4">
         <span class="text-primary font-bold">$t:sirsoft-ecommerce.admin.wishlists.table.total_count|count={{wishlists?.data?.pagination?.total ?? 0}}</span>
         <div data-ref="table_header_controls" class="flex items-center gap-3">
-          <select data-ref="sort_select" class="w-40 text-sm" value="{{query.sort || 'created_at_desc'}}">
+          <select data-ref="sort_select" aria-label="$t:common.sort_order" class="w-40 text-sm" value="{{query.sort || 'created_at_desc'}}">
             <options>
               <option value="created_at_desc">$t:sirsoft-ecommerce.admin.wishlists.sort.created_at_desc</option>
               <option value="created_at_asc">$t:sirsoft-ecommerce.admin.wishlists.sort.created_at_asc</option>
@@ -200,7 +200,7 @@
               </sequence>
             </on>
           </select>
-          <select data-ref="per_page_select" class="w-32 text-sm" value="{{query.per_page || '20'}}">
+          <select data-ref="per_page_select" aria-label="$t:common.per_page" class="w-32 text-sm" value="{{query.per_page || '20'}}">
             <options>
               <option value="10">10</option>
               <option value="20">20</option>
@@ -219,7 +219,7 @@
           </select>
         </div>
       </div>
-      <data-grid data-type="composite" data-ref="wishlists_datagrid" :data-blur-until-loaded="true" data="{{wishlists?.data?.data}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{wishlists?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{wishlists?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{wishlists?.data?.pagination?.has_more_pages ?? false}}" selectable="{{wishlists?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedItems_wishlists || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-ecommerce.admin.wishlists.table.empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
+      <data-grid data-type="composite" rowLabelField="product.name" data-ref="wishlists_datagrid" :data-blur-until-loaded="true" data="{{wishlists?.data?.data}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{wishlists?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{wishlists?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{wishlists?.data?.pagination?.has_more_pages ?? false}}" selectable="{{wishlists?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedItems_wishlists || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-ecommerce.admin.wishlists.table.empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
         <column field="created_at" header="$t:sirsoft-ecommerce.admin.wishlists.columns.created_at">
           <cell>
             <span class="text-sm text-gray-900 dark:text-white">{{row.created_at}}</span>

@@ -135,6 +135,7 @@
                                                     "name": "Input",
                                                     "props": {
                                                         "type": "text",
+                                                        "aria-label": "$t:common.row_cell|row=박민수|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}",
                                                         "value": "ORD20251118-0003",
                                                         "className": "input pr-8"
                                                     }
@@ -283,6 +284,7 @@
                                             "name": "Input",
                                             "props": {
                                                 "type": "text",
+                                                "aria-label": "$t:common.row_cell|row=최지은|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_number_placeholder",
                                                 "className": "input"
                                             }
@@ -457,6 +459,7 @@
                                                             "name": "Input",
                                                             "props": {
                                                                 "type": "text",
+                                                                "aria-label": "$t:common.row_cell|row=박민수|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}",
                                                                 "value": "ORD20251118-0003",
                                                                 "className": "input pr-8"
                                                             }
@@ -646,6 +649,7 @@
                                                     "name": "Input",
                                                     "props": {
                                                         "type": "text",
+                                                        "aria-label": "$t:common.row_cell|row=강해린|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}",
                                                         "placeholder": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_number_placeholder",
                                                         "className": "input"
                                                     }

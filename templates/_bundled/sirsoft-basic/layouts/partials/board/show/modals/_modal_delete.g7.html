@@ -10,7 +10,7 @@
           <icon name="lock" size="xs" class="text-gray-500 dark:text-gray-400"/>
           <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:board.guest_password</span>
         </div>
-        <input type="password" placeholder="$t:board.guest_password_placeholder" value="{{_global.deleteModal.password ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+        <input aria-label="$t:board.guest_password" type="password" placeholder="$t:board.guest_password_placeholder" value="{{_global.deleteModal.password ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
           <on type="change">
             <!-- 비회원 비밀번호 입력 — 이 창의 상태는 여는 쪽(글·댓글 어느 쪽이든)이 채운 전역 값이라, 비밀번호만 바꿔 담더라도 나머지 항목(대상 종류·회원 여부·삭제 주소)을 함께 다시 실어야 덮어쓰기로 지워지지 않는다. -->
             <set-state target="global">

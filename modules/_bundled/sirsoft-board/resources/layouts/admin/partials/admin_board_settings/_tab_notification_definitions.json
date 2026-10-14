@@ -247,6 +247,7 @@
                                     ],
                                     "props": {
                                         "name": "notifPerPage",
+                                        "aria-label": "$t:sirsoft-board.admin.settings.notification_definitions.per_page_label",
                                         "className": "w-20 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                         "value": "{{String(query.per_page || 20)}}",
                                         "options": [
@@ -554,6 +555,7 @@
                                                                         }
                                                                     ],
                                                                     "props": {
+                                                                        "ariaLabel": "$t:common.item_enabled|name={{$t('sirsoft-board.admin.settings.notification_definitions.types.' + def.type)}}",
                                                                         "checked": "{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.is_active ?? false}}",
                                                                         "disabled": "{{_computed.isNotificationReadOnly}}"
                                                                     }

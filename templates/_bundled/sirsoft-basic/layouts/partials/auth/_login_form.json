@@ -379,6 +379,7 @@
                     "type": "basic",
                     "name": "Input",
                     "props": {
+                        "aria-label": "$t:auth.email",
                         "type": "email",
                         "name": "email",
                         "placeholder": "$t:auth.email_placeholder",
@@ -417,6 +418,7 @@
                     "type": "basic",
                     "name": "PasswordInput",
                     "props": {
+                        "aria-label": "$t:auth.password",
                         "name": "password",
                         "placeholder": "$t:auth.password_placeholder",
                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200",
@@ -568,6 +570,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "{{_global.twoFactor?.provider_id === 'totp' ? $t('auth.two_factor.code_label_app') : $t('auth.two_factor.code_label')}}",
                                 "type": "text",
                                 "name": "two_factor_code",
                                 "value": "{{_global.twoFactor?.code ?? ''}}",
@@ -841,6 +844,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:auth.password_change.new_password",
                                 "name": "password_change_new",
                                 "value": "{{_local.passwordChangeInput?.password ?? ''}}",
                                 "placeholder": "$t:auth.password_change.new_password_placeholder|count={{_global.settings?.security?.password_min_length ?? 8}}",
@@ -929,6 +933,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:auth.password_change.confirm_password",
                                 "name": "password_change_confirm",
                                 "value": "{{_local.passwordChangeInput?.password_confirmation ?? ''}}",
                                 "placeholder": "$t:auth.password_confirm_placeholder",

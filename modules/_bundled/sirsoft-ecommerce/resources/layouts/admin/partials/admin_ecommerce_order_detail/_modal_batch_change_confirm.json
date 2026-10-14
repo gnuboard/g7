@@ -280,6 +280,7 @@
                                                             "props": {
                                                                 "type": "number",
                                                                 "className": "w-16 text-center rounded px-1",
+                                                                "aria-label": "$t:common.row_cell|row={{[confirmItem.product_name, confirmItem.product_option_name].filter(Boolean).join(' ')}}|column={{$t('sirsoft-ecommerce.admin.order.detail.modal.batch_change.change_quantity_col')}}",
                                                                 "min": "1",
                                                                 "max": "{{confirmItem.quantity}}",
                                                                 "value": "{{_local.changeQuantities?.[confirmItem.id] ?? $parent._local.changeQuantities?.[confirmItem.id] ?? confirmItem.quantity}}"

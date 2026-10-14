@@ -348,6 +348,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "ariaLabel": "$t:common.item_enabled|name={{$localized(item.name)}}",
                                                 "size": "sm",
                                                 "checked": "{{item.is_active}}",
                                                 "disabled": "{{!item.abilities?.can_update}}"

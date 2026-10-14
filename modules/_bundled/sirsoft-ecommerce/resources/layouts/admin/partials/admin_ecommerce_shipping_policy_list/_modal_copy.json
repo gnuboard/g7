@@ -124,7 +124,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-info-soft px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 rounded"
+                                                        "className": "ecommerce-tone-info-soft px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 rounded text-xs"
                                                     },
                                                     "text": "{{cs.shipping_method_label ?? ''}}"
                                                 },
@@ -158,7 +158,7 @@
                                                     "name": "Span",
                                                     "if": "{{cs.extra_fee_enabled && cs.country_code === 'KR'}}",
                                                     "props": {
-                                                        "className": "text-warning-soft px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 rounded"
+                                                        "className": "ecommerce-tone-warning-soft px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 rounded text-xs"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.table.extra_fee_badge"
                                                 },

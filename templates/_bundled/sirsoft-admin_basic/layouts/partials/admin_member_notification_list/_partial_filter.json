@@ -42,6 +42,7 @@
                             ],
                             "props": {
                                 "name": "searchType",
+                                "aria-label": "$t:common.search_field",
                                 "className": "select-composite w-36",
                                 "value": "{{_local.filter.searchType || 'all'}}",
                                 "options": [

@@ -34,10 +34,10 @@
       <div class="flex gap-3">
         <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
         <div>
-          <h3 class="text-error-strong">$t:common.validation_error</h3>
-          <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>
+          <h3 class="ecommerce-tone-error-strong text-sm font-medium">$t:common.validation_error</h3>
+          <p data-if="{{typeof _local.errors === 'string'}}" class="ecommerce-tone-error-soft mt-2 text-sm">{{_local.errors}}</p>
           <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-            <li class="text-error-soft">{{message}}</li>
+            <li class="ecommerce-tone-error-soft text-sm">{{message}}</li>
           </ul>
         </div>
       </div>

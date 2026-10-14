@@ -12,7 +12,7 @@
             <span class="text-body font-medium">{{localeItem.label}}</span>
             <span class="text-hint">({{localeItem.code | uppercase}})</span>
           </div>
-          <input type="text" value="{{_global.multilingualTagEdit?.values[localeItem.code] ?? ''}}" placeholder="$t:common.enter_value" class="dark:focus:ring-blue-400">
+          <input type="text" aria-label="{{localeItem.label}}" value="{{_global.multilingualTagEdit?.values[localeItem.code] ?? ''}}" placeholder="$t:common.enter_value" class="dark:focus:ring-blue-400">
             <on type="change">
               <!-- 언어별 입력칸이 반복으로 서므로 어느 언어인지 함께 넘긴다 — 값은 전역 편집 상태의 그 언어 칸에 들어간다 -->
               <action handler="sirsoft-ecommerce.updateMultilingualTagValue" locale="{{localeItem.code}}" value="{{$event.target.value}}"/>

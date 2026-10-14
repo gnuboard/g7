@@ -16,7 +16,7 @@
           <span class="text-red-500 dark:text-red-400 ml-0.5">*</span>
         </label>
         <!-- 사유를 바꾸면 귀책이 다시 정해져 배송비 부담 주체가 달라지므로 미리보기를 다시 부르고, 지난 제출이 남긴 오류 표시도 걷는다. 사유가 비어 있는 동안에는 미리보기가 돌지 않아 요약 금액도 서지 않는다. -->
-        <select class="{{_local.claimValidationErrors?.reason_code ? 'w-full px-3 py-2 text-sm border-2 border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white' : 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white'}}" value="{{_local.claimReason ?? ''}}">
+        <select aria-label="$t:claim.apply.reason_label" class="{{_local.claimValidationErrors?.reason_code ? 'w-full px-3 py-2 text-sm border-2 border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white' : 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white'}}" value="{{_local.claimReason ?? ''}}">
           <on type="change">
             <action handler="sirsoft-ecommerce.setClaimReason" value="{{$event.target.value}}" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>
           </on>
@@ -34,7 +34,7 @@
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:claim.apply.reason_detail_label</label>
         <!-- 상세 사유는 금액에 영향을 주지 않아 미리보기를 다시 부르지 않는다. 고쳐 쓰기 시작하면 지난 제출의 거절 표시를 걷어 이미 고친 칸이 붉게 남지 않게 한다. -->
-        <textarea class="w-full px-3 py-2 min-h-20 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="$t:claim.apply.reason_detail_placeholder" :maxLength="1000" value="{{_local.claimReasonDetail ?? ''}}">
+        <textarea aria-label="$t:claim.apply.reason_detail_label" class="w-full px-3 py-2 min-h-20 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white" placeholder="$t:claim.apply.reason_detail_placeholder" :maxLength="1000" value="{{_local.claimReasonDetail ?? ''}}">
           <on type="input">
             <set-state target="_local" claimReasonDetail="{{$event.target.value}}" :claimValidationErrors="null" :claimSubmitError="null"/>
           </on>

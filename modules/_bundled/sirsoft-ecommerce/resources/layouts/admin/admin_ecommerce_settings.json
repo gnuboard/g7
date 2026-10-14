@@ -388,7 +388,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-warning-soft"
+                                    "className": "ecommerce-tone-warning-soft text-xs"
                                 },
                                 "text": "$t:sirsoft-ecommerce.common.read_only_notice"
                             }
@@ -587,7 +587,7 @@
                                                         "type": "basic",
                                                         "name": "H3",
                                                         "props": {
-                                                            "className": "text-error-strong"
+                                                            "className": "ecommerce-tone-error-strong text-sm font-medium"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.settings.validation_error"
                                                     },
@@ -596,7 +596,7 @@
                                                         "name": "P",
                                                         "if": "{{typeof _local.errors === 'string'}}",
                                                         "props": {
-                                                            "className": "text-error-soft mt-2"
+                                                            "className": "ecommerce-tone-error-soft mt-2 text-sm"
                                                         },
                                                         "text": "{{_local.errors}}"
                                                     },
@@ -616,7 +616,7 @@
                                                                 "type": "basic",
                                                                 "name": "Li",
                                                                 "props": {
-                                                                    "className": "text-error-soft"
+                                                                    "className": "ecommerce-tone-error-soft text-sm"
                                                                 },
                                                                 "text": "{{message}}"
                                                             }

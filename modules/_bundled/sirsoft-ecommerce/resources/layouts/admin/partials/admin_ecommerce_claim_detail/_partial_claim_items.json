@@ -388,6 +388,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder",
                                 "name": "claimBulkStatus",
                                 "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                                 "value": "{{_local.claimBulkStatus ?? ''}}",
@@ -528,6 +529,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.claim.bulk.status_placeholder",
                                         "name": "itemBulkStatus",
                                         "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                                         "value": "{{_local.itemBulkStatus ?? ''}}",
@@ -599,6 +601,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.items.tracking_direction_label",
                                         "name": "itemTrackingDirection",
                                         "className": "w-32 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
                                         "value": "{{_local.itemTrackingDirection ?? 'collection'}}",
@@ -621,6 +624,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder",
                                         "name": "itemCarrierId",
                                         "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
                                         "value": "{{_local.itemCarrierId ?? ''}}",
@@ -794,6 +798,7 @@
                         }
                     ],
                     "props": {
+                        "rowLabelField": "product_name",
                         "data": "{{claim?.data?.claim?.items ?? []}}",
                         "idField": "id",
                         "selectable": "{{(claim?.data?.claim?.claim_type ?? '') !== 'cancel'}}",

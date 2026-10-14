@@ -2607,6 +2607,7 @@
                                                         "props": {
                                                             "type": "text",
                                                             "readOnly": true,
+                                                            "aria-label": "$t:sirsoft-pay_kginicis.settings.section_vbank_notify",
                                                             "value": "{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_kginicis/payment/vbank-notify'}}",
                                                             "className": "input-readonly flex-1 font-mono",
                                                             "disabled": "{{_computed.isPluginReadOnly}}"

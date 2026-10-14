@@ -9,7 +9,7 @@
       <!-- 우측: 페이지당 건수. 정렬 셀렉트는 두지 않는다 — 목록 게이트(`Admin\ClaimListRequest`)에 정렬 파라미터가 없어, 옵션을 만들면 화면에만 있고 저장소가 모르는 축이 된다. -->
       <div class="flex-center gap-2">
         <!-- 페이지당 건수. 조회 크기는 URL 의 per_page 가 정하지만 replace 이동은 화면을 다시 마운트하지 않아 셸의 init 이 돌지 않으므로, 셀렉트가 보여 줄 로컬 값도 여기서 함께 바꾼다. -->
-        <select data-ref="d_002_per_page_select" name="perPage" class="w-24" value="{{_local.perPage ?? '20'}}">
+        <select data-ref="d_002_per_page_select" name="perPage" aria-label="$t:common.per_page" class="w-24" value="{{_local.perPage ?? '20'}}">
           <options>
             <option value="10">10</option>
             <option value="20">20</option>
@@ -28,7 +28,7 @@
     </div>
     <div data-ref="claim_datagrid_card" class="p-0 md:p-0">
       <!-- DataGrid 의 id 가 전환 오버레이 대상(`claim_datagrid__body`)의 앞자리를 정한다 — 셸의 `named_actions.searchClaims` 와 이 파일의 페이지·페이지크기 이동이 같은 이름을 가리킨다. -->
-      <data-grid data-type="composite" data-ref="claim_datagrid" data="{{claims?.data?.data ?? []}}" selectable="{{(query.type ?? 'exchange') !== 'cancel' &amp;&amp; claims?.data?.abilities?.can_update_status === true}}" selectionScope="page" selectedIds="{{_local.selectedItems ?? []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.claim.message.no_claims" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{claims?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{claims?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{claims?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
+      <data-grid data-type="composite" data-ref="claim_datagrid" rowLabelField="claim_number" data="{{claims?.data?.data ?? []}}" selectable="{{(query.type ?? 'exchange') !== 'cancel' &amp;&amp; claims?.data?.abilities?.can_update_status === true}}" selectionScope="page" selectedIds="{{_local.selectedItems ?? []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.claim.message.no_claims" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{claims?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{claims?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{claims?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
         <column field="requested_at" header="$t:sirsoft-ecommerce.admin.claim.column.requested_at" width="140px" :sortable="false" :required="true">
           <cell>
             <span>{{row.requested_at_formatted ?? '-'}}</span>

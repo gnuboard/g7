@@ -569,6 +569,7 @@
                                             "name": "Select",
                                             "props": {
                                                 "name": "general.asset_url_mode",
+                                                "aria-label": "$t:admin.settings.general.asset_url_mode",
                                                 "className": "w-full",
                                                 "disabled": "{{_computed.isReadOnly}}",
                                                 "options": [

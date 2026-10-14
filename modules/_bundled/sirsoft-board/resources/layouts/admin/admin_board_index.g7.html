@@ -59,7 +59,7 @@
                 <span data-ref="board_type" class="text-label-subtle">({{row.type}})</span>
               </div>
               <div data-ref="header_right" class="flex items-center gap-3">
-                <toggle data-type="composite" data-ref="active_toggle" checked="{{row.is_active}}" name="is_active" size="sm" disabled="{{row.abilities?.can_update !== true}}">
+                <toggle data-type="composite" data-ref="active_toggle" checked="{{row.is_active}}" name="is_active" ariaLabel="$t:defer:common.item_enabled|name={{row.name}}" size="sm" disabled="{{row.abilities?.can_update !== true}}">
                   <on type="change">
                     <!-- 카드에서 바로 활성/비활성을 뒤집는다. 보내는 값은 «지금의 반대」이고 토스트 문구도 뒤집기 «전» 값으로 고르므로 둘의 기준이 같다. 성공 후 목록을 동기로 다시 읽어 화면의 토글이 서버 값과 어긋난 채 남지 않게 한다 -->
                     <sequence>

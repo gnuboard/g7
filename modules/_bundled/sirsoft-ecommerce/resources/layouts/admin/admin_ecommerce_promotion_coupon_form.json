@@ -409,7 +409,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-error-strong"
+                                            "className": "ecommerce-tone-error-strong text-sm font-medium"
                                         },
                                         "text": "$t:common.validation_error"
                                     },
@@ -429,7 +429,7 @@
                                                 "type": "basic",
                                                 "name": "Li",
                                                 "props": {
-                                                    "className": "text-error-soft"
+                                                    "className": "ecommerce-tone-error-soft text-sm"
                                                 },
                                                 "text": "{{message}}"
                                             }

@@ -33,6 +33,7 @@
             ],
             "props": {
                 "name": "boardFilter",
+                "aria-label": "$t:nav.boards",
                 "className": "w-40 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-700 dark:text-gray-200 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none cursor-pointer",
                 "value": "{{query?.board_slug ?? ''}}"
             },
@@ -81,6 +82,7 @@
             ],
             "props": {
                 "name": "sortBy",
+                "aria-label": "$t:common.sort_order",
                 "className": "w-32",
                 "value": "{{query?.sort ?? 'relevance'}}",
                 "options": [
@@ -121,6 +123,7 @@
             ],
             "props": {
                 "name": "sortBy",
+                "aria-label": "$t:common.sort_order",
                 "className": "w-32",
                 "value": "{{query?.sort ?? 'relevance'}}",
                 "options": [

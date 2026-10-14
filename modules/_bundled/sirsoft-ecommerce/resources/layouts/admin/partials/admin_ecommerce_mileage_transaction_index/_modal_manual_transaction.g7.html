@@ -131,7 +131,7 @@
             <span class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.expiry_custom</span>
           </label>
         </div>
-        <input data-if="{{_global.mileageManual?.useDefaultExpiry === false}}" type="date" value="{{_global.mileageManual?.expiresAt ?? ''}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+        <input data-if="{{_global.mileageManual?.useDefaultExpiry === false}}" type="date" aria-label="$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.expiry" value="{{_global.mileageManual?.expiresAt ?? ''}}" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
           <on type="change">
             <!-- 직접 정한 만료일. 하한이 걸려 있지 않아 과거 날짜도 고를 수 있고, 그 판단은 서버가 한다. -->
             <set-state target="global" mileageManual.expiresAt="{{$event.target.value}}"/>

@@ -189,6 +189,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "{{optionFilter.key}}",
                         "value": "{{_local.reviewOptionFilters?.[optionFilter.key] ?? ''}}",
                         "options": "{{[{ value: '', label: optionFilter.key }].concat((optionFilter.values ?? []).map(v => ({ value: v.value, label: v.value + ' (' + v.count + ')' })))}}",
                         "className": "text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
@@ -221,6 +222,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:shop.product.rating",
                         "value": "{{_local.reviewRating ?? ''}}",
                         "className": "w-40 text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300",
                         "options": [
@@ -368,6 +370,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:common.sort_order",
                         "value": "{{_local.reviewSortBy ?? 'created_at_desc'}}",
                         "className": "text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300",
                         "options": [

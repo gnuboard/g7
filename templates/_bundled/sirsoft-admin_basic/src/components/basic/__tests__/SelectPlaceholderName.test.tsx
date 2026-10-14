@@ -47,10 +47,10 @@ describe('선택 상자 안내 글자', () => {
      * @scenario case=c03
      * @effects select_trigger_named
      */
-    it('aria-label 을 넘기면 바깥 상자가 아니라 버튼에 단다', () => {
+    it('aria-label 을 넘기면 바깥 상자가 아니라 버튼에 단다 — 이름 뒤에 현재 값이 이어 읽힌다(#757)', () => {
         const { container } = render(<Select options={options} value={1} aria-label="브랜드" />);
 
-        expect(screen.getByRole('button', { name: '브랜드' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '브랜드 브랜드 A' })).toBeInTheDocument();
         expect((container.firstChild as HTMLElement).getAttribute('aria-label')).toBeNull();
     });
 });

@@ -172,13 +172,13 @@
             <span>$t:mypage.addresses.form.label</span>
             <span class="text-red-500 ml-0.5">*</span>
           </label>
-          <input type="text" name="name" placeholder="$t:mypage.addresses.form.label_placeholder" :required="true" class="{{_local.addressErrors?.name ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}"/>
+          <input aria-label="$t:mypage.addresses.form.label" type="text" name="name" placeholder="$t:mypage.addresses.form.label_placeholder" :required="true" class="{{_local.addressErrors?.name ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}"/>
           <span data-if="{{_local.addressErrors?.name}}" class="text-red-500 text-xs mt-1">{{_local.addressErrors?.name?.[0] ?? ''}}</span>
         </div>
         <!-- 배송국가 (D10 — 해외배송 활성 시에만 표시. name 바인딩으로 editingAddress.country_code 저장. 선택에 따라 국내/해외 주소 입력 분기.) -->
         <div data-if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.checkout.shipping_country</label>
-          <select name="country_code" value="{{_local.editingAddress?.country_code ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}" class="w-full"/>
+          <select name="country_code" aria-label="$t:shop.checkout.shipping_country" value="{{_local.editingAddress?.country_code ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name) || c.code) }))}}" class="w-full"/>
         </div>
         <!-- 받는 분 + 연락처 -->
         <div class="grid grid-cols-2 gap-4">
@@ -189,7 +189,7 @@
               <span>$t:mypage.addresses.form.recipient</span>
               <span class="text-red-500 ml-0.5">*</span>
             </label>
-            <input type="text" name="recipient_name" placeholder="$t:mypage.addresses.form.recipient_placeholder" :required="true" class="{{_local.addressErrors?.recipient_name ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}"/>
+            <input aria-label="$t:mypage.addresses.form.recipient" type="text" name="recipient_name" placeholder="$t:mypage.addresses.form.recipient_placeholder" :required="true" class="{{_local.addressErrors?.recipient_name ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}"/>
             <span data-if="{{_local.addressErrors?.recipient_name}}" class="text-red-500 text-xs mt-1">{{_local.addressErrors?.recipient_name?.[0] ?? ''}}</span>
           </div>
           <!-- 연락처 -->
@@ -198,7 +198,7 @@
               <span>$t:mypage.addresses.form.phone</span>
               <span class="text-red-500 ml-0.5">*</span>
             </label>
-            <input type="tel" name="recipient_phone" placeholder="$t:mypage.addresses.form.phone_placeholder" :required="true" class="{{_local.addressErrors?.recipient_phone ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}"/>
+            <input aria-label="$t:mypage.addresses.form.phone" type="tel" name="recipient_phone" placeholder="$t:mypage.addresses.form.phone_placeholder" :required="true" class="{{_local.addressErrors?.recipient_phone ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}"/>
             <span data-if="{{_local.addressErrors?.recipient_phone}}" class="text-red-500 text-xs mt-1">{{_local.addressErrors?.recipient_phone?.[0] ?? ''}}</span>
           </div>
         </div>
@@ -241,7 +241,7 @@
         <!-- 상세 주소 (국내 KR 전용 — 해외는 address_line_2 사용) -->
         <div data-if="{{(_local.editingAddress?.country_code ?? 'KR') === 'KR'}}">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:mypage.addresses.form.detail_address</label>
-          <input type="text" name="address_detail" placeholder="$t:mypage.addresses.form.detail_placeholder" class="{{_local.addressErrors?.address_detail ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}"/>
+          <input aria-label="$t:mypage.addresses.form.detail_address" type="text" name="address_detail" placeholder="$t:mypage.addresses.form.detail_placeholder" class="{{_local.addressErrors?.address_detail ? 'w-full px-4 py-2.5 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 transition-colors' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent transition-colors'}}"/>
         </div>
         <!-- 기본 배송지 체크박스 -->
         <div class="flex items-center gap-2 pt-2">

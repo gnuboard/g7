@@ -185,6 +185,7 @@
         "points_used": "Mileage Used",
         "points_earning": "To Earn",
         "view_detail": "View Details",
+        "status_filter_label": "Order status",
         "empty": "No order history.",
         "go_shopping": "Go Shopping",
         "status": {
@@ -513,6 +514,7 @@
         "reports": {
             "filter": {
                 "all_statuses": "All statuses",
+                "status_label": "Status",
                 "all_targets": "All targets"
             },
             "status": {

@@ -10,7 +10,7 @@
   <div data-ref="filter_section" class="admin-card">
     <div data-ref="search_row" class="mb-4">
       <div class="flex-center gap-2">
-        <select name="searchType" class="select-composite w-36" value="{{_local.filter.searchType || 'name'}}">
+        <select name="searchType" aria-label="$t:common.search_field" class="select-composite w-36" value="{{_local.filter.searchType || 'name'}}">
           <options>
             <option value="name">$t:sirsoft-ecommerce.admin.shipping_policy.filter.search_type.name</option>
           </options>

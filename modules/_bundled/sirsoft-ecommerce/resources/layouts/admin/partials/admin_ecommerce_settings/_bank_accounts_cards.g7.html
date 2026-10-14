@@ -22,7 +22,7 @@
           <span class="font-medium text-gray-900 dark:text-gray-100">{{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number') + ' ' + (accountIndex + 1)}}</span>
         </div>
         <div class="flex-center gap-2 flex-shrink-0">
-          <toggle data-type="composite" name="{{'order_settings.bank_accounts.' + account._idx + '.is_active'}}" value="{{account.is_active}}" disabled="{{_computed.isReadOnly}}"/>
+          <toggle data-type="composite" name="{{'order_settings.bank_accounts.' + account._idx + '.is_active'}}" ariaLabel="$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.is_active')}}" value="{{account.is_active}}" disabled="{{_computed.isReadOnly}}"/>
           <button data-if="{{(_local.form?.order_settings?.bank_accounts ?? []).length > 1}}" type="button" class="btn-icon text-red-500 dark:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.delete">
             <on type="click">
               <!-- 계좌 삭제. 마지막 한 줄은 지울 수 없게 버튼 자체를 숨긴다 — 계좌가 0개면 무통장 결제를 받을 수 없기 때문이다. -->
@@ -36,17 +36,17 @@
         <div>
           <div class="form-group">
             <label class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.bank</label>
-            <select name="{{'order_settings.bank_accounts.' + account._idx + '.bank_code'}}" value="{{account.bank_code}}" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code'] ? 'w-full input-error' : 'w-full'}}" options="{{(_local.form?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: typeof b.name === 'object' ? $localized(b.name) : b.name }))}}" disabled="{{_computed.isReadOnly}}"/>
+            <select name="{{'order_settings.bank_accounts.' + account._idx + '.bank_code'}}" aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.bank')}}" value="{{account.bank_code}}" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code'] ? 'w-full input-error' : 'w-full'}}" options="{{(_local.form?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: typeof b.name === 'object' ? $localized(b.name) : b.name }))}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']}}" class="form-error">{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']?.[0] ?? ''}}</span>
           </div>
           <div class="form-group">
             <label class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number</label>
-            <input type="text" name="{{'order_settings.bank_accounts.' + account._idx + '.account_number'}}" value="{{account.account_number ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number_placeholder" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+            <input type="text" name="{{'order_settings.bank_accounts.' + account._idx + '.account_number'}}" aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number')}}" value="{{account.account_number ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number_placeholder" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']}}" class="form-error">{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']?.[0] ?? ''}}</span>
           </div>
           <div class="form-group">
             <label class="form-label">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder</label>
-            <input type="text" name="{{'order_settings.bank_accounts.' + account._idx + '.account_holder'}}" value="{{account.account_holder ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder_placeholder" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+            <input type="text" name="{{'order_settings.bank_accounts.' + account._idx + '.account_holder'}}" aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder')}}" value="{{account.account_holder ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder_placeholder" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']}}" class="form-error">{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']?.[0] ?? ''}}</span>
           </div>
         </div>

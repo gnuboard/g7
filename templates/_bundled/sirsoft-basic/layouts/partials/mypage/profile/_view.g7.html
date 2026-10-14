@@ -235,28 +235,28 @@
       <div class="grid grid-cols-2 gap-4">
         <responsive on="portable" class="grid grid-cols-1 gap-3"/>
         <div class="flex items-start gap-3 p-3 rounded-lg">
-          <checkbox name="notify_post_complete" checked="{{!!user.data?.notify_post_complete}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
+          <checkbox name="notify_post_complete" aria-label="$t:mypage.notification_settings.post_complete" checked="{{!!user.data?.notify_post_complete}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
           <div>
             <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.post_complete</span>
             <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.post_complete_desc</span>
           </div>
         </div>
         <div class="flex items-start gap-3 p-3 rounded-lg">
-          <checkbox name="notify_post_reply" checked="{{!!user.data?.notify_post_reply}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
+          <checkbox name="notify_post_reply" aria-label="$t:mypage.notification_settings.post_reply" checked="{{!!user.data?.notify_post_reply}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
           <div>
             <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.post_reply</span>
             <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.post_reply_desc</span>
           </div>
         </div>
         <div class="flex items-start gap-3 p-3 rounded-lg">
-          <checkbox name="notify_comment" checked="{{!!user.data?.notify_comment}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
+          <checkbox name="notify_comment" aria-label="$t:mypage.notification_settings.comment" checked="{{!!user.data?.notify_comment}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
           <div>
             <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.comment</span>
             <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.comment_desc</span>
           </div>
         </div>
         <div class="flex items-start gap-3 p-3 rounded-lg">
-          <checkbox name="notify_reply_comment" checked="{{!!user.data?.notify_reply_comment}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
+          <checkbox name="notify_reply_comment" aria-label="$t:mypage.notification_settings.reply_comment" checked="{{!!user.data?.notify_reply_comment}}" :disabled="true" class="w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
           <div>
             <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:mypage.notification_settings.reply_comment</span>
             <span class="block text-xs text-gray-500 dark:text-gray-400">$t:mypage.notification_settings.reply_comment_desc</span>

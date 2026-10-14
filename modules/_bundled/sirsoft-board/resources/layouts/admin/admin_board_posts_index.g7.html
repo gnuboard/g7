@@ -67,7 +67,7 @@
       </page-header>
       <div data-ref="search_filter_area" class="admin-card">
         <div data-ref="search_row" class="flex-center flex-row gap-3">
-          <select data-ref="search_field_select" value="{{_local.searchField || 'all'}}" class="select-composite w-32">
+          <select data-ref="search_field_select" aria-label="$t:common.search_field" value="{{_local.searchField || 'all'}}" class="select-composite w-32">
             <options>
               <option value="all">$t:sirsoft-board.admin.posts.search_fields.all</option>
               <option value="title_content">$t:sirsoft-board.admin.posts.search_fields.title_content</option>
@@ -102,7 +102,7 @@
         <div data-ref="advanced_filters" data-if="{{_global.showAdvancedSearch}}" class="space-y-4 mt-4">
           <div data-ref="category_filter_row" data-if="{{posts?.data?.board?.categories &amp;&amp; posts?.data?.board?.categories.length > 0}}" class="flex-center flex-wrap gap-3">
             <span class="text-body font-medium min-w-[80px]">$t:sirsoft-board.admin.posts.filters.category_label</span>
-            <select data-ref="category_filter" value="{{query.category || 'all'}}" class="input min-w-[200px]" options="{{([{value:'all', label:'$t:sirsoft-board.admin.posts.filters.category_all'},{value:'unclassified', label:'$t:sirsoft-board.admin.posts.filters.category_unclassified'}].concat((posts?.data?.board?.categories||[]).map(function(c){return{value:c,label:c};}))) ?? []}}">
+            <select data-ref="category_filter" aria-label="$t:sirsoft-board.admin.posts.filters.category_label" value="{{query.category || 'all'}}" class="input min-w-[200px]" options="{{([{value:'all', label:'$t:sirsoft-board.admin.posts.filters.category_all'},{value:'unclassified', label:'$t:sirsoft-board.admin.posts.filters.category_unclassified'}].concat((posts?.data?.board?.categories||[]).map(function(c){return{value:c,label:c};}))) ?? []}}">
               <on type="change">
                 <!-- 분류는 고르는 즉시 적용된다. 「전체」는 빈 문자열로 보내 서버가 조건 없음으로 읽게 하고, 페이지는 1 로 되돌린다. 가려지는 것은 표 본문뿐이라 필터 줄은 그대로 손에 남는다 -->
                 <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true" :replace="true" transition_overlay_target="posts_data_grid__body">
@@ -174,7 +174,7 @@
         </div>
       </div>
       <div class="flex-center justify-end gap-3 mb-4">
-        <select name="sort_by" class="w-40" value="{{(query.sort_by || 'created_at') + '_' + (query.sort_order || 'desc')}}">
+        <select name="sort_by" aria-label="$t:common.sort_order" class="w-40" value="{{(query.sort_by || 'created_at') + '_' + (query.sort_order || 'desc')}}">
           <options>
             <option value="created_at_desc">$t:sirsoft-board.admin.posts.sort.latest</option>
             <option value="created_at_asc">$t:sirsoft-board.admin.posts.sort.oldest</option>
@@ -188,7 +188,7 @@
             </navigate>
           </on>
         </select>
-        <select name="per_page" class="w-36" value="{{query.per_page || '15'}}">
+        <select name="per_page" aria-label="$t:common.per_page" class="w-36" value="{{query.per_page || '15'}}">
           <options>
             <option value="15">$t:sirsoft-board.admin.posts.per_page.15</option>
             <option value="30">$t:sirsoft-board.admin.posts.per_page.30</option>
@@ -238,7 +238,7 @@
           </button>
         </div>
       </div>
-      <data-grid data-type="composite" selectedCountText="" data-ref="posts_data_grid" :data-blur-until-loaded="true" rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : (row.row_type === 'reply' ? 'bg-gray-50 dark:bg-gray-800/50' : '')}}" data="{{posts?.data?.data}}" :sortable="true" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{posts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{posts?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" selectable="{{posts?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_board_posts || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" columnSelectorText="$t:common.column_selector" emptyMessage="$t:common.no_data" requiredText="$t:common.required">
+      <data-grid data-type="composite" selectedCountText="" data-ref="posts_data_grid" rowLabelField="title" :data-blur-until-loaded="true" rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : (row.row_type === 'reply' ? 'bg-gray-50 dark:bg-gray-800/50' : '')}}" data="{{posts?.data?.data}}" :sortable="true" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{posts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{posts?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" selectable="{{posts?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_board_posts || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" columnSelectorText="$t:common.column_selector" emptyMessage="$t:common.no_data" requiredText="$t:common.required">
         <column field="number" header="$t:sirsoft-board.admin.posts.columns.number" :sortable="false" :required="true">
           <cell>
             <span data-if="{{row.row_type === 'notice'}}" class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500">{{row.number ?? '-'}}</span>

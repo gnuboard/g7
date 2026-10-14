@@ -244,6 +244,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:common.search_field",
                                             "value": "{{_local.searchField || 'all'}}",
                                             "className": "select-composite w-32",
                                             "options": [
@@ -392,6 +393,7 @@
                                                     }
                                                 ],
                                                 "props": {
+                                                    "aria-label": "$t:sirsoft-board.admin.posts.filters.category_label",
                                                     "value": "{{query.category || 'all'}}",
                                                     "className": "input min-w-[200px]",
                                                     "options": "{{([{value:'all', label:'$t:sirsoft-board.admin.posts.filters.category_all'},{value:'unclassified', label:'$t:sirsoft-board.admin.posts.filters.category_unclassified'}].concat((posts?.data?.board?.categories||[]).map(function(c){return{value:c,label:c};}))) ?? []}}"
@@ -685,6 +687,7 @@
                                 ],
                                 "props": {
                                     "name": "sort_by",
+                                    "aria-label": "$t:common.sort_order",
                                     "className": "w-40",
                                     "value": "{{(query.sort_by || 'created_at') + '_' + (query.sort_order || 'desc')}}",
                                     "options": [
@@ -729,6 +732,7 @@
                                 ],
                                 "props": {
                                     "name": "per_page",
+                                    "aria-label": "$t:common.per_page",
                                     "className": "w-36",
                                     "value": "{{query.per_page || '15'}}",
                                     "options": [
@@ -934,6 +938,7 @@
                         ],
                         "props": {
                             "selectedCountText": "",
+                            "rowLabelField": "title",
                             "rowClassName": "{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : (row.row_type === 'reply' ? 'bg-gray-50 dark:bg-gray-800/50' : '')}}",
                             "data": "{{posts?.data?.data}}",
                             "sortable": true,

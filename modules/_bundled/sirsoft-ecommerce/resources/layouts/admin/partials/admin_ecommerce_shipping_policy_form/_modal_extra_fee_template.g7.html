@@ -125,7 +125,7 @@
             <thead class="sticky top-0 z-10 bg-white dark:bg-gray-800">
               <tr>
                 <th class="w-10 text-center">
-                  <input type="checkbox" checked="{{(extra_fee_templates?.data?.data ?? []).length > 0 &amp;&amp; ($parent._local.selectedTemplateIds ?? []).length === (extra_fee_templates?.data?.data ?? []).length}}" class="w-4 h-4 rounded" disabled="{{$parent._computed?.isReadOnly !== false}}">
+                  <input type="checkbox" aria-label="$t:common.select_all" checked="{{(extra_fee_templates?.data?.data ?? []).length > 0 &amp;&amp; ($parent._local.selectedTemplateIds ?? []).length === (extra_fee_templates?.data?.data ?? []).length}}" class="w-4 h-4 rounded" disabled="{{$parent._computed?.isReadOnly !== false}}">
                     <on type="change">
                       <!-- 머리글 전체 선택 — 체크 값을 읽지 않고 **지금 전부 골라진 상태인지**로 판단해 비우거나 전부 채운다. 다만 지금 쪽에 실린 줄만 대상이라, 무한 스크롤로 더 받으면 그만큼은 빠진다. -->
                       <set-state target="$parent._local" selectedTemplateIds="{{($parent._local.selectedTemplateIds ?? []).length === (extra_fee_templates?.data?.data ?? []).length ? [] : (extra_fee_templates?.data?.data ?? []).map(t => t.id)}}"/>
@@ -212,7 +212,7 @@
               </tr>
               <tr data-each="template, templateIdx in {{extra_fee_templates?.data?.data ?? []}}">
                 <td class="text-center">
-                  <input type="checkbox" checked="{{($parent._local.selectedTemplateIds ?? []).includes(template.id)}}" class="w-4 h-4 rounded" disabled="{{$parent._computed?.isReadOnly !== false}}">
+                  <input type="checkbox" aria-label="$t:common.select_item|name={{template.zipcode || $t('common.row_n', {n: templateIdx + 1})}}" checked="{{($parent._local.selectedTemplateIds ?? []).includes(template.id)}}" class="w-4 h-4 rounded" disabled="{{$parent._computed?.isReadOnly !== false}}">
                     <on type="change">
                       <!-- 줄 체크 — 체크 값을 읽지 않고 목록에 있으면 빼고 없으면 넣는다. 머리글 전체 선택과 같은 목록을 쓰므로 낱개로 다 고르면 머리글도 켜진 것으로 보인다. -->
                       <set-state target="$parent._local" selectedTemplateIds="{{($parent._local.selectedTemplateIds ?? []).includes(template.id) ? ($parent._local.selectedTemplateIds ?? []).filter(id => id !== template.id) : [...($parent._local.selectedTemplateIds ?? []), template.id]}}"/>
@@ -221,7 +221,7 @@
                 </td>
                 <td>
                   <span data-if="{{$parent._local.editingTemplate !== template.id}}" class="text-primary text-sm font-mono">{{template.zipcode ?? ''}}</span>
-                  <input data-if="{{$parent._local.editingTemplate === template.id}}" type="text" value="{{$parent._local.templateForm.zipcode ?? ''}}" class="{{$parent._local.templateFormErrors?.zipcode ? 'input input-error' : 'input'}}" disabled="{{$parent._computed?.isReadOnly !== false}}">
+                  <input data-if="{{$parent._local.editingTemplate === template.id}}" aria-label="$t:common.row_cell|row={{template.zipcode || $t('common.row_n', {n: templateIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.zipcode')}}" type="text" value="{{$parent._local.templateForm.zipcode ?? ''}}" class="{{$parent._local.templateFormErrors?.zipcode ? 'input input-error' : 'input'}}" disabled="{{$parent._computed?.isReadOnly !== false}}">
                     <on type="change">
                       <!-- 편집 중인 줄의 우편번호 — 위 새 줄과 **같은 `templateForm` 칸**을 쓴다. 그래서 편집과 추가가 동시에 열리지 않게 서로를 닫는 것이다. -->
                       <set-state :debounce="300" target="$parent._local" templateForm.zipcode="{{$event.target.value}}" :templateFormErrors.zipcode="null"/>
@@ -231,7 +231,7 @@
                 </td>
                 <td class="whitespace-normal">
                   <span data-if="{{$parent._local.editingTemplate !== template.id}}" class="text-label truncate">{{template.region ?? ''}}</span>
-                  <input data-if="{{$parent._local.editingTemplate === template.id}}" type="text" value="{{$parent._local.templateForm.region ?? ''}}" class="{{$parent._local.templateFormErrors?.region ? 'input input-error' : 'input'}}" disabled="{{$parent._computed?.isReadOnly !== false}}">
+                  <input data-if="{{$parent._local.editingTemplate === template.id}}" aria-label="$t:common.row_cell|row={{template.zipcode || $t('common.row_n', {n: templateIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.region')}}" type="text" value="{{$parent._local.templateForm.region ?? ''}}" class="{{$parent._local.templateFormErrors?.region ? 'input input-error' : 'input'}}" disabled="{{$parent._computed?.isReadOnly !== false}}">
                     <on type="change">
                       <!-- 편집 중인 줄의 지역 이름 — 새 줄과 같은 규약. -->
                       <set-state :debounce="300" target="$parent._local" templateForm.region="{{$event.target.value}}" :templateFormErrors.region="null"/>
@@ -241,7 +241,7 @@
                 </td>
                 <td>
                   <span data-if="{{$parent._local.editingTemplate !== template.id}}" class="text-primary text-sm">{{template.fee_formatted ?? ($t('sirsoft-ecommerce.currency.krw_prefix') + Number(template.fee ?? 0).toLocaleString() + $t('sirsoft-ecommerce.currency.krw_suffix'))}}</span>
-                  <input data-if="{{$parent._local.editingTemplate === template.id}}" type="number" value="{{$parent._local.templateForm.fee ?? 0}}" class="{{$parent._local.templateFormErrors?.fee ? 'input input-error' : 'input'}}" :min="0" disabled="{{$parent._computed?.isReadOnly !== false}}">
+                  <input data-if="{{$parent._local.editingTemplate === template.id}}" aria-label="$t:common.row_cell|row={{template.zipcode || $t('common.row_n', {n: templateIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.fee')}}" type="number" value="{{$parent._local.templateForm.fee ?? 0}}" class="{{$parent._local.templateFormErrors?.fee ? 'input input-error' : 'input'}}" :min="0" disabled="{{$parent._computed?.isReadOnly !== false}}">
                     <on type="change">
                       <!-- 편집 중인 줄의 금액 — 새 줄과 같은 규약이나 **비었을 때 보이는 기본값이 다르다**(새 줄 3000 ↔ 여기 0). 편집은 이미 있는 값을 부어 받으므로 그 자리가 비는 경우가 정상이 아니기 때문이다. -->
                       <set-state :debounce="300" target="$parent._local" templateForm.fee="{{Number($event.target.value) || 0}}" :templateFormErrors.fee="null"/>
@@ -252,7 +252,7 @@
                 <td class="text-center">
                   <span data-if="{{$parent._local.editingTemplate !== template.id &amp;&amp; template.is_active}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.active</span>
                   <span data-if="{{$parent._local.editingTemplate !== template.id &amp;&amp; !template.is_active}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.inactive</span>
-                  <toggle data-type="composite" data-if="{{$parent._local.editingTemplate === template.id}}" value="{{$parent._local.templateForm.is_active ?? true}}" name="is_active" disabled="{{$parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_update !== true}}">
+                  <toggle data-type="composite" data-if="{{$parent._local.editingTemplate === template.id}}" ariaLabel="$t:common.row_cell|row={{template.zipcode || $t('common.row_n', {n: templateIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.status')}}" value="{{$parent._local.templateForm.is_active ?? true}}" name="is_active" disabled="{{$parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_update !== true}}">
                     <on type="change">
                       <!-- 편집 중인 줄의 사용 여부 — 스위치 값을 읽지 않고 현재 값을 뒤집는다(기본은 켬). 이 값이 꺼지면 [전체 적용]에서 빠진다. -->
                       <set-state target="$parent._local" templateForm.is_active="{{!($parent._local.templateForm.is_active ?? true)}}"/>

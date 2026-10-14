@@ -42,7 +42,7 @@
       <div data-ref="filter_card" class="admin-card mb-6">
         <div data-ref="search_row" class="flex-center flex-wrap gap-3 mb-6">
           <responsive on="portable" class="row-stack mb-6"/>
-          <select name="searchField" class="w-32" value="{{_local.searchField}}">
+          <select name="searchField" aria-label="$t:common.search_field" class="w-32" value="{{_local.searchField}}">
             <options>
               <option value="all">$t:sirsoft-ecommerce.admin.promotion_discount_code.search.field.all</option>
               <option value="discount_code_name">$t:sirsoft-ecommerce.admin.promotion_discount_code.search.field.discount_code_name</option>
@@ -157,7 +157,7 @@
                 </on>
               </select>
               <div class="flex-center gap-2">
-                <input type="text" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.min" class="input w-28" value="{{_local.benefitMin}}">
+                <input type="text" aria-label="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.benefit_amount_min" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.min" class="input w-28" value="{{_local.benefitMin}}">
                   <responsive on="portable" class="input flex-1"/>
                   <on type="change">
                     <!-- 혜택 하한 -->
@@ -165,7 +165,7 @@
                   </on>
                 </input>
                 <span class="text-secondary">~</span>
-                <input type="text" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.max" class="input w-28" value="{{_local.benefitMax}}">
+                <input type="text" aria-label="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.benefit_amount_max" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.max" class="input w-28" value="{{_local.benefitMax}}">
                   <responsive on="portable" class="input flex-1"/>
                   <on type="change">
                     <!-- 혜택 상한 -->
@@ -182,7 +182,7 @@
               <div class="flex-center gap-2">
                 <div class="relative">
                   <icon name="calendar" class="text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
-                  <input type="text" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.start_date" class="input w-32 pl-10" value="{{_local.startDate}}">
+                  <input type="text" aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_discount_code.filter.created_at')}}" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.start_date" class="input w-32 pl-10" value="{{_local.startDate}}">
                     <on type="change">
                       <!-- 유효기간 시작일 -->
                       <set-state target="_local" startDate="{{$event.target.value}}"/>
@@ -192,7 +192,7 @@
                 <span class="text-secondary">~</span>
                 <div class="relative">
                   <icon name="calendar" class="text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
-                  <input type="text" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.end_date" class="input w-32 pl-10" value="{{_local.endDate}}">
+                  <input type="text" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_discount_code.filter.created_at')}}" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.end_date" class="input w-32 pl-10" value="{{_local.endDate}}">
                     <on type="change">
                       <!-- 유효기간 종료일 -->
                       <set-state target="_local" endDate="{{$event.target.value}}"/>
@@ -227,7 +227,7 @@
           <responsive on="portable" class="row-stack"/>
           <div class="flex-center gap-3">
             <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.batch.selected_count|count=0</span>
-            <select name="bulkStatus" class="w-32" value="{{_local.bulkStatus}}">
+            <select name="bulkStatus" aria-label="$t:sirsoft-ecommerce.admin.promotion_discount_code.batch.status_change" class="w-32" value="{{_local.bulkStatus}}">
               <options>
                 <option value="">$t:sirsoft-ecommerce.admin.promotion_discount_code.batch.status_change</option>
                 <option value="active">$t:sirsoft-ecommerce.admin.promotion_discount_code.status.active</option>
@@ -251,7 +251,7 @@
         <responsive on="portable" class="row-stack mb-4"/>
         <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.total_count|count=2</span>
         <div class="flex-center gap-3">
-          <select name="sortBy" class="w-40" value="{{_local.sortBy}}">
+          <select name="sortBy" aria-label="$t:common.sort_order" class="w-40" value="{{_local.sortBy}}">
             <options>
               <option value="created_at_desc">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.sort.created_at_desc</option>
               <option value="created_at_asc">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.sort.created_at_asc</option>
@@ -263,7 +263,7 @@
               <set-state target="_local" sortBy="{{$event.target.value}}"/>
             </on>
           </select>
-          <select name="perPage" class="w-20" value="{{_local.perPage}}">
+          <select name="perPage" aria-label="$t:common.per_page" class="w-20" value="{{_local.perPage}}">
             <options>
               <option value="10">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page|count=10</option>
               <option value="20">$t:sirsoft-ecommerce.admin.promotion_discount_code.table.per_page|count=20</option>
@@ -282,7 +282,7 @@
             <div class="admin-card">
               <div class="flex items-start justify-between mb-2">
                 <div class="flex-center gap-2">
-                  <input type="checkbox" class="checkbox"/>
+                  <input type="checkbox" aria-label="$t:common.select_item|name=신규회원 10% 할인코" class="checkbox"/>
                   <span class="text-primary font-medium">신규회원 10% 할인코</span>
                 </div>
                 <button aria-label="$t:common.more_actions" type="button" class="btn-icon">
@@ -323,7 +323,7 @@
             <div class="admin-card">
               <div class="flex items-start justify-between mb-2">
                 <div class="flex-center gap-2">
-                  <input type="checkbox" class="checkbox"/>
+                  <input type="checkbox" aria-label="$t:common.select_item|name=첫구매 5천원 할인" class="checkbox"/>
                   <span class="text-primary font-medium">첫구매 5천원 할인</span>
                 </div>
                 <button aria-label="$t:common.more_actions" type="button" class="btn-icon">
@@ -369,7 +369,7 @@
             <thead class="bg-gray-50 dark:bg-gray-800">
               <tr>
                 <th class="px-4 py-3 w-10">
-                  <input type="checkbox" class="checkbox" checked="{{_local.selectAll}}">
+                  <input type="checkbox" aria-label="$t:common.select_all" class="checkbox" checked="{{_local.selectAll}}">
                     <on type="change">
                       <!-- 머리글 전체선택 — 체크값이 아니라 지금 상태를 뒤집는다(표가 예시 행이라 개별 선택과 아직 이어져 있지 않다) -->
                       <set-state target="_local" selectAll="{{!_local.selectAll}}"/>
@@ -392,7 +392,7 @@
             <tbody class="divider-list bg-white dark:bg-gray-900">
               <tr>
                 <td class="px-4 py-3">
-                  <input type="checkbox" class="checkbox"/>
+                  <input type="checkbox" aria-label="$t:common.select_item|name=신규회원 10% 할인코" class="checkbox"/>
                 </td>
                 <td class="px-4 py-3 text-sm text-secondary">1</td>
                 <td class="px-4 py-3">
@@ -426,7 +426,7 @@
               </tr>
               <tr>
                 <td class="px-4 py-3">
-                  <input type="checkbox" class="checkbox"/>
+                  <input type="checkbox" aria-label="$t:common.select_item|name=첫구매 5천원 할인" class="checkbox"/>
                 </td>
                 <td class="px-4 py-3 text-sm text-secondary">2</td>
                 <td class="px-4 py-3">

@@ -16,7 +16,7 @@
     <div data-ref="product_options_body" data-if="{{_local.ui.productOptionsExpanded !== false}}" class="row-stack">
       <div data-ref="option_required_notice" data-if="{{!_local.form.options || _local.form.options.length === 0}}" class="alert-info">
         <icon name="info-circle" class="text-xl text-blue-500 dark:text-blue-400 shrink-0"/>
-        <span class="text-info-soft">$t:sirsoft-ecommerce.admin.product.options.required_notice</span>
+        <span class="ecommerce-tone-info-soft text-xs">$t:sirsoft-ecommerce.admin.product.options.required_notice</span>
       </div>
       <div data-ref="option_generator_section" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-4">
         <div class="flex-between">
@@ -34,7 +34,7 @@
         <div data-ref="option_input_rows">
           <div data-each="optInput, optIdx in {{_local.ui.optionInputs ?? []}}" class="flex-center gap-3">
             <div class="w-48 shrink-0">
-              <multilingual-input data-type="composite" name="option_input_name_{{optIdx}}" value="{{optInput.name ?? {}}}" placeholder="$t:sirsoft-ecommerce.admin.product.options.option_name_placeholder" layout="compact" inputType="text" disabled="{{_computed.isReadOnly}}" :autoBinding="false">
+              <multilingual-input data-type="composite" name="option_input_name_{{optIdx}}" ariaLabel="$t:sirsoft-ecommerce.admin.product.options.option_group_name_n|n={{optIdx + 1}}" value="{{optInput.name ?? {}}}" placeholder="$t:sirsoft-ecommerce.admin.product.options.option_name_placeholder" layout="compact" inputType="text" disabled="{{_computed.isReadOnly}}" :autoBinding="false">
                 <on type="change">
                   <!-- 옵션 그룹 이름(다국어). 타건마다 조합을 다시 세지 않도록 잠시 모아서 반영한다 -->
                   <action handler="sirsoft-ecommerce.updateOptionInput" :debounce="300" index="{{optIdx}}" field="name" value="{{$event.target.value}}"/>
@@ -42,7 +42,7 @@
               </multilingual-input>
             </div>
             <div class="flex-1">
-              <multilingual-tag-input data-type="composite" data-ref="tag_input_option_{{optIdx}}" name="option_values_{{optIdx}}" value="{{optInput.values ?? []}}" placeholder="$t:sirsoft-ecommerce.admin.product.options.option_values_placeholder" class="w-full" :creatable="true" modalId="multilingual_tag_edit_modal" statePath="ui.optionInputs.{{optIdx}}.values" disabled="{{_computed.isReadOnly}}" :autoBinding="false">
+              <multilingual-tag-input data-type="composite" data-ref="tag_input_option_{{optIdx}}" name="option_values_{{optIdx}}" aria-label="$t:sirsoft-ecommerce.admin.product.options.option_group_values_n|n={{optIdx + 1}}" value="{{optInput.values ?? []}}" placeholder="$t:sirsoft-ecommerce.admin.product.options.option_values_placeholder" class="w-full" :creatable="true" modalId="multilingual_tag_edit_modal" statePath="ui.optionInputs.{{optIdx}}.values" disabled="{{_computed.isReadOnly}}" :autoBinding="false">
                 <prop name="delimiters">
                   <item>,</item>
                 </prop>
@@ -106,7 +106,7 @@
               <tbody class="divider-list">
                 <tr data-each="opt, optIdx in {{_local.form.options ?? []}}" class="align-top hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800/50">
                   <td class="px-3 py-2 text-center">
-                    <input type="radio" name="default_option" class="radio" checked="{{opt.is_default === true}}" disabled="{{_computed.isReadOnly}}">
+                    <input type="radio" name="default_option" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.default')}}" class="radio" checked="{{opt.is_default === true}}" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
                         <!-- 기본 옵션 지정 — 상품 화면에서 처음 골라져 있는 한 줄이다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.setDefaultOption" index="{{optIdx}}"/>
@@ -114,7 +114,7 @@
                     </input>
                   </td>
                   <td class="px-3 py-2">
-                    <multilingual-input data-type="composite" name="form_option_name_{{optIdx}}" value="{{opt.option_name ?? {}}}" layout="compact" inputType="text" size="sm" disabled="{{_computed.isReadOnly}}" :autoBinding="false">
+                    <multilingual-input data-type="composite" name="form_option_name_{{optIdx}}" ariaLabel="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.option')}}" value="{{opt.option_name ?? {}}}" layout="compact" inputType="text" size="sm" disabled="{{_computed.isReadOnly}}" :autoBinding="false">
                       <on type="change">
                         <!-- 옵션명 — 조합해 만든 이름을 손으로 다듬을 수 있다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="option_name" value="{{$event.target.value}}"/>
@@ -122,7 +122,7 @@
                     </multilingual-input>
                   </td>
                   <td class="px-3 py-2">
-                    <input type="number" class="input text-right" value="{{opt.list_price ?? 0}}" min="0" disabled="{{_computed.isReadOnly}}">
+                    <input aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.list_price')}}" type="number" class="input text-right" value="{{opt.list_price ?? 0}}" min="0" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
                         <!-- 이 옵션의 정가 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="list_price" value="{{$event.target.value}}"/>
@@ -132,7 +132,7 @@
                   <td class="px-3 py-2">
                     <div class="flex flex-col">
                       <div class="flex-center gap-1">
-                        <input type="number" class="{{ _local.errors?.['options.' + optIdx + '.selling_price'] ? 'input input-error w-24 text-right' : 'input w-24 text-right' }}" value="{{opt.selling_price ?? 0}}" min="0" disabled="{{_computed.isReadOnly}}">
+                        <input aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.selling_price')}}" type="number" class="{{ _local.errors?.['options.' + optIdx + '.selling_price'] ? 'input input-error w-24 text-right' : 'input w-24 text-right' }}" value="{{opt.selling_price ?? 0}}" min="0" disabled="{{_computed.isReadOnly}}">
                           <on type="change">
                             <!-- 이 옵션의 판매가 — 상품 판매가와의 차액이 옆에 추가금으로 붙어 보인다 (넓은 화면 표) -->
                             <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="selling_price" value="{{$event.target.value}}"/>
@@ -148,7 +148,7 @@
                     </div>
                   </td>
                   <td class="px-3 py-2">
-                    <input type="text" class="input" value="{{opt.sku ?? ''}}" placeholder="-" disabled="{{_computed.isReadOnly}}">
+                    <input aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.sku')}}" type="text" class="input" value="{{opt.sku ?? ''}}" placeholder="-" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
                         <!-- 옵션별 SKU — 창고에서 옵션 단위로 셀 때 쓴다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="sku" value="{{$event.target.value}}"/>
@@ -157,7 +157,7 @@
                   </td>
                   <td class="px-3 py-2">
                     <div class="flex flex-col">
-                      <input type="number" class="{{ _local.errors?.['options.' + optIdx + '.stock_quantity'] ? 'input input-error w-full text-right' : 'input w-full text-right' }}" value="{{opt.stock_quantity ?? 0}}" min="0" disabled="{{_computed.isReadOnly}}">
+                      <input aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.stock')}}" type="number" class="{{ _local.errors?.['options.' + optIdx + '.stock_quantity'] ? 'input input-error w-full text-right' : 'input w-full text-right' }}" value="{{opt.stock_quantity ?? 0}}" min="0" disabled="{{_computed.isReadOnly}}">
                         <on type="change">
                           <!-- 재고는 옵션 단위로만 고친다 — 상품 재고는 이 값들의 합이라 판매정보 구획에서는 읽기 전용이다 (넓은 화면 표) -->
                           <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="stock_quantity" value="{{$event.target.value}}"/>
@@ -167,7 +167,7 @@
                     </div>
                   </td>
                   <td class="px-3 py-2">
-                    <input type="number" class="input text-right" value="{{opt.safe_stock_quantity ?? 0}}" min="0" disabled="{{_computed.isReadOnly}}">
+                    <input aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.safe_stock')}}" type="number" class="input text-right" value="{{opt.safe_stock_quantity ?? 0}}" min="0" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
                         <!-- 안전재고 — 이 아래로 떨어지면 부족으로 잡힌다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="safe_stock_quantity" value="{{$event.target.value}}"/>
@@ -175,7 +175,7 @@
                     </input>
                   </td>
                   <td class="px-3 py-2">
-                    <input type="number" class="input text-right" value="{{opt.weight ?? 0}}" min="0" step="0.01" disabled="{{_computed.isReadOnly}}">
+                    <input aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.weight')}}" type="number" class="input text-right" value="{{opt.weight ?? 0}}" min="0" step="0.01" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
                         <!-- 무게 — 무게로 배송비를 매기는 정책에서 쓰인다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="weight" value="{{$event.target.value}}"/>
@@ -183,7 +183,7 @@
                     </input>
                   </td>
                   <td class="px-3 py-2">
-                    <input type="number" class="input text-right" value="{{opt.volume ?? 0}}" min="0" step="0.01" disabled="{{_computed.isReadOnly}}">
+                    <input aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.volume')}}" type="number" class="input text-right" value="{{opt.volume ?? 0}}" min="0" step="0.01" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
                         <!-- 부피 — 부피로 배송비를 매기는 정책에서 쓰인다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="volume" value="{{$event.target.value}}"/>
@@ -192,13 +192,13 @@
                   </td>
                   <td class="px-3 py-2">
                     <div class="flex-center gap-1">
-                      <input type="number" class="input w-16 text-right" value="{{opt.mileage_value ?? 0}}" aria-label="$t:sirsoft-ecommerce.admin.product.options.mileage_value_label" min="0" disabled="{{_computed.isReadOnly}}">
+                      <input type="number" class="input w-16 text-right" value="{{opt.mileage_value ?? 0}}" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.mileage_value_label')}}" min="0" disabled="{{_computed.isReadOnly}}">
                         <on type="change">
                           <!-- 적립 값 — 옆의 방식(%/정액)에 따라 뜻이 달라진다 (넓은 화면 표) -->
                           <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="mileage_value" value="{{$event.target.value}}"/>
                         </on>
                       </input>
-                      <select class="select w-16" value="{{opt.mileage_type ?? 'percent'}}" aria-label="$t:sirsoft-ecommerce.admin.product.options.mileage_type_label" disabled="{{_computed.isReadOnly}}">
+                      <select class="select w-16" value="{{opt.mileage_type ?? 'percent'}}" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.mileage_type_label')}}" disabled="{{_computed.isReadOnly}}">
                         <on type="change">
                           <!-- 적립 방식 — 바꾸면 왼쪽 숫자의 뜻이 바뀐다(3 이 3% 이거나 3원이 된다) (넓은 화면 표) -->
                           <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="mileage_type" value="{{$event.target.value}}"/>
@@ -209,7 +209,7 @@
                     </div>
                   </td>
                   <td class="px-3 py-2 text-center">
-                    <toggle data-type="composite" name="option_active_{{optIdx}}" checked="{{opt.is_active !== false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                    <toggle data-type="composite" name="option_active_{{optIdx}}" ariaLabel="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.active')}}" checked="{{opt.is_active !== false}}" size="sm" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
                         <!-- 이 옵션만 판매에서 내린다 — 상품 전체를 내리는 것과 다르다 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="is_active" value="{{$event.target.checked}}"/>
@@ -245,14 +245,14 @@
           <div data-each="opt, optIdx in {{_local.form.options ?? []}}" class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3">
             <div class="flex-between pb-3 border-b border-gray-100 dark:border-gray-700">
               <div class="flex-center gap-3">
-                <input type="radio" name="default_option_mobile" class="radio" checked="{{opt.is_default === true}}" disabled="{{_computed.isReadOnly}}">
+                <input type="radio" name="default_option_mobile" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.default')}}" class="radio" checked="{{opt.is_default === true}}" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 기본 옵션 지정 — 상품 화면에서 처음 골라져 있는 한 줄이다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.setDefaultOption" index="{{optIdx}}"/>
                   </on>
                 </input>
                 <span class="text-primary font-medium">{{opt.option_name_localized ?? opt.option_name?.ko ?? ''}}</span>
-                <toggle data-type="composite" name="option_active_mobile_{{optIdx}}" checked="{{opt.is_active !== false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                <toggle data-type="composite" name="option_active_mobile_{{optIdx}}" ariaLabel="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.active')}}" checked="{{opt.is_active !== false}}" size="sm" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 이 옵션만 판매에서 내린다 — 상품 전체를 내리는 것과 다르다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="is_active" value="{{$event.target.checked}}"/>
@@ -270,7 +270,7 @@
             <div class="grid grid-cols-2 gap-3">
               <div class="form-group">
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.list_price</label>
-                <input type="number" class="input" value="{{opt.list_price ?? 0}}" min="0" disabled="{{_computed.isReadOnly}}">
+                <input aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.list_price')}}" type="number" class="input" value="{{opt.list_price ?? 0}}" min="0" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 이 옵션의 정가 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="list_price" value="{{$event.target.value}}"/>
@@ -279,7 +279,7 @@
               </div>
               <div class="form-group">
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.selling_price</label>
-                <input type="number" class="{{ _local.errors?.['options.' + optIdx + '.selling_price'] ? 'input input-error w-full' : 'input w-full' }}" value="{{opt.selling_price ?? 0}}" min="0" disabled="{{_computed.isReadOnly}}">
+                <input aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.selling_price')}}" type="number" class="{{ _local.errors?.['options.' + optIdx + '.selling_price'] ? 'input input-error w-full' : 'input w-full' }}" value="{{opt.selling_price ?? 0}}" min="0" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 이 옵션의 판매가 — 상품 판매가와의 차액이 옆에 추가금으로 붙어 보인다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="selling_price" value="{{$event.target.value}}"/>
@@ -289,7 +289,7 @@
               </div>
               <div class="form-group">
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.sku</label>
-                <input type="text" class="input" value="{{opt.sku ?? ''}}" placeholder="SKU" disabled="{{_computed.isReadOnly}}">
+                <input aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.sku')}}" type="text" class="input" value="{{opt.sku ?? ''}}" placeholder="SKU" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 옵션별 SKU — 창고에서 옵션 단위로 셀 때 쓴다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="sku" value="{{$event.target.value}}"/>
@@ -298,7 +298,7 @@
               </div>
               <div class="form-group">
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.stock</label>
-                <input type="number" class="{{ _local.errors?.['options.' + optIdx + '.stock_quantity'] ? 'input input-error w-full' : 'input w-full' }}" value="{{opt.stock_quantity ?? 0}}" min="0" disabled="{{_computed.isReadOnly}}">
+                <input aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.stock')}}" type="number" class="{{ _local.errors?.['options.' + optIdx + '.stock_quantity'] ? 'input input-error w-full' : 'input w-full' }}" value="{{opt.stock_quantity ?? 0}}" min="0" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 재고는 옵션 단위로만 고친다 — 상품 재고는 이 값들의 합이라 판매정보 구획에서는 읽기 전용이다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="stock_quantity" value="{{$event.target.value}}"/>
@@ -308,7 +308,7 @@
               </div>
               <div class="form-group">
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.safe_stock</label>
-                <input type="number" class="input" value="{{opt.safe_stock_quantity ?? 0}}" min="0" disabled="{{_computed.isReadOnly}}">
+                <input aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.safe_stock')}}" type="number" class="input" value="{{opt.safe_stock_quantity ?? 0}}" min="0" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 안전재고 — 이 아래로 떨어지면 부족으로 잡힌다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="safe_stock_quantity" value="{{$event.target.value}}"/>
@@ -317,7 +317,7 @@
               </div>
               <div class="form-group">
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.weight</label>
-                <input type="number" class="input" value="{{opt.weight ?? 0}}" min="0" step="0.01" disabled="{{_computed.isReadOnly}}">
+                <input aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.weight')}}" type="number" class="input" value="{{opt.weight ?? 0}}" min="0" step="0.01" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 무게 — 무게로 배송비를 매기는 정책에서 쓰인다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="weight" value="{{$event.target.value}}"/>
@@ -326,7 +326,7 @@
               </div>
               <div class="form-group">
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.volume</label>
-                <input type="number" class="input" value="{{opt.volume ?? 0}}" min="0" step="0.01" disabled="{{_computed.isReadOnly}}">
+                <input aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.volume')}}" type="number" class="input" value="{{opt.volume ?? 0}}" min="0" step="0.01" disabled="{{_computed.isReadOnly}}">
                   <on type="change">
                     <!-- 부피 — 부피로 배송비를 매기는 정책에서 쓰인다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                     <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="volume" value="{{$event.target.value}}"/>
@@ -336,13 +336,13 @@
               <div class="form-group col-span-2">
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.mileage</label>
                 <div class="flex-center gap-2">
-                  <input type="number" class="input flex-1" value="{{opt.mileage_value ?? 0}}" aria-label="$t:sirsoft-ecommerce.admin.product.options.mileage_value_label" min="0" disabled="{{_computed.isReadOnly}}">
+                  <input type="number" class="input flex-1" value="{{opt.mileage_value ?? 0}}" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.mileage_value_label')}}" min="0" disabled="{{_computed.isReadOnly}}">
                     <on type="change">
                       <!-- 적립 값 — 옆의 방식(%/정액)에 따라 뜻이 달라진다 (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                       <action handler="sirsoft-ecommerce.updateFormOptionField" :debounce="300" index="{{optIdx}}" field="mileage_value" value="{{$event.target.value}}"/>
                     </on>
                   </input>
-                  <select class="select w-20" value="{{opt.mileage_type ?? 'percent'}}" aria-label="$t:sirsoft-ecommerce.admin.product.options.mileage_type_label" disabled="{{_computed.isReadOnly}}">
+                  <select class="select w-20" value="{{opt.mileage_type ?? 'percent'}}" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.mileage_type_label')}}" disabled="{{_computed.isReadOnly}}">
                     <on type="change">
                       <!-- 적립 방식 — 바꾸면 왼쪽 숫자의 뜻이 바뀐다(3 이 3% 이거나 3원이 된다) (좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
                       <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="mileage_type" value="{{$event.target.value}}"/>
@@ -396,7 +396,7 @@
                       <label class="form-label">$t:sirsoft-ecommerce.admin.product.options.additional_name_label</label>
                       <span class="text-red-500 dark:text-red-400">*</span>
                     </div>
-                    <multilingual-input data-type="composite" name="additional_options_{{addIdx}}_name" value="{{addOpt.name}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.product.options.additional_name_placeholder" :maxLength="100" :required="true" error="{{_local.errors?.['additional_options.' + addIdx + '.name']?.[0] ?? _local.errors?.['additional_options.' + addIdx + '.name.ko']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}" :autoBinding="false">
+                    <multilingual-input data-type="composite" name="additional_options_{{addIdx}}_name" ariaLabel="$t:common.row_cell|row={{$t('common.row_n', {n: addIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.additional_name_label')}}" value="{{addOpt.name}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.product.options.additional_name_placeholder" :maxLength="100" :required="true" error="{{_local.errors?.['additional_options.' + addIdx + '.name']?.[0] ?? _local.errors?.['additional_options.' + addIdx + '.name.ko']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}" :autoBinding="false">
                       <on type="change">
                         <!-- 추가옵션 그룹 이름(다국어) — 「각인 문구」 같은 묶음의 이름이다 -->
                         <action handler="sirsoft-ecommerce.updateAdditionalOption" :debounce="300" index="{{addIdx}}" field="name" value="{{$event.target.value}}"/>
@@ -404,7 +404,7 @@
                     </multilingual-input>
                   </div>
                   <div class="flex-center gap-2">
-                    <toggle data-type="composite" name="additional_options_{{addIdx}}_required" checked="{{addOpt.is_required === true}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                    <toggle data-type="composite" name="additional_options_{{addIdx}}_required" ariaLabel="$t:common.row_cell|row={{$localized(addOpt.name) || $t('common.row_n', {n: addIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.required')}}" checked="{{addOpt.is_required === true}}" size="sm" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
                         <!-- 필수 여부 — 켜면 구매자가 이 그룹에서 반드시 하나를 골라야 한다 -->
                         <action handler="sirsoft-ecommerce.updateAdditionalOption" index="{{addIdx}}" field="is_required" value="{{$event.target.checked}}"/>
@@ -429,7 +429,7 @@
                         <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.additional_value_name_label</label>
                         <span class="text-red-500 dark:text-red-400">*</span>
                       </div>
-                      <multilingual-input data-type="composite" name="additional_options_{{addIdx}}_values_{{addValIdx}}_name" value="{{addVal.name}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.product.options.additional_value_name_placeholder" :maxLength="100" :required="true" error="{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.name']?.[0] ?? _local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.name.ko']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}" :autoBinding="false">
+                      <multilingual-input data-type="composite" name="additional_options_{{addIdx}}_values_{{addValIdx}}_name" ariaLabel="$t:common.row_cell|row={{$t('common.row_n', {n: addValIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.additional_value_name_label')}}" value="{{addVal.name}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.product.options.additional_value_name_placeholder" :maxLength="100" :required="true" error="{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.name']?.[0] ?? _local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.name.ko']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}" :autoBinding="false">
                         <on type="change">
                           <!-- 선택지 이름(다국어) -->
                           <action handler="sirsoft-ecommerce.updateAdditionalOptionValue" :debounce="300" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}" field="name" value="{{$event.target.value}}"/>
@@ -440,7 +440,7 @@
                     <div class="w-full sm:w-40">
                       <label class="form-label text-xs mb-1">$t:sirsoft-ecommerce.admin.product.options.additional_value_price_label</label>
                       <div class="flex-center gap-1">
-                        <input type="number" class="{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.price_adjustment'] ? 'input input-error w-full text-right' : 'input w-full text-right'}}" value="{{addVal.price_adjustment ?? 0}}" min="0" step="1" disabled="{{_computed.isReadOnly}}">
+                        <input type="number" aria-label="$t:common.row_cell|row={{$localized(addVal.name) || $t('common.row_n', {n: addValIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.additional_value_price_label')}}" class="{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.price_adjustment'] ? 'input input-error w-full text-right' : 'input w-full text-right'}}" value="{{addVal.price_adjustment ?? 0}}" min="0" step="1" disabled="{{_computed.isReadOnly}}">
                           <on type="change">
                             <!-- 이 선택지를 고를 때 더 받는 금액 — 옵션 판매가와 달리 값 자체가 차액이라 0 이상만 받는다 -->
                             <action handler="sirsoft-ecommerce.updateAdditionalOptionValue" :debounce="300" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}" field="price_adjustment" value="{{$event.target.value}}"/>
@@ -455,18 +455,18 @@
                       <span data-if="{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.price_adjustment']}}" class="form-error-xs mt-0.5">{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.price_adjustment']?.[0]}}</span>
                     </div>
                     <!-- 기본 선택지 (라디오 — 그룹당 1개). 라벨 없는 컨트롤이라 sm:mt-6 으로 인풋(라벨+인풋) baseline 에 정렬 -->
-                    <div class="flex-center gap-1 sm:mt-6">
-                      <input type="radio" name="additional_options_{{addIdx}}_default" checked="{{addVal.is_default === true}}" disabled="{{_computed.isReadOnly}}">
+                    <label class="flex-center gap-1 sm:mt-6 cursor-pointer">
+                      <input type="radio" name="additional_options_{{addIdx}}_default" aria-label="$t:common.row_cell|row={{$localized(addVal.name) || $t('common.row_n', {n: addValIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.additional_value_default')}}" checked="{{addVal.is_default === true}}" disabled="{{_computed.isReadOnly}}">
                         <on type="change">
                           <!-- 그룹에서 처음 골라져 있을 선택지 — 그룹당 하나다 -->
                           <action handler="sirsoft-ecommerce.updateAdditionalOptionValue" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}" field="is_default" value="{{$event.target.checked}}"/>
                         </on>
                       </input>
-                      <label class="text-label text-xs">$t:sirsoft-ecommerce.admin.product.options.additional_value_default</label>
-                    </div>
+                      <span class="text-label text-xs">$t:sirsoft-ecommerce.admin.product.options.additional_value_default</span>
+                    </label>
                     <!-- 활성 토글. 라벨 없는 컨트롤이라 sm:mt-6 으로 인풋 baseline 에 정렬 -->
                     <div class="flex-center gap-1 sm:mt-6">
-                      <toggle data-type="composite" name="additional_options_{{addIdx}}_values_{{addValIdx}}_active" checked="{{addVal.is_active !== false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                      <toggle data-type="composite" name="additional_options_{{addIdx}}_values_{{addValIdx}}_active" ariaLabel="$t:common.row_cell|row={{$localized(addVal.name) || $t('common.row_n', {n: addValIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.additional_value_active')}}" checked="{{addVal.is_active !== false}}" size="sm" disabled="{{_computed.isReadOnly}}">
                         <on type="change">
                           <!-- 이 선택지만 감춘다 -->
                           <action handler="sirsoft-ecommerce.updateAdditionalOptionValue" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}" field="is_active" value="{{$event.target.checked}}"/>
@@ -476,7 +476,7 @@
                     </div>
                     <!-- 직접입력 허용 토글 — 유저가 이 선택지 선택 시 자유 텍스트 입력 필수. 라벨 없는 컨트롤이라 sm:mt-6 으로 인풋 baseline 에 정렬 -->
                     <div class="flex-center gap-1 sm:mt-6">
-                      <toggle data-type="composite" name="additional_options_{{addIdx}}_values_{{addValIdx}}_allow_custom_text" checked="{{addVal.allow_custom_text === true}}" size="sm" disabled="{{_computed.isReadOnly}}">
+                      <toggle data-type="composite" name="additional_options_{{addIdx}}_values_{{addValIdx}}_allow_custom_text" ariaLabel="$t:common.row_cell|row={{$localized(addVal.name) || $t('common.row_n', {n: addValIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.additional_value_allow_custom_text')}}" checked="{{addVal.allow_custom_text === true}}" size="sm" disabled="{{_computed.isReadOnly}}">
                         <on type="change">
                           <!-- 직접입력 허용 — 켜면 구매자가 이 선택지를 골랐을 때 글을 함께 적어야 한다(각인·문구 등) -->
                           <action handler="sirsoft-ecommerce.updateAdditionalOptionValue" groupIndex="{{addIdx}}" valueIndex="{{addValIdx}}" field="allow_custom_text" value="{{$event.target.checked}}"/>
