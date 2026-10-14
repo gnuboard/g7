@@ -1102,10 +1102,11 @@ describe('G7CoreGlobals - translation API', () => {
 
     G7Core.t('admin.users.pagination_info', { from: 1, to: 10, total: 100 });
 
+    // 인자 객체를 그대로 넘긴다(engine-v1.80.1) — `|from=1…` 문자열로 이어 붙이면 값의 `|`·`&` 에서 잘린다
     expect(mockTranslate).toHaveBeenCalledWith(
       'admin.users.pagination_info',
       expect.any(Object),
-      '|from=1|to=10|total=100'
+      { from: 1, to: 10, total: 100 }
     );
   });
 });

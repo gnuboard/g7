@@ -99,6 +99,27 @@ function pluralCount(params: TranslationParams): number | undefined {
 }
 
 /**
+ * 인자 객체를 번역 인자로 바꿉니다.
+ *
+ * 수는 그대로(복수형 선택용), 비어 있는 값(null·undefined)은 빈 글자, 나머지는 글자로 바꾼다 — 문자열 인자의
+ * `{{식}}` 이 빈 값일 때 빈 글자가 되는 것과 같다.
+ *
+ * @param input 인자 객체
+ * @return 번역 인자
+ * @since engine-v1.80.1
+ */
+function toTranslationParams(input: Record<string, unknown>): TranslationParams {
+  const params: TranslationParams = {};
+  for (const [name, value] of Object.entries(input)) {
+    params[name] = typeof value === 'number' ? value : value == null ? '' : String(value);
+  }
+  return params;
+}
+
+/** replaceParams 1차 치환 자리 표식 — 번역 문구·인자 값에 나오지 않는 NUL 로 감싼다 */
+const REPLACE_PARAMS_SLOT_PATTERN = /\u0000(\d+)\u0000/g;
+
+/**
  * 로케일의 복수 범주(CLDR: zero·one·two·few·many·other)를 구합니다.
  *
  * 로케일을 모르거나 Intl.PluralRules 가 없으면 other(기본 키)로 본다.
@@ -430,17 +451,26 @@ export class TranslationEngine {
   /**
    * 번역 키를 실제 번역 텍스트로 변환합니다.
    *
+   * 인자를 객체로 받으면 문자열로 풀지 않고 값을 글자 그대로 치환한다 — 값에 든 `|`·`&`·`=`·`{{…}}`·끝 ` /` 가
+   * 구분자·식·문장 꼬리로 읽히지 않는다. 식 도우미 `$t(키, 인자)`·`G7Core.t`·`useTranslation().t` 가 이 경로를 쓴다.
+   *
    * @param key 번역 키 (예: 'dashboard.title')
    * @param context 번역 컨텍스트
-   * @param paramsStr 파라미터 문자열 (예: '|count=5')
-   * @param dataContext 데이터 컨텍스트
+   * @param paramsStr 파라미터 문자열 (예: '|count=5') 또는 인자 객체 (예: { count: 5 })
+   * @param dataContext 데이터 컨텍스트 (문자열 인자의 `{{…}}` 해석용)
+   * @since engine-v1.80.1 인자 객체
    */
   translate(
     key: string,
     context: TranslationContext,
-    paramsStr?: string,
+    paramsStr?: string | Record<string, unknown>,
     dataContext?: any
   ): string {
+    if (paramsStr !== null && typeof paramsStr === 'object') {
+      const params = toTranslationParams(paramsStr);
+      return this.replaceParams(this.getTranslation(key, context, pluralCount(params)), params);
+    }
+
     // 파라미터 문자열의 trailing 비파라미터 텍스트 정리
     const cleanedParamsStr = paramsStr ? this.cleanParamsStr(paramsStr) : paramsStr;
 
@@ -773,6 +803,9 @@ export class TranslationEngine {
   /**
    * 번역 텍스트 내 파라미터를 치환합니다.
    *
+   * 자리표시자를 먼저 자리 표식으로 바꾼 뒤 값을 한 번에 넣는다. 값은 글자 그대로 들어간다 — 값의 `$&`·`$'` 가
+   * 바꿈 패턴으로, 값에 든 다른 인자의 자리표시자(`{{column}}`)가 다음 치환 대상으로 읽히지 않는다(engine-v1.80.1).
+   *
    * @param text 번역 텍스트 (예: '총 {count}개의 상품' 또는 '총 {{count}}개의 상품')
    * @param params 파라미터 맵
    */
@@ -781,18 +814,23 @@ export class TranslationEngine {
     params: TranslationParams
   ): string {
     let result = text;
+    const values: string[] = [];
 
     for (const [key, value] of Object.entries(params)) {
       const [doublePattern, singlePattern] = getReplaceParamPatterns(key);
+      const slot = `\u0000${values.length}\u0000`;
+      values.push(String(value));
 
       // {{key}} 형식 (이중 중괄호) 먼저 치환
-      result = result.replace(doublePattern, String(value));
+      result = result.replace(doublePattern, () => slot);
 
       // {key} 형식 (단일 중괄호) 치환
-      result = result.replace(singlePattern, String(value));
+      result = result.replace(singlePattern, () => slot);
     }
 
-    return result;
+    return values.length > 0
+      ? result.replace(REPLACE_PARAMS_SLOT_PATTERN, (match, index: string) => values[Number(index)] ?? match)
+      : result;
   }
 
   /**

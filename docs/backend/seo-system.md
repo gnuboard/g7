@@ -1063,9 +1063,11 @@ config에 없는 컴포넌트는 `<div>` fallback으로 렌더링됩니다.
 | 함수 | 설명 | 예시 |
 |------|------|------|
 | `$t('key')` | 번역 키 해석 (`$t:key`와 동일) | `{{$t('shop.product.sold_out')}}` |
+| `$t('key', {이름: 값})` | 인자 치환 (engine-v1.80.1 과 같은 규칙) | `{{$t('common.row_n', {n: i + 1})}}` |
 | `$localized(expr)` | 다국어 객체 → 현재 로케일 값 | `{{$localized(product.name)}}` |
 
-- `$t()`: 기존 `$t:key` prefix 방식의 함수 호출 구문. 삼항 내부에서 사용 가능
+- `$t()`: 기존 `$t:key` prefix 방식의 함수 호출 구문. 삼항 내부에서 사용 가능. 두 번째 인수가 객체면 값(산술·`||`·삼항 식 포함)을 글자로 풀어 치환하고, 객체가 아니면 인자 없는 호출과 같다. 비어 있는 값은 빈 글자
+- 인자 치환은 `$t:키|…`·`$t()` 모두 한 번에(`strtr`) 한다 — 앞 인자 값에 든 뒤 인자 자리표시자(`{{column}}`)를 다시 치환하지 않는다
 - `$localized()`: `{ko: "상품", en: "Product"}` → 현재 로케일(`ko`) → `"상품"`. fallback: ko → 첫 번째 값
 
 ### ExpressionEvaluator — 객체 리터럴 / 스프레드 연산자
@@ -1222,6 +1224,7 @@ SEO 렌더링은 `renderComponent()` 진입 시점에 이 값을 해석해 데�
 | `type: "extension_point"` 호스트 (반복 항목 안 포함) | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::renderComponent` → `renderTag` (`div` 폴백) | 주입된 children 을 감싸는 래퍼. `iteration` 항목 안에서도 같은 경로로 그 항목의 컨텍스트로 그린다 — React 는 engine-v1.73.0 에서 `renderItemChildren` 분기를 더해 이 동작에 맞췄다. 호스트 속성은 양쪽 모두 허용 목록만 싣고, `layout`/`columns`/`gap` 을 컨테이너 클래스로 접는 것은 React 만 한다(봇 화면의 내용에는 영향 없음) |
 | `computed` / `extends` / 파셜 | ✅ | ✅ | `app/Seo/SeoRenderer.php::resolveComputed` / `app/Services/LayoutService.php::getLayout` | 레이아웃 병합·설치 시점에 처리 |
 | `$t:` / `$t:defer:` | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::resolveTranslation` | 봇 화면은 지연 개념이 없어 동일 키로 해석 |
+| `$t(키, 인자)` 식 안 인자 | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::evaluateTranslationFunction` / `translateKey` | engine-v1.80.1 — 객체 인자 치환, 값은 글자 그대로 |
 | `$t:키\|count=N` 복수형 변형(`키_one` 등) | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::pluralVariant` | engine-v1.78.7 — 현재 로케일 CLDR 범주로 `키_{범주}` 를 먼저, 없거나 other 면 기본 키. intl 이 없으면 ko·ja·zh 등 other, 나머지 1 → one 근사([다국어 처리](../frontend/data-binding-i18n.md#수에-따른-단수복수-engine-v1787)) |
 | `actions` | ✅ | 링크만 | `app/Seo/ComponentHtmlMapper.php::extractLinkAction` | 페이지 이동/새 창 열기 액션만 `<a href>` 로 승격 |
 | `extensionPointCallbacks` | ✅ | ❌ (의도) | 미처리 | 액션 실행기 부재 |

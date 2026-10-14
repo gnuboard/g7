@@ -391,6 +391,21 @@ class ExpressionEvaluator
             }
         }
 
+        return $this->translateKey($key, $params);
+    }
+
+    /**
+     * 번역 키를 해석된 인자로 번역합니다 — `$t:키|…` 문자열과 `$t(키, 인자)` 함수가 함께 씁니다.
+     *
+     * 인자 치환은 한 번에 한다(strtr). 값을 넣은 뒤 다시 훑지 않으므로 앞 인자 값에 든 뒤 인자 자리표시자
+     * (`{{column}}`)가 다시 치환되지 않는다 — 브라우저 번역 엔진 engine-v1.80.1 과 같은 규칙.
+     *
+     * @param  string  $key  번역 키
+     * @param  array<string, string>  $params  해석된 번역 인자
+     * @return string 번역된 문자열 (없으면 빈 문자열)
+     */
+    private function translateKey(string $key, array $params): string
+    {
         // 1. 템플릿 번역 사전에서 먼저 조회
         if (! empty($this->translations)) {
             $translated = Arr::get($this->translations, $key);
@@ -398,15 +413,13 @@ class ExpressionEvaluator
                 $translated = $this->pluralVariant($key, $translated, $params);
                 // 파라미터 치환: :param 또는 {{param}} → value
                 // 템플릿 번역은 {{param}} 형식, Laravel 번역은 :param 형식
+                $replacements = [];
                 foreach ($params as $paramKey => $paramValue) {
-                    $translated = str_replace(
-                        ['{{'.$paramKey.'}}', ':'.$paramKey],
-                        [$paramValue, $paramValue],
-                        $translated
-                    );
+                    $replacements['{{'.$paramKey.'}}'] = $paramValue;
+                    $replacements[':'.$paramKey] = $paramValue;
                 }
 
-                return $translated;
+                return $replacements === [] ? $translated : strtr($translated, $replacements);
             }
         }
 
@@ -2156,10 +2169,11 @@ class ExpressionEvaluator
     /**
      * $t() 함수 호출을 평가합니다.
      *
-     * 프론트엔드의 `$t('key')` 구문과 호환됩니다.
-     * 내부적으로 기존 resolveTranslation()을 재활용합니다.
+     * 프론트엔드의 `$t('key')`·`$t('key', {n: 1})` 구문과 호환됩니다. 두 번째 인수가 객체(객체 리터럴 또는
+     * 객체로 평가되는 식)면 그 값을 번역 인자로 치환하고, 객체가 아니면 인자 없는 호출과 같습니다
+     * (브라우저 엔진 engine-v1.80.1). 비어 있는 값(null)은 빈 글자입니다.
      *
-     * @param  string  $argsStr  인수 문자열 (예: "'shop.product.sold_out'")
+     * @param  string  $argsStr  인수 문자열 (예: "'shop.product.sold_out'", "'common.row_n', {n: i + 1}")
      * @param  array  $context  데이터 컨텍스트
      * @return string 번역된 문자열
      */
@@ -2183,7 +2197,70 @@ class ExpressionEvaluator
             return '';
         }
 
-        return $this->resolveTranslation('$t:'.$key, $context);
+        $params = [];
+        if (isset($args[1])) {
+            $paramArg = trim($args[1]);
+            if (str_starts_with($paramArg, '{') && str_ends_with($paramArg, '}')) {
+                $params = $this->translationParamsFromObjectLiteral($paramArg, $context);
+            } else {
+                // 객체로 평가되는 식(컨텍스트 변수 등). 자바스크립트 배열(list)·스칼라는 객체가 아니다
+                $paramValue = $this->resolveToValue($paramArg, $context);
+                if (is_array($paramValue) && ($paramValue === [] || ! array_is_list($paramValue))) {
+                    foreach ($paramValue as $name => $value) {
+                        $params[(string) $name] = $value === null ? '' : $this->valueToString($value);
+                    }
+                }
+            }
+        }
+
+        return $this->translateKey($key, $params);
+    }
+
+    /**
+     * `$t()` 두 번째 인수의 객체 리터럴을 번역 인자로 풉니다.
+     *
+     * 값은 식 평가기(evaluateExpression)로 문자열로 푼다 — `{n: i + 1}` 같은 산술·`||`·삼항을 브라우저와 같이
+     * 평가하기 위해서다(일반 객체 리터럴 해석 resolveObjectPropertyValue 는 산술을 풀지 않는다). 스프레드·동적 키
+     * 항목은 일반 객체 리터럴 해석에 맡긴다.
+     *
+     * @param  string  $literal  객체 리터럴 문자열 (예: "{n: i + 1, name: row.name}")
+     * @param  array  $context  데이터 컨텍스트
+     * @return array<string, string> 번역 인자
+     */
+    private function translationParamsFromObjectLiteral(string $literal, array $context): array
+    {
+        $params = [];
+
+        foreach ($this->splitArgs(trim(substr($literal, 1, -1))) as $entry) {
+            $entry = trim($entry);
+            if ($entry === '') {
+                continue;
+            }
+
+            if (str_starts_with($entry, '...') || str_starts_with($entry, '[')) {
+                foreach ($this->parseObjectLiteral('{'.$entry.'}', $context) ?? [] as $name => $value) {
+                    $params[(string) $name] = $value === null ? '' : $this->valueToString($value);
+                }
+
+                continue;
+            }
+
+            $colonPos = $this->findColonInEntry($entry);
+            if ($colonPos === false) {
+                // shorthand: { name } → name: name
+                $params[$entry] = $this->evaluateExpression($entry, $context);
+
+                continue;
+            }
+
+            $name = trim(substr($entry, 0, $colonPos));
+            if (preg_match('/^[\'"](.+)[\'"]$/', $name, $m)) {
+                $name = $m[1];
+            }
+            $params[$name] = $this->evaluateExpression(trim(substr($entry, $colonPos + 1)), $context);
+        }
+
+        return $params;
     }
 
     /**

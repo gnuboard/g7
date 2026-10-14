@@ -1091,9 +1091,8 @@ function initTranslationAPI(G7Core: any, deps: G7CoreDependencies): void {
     }
 
     if (params) {
-      // 파라미터를 TranslationEngine 형식으로 변환 (|key=value|key2=value2)
-      const paramsStr = '|' + Object.entries(params).map(([k, v]) => `${k}=${v}`).join('|');
-      return state.translationEngine.translate(key, state.translationContext, paramsStr);
+      // 인자 객체를 그대로 넘긴다 — `|key=value` 로 이어 붙이면 값의 `|`·`&`·`=` 에서 잘린다(engine-v1.80.1)
+      return state.translationEngine.translate(key, state.translationContext, params);
     }
     return state.translationEngine.translate(key, state.translationContext);
   };
@@ -3543,7 +3542,7 @@ export function initDevToolsInterface(): void {
       }
     },
 
-    trackIfCondition: (id, condition, result, componentName) => {
+    trackIfCondition: (id, condition, result, _componentName) => {
       try {
         if (getDevTools().isEnabled()) {
           getDevTools().trackIfCondition(id, condition, result);

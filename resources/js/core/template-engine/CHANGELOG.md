@@ -5,6 +5,17 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.80.1] - 2026-10-14
+
+### Added
+
+- 식 도우미 `$t(키, 인자)` — 두 번째 인자(객체)를 번역 문구에 치환합니다. 레이아웃 반복 행에서 「{N}번째 행」처럼 언어마다 어순이 다른 문구를 `||` 대체값·삼항·`$t:키|이름={{…}}` 의 인자 식 안에서 만들 때 씁니다(#757). 종전에는 키 하나만 받아 인자를 버렸고(`{{n}}번째 행`), 공개 문서도 「인자는 `$t:key|param=` 으로만」이라 적고 있었습니다. 인자 하나 호출은 글자 그대로 같고, 객체가 아닌 두 번째 인자(undefined·글자·배열)는 인자 없는 호출과 같습니다. `count` 복수형 선택(engine-v1.78.7)과 없는 키·폴백 로케일 규칙은 문자열 인자와 같습니다. 봇(SEO) 화면 평가기도 같은 규칙으로 두 번째 인수를 치환합니다(값은 산술·`||`·삼항 식을 글자로 풀어 넣고, 인자 치환은 `strtr` 한 번) (DataBindingEngine.ts `extendedContext.$t`, TranslationEngine.ts `translate` 의 인자 객체 갈래·`toTranslationParams`, ExpressionEvaluator.php `evaluateTranslationFunction`·`translationParamsFromObjectLiteral`·`translateKey`, 회귀: `DataBindingEngine.translateParams.test.tsx`·`ExpressionEvaluatorTest` 2건)
+
+### Fixed
+
+- `G7Core.t(키, 인자)`·`useTranslation().t(키, 인자)` 가 인자 객체를 `|키=값` 문자열로 이어 붙여 번역 엔진에 넘겨, 값에 든 `&`·`|`·`=` 에서 값이 잘리고(「Tom & Jerry」 → 「Tom」), 끝의 공백·빗금(`/`)은 문장 꼬리로 떼어지고, `{{…}}` 는 데이터 문맥 없이 식으로 평가돼 빈 글자가 되던 문제. 인자 객체를 그대로 넘겨 값을 글자 그대로 치환합니다. 비어 있는 값(null·undefined)은 종전의 `"undefined"`·`"null"` 글자 대신 빈 글자입니다(문자열 인자의 빈 `{{식}}` 과 같음). 컴포넌트가 운영자 입력(상품명·역할명)으로 접근성 이름을 만드는 #757 경로가 이 함수를 씁니다. 레이아웃 편집기 미리보기가 `G7Core.t` 를 편집 대상 사전 우선으로 바꿔 끼우는 래퍼도 같은 이어 붙이기를 해, 사이트와 미리보기가 다른 글자를 그렸습니다 — 같이 고쳤습니다. 7.0.0-beta 부터 있던 결함입니다 (G7CoreGlobals.ts `G7Core.t`, TranslationContext.tsx `t`, layout-editor/components/PreviewCanvas.tsx, 회귀: `DataBindingEngine.translateParams.test.tsx` 「useTranslation().t」·`PreviewCanvas.gCoreTFallback.test.tsx`·`G7CoreGlobals.test.ts` 인자 전달 단언 갱신)
+- 번역 인자 치환(`replaceParams`)이 값을 `String.prototype.replace` 의 바꿈 문자열로 넣어 값의 `$&`·`$'`·`` $` `` 가 일치 글자·앞뒤 글자로 바뀌고, 앞 인자 값에 든 뒤 인자 자리표시자(`{{column}}`)가 뒤 인자 차례에 다시 치환되던 문제. 자리표시자를 먼저 자리 표식으로 바꾼 뒤 값을 함수 치환으로 한 번에 넣습니다. 문자열 인자(`$t:키|…`)·인자 객체 두 경로 모두 해당하고, 봇(SEO) 화면 평가기의 `str_replace` 순차 치환도 `strtr` 한 번으로 바꿨습니다. engine-v1.74.0 정규식 캐시 도입 때 「현행 그대로」로 잠근 `$&` 시험은 새 기대값으로 바꿨습니다. 7.0.0-beta 부터 있던 결함입니다 (TranslationEngine.ts `replaceParams`, 회귀: `DataBindingEngine.translateParams.test.tsx`·`TranslationEngine.replaceParams.cache.test.ts`)
+
 ## [engine-v1.80.0] - 2026-10-14
 
 ### Added

@@ -1347,18 +1347,25 @@ export class DataBindingEngine {
       // $t 헬퍼 함수 추가
       // 번역 키를 사용하여 다국어 텍스트를 반환
       // 사용법: $t('admin.settings.info.write_only') - 번역된 텍스트 반환
+      //         $t('common.row_n', {n: index + 1}) - 인자 치환(값은 글자 그대로)
       //
       // templateId / locale 은 위에서 해석된 값을 그대로 사용한다($localized 와 공유).
+      //
+      // @since engine-v1.80.1 두 번째 인자(객체) — 종전에는 인자를 버렸다. 객체가 아닌 값(배열 포함)은
+      //   인자 없는 호출과 같다.
       const translationContext = {
         templateId: templateId || '',
         locale,
       };
-      extendedContext.$t = (key: string): string => {
+      extendedContext.$t = (key: string, params?: unknown): string => {
         if (!key || typeof key !== 'string') {
           return '';
         }
         try {
           const translationEngine = TranslationEngine.getInstance();
+          if (params !== null && typeof params === 'object' && !Array.isArray(params)) {
+            return translationEngine.translate(key, translationContext, params as Record<string, unknown>);
+          }
           return translationEngine.translate(key, translationContext);
         } catch (error) {
           logger.warn('$t() translation failed for key:', key, error);
