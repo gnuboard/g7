@@ -5,7 +5,8 @@ description: |
   같은 이름이 이미 있으면 서버 409 「…덮어쓰시겠습니까?」 가 답할 수 없는 토스트로 떴다(전수 실측 S4, 제품 결정 — 세션 권장 ①).
   회원 주소록(userAddresses)을 함께 받아 같은 주소면 숨기고, 저장 성공 뒤 주소록을 다시 받아 숨기며, 409 는 안내로 바꾼다.
   비회원·주소록 실패는 빈 목록으로 떨어져 화면을 막지 않는다(후속 B 세션 B6).
-  409 분기는 액션 error-handling(on-code 409)로 둔다 — fail 안의 conditions 는 엔진이 조건 목록을 버려 토스트가 0건이었다(실측).
+  409 분기는 fail 하나 안의 conditions(409 → 안내 / 그 밖 → 오류)로 둔다 — engine-v1.80.0 부터 단일 실패 처리 안의 조건 분기가
+  실행된다(#753). 그 전에는 엔진이 조건 목록을 버려 토스트가 0건이었고, 액션 error-handling(on-code 409)으로 우회했다.
 
 axes:
   case: [same_address_saved, different_address, address_book_unavailable, duplicate_name_409, other_error]

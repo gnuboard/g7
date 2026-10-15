@@ -51,7 +51,8 @@ describe('ActionDispatcher — 이벤트 없이 불린 핸들러', () => {
   it('이벤트 없이 불린 핸들러도 액션을 실행하고 거부하지 않는다 (모달 Escape → onClose())', async () => {
     const handler = dispatcher.createHandler({ type: 'click', handler: 'countHandler' } as any, {});
 
-    await expect((handler as any)()).resolves.toBeUndefined();
+    // engine-v1.80.0 부터 핸들러는 실행 결과를 돌려준다(`<on listen>` 결과 계약) — 거부하지 않고 성공 결과로 끝난다
+    await expect((handler as any)()).resolves.toEqual({ success: true, data: undefined });
     expect(calls).toBe(1);
   });
 

@@ -1079,9 +1079,10 @@
   },
   "error": {
     "intro": "Choose what happens when this screen runs into an error.",
-    "degrade": "When nothing is set here, errors are shown using the default behavior.",
+    "degrade": "This template does not support visual editing here. Set it in the code editor.",
     "message_placeholder": "Message to show (use 🔍 to insert error details)",
     "handler_none": "Do nothing",
+    "handler_code_only": "Edit this action in the code editor (HTML).",
     "target_content": "Content area",
     "target_full": "Whole screen",
     "setstate_key": "State name",

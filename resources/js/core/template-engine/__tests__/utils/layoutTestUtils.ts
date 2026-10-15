@@ -507,6 +507,7 @@ export function createLayoutTest(
 
   const toasts: Array<{ type: string; message: string }> = [];
   const modalStack: string[] = [];
+  const componentEventListeners = new Map<string, Set<(data?: any) => any>>();
   const navigationHistory: string[] = [];
   const validationWarnings: LayoutValidationWarning[] = [];
   let fetchedDataContext: Record<string, any> = {};
@@ -616,6 +617,34 @@ export function createLayoutTest(
         open: (id: string) => modalStack.push(id),
         close: () => modalStack.pop(),
         getStack: () => modalStack,
+      },
+      // 컴포넌트 이벤트 버스 — 운영 G7CoreGlobals.initComponentEventSystem 과 같은 계약(on → 해제 함수,
+      // emit → 리스너 결과 배열, 리스너가 throw 하면 reject). 없으면 `<on listen>` 이 구독조차 하지 않아
+      // emitEvent ↔ onComponentEvent 흐름을 레이아웃 테스트로 잴 수 없었다(#753).
+      componentEvent: {
+        on: (eventName: string, callback: (data?: any) => any) => {
+          if (!componentEventListeners.has(eventName)) {
+            componentEventListeners.set(eventName, new Set());
+          }
+          componentEventListeners.get(eventName)!.add(callback);
+          return () => {
+            componentEventListeners.get(eventName)?.delete(callback);
+          };
+        },
+        emit: async (eventName: string, data?: any): Promise<any[]> => {
+          const listeners = componentEventListeners.get(eventName);
+          if (!listeners || listeners.size === 0) {
+            return [];
+          }
+          return Promise.all(Array.from(listeners).map(async (callback) => callback(data)));
+        },
+        off: (eventName: string) => {
+          componentEventListeners.delete(eventName);
+        },
+        clear: () => {
+          componentEventListeners.clear();
+        },
+        listenerCount: (eventName: string) => componentEventListeners.get(eventName)?.size ?? 0,
       },
     };
   }
@@ -799,6 +828,7 @@ export function createLayoutTest(
     };
     toasts.length = 0;
     modalStack.length = 0;
+    componentEventListeners.clear();
     navigationHistory.length = 0;
     validationWarnings.length = 0;
     fetchedDataContext = {};

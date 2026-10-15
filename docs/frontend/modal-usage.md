@@ -557,7 +557,29 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 
 > 엔진이 이 미러 정책을 바꾸면 ①이 불필요해진다. 그때까지 새로 쓸 때는 이 절을 근거로 삼는다.
 > 번들 예: 관리자 환경설정 `_modal_ip_restriction_rule_form`·`_modal_notification_channel_off_confirm`, 이커머스 공통정보 `_modal_default_confirm`·마일리지 내역 `_modal_extend_expiry`, 탭을 옮길 때 묻는 미저장 확인 창
-> `_modal_unsaved_tab_switch`(코어 환경설정, 게시판 환경설정, 이커머스 환경설정).
+> `_modal_unsaved_tab_switch`(코어 환경설정, 게시판 환경설정).
+
+#### 다른 형태 — 창은 알리기만 하고 페이지가 자기 상태를 고친다
+
+창이 고칠 페이지 상태가 많거나 페이지의 다른 동작(탭 전환·주소 갱신)과 묶여 있으면, 창은 `<close-modal>` 뒤
+`<emit-event>` 로 알리기만 하고 페이지 쪽 `<on listen>` 이 자기 `_local` 을 고친다. 리스너의 setState 는
+모달 문맥이 아니라 페이지 문맥에서 돌므로 「closeModal 뒤 setState 금지」에 걸리지 않고, 두 자리에 같은 값을
+쓸 필요도 없다(engine-v1.80.0 부터 `<on listen>` 안의 연속 실행·분기가 동작한다).
+
+```html
+<!-- 창 [이동] 버튼 -->
+<sequence>
+  <close-modal target="..."/>
+  <emit-event event="sirsoft-ecommerce:settings-switch-tab"><field name="data"><field name="tab" value="{{_global.pendingEcommerceSettingsTab}}"/></field></emit-event>
+</sequence>
+<!-- 페이지 탭 본문 틀 -->
+<on listen="sirsoft-ecommerce:settings-switch-tab">
+  <set-state target="local" :hasChanges="false"/>
+  <set-state target="global" activeEcommerceSettingsTab="{{_eventData.tab}}" :pendingEcommerceSettingsTab="null"/>
+</on>
+```
+
+> 번들 예: 이커머스 환경설정 `_modal_unsaved_tab_switch` + `admin_ecommerce_settings` 의 탭 본문 틀(#753).
 
 ### Footer 스타일 규칙
 

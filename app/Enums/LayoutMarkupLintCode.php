@@ -131,6 +131,16 @@ enum LayoutMarkupLintCode: string
     case MixedDebounceFlushed = 'mixed_debounce_flushed';
 
     /**
+     * 진입점 전용 키(`key`·`stopPropagation`)를 진입점이 아닌 액션에 적음 (#753).
+     *
+     * 엔진은 사용자가 직접 누르는 진입점 액션에서만 이 키를 읽는다(`key` 는 bindActionsToProps 의 키 필터,
+     * `stopPropagation` 은 createHandler 의 DOM 이벤트 전파 차단). 이벤트 받기(`<on listen>`)·실패 처리
+     * (`<fail>`·`<on-code>`)·첫 진입 동작(`<init>`)·다른 액션 안쪽에서는 효과가 없다. 엔진이 이 자리들의 액션을
+     * 통째로 실행하게 된(engine-v1.80.0) 뒤에도 이 키만은 의미가 없어 경고로 알린다.
+     */
+    case EntryOnlyKeyIgnored = 'entry_only_key_ignored';
+
+    /**
      * 다국어 경고 본문을 반환합니다.
      *
      * @param  array<string, string|int>  $params  메시지 치환 파라미터

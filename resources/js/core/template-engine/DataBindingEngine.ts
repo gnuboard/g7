@@ -974,17 +974,24 @@ export class DataBindingEngine {
    * {{}} 표현식이 렌더 시점 JS 객체로 고정되어 stale 값이 전송됩니다.
    * 컴포넌트 레벨 actions 배열은 bindComponentActions에서 별도 처리되므로 비해당.
    *
+   * 분기·참조 모양(`{handler:'conditions', conditions}`·`{handler:'switch', cases}`·`{actionRef}`·
+   * `{handler, if}`)도 액션이다 — 종전에는 일반 객체로 보아 `if` 가 렌더 순간 값으로 굳었다(engine-v1.80.0).
+   *
    * @param obj 검사할 객체
    * @returns 액션 정의이면 true
    */
   public isActionDefinition(obj: Record<string, any>): boolean {
+    if (typeof obj.actionRef === 'string') return true;
     if (typeof obj.handler !== 'string') return false;
     return (
       obj.params !== undefined ||
       Array.isArray(obj.actions) ||
       typeof obj.target === 'string' ||
       obj.onSuccess !== undefined ||
-      obj.onError !== undefined
+      obj.onError !== undefined ||
+      Array.isArray(obj.conditions) ||
+      (obj.cases !== null && typeof obj.cases === 'object') ||
+      obj.if !== undefined
     );
   }
 

@@ -4,7 +4,7 @@
     "layout_name": "shop/order_complete",
     "extends": "_user_base",
     "meta": {
-        "_e2e_allow": "e2e:allow SA-D2 — 「이 배송지를 저장하기」 버튼의 **요청 본문 키만** 서버 계약(StoreUserAddressRequest)에 맞춘 변경이다. 화면 구조·노출 조건·동작 흐름은 그대로이고, 바뀐 것은 어떤 키로 보내는가 하나다. 그 계약은 레이아웃 계약 테스트가 잠근다 — __tests__/layouts/shop-order-complete-save-address-payload.test.ts (6케이스 · 되돌리면 4 failed 대조 확인). 서버 쪽 required 규칙은 StoreUserAddressRequest 가 소유한다. Playwright 로 재현하려면 「로그인 회원 + 장바구니 상품 + 완료된 주문」 상태가 필요해 기존 주문서 spec 의 시드로는 세울 수 없다(형제 시나리오 checkout-default-address-prefill 과 같은 사유). 브라우저 검수는 Chrome MCP 실측으로 기록했다 — 수정 전 POST /user/addresses 422 · 배송지 행 증가 0 → 수정 후 200 · 토스트 「배송지가 저장되었습니다.」 · 행 name=배송지 주소·상세 정합 · 재클릭 시 서버 중복 가드 문구. / e2e:allow 후속B B6 — 주소록 대조로 버튼 숨김·409 안내(api-call error-handling on-code 409)는 같은 「로그인 회원 + 완료된 주문」 전제라 spec 시드로 세울 수 없다. 레이아웃 테스트 order-complete-save-address.test.tsx 9케이스(실제 클릭 흐름 409→info·500→error·성공→success 포함, 수정 전 2 failed)가 잠그고, 전용 Chrome·Playwright MCP 실측 T1~T7(이력 후속B 「Chrome MCP 정밀 점검 매트릭스」)으로 확인했다.",
+        "_e2e_allow": "e2e:allow SA-D2 — 「이 배송지를 저장하기」 버튼의 **요청 본문 키만** 서버 계약(StoreUserAddressRequest)에 맞춘 변경이다. 화면 구조·노출 조건·동작 흐름은 그대로이고, 바뀐 것은 어떤 키로 보내는가 하나다. 그 계약은 레이아웃 계약 테스트가 잠근다 — __tests__/layouts/shop-order-complete-save-address-payload.test.ts (6케이스 · 되돌리면 4 failed 대조 확인). 서버 쪽 required 규칙은 StoreUserAddressRequest 가 소유한다. Playwright 로 재현하려면 「로그인 회원 + 장바구니 상품 + 완료된 주문」 상태가 필요해 기존 주문서 spec 의 시드로는 세울 수 없다(형제 시나리오 checkout-default-address-prefill 과 같은 사유). 브라우저 검수는 Chrome MCP 실측으로 기록했다 — 수정 전 POST /user/addresses 422 · 배송지 행 증가 0 → 수정 후 200 · 토스트 「배송지가 저장되었습니다.」 · 행 name=배송지 주소·상세 정합 · 재클릭 시 서버 중복 가드 문구. / e2e:allow 후속B B6 — 주소록 대조로 버튼 숨김·409 안내(api-call 의 fail 하나 안 conditions — #753)는 같은 「로그인 회원 + 완료된 주문」 전제라 spec 시드로 세울 수 없다. 레이아웃 테스트 order-complete-save-address.test.tsx 9케이스(실제 클릭 흐름 409→info·500→error·성공→success 포함, 수정 전 2 failed)가 잠그고, 전용 Chrome·Playwright MCP 실측 T1~T7(이력 후속B 「Chrome MCP 정밀 점검 매트릭스」)으로 확인했다.",
         "title": "$t:shop.order_complete.page_title",
         "description": "주문 완료/결제 완료 화면"
     },
@@ -1038,21 +1038,29 @@
                                                             ]
                                                         },
                                                         "onError": {
-                                                            "handler": "toast",
-                                                            "params": {
-                                                                "type": "error",
-                                                                "message": "{{error.message ?? '$t:shop.order_complete.address_save_failed'}}"
-                                                            }
-                                                        },
-                                                        "errorHandling": {
-                                                            "409": {
-                                                                "comment": "409 는 같은 이름(「배송지」)의 저장 배송지가 이미 있다는 뜻이다 — 서버 문구 「덮어쓰시겠습니까?」 는 토스트로 답할 수 없는 질문이라 안내로 바꾼다.\n                        분기는 상태 코드별 error-handling 으로 한다(fail 안의 conditions 는 엔진이 오류 처리기로 옮길 때 조건 목록을 버려 아무 토스트도 뜨지 않았다).",
-                                                                "handler": "toast",
-                                                                "params": {
-                                                                    "type": "info",
-                                                                    "message": "$t:shop.order_complete.address_name_exists"
+                                                            "comment": "409 는 같은 이름(「배송지」)의 저장 배송지가 이미 있다는 뜻 — 서버 문구 「덮어쓰시겠습니까?」 는 토스트로 답할 수 없는 질문이라 안내로 바꾼다",
+                                                            "handler": "conditions",
+                                                            "conditions": [
+                                                                {
+                                                                    "if": "{{error.status === 409}}",
+                                                                    "then": {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "info",
+                                                                            "message": "$t:shop.order_complete.address_name_exists"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "then": {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{error.message ?? '$t:shop.order_complete.address_save_failed'}}"
+                                                                        }
+                                                                    }
                                                                 }
-                                                            }
+                                                            ]
                                                         }
                                                     }
                                                 ],

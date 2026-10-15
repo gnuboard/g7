@@ -5,6 +5,24 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.80.0] - 2026-10-14
+
+### Added
+
+- 데이터 소스 오류 처리(`onError`·`errorHandling`·`errorCondition`)의 실행 문맥에서 `{{route.*}}`·`{{query.*}}` 를 읽을 수 있습니다. 작성·수정을 한 레이아웃으로 처리하는 화면이 같은 404 를 주소로 가를 수 있습니다(예: `<when if="{{!!route.claim_number}}"><suppress/></when>`). `error`·`auth` 는 종전 그대로이며 더한 값이 덮지 못합니다 (ErrorHandlingResolver.ts `execute`·`resolveAndExecute` 의 추가 문맥 인자, ActionDispatcher.ts `setupErrorHandling`, DataSourceManager.ts `errorHandlerExtraData`, 회귀: `ErrorHandlingResolver.extraData.test.ts`·`ActionDispatcher.actionShapePreservation.test.ts`)
+- `switch` 의 case 값에 동작 여러 개(배열)를 적으면 순서대로 실행합니다 — `conditions` 의 `then` 배열과 같습니다 (ActionDispatcher.ts `handleSwitch`·`runSwitchCase`, 회귀: `ActionDispatcher.actionShapePreservation.test.ts`)
+- `<init>`(init_actions) 에서 `sequence`·`switch`·`action-ref`·`errorHandling` 을 쓸 수 있습니다 (TemplateApp.ts `executeInitActions`, 회귀: `TemplateApp.test.ts` [TS-INIT-4])
+- 이벤트 받기(`<on listen>`·onComponentEvent)의 처리 결과를 보낸 쪽 `_local._eventResult` 에 돌려줍니다 — 받는 쪽 동작이 하나라도 실패하면(`<conditions>`·`<switch>` 갈래 안, 여러 동작 중간, 그 동작의 `<fail>` 이 처리한 실패 포함) `success: false`·`error`(첫 실패), `data` 는 마지막 동작의 결과입니다(연속 실행이면 마지막 단계의 결과, 분기면 고른 갈래 동작의 결과, 상태 쓰기 동작의 결과인 병합된 상태 스냅숏은 싣지 않습니다 — 실으면 emit 마다 이전 `_eventResult` 가 한 겹씩 쌓입니다). 실행마다 첫 실패를 실행 문맥(`ActionContext.failures`)에 모아 `createHandler` 가 결과에 올리고, 분기가 남긴 실행 결과 겹은 벗겨 판별합니다. 받는 쪽 실패를 보낸 쪽 예외로 바꾸지 않아 보낸 쪽 흐름은 이어집니다(받는 쪽이 자기 `<fail>` 로 알렸는데 기본 오류 토스트가 한 번 더 뜨지 않게). 컴포넌트 코드가 `G7Core.componentEvent.on` 으로 단 리스너는 종전대로입니다. `createHandler` 가 돌려준 함수는 이제 실행 결과를 돌려줍니다 (helpers/componentEventResult.ts, DynamicRenderer.tsx, ActionDispatcher.ts `createHandler`·`emitEvent`·`executeAction`, 회귀: `DynamicRenderer.onComponentEventActionShape.test.tsx`·`ActionDispatcher.actionShapePreservation.test.ts`)
+
+### Fixed
+
+- 이벤트 받기(`<on listen>`) 안의 연속 실행·분기가 경고 없이 아무 일도 하지 않던 문제. 구독 콜백이 액션 정의에서 `handler`·`params`·`onSuccess`·`onError` 4개만 옮겨 담아, 자식이 여럿인 `<on listen>`(암묵 sequence)·`<sequence>`·`<conditions>`·`<switch>`·`<action-ref>`·`<open-modal target>`·`resultTo` 가 버려졌고 루트 `if` 는 무시돼 항상 실행됐습니다. 이제 `event` 만 빼고 통째로 실행합니다. 함께, 구독이 마운트 때 한 번이라 콜백이 마운트 시점 문맥을 붙잡아 `{{_local.x}}` 가 옛 값으로 읽히던 경로를 실행 시점의 최신 문맥으로 고쳤습니다. onComponentEvent 구독 패턴(engine-v1.11.0, 2026-01-23)부터 있던 결함입니다 (DynamicRenderer.tsx, 회귀: `DynamicRenderer.onComponentEventActionShape.test.tsx`)
+- 단일 `<fail>`·`<on-code>`·레이아웃/템플릿 오류 처리 안의 `<conditions>`·`<switch>` 가 아무 일도 하지 않고, `if` 가 무시돼 항상 실행되며, `<action-ref>`·`onSuccess` 가 버려지던 문제. 액션 실패 처리와 데이터 소스 오류 처리가 결정된 처리기를 `handler`·`target`·`params`·`actions` 4개만 골라 다시 조립했습니다(동작이 하나일 때만 — 여럿이면 sequence 로 감싸여 살아남았습니다). 이제 처리기를 통째로 실행합니다. 2026-02-03 부터 있던 결함입니다 (ActionDispatcher.ts `executeAction`·`setupErrorHandling`, 회귀: `ActionDispatcher.actionShapePreservation.test.ts`)
+- `<init>` 에 `action-ref` 만 있는 항목이 하나라도 있으면 그 화면 진입이 「페이지 로딩 실패」 로 끝나던 문제(`handler` 없는 항목에서 TypeError). 또 init 항목을 10개 키만 골라 담아 `sequence`·`switch`·`actionRef`·`errorHandling` 이 버려졌고, `conditions`·`sequence` 안의 확장 핸들러는 등록을 기다리지 않아 등록 전이면 조용히 건너뛰었습니다. 이제 항목을 통째로 넘기고, 기다릴 확장 핸들러를 중첩·named_actions 까지 모읍니다. 활성 확장(`G7Config.activeModules`·`activePlugins`)도 현재 템플릿도 아닌 네임스페이스의 핸들러는 기다리지 않습니다 — 영원히 등록되지 않으므로, 실행되지 않을 분기에 적힌 선택 확장의 핸들러 때문에 화면이 최대 5초 비지 않게 합니다 (TemplateApp.ts `executeInitActions`·`collectNamespacedHandlers`·`dropInactiveExtensionHandlers`, 회귀: `TemplateApp.test.ts` [TS-INIT-4])
+- navigate 대체 동작(`params.fallback` 객체)의 `actions`(sequence)·`conditions`·`if` 가 버려지던 문제 (ActionDispatcher.ts `resolveNavigateFallback`·`handleNavigate`, 회귀: `ActionDispatcher.actionShapePreservation.test.ts`)
+- 콜백 prop 에 담은 `{handler:'conditions', conditions}`·`{handler:'switch', cases}`·`{actionRef}`·`{handler, if}` 모양의 액션을 일반 객체로 보아 렌더 시점에 `{{}}` 를 미리 평가하던 문제(조건이 렌더 순간 값으로 굳음) (DataBindingEngine.ts `isActionDefinition`, 회귀: `DataBindingEngine.isActionDefinition.test.ts`)
+- 웹소켓 데이터 소스 `onReceive` 를 단일 객체로 적으면 조용히 무시하던 문제 (TemplateApp.ts `toActionList`, 회귀: `TemplateApp.test.ts` [TS-WS-ONRECEIVE-1])
+
 ## [engine-v1.79.0] - 2026-10-09
 
 ### Added

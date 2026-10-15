@@ -271,8 +271,14 @@
 주문 배송지를 대조하는 `_computed.shippingAddressAlreadySaved` 가 참이면 숨긴다. 대조 기준은 수령인·연락처(숫자만)·국가와, 국내는
 우편번호·주소·상세주소, 해외는 주소줄·도시·주·우편번호이고 배송지명은 보지 않는다. 저장에 성공하면 주소록을 다시 받아 버튼이 사라지며,
 서버 409(같은 이름 「배송지」가 이미 있음)는 질문형 서버 문구 대신 `shop.order_complete.address_name_exists` 안내로 바꾼다.
-이 분기는 api-call 의 `<error-handling><on-code code="409">` 로 둔다 — `<fail>` 안에 `<conditions>` 를 두면 엔진이 오류 처리기로
-옮길 때 조건 목록을 버려 409·기타 오류 모두 토스트가 뜨지 않는다(실측). 409 외 실패는 `<fail>` 의 오류 토스트가 맡는다.
+이 분기는 `<fail>` 하나 안의 `<conditions>` 로 둔다 — 409 면 안내(info), 그 밖이면 서버 문구의 오류 토스트다. 코어 7.1.1(engine-v1.80.0)
+부터 단일 `<fail>` 안의 조건 분기가 그대로 실행된다(그 전 엔진은 오류 처리기로 옮기며 조건 목록을 버려 토스트가 뜨지 않아,
+한때 `<error-handling><on-code code="409">` 로 우회했다).
+
+클레임 신청서 셸(`mypage/claims/apply`)은 작성(`/mypage/orders/:order_number/claims/apply/:type`)과 수정(`/mypage/claims/:claim_number/edit`)이
+함께 쓴다. `order` 데이터소스의 404 는 `<on-code code="404">` 안 `<conditions>` 가 주소로 가른다 — `route.claim_number` 가 있으면(수정 진입의
+첫 호출은 주소에 주문번호가 없어 반드시 404) `<suppress/>`, 없으면 오류 화면(`show-error-page` 404). 데이터소스 오류 처리 문맥에서
+`route` 를 읽는 것은 코어 7.1.1 부터다(그 전에는 이커머스 핸들러 `claimApplyOrderMissing` 이 판정했고, 그 핸들러는 사용 중단).
 
 <!-- @intent END -->
 

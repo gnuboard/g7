@@ -316,11 +316,13 @@
 
 환경설정의 탭 전환은 같은 화면으로의 재진입(`navigate replace`)이라 설정 소스가 `refetchOnMount` 로 다시 받아 폼을
 덮습니다. 그래서 탭 줄은 `_local.hasChanges` 가 참이고 지금 탭이 아닌 탭을 누르면 옮기지 않고 확인 창(`_modal_unsaved_tab_switch`, 코어·게시판 환경설정과 같은 공통 창)을 엽니다 —
-가려던 탭은 `_global.pendingEcommerceSettingsTab` 에 둡니다. 창의 [이동] 은 창이 자기 지역 상태를 따로 가지므로
-전역 `_local`(저장 가드가 읽는 자리)과 `$parent._local`(화면 폼이 읽는 자리)에 탭 줄 「변경 없음」 갈래와 **같은 정리 목록**(인라인 추가 폼 플래그·버퍼·오류)과 `hasChanges=false` 를
-쓰고 옮깁니다. 인라인 폼이 새로 생기면 두 목록을 함께 고칩니다(회귀 테스트가 키 일치를 단언). 창에서 사건(`emit-event`)을
-보내 부모의 `<on listen>` 하나로 모으는 방식은 쓰지 않습니다 — 엔진의 컴포넌트 사건 구독이 `handler`·`params` 만 넘겨
-`sequence` 를 받는 쪽이 아무것도 하지 않습니다.
+가려던 탭은 `_global.pendingEcommerceSettingsTab` 에 둡니다. 탭 전환의 정리·이동은 **탭 본문 틀(`ecommerce_settings_tab_content`)의
+`<on listen="sirsoft-ecommerce:settings-switch-tab">` 한 곳**이 맡습니다 — 정리 목록(인라인 추가 폼 플래그·버퍼·오류)과 `hasChanges=false`,
+전역 탭(`activeEcommerceSettingsTab`·`pendingEcommerceSettingsTab=null`), 주소 갱신(`navigate replace`) 순서입니다. 탭 줄의
+「변경 없음」 갈래와 확인 창 [이동](창을 먼저 닫고)은 같은 이벤트에 `{ tab }` 만 실어 보냅니다. 받는 쪽이 페이지 문맥이라
+`target="local"` 쓰기가 화면 폼 렌더러 상태와 저장 가드가 읽는 자리에 함께 닿습니다. 인라인 폼이 새로 생기면 이 목록 하나만
+고칩니다(코어 7.1.1 — 엔진이 이벤트 받기 안의 연속 실행을 지원하면서, 종전에 탭 줄과 확인 창 두 곳에 복제하고 창은 `$parent._local`·
+전역 `_local` 두 자리에 같은 값을 쓰던 우회를 걷어 냈습니다).
 
 다국어 이름의 **필수 언어는 사이트 기본 언어**(`_global.appConfig.siteLocale`, 서버 `app.site_locale`)입니다 —
 보는 사람의 언어가 아닙니다. 상품 옵션 처리기(`optionHandlers.ts` 의 `getDefaultLocale`)가 옵션 조합 이름을 넣는 칸,
@@ -586,6 +588,8 @@
 | `initCommonInfoFromUrl` | `sirsoft-ecommerce.initCommonInfoFromUrl` |
 | `initNoticeFromUrl` | `sirsoft-ecommerce.initNoticeFromUrl` |
 <!-- @generated:handlers END -->
+
+> **사용 중단 — `claimApplyOrderMissing`**(1.3.1): 클레임 신청 셸의 주문 조회 404 를 작성/수정 진입으로 가르던 핸들러입니다. 코어 7.1.1 부터 데이터소스 오류 처리 안의 `<conditions>` 가 실행되고 그 문맥에서 `route` 를 읽을 수 있어, 번들 사용자 템플릿은 `<when if="{{!!route.claim_number}}"><suppress/></when>` 로 직접 가릅니다. 운영자가 편집기로 저장해 둔 레이아웃이 깨지지 않도록 등록만 유지합니다 — 새 레이아웃에서는 쓰지 않습니다.
 
 <!-- @intent START -->
 핸들러 201개는 레이아웃 JSON 에서 `sirsoft-ecommerce.{이름}` 으로 부릅니다. 관리자 화면 전용이

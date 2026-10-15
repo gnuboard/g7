@@ -207,20 +207,26 @@
               <open-modal target="modal_ecommerce_settings_unsaved_tab"/>
             </when>
             <else>
-              <sequence>
-                <!-- 탭을 옮기면 열어 둔 인라인 추가 폼도 함께 정리한다(확인 창 「저장하지 않고 이동」 partials/admin_ecommerce_settings/_modal_unsaved_tab_switch 도 같은 목록 — 함께 고친다). 페이지 [저장] 가드는 이 플래그들을 **탭과 무관하게** 읽으므로, 남겨 두면 폼을 연 채 다른 탭으로 간 운영자는 그 뒤로 어느 탭에서도 저장하지 못하고 화면에 있지도 않은 폼을 확정하라는 안내만 받는다(브라우저 실측으로 재현 — S10 17차). 각 폼의 '취소' 가 비우는 것과 같은 범위를 비운다: 플래그 + 입력 버퍼 + 그 폼의 오류. 가드가 열거식이므로 새 인라인 폼이 생기면 여기에도 더해야 한다. -->
-                <set-state target="local" :errors="null" :isAddingExchangeReason="false" :exchangeReasonForm="null" :exchangeReasonFormErrors="null" :isAddingReturnReason="false" :returnReasonForm="null" :returnReasonFormErrors="null" :isAddingRefundReason="false" :refundReasonForm="null" :refundReasonFormErrors="null" :isAddingCarrier="false" :carrierForm="null" :carrierFormErrors="null" :isAddingShippingType="false" :shippingTypeForm="null" :shippingTypeFormErrors="null" :isAddingCountry="false" :newCountry="null" :isAddingCurrency="false" :form.newCurrency="null" :isAddingMileageCurrency="false" :form.newMileageCurrency="null" :claimReasonTab="null"/>
-                <set-state target="global" activeEcommerceSettingsTab="{{$args[0]}}"/>
-                <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
-                <navigate path="/admin/ecommerce/settings" :replace="true">
-                  <query tab="{{$args[0]}}"/>
-                </navigate>
-              </sequence>
+              <!-- 탭 전환은 탭 본문 틀(ecommerce_settings_tab_content)의 이벤트 받기가 전담한다 — 확인 창 [이동] 도 같은 이벤트만 보낸다 -->
+              <emit-event event="sirsoft-ecommerce:settings-switch-tab">
+                <field name="data">
+                  <field name="tab" value="{{$args[0]}}"/>
+                </field>
+              </emit-event>
             </else>
           </conditions>
         </on>
       </tab-navigation>
       <div data-ref="ecommerce_settings_tab_content" class="tab-content">
+        <on listen="sirsoft-ecommerce:settings-switch-tab">
+          <!-- 탭 전환의 단일 처리처 — 탭 줄(변경 없음)과 확인 창 [이동] 이 이 이벤트만 보낸다. 정리 목록은 여기 한 곳(새 인라인 폼이 생기면 여기에만 더한다). 페이지 [저장] 가드는 인라인 추가 폼 플래그를 탭과 무관하게 읽으므로, 남겨 두면 폼을 연 채 다른 탭으로 간 운영자는 어느 탭에서도 저장하지 못한다(S10 17차). 각 폼의 '취소' 가 비우는 범위(플래그 + 입력 버퍼 + 그 폼의 오류)와 「변경 있음」·오류를 비운다. 이 받기는 페이지 문맥이라 target=local 이 페이지 폼 렌더러 상태에 닿는다(모달 문맥의 local 은 닿지 않아 옮긴 뒤 첫 입력에 옛 값이 되살아났다 — G2 실측 C7) -->
+          <set-state target="local" :hasChanges="false" :errors="null" :isAddingExchangeReason="false" :exchangeReasonForm="null" :exchangeReasonFormErrors="null" :isAddingReturnReason="false" :returnReasonForm="null" :returnReasonFormErrors="null" :isAddingRefundReason="false" :refundReasonForm="null" :refundReasonFormErrors="null" :isAddingCarrier="false" :carrierForm="null" :carrierFormErrors="null" :isAddingShippingType="false" :shippingTypeForm="null" :shippingTypeFormErrors="null" :isAddingCountry="false" :newCountry="null" :isAddingCurrency="false" :form.newCurrency="null" :isAddingMileageCurrency="false" :form.newMileageCurrency="null" :claimReasonTab="null"/>
+          <set-state target="global" activeEcommerceSettingsTab="{{_eventData.tab}}" :pendingEcommerceSettingsTab="null"/>
+          <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
+          <navigate path="/admin/ecommerce/settings" :replace="true">
+            <query tab="{{_eventData.tab}}"/>
+          </navigate>
+        </on>
         <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
           <div class="flex gap-3">
             <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>

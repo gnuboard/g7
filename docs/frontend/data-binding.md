@@ -816,7 +816,7 @@ DataGrid의 `cellChildren`, 리스트 아이템 등 **반복 렌더링 컨텍스
 |------|------|----------|
 | `$event` | DOM 이벤트 객체 (`type` 필드 사용 시) | 액션 핸들러 params |
 | `$args` | 커스텀 콜백 인자 배열 (`event` 필드 사용 시) | 액션 핸들러 params |
-| `$eventData` | 컴포넌트 이벤트 데이터 (engine-v1.11.0+) | onComponentEvent 핸들러 |
+| `_eventData` | 컴포넌트 이벤트 데이터 (engine-v1.11.0+, `$` 접두 없음) | onComponentEvent(`<on listen>`) 액션 |
 
 ### 계층 접근 변수 (engine-v1.16.0+)
 

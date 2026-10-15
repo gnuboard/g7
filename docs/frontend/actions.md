@@ -517,6 +517,19 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 
 ---
 
+## 진입점 전용 키
+
+`debounce`·`key`·`stopPropagation`·`confirm` 네 키는 **사용자가 직접 누르는 진입점 액션**(DOM 이벤트·컴포넌트 콜백에 바로 묶인 액션)에서만 효과가 있다. 엔진이 이벤트를 받는 순간에만 읽기 때문이다(`key` 는 키 필터, `debounce` 는 진입점 대기, `stopPropagation` 은 DOM 전파 차단, `confirm` 은 확인 창).
+
+```text
+✅ 진입점: <on type="…">·<on event="…"> 바로 아래 액션
+❌ 효과 없음: 이벤트 받기(<on listen>) · 실패 처리(<fail>·<on-code>) · 데이터소스 결과·오류 처리 · 첫 진입 동작(<init>) · 다른 액션 안쪽(<sequence>·<when>·<case>·<success> 안)
+```
+
+엔진은 위 자리들의 액션도 통째로 실행하지만(engine-v1.80.0) 그 자리에는 「누르는 순간」이 없어 이 키들만은 의미가 없다. 대신 감싸는 진입점에 단다(예: `<sequence :debounce="300">`). 마크업 굽기가 알린다 — `debounce` 는 lint `nested_action_debounce_ignored`, `key`·`stopPropagation` 은 lint `entry_only_key_ignored`, `confirm` 은 굽기 오류 `confirm_not_at_root`, `<init>` 의 네 키는 굽기 오류 `init_action_key_forbidden`. 마크업에서 키 필터는 `<on type="keydown" key="Enter">` 처럼 `<on>` 에 단다 — 안쪽 액션 태그에 `key="…"` 를 쓰면 그 핸들러의 `params.key` 로 들어가 키 필터가 되지 않으며 lint 도 잡지 못한다(`<on listen>` 의 `key` 속성은 굽기가 버린다). JSON 으로 직접 작성한 레이아웃은 검사하지 않는다 — 그 경우 이벤트 받기(onComponentEvent) 항목과 init 항목 루트의 `confirm` 은 엔진이 실제로 확인 창을 띄운다(두 자리는 진입점과 같은 실행 경로를 탄다). 의도한 것이 아니면 적지 않는다.
+
+---
+
 ## Debounce 옵션
 
 연속 호출되는 액션의 실행을 제어하여 성능을 최적화합니다. 텍스트 입력 필드의 실시간 업데이트 등에 유용합니다.

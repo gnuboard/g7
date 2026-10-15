@@ -1127,6 +1127,27 @@ export class DataSourceManager {
     return source.fallback !== undefined ? { data: source.fallback } : null;
   }
 
+  /**
+   * 데이터소스 오류 처리기(onError·errorHandling·errorCondition)의 실행 문맥에 더 실을 값.
+   *
+   * 작성/수정 겸용 화면이 404 를 주소로 가를 수 있게 `route`·`query` 를 싣는다 — 종전 문맥은
+   * `{ auth, error }` 뿐이라 그 판정을 확장 핸들러로 옮겨 우회해야 했다(#753).
+   *
+   * @param routeParams 라우트 파라미터
+   * @param queryParams 쿼리 파라미터
+   * @returns 실행 문맥에 더할 `{ route, query }`
+   * @since engine-v1.80.0
+   */
+  private errorHandlerExtraData(
+    routeParams?: Record<string, any>,
+    queryParams?: URLSearchParams,
+  ): { route: Record<string, any>; query: Record<string, string | string[]> } {
+    return {
+      route: routeParams ?? {},
+      query: queryParams ? parseQueryParams(queryParams) : {},
+    };
+  }
+
   async fetchDataSources(
     sources: DataSource[],
     routeParams: Record<string, string> = {},
@@ -1176,7 +1197,7 @@ export class DataSourceManager {
 
             if (resolveResult.handler) {
               try {
-                await resolver.execute(resolveResult.handler, errorContext);
+                await resolver.execute(resolveResult.handler, errorContext, this.errorHandlerExtraData(routeParams, queryParams));
               } catch (handlerError) {
                 logger.error(`Error executing errorCondition handler for ${source.id}:`, handlerError);
               }
@@ -1233,7 +1254,7 @@ export class DataSourceManager {
 
           if (resolveResult.handler) {
             try {
-              await resolver.execute(resolveResult.handler, errorContext);
+              await resolver.execute(resolveResult.handler, errorContext, this.errorHandlerExtraData(routeParams, queryParams));
             } catch (handlerError) {
               logger.error(`Error executing error handler for ${source.id}:`, handlerError);
             }
@@ -1331,13 +1352,13 @@ export class DataSourceManager {
               // blocking이 끝나야 #main_content가 마운트됨)
               // → 핸들러를 비동기로 실행하고 즉시 blocking 해제
               if (source.loading_strategy === 'blocking') {
-                resolver.execute(resolveResult.handler, errorContext).catch((handlerError) => {
+                resolver.execute(resolveResult.handler, errorContext, this.errorHandlerExtraData(routeParams, queryParams)).catch((handlerError) => {
                   logger.error(`Error executing errorCondition handler for ${source.id}:`, handlerError);
                 });
                 errorHandled = true;
               } else {
                 try {
-                  await resolver.execute(resolveResult.handler, errorContext);
+                  await resolver.execute(resolveResult.handler, errorContext, this.errorHandlerExtraData(routeParams, queryParams));
                   errorHandled = true;
                 } catch (handlerError) {
                   logger.error(`Error executing errorCondition handler for ${source.id}:`, handlerError);
@@ -1418,14 +1439,14 @@ export class DataSourceManager {
             // blocking이 끝나야 #main_content가 마운트됨)
             // → 핸들러를 비동기로 실행하고 즉시 blocking 해제
             if (source.loading_strategy === 'blocking') {
-              resolver.execute(resolveResult.handler, errorContext).catch((handlerError) => {
+              resolver.execute(resolveResult.handler, errorContext, this.errorHandlerExtraData(routeParams, queryParams)).catch((handlerError) => {
                 logger.error(`Error executing error handler for ${source.id}:`, handlerError);
               });
               errorHandled = true;
             } else {
               try {
                 // 핸들러 실행
-                await resolver.execute(resolveResult.handler, errorContext);
+                await resolver.execute(resolveResult.handler, errorContext, this.errorHandlerExtraData(routeParams, queryParams));
                 errorHandled = true;
               } catch (handlerError) {
                 logger.error(`Error executing error handler for ${source.id}:`, handlerError);
@@ -1508,7 +1529,7 @@ export class DataSourceManager {
 
             if (resolveResult.handler) {
               try {
-                await resolver.execute(resolveResult.handler, errorContext);
+                await resolver.execute(resolveResult.handler, errorContext, this.errorHandlerExtraData(routeParams, queryParams));
               } catch (handlerError) {
                 logger.error(`Error executing errorCondition handler for ${source.id}:`, handlerError);
               }
@@ -1572,7 +1593,7 @@ export class DataSourceManager {
 
           if (resolveResult.handler) {
             try {
-              await resolver.execute(resolveResult.handler, errorContext);
+              await resolver.execute(resolveResult.handler, errorContext, this.errorHandlerExtraData(routeParams, queryParams));
             } catch (handlerError) {
               logger.error(`Error executing error handler for ${source.id}:`, handlerError);
             }

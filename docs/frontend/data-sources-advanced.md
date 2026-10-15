@@ -519,6 +519,8 @@ CAUTION: if와 conditions 동시 사용 시 if 우선
 
 데이터 소스에서도 액션과 동일한 방식으로 `errorHandling`과 `onError`를 설정할 수 있습니다.
 
+데이터 소스 오류 처리기 안에서는 `{{error.*}}` 와 함께 `{{route.*}}`·`{{query.*}}` 를 읽을 수 있다(engine-v1.80.0) — 작성·수정을 한 레이아웃으로 처리하는 화면이 같은 404 를 주소로 가를 때 쓴다. 예와 제약은 [오류 처리 — 데이터소스 오류 처리 문맥](layout-json-features-error.md).
+
 #### 기본 구조
 
 ```html

@@ -1072,6 +1072,7 @@
     "degrade": "이 템플릿은 친화 편집을 지원하지 않습니다. 코드 편집기에서 설정해 주세요.",
     "message_placeholder": "표시할 메시지 (🔍 로 오류 정보 삽입 가능)",
     "handler_none": "설정 안 함",
+    "handler_code_only": "이 동작은 코드 편집기(HTML)에서 고칠 수 있습니다.",
     "handler_showErrorPage": "오류 화면 보여주기",
     "handler_navigate": "다른 화면으로 이동",
     "handler_openModal": "모달 열기",

@@ -1757,36 +1757,7 @@ export class TemplateApp {
                         const websocketSource = dataSources.find(
                             (s: any) => s.type === 'websocket' && (s.target_source || s.id) === sourceId
                         );
-                        const onReceiveActions = websocketSource?.onReceive;
-                        if (Array.isArray(onReceiveActions) && onReceiveActions.length > 0) {
-                            const G7Core = (window as any).G7Core;
-                            if (G7Core?.dispatch) {
-                                // 각 액션을 순차 실행, $args[0]로 페이로드 접근 가능
-                                (async () => {
-                                    for (const action of onReceiveActions) {
-                                        try {
-                                            // dispatchAction에 직접 호출하여 $args 컨텍스트 주입
-                                            const actionDispatcher = this.getActionDispatcher?.();
-                                            if (actionDispatcher) {
-                                                await actionDispatcher.dispatchAction(action, {
-                                                    navigate: this.getRouter?.() ? (path: string, opts?: any) =>
-                                                        this.getRouter().navigate(path, opts) : undefined,
-                                                    setState: (updates: any) => this.setGlobalState(updates),
-                                                    state: this.globalState,
-                                                    data: { ...this.globalState, $args: [data], $event: data },
-                                                    _isDispatchFallbackContext: true,
-                                                });
-                                            }
-                                        } catch (err) {
-                                            logger.error(
-                                                `WebSocket onReceive action failed for ${sourceId}:`,
-                                                err
-                                            );
-                                        }
-                                    }
-                                })();
-                            }
-                        }
+                        void this.runWebSocketOnReceive(sourceId, websocketSource?.onReceive, data);
                     },
                     wsBindingContext
                 );
@@ -4827,40 +4798,34 @@ export class TemplateApp {
             return;
         }
 
-        logger.log('Executing init_actions:', initActions.map(a => a.handler));
+        logger.log('Executing init_actions:', initActions.map(a => a.handler ?? a.actionRef));
         logger.log('Init actions dataContext:', dataContext);
         logger.log('Init actions dataContext._global:', dataContext._global);
 
-        // 모듈/플러그인 핸들러(네임스페이스가 있는 핸들러) 목록 추출
-        const moduleHandlers = initActions
-            .map(a => a.handler)
-            .filter(h => h.includes('.'));
-
-        // 모듈 핸들러가 있으면 등록될 때까지 대기
-        if (moduleHandlers.length > 0) {
-            await this.waitForHandlers(actionDispatcher, moduleHandlers);
+        // 모듈/플러그인 핸들러(네임스페이스가 있는 핸들러)가 등록될 때까지 대기.
+        // conditions·sequence·switch·onSuccess·actionRef 안에 있는 것까지 모은다 — 최상위만 보면 중첩된 확장
+        // 핸들러가 등록 전에 실행돼 미등록 핸들러로 조용히 건너뛰어졌다. handler 없는 항목(actionRef 만)이
+        // 하나라도 있으면 `a.handler.includes` 가 TypeError 로 화면 진입 자체를 실패시켰다(engine-v1.80.0).
+        try {
+            const moduleHandlers = this.dropInactiveExtensionHandlers(
+                TemplateApp.collectNamespacedHandlers(initActions, actionDispatcher.getNamedActions?.() ?? {})
+            );
+            if (moduleHandlers.length > 0) {
+                await this.waitForHandlers(actionDispatcher, moduleHandlers);
+            }
+        } catch (error) {
+            logger.warn('Failed to wait for extension handlers before init_actions:', error);
         }
 
         // 현재 데이터 컨텍스트 (각 액션 실행 후 갱신됨)
         let currentDataContext = { ...dataContext };
 
         for (const initAction of initActions) {
+            const label = initAction.handler ?? initAction.actionRef;
             try {
-                // ActionDefinition 형태로 변환하여 핸들러 실행
-                // resultTo, onSuccess, onError, auth_mode 등 전체 액션 체인 지원
-                const actionDef = {
-                    type: 'click' as const, // init_actions는 이벤트 타입이 필요 없지만 형식상 필요
-                    handler: initAction.handler,
-                    target: initAction.target,
-                    params: initAction.params,
-                    resultTo: initAction.resultTo,
-                    onSuccess: initAction.onSuccess, // onSuccess 콜백 전달
-                    onError: initAction.onError,     // onError 콜백 전달
-                    if: initAction.if,                 // 조건부 실행 지원
-                    conditions: initAction.conditions, // conditions 핸들러용 조건 분기 배열
-                    auth_mode: (initAction as any).auth_mode, // 인증 모드 전달
-                    auth_required: (initAction as any).auth_required, // 하위 호환
-                } as any;
+                // init 항목을 통째로 넘긴다 — 키를 골라 담으면 sequence(actions)·switch(cases)·actionRef·
+                // errorHandling·identity_target 이 탈락했다(engine-v1.80.0). type 은 형식 값이다.
+                const actionDef = { ...initAction, type: 'click' as const } as any;
 
                 // 핸들러 직접 호출 (최신 데이터 컨텍스트 전달)
                 const handler = actionDispatcher.createHandler(actionDef, currentDataContext);
@@ -4869,7 +4834,7 @@ export class TemplateApp {
                 const dummyEvent = new Event('init');
                 await handler(dummyEvent);
 
-                logger.log(`Init action executed: ${initAction.handler}`);
+                logger.log(`Init action executed: ${label}`);
 
                 // 액션 실행 후 데이터 컨텍스트 갱신 (다음 액션에서 최신 상태 사용)
                 // 이전 핸들러가 G7Core.state.set()으로 설정한 _global 값을 다음 핸들러가 참조할 수 있도록 함
@@ -4879,11 +4844,156 @@ export class TemplateApp {
                     _global: { ...updatedGlobalState },
                     _local: updatedGlobalState._local || currentDataContext._local || {},
                 };
-                logger.log(`Data context refreshed after ${initAction.handler}:`, {
+                logger.log(`Data context refreshed after ${label}:`, {
                     cartKey: currentDataContext._global?.cartKey,
                 });
             } catch (error) {
-                logger.error(`Failed to execute init action: ${initAction.handler}`, error);
+                logger.error(`Failed to execute init action: ${label}`, error);
+            }
+        }
+    }
+
+    /**
+     * init 항목에서 등록을 기다릴 확장 핸들러 이름을 모은다.
+     *
+     * 최상위 `handler` 뿐 아니라 `actions`·`params.actions`·`conditions[].then`·`cases` 값·`onSuccess`·
+     * `onError`·`errorHandling` 값 안까지, `actionRef` 는 레이아웃 `named_actions` 를 따라 내려간다
+     * (순환 참조는 한 번만 본다). 이름은 문자열이고 `.` 이 있으며 `{{` 가 없는 것만 — 동적 핸들러 이름은
+     * 실행 시점에야 정해지므로 기다릴 수 없다. `handler` 가 없거나 문자열이 아닌 항목은 건너뛴다.
+     *
+     * @param actions init 항목(들)
+     * @param namedActions 레이아웃 named_actions
+     * @returns 중복 없는 확장 핸들러 이름 목록
+     * @since engine-v1.80.0
+     */
+    private static collectNamespacedHandlers(
+        actions: unknown,
+        namedActions: Record<string, unknown>
+    ): string[] {
+        const found = new Set<string>();
+        const visitedRefs = new Set<string>();
+
+        const visit = (node: unknown): void => {
+            if (Array.isArray(node)) {
+                node.forEach(visit);
+                return;
+            }
+            if (!node || typeof node !== 'object') {
+                return;
+            }
+            const action = node as Record<string, any>;
+
+            if (typeof action.handler === 'string' && action.handler.includes('.') && !action.handler.includes('{{')) {
+                found.add(action.handler);
+            }
+            if (typeof action.actionRef === 'string' && !visitedRefs.has(action.actionRef)) {
+                visitedRefs.add(action.actionRef);
+                visit(namedActions[action.actionRef]);
+            }
+
+            visit(action.actions);
+            visit(action.params?.actions);
+            if (Array.isArray(action.conditions)) {
+                action.conditions.forEach((branch: any) => visit(branch?.then));
+            }
+            if (action.cases && typeof action.cases === 'object') {
+                Object.values(action.cases).forEach(visit);
+            }
+            visit(action.onSuccess);
+            visit(action.onError);
+            if (action.errorHandling && typeof action.errorHandling === 'object') {
+                Object.values(action.errorHandling).forEach(visit);
+            }
+        };
+
+        visit(actions);
+
+        return [...found];
+    }
+
+    /**
+     * 활성 확장도 현재 템플릿도 아닌 네임스페이스의 핸들러를 대기 목록에서 뺀다.
+     *
+     * 비활성·미설치 확장의 핸들러는 영원히 등록되지 않는다 — 기다리면 `waitForHandlers` 가 최대 5초를
+     * 폴링하고 그동안 화면이 비어 있다(트러블슈팅 network 사례 3). 대기 대상을 분기(conditions·switch·
+     * onError 등) 안까지 모으면서 실행되지 않을 분기에 적힌 선택 확장의 핸들러도 대상이 됐다(engine-v1.80.0).
+     * 활성 목록(`G7Config.activeModules`·`activePlugins`)을 모르면(비었거나 없음) 걸러내지 않는다.
+     *
+     * @param handlerNames 기다릴 핸들러 이름 목록
+     * @returns 활성 확장·현재 템플릿 네임스페이스의 핸들러만 남긴 목록
+     * @since engine-v1.80.0
+     */
+    private dropInactiveExtensionHandlers(handlerNames: string[]): string[] {
+        const config = typeof window !== 'undefined' ? (window as any).G7Config : undefined;
+        const identifiers = [config?.activeModules, config?.activePlugins]
+            .flatMap((list) => (Array.isArray(list) ? list : []))
+            .map((meta: any) => meta?.identifier)
+            .filter((identifier: unknown): identifier is string => typeof identifier === 'string');
+
+        if (identifiers.length === 0) {
+            return handlerNames;
+        }
+
+        const known = new Set([...identifiers, this.config.templateId]);
+        const kept = handlerNames.filter((name) => known.has(name.slice(0, name.indexOf('.'))));
+
+        if (kept.length !== handlerNames.length) {
+            logger.log('Not waiting for handlers of inactive extensions:', handlerNames.filter((name) => !kept.includes(name)));
+        }
+
+        return kept;
+    }
+
+    /**
+     * 액션 목록 자리에 온 값을 목록으로 맞춘다 — 배열은 그대로, 액션 객체 하나는 한 개짜리 목록, 그 밖은 빈 목록.
+     *
+     * 웹소켓 `onReceive` 는 배열일 때만 실행해 단일 객체로 적은 수신 동작이 조용히 무시됐다(engine-v1.80.0).
+     *
+     * @param value 액션 목록 자리의 값
+     * @returns 액션 목록
+     * @since engine-v1.80.0
+     */
+    private static toActionList(value: unknown): any[] {
+        if (Array.isArray(value)) {
+            return value;
+        }
+
+        return value && typeof value === 'object' ? [value] : [];
+    }
+
+    /**
+     * 웹소켓 데이터 소스의 `onReceive` 동작을 순서대로 실행한다(engine-v1.33.0).
+     *
+     * 단일 객체도 한 개짜리 목록으로 실행한다(engine-v1.80.0). 각 동작은 `$args[0]`·`$event` 로 수신 페이로드를 읽는다.
+     * 한 동작이 실패해도 다음 동작은 이어서 실행한다.
+     *
+     * @param sourceId 갱신 대상 데이터 소스 id (로그용)
+     * @param onReceive 웹소켓 소스의 `onReceive` 원본 값(배열·객체·없음)
+     * @param data 수신 페이로드
+     * @returns 모든 동작 실행이 끝나면 resolve
+     */
+    private async runWebSocketOnReceive(sourceId: string, onReceive: unknown, data: unknown): Promise<void> {
+        const onReceiveActions = TemplateApp.toActionList(onReceive);
+        if (onReceiveActions.length === 0 || !(window as any).G7Core?.dispatch) {
+            return;
+        }
+
+        for (const action of onReceiveActions) {
+            try {
+                // dispatchAction에 직접 호출하여 $args 컨텍스트 주입
+                const actionDispatcher = this.getActionDispatcher?.();
+                if (actionDispatcher) {
+                    await actionDispatcher.dispatchAction(action, {
+                        navigate: this.getRouter?.() ? (path: string, opts?: any) =>
+                            this.getRouter().navigate(path, opts) : undefined,
+                        setState: (updates: any) => this.setGlobalState(updates),
+                        state: this.globalState,
+                        data: { ...this.globalState, $args: [data], $event: data },
+                        _isDispatchFallbackContext: true,
+                    });
+                }
+            } catch (err) {
+                logger.error(`WebSocket onReceive action failed for ${sourceId}:`, err);
             }
         }
     }

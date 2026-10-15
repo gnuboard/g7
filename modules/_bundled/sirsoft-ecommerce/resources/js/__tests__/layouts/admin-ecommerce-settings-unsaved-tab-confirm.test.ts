@@ -42,6 +42,9 @@ function flatten(action: any): any[] {
   return [action];
 }
 
+/** 탭 전환 이벤트 — 탭 줄(변경 없음)과 확인 창 [이동] 이 보내고 탭 본문 틀이 받는다(#753) */
+const SWITCH_EVENT = 'sirsoft-ecommerce:settings-switch-tab';
+
 const onTabChange = collect(layout, (n) => n.event === 'onTabChange')[0];
 const [guarded, fallback] = onTabChange?.conditions ?? [];
 
@@ -64,12 +67,13 @@ describe('이커머스 환경설정 — 미저장 변경이 있을 때 탭 전�
 
   // @scenario case=clean_other_tab_switches
   // @effects tab_switch_without_confirm
-  it('고친 것이 없으면 확인 없이 바로 옮긴다', () => {
+  it('고친 것이 없으면 확인 없이 탭 전환 이벤트만 보낸다 (정리·이동은 탭 본문 틀의 이벤트 받기가 한다)', () => {
     expect(evaluate(guarded.if, ctx(false, 'shipping'))).toBe(false);
     expect(fallback.if).toBeUndefined();
 
-    const navigate = flatten(fallback.then).find((a) => a.handler === 'navigate');
-    expect(navigate?.params).toMatchObject({ path: '/admin/ecommerce/settings', replace: true, query: { tab: '{{$args[0]}}' } });
+    const actions = flatten(fallback.then);
+    expect(actions).toHaveLength(1);
+    expect(actions[0]).toMatchObject({ handler: 'emitEvent', params: { event: SWITCH_EVENT, data: { tab: '{{$args[0]}}' } } });
   });
 
   // @scenario case=dirty_same_tab_no_confirm
@@ -95,49 +99,49 @@ describe('이커머스 환경설정 — 미저장 변경이 있을 때 탭 전�
 
   // @scenario case=leave_switches_tab
   // @effects unsaved_tab_confirm_leave_switches_tab
-  it('옮기기는 페이지 상태를 $parent._local 로 정리한 뒤 창을 닫고 확인 창에 맡겨 둔 탭으로 옮긴다', () => {
+  it('옮기기는 창을 먼저 닫고 확인 창에 맡겨 둔 탭으로 전환 이벤트만 보낸다', () => {
     const leave = collect(modal, (n) => n.props?.['data-testid'] === 'ecommerce-settings-unsaved-tab-leave')[0];
     const actions = flatten(leave.actions);
-    const parentLocal = actions.filter((a) => a.handler === 'setState' && String(a.params?.target ?? '').startsWith('$parent._local'));
     const closeIdx = actions.findIndex((a) => a.handler === 'closeModal');
-    const moveIdx = actions.findIndex((a) => a.handler === 'navigate');
+    const emitIdx = actions.findIndex((a) => a.handler === 'emitEvent');
 
-    // 모달 문맥의 target=local 은 페이지 폼 렌더러 상태에 닿지 않아, 옮긴 뒤 첫 입력에 지운 값(인라인 폼 플래그 등)이
-    // 되살아났다(G2 실측 C7). 페이지 상태는 여는 쪽 문맥인 $parent._local 로 고친다(modal-usage.md TL;DR 3)
-    expect(actions.some((a) => a.handler === 'setState' && a.params?.target === 'local')).toBe(false);
-    expect(actions.some((a) => a.actionRef)).toBe(false);
-    // $parent 는 openModal 이 쌓은 여는 쪽 문맥이고 closeModal 이 걷어 낸다 — 그 전에 쓴다(TL;DR 7)
-    expect(parentLocal.length).toBeGreaterThan(0);
-    for (const a of parentLocal) expect(actions.indexOf(a)).toBeLessThan(closeIdx);
-    // 고친 것을 버렸으므로 「변경 있음」을 끈다 — 설정 재조회(수 초) 도착 전 다른 탭 클릭에 창이 다시 뜨지 않게(실측)
-    expect(parentLocal.some((a) => a.params.target === '$parent._local' && a.params.hasChanges === false)).toBe(true);
+    // 정리 목록은 탭 본문 틀의 이벤트 받기 한 곳 — 창 쪽에는 상태 쓰기(local·$parent·전역 _local 이중 쓰기)가 없다
+    expect(actions.some((a) => a.handler === 'setState')).toBe(false);
+    expect(actions.some((a) => a.handler === 'navigate')).toBe(false);
     // 창은 이동 전에 닫는다 — 이동(설정 재조회)이 끝날 때까지 창이 떠 있지 않게(실측 1~5초)
     expect(closeIdx).toBeGreaterThan(-1);
-    expect(closeIdx).toBeLessThan(moveIdx);
+    expect(closeIdx).toBeLessThan(emitIdx);
+    expect(actions[emitIdx]?.params).toEqual({ event: SWITCH_EVENT, data: { tab: '{{_global.pendingEcommerceSettingsTab}}' } });
+  });
 
-    // 바로 옮길 때와 같은 페이지 상태 정리(오류, 인라인 추가 폼 플래그와 입력 버퍼)
-    const directLocal: Record<string, any> = { ...(flatten(fallback.then).find((a) => a.params?.target === 'local')?.params ?? {}) };
-    delete directLocal.target;
-    const leaveLocal: Record<string, any> = {};
-    for (const a of parentLocal) {
-      const { target, value, ...rest } = a.params;
-      if (target === '$parent._local') Object.assign(leaveLocal, rest);
-      else leaveLocal[String(target).slice('$parent._local.'.length)] = value;
-    }
-    // 이중 쓰기(modal-usage.md §부모 폼 커밋): 엔진은 $parent._local 쓰기를 저장소 B 미러에서 일부러 빼 두므로
-    // 같은 값을 전역 `_local.*`(저장, 저장 가드가 읽는 자리)에도 쓴다. 한쪽만 지우면 첫 입력에 다른 쪽 옛 값이 되살아난다(C7)
-    const globalLocalWrites = actions.filter((x) => x.handler === 'setState' && x.params?.target === 'global' && Object.keys(x.params).some((k) => k.startsWith('_local.')));
-    const globalLocal: Record<string, any> = {};
-    for (const a of globalLocalWrites) {
-      for (const [k, v] of Object.entries(a.params)) if (k.startsWith('_local.')) globalLocal[k.slice('_local.'.length)] = v;
-      expect(actions.indexOf(a)).toBeLessThan(closeIdx);
-    }
-    expect(globalLocal).toEqual(leaveLocal);
-    delete leaveLocal.hasChanges;
-    expect(leaveLocal).toEqual(directLocal);
+  // @scenario case=leave_switches_tab
+  // @effects unsaved_tab_confirm_leave_switches_tab
+  it('탭 본문 틀의 이벤트 받기가 정리 목록·전역 탭·주소 갱신을 한 곳에서 맡는다', () => {
+    const container = collect(layout, (n) => n.id === 'ecommerce_settings_tab_content')[0];
+    const listeners = (container?.onComponentEvent ?? []).filter((e: any) => e.event === SWITCH_EVENT);
+    expect(listeners).toHaveLength(1);
 
-    expect(actions.find((a) => a.params?.target === 'global' && 'activeEcommerceSettingsTab' in a.params)?.params.activeEcommerceSettingsTab).toBe('{{_global.pendingEcommerceSettingsTab}}');
-    expect(actions[moveIdx]?.params).toMatchObject({ path: '/admin/ecommerce/settings', replace: true, query: { tab: '{{_global.pendingEcommerceSettingsTab}}' } });
+    const actions = flatten(listeners[0]);
+    const local = actions.find((a) => a.handler === 'setState' && a.params?.target === 'local')?.params ?? {};
+    const { target: _t, ...cleanup } = local;
+    // 고친 것을 버렸으므로 「변경 있음」을 끈다 — 설정 재조회(수 초) 도착 전 다른 탭 클릭에 창이 다시 뜨지 않게(실측)
+    expect(cleanup).toEqual({
+      hasChanges: false, errors: null,
+      isAddingExchangeReason: false, exchangeReasonForm: null, exchangeReasonFormErrors: null,
+      isAddingReturnReason: false, returnReasonForm: null, returnReasonFormErrors: null,
+      isAddingRefundReason: false, refundReasonForm: null, refundReasonFormErrors: null,
+      isAddingCarrier: false, carrierForm: null, carrierFormErrors: null,
+      isAddingShippingType: false, shippingTypeForm: null, shippingTypeFormErrors: null,
+      isAddingCountry: false, newCountry: null, isAddingCurrency: false, 'form.newCurrency': null,
+      isAddingMileageCurrency: false, 'form.newMileageCurrency': null, claimReasonTab: null,
+    });
+    expect(actions.find((a) => a.handler === 'setState' && a.params?.target === 'global')?.params).toEqual({
+      target: 'global', activeEcommerceSettingsTab: '{{_eventData.tab}}', pendingEcommerceSettingsTab: null,
+    });
+    expect(actions.find((a) => a.handler === 'navigate')?.params).toMatchObject({ path: '/admin/ecommerce/settings', replace: true, query: { tab: '{{_eventData.tab}}' } });
+    // 정리 → 전역 탭 → 이동 순서
+    const order = actions.filter((a) => a.handler !== 'sequence').map((a) => a.handler);
+    expect(order).toEqual(['setState', 'setState', 'navigate']);
   });
   // @scenario case=identity_filter_not_form_state
   // @effects identity_filter_not_bound_to_settings_form

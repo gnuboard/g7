@@ -280,12 +280,16 @@ describe('철회·수정 진입점 — 목록과 상세 두 곳에 있다', () =
 
   // @scenario claim_type=exchange, screen=detail, entry=none
   // @effects claim_edit_order_404_is_a_normal_path
-  it('작성 셸의 주문 조회 404 는 핸들러가 가른다 (수정 진입의 첫 호출은 정상 경로)', () => {
+  it('작성 셸의 주문 조회 404 는 주소(route.claim_number)로 가른다 (수정 진입의 첫 호출은 정상 경로)', () => {
     const order = applyShell.data_sources.find((s: any) => s.id === 'order');
 
     expect(String(order.endpoint)).toContain('_local.claimEditOrderNumber');
-    // errorHandling 은 조건 분기를 받지 않는다 — 그래서 판정을 핸들러가 한다.
-    expect(order.errorHandling['404'].handler).toBe('sirsoft-ecommerce.claimApplyOrderMissing');
+    // engine-v1.80.0 부터 데이터소스 오류 처리 안의 conditions 가 실행되고 route 를 읽는다(#753) — 확장 핸들러 우회를 걷어 냈다.
+    const branch = order.errorHandling['404'];
+    expect(branch.handler).toBe('conditions');
+    expect(branch.conditions[0].if).toBe('{{!!route.claim_number}}');
+    expect(branch.conditions[0].then.handler).toBe('suppress');
+    expect(branch.conditions[1].then).toMatchObject({ handler: 'showErrorPage', params: { errorCode: 404, target: 'content' } });
   });
 });
 
