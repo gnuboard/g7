@@ -31,6 +31,7 @@ import { createLogger } from '../utils/Logger';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
 import { evaluateConditionBranches } from './helpers/ConditionEvaluator';
 import { addMissingLeafKeys } from './helpers/StateMerge';
+import { isLayoutListenerResult } from './helpers/componentEventResult';
 import { triggerModalParentUpdate } from './ParentContextProvider';
 import type { GlobalHeaderRule } from './LayoutLoader';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
@@ -265,8 +266,11 @@ export interface ActionDefinition {
   stopPropagation?: boolean;
   /** 키보드 이벤트에서 특정 키 필터링 (예: "Enter", "Escape") */
   key?: string;
-  /** switch 핸들러용 케이스 정의 - $args[0] 값을 기준으로 분기 */
-  cases?: Record<string, ActionDefinition>;
+  /**
+   * switch 핸들러용 케이스 정의 - params.value(없으면 $args[0]) 값을 기준으로 분기.
+   * case 값이 배열이면 순서대로(sequence) 실행한다 (engine-v1.80.0).
+   */
+  cases?: Record<string, ActionDefinition | ActionDefinition[]>;
   /** sequence 핸들러용 순차 실행 액션 배열 */
   actions?: ActionDefinition[];
   /** 인증 필요 여부 (apiCall 핸들러에서 Bearer 토큰 포함 여부) - auth_mode 사용 권장 */
@@ -508,6 +512,13 @@ export interface ActionContext {
    * target: "isolated"로 setState 핸들러 호출 시 사용됩니다.
    */
   isolatedContext?: IsolatedContextValue | null;
+  /**
+   * 이 실행(createHandler 한 번)에서 처음 실패로 끝난 동작의 오류(최대 1개) — 오류 처리기(`<fail>`·onError·
+   * errorHandling)가 처리한 실패도 담는다. 하위 동작은 컨텍스트를 펼쳐 받으므로 같은 목록을 공유한다.
+   * createHandler 가 분기(conditions·switch)·연속 실행(sequence·parallel) 안쪽의 실패를 실행 결과에 올리는 데
+   * 쓴다(engine-v1.80.0 — `<on listen>` 리스너의 `_eventResult.success`).
+   */
+  failures?: Error[];
 }
 
 /**
@@ -938,22 +949,24 @@ export class ActionDispatcher {
     const resolver = getErrorHandlingResolver();
 
     // ErrorHandlingResolver에서 핸들러 실행 시 dispatchAction 사용
-    resolver.setActionExecutor(async (handler: ErrorHandlerConfig, errorContext: { error: ErrorContext }) => {
-      // ErrorHandlerConfig를 ActionDefinition으로 변환
-      const action: ActionDefinition = {
-        type: 'click', // 이벤트 타입은 의미 없음 (dispatchAction에서 사용하지 않음)
-        handler: handler.handler as ActionType,
-        target: handler.target,
-        params: handler.params,
-        actions: handler.actions, // sequence 핸들러용 actions 배열 전달
-      };
+    resolver.setActionExecutor(async (
+      handler: ErrorHandlerConfig,
+      errorContext: { error: ErrorContext } & Record<string, unknown>
+    ) => {
+      // 오류 처리기 정의를 통째로 넘긴다 — 키를 골라 담으면 conditions·cases·if·actionRef·onSuccess 가
+      // 경고 없이 버려진다(engine-v1.80.0, #753). type 은 dispatchAction 이 쓰지 않는 형식 값이다.
+      const action = { ...handler, type: 'click' } as ActionDefinition;
 
       // 에러 컨텍스트를 data에 포함 — 기본 401 처리의 `{{auth.loginPath}}` 가 풀리도록 auth 도 싣는다.
+      // 데이터소스 오류 처리는 route·query 도 싣는다(engine-v1.80.0) — 추가 문맥이 auth·error 를 덮지 못하게
+      // 두 키를 뒤에 둔다.
+      const { error, ...extraData } = errorContext;
       const context: Partial<ActionContext> = {
         data: {
           ...this.defaultContext.data,
+          ...extraData,
           auth: this.buildErrorAuthContext(),
-          error: errorContext.error,
+          error,
         },
       };
 
@@ -1822,15 +1835,25 @@ export class ActionDispatcher {
           logger.log(`emitEvent: Event "${eventName}" completed with ${results.length} listener(s)`, results);
         }
 
+        // 레이아웃 리스너(`<on listen>`)는 표식 결과를 돌려준다 — 풀어서 data 는 결과 값만, 받는 쪽 동작이
+        // 실패했으면 success:false·error 를 싣는다. 보낸 쪽 예외로 바꾸지 않는다(받는 쪽이 자기 `<fail>` 로
+        // 이미 알렸다면 기본 오류 토스트가 한 번 더 뜬다). 컴포넌트 리스너 값은 그대로다(engine-v1.80.0).
+        const listenerResults: any[] = Array.isArray(results) ? results : [];
+        const unwrapped = listenerResults.map((r) => (isLayoutListenerResult(r) ? r.data : r));
+        const firstFailure = listenerResults.find((r) => isLayoutListenerResult(r) && !r.success);
+
         // 결과를 _local._eventResult에 저장하여 후속 액션에서 접근 가능하게 함
         if (this.globalStateUpdater) {
           const currentGlobalLocal = (G7Core?.state?.get() || {})._local || {};
-          const eventResult = {
+          const eventResult: Record<string, any> = {
             event: eventName,
-            success: true,
-            data: results.length === 1 ? results[0] : results,
-            listeners: results.length,
+            success: !firstFailure,
+            data: unwrapped.length === 1 ? unwrapped[0] : unwrapped,
+            listeners: listenerResults.length,
           };
+          if (firstFailure) {
+            eventResult.error = firstFailure.error;
+          }
           // 글로벌 _local 갱신 (기존 동작 유지: 글로벌 _local 기준 머지)
           this.globalStateUpdater({
             _local: { ...currentGlobalLocal, _eventResult: eventResult },
@@ -2123,7 +2146,7 @@ export class ActionDispatcher {
     action: ActionDefinition,
     dataContext?: any,
     componentContext?: { state?: any; setState?: (updates: any) => void; isolatedContext?: IsolatedContextValue | null }
-  ): (event?: Event) => void {
+  ): (event?: Event) => Promise<ActionResult | undefined> {
     logger.log('createHandler called for:', action.handler, action.type);
 
     // DevTools: 핸들러 생성 시점 상태 캡처 (stale closure 감지용)
@@ -2132,7 +2155,9 @@ export class ActionDispatcher {
     const capturedLocalState = componentContext?.state ? { ...componentContext.state } : null;
     const handlerId = `handler_${action.handler}_${handlerCreatedAt}`;
 
-    const run = async (event: Event) => {
+    // 실행 결과를 돌려준다(engine-v1.80.0) — `<on listen>` 리스너가 이 결과로 보낸 쪽 `_eventResult` 를 채운다.
+    // 확인 창에서 취소하면 undefined, 실행 중 예외로 onError 를 돌렸으면 `{ success: false, error }`.
+    const run = async (event: Event): Promise<ActionResult | undefined> => {
       logger.log('Handler invoked for:', action.handler, 'event:', event.type);
 
       // DevTools: 핸들러 실행 시점에 stale closure 감지
@@ -2223,6 +2248,8 @@ export class ActionDispatcher {
           }),
           // 격리된 상태 컨텍스트 (isolatedState 속성이 있는 컴포넌트에서 제공)
           isolatedContext: componentContext?.isolatedContext,
+          // 이 실행의 실패 목록 — 안쪽 동작의 실패를 결과에 올린다(아래 executeAction 뒤)
+          failures: [],
         };
 
         // 확인 메시지 표시
@@ -2239,7 +2266,7 @@ export class ActionDispatcher {
           }
 
           if (!confirm(message)) {
-            return;
+            return undefined;
           }
         }
 
@@ -2255,7 +2282,17 @@ export class ActionDispatcher {
 
         try {
           // 액션 실행
-          await this.executeAction(action, context);
+          const result = await this.executeAction(action, context);
+
+          // 분기·연속 실행 안쪽 동작의 실패를 결과에 올린다 — 분기는 고른 동작의 결과를 한 겹 감싸 돌려주고
+          // 연속 실행은 실패한 단계 뒤에도 이어져, 최상위 결과만 보면 안쪽 실패가 성공으로 보였다
+          // (engine-v1.80.0 — `<on listen>` 리스너의 보낸 쪽 `_eventResult.success`).
+          const [firstFailure] = context.failures ?? [];
+          if (firstFailure && result?.success !== false) {
+            return { ...result, success: false, error: firstFailure };
+          }
+
+          return result;
         } finally {
           // 액션 완료 후 이전 컨텍스트 복원
           (window as any).__g7ActionContext = previousActionContext;
@@ -2295,6 +2332,8 @@ export class ActionDispatcher {
             await this.executeAction(errorAction, errorContext);
           }
         }
+
+        return { success: false, error: error instanceof Error ? error : new Error(String(error)) };
       }
     };
 
@@ -2326,7 +2365,10 @@ export class ActionDispatcher {
    * @param run 실제 핸들러
    * @returns 핸들러 완료 Promise
    */
-  private async runGuardingFormSubmit(event: Event, run: (event: Event) => Promise<void>): Promise<void> {
+  private async runGuardingFormSubmit(
+    event: Event,
+    run: (event: Event) => Promise<ActionResult | undefined>
+  ): Promise<ActionResult | undefined> {
     const form = event?.type === 'submit' && event.target instanceof HTMLFormElement ? event.target : null;
     if (!form) {
       return run(event);
@@ -2337,7 +2379,7 @@ export class ActionDispatcher {
       event.preventDefault();
       logger.log('Duplicate form submit ignored while the previous submit is in flight');
 
-      return;
+      return undefined;
     }
 
     const entry = inFlight ?? { event, running: 0 };
@@ -2345,7 +2387,7 @@ export class ActionDispatcher {
     ActionDispatcher.submitsInFlight.set(form, entry);
 
     try {
-      await run(event);
+      return await run(event);
     } finally {
       entry.running -= 1;
       if (entry.running === 0 && ActionDispatcher.submitsInFlight.get(form) === entry) {
@@ -2859,6 +2901,12 @@ export class ActionDispatcher {
               error instanceof Error ? error : undefined
             );
 
+      // 이 실행의 첫 실패로 기록한다 — 아래 오류 처리기가 처리해도 동작은 실패다(createHandler 가 결과에 올린다).
+      // 첫 하나만 담는다: 반복 실행(startInterval)처럼 실행이 끝난 뒤에도 같은 컨텍스트를 쓰는 경로에서 목록이 자라지 않게.
+      if (context.failures && context.failures.length === 0) {
+        context.failures.push(actionError);
+      }
+
       // API 응답에서 에러 정보 추출
       const apiResponse = (actionError.originalError as any)?.response || {};
       const responseData = apiResponse.data || {};
@@ -2960,14 +3008,9 @@ export class ActionDispatcher {
         };
 
         try {
-          // ErrorHandlerConfig를 ActionDefinition으로 변환하여 실행
-          const handlerAction: ActionDefinition = {
-            type: 'click',
-            handler: result.handler.handler as ActionType,
-            target: result.handler.target,
-            params: result.handler.params,
-            actions: result.handler.actions as ActionDefinition[],
-          };
+          // 오류 처리기 정의를 통째로 넘긴다 — 키를 골라 담으면 단일 `<fail>` 의 conditions·switch·if·
+          // actionRef·onSuccess 가 경고 없이 버려졌다(engine-v1.80.0, #753).
+          const handlerAction = { ...result.handler, type: 'click' } as ActionDefinition;
 
           await this.executeAction(handlerAction, errorContext);
           return { success: false, error: actionError };
@@ -3119,10 +3162,8 @@ export class ActionDispatcher {
       logger.warn(
         `handleNavigate: No route matched, falling back to "${fallbackAction.handler}"`
       );
-      await this.dispatchAction(
-        { type: 'click', handler: fallbackAction.handler, params: fallbackAction.params } as ActionDefinition,
-        context
-      );
+      // 대체 동작 객체를 통째로 넘긴다 — sequence(actions)·conditions·cases·if 가 탈락하지 않게(engine-v1.80.0)
+      await this.dispatchAction({ ...fallbackAction, type: 'click' } as ActionDefinition, context);
       this.applyScrollOption(params.scroll, params.scrollBehavior, 'top');
       return;
     }
@@ -3161,7 +3202,7 @@ export class ActionDispatcher {
   private resolveNavigateFallbackAction(
     finalPath: string,
     params: Record<string, any>
-  ): { handler: string; params: Record<string, any> } | null {
+  ): Omit<ActionDefinition, 'type'> | null {
     const fallbackOption = params.fallback;
 
     // 명시적 비활성화
@@ -3196,19 +3237,22 @@ export class ActionDispatcher {
   }
 
   /**
-   * navigate fallback 옵션을 정규화하여 { handler, params } 구조로 변환합니다.
+   * navigate fallback 옵션을 정규화하여 실행할 액션 정의로 변환합니다.
+   *
+   * 객체로 지정한 대체 동작은 통째로 돌려준다(params 에 path 만 채운다) — sequence(actions)·conditions·
+   * cases·if 를 골라 담지 않는다(engine-v1.80.0).
    *
    * @param fallbackOption params.fallback 원본 값 (undefined | string | object)
    * @param finalPath query 병합 완료된 경로
    * @param originalParams 원래 navigate params
-   * @returns fallback 핸들러 정의
+   * @returns fallback 액션 정의
    * @since engine-v1.40.0
    */
   private resolveNavigateFallback(
     fallbackOption: any,
     finalPath: string,
     _originalParams: Record<string, any>
-  ): { handler: string; params: Record<string, any> } {
+  ): Omit<ActionDefinition, 'type'> {
     // 기본값: openWindow with target '_self' — 같은 탭에서 이동.
     // 이전 기본값(`'_blank'`)은 admin↔user 교차 이동 시 새 탭이 열려 사용자 흐름이
     // 끊기는 결함을 유발. 명시적으로 새 탭이
@@ -3229,10 +3273,10 @@ export class ActionDispatcher {
       };
     }
 
-    // 객체: 상세 지정 { handler, params }
+    // 객체: 상세 지정 — 원본 그대로, params 에 path 를 채운다
     if (typeof fallbackOption === 'object' && typeof fallbackOption.handler === 'string') {
       return {
-        handler: fallbackOption.handler,
+        ...fallbackOption,
         params: {
           path: finalPath,
           ...(fallbackOption.params || {}),
@@ -5801,7 +5845,7 @@ export class ActionDispatcher {
       // default 케이스 확인
       if (cases['default']) {
         logger.log('switch handler: case key is undefined, using default case');
-        return await this.executeAction(cases['default'], context);
+        return await this.runSwitchCase(action, cases['default'], context);
       }
       logger.warn('switch handler: case key is not defined and no default case');
       return;
@@ -5825,6 +5869,29 @@ export class ActionDispatcher {
     }
 
     // 케이스 액션 실행
+    return await this.runSwitchCase(action, caseAction, context);
+  }
+
+  /**
+   * switch 가 고른 case 를 실행합니다.
+   *
+   * case 값이 배열이면 conditions 의 `then` 배열과 같이 순서대로(sequence) 실행한다 — 종전에는 배열을
+   * 액션 하나로 넘겨 handler 가 없어 실패했다(engine-v1.80.0).
+   *
+   * @param action switch 액션 정의
+   * @param caseAction 고른 case 의 액션(단일 또는 배열)
+   * @param context 액션 컨텍스트
+   * @returns 실행 결과
+   */
+  private async runSwitchCase(
+    action: ActionDefinition,
+    caseAction: ActionDefinition | ActionDefinition[],
+    context: ActionContext
+  ): Promise<any> {
+    if (Array.isArray(caseAction)) {
+      return await this.handleSequence({ ...action, handler: 'sequence', actions: caseAction }, context);
+    }
+
     return await this.executeAction(caseAction, context);
   }
 

@@ -74,7 +74,7 @@
 | `data_sources` | `<data-source …/>` (반복) — §4 |
 | `computed` | `<computed name="total">{{a+b}}</computed>` (반복) |
 | `initLocal`/`initGlobal`/`initIsolated` | `<init-local>`/`<init-global>`/`<init-isolated>` + `<field>`/`<from-source>` 트리 — §7 |
-| `init_actions` | `<init>…</init>` (자식 액션, 축소 화이트리스트) |
+| `init_actions` | `<init>…</init>` (자식 액션 — `<sequence>`·`<switch>`·`<conditions>`·`<action-ref>`·`<success>`/`<fail>`/`<error-handling>` 모두 된다. 진입점 전용 키 `confirm`·`debounce`·`stopPropagation`·`key` 만 굽기 오류 `init_action_key_forbidden`) |
 | `named_actions` | `<action name="searchOrders">…</action>` |
 | `defines` | `<defines><define name="x">JSON</define></defines>` |
 | `permissions` | `<permissions>` — 아래 참조 |
@@ -418,7 +418,9 @@ top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(액�
 
 > `<api-call>` 의 `target` 이 곧 요청 URL(엔드포인트)이다. `method` 는 params 로 전달. 핸들러 49종은 kebab↔camel 자동 변환(`<set-state>`↔setState). 확장/점 핸들러는 `<action handler="sirsoft-ecommerce.toggleArrayValue">`.
 >
-> **`<action-ref name>` 은 핸들러 없이 성립하는 유일한 액션이다.** `named_actions` 에 정의해 둔 액션을 이름으로 불러 쓰는 형태(`actionRef`)로, `<action>` 은 `handler` 가 필수라 이 형태를 지을 수 없다. 같은 액션을 여러 진입점에서 재사용하거나, `init_actions` 루트처럼 키 화이트리스트가 좁은 자리에서 복잡한 액션을 우회 실행할 때 쓴다.
+> **`<action-ref name>` 은 핸들러 없이 성립하는 유일한 액션이다.** `named_actions` 에 정의해 둔 액션을 이름으로 불러 쓰는 형태(`actionRef`)로, `<action>` 은 `handler` 가 필수라 이 형태를 지을 수 없다. 같은 액션을 여러 진입점에서 재사용할 때 쓴다. `<init>`·`<on listen>`·`<fail>`·`<on-code>` 안에서도 그대로 실행된다(engine-v1.80.0 — 그 전에는 `<init>` 이 이 형태를 굽기에서 거부했고 JSON 으로 적으면 화면 진입이 실패했다).
+>
+> **`<on>`·`<fail>`·`<on-code>` 의 자식이 여럿이면 순서대로 실행된다(암묵 sequence) — 이제 모든 자리에서 그렇다.** 엔진은 버튼 클릭뿐 아니라 이벤트 받기(`<on listen>`)·실패 처리(`<fail>`·`<on-code>`)·데이터소스 오류 처리·첫 진입 동작(`<init>`)에서도 적은 액션을 통째로 실행한다(engine-v1.80.0). 그 전에는 이 자리들에서 액션을 옮겨 담으며 키를 골라 담아, 분기(`<conditions>`·`<switch>`)·연속 실행·`if`·`<action-ref>` 가 경고 없이 버려졌다.
 >
 > **조건 분기의 실행 블록도 같은 블록 규칙이다 (G9).** `<conditions>` 의 `<when if>`/`<else>` 본문은 `<case>`/`<default>` 와 같다 — 액션이 하나면 `then` 이 단일 객체, 둘 이상이면 배열이 된다. 엔진은 두 형태를 모두 받으므로(배열은 sequence 처럼 순차 실행) 작성에서는 자식 수만 신경 쓰면 된다.
 >

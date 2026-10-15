@@ -139,6 +139,56 @@ API 에러 발생
 | `sequence` | 순차 실행 |
 | `parallel` | 병렬 실행 |
 | `showErrorPage` | 에러 페이지 렌더링 |
+| `conditions` | 조건 분기 (`<conditions>` — 예: `{{error.status === 409}}`) |
+| `switch` | 값 분기 (`<switch on>` — case 값에 동작 여러 개(배열)도 된다) |
+| `suppress` | 아무것도 하지 않음 (예정된 실패 — 아래 「에러 전파 방지」) |
+| `actionRef`(핸들러 없이) | `named_actions` 의 이름 — `<action-ref name>` 으로 그 액션을 실행 (engine-v1.80.0) |
+| `if`(모든 핸들러에 붙는 키) | 조건이 거짓이면 그 처리기를 실행하지 않는다 — 처리한 것으로 끝나며 레이아웃·템플릿·시스템 기본 처리로 넘어가지 않는다 (engine-v1.80.0) |
+
+오류 처리기는 **적은 그대로 실행된다**(engine-v1.80.0) — 버튼 클릭과 같이 `if`·`<action-ref>`·`onSuccess`·`resultTo` 도 쓸 수 있다. 그 전에는 오류 처리기를 옮겨 담으면서 `handler`·`target`·`params`·`actions` 만 남겨, **단일** `<fail>`·`<on-code>` 안의 `<conditions>`·`<switch>` 는 아무 일도 하지 않고 `if` 는 무시돼 항상 실행됐다. 동작을 하나 적든(객체) 여럿 적든(배열 → sequence) 같게 동작한다.
+
+```html
+<button type="button" data-ref="save_button">
+  <on type="click">
+    <api-call target="/api/me/addresses" method="POST">
+      <fail>
+        <conditions>
+          <when if="{{error.status === 409}}"><toast type="info" message="$t:address.name_exists"/></when>
+          <else><toast type="error" message="{{error.message}}"/></else>
+        </conditions>
+      </fail>
+    </api-call>
+  </on>
+  저장
+</button>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "id": "save_button",
+  "type": "basic",
+  "name": "Button",
+  "props": { "type": "button" },
+  "text": "저장",
+  "actions": [
+    {
+      "type": "click",
+      "handler": "apiCall",
+      "target": "/api/me/addresses",
+      "params": { "method": "POST" },
+      "onError": {
+        "handler": "conditions",
+        "conditions": [
+          { "if": "{{error.status === 409}}", "then": { "handler": "toast", "params": { "type": "info", "message": "$t:address.name_exists" } } },
+          { "then": { "handler": "toast", "params": { "type": "error", "message": "{{error.message}}" } } }
+        ]
+      }
+    }
+  ]
+}
+```
 
 ### sequence/parallel 지원
 
@@ -185,6 +235,44 @@ API 에러 발생
 | `{{error.message}}` | 에러 메시지 |
 | `{{error.errors}}` | 필드별 에러 (422) |
 | `{{error.data}}` | 전체 응답 데이터 |
+
+**데이터소스 오류 처리에서는 `{{route.*}}`·`{{query.*}}` 도 읽는다** (engine-v1.80.0) — 데이터소스의 `onError`·`errorHandling`·`errorCondition` 이 실행될 때 그 화면의 라우트 파라미터와 쿼리를 함께 싣는다. 작성·수정을 한 레이아웃으로 처리하는 화면이 같은 404 를 주소로 가를 수 있다:
+
+```html
+<data-source id="order" type="api" endpoint="/api/user/orders/{{route.order_number ?? 0}}" method="GET" :auto_fetch="true">
+  <error-handling>
+    <on-code code="404">
+      <conditions>
+        <when if="{{!!route.claim_number}}"><suppress/></when>
+        <else><show-error-page :errorCode="404" target="content"/></else>
+      </conditions>
+    </on-code>
+  </error-handling>
+</data-source>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "id": "order",
+  "type": "api",
+  "endpoint": "/api/user/orders/{{route.order_number ?? 0}}",
+  "method": "GET",
+  "auto_fetch": true,
+  "errorHandling": {
+    "404": {
+      "handler": "conditions",
+      "conditions": [
+        { "if": "{{!!route.claim_number}}", "then": { "handler": "suppress" } },
+        { "then": { "handler": "showErrorPage", "params": { "errorCode": 404, "target": "content" } } }
+      ]
+    }
+  }
+}
+```
+
+액션(api-call 등)의 오류 처리는 원래 그 화면의 데이터 문맥 전체(`route`·`query`·`_local`·`_global` 포함)를 읽는다. 데이터소스 오류 처리에 더해지는 것은 `route`·`query` 뿐이다.
 
 > **레이아웃 바인딩에서는 `{{error.data}}` 를 쓰지 않는다.** 엔진 `ErrorContext` 에 `data`(전체 응답 본문)와 `errors`(필드별 에러)가 함께 있지만, 레이아웃은 `{{error.errors}}` 만 사용한다 — 정적 검사가 차단한다(번들 코퍼스 실사용: `error.data` **0건** / `error.errors` **120건**). 위 표는 컨텍스트에 어떤 키가 있는지를 설명할 뿐 레이아웃 작성 권장 경로가 아니다.
 

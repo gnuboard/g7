@@ -30,6 +30,7 @@ import { ActionDispatcher, ActionDefinition } from './ActionDispatcher';
 import { resolveIterationSource, evaluateIfCondition, evaluateRenderCondition, bindComponentActions, resolveClassMap, buildExtensionPointHostProps } from './helpers/RenderHelpers';
 import { hasPipes } from './PipeRegistry';
 import { evaluateComputedDefinitions, isInheritableDefinitions } from './helpers/ComputedEvaluator';
+import { makeLayoutListenerResult } from './helpers/componentEventResult';
 import { getEngineFlags } from './EngineFlags';
 import {
   extractSingleBinding as canonicalExtractSingleBinding,
@@ -662,22 +663,36 @@ export interface ComponentDefinition {
    *         "target": "_local",
    *         "value": { "showSuccess": true }
    *       }
+   *     },
+   *     {
+   *       "event": "cart:changed",
+   *       "handler": "sequence",
+   *       "actions": [
+   *         { "handler": "setState", "params": { "target": "local", "cartDirty": true } },
+   *         { "handler": "refetchDataSource", "params": { "dataSourceId": "cart" } }
+   *       ]
+   *     },
+   *     {
+   *       "event": "order:status",
+   *       "handler": "conditions",
+   *       "conditions": [
+   *         { "if": "{{_eventData.status === 'paid'}}", "then": { "handler": "toast", "params": { "type": "success", "message": "$t:order.paid" } } }
+   *       ]
    *     }
    *   ]
    * }
    * ```
+   *
+   * 항목은 `event` + 일반 액션 키 전부다 — 버튼 클릭과 같이 sequence·conditions·switch·if·actionRef·
+   * target·resultTo·onSuccess·onError·errorHandling 이 동작한다(engine-v1.80.0). 처리 결과는 보낸 쪽
+   * `_local._eventResult` 에 담긴다. `debounce`·`key`·`stopPropagation` 은 사용자가 직접 누르는 진입점에서만
+   * 효과가 있어 이 자리에서는 무시된다.
    */
-  onComponentEvent?: Array<{
+  onComponentEvent?: Array<Omit<ActionDefinition, 'type'> & {
     /** 구독할 이벤트 이름 (예: "upload:site_logo", "form:submitted") */
     event: string;
-    /** 이벤트 발생 시 실행할 핸들러 */
-    handler: string;
-    /** 핸들러에 전달할 파라미터 */
-    params?: Record<string, any>;
-    /** 이벤트 핸들러 성공 시 실행할 액션 (선택적) */
-    onSuccess?: ActionDefinition | ActionDefinition[];
-    /** 이벤트 핸들러 실패 시 실행할 액션 (선택적) */
-    onError?: ActionDefinition | ActionDefinition[];
+    /** 형식 값 — 엔진이 `click` 으로 채운다 */
+    type?: ActionDefinition['type'];
   }>;
 
   /**
@@ -1450,6 +1465,9 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
     // 모달 등에서 부모 상태 접근 시 항상 최신 값을 반환하도록 함
     const parentDataContextRef = useRef<Record<string, any> | undefined>(parentDataContext);
 
+    // onComponentEvent 리스너가 실행 시점에 읽는 최신 데이터·컴포넌트 문맥 (engine-v1.80.0)
+    const listenerContextRef = useRef<{ dataContext: Record<string, any>; componentContext: any } | null>(null);
+
     // 격리된 상태 컨텍스트 (IsolatedStateProvider 내부에서만 유효)
     const isolatedContext = useIsolatedState();
 
@@ -2195,6 +2213,11 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // getEffectiveContext()에서 데이터소스 키를 최상위 컨텍스트에 병합함.
       parentDataContext: extendedDataContext,
     }), [extendedDataContext._local, handleSetState, localDynamicState, isolatedContext, extendedDataContext]);
+
+    // `<on listen>`(onComponentEvent) 리스너가 실행 시점에 읽을 최신 문맥 — 구독은 마운트 때 한 번이라
+    // 콜백이 마운트 시점 문맥을 붙잡으면 `{{_local.x}}` 가 옛 값으로 읽히고, 로컬 setState 가 그 옛 스냅샷을
+    // 기준으로 저장소 B 를 맞춘다(리스너가 sequence·conditions 를 실행하게 된 engine-v1.80.0 부터 드러남).
+    listenerContextRef.current = { dataContext: extendedDataContext, componentContext };
 
     /**
      * 조건부 렌더링 평가
@@ -3544,36 +3567,42 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
               continue;
             }
 
+            // 로그에 쓸 리스너 이름 — handler 가 없는 모양(actionRef 만)도 있다
+            const listenerLabel = eventDef.handler ?? eventDef.actionRef ?? '(sequence)';
+
             // 이벤트 콜백 함수 생성
             const eventCallback = async (eventData?: any) => {
               try {
+                // 실행 시점의 최신 문맥 — 마운트 시점 문맥(클로저)은 그 뒤의 상태 변경을 모른다
+                const latest = listenerContextRef.current;
+                const listenerDataContext = latest?.dataContext ?? extendedDataContext;
+                const listenerComponentContext = latest?.componentContext ?? componentContext;
+
                 // 이벤트 데이터를 포함한 확장 컨텍스트 생성
                 const eventContext = {
-                  ...extendedDataContext,
+                  ...listenerDataContext,
                   _eventData: eventData,
                 };
 
-                // 핸들러 생성 및 실행
+                // 액션 정의를 통째로 넘긴다(event 키만 뺀다) — 키를 골라 담으면 암묵 sequence·conditions·
+                // switch·if·actionRef·target·resultTo 가 경고 없이 버려졌다(engine-v1.80.0, #753).
+                const { event: _eventName, ...actionDef } = eventDef;
                 const handler = actionDispatcher.createHandler(
-                  {
-                    handler: eventDef.handler,
-                    params: eventDef.params,
-                    onSuccess: eventDef.onSuccess,
-                    onError: eventDef.onError,
-                  },
+                  { ...actionDef, type: 'click' } as ActionDefinition,
                   eventContext,
-                  componentContext
+                  listenerComponentContext
                 );
 
                 const result = await handler(new CustomEvent(eventDef.event, { detail: eventData }));
                 logger.log(
-                  `onComponentEvent "${eventDef.event}" handled: ${eventDef.handler} (Component: ${componentDef.id})`,
+                  `onComponentEvent "${eventDef.event}" handled: ${listenerLabel} (Component: ${componentDef.id})`,
                   { eventData, result }
                 );
-                return result;
+                // 보낸 쪽 `_local._eventResult` 가 받는 쪽의 성공·실패·결과를 알 수 있게 표식 결과로 돌려준다
+                return makeLayoutListenerResult(result, { sequence: actionDef.handler === 'sequence' });
               } catch (error) {
                 logger.error(
-                  `onComponentEvent "${eventDef.event}" failed: ${eventDef.handler} (Component: ${componentDef.id})`,
+                  `onComponentEvent "${eventDef.event}" failed: ${listenerLabel} (Component: ${componentDef.id})`,
                   error
                 );
                 throw error;

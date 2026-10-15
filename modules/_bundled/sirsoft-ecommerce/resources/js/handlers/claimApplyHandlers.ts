@@ -250,13 +250,16 @@ export function resolveClaimEditNumber(): string {
 /**
  * 작성 셸의 주문 데이터소스가 404 로 끝났을 때의 처분을 정합니다.
  *
+ * @deprecated sirsoft-ecommerce 1.3.1 — 번들 레이아웃은 errorHandling 안 <conditions>(route.claim_number) 로 대체.
+ * 운영자가 저장한 레이아웃 호환을 위해 등록만 유지
+ *
  * 작성 진입은 주소가 주문번호를 품으므로 404 는 곧 "열 수 없는 주문" 이고 오류 화면을
  * 세워야 한다. 수정 진입은 주소에 주문번호가 없어 **첫 호출이 반드시 404** 다 — 주문번호는
  * 신청서 응답이 알려 주고 그 뒤 체인이 올바른 번호로 다시 부른다. 그 정상 경로에서 오류
  * 화면을 세우면 수정 화면이 열리지 않는다.
  *
- * 두 경우를 데이터소스의 `errorHandling` 만으로는 가를 수 없다 — 그 자리는 조건 분기를
- * 받지 않는다(핸들러의 `conditions` 배열이 전달되지 않는다). 그래서 판정을 여기서 한다.
+ * 코어 engine-v1.80.0 부터 데이터소스 오류 처리 안의 conditions 가 실행되고 그 문맥에서 route 를 읽을 수
+ * 있어, 같은 판정을 레이아웃이 `<when if="{{!!route.claim_number}}">` 로 직접 한다.
  *
  * @example
  * { "handler": "sirsoft-ecommerce.claimApplyOrderMissing" }
@@ -389,7 +392,7 @@ export async function initClaimEditHandler(
             claimEditSnapshot: claim,
             claimEditLoading: false,
             // 주문번호는 order 데이터소스의 주소 재료다. 이 값이 서기 전의 첫 호출은
-            // 404 로 끝나고(claimApplyOrderMissing 이 그 404 를 정상 경로로 판정한다),
+            // 404 로 끝나고(셸의 errorHandling 이 route.claim_number 로 그 404 를 정상 경로로 판정한다),
             // 여기서 값을 세운 뒤의 refetch 가 실제 주문을 읽는다.
             claimEditOrderNumber: claim.order_number ?? null,
             // 접수 때 고른 환불 우선순위를 되살린다 (S1-D13).

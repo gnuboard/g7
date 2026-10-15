@@ -6,6 +6,9 @@ description: |
   다만 말없이 사라지면 운영자가 저장된 줄 알기 때문에, 고친 것이 있는 채 다른 탭을 누르면 확인 창을 띄운다.
   머무르기는 고친 값과 변경 표시를 그대로 두고, 옮기기는 평소 탭 전환과 같은 순서로 옮긴다.
   같은 탭 안 본인인증 정책 목록의 필터·검색·초기화·쪽 넘김은 목록 소스만 다시 받아, 위쪽 설정 칸에서 고친 값과 변경 표시를 덮지 않는다(7.1.0 조치 R1 ②).
+  탭 전환의 정리(「변경 있음」·오류·인라인 추가 폼)·전역 탭·주소 갱신은 탭 본문 틀의 이벤트 받기 한 곳이 맡고, 탭 줄(변경 없음)과
+  확인 창 [이동] 은 같은 이벤트(sirsoft-ecommerce:settings-switch-tab)만 보낸다 — 코어 engine-v1.80.0 이 이벤트 받기 안의 연속 실행을
+  지원하면서 두 곳에 복제했던 정리 목록을 하나로 모았다(#753).
 
 axes:
   case: [dirty_other_tab_opens_confirm, clean_other_tab_switches, dirty_same_tab_no_confirm, stay_keeps_edits, leave_switches_tab, identity_filter_not_form_state, tab_refetch_overlay_covers_inputs, identity_list_refetches_list_only]
@@ -21,6 +24,7 @@ effects:
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-settings-unsaved-tab-confirm.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin-ecommerce-settings-switch-tab-listener.test.tsx
 
 notes: |
   브라우저 흐름(ko/en/ja, 머무르기와 옮기기)은 7.1.0 조치 G2 재실측에서 확인한다. Playwright spec 은 코어 환경설정만 다룬다.

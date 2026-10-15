@@ -1,0 +1,43 @@
+{
+    "id": "probe_fail",
+    "type": "basic",
+    "name": "Button",
+    "actions": [
+        {
+            "type": "click",
+            "handler": "apiCall",
+            "target": "/api/probe",
+            "params": {
+                "method": "POST"
+            },
+            "onError": {
+                "handler": "conditions",
+                "conditions": [
+                    {
+                        "if": "{{error.status === 409}}",
+                        "then": {
+                            "handler": "toast",
+                            "params": {
+                                "type": "info",
+                                "message": "dup"
+                            }
+                        }
+                    },
+                    {
+                        "then": {
+                            "handler": "toast",
+                            "params": {
+                                "type": "error",
+                                "message": "{{error.message}}"
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "props": {
+        "type": "button"
+    },
+    "text": "Save"
+}

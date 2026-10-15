@@ -152,7 +152,7 @@ return [
         'duplicate_case_key' => ':case 케이스를 두 번 지정했습니다.',
         'duplicate_action_key' => ':key 를 두 번 지정했습니다. 속성과 태그가 같은 자리를 다투지 않는지 확인하세요.',
         'confirm_not_at_root' => 'confirm 은 이벤트에 직접 연결된 액션에서만 확인창을 띄웁니다. 중첩 액션의 confirm 은 무시되므로 진입 액션으로 옮기세요.',
-        'init_action_key_forbidden' => '초기화 액션에는 :key 를 쓸 수 없습니다 — 초기화 단계에서 조용히 무시됩니다. 후속 동작은 <success> 안에 두거나 named action 으로 참조하세요.',
+        'init_action_key_forbidden' => '초기화 액션에는 :key 를 쓸 수 없습니다 — 화면에서 직접 누르는 동작에만 적용되는 키라 화면 첫 진입 동작에서는 효과가 없습니다.',
 
         // 문서 구조 (S4)
         'section_tag_in_node_position' => '<:tag> 는 문서 최상위 섹션이라 컴포넌트 자리에 쓸 수 없습니다. 문서 봉투 직속에 두세요.',
@@ -209,8 +209,9 @@ return [
         'component_type_mismatch' => ':component 의 종류를 :written 으로 적었지만 :template 템플릿은 :declared 로 선언합니다 — data-type 을 확인하세요(생략하면 basic).',
         'extension_component_not_installed' => '설치된 확장 어디에도 없는 컴포넌트입니다: :name — :extension 확장이 삭제됐거나 이름이 틀렸을 수 있습니다. 저장은 되지만 그 확장이 없으면 화면에 그려지지 않습니다.',
         'template_component_kept' => '이 템플릿의 컴포넌트 목록에 없는 컴포넌트입니다: :name — 저장본에 이미 있던 것이라 저장은 되지만, 이 템플릿에서는 화면에 그려지지 않을 수 있습니다.',
-        'nested_action_debounce_ignored' => ':handler 액션에 단 debounce 는 적용되지 않습니다 — 조건·순서·결과 처리 안쪽 액션은 이벤트마다 바로 실행됩니다. 감싸는 바깥 액션(<conditions :debounce>·<sequence :debounce>)에 다세요.',
+        'nested_action_debounce_ignored' => ':handler 액션에 단 debounce 는 적용되지 않습니다 — 조건·순서·결과 처리 안쪽이나 이벤트 받기·실패 처리·첫 진입 동작의 액션은 매번 바로 실행됩니다. 화면에서 직접 누르는 동작(<on type> 바로 아래 액션, 예: <sequence :debounce>)에 다세요.',
         'mixed_debounce_flushed' => ':name 의 :event 에 debounce 를 단 액션과 바로 실행하는 액션이 함께 있습니다 — 바로 실행하는 액션이 돌 때마다 대기 중인 debounce 액션도 즉시 실행되어 매 입력 실행됩니다. 기다리게 하려면 이 이벤트의 액션을 모두 debounce 로 맞추세요.',
+        'entry_only_key_ignored' => ':key 는 화면에서 바로 누르는 동작에만 적용됩니다. 이 자리(이벤트 받기·실패 처리·첫 진입 동작·안쪽 동작)의 :handler 액션에서는 무시됩니다.',
     ],
 
     // 설정 관련 예외

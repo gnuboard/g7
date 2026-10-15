@@ -1076,6 +1076,11 @@ effects:
   # 조건(when) 안 액션의 debounce 는 엔진이 무시한다 — 린터가 경고한다(7.1.0 잔여 관측 R-05)
   - nested_action_debounce_is_warned
   - mixed_debounce_on_same_event_is_warned
+  # #753 — 엔진이 이벤트 받기·실패 처리·첫 진입 동작을 통째로 실행한다(engine-v1.80.0). 진입점 전용 키(key·
+  # stopPropagation)를 그 자리에 적으면 린터가 알리고, init 은 sequence·switch·action-ref 를 굽고, 분기 모양이 왕복한다.
+  - entry_only_key_is_warned
+  - init_accepts_flow_handlers_and_action_ref
+  - branch_shapes_in_listen_fail_init_round_trip
   # 7.1.0 P16 — 검사 경고·보안 위반 소스 줄 위치(LayoutMarkupIssueLocationTest, 조합 축은 layout-markup-issue-location.yaml)
   - lint_warning_carries_source_line
   - security_violation_carries_source_line

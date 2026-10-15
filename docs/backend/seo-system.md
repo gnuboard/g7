@@ -1565,7 +1565,7 @@ SEO 렌더링 시 레이아웃의 `init_actions`에서 `setState` 핸들러를 �
 
 #### 동작 원리
 
-1. `init_actions` 배열에서 `handler: "setState"` 항목만 추출
+1. `init_actions` 배열에서 `handler: "setState"` 항목만 추출 — `handler: "sequence"`·`"parallel"` 항목은 `actions`(없으면 `params.actions`) 안으로 내려가 같은 규칙으로 읽는다(깊이 상한 10, 엔진이 `<init>` 의 sequence 를 실행하게 된 engine-v1.80.0 짝)
 2. `target: "global"`인 항목은 스킵 (SEO `_global`은 별도 주입)
 3. `params`의 메타 키(`target`, `handler`, `comment`)를 제외한 나머지를 `_local`에 매핑
 4. `{{expression}}` 값은 현재 컨텍스트(`query`, `route` 등)로 평가
@@ -1613,6 +1613,8 @@ SEO 렌더링 시 레이아웃의 `init_actions`에서 `setState` 핸들러를 �
 | `loadFromLocalStorage` | 서버 사이드에서 localStorage 미존재 |
 | `closeModal` | SEO에서 모달 상태 불필요 |
 | `navigate` | SEO 렌더링은 단일 페이지 |
+| `conditions` · `switch` | 봇 렌더러는 분기를 평가하지 않는다 — 분기 안의 setState 는 반영하지 않는다(`if` 도 지금처럼 무시) |
+| `actionRef`(`<action-ref>`) | 봇 렌더러는 `named_actions` 를 따라가지 않는다 — 참조한 named action 안의 setState 는 반영하지 않는다. 봇 화면 초기값이 필요하면 init 최상위나 `sequence` 안에 직접 적는다 |
 | 기타 비-setState | _local 초기화와 무관 |
 
 ### 파이프라인 흐름
