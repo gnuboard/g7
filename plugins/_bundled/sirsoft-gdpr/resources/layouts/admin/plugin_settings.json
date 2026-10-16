@@ -3406,19 +3406,16 @@
                                                     },
                                                     {
                                                         "type": "basic",
-                                                        "name": "Button",
+                                                        "name": "A",
                                                         "actions": [
                                                             {
                                                                 "type": "click",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/admin/plugins/sirsoft-gdpr/notice-log"
-                                                                }
+                                                                "handler": "navigate"
                                                             }
                                                         ],
                                                         "props": {
-                                                            "type": "button",
-                                                            "className": "btn btn-secondary"
+                                                            "href": "/admin/plugins/sirsoft-gdpr/notice-log",
+                                                            "className": "button btn btn-secondary"
                                                         },
                                                         "children": [
                                                             {
@@ -3963,19 +3960,16 @@
                             {
                                 "id": "footer_cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/plugins"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary text-sm"
+                                    "href": "/admin/plugins",
+                                    "className": "button btn btn-secondary text-sm"
                                 },
                                 "children": [
                                     {

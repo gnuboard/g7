@@ -47,16 +47,16 @@
           </on>
           <icon name="arrows-rotate" class="text-xl"/>
         </button>
-        <button data-ref="back_button" class="flex-center gap-2 btn btn-secondary">
+        <a href="/admin/boards/reports" :mergeQuery="true" data-ref="back_button" class="button flex-center gap-2 btn btn-secondary">
           <on type="click">
             <!-- 신고 목록으로. 보던 목록 상태를 이고 간다 -->
-            <navigate path="/admin/boards/reports" :mergeQuery="true">
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
           <icon name="arrow-left" class="text-base"/>
           <span>$t:common.back</span>
-        </button>
+        </a>
       </page-header>
       <include src="partials/admin_board_reports_detail/_alert_status.g7.html"/>
       <include src="partials/admin_board_reports_detail/_card_report_info.g7.html"/>

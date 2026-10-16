@@ -55,16 +55,16 @@
         <span class="text-xs bizppurio-tone-warning">$t:sirsoft-message_bizppurio.plugin_read_only</span>
       </div>
       <div data-ref="settings_tabs" class="mt-6 border-b border-gray-200 dark:border-gray-700 flex gap-1">
-        <button data-ref="tab_connection" type="button" class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {{(query.tab ?? 'connection') === 'connection' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}}">
+        <a href="/admin/plugins/{{route.identifier}}/settings?tab=connection" :mergeQuery="true" data-ref="tab_connection" class="button px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {{(query.tab ?? 'connection') === 'connection' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}}">
           <on type="click">
             <!-- 탭 전환은 URL 쿼리 tab 으로만 한다 — replace 로 이력을 늘리지 않고, mergeQuery 로 다른 쿼리(bz_*)는 보존한다. -->
-            <navigate path="/admin/plugins/{{route.identifier}}/settings" :mergeQuery="true" :replace="true">
+            <navigate :mergeQuery="true" :replace="true">
               <query tab="connection"/>
             </navigate>
           </on>
           <span>$t:sirsoft-message_bizppurio.settings.tabs.connection</span>
-        </button>
-        <button data-ref="tab_templates" type="button" class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {{(query.tab ?? 'connection') === 'templates' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}}">
+        </a>
+        <a href="/admin/plugins/{{route.identifier}}/settings?tab=templates" :mergeQuery="true" data-ref="tab_templates" class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {{(query.tab ?? 'connection') === 'templates' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}}">
           <on type="click">
             <!-- 템플릿 탭으로 전환하면서 DB 목록을 받는다 — 목록 데이터소스는 auto_fetch 가 꺼져 있어(연결 탭에서는 불필요) 탭 진입 시점에 직접 부른다. -->
             <sequence>
@@ -75,7 +75,7 @@
             </sequence>
           </on>
           <span>$t:sirsoft-message_bizppurio.settings.tabs.templates</span>
-        </button>
+        </a>
       </div>
       <div data-ref="connection_tab_panel" data-key="form" data-track-changes data-if="{{(query.tab ?? 'connection') === 'connection'}}">
         <!-- 사용 전 준비 안내(통합 1박스) — 알림톡 템플릿 탭 list_notice 와 동일 구조. 위: 총괄 안내 1줄 + 콘솔 열기 링크. 구분선(border-t). 아래: 문자·카카오 채널별 사전 준비 목록(라벨 굵게 + 들여쓴 하위 불릿). -->
@@ -283,12 +283,12 @@
           </div>
         </div>
         <div data-ref="footer_buttons" class="sticky-footer-buttons">
-          <button data-ref="cancel_button" type="button" class="btn btn-secondary">
+          <a href="/admin/plugins" data-ref="cancel_button" class="button btn btn-secondary">
             <on type="click">
-              <navigate path="/admin/plugins"/>
+              <navigate/>
             </on>
             <span>$t:common.cancel</span>
-          </button>
+          </a>
           <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
             <on type="click">
               <!-- 설정 저장 — 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보낸다. 실패하면 서버 검증 오류를 필드별로 펼치고 오류 요약 위치로 스크롤한다(긴 폼이라 상단 토스트만으로는 어디가 틀렸는지 못 찾는다). -->
@@ -331,15 +331,15 @@
                 </div>
               </div>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm whitespace-nowrap">
+            <a href="/admin/plugins/{{route.identifier}}/settings?tab=connection" :mergeQuery="true" class="button btn btn-secondary btn-sm whitespace-nowrap">
               <on type="click">
                 <!-- 준비 안내의 [설정으로] — 연결 탭으로 보낸다(같은 화면의 탭 전환이라 mergeQuery·replace). -->
-                <navigate path="/admin/plugins/{{route.identifier}}/settings" :mergeQuery="true" :replace="true">
+                <navigate :mergeQuery="true" :replace="true">
                   <query tab="connection"/>
                 </navigate>
               </on>
               <span>$t:sirsoft-message_bizppurio.templates.readiness.go_settings</span>
-            </button>
+            </a>
           </div>
           <p class="text-xs text-amber-700 dark:text-amber-300 mt-2 leading-relaxed">$t:sirsoft-message_bizppurio.templates.readiness.note</p>
         </div>
@@ -671,7 +671,7 @@
             </div>
           </div>
           <div class="flex justify-center mt-4">
-            <pagination data-type="composite" currentPage="{{bizppurio_templates_list?.data?.pagination?.current_page ?? 1}}" totalPages="{{bizppurio_templates_list?.data?.pagination?.last_page ?? null}}" hasMorePages="{{bizppurio_templates_list?.data?.pagination?.has_more_pages ?? false}}">
+            <pagination :pageHrefMergeQuery="true" pageHref="/admin/plugins/{{route.identifier}}/settings?bz_page={page}" data-type="composite" currentPage="{{bizppurio_templates_list?.data?.pagination?.current_page ?? 1}}" totalPages="{{bizppurio_templates_list?.data?.pagination?.last_page ?? null}}" hasMorePages="{{bizppurio_templates_list?.data?.pagination?.has_more_pages ?? false}}">
               <on type="action" event="onPageChange">
                 <!-- 페이지 이동 — 쿼리 bz_page 로 싣고 목록을 다시 받는다(mergeQuery 로 상태·검색 조건은 보존). -->
                 <sequence>

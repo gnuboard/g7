@@ -28,16 +28,16 @@
           </on>
           <icon data-ref="refresh_icon" name="refresh" class="text-xl"/>
         </button>
-        <button data-ref="add_board_button" disabled="{{boards?.data?.abilities?.can_create !== true}}" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <a href="/admin/boards/create" :mergeQuery="true" data-ref="add_board_button" disabled="{{boards?.data?.abilities?.can_create !== true}}" class="button flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed">
           <on type="click">
             <!-- 새 게시판 만들기. 만들기를 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다 -->
-            <navigate path="/admin/boards/create" :mergeQuery="true">
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
           <icon name="plus" class="text-xl"/>
           <span>$t:sirsoft-board.admin.board.index.add_board</span>
-        </button>
+        </a>
       </page-header>
       <div data-ref="content_area" class="admin-card">
         <div data-ref="search_area" class="flex justify-end mb-6">
@@ -50,7 +50,7 @@
             </on>
           </search-bar>
         </div>
-        <card-grid data-type="composite" data-ref="boards_card_grid" :data-blur-until-loaded="true" data="{{boards.data.data}}" :gridColumns="1" :gap="4" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{boards?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{boards?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{boards?.data?.pagination?.has_more_pages ?? false}}" :alwaysShowPagination="true" emptyMessage="$t:sirsoft-board.admin.board.index.empty_description" cardClassName="rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+        <card-grid data-type="composite" data-ref="boards_card_grid" pageHref="/admin/boards?page={page}" :pageHrefMergeQuery="true" :data-blur-until-loaded="true" data="{{boards.data.data}}" :gridColumns="1" :gap="4" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{boards?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{boards?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{boards?.data?.pagination?.has_more_pages ?? false}}" :alwaysShowPagination="true" emptyMessage="$t:sirsoft-board.admin.board.index.empty_description" cardClassName="rounded-lg bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border border-gray-200 dark:border-gray-700 p-6 space-y-4">
           <card id="board_card">
             <div data-ref="card_header_row" class="flex items-start justify-between">
               <div data-ref="header_left" class="flex items-center gap-3">
@@ -78,8 +78,8 @@
                 </toggle>
                 <action-menu data-type="composite" data-ref="action_menu" triggerLabel="" triggerIconName="ellipsis-h" position="right">
                   <prop name="items">
-                    <item id="edit" label="$t:sirsoft-board.admin.board.actions.edit" iconName="pencil" disabled="{{row.abilities?.can_update !== true}}"/>
-                    <item id="manage_posts" label="$t:sirsoft-board.admin.board.actions.manage_posts" iconName="list"/>
+                    <item href="/admin/boards/{{row.slug}}/edit" id="edit" label="$t:sirsoft-board.admin.board.actions.edit" iconName="pencil" disabled="{{row.abilities?.can_update !== true}}"/>
+                    <item href="/admin/board/{{row.slug}}" id="manage_posts" label="$t:sirsoft-board.admin.board.actions.manage_posts" iconName="list"/>
                     <item id="copy" label="$t:sirsoft-board.admin.board.actions.copy" iconName="copy" disabled="{{row.abilities?.can_create !== true}}"/>
                     <item id="delete" label="$t:sirsoft-board.admin.board.actions.delete" iconName="trash" variant="danger" disabled="{{row.abilities?.can_delete !== true}}"/>
                   </prop>

@@ -180,7 +180,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-sm font-medium text-danger-soft"
+                                                    "className": "text-sm font-medium page-tone-danger"
                                                 },
                                                 "text": "$t:sirsoft-page.admin.page.form.validation_error"
                                             },
@@ -256,7 +256,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-warning-soft"
+                                    "className": "text-xs page-tone-warning"
                                 },
                                 "text": "{{route?.id ? '$t:sirsoft-page.admin.page.form.read_only_message' : '$t:sirsoft-page.admin.page.form.read_only_message_create'}}"
                             }
@@ -996,22 +996,22 @@
                             {
                                 "id": "footer_cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "취소. 수정 중이면 그 페이지 상세로, 새로 만드는 중이면 목록으로 돌아간다. 어느 쪽이든 목록 상태를 이고 가므로 목록까지 되짚어 나가도 보던 자리가 남는다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "{{route?.id ? '/admin/pages/' + route.id : '/admin/pages'}}",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary",
+                                    "href": "{{route?.id ? '/admin/pages/' + route.id : '/admin/pages'}}",
+                                    "mergeQuery": true,
+                                    "className": "button btn btn-secondary",
                                     "data-testid": "page-form-cancel"
                                 },
                                 "children": [

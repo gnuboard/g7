@@ -308,7 +308,7 @@
                     {
                         "comment": "뒤로가기 버튼",
                         "type": "basic",
-                        "name": "Button",
+                        "name": "A",
                         "responsive": {
                             "desktop": {
                                 "props": {
@@ -321,13 +321,14 @@
                                 "type": "click",
                                 "handler": "navigate",
                                 "params": {
-                                    "path": "{{_global.shopBase}}/products",
                                     "mergeQuery": true,
                                     "query": {}
                                 }
                             }
                         ],
                         "props": {
+                            "href": "{{_global.shopBase}}/products",
+                            "mergeQuery": true,
                             "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 cursor-pointer"
                         },
                         "children": [
@@ -511,23 +512,27 @@
                             }
                         ],
                         "props": {
+                            "tabHrefMergeQuery": true,
                             "hiddenTabIds": "{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ? [] : ['qna']}}",
                             "activeTabId": "{{_local.activeTab ?? 'info'}}",
                             "variant": "underline",
                             "tabs": [
                                 {
                                     "id": "info",
+                                    "href": "{{route.path}}?tab=info",
                                     "label": "$t:shop.tabs.detail_info",
                                     "iconName": "file-text"
                                 },
                                 {
                                     "id": "reviews",
+                                    "href": "{{route.path}}?tab=reviews",
                                     "label": "$t:shop.tabs.reviews",
                                     "badge": "{{reviews.data?.total_count ?? 0}}",
                                     "iconName": "star"
                                 },
                                 {
                                     "id": "qna",
+                                    "href": "{{route.path}}?tab=qna",
                                     "label": "$t:shop.tabs.qna",
                                     "badge": "{{qna.data.meta.total ?? 0}}",
                                     "iconName": "comment"

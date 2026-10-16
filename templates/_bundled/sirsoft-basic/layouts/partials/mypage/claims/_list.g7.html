@@ -7,7 +7,31 @@
     <!-- 유형 서브탭 — 진입 시 주소(query.type)를 읽고, 조작 시 claimsType/claimsPage와 주소를 함께 갱신한 뒤 claims만 다시 조회한다. 주문 전체 재조회나 컴포넌트 재마운트 없이 선택·포커스·스크롤을 유지한다. 주소에 유형이 없을 때만 응답의 claim_type(주문상세 셸이 type 을 비워 보내면 서버가 접수 건이 있는 첫 유형을 골라 돌려준다)을 읽고, 그것도 없으면 교환이다(신청내역 목록 화면은 늘 유형을 실어 보내므로 종전 그대로 교환). -->
     <div class="flex items-center gap-1 border-b border-gray-200 dark:border-gray-700 mb-4 overflow-x-auto">
       <responsive on="portable" class="flex items-center gap-1 border-b border-gray-200 dark:border-gray-700 mb-3 overflow-x-auto"/>
-      <button data-each="tab in {{[{ id: 'exchange', label: $t('claim.list.tab_exchange') }, { id: 'return', label: $t('claim.list.tab_return') }, { id: 'refund', label: $t('claim.list.tab_refund') }, { id: 'cancel', label: $t('claim.list.tab_cancel') }]}}" type="button" aria-disabled="{{_local.claimsLoading === true || claims?.data == null}}" class="{{(_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id ? 'px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white cursor-pointer' : 'px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer'}}">
+      <!-- 회원 갈래는 유형 주소(?type=)를 가진 링크다(새 탭으로 그 유형을 열 수 있다). 보통 클릭은 아래 순서 그대로 주소만 바꾸고 목록을 다시 부른다 -->
+      <a href="{{(_local.claimListPath ?? '') + '?type=' + tab.id + '&amp;page=1'}}" data-if="{{!_local.isGuest}}" data-each="tab in {{[{ id: 'exchange', label: $t('claim.list.tab_exchange') }, { id: 'return', label: $t('claim.list.tab_return') }, { id: 'refund', label: $t('claim.list.tab_refund') }, { id: 'cancel', label: $t('claim.list.tab_cancel') }]}}" aria-disabled="{{_local.claimsLoading === true || claims?.data == null}}" class="{{(_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id ? 'inline-block px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white cursor-pointer' : 'inline-block px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer'}}">
+        <on type="click">
+          <!-- audit:allow layout-list-context-navigate-merge-query 유형 서브탭 전환 — 유형마다 서버가 다른 테이블을 읽으므로 앞 유형의 페이지 번호를 물려받으면 빈 화면이 열린다. 목록 정체성이 바뀌는 이동이라 승계하지 않는다. -->
+          <sequence if="{{_local.claimsLoading !== true &amp;&amp; claims?.data != null}}">
+            <set-state target="local" claimsType="{{tab.id}}" :claimsPage="1" :claimsLoading="true"/>
+            <!-- audit:allow layout-list-context-navigate-merge-query 유형 서브탭 전환 — 유형마다 서버가 다른 테이블을 읽으므로 앞 유형의 페이지 번호를 물려받으면 빈 화면이 열린다. 목록 정체성이 바뀌는 이동이라 승계하지 않는다. -->
+            <replace-url path="{{_local.claimListPath ?? ''}}" scroll="preserve">
+              <query type="{{tab.id}}" page="1"/>
+            </replace-url>
+            <refetch-data-source dataSourceId="claims" :sync="true">
+              <fail>
+                <set-state target="local" :claimsLoading="false"/>
+              </fail>
+            </refetch-data-source>
+            <set-state target="local" :claimsLoading="false"/>
+          </sequence>
+        </on>
+        <icon data-if="{{_local.claimsLoading === true &amp;&amp; (_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id}}" name="spinner" class="text-sm animate-spin mr-1" :aria-hidden="true"/>
+        <span>{{tab.label}}</span>
+        <!-- 서브탭 건수 뱃지 (F12). 서버는 매 요청 네 유형을 세어 `counts` 로 실어 보내는데 구매자 화면은 그 값을 그리지 않아, 어느 탭에 무엇이 있는지 눌러 보기 전에는 알 수 없었다(관리자 화면에는 있는 표기다). 0건인 탭에는 세우지 않는다 — 0 을 나란히 그리면 '아직 세지 않음' 과 구분되지 않는다. -->
+        <span data-if="{{(claims?.data?.counts?.[tab.id] ?? 0) > 0}}" class="{{(_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id ? 'ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] px-1.5 py-0.5 rounded-full text-xs font-semibold bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}}">{{claims?.data?.counts?.[tab.id] ?? 0}}</span>
+      </a>
+      <!-- 비회원 갈래는 단추로 둔다 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않는다 -->
+      <button data-if="{{_local.isGuest}}" data-each="tab in {{[{ id: 'exchange', label: $t('claim.list.tab_exchange') }, { id: 'return', label: $t('claim.list.tab_return') }, { id: 'refund', label: $t('claim.list.tab_refund') }, { id: 'cancel', label: $t('claim.list.tab_cancel') }]}}" type="button" aria-disabled="{{_local.claimsLoading === true || claims?.data == null}}" class="{{(_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id ? 'px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white cursor-pointer' : 'px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer'}}">
         <on type="click">
           <!-- audit:allow layout-list-context-navigate-merge-query 유형 서브탭 전환 — 유형마다 서버가 다른 테이블을 읽으므로 앞 유형의 페이지 번호를 물려받으면 빈 화면이 열린다. 목록 정체성이 바뀌는 이동이라 승계하지 않는다. -->
           <sequence if="{{_local.claimsLoading !== true &amp;&amp; claims?.data != null}}">
@@ -78,7 +102,16 @@
             </span>
             <div data-if="{{claim.is_editable === true || claim.is_withdrawable === true}}" class="flex items-center gap-2">
               <!-- [수정] — 승인 전에만. edit 라우트는 클레임 번호만 받고 유형은 서버가 번호로 해석한다. -->
-              <button data-if="{{claim.is_editable === true}}" type="button" class="px-2.5 py-1 text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+              <a href="{{(_local.claimDetailPathBase ?? '') + '/' + claim.claim_number + '/edit'}}" :mergeQuery="true" data-if="{{claim.is_editable === true &amp;&amp; !_local.isGuest}}" class="inline-flex items-center justify-center px-2.5 py-1 text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+                <on type="click">
+                  <navigate :mergeQuery="true">
+                    <query/>
+                  </navigate>
+                </on>
+                $t:claim.list.edit
+              </a>
+              <!-- 비회원 갈래는 단추로 둔다 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않아, 새 탭으로 열면 조회 폼으로 되돌아간다 -->
+              <button data-if="{{claim.is_editable === true &amp;&amp; _local.isGuest}}" type="button" class="px-2.5 py-1 text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
                 <on type="click">
                   <navigate path="{{(_local.claimDetailPathBase ?? '') + '/' + claim.claim_number + '/edit'}}" :mergeQuery="true">
                     <query/>
@@ -210,7 +243,17 @@
         <!-- 카드 푸터 — 상세보기. 목록 상태(서브탭·페이지)를 그대로 물려주어 뒤로 돌아왔을 때 보던 자리가 남게 한다. 주문상세 셸(claimDetailLinkMode 가 선 곳)에서는 번호 자체가 링크라 이 푸터가 중복이므로 세우지 않는다. -->
         <div data-ref="claim_list_card_footer_{{claim.claim_number}}" data-if="{{!_local.claimDetailLinkMode}}" class="flex justify-end pt-3 mt-3 border-t border-gray-100 dark:border-gray-700">
           <!-- [상세보기] — 지금 이 푸터가 서는 곳은 회원 신청내역 목록뿐이지만, 주소는 리터럴로 들지 않고 셸이 준 상세 주소 앞부분에 신청번호를 잇는다. 다른 셸이 푸터를 켜도 자기 상세 화면으로 가게 하기 위해서다. -->
-          <button type="button" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+          <a data-if="{{!_local.isGuest}}" href="{{(_local.claimDetailPathBase ?? '') + '/' + claim.claim_number}}" :mergeQuery="true" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+            <on type="click">
+              <navigate :mergeQuery="true">
+                <query/>
+              </navigate>
+            </on>
+            <span>$t:claim.list.detail</span>
+            <icon name="chevron-right" class="text-xs"/>
+          </a>
+          <!-- 비회원 갈래는 단추로 둔다 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않는다 -->
+          <button data-if="{{_local.isGuest}}" type="button" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
             <on type="click">
               <navigate path="{{(_local.claimDetailPathBase ?? '') + '/' + claim.claim_number}}" :mergeQuery="true">
                 <query/>
@@ -227,7 +270,15 @@
     <div data-if="{{!!claims.data &amp;&amp; (claims.data?.data ?? []).length === 0}}" class="flex flex-col items-center justify-center py-16 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
       <icon name="rotate-left" class="text-5xl text-gray-300 dark:text-gray-600"/>
       <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">$t:claim.list.empty</p>
-      <button type="button" class="mt-4 px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer">
+      <a data-if="{{!_local.isGuest}}" href="{{_local.claimEmptyCtaPath ?? ''}}" class="inline-flex items-center justify-center mt-4 px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer">
+        <on type="click">
+          <!-- audit:allow layout-list-context-navigate-merge-query 이 목록 밖으로 나가는 이동 — 클레임 목록의 서브탭·페이지를 물려주면 목적지가 알지 못하는 파라미터가 실린다. 목적지는 셸이 정한다(회원=주문 내역, 비회원=상품 목록 — 비회원에게는 주문 내역 화면이 없다). -->
+          <navigate/>
+        </on>
+        $t:claim.list.go_orders
+      </a>
+      <!-- 비회원 갈래는 단추로 둔다 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않는다 -->
+      <button data-if="{{_local.isGuest}}" type="button" class="mt-4 px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer">
         <on type="click">
           <!-- audit:allow layout-list-context-navigate-merge-query 이 목록 밖으로 나가는 이동 — 클레임 목록의 서브탭·페이지를 물려주면 목적지가 알지 못하는 파라미터가 실린다. 목적지는 셸이 정한다(회원=주문 내역, 비회원=상품 목록 — 비회원에게는 주문 내역 화면이 없다). -->
           <navigate path="{{_local.claimEmptyCtaPath ?? ''}}"/>
@@ -240,7 +291,7 @@
       <icon data-if="{{_local.claimsLoading === true}}" name="spinner" class="text-sm text-gray-500 dark:text-gray-400 animate-spin"/>
     </div>
     <!-- 총 건수가 상한에 잘렸으면 last_page가 null로 오고 마지막 페이지 점프만 감춘다. -->
-    <pagination data-type="composite" data-if="{{((claims.data?.pagination?.last_page ?? 0) > 1) || (claims.data?.pagination?.has_more_pages === true) || ((claims.data?.pagination?.current_page ?? 1) > 1)}}" currentPage="{{claims.data?.pagination?.current_page}}" totalPages="{{claims.data?.pagination?.last_page ?? null}}" hasMorePages="{{claims.data?.pagination?.has_more_pages ?? false}}" class="mt-4">
+    <pagination pageHref="{{_local.isGuest ? '' : (_local.claimListPath ?? '') + '?page={page}'}}" :pageHrefMergeQuery="true" data-type="composite" data-if="{{((claims.data?.pagination?.last_page ?? 0) > 1) || (claims.data?.pagination?.has_more_pages === true) || ((claims.data?.pagination?.current_page ?? 1) > 1)}}" currentPage="{{claims.data?.pagination?.current_page}}" totalPages="{{claims.data?.pagination?.last_page ?? null}}" hasMorePages="{{claims.data?.pagination?.has_more_pages ?? false}}" class="mt-4">
       <responsive on="portable" currentPage="{{claims.data?.pagination?.current_page}}" totalPages="{{claims.data?.pagination?.last_page ?? null}}" hasMorePages="{{claims.data?.pagination?.has_more_pages ?? false}}" class="mt-3"/>
       <on event="onPageChange">
         <sequence if="{{_local.claimsLoading !== true}}">

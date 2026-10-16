@@ -116,22 +116,22 @@
                                     {
                                         "id": "back_button",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "comment": "목록으로 — 질의를 병합해 돌아가므로 목록에서 들고 온 기간·검색어·유형·쪽이 그대로 살아난다.",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/analytics/visitors",
                                                     "mergeQuery": true,
                                                     "query": {}
                                                 }
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "btn-icon",
+                                            "href": "/admin/analytics/visitors",
+                                            "mergeQuery": true,
+                                            "className": "button btn-icon",
                                             "aria-label": "$t:admin.analytics.visitor_detail.back"
                                         },
                                         "children": [

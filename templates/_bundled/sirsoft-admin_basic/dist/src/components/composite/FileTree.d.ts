@@ -23,6 +23,11 @@ export interface FileTreeNode {
         updatedAt?: string;
         disabled?: boolean;
     };
+    /**
+     * 이 파일을 여는 주소(예: 편집 화면 `?route=…`) — 있으면 이름이 행을 덮는 링크가 되어 가운데 클릭·Ctrl+클릭으로
+     * 새 탭에서 그 파일을 연다(#757). 보통 클릭은 지금처럼 onSelect. 주소로 가리킬 수 없는 항목(부분 레이아웃·확장 조각)은 비운다.
+     */
+    href?: string;
 }
 /** 한 파일에서 찾은 내용 매치. */
 export interface FileTreeContentMatch {
@@ -51,7 +56,7 @@ export interface FileTreeProps {
     searchKeyword?: string;
     /** 서버가 준 내용 검색 결과 */
     contentMatches?: FileTreeContentMatch[];
-    /** 아직 파일이 없는 가상 폴더 (PO 결정 D-2) */
+    /** 아직 파일이 없는 가상 폴더 (결정 D-2) */
     pendingFolders?: string[];
     /** 행 높이 — 터치 환경은 `touch`(44px) */
     rowSize?: 'compact' | 'touch';
@@ -61,6 +66,8 @@ export interface FileTreeProps {
     canManage?: boolean;
     /** 목록을 불러오는 중 */
     isLoading?: boolean;
+    /** 참이면 현재 주소의 쿼리를 파일 주소(href)에 합친다(같은 키는 파일 주소 쪽이 이긴다) */
+    hrefMergeQuery?: boolean;
     onSelect?: (key: string, revealAt?: FileTreeReveal) => void;
     onToggle?: (expandedPaths: string[]) => void;
     onCreateFile?: (parentPath: string) => void;

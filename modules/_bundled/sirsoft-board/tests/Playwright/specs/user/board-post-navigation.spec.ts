@@ -4,7 +4,7 @@
  * - 45-1: 목록(category/search/page)에서 상세 진입 후 '목록' 클릭 시 동일 query 로 복귀.
  *         행 클릭/목록 버튼 navigate 의 mergeQuery:true 가 URL 상태를 왕복 보존.
  * - 47-1: 카테고리가 섞인 게시판에서 이전/다음 글은 현재 글과 동일 카테고리 글만 이동.
- * - 47-4: 답글 상세에서는 이전/다음 버튼이 노출되지 않는다 (원글 인용 블록이 안내 담당).
+ * - 47-4: 답글 상세에서는 이전/다음 링크가 노출되지 않는다 (원글 인용 블록이 안내 담당).
  *
  * 단위/통합:
  *   - 백엔드 PostNavigationTest 가 category/reply/notice/secret/blinded/boundary 를 cross product 로 검증
@@ -37,8 +37,8 @@ test.describe.skip('게시글 네비게이션 + 목록 복귀 — 사용자 페�
     await page.goto(listUrl);
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
-    // 첫 번째 글 행 클릭 → 상세 진입
-    const firstRow = page.locator('a[href*="/board/"], button').filter({ hasText: /.+/ }).first();
+    // 첫 번째 글 행(상세 주소를 가진 링크, #757) 클릭 → 상세 진입. 글쓰기 링크는 제외한다
+    const firstRow = page.locator(`a[href^="/board/${BOARD_SLUG}/"]:not([href*="/write"])`).first();
     await firstRow.click();
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
@@ -46,8 +46,8 @@ test.describe.skip('게시글 네비게이션 + 목록 복귀 — 사용자 페�
     expect(page.url()).toContain('category=');
     expect(page.url()).toContain('page=2');
 
-    // '목록' 버튼 클릭 → 동일 query 로 복귀
-    await page.getByRole('button', { name: /목록|List/ }).first().click();
+    // '목록' 링크 클릭 → 동일 query 로 복귀
+    await page.getByRole('link', { name: /(목록|Back to List)$/i }).first().click();
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
     expect(page.url()).toContain(`/board/${BOARD_SLUG}`);
@@ -61,9 +61,9 @@ test.describe.skip('게시글 네비게이션 + 목록 복귀 — 사용자 페�
     await page.goto(`/board/${BOARD_SLUG}/${FREE_MIDDLE_POST_ID}?category=자유`);
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
-    const nextBtn = page.getByRole('button', { name: /다음|Next/ }).first();
-    await expect(nextBtn).toBeVisible({ timeout: 10_000 });
-    await nextBtn.click();
+    const nextLink = page.getByRole('link', { name: /(다음글|Next)(?!\s*page)/i }).first();
+    await expect(nextLink).toBeVisible({ timeout: 10_000 });
+    await nextLink.click();
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
     // 이동한 상세의 카테고리 라벨이 동일(자유)해야 함
@@ -72,15 +72,20 @@ test.describe.skip('게시글 네비게이션 + 목록 복귀 — 사용자 페�
 
   // @scenario post_kind=reply
   // @effects navigation_null_for_reply
-  test('답글 상세에서는 이전/다음 버튼이 노출되지 않는다', async ({ page }) => {
+  test('답글 상세에서는 이전/다음 링크가 노출되지 않는다', async ({ page }) => {
     await page.goto(`/board/${BOARD_SLUG}/${REPLY_POST_ID}`);
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
-    await expect(page.getByRole('button', { name: /이전|Prev/ })).toHaveCount(0, {
-      timeout: 10_000,
-    });
-    await expect(page.getByRole('button', { name: /다음|Next/ })).toHaveCount(0, {
-      timeout: 10_000,
-    });
+    // 같은 네비게이션 영역의 '목록' 링크가 그려진 뒤에 부재를 잰다 — 렌더 전 0 으로 통과하지 않게
+    await expect(page.getByRole('link', { name: /(목록|Back to List)$/i }).first()).toBeVisible({ timeout: 10_000 });
+
+    // 이전/다음은 링크(#757)다. 단추로 되돌아가도 거짓 통과하지 않도록 두 역할을 함께 단언한다.
+    // '이전 페이지'·'Previous page'(댓글 페이지 번호)는 제외한다.
+    const prevName = /(이전글|Previous)(?!\s*page)/i;
+    const nextName = /(다음글|Next)(?!\s*page)/i;
+    for (const role of ['link', 'button'] as const) {
+      await expect(page.getByRole(role, { name: prevName })).toHaveCount(0);
+      await expect(page.getByRole(role, { name: nextName })).toHaveCount(0);
+    }
   });
 });

@@ -73,7 +73,8 @@ test.describe('회원 주문상세 클레임 섹션', () => {
       } }) });
     });
     await openOrderDetail(page, 'EX-PAGE-1');
-    const second = page.getByRole('button', { name: '페이지 2', exact: true });
+    // 회원 주문 상세의 페이지 번호는 링크다(#757 WP-L — pageHref). 보통 클릭은 같은 화면 안 교체라 아래 단언이 그대로 선다.
+    const second = page.getByRole('link', { name: '페이지 2', exact: true });
     await second.scrollIntoViewIfNeeded();
     await second.focus();
     const before = await page.evaluate(() => ({ y: scrollY, origin: performance.timeOrigin }));
@@ -101,16 +102,16 @@ test.describe('회원 주문상세 클레임 섹션', () => {
       await held;
       await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ success: false, message: 'test failure' }) });
     });
-    const tab = page.getByRole('button', { name: /^반품( \d+)?$/ });
+    const tab = page.getByRole('link', { name: /^반품( \d+)?$/ });
     await tab.scrollIntoViewIfNeeded();
     await tab.focus();
     const element = await tab.elementHandle();
     try {
-      await element!.evaluate((button: HTMLButtonElement) => button.click());
+      await element!.evaluate((button: HTMLElement) => button.click());
       await expect.poll(() => count).toBe(1);
       expect(await element!.evaluate(button => button.querySelectorAll('.animate-spin').length)).toBe(1);
       expect(await element!.getAttribute('aria-disabled')).toBe('true');
-      await element!.evaluate((button: HTMLButtonElement) => button.click());
+      await element!.evaluate((button: HTMLElement) => button.click());
       expect(count).toBe(1);
     } finally {
       release();
@@ -148,6 +149,8 @@ test.describe('회원 주문상세 클레임 섹션', () => {
     await expect(link).toHaveCount(1);
     expect(await link.getAttribute('href')).toBe('/mypage/claims/EX20260902-0900');
     // 번호가 곧 링크라 푸터 [상세보기] 는 없다
+    // 푸터 [상세보기]는 링크로 그린다(#757 WP-L) — 단추·링크 어느 쪽으로도 서지 않아야 한다.
+    await expect(page.getByRole('link', { name: '상세보기' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: '상세보기' })).toHaveCount(0);
 
     // 이미지 없는 상품 — 자리표시 아이콘이 서고 img 는 없다 (claimRow 의 thumbnail_url 은 null)
@@ -188,8 +191,8 @@ test.describe('회원 주문상세 클레임 섹션', () => {
     await openOrderDetail(page, 'RT20260902-0920');
 
     // 활성 서브탭은 진한 밑줄(border-gray-900)이다 — 반품만 활성이고 교환은 아니다
-    await expect(page.getByRole('button', { name: /^반품( \d+)?$/ })).toHaveClass(/border-gray-900/);
-    await expect(page.getByRole('button', { name: /^교환( \d+)?$/ })).not.toHaveClass(/border-gray-900/);
+    await expect(page.getByRole('link', { name: /^반품( \d+)?$/ })).toHaveClass(/border-gray-900/);
+    await expect(page.getByRole('link', { name: /^교환( \d+)?$/ })).not.toHaveClass(/border-gray-900/);
     expect(new URL(page.url()).searchParams.get('type')).toBeNull();
 
     // 화면이 유형을 정하지 않았다 — 나간 요청의 type 은 전부 비어 있다
@@ -215,7 +218,7 @@ test.describe('회원 주문상세 클레임 섹션', () => {
 
     await openOrderDetail(page, 'EX20260902-0910');
 
-    const tab = page.getByRole('button', { name: /^반품( \d+)?$/ });
+    const tab = page.getByRole('link', { name: /^반품( \d+)?$/ });
     await tab.scrollIntoViewIfNeeded();
     await tab.focus();
     const before = await page.evaluate(() => ({ y: scrollY, origin: performance.timeOrigin }));

@@ -17,6 +17,8 @@ import { Span } from '../basic/Span';
 import { H3 } from '../basic/H3';
 import { Img } from '../basic/Img';
 import type { EditorAttrs } from '../../types';
+import { LinkButton } from '../../support/LinkButton';
+import { mergeQueryIntoHref } from '../../support/navigationLink';
 
 /**
  * 선호 통화를 전역 상태에서 읽고, 변경을 구독하는 훅.
@@ -231,23 +233,22 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const nameHighlighted = product.name_highlighted;
   const descriptionHtml = product.description_highlighted ?? product.short_description;
 
+  const base = shopBase === '/' ? '' : shopBase;
+  // 상세 페이지는 product_code 기준 라우팅. code 미제공 시 id 로 폴백(하위호환).
+  const detailPath = `${base}/products/${product.product_code ?? product.id}`;
+
   const handleClick = () => {
     if (onClick) {
       onClick(product.id);
     } else {
-      const base = shopBase === '/' ? '' : shopBase;
-      // 상세 페이지는 product_code 기준 라우팅. code 미제공 시 id 로 폴백(하위호환).
-      const identifier = product.product_code ?? product.id;
-      navigate(`${base}/products/${identifier}`, preserveListQuery);
+      navigate(detailPath, preserveListQuery);
     }
   };
 
-  return (
-    <Button
-      onClick={handleClick}
-      className={`block w-full text-left group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer ${className}`}
-      id={id} {...editorAttrs}
-    >
+  const cardClassName = `block w-full text-left group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer ${className}`;
+
+  const content = (
+    <>
       {/* 이미지 영역 */}
       <Div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700">
         {/* 상품 이미지 */}
@@ -273,7 +274,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* 할인율 뱃지 (좌상단) - 품절/판매중단 시 숨김 */}
         {hasDiscount && product.sales_status !== 'sold_out' && product.sales_status !== 'suspended' && (
-          <Span className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-xs font-bold rounded">
+          <Span className="absolute top-2 left-2 px-2 py-1 bg-red-500 dark:bg-red-600 text-white dark:text-white text-xs font-bold rounded">
             {product.discount_rate}%
           </Span>
         )}
@@ -362,7 +363,29 @@ const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </Div>
       </Div>
-    </Button>
+    </>
+  );
+
+  // 상세로 가는 카드는 링크 — 가운데 클릭·Ctrl+클릭으로 새 탭에 연다(#757). 목록 문맥을 승계하면 href 에도 같은 쿼리를 싣는다.
+  // 레이아웃이 onClick 으로 따로 처리하는 카드는 주소를 알 수 없으므로 단추 그대로다.
+  if (onClick) {
+    return (
+      <Button onClick={handleClick} className={cardClassName} id={id} {...editorAttrs}>
+        {content}
+      </Button>
+    );
+  }
+
+  return (
+    <LinkButton
+      href={preserveListQuery ? mergeQueryIntoHref(detailPath) : detailPath}
+      onNavigate={handleClick}
+      className={cardClassName}
+      id={id}
+      {...(editorAttrs as Record<string, unknown>)}
+    >
+      {content}
+    </LinkButton>
   );
 };
 

@@ -10,14 +10,12 @@
         <p class="text-warning-soft flex-1">$t:admin.analytics.alerts.collection_disabled</p>
         <!-- 안내 버튼은 그 화면에 갈 수 있는 계정에게만 그린다 — 권한이 없으면 눌러도 「필요 권한」 페이지뿐이라
         안내가 막다른 길이 된다(#682 S3 라운드 3). 문구는 남겨 사실은 계속 알린다. -->
-        <button data-ref="collection_disabled_link" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.update'))}}" type="button" class="text-sm font-medium underline text-yellow-800 dark:text-yellow-200">
+        <a data-ref="collection_disabled_link" href="/admin/analytics/settings?tab=collection" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.update'))}}" class="button text-sm font-medium underline text-yellow-800 dark:text-yellow-200">
           <on type="click">
-            <navigate path="/admin/analytics/settings">
-              <query tab="collection"/>
-            </navigate>
+            <navigate/>
           </on>
           $t:admin.analytics.alerts.collection_disabled_link
-        </button>
+        </a>
       </div>
     </div>
     <!-- 익명으로 내려간 사유가 실리면 띄운다 — 운영자가 고른 모드로 가두지 않는다.
@@ -44,12 +42,12 @@
       <div class="flex-center gap-3">
         <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0"/>
         <p class="text-error-soft flex-1">$t:admin.analytics.alerts.queue_backlog|count={{(analytics_status?.data?.queue?.pending_jobs ?? 0) | number}}</p>
-        <button data-ref="queue_backlog_link" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.read'))}}" type="button" class="text-sm font-medium underline text-red-800 dark:text-red-200">
+        <a data-ref="queue_backlog_link" href="/admin/analytics/diagnostics" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.read'))}}" class="button text-sm font-medium underline text-red-800 dark:text-red-200">
           <on type="click">
-            <navigate path="/admin/analytics/diagnostics"/>
+            <navigate/>
           </on>
           $t:admin.analytics.alerts.queue_backlog_link
-        </button>
+        </a>
       </div>
     </div>
     <!-- 아래 세 줄은 집계 신선도 경고다. 값은 집계 응답의 `data.freshness` 를 화면이 `_computed.archiveFreshness` 로
@@ -61,12 +59,12 @@
       <div class="flex-center gap-3 flex-wrap">
         <icon name="circle-info" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"/>
         <p class="text-info-soft flex-1 min-w-0">$t:admin.analytics.alerts.scheduler_missing</p>
-        <button data-ref="scheduler_missing_link" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.read'))}}" type="button" class="text-sm font-medium underline text-blue-800 dark:text-blue-200">
+        <a data-ref="scheduler_missing_link" href="/admin/analytics/diagnostics" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.read'))}}" class="button text-sm font-medium underline text-blue-800 dark:text-blue-200">
           <on type="click">
-            <navigate path="/admin/analytics/diagnostics"/>
+            <navigate/>
           </on>
           $t:admin.analytics.alerts.scheduler_missing_link
-        </button>
+        </a>
       </div>
     </div>
     <!-- 화면 열 때 집계를 끈 사이트에서 집계가 2시간 넘게 멈췄다 — 숫자가 그 시각에 멈춰 있다. -->

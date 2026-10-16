@@ -147,21 +147,22 @@
                             {
                                 "id": "header_cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "취소. 수정 중이면 그 글로, 새 글이면 게시판 글 목록으로 돌아가며 보던 목록 상태를 이고 간다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "className": "btn btn-secondary"
+                                    "href": "{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}",
+                                    "mergeQuery": true,
+                                    "className": "button btn btn-secondary"
                                 },
                                 "children": [
                                     {
@@ -286,7 +287,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-warning-soft"
+                                    "className": "text-xs board-tone-warning"
                                 },
                                 "text": "$t:sirsoft-board.admin.posts.form.read_only_message"
                             }
@@ -443,22 +444,22 @@
                                     {
                                         "id": "footer_cancel_button",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "comment": "취소(화면 아래 버튼). 위쪽 취소와 같은 자리로 돌아간다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}",
                                                     "mergeQuery": true,
                                                     "query": {}
                                                 }
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "btn btn-secondary"
+                                            "href": "{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}",
+                                            "mergeQuery": true,
+                                            "className": "button btn btn-secondary"
                                         },
                                         "children": [
                                             {

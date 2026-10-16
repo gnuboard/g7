@@ -2119,7 +2119,44 @@
                         },
                         {
                             "type": "basic",
+                            "name": "A",
+                            "if": "{{!_local.isGuest}}",
+                            "actions": [
+                                {
+                                    "comment": "앞 신청서의 결제 오류 문구를 지우고 원 신청서로 옮긴다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "claimPayError": ""
+                                            }
+                                        },
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "{{claim.data.linked_claims.source.detail_url}}",
+                                                "mergeQuery": true,
+                                                "query": {}
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "href": "{{claim.data.linked_claims.source.detail_url}}",
+                                "mergeQuery": true,
+                                "className": "inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                            },
+                            "text": "{{(claim.data?.linked_claims?.source?.claim_type_label ?? '') + ' ' + (claim.data?.linked_claims?.source?.claim_number ?? '')}}"
+                        },
+                        {
+                            "comment": "비회원 갈래는 단추로 둔다 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않는다",
+                            "type": "basic",
                             "name": "Button",
+                            "if": "{{_local.isGuest}}",
                             "actions": [
                                 {
                                     "comment": "앞 신청서의 결제 오류 문구를 지우고 원 신청서로 옮긴다",
@@ -2182,7 +2219,44 @@
                             "children": [
                                 {
                                     "type": "basic",
+                                    "name": "A",
+                                    "if": "{{!_local.isGuest}}",
+                                    "actions": [
+                                        {
+                                            "comment": "앞 신청서의 결제 오류 문구를 지우고 후속 환불로 옮긴다",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "_local",
+                                                        "claimPayError": ""
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "path": "{{linkedRefund.detail_url}}",
+                                                        "mergeQuery": true,
+                                                        "query": {}
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "href": "{{linkedRefund.detail_url}}",
+                                        "mergeQuery": true,
+                                        "className": "inline-flex items-center justify-center text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                                    },
+                                    "text": "{{linkedRefund.claim_number}}"
+                                },
+                                {
+                                    "comment": "비회원 갈래는 단추로 둔다 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않는다",
+                                    "type": "basic",
                                     "name": "Button",
+                                    "if": "{{_local.isGuest}}",
                                     "actions": [
                                         {
                                             "comment": "앞 신청서의 결제 오류 문구를 지우고 후속 환불로 옮긴다",

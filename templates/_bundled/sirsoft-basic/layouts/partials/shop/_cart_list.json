@@ -183,17 +183,15 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "{{_global.shopBase}}/products"
-                                    }
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
+                                "href": "{{_global.shopBase}}/products",
                                 "className": "inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer"
                             },
                             "children": [

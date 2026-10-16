@@ -58,6 +58,8 @@
         "data": "{{memberNotifications?.data?.data}}",
         "pagination": true,
         "serverSidePagination": true,
+        "pageHref": "/admin/member-notifications?page={page}",
+        "pageHrefMergeQuery": true,
         "serverCurrentPage": "{{memberNotifications?.data?.pagination?.current_page ?? 1}}",
         "serverTotalPages": "{{memberNotifications?.data?.pagination?.last_page ?? null}}",
         "serverHasMorePages": "{{memberNotifications?.data?.pagination?.has_more_pages ?? false}}",
@@ -216,12 +218,6 @@
                                 "event": "onItemClick",
                                 "handler": "switch",
                                 "cases": {
-                                    "view_member": {
-                                        "handler": "openWindow",
-                                        "params": {
-                                            "path": "/admin/users/{{row.member.uuid}}"
-                                        }
-                                    },
                                     "filter_by_member": {
                                         "handler": "navigate",
                                         "params": {
@@ -244,7 +240,9 @@
                                 {
                                     "id": "view_member",
                                     "label": "$t:admin.member_notification.action.view_member",
-                                    "iconName": "user"
+                                    "iconName": "user",
+                                    "href": "/admin/users/{{row.member.uuid}}",
+                                    "target": "_blank"
                                 },
                                 {
                                     "id": "filter_by_member",

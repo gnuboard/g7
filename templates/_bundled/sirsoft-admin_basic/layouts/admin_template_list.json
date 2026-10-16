@@ -776,10 +776,12 @@
                                     "tabs": [
                                         {
                                             "id": "user",
+                                            "href": "/admin/templates/user{{query.include_hidden === '1' ? '?include_hidden=1' : ''}}",
                                             "label": "$t:admin.templates.tabs.user"
                                         },
                                         {
                                             "id": "admin",
+                                            "href": "/admin/templates/admin{{query.include_hidden === '1' ? '?include_hidden=1' : ''}}",
                                             "label": "$t:admin.templates.tabs.admin"
                                         }
                                     ]

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import { createLayoutTest, createMockComponentRegistryWithBasics } from '@core/template-engine/__tests__/utils/layoutTestUtils';
+import { A } from '../../src/components/basic/A';
 
 const root = path.resolve(__dirname, '../../layouts');
 const read = (file: string) => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
@@ -11,6 +12,32 @@ const nodes = (value: any): any[] => !value || typeof value !== 'object'
   ? [] : [value, ...Object.values(value).flatMap(nodes)];
 let active: ReturnType<typeof createLayoutTest> | undefined;
 afterEach(() => { active?.cleanup(); active = undefined; });
+
+/** 기본 모의 등록부에 템플릿의 실제 링크(A)를 얹는다 — 잠긴 신청 링크는 href 를 빼고 aria-disabled 로 알린다 */
+const registryWithRealLink = () => {
+  const registry = createMockComponentRegistryWithBasics();
+  registry.register('basic', 'A', A as any);
+
+  return registry;
+};
+
+/**
+ * 신청 진입을 이름으로 찾는다 — 회원 화면은 신청서 주소를 가진 링크, 비회원 화면은 단추다.
+ *
+ * @param name 접근 가능한 이름
+ * @returns 찾은 요소(없으면 null)
+ */
+const queryEntry = (name: string): HTMLElement | null =>
+  screen.queryByRole('button', { name }) ?? screen.queryByRole('link', { name });
+
+/**
+ * 진입이 잠겼는지 — 단추는 disabled, 링크는 href 를 빼고 aria-disabled 로 알린다.
+ *
+ * @param el 진입 요소
+ * @returns 잠겼으면 true
+ */
+const isLocked = (el: HTMLElement): boolean =>
+  el.tagName === 'BUTTON' ? (el as HTMLButtonElement).disabled : el.getAttribute('aria-disabled') === 'true';
 
 describe.each(['mypage/orders/show.json', 'shop/guest_order_show.json'])('%s 상품 선택', (file) => {
   const shell = read(file);
@@ -43,7 +70,7 @@ describe.each(['mypage/orders/show.json', 'shop/guest_order_show.json'])('%s 상
       data_sources: [{ id: 'claimable', type: 'api', endpoint: '/claimable', auto_fetch: true }],
       components: [group],
     } as any, {
-      componentRegistry: createMockComponentRegistryWithBasics(),
+      componentRegistry: registryWithRealLink(),
       initialState: { _local: { selectedItemIds: selected } },
       translations: { claim: { apply: { entry_refund: '취소·환불 신청', entry_return: '반품 신청', entry_exchange: '교환 신청' } } },
     });
@@ -54,14 +81,14 @@ describe.each(['mypage/orders/show.json', 'shop/guest_order_show.json'])('%s 상
       abilities: { can_request: true, can_cancel: true },
     } } });
     await active.render();
-    const button = screen.queryByRole('button', { name: '취소·환불 신청' });
+    const button = queryEntry('취소·환불 신청');
     if (!shown) expect(button).toBeNull();
     else {
       expect(button).toBeInTheDocument();
-      expect((button as HTMLButtonElement).disabled).toBe(!enabled);
+      expect(isLocked(button as HTMLElement)).toBe(!enabled);
       expect(button).toHaveClass('bg-red-600', 'text-white');
-      expect(screen.getByRole('button', { name: '반품 신청' })).toHaveClass('bg-orange-600', 'text-white');
-      expect(screen.getByRole('button', { name: '교환 신청' })).toHaveClass('bg-blue-600', 'text-white');
+      expect(queryEntry('반품 신청')).toHaveClass('bg-orange-600', 'text-white');
+      expect(queryEntry('교환 신청')).toHaveClass('bg-blue-600', 'text-white');
     }
   });
 });
@@ -80,13 +107,15 @@ describe('클레임 부분 갱신과 주문 식별자', () => {
   it('탭·페이지는 URL과 상태를 갱신하고 claims만 다시 조회한다', () => {
     const list = read('partials/mypage/claims/_list.json');
     const sequences = nodes(list).filter(n => n.handler === 'sequence' && n.actions?.some((a: any) => a.params?.claimListPath || a.params?.path?.includes('claimListPath')));
-    expect(sequences).toHaveLength(2);
+    // 유형 서브탭 2갈래(회원 = 유형 주소 링크, 비회원 = 단추 — 비회원 조회 토큰은 탭에 묶인다) + 페이저 1
+    expect(sequences).toHaveLength(3);
     for (const sequence of sequences) {
       expect(sequence.actions.map((a: any) => a.handler)).toEqual(['setState', 'replaceUrl', 'refetchDataSource', 'setState']);
       expect(sequence.actions[1].params.scroll).toBe('preserve');
       expect(sequence.actions[2].params.dataSourceId).toBe('claims');
     }
     expect(sequences[0].actions[0].params.claimsPage).toBe(1);
+    expect(sequences[1].actions[0].params.claimsPage).toBe(1);
     for (const file of ['mypage/orders/show.json', 'shop/guest_order_show.json', 'mypage/claims.json']) {
       const source = read(file).data_sources.find((d: any) => d.id === 'claims');
       expect(source.params.type).toContain('_local.claimsType ?? query.type');

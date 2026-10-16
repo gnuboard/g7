@@ -2,6 +2,8 @@
 
 namespace App\Seo;
 
+use App\Support\SiteUrl;
+
 class ComponentHtmlMapper
 {
     /**
@@ -305,9 +307,10 @@ class ComponentHtmlMapper
         // navigate/openWindow 링크 자동 생성
         $linkAction = $this->extractLinkAction($component);
         if ($linkAction !== null) {
-            $href = $this->resolveNavigateHref($linkAction['params'], $context, $evaluator);
+            $newWindow = self::isNewWindowLink($linkAction['handler'], $linkAction['params']);
+            $href = $this->resolveNavigateHref($linkAction['params'], $context, $evaluator, $newWindow);
             if ($href !== null) {
-                $html = $this->applyNavigateLink($html, $tag, $href, $linkAction['handler'], $component);
+                $html = $this->applyNavigateLink($html, $tag, $href, $newWindow, $component);
             }
         }
 
@@ -2013,62 +2016,30 @@ class ComponentHtmlMapper
      * 나머지 표현식은 ExpressionEvaluator로 해석합니다.
      * 미해석 {{}} 토큰이 남아있으면 null을 반환합니다 (graceful skip).
      *
+     * 이동 대상은 엔진 `handleNavigate`·`handleOpenWindow` 와 같은 판정을 거친다 — 같은 탭 이동은
+     * 같은 출처만(같은 출처 전체 주소는 경로로), 새 창은 같은 출처 또는 https 외부 주소만.
+     *
+     * navigate 의 `fallbackPath`(engine-v1.80.1)도 엔진과 같다 — path 가 비었거나 거부되면 fallbackPath 로 링크하고,
+     * fallbackPath 도 같은 판정에서 거부되면 링크를 만들지 않는다. path 가 실행 시점 값(`_local` 등)이라 봇이 풀 수
+     * 없으면 대체 경로로 링크하지 않는다(사람은 그 값으로 다른 곳에 간다).
+     *
      * @param  array  $params  navigate/openWindow params
      * @param  array  $context  데이터 컨텍스트
      * @param  ExpressionEvaluator  $evaluator  표현식 평가기
-     * @return string|null 해석된 URL 또는 null (해석 불가 시)
+     * @param  bool  $newWindow  새 창 링크인지 (openWindow 의 `_self` 가 아닌 대상)
+     * @return string|null 해석된 URL 또는 null (해석 불가·거부 시)
      */
-    private function resolveNavigateHref(array $params, array $context, ExpressionEvaluator $evaluator): ?string
+    private function resolveNavigateHref(array $params, array $context, ExpressionEvaluator $evaluator, bool $newWindow): ?string
     {
-        $pathExpr = $params['path'] ?? '';
-        if ($pathExpr === '') {
+        if (($params['path'] ?? '') === '' && ! array_key_exists('fallbackPath', $params)) {
             return null;
         }
 
-        $pathExpr = (string) $pathExpr;
-
-        // _global 참조를 globalResolver로 선치환
-        if (str_contains($pathExpr, '_global')) {
-            if (! $this->globalResolver) {
-                // globalResolver 미설정 → _global 해석 불가 → skip
-                return null;
-            }
-
-            $resolveFailed = false;
-            $pathExpr = (string) preg_replace_callback(
-                '/\{\{([^}]*_global\.[^}]*)\}\}/',
-                function ($matches) use (&$resolveFailed) {
-                    $resolved = ($this->globalResolver)($matches[1]);
-                    if ($resolved === null) {
-                        $resolveFailed = true;
-                    }
-
-                    return $resolved !== null ? $resolved : $matches[0];
-                },
-                $pathExpr
-            );
-
-            if ($resolveFailed) {
-                return null;
-            }
+        $href = $this->resolveLinkTarget((string) ($params['path'] ?? ''), $context, $evaluator, $newWindow);
+        if ($href === null && ! $newWindow && array_key_exists('fallbackPath', $params)) {
+            $href = $this->resolveLinkTarget((string) $params['fallbackPath'], $context, $evaluator, false);
         }
-
-        // ExpressionEvaluator로 나머지 표현식 해석
-        $href = $evaluator->evaluate($pathExpr, $context);
-
-        // 미해석 {{}} 토큰이 남아있으면 skip
-        if (str_contains($href, '{{') || str_contains($href, '}}')) {
-            return null;
-        }
-
-        // 빈 문자열이면 skip
-        if ($href === '') {
-            return null;
-        }
-
-        // 실행 스킴(`{{query.redirect}}` ← `javascript:…`)은 링크로 만들지 않는다 — 클라이언트
-        // 이동 sink 가 막는 값을 봇 HTML 이 `<a href>` 로 되살리면 그 자리가 우회로가 된다.
-        if (self::isExecutableUrl($href, true)) {
+        if (! is_string($href)) {
             return null;
         }
 
@@ -2095,6 +2066,238 @@ class ComponentHtmlMapper
     }
 
     /**
+     * 링크 이동 주소 식 하나를 풀어 링크에 쓸 주소를 돌려줍니다.
+     *
+     * @param  string  $pathExpr  주소 식 (`/posts/{{post.slug}}`·`{{query.redirect}}` 등)
+     * @param  array  $context  데이터 컨텍스트
+     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     * @param  bool  $newWindow  새 창 링크인지
+     * @return string|false|null 링크 주소 · false(봇이 풀 수 없는 실행 시점 값 — 대체 경로도 쓰지 않음) · null(빈 값·거부)
+     */
+    private function resolveLinkTarget(string $pathExpr, array $context, ExpressionEvaluator $evaluator, bool $newWindow): string|false|null
+    {
+        if ($pathExpr === '') {
+            return null;
+        }
+
+        // _global 참조를 globalResolver로 선치환
+        if (str_contains($pathExpr, '_global')) {
+            if (! $this->globalResolver) {
+                // globalResolver 미설정 → _global 해석 불가 → skip
+                return false;
+            }
+
+            $resolveFailed = false;
+            $pathExpr = (string) preg_replace_callback(
+                '/\{\{([^}]*_global\.[^}]*)\}\}/',
+                function ($matches) use (&$resolveFailed) {
+                    $resolved = ($this->globalResolver)($matches[1]);
+                    if ($resolved === null) {
+                        $resolveFailed = true;
+                    }
+
+                    return $resolved !== null ? $resolved : $matches[0];
+                },
+                $pathExpr
+            );
+
+            if ($resolveFailed) {
+                return false;
+            }
+        }
+
+        // 정적 경로는 평가하지 않는다 — 평가기의 「빈 바인딩 뒤 남은 연산자 정리」가 `/` 한 글자를 지워 홈 링크가 사라진다
+        if (! str_contains($pathExpr, '{{')) {
+            $href = $pathExpr;
+        } else {
+            // ExpressionEvaluator로 나머지 표현식 해석
+            $href = $evaluator->evaluate($pathExpr, $context);
+
+            // 미해석 {{}} 토큰이 남아있으면 skip
+            if (str_contains($href, '{{') || str_contains($href, '}}')) {
+                return false;
+            }
+
+            // 단일 바인딩(`{{query.redirect}}`)이 `/` 로 풀려 같은 정리에 지워졌으면 원값으로 되살린다
+            if ($href === '' && preg_match('/^\{\{(?:(?!\}\}).)*\}\}$/s', trim($pathExpr))) {
+                $raw = $evaluator->evaluateRaw($pathExpr, $context);
+                $href = is_string($raw) ? $raw : '';
+            }
+
+            // 실행 시점 값(`_local`·`_isolated`·`$event`·`$args`)이 빈 값이면 봇이 모르는 값이다 — 대체 경로로도 링크하지 않는다
+            if (trim($href) === '' && preg_match('/(?<![\w.$])(_local|_isolated|\$event|\$args)\b/', $pathExpr)) {
+                return false;
+            }
+        }
+
+        // 빈 문자열이면 skip
+        if ($href === '') {
+            return null;
+        }
+
+        // 실행 스킴(`{{query.redirect}}` ← `javascript:…`)은 링크로 만들지 않는다 — 클라이언트
+        // 이동 sink 가 막는 값을 봇 HTML 이 `<a href>` 로 되살리면 그 자리가 우회로가 된다.
+        if (self::isExecutableUrl($href, true)) {
+            return null;
+        }
+
+        // 다른 출처(`https://다른 사이트`·`//host`·`/\host`)는 클라이언트가 이동하지 않는 값이라 링크로 내보내지 않는다.
+        // 같은 출처 전체 주소는 경로로 바꾼다 — 요청 주소를 같은 출처로 받아도 내보내는 값은 경로뿐이다.
+        $sameOriginPath = $this->toSameOriginLinkPath($href);
+        // 같은 탭 이동은 `/` 로 시작하는 경로만 — 클라이언트 `sanitizeNavPath` 가 상대 경로(`admin/users`·`./x`·`?q`)를 거부한다
+        if ($sameOriginPath !== null && ! $newWindow && ! str_starts_with($sameOriginPath, '/')) {
+            $sameOriginPath = null;
+        }
+        if ($sameOriginPath !== null) {
+            $href = $sameOriginPath;
+        } elseif (! $newWindow || ! self::isHttpsExternalUrl($href)) {
+            return null;
+        }
+
+        return $href;
+    }
+
+    /**
+     * 링크 액션이 새 창을 여는지 판정합니다 (엔진 `handleOpenWindow` 의 `target` 판정과 같다).
+     *
+     * @param  string  $handler  핸들러명 (navigate|openWindow)
+     * @param  array  $params  액션 params
+     * @return bool openWindow 이고 `target` 이 `_self` 가 아니면 true
+     */
+    private static function isNewWindowLink(string $handler, array $params): bool
+    {
+        return $handler === 'openWindow' && ($params['target'] ?? null) !== '_self';
+    }
+
+    /**
+     * 출처 판정 전에 브라우저 URL 파서와 같게 정규화합니다 (엔진 `normalizeScriptSrcForOriginCheck` 와 같은 규칙).
+     *
+     * 앞뒤 C0 제어문자·공백을 버리고 ASCII tab·개행을 지우며, 백슬래시를 슬래시로 바꾸고
+     * 앞쪽 3개 이상의 슬래시를 `//` 로 접는다 (`/\host`·`///host` ≡ `//host`).
+     *
+     * @param  string  $url  주소
+     * @return string 정규화한 주소
+     */
+    private static function normalizeForOriginCheck(string $url): string
+    {
+        $stripped = (string) preg_replace(['/^[\x00-\x20]+/', '/[\x00-\x20]+$/', '/[\t\n\r]/'], '', $url);
+        $slashed = str_replace('\\', '/', $stripped);
+
+        return (string) preg_replace('/^([a-z][a-z0-9+.\-]*:)?\/{2,}/i', '$1//', $slashed);
+    }
+
+    /**
+     * 링크 주소가 이 사이트와 같은 출처면 링크에 쓸 경로를 돌려줍니다.
+     *
+     * - 스킴·호스트가 없는 주소(`/path`·상대 경로·`?q`)는 원본(trim)을 그대로 — 쿼리 속 백슬래시를 보존한다.
+     * - `http(s)://` 전체 주소는 사용자 정보가 없고 출처(스킴·호스트·기본 포트 정규화)가 사이트 주소
+     *   (`app.url`) 또는 이 요청의 주소와 같을 때만 「경로?쿼리#해시」로.
+     * - `//host`·다른 출처·다른 스킴은 null.
+     *
+     * @param  string  $href  해석된 주소
+     * @return string|null 같은 출처 경로 또는 null
+     */
+    private function toSameOriginLinkPath(string $href): ?string
+    {
+        $normalized = self::normalizeForOriginCheck($href);
+        if ($normalized === '' || str_starts_with($normalized, '//')) {
+            return null;
+        }
+
+        if (! preg_match('/^[a-z][a-z0-9+.\-]*:/i', $normalized)) {
+            return trim($href);
+        }
+
+        $parts = parse_url($normalized);
+        if (! is_array($parts) || ! isset($parts['scheme'], $parts['host']) || isset($parts['user']) || isset($parts['pass'])) {
+            return null;
+        }
+
+        $origin = self::originKey($parts['scheme'], $parts['host'], $parts['port'] ?? null);
+        if ($origin === null || ! in_array($origin, $this->sameOriginKeys(), true)) {
+            return null;
+        }
+
+        $path = $parts['path'] ?? '';
+        // `https://이 사이트//다른호스트` 의 경로는 `//다른호스트` — 그대로 쓰면 바깥 링크가 된다
+        if (str_starts_with($path, '//')) {
+            return null;
+        }
+
+        return ($path === '' ? '/' : $path)
+            .(isset($parts['query']) ? '?'.$parts['query'] : '')
+            .(isset($parts['fragment']) ? '#'.$parts['fragment'] : '');
+    }
+
+    /**
+     * 같은 출처로 보는 출처 키 목록 — 사이트 주소(`app.url`)와 이 요청의 주소.
+     *
+     * @return array<int, string> `scheme://host:port` 형식 출처 키
+     */
+    private function sameOriginKeys(): array
+    {
+        $candidates = [SiteUrl::base()];
+
+        if (app()->bound('request')) {
+            try {
+                $candidates[] = request()->getSchemeAndHttpHost();
+            } catch (\Throwable) {
+                // 형식이 잘못된 Host 헤더 — 요청 주소는 후보에서 뺀다
+            }
+        }
+
+        $keys = [];
+        foreach ($candidates as $candidate) {
+            $parts = parse_url($candidate);
+            if (is_array($parts) && isset($parts['scheme'], $parts['host'])) {
+                $key = self::originKey($parts['scheme'], $parts['host'], $parts['port'] ?? null);
+                if ($key !== null) {
+                    $keys[] = $key;
+                }
+            }
+        }
+
+        return $keys;
+    }
+
+    /**
+     * 출처 비교 키를 만듭니다 (http·https 만, 기본 포트 정규화).
+     *
+     * @param  string  $scheme  스킴
+     * @param  string  $host  호스트
+     * @param  int|null  $port  명시 포트
+     * @return string|null `scheme://host:port`, http(s) 가 아니면 null
+     */
+    private static function originKey(string $scheme, string $host, ?int $port): ?string
+    {
+        $scheme = strtolower($scheme);
+        $defaultPort = match ($scheme) {
+            'https' => 443,
+            'http' => 80,
+            default => null,
+        };
+
+        if ($defaultPort === null) {
+            return null;
+        }
+
+        return $scheme.'://'.strtolower($host).':'.($port ?? $defaultPort);
+    }
+
+    /**
+     * 새 창으로 열 수 있는 외부 주소인지 판정합니다 — 엔진은 외부 새 창을 https 주소만 연다.
+     *
+     * @param  string  $href  해석된 주소
+     * @return bool `https://호스트` 로 시작하면 true
+     */
+    private static function isHttpsExternalUrl(string $href): bool
+    {
+        $normalized = self::normalizeForOriginCheck($href);
+
+        return (bool) preg_match('#^https://[^/]#i', $normalized);
+    }
+
+    /**
      * 렌더링된 HTML에 navigate 링크를 적용합니다.
      *
      * 태그 유형에 따라 변환/래핑/주입 전략을 선택합니다:
@@ -2108,17 +2311,18 @@ class ComponentHtmlMapper
      * @param  string  $html  렌더링된 HTML
      * @param  string  $tag  HTML 태그명
      * @param  string  $href  링크 URL
-     * @param  string  $handler  핸들러명 (navigate|openWindow)
+     * @param  bool  $newWindow  새 창 링크인지 (`target="_blank" rel="noopener noreferrer"`)
      * @param  array  $component  컴포넌트 정의
      * @return string 링크가 적용된 HTML
      */
-    private function applyNavigateLink(string $html, string $tag, string $href, string $handler, array $component): string
+    private function applyNavigateLink(string $html, string $tag, string $href, bool $newWindow, array $component): string
     {
         if ($html === '' || $tag === '') {
             return $html;
         }
 
-        $targetAttr = $handler === 'openWindow' ? ' target="_blank"' : '';
+        // 새 창은 열린 창이 이 창(opener)을 조작하지 못하게 끊는다 — 엔진 openWindow·HtmlContent 외부 링크와 같은 기준
+        $targetAttr = $newWindow ? ' target="_blank" rel="noopener noreferrer"' : '';
         $escapedHref = e($href);
 
         // a 태그: href 주입 또는 스킵

@@ -469,18 +469,16 @@
                                         {
                                             "comment": "신고한 글·댓글. 글은 제목, 댓글은 본문 요약(댓글 스냅샷에는 제목이 없다). 살아 있으면 눌러서 원글로 간다",
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "if": "{{!report.target_deleted && !!report.board_slug && !!report.post_id}}",
                                             "actions": [
                                                 {
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/board/{{report.board_slug}}/{{report.post_id}}"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
+                                                "href": "/board/{{report.board_slug}}/{{report.post_id}}",
                                                 "className": "justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2"
                                             },
                                             "text": "{{raw:report.title ?? report.excerpt ?? ''}}"

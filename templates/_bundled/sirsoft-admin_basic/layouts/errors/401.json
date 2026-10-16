@@ -57,18 +57,16 @@
                     {
                         "id": "back_button",
                         "type": "basic",
-                        "name": "Button",
+                        "name": "A",
                         "actions": [
                             {
                                 "type": "click",
-                                "handler": "navigate",
-                                "params": {
-                                    "path": "/admin"
-                                }
+                                "handler": "navigate"
                             }
                         ],
                         "props": {
-                            "className": "px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                            "href": "/admin",
+                            "className": "button px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white dark:text-white font-medium rounded-lg transition-colors"
                         },
                         "text": "$t:errors.back_home"
                     }

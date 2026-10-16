@@ -342,7 +342,7 @@
         <blur-until-loaded sources="analytics_archive_runs"/>
         <h2 class="section-heading mb-3">$t:admin.analytics.diagnostics.runs_title</h2>
         <div class="overflow-x-auto">
-          <data-grid data-type="composite" data-ref="archive_runs_grid" data="{{analytics_archive_runs?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{analytics_archive_runs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{analytics_archive_runs?.data?.pagination?.last_page ?? null}}" :pageSize="10" :alwaysShowPagination="true" idField="id" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+          <data-grid data-type="composite" data-ref="archive_runs_grid" data="{{analytics_archive_runs?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" pageHref="/admin/analytics/diagnostics?runs_page={page}" :pageHrefMergeQuery="true" serverCurrentPage="{{analytics_archive_runs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{analytics_archive_runs?.data?.pagination?.last_page ?? null}}" :pageSize="10" :alwaysShowPagination="true" idField="id" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
             <on type="action" event="onPageChange">
               <!-- 집계 이력의 쪽 이동 — 이력 전용 키 `runs_page` 를 쓴다. 같은 화면의 실패 로그가 `failures_page` 를 따로 쓰므로
                    한쪽 표를 넘겨도 다른 표의 쪽이 따라 움직이지 않는다. -->
@@ -442,7 +442,7 @@
           </div>
         </div>
         <div class="overflow-x-auto">
-          <data-grid data-type="composite" data-ref="collect_failures_grid" data="{{analytics_collect_failures?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{analytics_collect_failures?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{analytics_collect_failures?.data?.pagination?.last_page ?? null}}" :pageSize="10" :alwaysShowPagination="true" idField="id" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.diagnostics.failures_empty">
+          <data-grid data-type="composite" data-ref="collect_failures_grid" data="{{analytics_collect_failures?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" pageHref="/admin/analytics/diagnostics?failures_page={page}" :pageHrefMergeQuery="true" serverCurrentPage="{{analytics_collect_failures?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{analytics_collect_failures?.data?.pagination?.last_page ?? null}}" :pageSize="10" :alwaysShowPagination="true" idField="id" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.diagnostics.failures_empty">
             <on type="action" event="onPageChange">
               <!-- 실패 로그의 쪽 이동 — `failures_page` 만 바꾼다. 걸어 둔 사유 필터(`reason`)는 병합으로 그대로 남는다. -->
               <navigate path="/admin/analytics/diagnostics" :mergeQuery="true" :replace="true">

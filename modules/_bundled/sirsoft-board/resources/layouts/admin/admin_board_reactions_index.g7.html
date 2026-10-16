@@ -89,7 +89,7 @@
       <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
         <span class="text-label">$t:sirsoft-board.admin.reactions.total_count|count={{reactions?.data?.pagination?.total ?? 0}}</span>
       </div>
-      <data-grid data-type="composite" data-ref="reactions_data_grid" rowLabelField="target_title" :data-blur-until-loaded="true" data="{{reactions?.data?.data}}" :sortable="true" sortField="created_at" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{reactions?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{reactions?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{reactions?.data?.pagination?.has_more_pages ?? false}}" selectable="{{reactions?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds || []}}" idField="id" :showColumnSelector="false" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-board.admin.reactions.table_empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
+      <data-grid :pageHrefMergeQuery="true" pageHref="/admin/boards/reactions?page={page}" data-type="composite" data-ref="reactions_data_grid" rowLabelField="target_title" :data-blur-until-loaded="true" data="{{reactions?.data?.data}}" :sortable="true" sortField="created_at" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{reactions?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{reactions?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{reactions?.data?.pagination?.has_more_pages ?? false}}" selectable="{{reactions?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds || []}}" idField="id" :showColumnSelector="false" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-board.admin.reactions.table_empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
         <column field="created_at" header="$t:sirsoft-board.admin.reactions.columns.reacted_at" :sortable="true">
           <cell>
             <!-- 반응 시각은 «언제 눌렀나» 를 초까지 밝힌다 — 「2시간 전」 같은 상대 표기는 지울 대상을
@@ -104,17 +104,14 @@
               <div class="flex-center gap-2">
                 <action-menu data-type="composite" data-if="{{!!row.member?.uuid}}" position="right">
                   <prop name="items">
-                    <item id="view_member" label="$t:sirsoft-board.admin.reactions.cell.view_member" iconName="user"/>
+                    <item href="/admin/users/{{row.member?.uuid}}" target="_blank" id="view_member" label="$t:sirsoft-board.admin.reactions.cell.view_member" iconName="user"/>
                     <item id="search_member" label="$t:sirsoft-board.admin.reactions.cell.search_member" iconName="magnifying-glass"/>
                   </prop>
                   <on event="onItemClick">
-                    <!-- 회원 이름 메뉴 — 형제 목록(이커머스 마일리지 내역)과 같은 두 갈래다. 상세는 **새 창**으로
-                         열어 이 목록의 검색 조건을 잃지 않게 하고, 「이 회원으로 검색」은 같은 창에서 회원 조건만
+                    <!-- 회원 이름 메뉴 — 「회원 정보 보기」는 항목 자체가 새 탭 링크(href + target=_blank, #757)라 여기 갈래가 없다
+                         (새 탭이라 이 목록의 검색 조건을 잃지 않는다). 「이 회원으로 검색」만 같은 창에서 회원 조건을
                          갈아끼운다(user_uuid — 목록이 이미 읽는 필터라 배너도 그대로 선다). -->
                     <switch>
-                      <case when="view_member">
-                        <open-window path="/admin/users/{{row.member?.uuid}}"/>
-                      </case>
                       <case when="search_member">
                         <navigate path="/admin/boards/reactions" :mergeQuery="true" :replace="true">
                           <query user_uuid="{{row.member?.uuid}}" :page="1"/>
@@ -136,13 +133,13 @@
             <div class="flex flex-col gap-1">
               <div class="flex-center gap-2">
                 <badge data-type="composite" color="{{row.target_type === 'comment' ? 'purple' : 'blue'}}" size="sm">{{row.target_type_label}}</badge>
-                <span data-if="{{!row.is_target_deleted &amp;&amp; !!row.board}}" class="font-medium truncate cursor-pointer hover:underline">
+                <a href="/admin/board/{{row.board?.slug}}/post/{{row.post_id}}" data-if="{{!row.is_target_deleted &amp;&amp; !!row.board}}" class="font-medium truncate cursor-pointer hover:underline">
                   <on type="click">
                     <!-- 살아 있는 대상이고 게시판도 남아 있을 때만 원글로 건너뛴다 — 삭제된 대상·게시판 삭제 행은 갈 곳이 없다 -->
-                    <navigate path="/admin/board/{{row.board?.slug}}/post/{{row.post_id}}"/>
+                    <navigate/>
                   </on>
                   {{row.target_title}}
-                </span>
+                </a>
                 <span data-if="{{row.is_target_deleted || !row.board}}" class="font-medium truncate line-through text-gray-400 dark:text-gray-500">{{row.target_title}}</span>
               </div>
               <!-- 댓글 반응은 어느 댓글이었는지가 제목만으로는 드러나지 않아 발췌를 함께 싣는다 -->
@@ -178,8 +175,8 @@
           </cell>
         </column>
         <prop name="rowActions">
-          <item id="go_to_post" label="$t:sirsoft-board.admin.reactions.actions.go_to_post" iconName="file-lines" disabledField="board.slug"/>
-          <item id="go_to_member" label="$t:sirsoft-board.admin.reactions.actions.go_to_member" iconName="user"/>
+          <item href="/admin/board/{{row.board?.slug}}/post/{{row.post_id}}" id="go_to_post" label="$t:sirsoft-board.admin.reactions.actions.go_to_post" iconName="file-lines" disabledField="board.slug"/>
+          <item href="/admin/users/{{row.member?.uuid}}" id="go_to_member" label="$t:sirsoft-board.admin.reactions.actions.go_to_member" iconName="user" disabledField="member.uuid"/>
           <item id="delete" label="$t:sirsoft-board.admin.reactions.actions.delete" iconName="trash" disabledField="abilities.can_delete"/>
         </prop>
         <on type="change" event="onSelectionChange">

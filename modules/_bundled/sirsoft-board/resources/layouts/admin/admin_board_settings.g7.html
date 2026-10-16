@@ -203,18 +203,18 @@
         <div data-ref="header_content">
           <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
             <icon name="lock" size="lg" class="text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-            <span class="text-warning-soft">$t:sirsoft-board.admin.settings.read_only_message</span>
+            <span class="text-xs board-tone-warning">$t:sirsoft-board.admin.settings.read_only_message</span>
           </div>
           <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeBoardSettingsTab || query.tab || 'general'}}" variant="default">
             <prop name="tabs">
-              <item id="general" label="$t:sirsoft-board.admin.settings.tabs.general"/>
-              <item id="basic_defaults" label="$t:sirsoft-board.admin.settings.tabs.basic_defaults"/>
-              <item id="report_policy" label="$t:sirsoft-board.admin.settings.tabs.report_policy"/>
-              <item id="spam_security" label="$t:sirsoft-board.admin.settings.tabs.spam_security"/>
-              <item id="seo" label="$t:sirsoft-board.admin.settings.tabs.seo"/>
-              <item id="notification_definitions" label="$t:sirsoft-board.admin.settings.tabs.notification_definitions"/>
-              <item id="identity_policies" label="$t:sirsoft-board.admin.settings.tabs.identity_policies"/>
-              <item id="privacy_retention" label="$t:sirsoft-board.admin.settings.tabs.privacy_retention"/>
+              <item href="/admin/boards/settings?tab=general" id="general" label="$t:sirsoft-board.admin.settings.tabs.general"/>
+              <item href="/admin/boards/settings?tab=basic_defaults" id="basic_defaults" label="$t:sirsoft-board.admin.settings.tabs.basic_defaults"/>
+              <item href="/admin/boards/settings?tab=report_policy" id="report_policy" label="$t:sirsoft-board.admin.settings.tabs.report_policy"/>
+              <item href="/admin/boards/settings?tab=spam_security" id="spam_security" label="$t:sirsoft-board.admin.settings.tabs.spam_security"/>
+              <item href="/admin/boards/settings?tab=seo" id="seo" label="$t:sirsoft-board.admin.settings.tabs.seo"/>
+              <item href="/admin/boards/settings?tab=notification_definitions" id="notification_definitions" label="$t:sirsoft-board.admin.settings.tabs.notification_definitions"/>
+              <item href="/admin/boards/settings?tab=identity_policies" id="identity_policies" label="$t:sirsoft-board.admin.settings.tabs.identity_policies"/>
+              <item href="/admin/boards/settings?tab=privacy_retention" id="privacy_retention" label="$t:sirsoft-board.admin.settings.tabs.privacy_retention"/>
             </prop>
             <on type="change" event="onTabChange">
               <!-- 저장하지 않은 변경이 있으면 바로 옮기지 않고 확인 창을 연다 — 저장은 지금 탭의 구획만 보내고, 탭을 옮기면 설정을 다시 받아 고친 값이 저장된 값으로 돌아가기 때문이다(말없이 사라지지 않게) -->
@@ -289,12 +289,12 @@
             <icon name="circle-dot" size="xs"/>
             <span>$t:sirsoft-board.admin.settings.unsaved_changes</span>
           </div>
-          <button data-ref="footer_cancel_button" type="button" class="btn btn-secondary text-sm">
+          <a href="/admin" data-ref="footer_cancel_button" class="button btn btn-secondary text-sm">
             <on type="click">
-              <navigate path="/admin"/>
+              <navigate/>
             </on>
             <span>$t:common.cancel</span>
-          </button>
+          </a>
           <!-- 설정 본체(settings)를 받기 전에는 잠근다 — 입력칸이 먼저 그려져 받기 전에 칸 하나를 고치면 그 칸만 실린 본문이 나가고,
                서버는 그 구획을 통째로 갈아 써 기본 권한·금지어·스위치 기본값이 지워졌다(7.1.0 실측 K3) -->
           <button data-ref="footer_save_button" type="button" disabled="{{_computed.isReadOnly || !settings?.data || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5 text-sm">

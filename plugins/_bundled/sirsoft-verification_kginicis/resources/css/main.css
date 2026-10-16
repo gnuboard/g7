@@ -14,3 +14,21 @@
 .dark .verification-kginicis-focus-group:focus-within {
     --tw-ring-color: oklch(70.7% 0.165 254.624); /* blue-400 */
 }
+
+/* 경고 글자색 — 관리자 템플릿 의미 클래스(text-warning-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
+.verification-kginicis-tone-warning {
+    color: var(--color-yellow-700, oklch(55.4% 0.135 66.442)); /* yellow-700 */
+}
+
+.dark .verification-kginicis-tone-warning {
+    color: var(--color-yellow-300, oklch(90.5% 0.182 98.111)); /* yellow-300 */
+}
+
+/* 안내 글자색 — 관리자 템플릿 의미 클래스(text-info-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
+.verification-kginicis-tone-info {
+    color: var(--color-blue-700, oklch(48.8% 0.243 264.376)); /* blue-700 */
+}
+
+.dark .verification-kginicis-tone-info {
+    color: var(--color-blue-300, oklch(80.9% 0.105 251.813)); /* blue-300 */
+}

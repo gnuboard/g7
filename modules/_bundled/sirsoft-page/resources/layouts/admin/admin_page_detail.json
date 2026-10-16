@@ -83,21 +83,22 @@
                             {
                                 "id": "header_back_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "목록으로 돌아간다. 보던 검색어·필터·페이지를 그대로 이고 가므로(mergeQuery) 상세를 열었다 닫아도 목록이 처음으로 되감기지 않는다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/pages",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "className": "btn btn-secondary"
+                                    "href": "/admin/pages",
+                                    "mergeQuery": true,
+                                    "className": "button btn btn-secondary"
                                 },
                                 "children": [
                                     {
@@ -121,20 +122,21 @@
                             {
                                 "id": "header_edit_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "수정 화면으로. 같은 목록 클러스터 안의 이동이라 목록 상태를 그대로 넘긴다 — 수정을 마치고 돌아올 때 보던 자리로 복귀시키기 위해서다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/pages/{{route?.id}}/edit",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
+                                    "href": "/admin/pages/{{route?.id}}/edit",
+                                    "mergeQuery": true,
                                     "disabled": "{{page?.data?.abilities?.can_update !== true}}",
                                     "className": "btn btn-primary"
                                 },
@@ -988,7 +990,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "mb-4 px-4 py-2.5 flex-center gap-2 rounded-md text-info-soft bg-blue-50 dark:bg-blue-900/20"
+                                    "className": "mb-4 px-4 py-2.5 flex-center gap-2 rounded-md text-xs page-tone-info bg-blue-50 dark:bg-blue-900/20"
                                 },
                                 "children": [
                                     {

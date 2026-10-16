@@ -389,6 +389,8 @@
                                             }
                                         ],
                                         "props": {
+                                            "pageHref": "/admin/analytics/visitors?page={page}",
+                                            "pageHrefMergeQuery": true,
                                             "data": "{{analytics_visitors?.data?.data ?? []}}",
                                             "pagination": true,
                                             "serverSidePagination": true,
@@ -406,7 +408,9 @@
                                                 {
                                                     "id": "timeline",
                                                     "label": "$t:admin.analytics.visitors.timeline_button",
-                                                    "iconName": "clock-rotate-left"
+                                                    "iconName": "clock-rotate-left",
+                                                    "href": "/admin/analytics/visitors/{{row.visitor_key}}",
+                                                    "mergeQuery": true
                                                 }
                                             ],
                                             "columns": [
@@ -417,22 +421,22 @@
                                                     "cellChildren": [
                                                         {
                                                             "type": "basic",
-                                                            "name": "Button",
+                                                            "name": "A",
                                                             "actions": [
                                                                 {
                                                                     "comment": "방문자 키(앞 8자리)를 눌러도 행 동작 「타임라인」과 같은 상세 화면으로 간다 — 질의를 병합해 넘겨 돌아올 때 목록 조건이 살아난다.",
                                                                     "type": "click",
                                                                     "handler": "navigate",
                                                                     "params": {
-                                                                        "path": "/admin/analytics/visitors/{{row.visitor_key}}",
                                                                         "mergeQuery": true,
                                                                         "query": {}
                                                                     }
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "type": "button",
-                                                                "className": "text-blue-600 dark:text-blue-400 hover:underline font-mono text-sm"
+                                                                "href": "/admin/analytics/visitors/{{row.visitor_key}}",
+                                                                "mergeQuery": true,
+                                                                "className": "button text-blue-600 dark:text-blue-400 hover:underline font-mono text-sm"
                                                             },
                                                             "text": "{{String(row.visitor_key ?? '').slice(0, 8)}}"
                                                         }
@@ -472,12 +476,6 @@
                                                                     "event": "onItemClick",
                                                                     "handler": "switch",
                                                                     "cases": {
-                                                                        "view_member": {
-                                                                            "handler": "openWindow",
-                                                                            "params": {
-                                                                                "path": "/admin/users/{{row.user.uuid}}"
-                                                                            }
-                                                                        },
                                                                         "search_by_member": {
                                                                             "handler": "navigate",
                                                                             "params": {
@@ -501,6 +499,8 @@
                                                                         "id": "view_member",
                                                                         "label": "$t:admin.analytics.visitors.action.view_member",
                                                                         "iconName": "user",
+                                                                        "href": "/admin/users/{{row.user.uuid}}",
+                                                                        "target": "_blank",
                                                                         "if": "{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.users.read')}}"
                                                                     },
                                                                     {

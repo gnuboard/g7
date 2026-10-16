@@ -63,7 +63,7 @@
       </div>
     </div>
     <div data-ref="order_datagrid_card" class="p-0 md:p-0">
-      <data-grid data-type="composite" data-ref="order_datagrid" rowLabelField="order_number" data="{{orders?.data?.data || []}}" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.order.message.no_orders" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{orders?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{orders?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{orders?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
+      <data-grid data-type="composite" data-ref="order_datagrid" pageHref="/admin/ecommerce/orders?page={page}" :pageHrefMergeQuery="true" rowLabelField="order_number" data="{{orders?.data?.data || []}}" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.order.message.no_orders" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{orders?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{orders?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{orders?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
         <column field="no" header="NO" width="60px" :sortable="false" :required="false">
           <cell>
             <span>{{row.no}}</span>
@@ -77,14 +77,14 @@
         <column field="order_number" header="$t:sirsoft-ecommerce.admin.order.column.order_number" width="140px" :sortable="true" :required="true">
           <cell>
             <!-- 주문번호를 눌러 상세로. 보던 목록 상태를 이고 가므로 상세에서 돌아오면 같은 자리가 열린다 -->
-            <span class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
+            <a href="/admin/ecommerce/orders/{{row.order_number}}" :mergeQuery="true" class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
               <on type="click">
-                <navigate path="/admin/ecommerce/orders/{{row.order_number}}" :mergeQuery="true">
+                <navigate :mergeQuery="true">
                   <query/>
                 </navigate>
               </on>
               {{row.order_number}}
-            </span>
+            </a>
           </cell>
         </column>
         <column field="product" header="$t:sirsoft-ecommerce.admin.order.column.product" width="auto" :sortable="false" :required="false">
@@ -137,7 +137,7 @@
             <span data-if="{{!row.address?.orderer_name &amp;&amp; !row.user?.name}}" class="text-gray-500 dark:text-gray-400">-</span>
             <action-menu data-type="composite" data-if="{{!!row.address?.orderer_name || !!row.user?.name}}" position="right">
               <prop name="items">
-                <item id="view_member" label="$t:sirsoft-ecommerce.admin.order.action.view_member" iconName="user" if="{{!!row.user?.uuid}}"/>
+                <item id="view_member" href="/admin/users/{{row.user?.uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.order.action.view_member" iconName="user" if="{{!!row.user?.uuid}}"/>
                 <item id="search_by_orderer_member" label="$t:sirsoft-ecommerce.admin.order.action.search_by_orderer" iconName="magnifying-glass" if="{{!!row.user?.uuid}}"/>
                 <item id="search_by_orderer_guest" label="$t:sirsoft-ecommerce.admin.order.action.search_by_orderer" iconName="magnifying-glass" if="{{!row.user?.uuid}}"/>
               </prop>
@@ -150,9 +150,6 @@
                   손수 채우는 이유는, 필터의 주문자 드롭다운이 그 목록에서 라벨을 찾기 때문이다 —
                   비워 두면 이름 대신 uuid 가 그대로 보인다. -->
                 <switch>
-                  <case when="view_member">
-                    <open-window path="/admin/users/{{row.user?.uuid}}"/>
-                  </case>
                   <case when="search_by_orderer_member">
                     <set-state target="_local" filter.ordererUuid="{{row.user?.uuid}}" filter.searchField="all" filter.searchKeyword="" ordererSearchResults="{{[{ uuid: row.user?.uuid, name: row.user?.name || row.address?.orderer_name, email: row.user?.email || '' }]}}"/>
                     <!-- 이 주문자의 주문만 보기 — 앞선 setState 가 검색어를 비우므로 URL 의 검색 조건도 함께 비운다. 비우지 않으면 화면 입력창은 빈 채로 이전 검색어가 계속 적용된다 (#75). -->
@@ -224,7 +221,7 @@
           </cell>
         </column>
         <prop name="rowActions">
-          <item id="view_detail" label="$t:sirsoft-ecommerce.admin.order.action.view_detail" iconName="eye" disabledField="abilities.can_read"/>
+          <item id="view_detail" href="/admin/ecommerce/orders/{{row.order_number}}" label="$t:sirsoft-ecommerce.admin.order.action.view_detail" iconName="eye" disabledField="abilities.can_read"/>
           <item id="excel_download" label="$t:sirsoft-ecommerce.admin.order.action.excel_download" iconName="download" :if="false"/>
         </prop>
         <on type="change" event="onSelectionChange">

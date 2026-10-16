@@ -34,12 +34,12 @@
         <div data-if="{{userPosts.data &amp;&amp; !userPosts.error}}" class="space-y-6">
           <!-- 브레드크럼 (1행). 경로의 이름은 한 줄 … 로 자르고, 아래 제목은 줄을 바꿔 모두 보인다(#143). -->
           <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
-            <button class="min-w-0 truncate hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors">
+            <a href="/users/{{route.userId}}" class="inline-block text-center min-w-0 truncate hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors">
               <on type="click">
-                <navigate path="/users/{{route.userId}}"/>
+                <navigate/>
               </on>
               {{userProfile.data?.name ?? ''}} $t:user.profile.back_to_profile
-            </button>
+            </a>
             <span>></span>
             <span class="text-gray-900 dark:text-white font-medium">$t:user.profile.posts_page_title</span>
           </div>
@@ -69,9 +69,9 @@
             </div>
             <!-- 게시글 목록 (한 줄 표시) -->
             <div data-if="{{userPosts.data?.data?.length > 0}}" class="divide-y divide-gray-200 dark:divide-gray-700">
-              <button data-each="post in {{userPosts.data?.data ?? []}}" class="w-full text-left grid grid-cols-1 md:grid-cols-12 gap-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer items-center">
+              <a href="/board/{{post.board_slug}}/{{post.id}}" data-each="post in {{userPosts.data?.data ?? []}}" class="w-full text-left grid grid-cols-1 md:grid-cols-12 gap-2 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer items-center">
                 <on type="click">
-                  <navigate path="/board/{{post.board_slug}}/{{post.id}}"/>
+                  <navigate/>
                 </on>
                 <!-- 게시판명 컬럼 -->
                 <div class="hidden md:block col-span-2 text-sm text-gray-600 dark:text-gray-400 truncate">{{post.board_name}}</div>
@@ -108,12 +108,12 @@
                   </span>
                   <span title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
                 </div>
-              </button>
+              </a>
             </div>
           </div>
           <!-- 페이지네이션 (항상 표시) -->
           <div class="flex justify-center mt-6">
-            <pagination data-type="composite" currentPage="{{userPosts.data?.current_page ?? 1}}" totalPages="{{userPosts.data?.last_page ?? null}}" hasMorePages="{{userPosts.data?.has_more_pages ?? false}}">
+            <pagination pageHref="/users/{{route.userId}}/posts?page={page}" :pageHrefMergeQuery="true" data-type="composite" currentPage="{{userPosts.data?.current_page ?? 1}}" totalPages="{{userPosts.data?.last_page ?? null}}" hasMorePages="{{userPosts.data?.has_more_pages ?? false}}">
               <on event="onPageChange">
                 <!-- 페이지 이동 — 상태가 아니라 URL 질의를 바꾸므로 특정 페이지를 그대로 공유하거나 뒤로가기로 되돌아갈 수 있다. -->
                 <navigate path="/users/{{route.userId}}/posts" :mergeQuery="true">

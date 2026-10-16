@@ -13,6 +13,11 @@ export interface Tab {
      * 확장이 끼워 넣는 탭은 이동할 본문과 같은 조건을 달아, 본문이 없을 때 갈 곳 없는 빈 탭이 남지 않게 한다.
      */
     if?: unknown;
+    /**
+     * 탭이 가리키는 주소 — 주면 `<a role="tab" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다.
+     * 보통 클릭은 지금처럼 탭 전환(onTabChange — 저장 안 한 변경 확인 흐름 유지)(#757).
+     */
+    href?: string;
 }
 export interface TabNavigationProps {
     tabs: Tab[];

@@ -187,20 +187,17 @@
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "audit:allow layout-list-context-navigate-merge-query 상품 폼에서 채널 연동 설정 화면으로 나가는 이동이다 — 상품 목록의 페이지·필터를 물려주지 않는다.",
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/ecommerce/integrations/naver"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
-                                                "className": "btn btn-ghost btn-sm"
+                                                "href": "/admin/ecommerce/integrations/naver",
+                                                "className": "button btn btn-ghost btn-sm"
                                             },
                                             "children": [
                                                 {
@@ -558,20 +555,17 @@
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "audit:allow layout-list-context-navigate-merge-query 상품 폼에서 채널 연동 설정 화면으로 나가는 이동이다 — 상품 목록의 페이지·필터를 물려주지 않는다.",
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/ecommerce/integrations/facebook"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
-                                                "className": "btn btn-ghost btn-sm"
+                                                "href": "/admin/ecommerce/integrations/facebook",
+                                                "className": "button btn btn-ghost btn-sm"
                                             },
                                             "children": [
                                                 {
@@ -929,20 +923,17 @@
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "audit:allow layout-list-context-navigate-merge-query 상품 폼에서 채널 연동 설정 화면으로 나가는 이동이다 — 상품 목록의 페이지·필터를 물려주지 않는다.",
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/ecommerce/integrations/google"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
-                                                "className": "btn btn-ghost btn-sm"
+                                                "href": "/admin/ecommerce/integrations/google",
+                                                "className": "button btn btn-ghost btn-sm"
                                             },
                                             "children": [
                                                 {

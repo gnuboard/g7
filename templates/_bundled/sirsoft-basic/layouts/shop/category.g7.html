@@ -46,12 +46,12 @@
       <div class="mb-4">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <!-- 뒤로가기: 상위 카테고리 있으면 상위로, 없으면 /shop으로 -->
-          <button type="button" aria-label="$t:common.back" class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <a href="{{(category?.data?.breadcrumb ?? []).length > 1 ? _global.shopBase + '/category/' + (category?.data?.breadcrumb ?? []).slice(-2, -1)[0]?.slug : _global.shopBase + '/products'}}" aria-label="$t:common.back" class="inline-flex items-center justify-center p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
             <on type="click">
-              <navigate path="{{(category?.data?.breadcrumb ?? []).length > 1 ? _global.shopBase + '/category/' + (category?.data?.breadcrumb ?? []).slice(-2, -1)[0]?.slug : _global.shopBase + '/products'}}"/>
+              <navigate/>
             </on>
             <icon name="arrow-left" class="text-xl"/>
-          </button>
+          </a>
           <span class="min-w-0 wrap-anywhere">{{category?.data?.name_localized ?? $t:shop.categories}}</span>
         </h1>
         <!-- 설명 + 브레드크럼 한 줄. 이름·설명은 줄어들며 줄을 바꾸고, 경로는 칸이 모자라면 다음 줄로 내리며 각 이름은 한 줄 … — 공백 없는 긴 카테고리 이름이 화면을 넘쳤다(#143). -->
@@ -101,13 +101,13 @@
       <!-- 하위 카테고리 칩 (자식 카테고리가 있을 때만 표시). 칩 하나가 줄보다 넓어지지 않게 폭을 줄에 맞추고 이름은 한 줄 … (#143) -->
       <div data-if="{{(category?.data?.children ?? []).length > 0}}" class="flex flex-wrap gap-2 mb-4">
         <div data-each="sub in {{category?.data?.children ?? []}}" class="max-w-full">
-          <button class="max-w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600">
+          <a href="{{_global.shopBase}}/category/{{sub?.slug}}" class="inline-flex items-center justify-center max-w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600">
             <on type="click">
               <!-- audit:allow layout-list-context-navigate-merge-query 하위 카테고리 이동 — 다른 목록으로의 이동이라 상위 카테고리의 검색·정렬·페이지를 승계하지 않는다 -->
-              <navigate path="{{_global.shopBase}}/category/{{sub?.slug}}"/>
+              <navigate/>
             </on>
             <span class="min-w-0 truncate">{{sub?.name_localized}}</span>
-          </button>
+          </a>
         </div>
       </div>
       <!-- 정렬 바 -->

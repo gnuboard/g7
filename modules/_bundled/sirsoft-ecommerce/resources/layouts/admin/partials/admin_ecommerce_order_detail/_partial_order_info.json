@@ -1367,12 +1367,6 @@
                                                             "event": "onItemClick",
                                                             "handler": "switch",
                                                             "cases": {
-                                                                "view_member": {
-                                                                    "handler": "openWindow",
-                                                                    "params": {
-                                                                        "path": "/admin/users/{{order.data?.user_id}}"
-                                                                    }
-                                                                },
                                                                 "search_by_orderer": {
                                                                     "comment": "주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (#75).",
                                                                     "handler": "navigate",
@@ -1397,6 +1391,8 @@
                                                         "items": [
                                                             {
                                                                 "id": "view_member",
+                                                                "href": "/admin/users/{{order.data?.user_id}}",
+                                                                "target": "_blank",
                                                                 "label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_action.view_member",
                                                                 "iconName": "user"
                                                             },

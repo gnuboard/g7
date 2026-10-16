@@ -87,13 +87,13 @@
           <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">$t:user.page.not_found_title</h2>
           <p class="text-gray-500 dark:text-gray-400 mb-6">$t:user.page.not_found_description</p>
           <div class="flex items-center justify-center gap-3">
-            <button type="button" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+            <a href="/" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
               <on type="click">
-                <navigate path="/"/>
+                <navigate/>
               </on>
               <icon name="house" class="text-sm"/>
               <span>$t:user.page.back_to_home</span>
-            </button>
+            </a>
             <a data-ref="page_create_button" data-if="{{_local.pageCanCreate === true}}" href="/admin/pages/create?slug={{route?.slug ?? ''}}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors no-underline">
               <icon name="plus" class="text-sm"/>
               <span>$t:user.page.create_page</span>
@@ -102,13 +102,13 @@
         </div>
         <div data-ref="page_back_button" data-if="{{page?.data}}" class="mt-8 text-center">
           <responsive on="portable" class="mt-6 text-center"/>
-          <button type="button" class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
+          <a href="/" class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
             <on type="click">
-              <navigate path="/"/>
+              <navigate/>
             </on>
             <icon name="arrow-left" class="text-sm"/>
             <span>$t:user.page.back_to_home</span>
-          </button>
+          </a>
         </div>
       </div>
     </container>

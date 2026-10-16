@@ -237,7 +237,7 @@
                                 {
                                     "id": "go_to_notification_settings",
                                     "type": "basic",
-                                    "name": "Button",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "comment": "알림 설정 화면으로 이동. 마일리지 알림의 실제 문구·채널은 그쪽에서 정하므로 여기서는 자리만 안내한다.",
@@ -266,7 +266,7 @@
                                         }
                                     ],
                                     "props": {
-                                        "type": "button",
+                                        "href": "/admin/ecommerce/settings?tab=notification_definitions",
                                         "className": "flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                     },
                                     "children": [

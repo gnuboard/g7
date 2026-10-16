@@ -145,21 +145,22 @@
                             {
                                 "id": "back_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "글 목록으로. 보던 검색·필터·페이지를 이고 간다 — 글 하나를 처리하고 목록으로 돌아가는 왕복이 이 화면의 기본 동선이다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/board/{{route.slug}}",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "className": "flex-center gap-2 btn btn-secondary"
+                                    "href": "/admin/board/{{route.slug}}",
+                                    "mergeQuery": true,
+                                    "className": "button flex-center gap-2 btn btn-secondary"
                                 },
                                 "children": [
                                     {
@@ -469,7 +470,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-warning-soft"
+                                        "className": "text-xs board-tone-warning"
                                     },
                                     "text": "$t:sirsoft-board.admin.posts.detail.report_modal.warning_notice"
                                 }

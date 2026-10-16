@@ -95,7 +95,7 @@
            템플릿은 버튼이 둘이다 — 원문 편집(보조)과 시각 편집(주). 미설치면 그 자리에
            설치 버튼 하나만 온다. 열 수는 컴포넌트가 컨테이너 실측 폭으로 정한다.
            코어 요구 버전 미충족(`core_compatible=false`)이면 설치와 켜기를 잠근다 — 서버가 422 로 거절한다. -->
-      <extension-card-grid data-type="composite" data-ref="template_card_grid" :data-blur-until-loaded="true" viewMode="{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}" :minCardWidth="250" :maxColumns="5" resyncKey="{{_global.extensionToggleResync ?? 0}}" loading="{{templates?.loading ?? false}}" :pagination="true" :alwaysShowPagination="true" currentPage="{{templates?.data?.pagination?.current_page ?? 1}}" totalPages="{{templates?.data?.pagination?.last_page ?? null}}" hasMorePages="{{templates?.data?.pagination?.has_more_pages ?? false}}" items="{{(templates?.data?.data ?? []).map(p => ({
+      <extension-card-grid pageHref="/admin/templates/admin?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="template_card_grid" :data-blur-until-loaded="true" viewMode="{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}" :minCardWidth="250" :maxColumns="5" resyncKey="{{_global.extensionToggleResync ?? 0}}" loading="{{templates?.loading ?? false}}" :pagination="true" :alwaysShowPagination="true" currentPage="{{templates?.data?.pagination?.current_page ?? 1}}" totalPages="{{templates?.data?.pagination?.last_page ?? null}}" hasMorePages="{{templates?.data?.pagination?.has_more_pages ?? false}}" items="{{(templates?.data?.data ?? []).map(p => ({
         id: p.identifier,
         row: p,
         name: p.name ?? p.identifier,
@@ -118,15 +118,15 @@
         toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.status === 'active' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_activate !== true || p.core_compatible === false, label: p.name ?? p.identifier } : null,
         secondaryAction: p.update_available &amp;&amp; p.status !== 'uninstalled'
           ? { label: '$t:admin.templates.actions.update', icon: 'refresh', disabled: ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true }
-          : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_code', icon: 'code', disabled: p.abilities?.can_edit_layouts !== true } : null),
+          : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_code', icon: 'code', href: '/admin/templates/' + p.identifier + '/edit', disabled: p.abilities?.can_edit_layouts !== true } : null),
         primaryAction: p.status === 'uninstalled'
           ? { label: '$t:admin.templates.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true || p.core_compatible === false }
-          : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_layout_visual', icon: 'edit', variant: 'solid', disabled: p.abilities?.can_edit_layouts !== true } : null),
+          : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_layout_visual', icon: 'edit', variant: 'solid', disabled: p.abilities?.can_edit_layouts !== true, href: '/admin/layout-editor/' + p.identifier, target: '_blank' } : null),
         actions: [
           { id: 'view_detail', label: '$t:admin.templates.actions.view_detail', iconName: 'info-circle' },
           { id: 'update', label: '$t:admin.templates.actions.update', iconName: 'refresh', disabled: !p.update_available || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true },
           { id: 'refresh_layouts', label: '$t:admin.templates.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },
-          { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', disabled: p.status !== 'active' || templates?.data?.abilities?.can_view_language_packs !== true },
+          { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', href: '/admin/templates/' + p.identifier + '/language-packs', mergeQuery: true, disabled: p.status !== 'active' || templates?.data?.abilities?.can_view_language_packs !== true },
           { id: 'uninstall', label: '$t:admin.templates.actions.uninstall', iconName: 'trash', variant: 'danger', disabled: p.status === 'active' || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_uninstall !== true }
         ]
       }))}}">
@@ -193,17 +193,14 @@
           </switch>
         </on>
         <on type="action" event="onPrimaryAction">
-          <!-- 미설치면 설치 창, 활성이면 시각 편집기다(버튼 자체가 그 둘로만 생긴다).
-               시각 편집기는 새 창으로 연다 — 편집하며 결과를 보려면 원래 화면이 남아 있어야 한다. -->
+          <!-- 미설치면 설치 창이다. 활성 템플릿의 시각 편집기는 주 단추가 새 창 링크(primaryAction.href + target _blank)라
+               이 갈래에 오지 않는다 — 편집하며 결과를 보려면 원래 화면이 남아 있어야 하고, 링크라 주소 복사·새 탭도 된다(#757). -->
           <switch on="{{$args[0].status === 'uninstalled' ? 'install' : 'edit'}}">
             <case when="install">
               <sequence>
                 <set-state target="global" selectedTemplate="{{$args[0]}}" templateLayoutSource="auto" :templateLayoutSourceOpen="false"/>
                 <open-modal target="template_install_modal"/>
               </sequence>
-            </case>
-            <case when="edit">
-              <open-window path="/admin/layout-editor/{{$args[0].identifier}}" target="_blank"/>
             </case>
           </switch>
         </on>

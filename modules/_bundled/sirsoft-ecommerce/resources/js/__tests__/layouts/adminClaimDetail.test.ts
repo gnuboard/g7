@@ -331,9 +331,14 @@ describe('상세 셸 — 라우트·데이터소스·모달 (S9a)', () => {
    * @effects claim_detail_list_return_preserves_context
    */
   it('[목록] 버튼이 목록 컨텍스트를 승계한다', () => {
-    const action = (byId(shell, 'cd_010_list_button').actions as Node[])[0];
+    const link = byId(shell, 'cd_010_list_button');
+    const action = (link.actions as Node[])[0];
 
-    expect(action.params.path).toBe('/admin/ecommerce/claims');
+    // 링크다(#757 WP-L) — 주소는 href, 새 탭도 같은 조건이 되게 링크 자체가 쿼리를 합친다
+    expect(link.name).toBe('A');
+    expect(link.props.href).toBe('/admin/ecommerce/claims');
+    expect(link.props.mergeQuery).toBe(true);
+    expect(action.params.path).toBeUndefined();
     expect(action.params.mergeQuery).toBe(true);
     expect(action.params.query).toEqual({});
   });

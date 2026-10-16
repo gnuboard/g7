@@ -8,27 +8,34 @@ description: |
 
   같은 원인의 진입점 전부가 하나의 판정(`support/navPolicy`)을 경유한다.
   - 같은 탭 이동(openWindow `_self`·navigate 폴백·redirect)·로그인 복귀(`AuthManager.getRedirectUrl`)
-    는 **same-origin 절대 경로만** 통과하고, 나머지는 기본 경로로 떨어진다.
+    는 **same-origin 절대 경로만** 통과한다. 거부된 주소는 같은 탭 이동 sink 에서 **이동하지 않고**(engine-v1.80.1 — 종전: 기본 경로 `/`),
+    로그인 복귀는 어디든 가야 하므로 기본 경로로 간다. 주소가 비면 sink 마다 종전 동작(openWindow `_self` 는 `/`, redirect 는 무동작).
   - 새 창·`<a href>`·제공자 외부 인증 이동은 정상 외부 링크가 있으므로 **실행 스킴만** 막는다.
   - 봇(SEO) HTML 도 같은 판정을 한다 — 클라이언트가 막은 값을 봇 HTML 이 `<a href>` 로 되살리면
     그 자리가 우회로가 된다.
+
+  같은 출처의 전체 주소(`https://이 사이트/…` — 서버가 알림 이동 주소를 이 꼴로 준다)는 경로로 바꿔 통과한다(engine-v1.80.1).
+  navigate 는 그 경로로 SPA 이동하고, 같은 탭 sink·로그인 복귀도 첫 화면 대신 그 경로로 간다. 다른 출처·실행 스킴은 거부 그대로.
 
   정규화는 스크립트 출처 정책(`normalizeScriptSrcForOriginCheck`)을 그대로 재사용한다 —
   브라우저 URL 파서와 다른 정규화를 따로 두면 그 차집합이 우회로가 된다.
 
 axes:
-  target_kind: [script_scheme, offsite, same_origin]
+  target_kind: [script_scheme, offsite, same_origin, same_origin_full_url]
   sink: [same_tab, new_window_or_link]
 
 exclusions:
+  - { target_kind: same_origin_full_url, sink: new_window_or_link, reason: "새 창·링크는 실행 스킴만 막아 같은 출처 전체 주소는 종전부터 그대로 열린다 — 과차단 방지 축(external_link_preserved)과 같은 갈래" }
   - { target_kind: offsite, sink: new_window_or_link, reason: "새 창·링크의 외부 origin 은 정당한 외부 링크라 판정 대상이 아니다 — 과차단 방지 축(external_link_preserved)이 검증" }
 
 effects:
   - nav_sink_rejects_script_scheme
   - nav_sink_rejects_offsite_target
   - same_origin_redirect_preserved
+  - same_origin_full_url_becomes_path
   - dangerous_href_neutralized
   - external_link_preserved
+  - new_window_link_has_noopener
 
 test_files:
   # 배포 번들 종단 — 실 로그인 흐름의 javascript:/외부 redirect

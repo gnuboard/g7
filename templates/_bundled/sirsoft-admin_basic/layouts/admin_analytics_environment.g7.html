@@ -69,6 +69,7 @@
     <field name="periodSource" value="analytics_report"/>
     <field name="showUnit" :value="false"/>
   </init-local>
+  <computed name="tabQuery">{{['preset', 'from', 'to', 'unit', 'exclude', 'per_page'].filter(k =&gt; query[k]).map(k =&gt; '&amp;' + k + '=' + encodeURIComponent(query[k])).join('')}}</computed>
   <computed name="reportName">{{({browsers: 'browser', os: 'os', devices: 'device_type', resolutions: 'resolution', languages: 'browser_language', locales: 'locale'})[query.tab || 'browsers'] || 'browser'}}</computed>
   <computed name="csvUrl">{{'/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&amp;from=' + query.from + '&amp;to=' + (query.to || query.from) : '&amp;preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&amp;exclude[]=' + e).join('') + (query.q ? '&amp;q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&amp;sort=' + query.sort : '')}}</computed>
   <computed name="csvFilename">{{'analytics-' + _computed.reportName + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}</computed>
@@ -101,12 +102,12 @@
       <include src="partials/admin_analytics/_partial_period_bar.g7.html"/>
       <tab-navigation data-type="composite" data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'browsers'}}" variant="underline">
         <prop name="tabs">
-          <item id="browsers" label="$t:admin.analytics.environment.tabs.browsers"/>
-          <item id="os" label="$t:admin.analytics.environment.tabs.os"/>
-          <item id="devices" label="$t:admin.analytics.environment.tabs.devices"/>
-          <item id="resolutions" label="$t:admin.analytics.environment.tabs.resolutions"/>
-          <item id="languages" label="$t:admin.analytics.environment.tabs.languages"/>
-          <item id="locales" label="$t:admin.analytics.environment.tabs.locales"/>
+          <item id="browsers" href="/admin/analytics/environment?tab=browsers{{_computed.tabQuery}}" label="$t:admin.analytics.environment.tabs.browsers"/>
+          <item id="os" href="/admin/analytics/environment?tab=os{{_computed.tabQuery}}" label="$t:admin.analytics.environment.tabs.os"/>
+          <item id="devices" href="/admin/analytics/environment?tab=devices{{_computed.tabQuery}}" label="$t:admin.analytics.environment.tabs.devices"/>
+          <item id="resolutions" href="/admin/analytics/environment?tab=resolutions{{_computed.tabQuery}}" label="$t:admin.analytics.environment.tabs.resolutions"/>
+          <item id="languages" href="/admin/analytics/environment?tab=languages{{_computed.tabQuery}}" label="$t:admin.analytics.environment.tabs.languages"/>
+          <item id="locales" href="/admin/analytics/environment?tab=locales{{_computed.tabQuery}}" label="$t:admin.analytics.environment.tabs.locales"/>
         </prop>
         <on type="change" event="onTabChange">
           <!-- audit:allow layout-list-context-navigate-merge-query 서브탭 전환 — 리포트마다 행이 달라 쪽·검색·정렬을 물려받지 않도록 병합하지 않는다. 기간(preset·from·to·unit·exclude)과 쪽 크기만 query 로 명시해 잇는다. -->

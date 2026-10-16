@@ -1229,6 +1229,7 @@
     "navigate": {
       "label": "別のページに移動",
       "param_path": "移動するページ",
+      "param_fallback_path": "アドレスが安全でないか空のときに移動するページ",
       "param_query": "クエリ値",
       "param_merge_query": "既存のクエリを保持",
       "param_scroll": "スクロール位置",

@@ -55,21 +55,24 @@
       <!-- 알림 목록 -->
       <div data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" data-each="notification in {{userNotifications.data.data ?? []}}" class="divide-y divide-gray-200 dark:divide-gray-700">
         <!-- 알림 아이템 - 반응형 -->
-        <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}">
-          <responsive on="portable" class="p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}"/>
-          <on type="click">
-            <api-call if="{{!notification.read_at &amp;&amp; userNotifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/{{notification.id}}/read" method="PATCH">
-              <success>
-                <refetch-data-source dataSourceId="notification_unread_count"/>
-                <set-state target="global" notificationCount="{{Math.max(0, (_global.notificationCount ?? 0) - 1)}}"/>
-              </success>
-              <fail>
-                <toast type="error" message="{{error.message}}"/>
-              </fail>
-            </api-call>
-            <!-- audit:allow layout-list-context-navigate-merge-query 알림 대상으로 이동 — 목적지는 알림이 지정한 임의 화면이므로 알림 목록 클러스터 밖이다. -->
-            <navigate if="{{notification.url}}" path="{{notification.url}}"/>
-          </on>
+        <div class="relative block p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}">
+          <!-- 카드 전체가 링크다 — 안쪽 조작(작성자 메뉴·삭제 등)을 링크 밖에 두려고 빈 링크가 카드를 덮고, 그 조작은 링크 위(z-20)에 둔다 -->
+          <a href="{{notification.url || null}}" aria-label="{{notification.subject ?? notification.body ?? ''}}" class="absolute inset-0 z-10 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400">
+            <on type="click">
+              <api-call if="{{!notification.read_at &amp;&amp; userNotifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/{{notification.id}}/read" method="PATCH">
+                <success>
+                  <refetch-data-source dataSourceId="notification_unread_count"/>
+                  <set-state target="global" notificationCount="{{Math.max(0, (_global.notificationCount ?? 0) - 1)}}"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+              <!-- audit:allow layout-list-context-navigate-merge-query 알림 대상으로 이동 — 목적지는 알림이 지정한 임의 화면이므로 알림 목록 클러스터 밖이다. -->
+              <navigate if="{{notification.url}}" path="{{notification.url || null}}"/>
+            </on>
+          </a>
+          <responsive on="portable" class="relative block p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}"/>
           <div class="flex items-start gap-3">
             <!-- 읽지 않음 표시 + 아이콘 -->
             <div class="flex items-center gap-2 flex-shrink-0">
@@ -93,7 +96,7 @@
                   <span data-if="{{notification.type_label}}" class="flex-shrink-0 px-2 py-0.5 text-xs rounded {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}}">{{notification.type_label}}</span>
                 </div>
                 <!-- 삭제 버튼 -->
-                <button aria-label="$t:common.delete" title="{{userNotifications?.data?.abilities?.can_delete === true ? '$t:common.delete' : '$t:mypage.notifications.no_permission'}}" class="flex-shrink-0 p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{userNotifications?.data?.abilities?.can_delete !== true}}">
+                <button aria-label="$t:common.delete" title="{{userNotifications?.data?.abilities?.can_delete === true ? '$t:common.delete' : '$t:mypage.notifications.no_permission'}}" class="relative z-20 flex-shrink-0 p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{userNotifications?.data?.abilities?.can_delete !== true}}">
                   <on type="click">
                     <api-call :stopPropagation="true" :auth_required="true" target="/api/user/notifications/{{notification.id}}" method="DELETE">
                       <success>

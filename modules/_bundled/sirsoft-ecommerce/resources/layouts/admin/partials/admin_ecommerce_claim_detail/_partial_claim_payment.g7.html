@@ -264,11 +264,7 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
               <variant when="live">text-gray-900 dark:text-gray-100</variant>
             </class-map>
             <div class="flex-center gap-2">
-              <a data-ref="cst_014_linked_refund_link_{{lrIdx}}" href="#" class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
-                <on type="click">
-                  <!-- 후속 환불신청서를 새 창으로 연다 -->
-                  <open-window path="{{linkedRefund.detail_url}}"/>
-                </on>
+              <a href="{{linkedRefund.detail_url}}" target="_blank" rel="noopener noreferrer" data-ref="cst_014_linked_refund_link_{{lrIdx}}" class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                 {{linkedRefund.claim_number}}
               </a>
               <badge data-type="composite" variant="{{linkedRefund.status_variant ?? 'default'}}">{{linkedRefund.status_label ?? ''}}</badge>

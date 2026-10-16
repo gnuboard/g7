@@ -26,52 +26,62 @@
         "tabs": [
             {
                 "id": "profile",
+                "href": "/mypage/profile",
                 "label": "$t:mypage.tabs.profile",
                 "iconName": "user"
             },
             {
                 "id": "board",
+                "href": "/mypage/board",
                 "label": "$t:mypage.tabs.board",
                 "iconName": "message-square"
             },
             {
                 "id": "scrap",
+                "href": "/mypage/scrap",
                 "label": "$t:mypage.tabs.scrap",
                 "iconName": "bookmark"
             },
             {
                 "id": "orders",
+                "href": "/mypage/orders",
                 "label": "$t:mypage.tabs.orders",
                 "iconName": "package"
             },
             {
                 "comment": "취소·반품·교환 — 주문내역 바로 뒤에 둔다. 이 탭이 여는 화면(/mypage/claims)은 주문에서 파생된 신청 내역이라 주문과 붙어 있어야 찾는다.",
                 "id": "claims",
+                "href": "/mypage/claims",
                 "label": "$t:mypage.tabs.claims",
                 "iconName": "rotate-left"
             },
             {
                 "id": "mileage",
+                "href": "/mypage/mileage",
                 "label": "$t:mypage.tabs.mileage",
                 "iconName": "coins"
             },
             {
                 "id": "wishlist",
+                "href": "/mypage/wishlist",
                 "label": "$t:mypage.tabs.wishlist",
                 "iconName": "heart"
             },
             {
                 "id": "addresses",
+                "href": "/mypage/addresses",
                 "label": "$t:mypage.tabs.addresses",
                 "iconName": "map-pin"
             },
             {
                 "id": "notifications",
+                "href": "/mypage/notifications",
                 "label": "$t:mypage.tabs.notifications",
                 "iconName": "bell"
             },
             {
                 "id": "inquiries",
+                "href": "/mypage/inquiries",
                 "label": "$t:mypage.tabs.inquiries",
                 "iconName": "comment"
             }

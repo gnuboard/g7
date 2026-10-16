@@ -7,6 +7,7 @@ import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Select } from '../basic/Select';
 import type { EditorAttrs } from '../../types';
+import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖이면 대체 문구를 쓴다
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
@@ -26,6 +27,11 @@ export interface Tab {
    * 확장이 끼워 넣는 탭은 이동할 본문과 같은 조건을 달아, 본문이 없을 때 갈 곳 없는 빈 탭이 남지 않게 한다.
    */
   if?: unknown;
+  /**
+   * 탭이 가리키는 주소 — 주면 `<a role="tab" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다.
+   * 보통 클릭은 지금처럼 탭 전환(onTabChange — 저장 안 한 변경 확인 흐름 유지)(#757).
+   */
+  href?: string;
 }
 
 /**
@@ -122,7 +128,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     : typeof window !== 'undefined' && window.innerWidth < mobileBreakpoint;
 
   /** 탭 버튼 DOM 참조 — 화살표 이동 시 초점을 옮기기 위해 보관한다. */
-  const tabRefs = React.useRef<Array<HTMLButtonElement | null>>([]);
+  const tabRefs = React.useRef<Array<HTMLElement | null>>([]);
 
   const handleTabClick = (tab: Tab) => {
     if (!tab.disabled && tab.id !== activeTabId) {
@@ -139,7 +145,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
    * @param e 키보드 이벤트
    * @param currentIndex 이벤트가 발생한 탭의 인덱스
    */
-  const handleTabKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
+  const handleTabKeyDown = (e: React.KeyboardEvent<HTMLElement>, currentIndex: number) => {
     const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
 
     let nextIndex: number | null = null;
@@ -255,7 +261,46 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
       aria-orientation="horizontal"
       id={id} {...editorAttrs}
     >
-      {tabs.map((tab, tabIndex) => isHiddenTab(tab) ? null : (
+      {tabs.map((tab, tabIndex) => isHiddenTab(tab) ? null : (() => {
+        const tabContent = (
+          <>
+            {tab.iconName && (
+              <Icon name={tab.iconName} className="w-4 h-4" />
+            )}
+
+            <Span>{tab.label}</Span>
+
+            {tab.badge !== undefined && (
+              <Div className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 dark:bg-red-600 text-white dark:text-white text-xs font-bold rounded-full">
+                <Span>{tab.badge}</Span>
+              </Div>
+            )}
+          </>
+        );
+        const link = tab.disabled ? null : resolveLinkHref(tab.href);
+        if (link && !link.external) {
+          return (
+            <a
+              key={tab.id}
+              ref={(el) => {
+                tabRefs.current[tabIndex] = el;
+              }}
+              href={link.href}
+              role="tab"
+              aria-selected={tab.id === activeTabId}
+              tabIndex={tabIndex === focusableIndex ? 0 : -1}
+              onClick={(event) => handleLinkClick(event, () => handleTabClick(tab))}
+              onKeyDown={(e) => handleTabKeyDown(e, tabIndex)}
+              className={`button ${getTabClasses(tab)}`}
+              {...(editorNodePath
+                ? { 'data-editor-item-path': `${editorNodePath}.props.tabs.${tabIndex}` }
+                : {})}
+            >
+              {tabContent}
+            </a>
+          );
+        }
+        return (
         <Button
           key={tab.id}
           ref={(el) => {
@@ -285,7 +330,8 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
             </Div>
           )}
         </Button>
-      ))}
+        );
+      })())}
     </Nav>
   );
 };

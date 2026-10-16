@@ -184,11 +184,11 @@
       <div data-ref="sticky_header" class="sticky-tab-nav-responsive">
         <tab-navigation data-type="composite" data-ref="settings_tabs" class="sticky-tab-nav-responsive" activeTabId="{{query.tab || 'collection'}}" variant="default">
           <prop name="tabs">
-            <item id="collection" label="$t:admin.analytics.settings.tabs.collection"/>
-            <item id="privacy" label="$t:admin.analytics.settings.tabs.privacy"/>
-            <item id="bots" label="$t:admin.analytics.settings.tabs.bots"/>
-            <item id="retention" label="$t:admin.analytics.settings.tabs.retention"/>
-            <item id="reports" label="$t:admin.analytics.settings.tabs.reports"/>
+            <item id="collection" href="/admin/analytics/settings?tab=collection" label="$t:admin.analytics.settings.tabs.collection"/>
+            <item id="privacy" href="/admin/analytics/settings?tab=privacy" label="$t:admin.analytics.settings.tabs.privacy"/>
+            <item id="bots" href="/admin/analytics/settings?tab=bots" label="$t:admin.analytics.settings.tabs.bots"/>
+            <item id="retention" href="/admin/analytics/settings?tab=retention" label="$t:admin.analytics.settings.tabs.retention"/>
+            <item id="reports" href="/admin/analytics/settings?tab=reports" label="$t:admin.analytics.settings.tabs.reports"/>
           </prop>
           <on type="change" event="onTabChange">
             <!-- 탭 전환 — 검증 오류를 지우고 질의만 바꾼다. 설정은 질의를 타지 않으므로 다시 받지 않고,
@@ -332,12 +332,12 @@
             <badge data-type="composite" color="{{!_computed.canReadAnalytics ? 'gray' : (['auto', 'selected'].includes(analytics_status?.data?.collection?.consent_selection ?? '') ? 'green' : (['ambiguous', 'missing'].includes(analytics_status?.data?.collection?.consent_selection ?? '') ? 'orange' : 'gray'))}}" text="{{!_computed.canReadAnalytics ? $t('admin.analytics.settings.privacy.consent_source_unknown') : (['auto', 'selected'].includes(analytics_status?.data?.collection?.consent_selection ?? '') ? (analytics_status?.data?.collection?.consent_provider_label ?? '') : (['ambiguous', 'missing'].includes(analytics_status?.data?.collection?.consent_selection ?? '') ? $t('admin.analytics.settings.privacy.consent_source_needs_selection') : $t('admin.analytics.settings.privacy.consent_source_none')))}}" size="sm"/>
             <!-- 링크는 선택이 필요한 상태(ambiguous·missing)이고, 목적지(환경설정 개인정보 탭)를 열 권한(core.settings.read)이 있을 때만 그린다. -->
             <div data-if="{{_computed.canReadAnalytics &amp;&amp; ['ambiguous', 'missing'].includes(analytics_status?.data?.collection?.consent_selection ?? '')}}" class="contents">
-              <button data-ref="consent_source_choose_link" data-if="{{_computed.canReadDefinitions}}" type="button" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+              <a data-ref="consent_source_choose_link" href="/admin/settings?tab=privacy" data-if="{{_computed.canReadDefinitions}}" class="button text-sm text-blue-600 dark:text-blue-400 hover:underline">
                 <on type="click">
-                  <navigate path="/admin/settings?tab=privacy"/>
+                  <navigate/>
                 </on>
                 $t:admin.analytics.settings.privacy.consent_source_choose
-              </button>
+              </a>
             </div>
           </div>
           <!-- 세 모드 카드에는 KPI 카드와 같은 아이콘 상자를 둔다 — 글만 있으면 어느 것이 무엇을 덜 모으는

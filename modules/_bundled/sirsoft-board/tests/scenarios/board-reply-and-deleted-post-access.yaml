@@ -67,3 +67,5 @@ test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/DeletedPostAttachmentAccessTest.php
   # 50-3 — 답변 버튼 차단 (프론트 레이아웃 JSON 구조)
   - templates/_bundled/sirsoft-basic/__tests__/layouts/board-deleted-reply-button.test.tsx
+  # 브라우저 수준 — 답글 폼 직접 진입 차단 · 삭제 게시글 답변 링크 미노출 (E2E)
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/user/board-reply-and-deleted-post-access.spec.ts

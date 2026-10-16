@@ -949,6 +949,22 @@ describe('G7CoreGlobals - navigation API', () => {
 
     expect(typeof result).toBe('function');
   });
+
+  // @scenario surface=ui
+  // @effects navigation_api_judges_plain_click_and_merges_link_query
+  it('navigation.isPlainLeftClick()·mergeQueryIntoHref() — 링크 컴포넌트가 쓰는 판정·병합 규칙을 노출한다 (engine-v1.80.1)', () => {
+    const a = document.createElement('a');
+    a.setAttribute('href', '/admin/users');
+    expect(G7Core.navigation.isPlainLeftClick({ button: 0, currentTarget: a })).toBe(true);
+    expect(G7Core.navigation.isPlainLeftClick({ button: 0, ctrlKey: true, currentTarget: a })).toBe(false);
+
+    window.history.replaceState(null, '', '/admin/users?search=kim&page=1');
+    try {
+      expect(G7Core.navigation.mergeQueryIntoHref('/admin/users?page=2')).toBe('/admin/users?search=kim&page=2');
+    } finally {
+      window.history.replaceState(null, '', '/');
+    }
+  });
 });
 
 describe('G7CoreGlobals - websocket API', () => {

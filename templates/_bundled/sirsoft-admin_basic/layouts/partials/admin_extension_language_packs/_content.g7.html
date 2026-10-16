@@ -13,15 +13,16 @@
           <span data-if="{{route.path &amp;&amp; route.path.indexOf('/admin/plugins/') === 0}}">$t:admin.language_packs.banner.scoped|scope=plugin|target={{route.identifier}}</span>
           <span data-if="{{route.path &amp;&amp; route.path.indexOf('/admin/templates/') === 0}}">$t:admin.language_packs.banner.scoped|scope=template|target={{route.identifier}}</span>
         </div>
-        <button type="button" class="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 font-medium">
-          <on event="onClick">
-            <navigate path="{{route.path &amp;&amp; route.path.indexOf('/admin/modules/') === 0 ? '/admin/modules' : (route.path &amp;&amp; route.path.indexOf('/admin/plugins/') === 0 ? '/admin/plugins' : (route.path &amp;&amp; route.path.indexOf('/admin/templates/') === 0 ? '/admin/templates' : '/admin/settings?tab=language_packs'))}}"/>
+        <a href="{{route.path &amp;&amp; route.path.indexOf('/admin/modules/') === 0 ? '/admin/modules' : (route.path &amp;&amp; route.path.indexOf('/admin/plugins/') === 0 ? '/admin/plugins' : (route.path &amp;&amp; route.path.indexOf('/admin/templates/') === 0 ? '/admin/templates' : '/admin/settings?tab=language_packs'))}}" class="button inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 font-medium">
+          <on type="click">
+            <!-- 확장 목록으로 — 링크(#757)라 새 탭으로도 연다. 주소는 href 한 곳 -->
+            <navigate/>
           </on>
           <icon name="fas fa-arrow-left" size="sm"/>
           <span data-if="{{route.path &amp;&amp; route.path.indexOf('/admin/modules/') === 0}}">$t:admin.language_packs.banner.back_to_modules</span>
           <span data-if="{{route.path &amp;&amp; route.path.indexOf('/admin/plugins/') === 0}}">$t:admin.language_packs.banner.back_to_plugins</span>
           <span data-if="{{route.path &amp;&amp; route.path.indexOf('/admin/templates/') === 0}}">$t:admin.language_packs.banner.back_to_templates</span>
-        </button>
+        </a>
       </div>
       <include src="partials/admin_language_pack_list/_content.g7.html"/>
     </div>

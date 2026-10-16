@@ -129,7 +129,8 @@
                             "handler": "navigate",
                             "if": "{{!response.two_factor_required && !response.password_change_required}}",
                             "params": {
-                                "path": "{{query.redirect ?? '/'}}"
+                                "path": "{{query.redirect ?? '/'}}",
+                                "fallbackPath": "/"
                             }
                         }
                     ],
@@ -221,7 +222,8 @@
                             "handler": "navigate",
                             "if": "{{!response.password_change_required}}",
                             "params": {
-                                "path": "{{query.redirect ?? '/'}}"
+                                "path": "{{query.redirect ?? '/'}}",
+                                "fallbackPath": "/"
                             }
                         }
                     ],
@@ -279,7 +281,8 @@
                         {
                             "handler": "navigate",
                             "params": {
-                                "path": "{{query.redirect ?? '/'}}"
+                                "path": "{{query.redirect ?? '/'}}",
+                                "fallbackPath": "/"
                             }
                         }
                     ],
@@ -1044,7 +1047,8 @@
                                                 {
                                                     "handler": "navigate",
                                                     "params": {
-                                                        "path": "{{query.redirect ?? '/'}}"
+                                                        "path": "{{query.redirect ?? '/'}}",
+                                                        "fallbackPath": "/"
                                                     }
                                                 }
                                             ],

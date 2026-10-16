@@ -38,15 +38,15 @@
           <textarea name="content" :rows="6" class="" disabled="{{_computed.isReadOnly}}"/>
         </div>
         <div data-ref="memo_form_actions" class="flex-center justify-end gap-2">
-          <button data-ref="memo_cancel_button" type="button" class="px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors">
+          <a href="/admin/memos" :mergeQuery="true" data-ref="memo_cancel_button" class="button px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors">
             <on type="click">
               <!-- 취소하고 목록으로. 목록 상태를 그대로 넘겨 보던 페이지로 돌아간다 -->
-              <navigate path="/admin/memos" :mergeQuery="true">
+              <navigate :mergeQuery="true">
                 <query/>
               </navigate>
             </on>
             <span>$t:gnuboard7-hello_module.admin.memos.form.actions.cancel</span>
-          </button>
+          </a>
           <button data-ref="memo_save_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <!-- 저장 — route.id 유무로 생성(POST)과 수정(PUT)을 같은 버튼에서 가른다. 성공하면 목록으로 돌아간다. -->

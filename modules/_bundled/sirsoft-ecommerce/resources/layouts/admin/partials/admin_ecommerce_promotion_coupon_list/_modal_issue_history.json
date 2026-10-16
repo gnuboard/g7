@@ -253,6 +253,7 @@
                                             "items": [
                                                 {
                                                     "id": "view_member",
+                                                    "href": "/admin/users/{{row.user_id}}",
                                                     "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member",
                                                     "iconName": "user"
                                                 },

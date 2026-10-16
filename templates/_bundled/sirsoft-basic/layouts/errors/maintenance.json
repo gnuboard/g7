@@ -50,17 +50,15 @@
                             },
                             {
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
+                                    "href": "/",
                                     "className": "inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors cursor-pointer"
                                 },
                                 "children": [

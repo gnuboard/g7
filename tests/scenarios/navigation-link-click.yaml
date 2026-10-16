@@ -1,0 +1,49 @@
+feature: 화면 이동 링크 클릭 — 보통 클릭은 SPA, 새 탭·새 창은 브라우저
+
+description: |
+  화면 이동을 `<a href>` 로 그려도 엔진(`ActionDispatcher.createHandler`)이 click 마다 수정키를 보지 않고
+  `preventDefault()` 를 불러 Ctrl·Cmd·Shift+클릭 새 탭이 막혔다. engine-v1.80.1 에서 실제 주소 `<a href>` 를
+  보통 클릭이 아니게 누르면 막지도 실행하지도 않고(브라우저가 새 탭·새 창), 진입점 액션 키 `preventDefault`
+  (생략 = 자동 · true = 언제나 막고 실행 · false = 막지 않고 실행)로 직접 정할 수 있다. path 를 생략한 navigate 는
+  클릭한 링크의 href(같은 출처만)로 이동한다. 판정·병합 규칙은 `navigationLinks.ts` 하나이고
+  `G7Core.navigation.isPlainLeftClick`·`mergeQueryIntoHref` 로 합성 컴포넌트에 노출된다.
+
+  축 click 은 누르는 방식 — 보통 왼쪽 클릭(plain), 수정키 클릭(modified: Ctrl·Cmd·Shift·Alt),
+  가운데 버튼·우클릭(middle_or_context: click 이 아니라 auxclick·contextmenu 로 온다).
+  축 element 는 액션이 붙은 요소 — 같은 출처 링크(link), target="_blank"·download 링크(link_target_blank),
+  외부 주소 링크(link_external), 클릭 가능한 부모(카드) 안의 링크(link_nested_in_clickable — 버블링된 부모 처리기도
+  링크 클릭을 브라우저에 맡겨야 새 탭이 열린다), href 없는 단추(button).
+  축 prevent_key 는 진입점 액션 키 `preventDefault` — 생략(omitted)·true·false.
+
+axes:
+  click: [plain, modified, middle_or_context]
+  element: [link, link_target_blank, link_external, link_nested_in_clickable, button]
+  prevent_key: [omitted, "true", "false"]
+
+exclusions:
+  - { prevent_key: ["true", "false"], element: [link_target_blank, link_external, link_nested_in_clickable, button], reason: "키는 자동 판정만 끈다 — 키가 있으면 요소 종류와 무관하게 막음 여부가 키로 정해지고 링크 칸이 그 경로를 대표한다" }
+  - { prevent_key: ["true", "false"], click: middle_or_context, reason: "엔진은 auxclick·contextmenu 에 리스너가 없다 — 키가 닿을 자리가 없다" }
+  - { click: middle_or_context, element: [link_target_blank, link_external, link_nested_in_clickable, button], reason: "엔진 리스너 0 은 요소와 무관 — 링크 칸이 대표" }
+  - { click: modified, element: [link_target_blank, link_external], reason: "수정키와 target/외부 주소 둘 다 브라우저 몫이라 링크 칸과 같은 갈래" }
+  - { click: plain, prevent_key: "true", reason: "보통 클릭은 키가 없어도 막고 실행한다 — 생략 칸과 같은 동작" }
+  - { click: plain, element: link_nested_in_clickable, prevent_key: omitted, reason: "보통 클릭은 부모 click 도 함께 도는 종전 동작 — 같은 시험이 링크 이동만 확인" }
+  - { click: plain, element: button, prevent_key: omitted, reason: "종전 동작 그대로(단추 click 은 막고 실행) — ActionDispatcher 기존 시험이 덮는다" }
+
+effects:
+  - plain_click_spa_navigates
+  - modified_click_left_to_browser
+  - prevent_key_overrides_auto
+  - non_link_unchanged
+  - path_from_link_href_merges_query
+  - external_href_not_followed
+  - explicit_path_wins
+  - no_engine_listener_on_aux_or_context
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.linkClick.test.tsx
+
+notes: |
+  `prevent_key` 값의 true/false 는 YAML 불리언으로 읽히지 않게 따옴표로 둔다(마킹은 문자열 비교).
+  레이아웃 마크업 `:preventDefault`(액션 top-level 키)·path 없는 navigate 컴파일은 navigation-link-markup 매니페스트의
+  `NavigationLinkMarkupTest`(컴파일·봇 HTML 의 href 유지)가 잠근다.
+  `G7Core.navigation` 노출은 g7core-globals-surface 매니페스트(navigation_api_judges_plain_click_and_merges_link_query).

@@ -27,14 +27,13 @@
                 },
                 {
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "comment": "이력 탭으로 이동 — 다른 쿼리는 유지한 채 tab 만 바꾼다",
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "/admin/plugins/sirsoft-koreaexim/settings",
                                 "mergeQuery": true,
                                 "query": {
                                     "tab": "history"
@@ -43,8 +42,9 @@
                         }
                     ],
                     "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary"
+                        "href": "/admin/plugins/sirsoft-koreaexim/settings?tab=history",
+                        "mergeQuery": true,
+                        "className": "button btn btn-secondary"
                     },
                     "children": [
                         {

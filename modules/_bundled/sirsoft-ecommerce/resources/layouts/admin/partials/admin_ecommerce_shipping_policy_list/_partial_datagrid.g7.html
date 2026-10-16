@@ -7,7 +7,7 @@
   행 메뉴(수정·복사·삭제)는 저마다 다르게 움직인다 — 수정은 곧장 이동, 복사·삭제는 대상을 전역에
   담고 확인 창을 연다. -->
 <partial description="Shipping Policy List DataGrid (국가별 설정 요약 표시)">
-  <data-grid data-type="composite" data-ref="shipping_policy_datagrid" rowLabelField="name_localized" data="{{shipping_policies?.data?.data || []}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_global.bulkSelectedItems || []}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.shipping_policy.empty.title" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{shipping_policies?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{shipping_policies?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{shipping_policies?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" subRowClassName="px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 whitespace-normal shadow-sm">
+  <data-grid data-type="composite" pageHref="/admin/ecommerce/shipping-policies?page={page}" :pageHrefMergeQuery="true" data-ref="shipping_policy_datagrid" rowLabelField="name_localized" data="{{shipping_policies?.data?.data || []}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_global.bulkSelectedItems || []}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.shipping_policy.empty.title" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{shipping_policies?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{shipping_policies?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{shipping_policies?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" subRowClassName="px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 whitespace-normal shadow-sm">
     <blur-until-loaded sources="shipping_policies"/>
     <column field="is_default" header="$t:sirsoft-ecommerce.admin.shipping_policy.table.column.is_default_header" width="70px">
       <cell>
@@ -55,7 +55,7 @@
       </cell>
     </column>
     <prop name="rowActions">
-      <item id="edit" label="$t:sirsoft-ecommerce.admin.shipping_policy.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
+      <item id="edit" href="/admin/ecommerce/shipping-policies/{{row.id}}/edit" label="$t:sirsoft-ecommerce.admin.shipping_policy.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
       <item id="copy" label="$t:sirsoft-ecommerce.admin.shipping_policy.action.copy" iconName="fa-regular fa-copy" disabledField="abilities.can_create"/>
       <item id="divider" :divider="true"/>
       <item id="delete" label="$t:sirsoft-ecommerce.admin.shipping_policy.action.delete" iconName="fa-regular fa-trash-can" variant="danger" disabledField="abilities.can_delete"/>

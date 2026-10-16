@@ -15,7 +15,8 @@
 7. [CodeEditor 컴포넌트](#codeeditor-컴포넌트)
 8. [Modal 컴포넌트](#modal-컴포넌트)
 9. [LoadingSpinner 컴포넌트](#loadingspinner-컴포넌트)
-10. [관련 문서](#관련-문서)
+10. [A · Pagination 링크](#a--pagination-링크)
+11. [관련 문서](#관련-문서)
 
 ---
 
@@ -463,13 +464,15 @@ export interface DataGridProps {
   // 페이지네이션
   pagination?: boolean;             // 페이지네이션 활성화
   pageSize?: number;                // 페이지당 행 수
+  pageHref?: string;                // 페이지 주소 틀 — {page} 자리에 번호. 주면 페이지 번호가 링크(#757)
+  pageHrefMergeQuery?: boolean;     // 페이지 주소에 현재 쿼리 합치기
 
   // 컬럼 표시/숨김
   showColumnSelector?: boolean;     // 컬럼 선택기 노출
   visibleColumns?: string[];        // 표시할 컬럼 field 목록
 
   // 행 액션 메뉴
-  rowActions?: ActionMenuItem[];    // 행별 액션 메뉴 항목
+  rowActions?: ActionMenuItem[];    // 행별 액션 메뉴 항목 (항목 href → 링크, 행마다 평가)
   rowClassName?: string;            // 데이터 행에 덧붙일 CSS 클래스 (행 표현식 가능)
 
   // SubRow Props (engine-v1.6.0+)
@@ -503,9 +506,11 @@ export interface DataGridProps {
 | `sortDirection` | `'asc' \| 'desc'` | ❌ | - | 정렬 방향 |
 | `pagination` | `boolean` | ❌ | `false` | 페이지네이션 활성화 |
 | `pageSize` | `number` | ❌ | - | 페이지당 행 수 |
+| `pageHref` | `string` | ❌ | - | 내장 페이지 번호의 주소 틀 — `{page}` 자리에 번호(예: `/admin/users?page={page}`). 주면 페이지 번호가 `<a href>` 가 되어 새 탭으로 열 수 있다. 보통 클릭은 `onPageChange` 그대로([Pagination](#pagination)) |
+| `pageHrefMergeQuery` | `boolean` | ❌ | `false` | 페이지 주소에 현재 주소의 쿼리(검색·정렬)를 합친다 |
 | `showColumnSelector` | `boolean` | ❌ | `false` | 컬럼 선택기 노출 |
 | `visibleColumns` | `string[]` | ❌ | - | 표시할 컬럼 `field` 목록 |
-| `rowActions` | `ActionMenuItem[]` | ❌ | - | 행별 액션 메뉴 항목 |
+| `rowActions` | `ActionMenuItem[]` | ❌ | - | 행별 액션 메뉴 항목. 항목에 `href`(예: `/admin/users/{{row.uuid}}/edit`)를 주면 `<a role="menuitem" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열린다. 보통 클릭은 `onRowAction` 그대로. `href` 는 **DataGrid 가 행마다 평가**한다 — `components.json` 의 `skipBindingKeys` 에 `href` 가 있어 엔진이 행 문맥 없이 먼저 풀지 않으므로 `{{row.…}}` 를 그대로 쓴다(`$t:defer:` 불필요). `href` 없는 항목(삭제 등)은 종전 단추. 보통 클릭이 목록 조건을 넘기는 항목은 `:mergeQuery="true"` 를 함께 달아 새 탭에도 현재 쿼리를 합친다 |
 | `className` | `string` | ❌ | - | CSS 클래스 |
 
 > **`rowKey` / `selectedRows` / `loading` 은 존재한 적이 없는 prop 이다** (S17 20차 실측 —
@@ -1427,6 +1432,50 @@ id prop 사용: scrollIntoView 등 DOM selector로 접근해야 할 때 필수 �
 ✅ 다크 모드: 자동 지원 (border-gray-200 dark:border-gray-700)
 ✅ 접근성: role="status", aria-label, aria-live="polite" 자동 설정
 ```
+
+---
+
+## A · Pagination 링크
+
+**템플릿**: `sirsoft-admin_basic`, `sirsoft-basic` (#757 — 두 템플릿의 prop 이름·뜻이 같다)
+
+화면을 옮기는 자리는 `<a href>` 로 그려야 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 된다(SPA 는 클릭 때 주소를 정하므로 단추로 그리면 새 탭이 없다). 보통 클릭(왼쪽 단추·수정키 없음·`target` 없음·`download` 없음)만 지금처럼 SPA 로 옮기고, 나머지는 브라우저에 맡긴다. 보통 클릭인지는 엔진 `G7Core.navigation.isPlainLeftClick` 한 곳이 판정한다 — 컴포넌트는 그 결과만 쓰고 규칙을 따로 두지 않는다. 판정 API 가 없는 옛 엔진에서는 종전처럼 SPA 로 옮긴다.
+
+### A
+
+| Prop | 타입 | 기본값 | 설명 |
+| ---- | ---- | ------ | ---- |
+| `href` | string | - | 이동할 주소. 비었거나 `#` 이면 이동 없음 |
+| `disabled` | boolean | `false` | 참이면 `href` 를 빼고 `aria-disabled="true"` · `tabindex="-1"` 로 그린다. 클릭해도 아무 일도 하지 않는다. `<a>` 에는 `disabled` 속성이 없으므로 꾸밈은 `disabled:` 가 아니라 **`aria-disabled:`** 변형으로 쓴다 |
+| `target` | string | - | `_blank` 면 새 창. `rel` 에 `noopener` 가 없으면 컴포넌트가 `noopener noreferrer` 를 더한다(기존 `rel` 값은 지킨다) — 레이아웃에서 `rel` 을 따로 적지 않아도 새 창이 `window.opener` 로 이 화면을 조작하지 못한다 |
+| `mergeQuery` | boolean | `false` | 렌더할 때 현재 주소의 쿼리를 `href` 에 합친다(`G7Core.navigation.mergeQueryIntoHref` — 같은 키는 `href` 쪽이 이긴다). 새 탭도 같은 목록 조건(검색·정렬·쪽)으로 열린다. DOM 속성으로 새지 않는다 |
+
+| 클릭 | 동작 |
+| ---- | ---- |
+| 액션(`<on type="click">`) 없음 · 같은 출처 `href` · 보통 클릭 | A 가 기본 이동을 막고 SPA 로 옮긴다(문서 전체를 다시 부르지 않는다) |
+| 액션 있음 | A 는 관여하지 않고 엔진이 판정한다 — 링크의 보통 클릭만 막고 실행, 수정키 클릭은 막지도 실행하지도 않는다. `path` 없는 `<navigate/>` 는 클릭한 링크의 `href` 로 간다(같은 출처만). 새 탭을 막아야 하는 링크는 진입점에 `:preventDefault="true"` |
+| Ctrl·Meta·Shift·Alt · 가운데 단추 · `target="_blank"` · 바깥 주소 | 브라우저 기본(새 탭·새 창) |
+
+```html
+<!-- 목록 행의 수정 링크 — 주소는 href 한 곳, 새 탭도 같은 목록 조건 -->
+<a href="/admin/users/{{row.uuid}}/edit" :mergeQuery="true"
+   disabled="{{row.abilities?.can_update !== true}}"
+   class="text-blue-600 dark:text-blue-400 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
+   text="$t:common.edit">
+  <on type="click"><navigate :mergeQuery="true"/></on>
+</a>
+```
+
+단추 겉모습을 유지해야 하는 자리(`<button>` → `<a>`)는 `class` 에 `button` 을 함께 둔다 — 관리자 템플릿 `main.css` `.button` 이 inline-flex·커서를 준다. 관리자 템플릿의 단추형 클래스(`.button` · `.btn` · `.btn-base` · `.dialog-btn-*` · `.disabled-state`)는 `disabled:` 꾸밈과 같은 `aria-disabled:` 꾸밈을 함께 가져, `<a class="button btn btn-primary" disabled="…">` 처럼 링크가 된 단추도 비활성일 때 흐려진다. 단추형 클래스를 쓰지 않는 링크는 `aria-disabled:opacity-50 aria-disabled:cursor-not-allowed` 를 직접 적는다.
+
+### Pagination
+
+| Prop | 타입 | 기본값 | 설명 |
+| ---- | ---- | ------ | ---- |
+| `pageHref` | string | - | 페이지 주소 틀. `{page}` 자리(한 겹 중괄호 — 바인딩 아님)에 쪽 번호가 들어간다. 예: `/admin/users?page={page}`. 주면 번호·이전·다음·처음·끝이 `<a href>` 가 되고 현재 쪽은 `aria-current="page"`, 갈 수 없는 이전·다음은 `href` 없는 `aria-disabled`. 보통 클릭은 `onPageChange` 그대로. 없으면 종전처럼 단추 |
+| `pageHrefMergeQuery` | boolean | `false` | 페이지 주소에 현재 주소의 쿼리(검색·정렬 조건)를 합친다 |
+
+사용자 템플릿(`sirsoft-basic`) Pagination 도 같은 두 prop 을 받는다. DataGrid · CardGrid · ExtensionCardGrid(관리자 템플릿)의 `pageHref` · `pageHrefMergeQuery` 는 내장 페이지 번호에 그대로 넘어간다([DataGrid 지원 Props 요약](#지원-props-요약) · [메뉴 · 카드 · 바로가기 링크](component-props-composite.md#메뉴--카드--바로가기-링크)). 쪽 번호를 그리는 관리자 합성 컴포넌트는 이 넷이 전부다.
 
 ---
 

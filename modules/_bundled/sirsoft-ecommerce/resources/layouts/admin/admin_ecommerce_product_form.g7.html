@@ -341,14 +341,14 @@
         <include src="partials/admin_ecommerce_product_form/_partial_activity_log.g7.html"/>
         <div data-ref="footer_buttons" class="sticky-footer-buttons">
           <!-- 목록으로. 보던 목록 상태를 이고 간다 -->
-          <button data-ref="footer_list_button" type="button" class="btn btn-outline">
+          <a href="/admin/ecommerce/products" :mergeQuery="true" data-ref="footer_list_button" class="button btn btn-outline">
             <on type="click">
-              <navigate path="/admin/ecommerce/products" :mergeQuery="true">
+              <navigate :mergeQuery="true">
                 <query/>
               </navigate>
             </on>
             $t:sirsoft-ecommerce.common.list
-          </button>
+          </a>
           <button data-ref="footer_copy_button" data-if="{{route.itemCode &amp;&amp; product_abilities?.data?.abilities?.can_create === true}}" type="button" class="btn btn-outline">
             <on type="click">
               <open-modal target="modal_copy_product"/>

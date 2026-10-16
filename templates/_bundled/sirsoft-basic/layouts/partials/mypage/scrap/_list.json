@@ -559,18 +559,16 @@
                                                         {
                                                             "comment": "게시판명 클릭 → 게시판 목록 이동",
                                                             "type": "basic",
-                                                            "name": "Span",
+                                                            "name": "A",
                                                             "actions": [
                                                                 {
                                                                     "comment": "audit:allow layout-list-context-navigate-merge-query 게시판명 → 게시판 목록 이동. 스크랩 목록과 게시판 목록은 서로 다른 목록 정체성이라 병합하지 않는다.",
                                                                     "type": "click",
-                                                                    "handler": "navigate",
-                                                                    "params": {
-                                                                        "path": "{{`/board/${item.board_slug}`}}"
-                                                                    }
+                                                                    "handler": "navigate"
                                                                 }
                                                             ],
                                                             "props": {
+                                                                "href": "{{`/board/${item.board_slug}`}}",
                                                                 "className": "cursor-pointer hover:underline"
                                                             },
                                                             "text": "{{item.board_name ?? ''}}"
@@ -587,18 +585,16 @@
                                                         {
                                                             "comment": "제목 클릭 → 원글 상세 이동",
                                                             "type": "basic",
-                                                            "name": "Span",
+                                                            "name": "A",
                                                             "actions": [
                                                                 {
                                                                     "comment": "audit:allow layout-list-context-navigate-merge-query 제목 → 원글 이동. 스크랩 목록과 게시판 상세는 서로 다른 목록 정체성이라 병합하지 않는다.",
                                                                     "type": "click",
-                                                                    "handler": "navigate",
-                                                                    "params": {
-                                                                        "path": "{{`/board/${item.board_slug}/${item.post_id}`}}"
-                                                                    }
+                                                                    "handler": "navigate"
                                                                 }
                                                             ],
                                                             "props": {
+                                                                "href": "{{`/board/${item.board_slug}/${item.post_id}`}}",
                                                                 "className": "cursor-pointer hover:underline"
                                                             },
                                                             "text": "{{item.title ?? ''}}"
@@ -1063,20 +1059,18 @@
                                         {
                                             "comment": "살아있는 원글 카드 — 게시판 뱃지+제목 한 줄, 작성자·댓글수·스크랩일. 클릭 시 원글 이동",
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "A",
                                             "if": "{{!item.is_deleted && item.scrap_enabled}}",
                                             "actions": [
                                                 {
                                                     "comment": "audit:allow layout-list-context-navigate-merge-query 스크랩 카드 → 원글 이동. 스크랩 목록과 게시판 상세는 서로 다른 목록 정체성이라 병합하지 않는다.",
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "{{`/board/${item.board_slug}/${item.post_id}`}}"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
-                                                "className": "cursor-pointer"
+                                                "href": "{{`/board/${item.board_slug}/${item.post_id}`}}",
+                                                "className": "block cursor-pointer"
                                             },
                                             "children": [
                                                 {

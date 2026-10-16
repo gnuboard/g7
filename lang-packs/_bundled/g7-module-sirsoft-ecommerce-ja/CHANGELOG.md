@@ -16,6 +16,10 @@
   - 클레임 상세 송장 방향(`admin/claim.detail.items.tracking_direction_label` — 「送り状の方向」), 교환 신청의 교환할 옵션(`admin/order.claim_request.exchange_option_label` — 「交換するオプション」)
   - 주문 설정 자동 취소 칸(`admin/settings.order_settings.auto_cancel.days_label`·`pending_minutes_label` — 「入金待ち注文の自動キャンセル日数」「決済未完了注文の自動キャンセル時間（分）」)
 
+### Fixed
+
+- 상품 공통정보 관리에서 편집 중 다른 항목을 고를 때 뜨는 확인 창 문구가 「別の商品グループ」(상품정보고시 용어)였던 것을 「別の共通情報」로 바로잡았습니다(`admin/common_info.modal.editing.confirm_message`).
+
 ## [1.2.0] - 2026-10-10
 
 ### Added

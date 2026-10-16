@@ -184,37 +184,31 @@
                                 "children": [
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "{{_global.shopBase}}/cart"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "flex-1 px-4 py-2.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-lg font-medium cursor-pointer"
+                                            "href": "{{_global.shopBase}}/cart",
+                                            "className": "inline-flex items-center justify-center flex-1 px-4 py-2.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-lg font-medium cursor-pointer"
                                         },
                                         "text": "$t:shop.reorder.go_cart"
                                     },
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/mypage/orders"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                                            "href": "/mypage/orders",
+                                            "className": "inline-flex items-center justify-center flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
                                         },
                                         "text": "$t:shop.reorder.back_to_orders"
                                     }
@@ -263,19 +257,16 @@
                             },
                             {
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/mypage/orders"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+                                    "href": "/mypage/orders",
+                                    "className": "inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
                                 },
                                 "text": "$t:shop.reorder.back_to_orders"
                             }

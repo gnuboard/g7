@@ -50,18 +50,16 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Button",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/board/{{post.board_slug}}/{{post.id}}"
-                                            }
+                                            "handler": "navigate"
                                         }
                                     ],
                                     "props": {
-                                        "className": "justify-start font-medium text-gray-900 dark:text-white min-w-12 truncate flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer"
+                                        "href": "/board/{{post.board_slug}}/{{post.id}}",
+                                        "className": "inline-block text-center justify-start font-medium text-gray-900 dark:text-white min-w-12 truncate flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer"
                                     },
                                     "text": "{{post.title}}"
                                 }

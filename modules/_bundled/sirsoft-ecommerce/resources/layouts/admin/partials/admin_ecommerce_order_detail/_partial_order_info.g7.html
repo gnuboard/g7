@@ -292,15 +292,12 @@
               <span class="text-label-subtle block mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_info.name</span>
               <action-menu data-type="composite" data-if="{{!!order.data?.user_id}}" position="left">
                 <prop name="items">
-                  <item id="view_member" label="$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_action.view_member" iconName="user"/>
+                  <item id="view_member" href="/admin/users/{{order.data?.user_id}}" target="_blank" label="$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_action.view_member" iconName="user"/>
                   <item id="search_by_orderer" label="$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_action.search_by_member" iconName="magnifying-glass"/>
                 </prop>
                 <on event="onItemClick">
                   <!-- 주문자 이름 메뉴 — 회원 상세는 **새 창**으로(보던 주문을 잃지 않게), 그 회원 주문만 보기는 같은 창에서 주문 목록으로 넘어간다. -->
                   <switch>
-                    <case when="view_member">
-                      <open-window path="/admin/users/{{order.data?.user_id}}"/>
-                    </case>
                     <case when="search_by_orderer">
                       <!-- 주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (#75). -->
                       <navigate path="/admin/ecommerce/orders" :mergeQuery="true" :replace="true" transition_overlay_target="order_product_datagrid__body">

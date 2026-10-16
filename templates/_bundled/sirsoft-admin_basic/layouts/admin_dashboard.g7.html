@@ -168,14 +168,12 @@
           <div data-ref="asset_url_mode_drift_title" class="text-sm font-semibold text-amber-900 dark:text-amber-200">$t:admin.dashboard.asset_url_mode_drift_title</div>
           <p data-ref="asset_url_mode_drift_desc" class="mt-1 text-sm text-amber-800 dark:text-amber-300">$t:admin.dashboard.asset_url_mode_drift_description</p>
           <!-- 자산 주소 방식이 어긋났다는 경고에서 설정 화면으로 바로 보낸다 — 대시보드에서 문제를 알리고 고칠 자리까지 데려가는 것이 이 링크의 몫이다 -->
-          <button data-ref="asset_url_mode_drift_link" type="button" class="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-amber-900 dark:text-amber-200 underline hover:no-underline cursor-pointer">
+          <a data-ref="asset_url_mode_drift_link" href="/admin/settings?tab=general" class="button mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-amber-900 dark:text-amber-200 underline hover:no-underline cursor-pointer">
             <on type="click">
-              <navigate path="/admin/settings">
-                <query tab="general"/>
-              </navigate>
+              <navigate/>
             </on>
             $t:admin.dashboard.asset_url_mode_drift_action
-          </button>
+          </a>
         </div>
       </div>
       <div data-ref="dashboard_alert_banners" data-if="{{((dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type === 'warning').length) > 0}}" class="space-y-3 mb-6">
@@ -209,17 +207,17 @@
                 <span data-if="{{!!alert.recover_label}}">{{alert.recover_label}}</span>
                 <span data-if="{{!alert.recover_label}}">$t:extensions.alerts.recover_action</span>
               </button>
-              <button data-ref="top_alert_navigate_button_{{$idx}}" data-if="{{!alert.recover_endpoint &amp;&amp; !!alert.action_url}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded">
+              <a data-ref="top_alert_navigate_button_{{$idx}}" href="{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}" data-if="{{!alert.recover_endpoint &amp;&amp; !!alert.action_url}}" class="button inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded">
                 <on type="click">
                   <!-- 복구 API 는 없지만 갈 곳은 있는 알림(보존일을 고치라는 경고 등). 주소도 글자도 알림이 실어 온 값을 쓴다 —
                        버튼이 뜨는 조건은 종류가 아니라 **이동 주소를 실어 왔는가**라 새 알림이 이동을 붙일 때 화면을 고치지 않는다.
                        절대 주소로 와도 같은 사이트 안이면 경로만 떼어 SPA 이동한다. -->
-                  <navigate path="{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}"/>
+                  <navigate/>
                 </on>
                 <icon name="arrow-right" size="xs"/>
                 <span data-if="{{!!alert.action_label}}">{{alert.action_label}}</span>
                 <span data-if="{{!alert.action_label}}">$t:extensions.alerts.open_action</span>
-              </button>
+              </a>
               <button data-ref="top_alert_dismiss_button_{{$idx}}" data-if="{{alert.extension_type &amp;&amp; alert.identifier}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed" aria-label="$t:extensions.alerts.dismiss_action" disabled="{{alert.abilities?.can_dismiss !== true}}">
                 <on type="click">
                   <!-- 닫기는 조치가 아니라 「이 확장의 이 알림을 더 보지 않겠다」는 기록이다 — 서버에 남겨야 새로고침마다 되살아나지 않는다. 그래서 토스트 없이 목록만 다시 받는다. -->
@@ -279,12 +277,12 @@
               <h2 data-ref="recent_notifications_title" class="section-heading">$t:admin.dashboard.recent_notifications.title</h2>
               <p data-ref="recent_notifications_subtitle" class="text-label-subtle">$t:admin.dashboard.recent_notifications.subtitle</p>
             </div>
-            <button data-ref="recent_notifications_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
+            <a data-ref="recent_notifications_more_btn" href="/admin/notification-logs" class="button text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
               <on type="click">
-                <navigate path="/admin/notification-logs"/>
+                <navigate/>
               </on>
               $t:admin.dashboard.extension_status.more
-            </button>
+            </a>
           </div>
           <p data-ref="recent_notifications_empty" data-if="{{(dashboard_recent_notifications?.data ?? []).length === 0}}" class="text-sm text-slate-500 dark:text-slate-400 text-center py-6">$t:admin.dashboard.recent_notifications.empty</p>
           <div data-ref="recent_notifications_list" data-if="{{(dashboard_recent_notifications?.data ?? []).length > 0}}" class="mb-4">
@@ -308,12 +306,12 @@
               <h2 data-ref="recent_activity_title" class="section-heading">$t:admin.dashboard.recent_activity.title</h2>
               <p data-ref="recent_activity_subtitle" class="text-label-subtle">$t:admin.dashboard.recent_activity.subtitle</p>
             </div>
-            <button data-ref="activity_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
+            <a data-ref="activity_more_btn" href="/admin/activity-logs" class="button text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
               <on type="click">
-                <navigate path="/admin/activity-logs"/>
+                <navigate/>
               </on>
               $t:admin.dashboard.extension_status.more
-            </button>
+            </a>
           </div>
           <div data-ref="activity_list">
             <div data-ref="activity_item_{{$idx}}" data-each="activity, $idx in dashboard_activities?.data" class="flex-start gap-3">
@@ -332,50 +330,50 @@
         (#682 라운드 4, 검수 지적 ⑧). 언어팩은 상태 카드가 없어 칩이 유일한 요약이다. -->
       <div data-ref="secondary_stats_badges" class="flex-center flex-wrap gap-2 md:gap-3 mb-4">
         <blur-until-loaded sources="dashboard_stats"/>
-        <div data-ref="modules_badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
+        <a data-ref="modules_badge" href="/admin/modules" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
           <permissions>
             <permission>core.modules.read</permission>
           </permissions>
           <on type="click">
-            <navigate path="/admin/modules"/>
+            <navigate/>
           </on>
           <icon data-ref="modules_badge_icon" name="cube" size="sm"/>
           <span data-ref="modules_badge_label">$t:admin.dashboard.stats.installed_modules</span>
           <span data-ref="modules_badge_value" class="font-bold">{{dashboard_stats?.data?.installed_modules?.active ?? 0}}/{{dashboard_stats?.data?.installed_modules?.total ?? 0}}</span>
-        </div>
-        <div data-ref="plugins_badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
+        </a>
+        <a data-ref="plugins_badge" href="/admin/plugins" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
           <permissions>
             <permission>core.plugins.read</permission>
           </permissions>
           <on type="click">
-            <navigate path="/admin/plugins"/>
+            <navigate/>
           </on>
           <icon data-ref="plugins_badge_icon" name="puzzle-piece" size="sm"/>
           <span data-ref="plugins_badge_label">$t:admin.dashboard.stats.active_plugins</span>
           <span data-ref="plugins_badge_value" class="font-bold">{{dashboard_stats?.data?.active_plugins?.active ?? 0}}/{{dashboard_stats?.data?.active_plugins?.total ?? 0}}</span>
-        </div>
-        <div data-ref="templates_badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
+        </a>
+        <a data-ref="templates_badge" href="/admin/templates/admin" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
           <permissions>
             <permission>core.templates.read</permission>
           </permissions>
           <on type="click">
-            <navigate path="/admin/templates/admin"/>
+            <navigate/>
           </on>
           <icon data-ref="templates_badge_icon" name="palette" size="sm"/>
           <span data-ref="templates_badge_label">$t:admin.dashboard.stats.active_templates</span>
           <span data-ref="templates_badge_value" class="font-bold">{{dashboard_stats?.data?.installed_templates?.active ?? 0}}/{{dashboard_stats?.data?.installed_templates?.total ?? 0}}</span>
-        </div>
-        <div data-ref="language_packs_badge" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
+        </a>
+        <a data-ref="language_packs_badge" href="/admin/settings?tab=language_packs" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
           <permissions>
             <permission>core.language_packs.read</permission>
           </permissions>
           <on type="click">
-            <navigate path="/admin/settings?tab=language_packs"/>
+            <navigate/>
           </on>
           <icon data-ref="language_packs_badge_icon" name="language" size="sm"/>
           <span data-ref="language_packs_badge_label">$t:admin.dashboard.stats.active_language_packs</span>
           <span data-ref="language_packs_badge_value" class="font-bold">{{dashboard_stats?.data?.language_packs?.active ?? 0}}/{{dashboard_stats?.data?.language_packs?.total ?? 0}}</span>
-        </div>
+        </a>
       </div>
       <div data-ref="extension_status_grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <div data-ref="module_status_card" class="bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6">
@@ -390,12 +388,12 @@
                 <p data-ref="module_status_subtitle" class="text-label-subtle">$t:admin.dashboard.module_status.subtitle</p>
               </div>
             </div>
-            <button data-ref="module_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
+            <a data-ref="module_more_btn" href="/admin/modules" class="button text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
               <on type="click">
-                <navigate path="/admin/modules"/>
+                <navigate/>
               </on>
               $t:admin.dashboard.extension_status.more
-            </button>
+            </a>
           </div>
           <div data-ref="module_list">
             <div data-ref="module_item_{{$idx}}" data-each="module, $idx in dashboard_modules?.data?.data" class="flex-between py-2">
@@ -419,12 +417,12 @@
                 <p data-ref="plugin_status_subtitle" class="text-label-subtle">$t:admin.dashboard.plugin_status.subtitle</p>
               </div>
             </div>
-            <button data-ref="plugin_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
+            <a data-ref="plugin_more_btn" href="/admin/plugins" class="button text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
               <on type="click">
-                <navigate path="/admin/plugins"/>
+                <navigate/>
               </on>
               $t:admin.dashboard.extension_status.more
-            </button>
+            </a>
           </div>
           <div data-ref="plugin_list">
             <div data-ref="plugin_item_{{$idx}}" data-each="plugin, $idx in dashboard_plugins?.data?.data" class="flex-between py-2">
@@ -448,12 +446,12 @@
                 <p data-ref="template_status_subtitle" class="text-label-subtle">$t:admin.dashboard.template_status.subtitle</p>
               </div>
             </div>
-            <button data-ref="template_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
+            <a data-ref="template_more_btn" href="/admin/templates/admin" class="button text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
               <on type="click">
-                <navigate path="/admin/templates/admin"/>
+                <navigate/>
               </on>
               $t:admin.dashboard.extension_status.more
-            </button>
+            </a>
           </div>
           <div data-ref="template_list">
             <div data-ref="template_item_{{$idx}}" data-each="template, $idx in dashboard_templates?.data?.data" class="flex-between py-2">
@@ -506,17 +504,17 @@
                     <span data-if="{{!!alert.recover_label}}">{{alert.recover_label}}</span>
                     <span data-if="{{!alert.recover_label}}">$t:extensions.alerts.recover_action</span>
                   </button>
-                  <button data-ref="alert_navigate_button_{{$idx}}" data-if="{{!alert.recover_endpoint &amp;&amp; !!alert.action_url}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded">
+                  <a data-ref="alert_navigate_button_{{$idx}}" href="{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}" data-if="{{!alert.recover_endpoint &amp;&amp; !!alert.action_url}}" class="button inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded">
                     <on type="click">
                       <!-- 복구 API 는 없지만 갈 곳은 있는 알림(보존일을 고치라는 경고 등). 주소도 글자도 알림이 실어 온 값을 쓴다 —
                            버튼이 뜨는 조건은 종류가 아니라 **이동 주소를 실어 왔는가**라 새 알림이 이동을 붙일 때 화면을 고치지 않는다.
                            절대 주소로 와도 같은 사이트 안이면 경로만 떼어 SPA 이동한다. -->
-                      <navigate path="{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}"/>
+                      <navigate/>
                     </on>
                     <icon name="arrow-right" size="xs"/>
                     <span data-if="{{!!alert.action_label}}">{{alert.action_label}}</span>
                     <span data-if="{{!alert.action_label}}">$t:extensions.alerts.open_action</span>
-                  </button>
+                  </a>
                   <button data-ref="alert_dismiss_button_{{$idx}}" data-if="{{alert.extension_type &amp;&amp; alert.identifier}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed" aria-label="$t:extensions.alerts.dismiss_action" disabled="{{alert.abilities?.can_dismiss !== true}}">
                     <on type="click">
                       <!-- 경고 숨기기. 복구와 달리 확장 종류·식별자로 주소를 조립한다(경고가 그 둘을 실어

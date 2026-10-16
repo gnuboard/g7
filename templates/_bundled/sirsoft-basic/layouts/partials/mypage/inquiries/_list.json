@@ -212,21 +212,18 @@
                                                 {
                                                     "comment": "상품 썸네일 (있을 때) - 클릭 시 상품 상세 이동",
                                                     "type": "basic",
-                                                    "name": "Button",
+                                                    "name": "A",
                                                     "if": "{{!!item.product?.thumbnail_url}}",
                                                     "actions": [
                                                         {
                                                             "comment": "audit:allow layout-list-context-navigate-merge-query 문의 대상 상품으로 이동 — 문의 목록과 다른 클러스터(상품 상세)로 나가는 이동이다.",
                                                             "type": "click",
-                                                            "handler": "navigate",
-                                                            "params": {
-                                                                "path": "{{item.product?.url ?? '/'}}"
-                                                            }
+                                                            "handler": "navigate"
                                                         }
                                                     ],
                                                     "props": {
-                                                        "type": "button",
-                                                        "className": "shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700"
+                                                        "href": "{{item.product?.url ?? '/'}}",
+                                                        "className": "inline-flex items-center justify-center shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700"
                                                     },
                                                     "children": [
                                                         {
@@ -270,20 +267,17 @@
                                                         {
                                                             "comment": "상품명 - 클릭 시 상품 상세 이동",
                                                             "type": "basic",
-                                                            "name": "Button",
+                                                            "name": "A",
                                                             "if": "{{!!item.product?.url}}",
                                                             "actions": [
                                                                 {
                                                                     "comment": "audit:allow layout-list-context-navigate-merge-query 문의 대상 상품으로 이동 — 문의 목록과 다른 클러스터(상품 상세)로 나가는 이동이다.",
                                                                     "type": "click",
-                                                                    "handler": "navigate",
-                                                                    "params": {
-                                                                        "path": "{{item.product?.url ?? '/'}}"
-                                                                    }
+                                                                    "handler": "navigate"
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "type": "button",
+                                                                "href": "{{item.product?.url ?? '/'}}",
                                                                 "className": "block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5 truncate max-w-full hover:underline hover:text-gray-700 dark:hover:text-gray-200 text-left"
                                                             },
                                                             "text": "{{item.product_name ?? ''}}"
@@ -814,19 +808,16 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "{{_global.shopBase ?? '/shop'}}/products"
-                                    }
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
-                                "type": "button",
-                                "className": "inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg cursor-pointer"
+                                "href": "{{_global.shopBase ?? '/shop'}}/products",
+                                "className": "text-center inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg cursor-pointer"
                             },
                             "text": "$t:mypage.inquiries.go_shopping"
                         }

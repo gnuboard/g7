@@ -166,6 +166,8 @@
                 }
             ],
             "props": {
+                "pageHref": "/admin/ecommerce/products?page={page}",
+                "pageHrefMergeQuery": true,
                 "rowLabelField": "name_localized",
                 "data": "{{products?.data?.data}}",
                 "idField": "id",
@@ -192,6 +194,7 @@
                 "rowActions": [
                     {
                         "id": "edit",
+                        "href": "/admin/ecommerce/products/{{row.product_code ?? row.id}}/edit",
                         "label": "$t:sirsoft-ecommerce.admin.product.action.edit",
                         "iconName": "fa-regular fa-pen-to-square",
                         "disabledField": "abilities.can_update"
@@ -721,7 +724,7 @@
                                     }
                                 ],
                                 "props": {
-                                    "href": "#",
+                                    "href": "/admin/ecommerce/products?shipping_policy_id={{row.shipping_policy_id}}",
                                     "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline"
                                 },
                                 "text": "{{row.shipping_policy_name}}"

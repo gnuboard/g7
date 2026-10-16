@@ -1149,22 +1149,18 @@
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "이전 페이지 — 페이지네이션 컴포넌트가 아니라 손으로 만든 버튼이라 **여기서 하한을\n                     지킨다**(1 아래로 내려가지 않게). 버튼 자체도 첫 페이지에서 잠긴다.",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
-                                                        "path": "/admin/settings",
                                                         "replace": true,
                                                         "mergeQuery": true,
                                                         "transition_overlay_target": "policy_table_card",
                                                         "refetch_data_sources": "policies",
-                                                        "query": {
-                                                            "tab": "identity",
-                                                            "page": "{{Math.max(1, (policies?.data?.meta?.current_page ?? 1) - 1)}}"
-                                                        },
+                                                        "query": {},
                                                         "scroll": {
                                                             "container": "#right_content_area",
                                                             "to": "#identity_section_policies",
@@ -1175,9 +1171,10 @@
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
+                                                "href": "/admin/settings?tab=identity&page={{Math.max(1, (policies?.data?.meta?.current_page ?? 1) - 1)}}",
+                                                "mergeQuery": true,
                                                 "disabled": "{{(policies?.data?.meta?.current_page ?? 1) <= 1}}",
-                                                "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                "className": "button px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                                             },
                                             "children": [
                                                 {
@@ -1197,22 +1194,18 @@
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "다음 페이지 — 이전 버튼과 대칭으로 마지막 페이지를 상한으로 지킨다.",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
-                                                        "path": "/admin/settings",
                                                         "replace": true,
                                                         "mergeQuery": true,
                                                         "transition_overlay_target": "policy_table_card",
                                                         "refetch_data_sources": "policies",
-                                                        "query": {
-                                                            "tab": "identity",
-                                                            "page": "{{policies?.data?.meta?.last_page ? Math.min(policies.data.meta.last_page, (policies?.data?.meta?.current_page ?? 1) + 1) : ((policies?.data?.meta?.current_page ?? 1) + 1)}}"
-                                                        },
+                                                        "query": {},
                                                         "scroll": {
                                                             "container": "#right_content_area",
                                                             "to": "#identity_section_policies",
@@ -1223,9 +1216,10 @@
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
+                                                "href": "/admin/settings?tab=identity&page={{policies?.data?.meta?.last_page ? Math.min(policies.data.meta.last_page, (policies?.data?.meta?.current_page ?? 1) + 1) : ((policies?.data?.meta?.current_page ?? 1) + 1)}}",
+                                                "mergeQuery": true,
                                                 "disabled": "{{!((policies?.data?.meta?.has_more_pages === true) || ((policies?.data?.meta?.current_page ?? 1) < (policies?.data?.meta?.last_page ?? 0)))}}",
-                                                "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                "className": "button px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                                             },
                                             "children": [
                                                 {

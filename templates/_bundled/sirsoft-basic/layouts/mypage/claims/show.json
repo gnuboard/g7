@@ -112,20 +112,20 @@
                                     {
                                         "comment": "회원 신청내역 목록으로 돌아가는 버튼이다. 비회원 상세는 목록 대신 주문 상세로 돌아가므로 이 버튼은 공유 partial 이 아니라 셸마다 따로 둔다.",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/mypage/claims",
                                                     "mergeQuery": true,
                                                     "query": {}
                                                 }
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
+                                            "href": "/mypage/claims",
+                                            "mergeQuery": true,
                                             "className": "flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
                                         },
                                         "children": [
@@ -324,20 +324,17 @@
                                                     {
                                                         "comment": "원 주문으로 — 신청서에서 주문을 되짚어 볼 수 있어야 한다. 주문 상세는 다른 목록(주문내역)의 클러스터이므로 이 목록의 서브탭·페이지를 물려주지 않는다.",
                                                         "type": "basic",
-                                                        "name": "Button",
+                                                        "name": "A",
                                                         "if": "{{!!claim.data?.claim?.order_number}}",
                                                         "actions": [
                                                             {
                                                                 "comment": "audit:allow layout-list-context-navigate-merge-query 주문내역 클러스터로 나가는 이동 — 클레임 목록의 서브탭·페이지를 물려주면 주문 상세가 알지 못하는 파라미터가 실린다.",
                                                                 "type": "click",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/mypage/orders/{{claim.data?.claim?.order_number}}"
-                                                                }
+                                                                "handler": "navigate"
                                                             }
                                                         ],
                                                         "props": {
-                                                            "type": "button",
+                                                            "href": "/mypage/orders/{{claim.data?.claim?.order_number}}",
                                                             "className": "inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline mt-1 cursor-pointer"
                                                         },
                                                         "text": "$t:claim.list.order_number|number={{claim.data?.claim?.order_number ?? ''}}"
@@ -365,22 +362,22 @@
                                                     {
                                                         "comment": "[수정] — 작성 화면을 수정 모드로 연다. 주소에는 신청번호만 싣고 유형·주문번호는 그 화면이 신청서를 읽어 세우며, 목록 쿼리를 물려주어 수정·상세를 거쳐 목록으로 돌아와도 보던 서브탭이 남는다.",
                                                         "type": "basic",
-                                                        "name": "Button",
+                                                        "name": "A",
                                                         "if": "{{claim.data?.claim?.is_editable === true}}",
                                                         "actions": [
                                                             {
                                                                 "type": "click",
                                                                 "handler": "navigate",
                                                                 "params": {
-                                                                    "path": "/mypage/claims/{{claim.data?.claim?.claim_number}}/edit",
                                                                     "mergeQuery": true,
                                                                     "query": {}
                                                                 }
                                                             }
                                                         ],
                                                         "props": {
-                                                            "type": "button",
-                                                            "className": "px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                                            "href": "/mypage/claims/{{claim.data?.claim?.claim_number}}/edit",
+                                                            "mergeQuery": true,
+                                                            "className": "inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                                                         },
                                                         "text": "$t:claim.list.edit"
                                                     },

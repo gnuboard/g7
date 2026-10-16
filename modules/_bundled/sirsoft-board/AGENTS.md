@@ -224,6 +224,17 @@ cd modules/_bundled/sirsoft-board && npm run test:e2e -- specs/<대상>.spec.ts
 무필터 전체 실행은 금지되어 있습니다 — 변경 범위에 걸리는 대상만 지정해 실행합니다.
 <!-- @generated:test-commands END -->
 
+### E2E 시드 커맨드
+
+화면·API 로 만들 수 없거나(작성 시각·삭제된 행) 글 쿨다운에 막히는 전제는 시드 커맨드가 세운다. 모두 3중 가드(CLI · `G7_PLAYWRIGHT_BYPASS=1` · APP_DEBUG)를 거치고 `--teardown` 으로 되돌린다. 코어 쪽 책임 분리 표는 [docs/testing/e2e-testing.md](../../../docs/testing/e2e-testing.md) §4.
+
+| 커맨드 | 세우는 전제 |
+| --- | --- |
+| `playwright:seed-board-posts --tag=<워커>` | 쪽당 2건·글 3건인 공개 게시판 `e2e-nav-{tag}` + 기본 `user` 역할 회원과 토큰(페이지 번호·게시글 행·글쓰기 링크 실측, 사용자 템플릿 `user-navigation-links.spec.ts`) |
+| `playwright:seed-board-reaction` | 반응 화면의 세 상태 행·비활성 반응 유형 |
+| `playwright:seed-board-retention` | 오래전에 쓴 비회원·회원 글(개인정보 보유기간 처리) |
+| `playwright:seed-board-scrap` | 스크랩 화면의 세 상태 행 |
+
 ## 8. 문서 목차
 
 <!-- @generated:docs-index START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->

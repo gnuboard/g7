@@ -54,4 +54,28 @@ describe('AuthManager.getRedirectUrl — 복귀 경로 정책', () => {
         withSearch('?redirect=%2Fadmin%2Forders%3Fstatus%3Dpaid');
         expect(authManager.getRedirectUrl('admin')).toBe('/admin/orders?status=paid');
     });
+
+    /**
+     * 같은 판정(navPolicy)을 쓰므로 같은 출처 전체 주소는 경로로, 다른 출처 전체 주소는 기본 경로로 간다.
+     *
+     * @scenario target_kind=same_origin_full_url, sink=same_tab
+     *
+     * @effects same_origin_full_url_becomes_path, nav_sink_rejects_offsite_target
+     */
+    it('같은 출처 전체 주소는 경로로 반환하고 다른 출처 전체 주소는 기본 경로를 반환한다', () => {
+        const origin = 'https://site.example';
+        const set = (redirect: string) => {
+            Object.defineProperty(window, 'location', {
+                value: { search: `?redirect=${encodeURIComponent(redirect)}`, origin },
+                writable: true,
+                configurable: true,
+            });
+        };
+        set(`${origin}/admin/orders?status=paid`);
+        expect(authManager.getRedirectUrl('admin')).toBe('/admin/orders?status=paid');
+        set('https://evil.example/admin');
+        expect(authManager.getRedirectUrl('admin')).toBe('/admin');
+        set(`${origin}@evil.example/admin`);
+        expect(authManager.getRedirectUrl('admin')).toBe('/admin');
+    });
 });

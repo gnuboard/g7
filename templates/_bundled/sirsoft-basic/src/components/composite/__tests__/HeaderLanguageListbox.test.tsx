@@ -107,7 +107,8 @@ describe('사용자 헤더 아이콘 단추 이름', () => {
   // @effects cart_named_with_count
   it('아이콘만 있는 장바구니 단추가 담긴 수를 함께 말하는 이름을 갖는다', () => {
     render(<Header siteName="S" availableLocales={['ko']} currentLocale="ko" cartCount={3} />);
-    expect(screen.getByRole('button', { name: '장바구니 (담긴 상품 3개)' })).toBeInTheDocument();
+    // 장바구니는 화면 이동이라 링크로 그린다(새 탭 열기, #757) — 이름 계약은 그대로
+    expect(screen.getByRole('link', { name: '장바구니 (담긴 상품 3개)' })).toBeInTheDocument();
   });
 
   // @scenario case=mobile_menu_name

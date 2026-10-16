@@ -740,21 +740,21 @@
                 {
                     "comment": "취소 버튼 (등록: 목록, 수정: 상세)",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}",
                                 "mergeQuery": true,
                                 "query": {}
                             }
                         }
                     ],
                     "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                        "href": "{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}",
+                        "mergeQuery": true,
+                        "className": "inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                     },
                     "text": "$t:common.cancel"
                 },

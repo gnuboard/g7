@@ -12,9 +12,9 @@
     <include src="_claim_policy_section.g7.html"/>
     <tab-navigation data-type="composite" data-ref="claim_reason_sub_tabs" activeTabId="{{['return', 'refund'].includes(_local.claimReasonTab ?? query.sub_tab) ? (_local.claimReasonTab ?? query.sub_tab) : 'exchange'}}" variant="underline" class="mb-4">
       <prop name="tabs">
-        <item id="exchange" label="$t:sirsoft-ecommerce.admin.settings.claim.reason_tabs.exchange"/>
-        <item id="return" label="$t:sirsoft-ecommerce.admin.settings.claim.reason_tabs.return"/>
-        <item id="refund" label="$t:sirsoft-ecommerce.admin.settings.claim.reason_tabs.refund"/>
+        <item id="exchange" href="/admin/ecommerce/settings?tab=claim&amp;sub_tab=exchange" label="$t:sirsoft-ecommerce.admin.settings.claim.reason_tabs.exchange"/>
+        <item id="return" href="/admin/ecommerce/settings?tab=claim&amp;sub_tab=return" label="$t:sirsoft-ecommerce.admin.settings.claim.reason_tabs.return"/>
+        <item id="refund" href="/admin/ecommerce/settings?tab=claim&amp;sub_tab=refund" label="$t:sirsoft-ecommerce.admin.settings.claim.reason_tabs.refund"/>
       </prop>
       <on type="change" event="onTabChange">
         <!-- 클레임 설정의 하위 탭을 옮길 때의 정리 — 아래 첫 줄 주석이 이유를 적는다 -->

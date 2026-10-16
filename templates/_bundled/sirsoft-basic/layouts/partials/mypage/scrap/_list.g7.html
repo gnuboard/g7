@@ -124,23 +124,23 @@
               </td>
               <td class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 whitespace-nowrap truncate">
                 <!-- 게시판명 클릭 → 게시판 목록 이동 -->
-                <span class="cursor-pointer hover:underline">
+                <a href="{{`/board/${item.board_slug}`}}" class="cursor-pointer hover:underline">
                   <on type="click">
                     <!-- audit:allow layout-list-context-navigate-merge-query 게시판명 → 게시판 목록 이동. 스크랩 목록과 게시판 목록은 서로 다른 목록 정체성이라 병합하지 않는다. -->
-                    <navigate path="{{`/board/${item.board_slug}`}}"/>
+                    <navigate/>
                   </on>
                   {{item.board_name ?? ''}}
-                </span>
+                </a>
               </td>
               <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
                 <!-- 제목 클릭 → 원글 상세 이동 -->
-                <span class="cursor-pointer hover:underline">
+                <a href="{{`/board/${item.board_slug}/${item.post_id}`}}" class="cursor-pointer hover:underline">
                   <on type="click">
                     <!-- audit:allow layout-list-context-navigate-merge-query 제목 → 원글 이동. 스크랩 목록과 게시판 상세는 서로 다른 목록 정체성이라 병합하지 않는다. -->
-                    <navigate path="{{`/board/${item.board_slug}/${item.post_id}`}}"/>
+                    <navigate/>
                   </on>
                   {{item.title ?? ''}}
-                </span>
+                </a>
               </td>
               <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-300 whitespace-nowrap truncate">{{item.author_name ?? ''}}</td>
               <td class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">{{item.comments_count ?? 0}}</td>
@@ -256,10 +256,10 @@
           </div>
           <div class="flex-1 min-w-0">
             <!-- 살아있는 원글 카드 — 게시판 뱃지+제목 한 줄, 작성자·댓글수·스크랩일. 클릭 시 원글 이동 -->
-            <div data-if="{{!item.is_deleted &amp;&amp; item.scrap_enabled}}" class="cursor-pointer">
+            <a href="{{`/board/${item.board_slug}/${item.post_id}`}}" data-if="{{!item.is_deleted &amp;&amp; item.scrap_enabled}}" class="block cursor-pointer">
               <on type="click">
                 <!-- audit:allow layout-list-context-navigate-merge-query 스크랩 카드 → 원글 이동. 스크랩 목록과 게시판 상세는 서로 다른 목록 정체성이라 병합하지 않는다. -->
-                <navigate path="{{`/board/${item.board_slug}/${item.post_id}`}}"/>
+                <navigate/>
               </on>
               <!-- 뱃지 + 제목 한 줄 -->
               <div class="flex items-center gap-2 mb-1">
@@ -271,7 +271,7 @@
                 <span>$t:mypage.scrap.comments|count={{item.comments_count ?? 0}}</span>
                 <span class="text-gray-400 dark:text-gray-500">{{item.scrapped_at ?? ''}}</span>
               </div>
-            </div>
+            </a>
             <!-- 스크랩이 중지된 게시판의 카드 — 톤다운 + 배지, 카드 클릭 이동 없음 -->
             <div data-if="{{!item.is_deleted &amp;&amp; !item.scrap_enabled}}" class="opacity-50">
               <div class="flex items-center gap-2 mb-1 flex-wrap">

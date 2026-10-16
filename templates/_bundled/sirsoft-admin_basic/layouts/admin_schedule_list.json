@@ -235,11 +235,13 @@
                                     "tabs": [
                                         {
                                             "id": "schedules",
+                                            "href": "/admin/schedules",
                                             "label": "$t:admin.schedules.tabs.schedules",
                                             "iconName": "clock"
                                         },
                                         {
                                             "id": "queue",
+                                            "href": "/admin/schedules/queue",
                                             "label": "$t:admin.schedules.tabs.queue",
                                             "iconName": "chart-column",
                                             "disabled": true

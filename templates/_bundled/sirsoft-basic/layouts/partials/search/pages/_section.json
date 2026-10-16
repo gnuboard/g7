@@ -56,7 +56,7 @@
                 {
                     "comment": "전체보기 버튼",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "if": "{{(searchResults?.data?.pages_count ?? 0) > 0}}",
                     "actions": [
                         {
@@ -64,7 +64,6 @@
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "/search",
                                 "mergeQuery": true,
                                 "query": {
                                     "type": "pages",
@@ -76,6 +75,8 @@
                         }
                     ],
                     "props": {
+                        "href": "/search?type=pages&board_slug=&page=&cursor=",
+                        "mergeQuery": true,
                         "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                     },
                     "children": [
@@ -117,22 +118,29 @@
                     }
                 },
                 {
+                    "comment": "카드 전체가 링크다 — 하이라이트 HTML 을 링크 밖에 두려고 빈 링크가 카드를 덮는다(이름은 일반 글자 제목). 초점 테두리는 안쪽(ring-inset) — 바깥 목록 상자가 overflow:hidden 이라 바깥 테두리는 잘린다",
                     "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "audit:allow layout-list-context-navigate-merge-query 검색 결과 → 원문(페이지) 이동 — 검색 목록과 다른 클러스터로 나가는 이동이다.",
-                            "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "{{page.url}}"
-                            }
-                        }
-                    ],
+                    "name": "Div",
                     "props": {
-                        "className": "block w-full text-left p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                        "className": "relative block w-full text-left p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
                     },
                     "children": [
+                        {
+                            "type": "basic",
+                            "name": "A",
+                            "actions": [
+                                {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 검색 결과 → 원문(페이지) 이동 — 검색 목록과 다른 클러스터로 나가는 이동이다.",
+                                    "type": "click",
+                                    "handler": "navigate"
+                                }
+                            ],
+                            "props": {
+                                "href": "{{page.url}}",
+                                "aria-label": "{{page.title ?? ''}}",
+                                "className": "absolute inset-0 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400"
+                            }
+                        },
                         {
                             "type": "composite",
                             "name": "HtmlContent",

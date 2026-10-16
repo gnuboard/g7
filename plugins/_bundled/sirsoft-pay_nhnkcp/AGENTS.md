@@ -162,7 +162,7 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 | PHPUnit | 48개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
 | Vitest | 27개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 42개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 43개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

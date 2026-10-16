@@ -149,6 +149,12 @@ export interface DataGridProps {
     serverSidePagination?: boolean;
     serverCurrentPage?: number;
     /**
+     * 페이지 번호 주소 틀 — `{page}` 자리에 번호(예: `/admin/users?page={page}`). 주면 내장 페이지 번호가 링크가 된다(#757).
+     */
+    pageHref?: string;
+    /** 페이지 주소에 현재 주소의 쿼리를 합친다 */
+    pageHrefMergeQuery?: boolean;
+    /**
      * 서버가 알려준 마지막 페이지 번호
      *
      * 총 건수를 상한까지만 센 목록은 마지막 페이지를 계산할 수 없어 서버가 `null` 을 보낸다.

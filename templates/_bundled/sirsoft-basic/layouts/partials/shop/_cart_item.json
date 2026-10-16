@@ -49,6 +49,7 @@
             "props": {
                 "href": "{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}",
                 "target": "_blank",
+                "rel": "noopener",
                 "className": "flex-shrink-0"
             },
             "children": [
@@ -107,6 +108,7 @@
                     "props": {
                         "href": "{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}",
                         "target": "_blank",
+                        "rel": "noopener",
                         "className": "block w-full text-left no-underline"
                     },
                     "children": [

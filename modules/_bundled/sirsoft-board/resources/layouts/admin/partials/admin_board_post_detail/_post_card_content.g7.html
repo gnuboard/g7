@@ -25,16 +25,16 @@
         </div>
         <div data-ref="card_actions" class="flex-center gap-2">
           <responsive on="portable" class="flex-center gap-2 ml-auto"/>
-          <button data-ref="reply_button" data-if="{{post?.data?.board?.use_reply &amp;&amp; !post?.data?.is_notice &amp;&amp; (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="text-secondary inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{post?.data?.abilities?.can_write !== true}}">
+          <a href="/admin/board/{{route.slug}}/create?parent_id={{post?.data?.id}}" :mergeQuery="true" data-ref="reply_button" data-if="{{post?.data?.board?.use_reply &amp;&amp; !post?.data?.is_notice &amp;&amp; (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at}}" class="button text-secondary inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed" disabled="{{post?.data?.abilities?.can_write !== true}}">
             <on type="click">
               <!-- 답변 작성 폼으로 이동 — parent_id 는 query 로 넘긴다. mergeQuery 는 path 의 인라인 쿼리스트링을 버리므로 path 에 붙여두면 사라진다 (#75). -->
-              <navigate path="/admin/board/{{route.slug}}/create" :mergeQuery="true">
+              <navigate :mergeQuery="true">
                 <query parent_id="{{post?.data?.id}}"/>
               </navigate>
             </on>
             <icon name="comment" class="text-xs"/>
             <span>$t:sirsoft-board.admin.posts.detail.reply_button</span>
-          </button>
+          </a>
           <!-- 신고 버튼 — 미신고 상태 (모달 오픈) -->
           <button data-ref="report_button" data-if="{{post?.data?.board?.use_report &amp;&amp; post?.data?.author?.uuid !== current_user?.data?.uuid &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; post?.data?.status !== 'deleted' &amp;&amp; !post?.data?.deleted_at &amp;&amp; !post?.data?.is_already_reported}}" class="text-secondary inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors">
             <on type="click">
@@ -98,9 +98,9 @@
         </div>
       </div>
       <div data-ref="card_meta" class="flex-center flex-wrap gap-2 text-label">
-        <action-menu data-type="composite" data-ref="author_name_menu" data-if="{{!post?.data?.author?.is_guest}}" triggerLabel="{{post?.data?.author?.name}}" triggerIconName="" triggerClassName="font-medium text-gray-900 dark:text-white" position="right">
+        <action-menu data-type="composite" data-ref="author_name_menu" data-if="{{!post?.data?.author?.is_guest &amp;&amp; post?.data?.author?.uuid}}" triggerLabel="{{post?.data?.author?.name}}" triggerIconName="" triggerClassName="font-medium text-gray-900 dark:text-white" position="right">
           <prop name="items">
-            <item id="view_user_info" label="$t:sirsoft-board.admin.posts.detail.user_info" iconName="user"/>
+            <item href="/admin/users/{{post?.data?.author?.uuid}}" id="view_user_info" label="$t:sirsoft-board.admin.posts.detail.user_info" iconName="user"/>
           </prop>
           <on type="click" event="onItemClick">
             <!-- 글쓴이 이름을 누르면 그 회원의 관리자 상세로 — 비회원 글은 이 메뉴 대신 이름만 나온다 -->
@@ -111,7 +111,7 @@
             </switch>
           </on>
         </action-menu>
-        <span data-if="{{post?.data?.author?.is_guest}}" class="text-heading">{{post?.data?.author?.name}}</span>
+        <span data-if="{{post?.data?.author?.is_guest || !post?.data?.author?.uuid}}" class="text-heading">{{post?.data?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}</span>
         <span data-if="{{post?.data?.author?.email}}" class="text-label-subtle">({{post?.data?.author?.email}})</span>
         <span data-if="{{post?.data?.author?.is_guest}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.posts.guest</span>
         <span>·</span>
@@ -194,9 +194,9 @@
         </div>
         <!-- 오른쪽: 작성자 (ActionMenu) + 날짜 -->
         <div class="flex-center gap-2">
-          <action-menu data-type="composite" data-ref="parent_author_name_menu" data-if="{{!post?.data?.parent?.author?.is_guest}}" triggerLabel="{{post?.data?.parent?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}" triggerIconName="" triggerClassName="text-gray-500 dark:text-gray-400" position="right">
+          <action-menu data-type="composite" data-ref="parent_author_name_menu" data-if="{{!post?.data?.parent?.author?.is_guest &amp;&amp; post?.data?.parent?.author?.uuid}}" triggerLabel="{{post?.data?.parent?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}" triggerIconName="" triggerClassName="text-gray-500 dark:text-gray-400" position="right">
             <prop name="items">
-              <item id="view_user_info" label="$t:sirsoft-board.admin.posts.detail.user_info" iconName="user"/>
+              <item href="/admin/users/{{post?.data?.parent?.author?.uuid}}" id="view_user_info" label="$t:sirsoft-board.admin.posts.detail.user_info" iconName="user"/>
             </prop>
             <on type="click" event="onItemClick">
               <!-- 원글 쓴 사람의 관리자 상세로 — 위 글쓴이 메뉴와 같은 짜임이지만 대상이 «원글» 쪽이다(이 화면은 답글이다) -->
@@ -207,7 +207,7 @@
               </switch>
             </on>
           </action-menu>
-          <span data-if="{{post?.data?.parent?.author?.is_guest}}" class="text-label-subtle">{{post?.data?.parent?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}</span>
+          <span data-if="{{post?.data?.parent?.author?.is_guest || !post?.data?.parent?.author?.uuid}}" class="text-label-subtle">{{post?.data?.parent?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}</span>
           <span data-if="{{post?.data?.parent?.author?.is_guest}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.posts.guest</span>
           <span class="text-gray-400 dark:text-gray-500">{{post?.data?.parent?.created_at ?? ''}}</span>
         </div>
@@ -295,10 +295,10 @@
     <div data-ref="post_navigation" data-if="{{post?.data?.navigation?.prev || post?.data?.navigation?.next}}" class="border-b border-gray-200 dark:border-gray-700">
       <div class="flex flex-row divide-x divide-gray-200 dark:divide-gray-700">
         <responsive on="portable" class="divider-list flex flex-col"/>
-        <div data-ref="prev_post" data-if="{{post?.data?.navigation?.prev}}" class="flex-1 px-4 py-3 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+        <a href="/admin/board/{{route.slug}}/post/{{post?.data?.navigation?.prev?.id}}" :mergeQuery="true" data-ref="prev_post" data-if="{{post?.data?.navigation?.prev}}" class="flex-1 px-4 py-3 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 cursor-pointer transition-colors">
           <on type="click">
-            <!-- 이 글의 수정 화면으로. 보던 목록 상태를 이고 간다 -->
-            <navigate path="/admin/board/{{route.slug}}/post/{{post?.data?.navigation?.prev?.id}}" :mergeQuery="true">
+            <!-- 이전 글로. 보던 목록 상태를 이고 간다 -->
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
@@ -308,11 +308,11 @@
             <span data-if="{{post?.data?.navigation?.prev?.is_notice}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 mr-2">$t:sirsoft-board.admin.posts.list.notice</span>
             <span class="text-primary text-sm truncate">{{post?.data?.navigation?.prev?.title}}</span>
           </div>
-        </div>
-        <div data-ref="next_post" data-if="{{post?.data?.navigation?.next}}" class="flex-1 px-4 py-3 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+        </a>
+        <a href="/admin/board/{{route.slug}}/post/{{post?.data?.navigation?.next?.id}}" :mergeQuery="true" data-ref="next_post" data-if="{{post?.data?.navigation?.next}}" class="flex-1 px-4 py-3 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 cursor-pointer transition-colors">
           <on type="click">
-            <!-- 작성자의 회원 상세로. 신고 처리를 하려면 그 사람의 다른 활동을 함께 봐야 한다 -->
-            <navigate path="/admin/board/{{route.slug}}/post/{{post?.data?.navigation?.next?.id}}" :mergeQuery="true">
+            <!-- 다음 글로. 보던 목록 상태를 이고 간다 -->
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
@@ -322,7 +322,7 @@
             <span class="text-tertiary font-medium ml-2">$t:sirsoft-board.admin.posts.detail.next</span>
             <icon name="chevron-right" class="text-base text-gray-400 dark:text-gray-500 flex-shrink-0"/>
           </div>
-        </div>
+        </a>
       </div>
     </div>
     <div data-ref="comments_section_in_post" data-if="{{post?.data?.id == route.id}}">

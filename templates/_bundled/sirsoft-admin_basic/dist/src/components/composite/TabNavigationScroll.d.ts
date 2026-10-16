@@ -22,6 +22,11 @@ export interface Tab {
     scrollDelay?: number;
     /** 개별 탭 클릭 시 실행될 콜백 (우선순위: 개별 > 공통 > 기본) */
     onClick?: (tabId: string | number) => void;
+    /**
+     * 탭이 가리키는 주소 — 주면 `<a role="tab" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다.
+     * 보통 클릭은 지금처럼 탭 전환(onTabChange — 저장 안 한 변경 확인 흐름 유지)(#757).
+     */
+    href?: string;
 }
 /**
  * TabNavigationScroll Props

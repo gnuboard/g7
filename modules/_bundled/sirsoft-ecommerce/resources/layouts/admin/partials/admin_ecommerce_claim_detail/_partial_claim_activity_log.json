@@ -261,28 +261,13 @@
                                                     "type": "composite",
                                                     "name": "ActionMenu",
                                                     "if": "{{!!log.user?.uuid}}",
-                                                    "actions": [
-                                                        {
-                                                            "event": "onItemClick",
-                                                            "handler": "switch",
-                                                            "params": {
-                                                                "value": "{{$args[0]}}"
-                                                            },
-                                                            "cases": {
-                                                                "view_member": {
-                                                                    "handler": "openWindow",
-                                                                    "params": {
-                                                                        "path": "/admin/users/{{log.user.uuid}}"
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    ],
                                                     "props": {
                                                         "position": "left",
                                                         "items": [
                                                             {
                                                                 "id": "view_member",
+                                                                "href": "/admin/users/{{log.user.uuid}}",
+                                                                "target": "_blank",
                                                                 "label": "$t:sirsoft-ecommerce.admin.claim.detail.activity_log.actor_action.view_member",
                                                                 "iconName": "user"
                                                             }
@@ -586,28 +571,13 @@
                                                     "type": "composite",
                                                     "name": "ActionMenu",
                                                     "if": "{{!!log.user?.uuid}}",
-                                                    "actions": [
-                                                        {
-                                                            "event": "onItemClick",
-                                                            "handler": "switch",
-                                                            "params": {
-                                                                "value": "{{$args[0]}}"
-                                                            },
-                                                            "cases": {
-                                                                "view_member": {
-                                                                    "handler": "openWindow",
-                                                                    "params": {
-                                                                        "path": "/admin/users/{{log.user.uuid}}"
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    ],
                                                     "props": {
                                                         "position": "left",
                                                         "items": [
                                                             {
                                                                 "id": "view_member",
+                                                                "href": "/admin/users/{{log.user.uuid}}",
+                                                                "target": "_blank",
                                                                 "label": "$t:sirsoft-ecommerce.admin.claim.detail.activity_log.actor_action.view_member",
                                                                 "iconName": "user"
                                                             }

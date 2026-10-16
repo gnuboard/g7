@@ -1015,21 +1015,21 @@
                                         "comment": "목록으로. 보던 목록 상태를 이고 간다",
                                         "id": "footer_list_button",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/ecommerce/products",
                                                     "mergeQuery": true,
                                                     "query": {}
                                                 }
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "btn btn-outline"
+                                            "href": "/admin/ecommerce/products",
+                                            "mergeQuery": true,
+                                            "className": "button btn btn-outline"
                                         },
                                         "text": "$t:sirsoft-ecommerce.common.list"
                                     },

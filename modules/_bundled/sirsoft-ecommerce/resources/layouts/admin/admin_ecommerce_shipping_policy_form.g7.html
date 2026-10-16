@@ -170,15 +170,15 @@
           <include src="partials/admin_ecommerce_shipping_policy_form/_partial_extra_fee.g7.html"/>
         </div>
         <div data-ref="footer_buttons" class="sticky-footer-buttons-between">
-          <button data-ref="footer_list_button" type="button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors">
+          <a href="/admin/ecommerce/shipping-policies" :mergeQuery="true" data-ref="footer_list_button" class="button flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors">
             <on type="click">
               <!-- 목록으로. 보던 목록 상태를 이고 간다 -->
-              <navigate path="/admin/ecommerce/shipping-policies" :mergeQuery="true">
+              <navigate :mergeQuery="true">
                 <query/>
               </navigate>
             </on>
             <span>$t:common.list</span>
-          </button>
+          </a>
           <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || _computed.isReadOnly}}" class="btn btn-primary flex-center gap-1.5">
             <on type="click">
               <!-- 저장 — 등록/수정 구분은 `route.id` 유무 하나로 엔드포인트와 메서드를 함께 가른다. 성공하면 목록으로 돌아가므로 폼을 되받아 채울 필요가 없고, 실패하면 서버 오류를 폼 위 배너로 넘긴다 -->

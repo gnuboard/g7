@@ -172,14 +172,13 @@
                             {
                                 "id": "tab_connection",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "탭 전환은 URL 쿼리 tab 으로만 한다 — replace 로 이력을 늘리지 않고, mergeQuery 로 다른 쿼리(bz_*)는 보존한다.",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/plugins/{{route.identifier}}/settings",
                                             "mergeQuery": true,
                                             "replace": true,
                                             "query": {
@@ -189,8 +188,9 @@
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {{(query.tab ?? 'connection') === 'connection' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}}"
+                                    "href": "/admin/plugins/{{route.identifier}}/settings?tab=connection",
+                                    "mergeQuery": true,
+                                    "className": "button px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {{(query.tab ?? 'connection') === 'connection' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}}"
                                 },
                                 "children": [
                                     {
@@ -203,7 +203,7 @@
                             {
                                 "id": "tab_templates",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "템플릿 탭으로 전환하면서 DB 목록을 받는다 — 목록 데이터소스는 auto_fetch 가 꺼져 있어(연결 탭에서는 불필요) 탭 진입 시점에 직접 부른다.",
@@ -231,7 +231,8 @@
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
+                                    "href": "/admin/plugins/{{route.identifier}}/settings?tab=templates",
+                                    "mergeQuery": true,
                                     "className": "px-4 py-2.5 text-sm font-medium border-b-2 transition-colors {{(query.tab ?? 'connection') === 'templates' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}}"
                                 },
                                 "children": [
@@ -1391,19 +1392,16 @@
                                     {
                                         "id": "cancel_button",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/plugins"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "btn btn-secondary"
+                                            "href": "/admin/plugins",
+                                            "className": "button btn btn-secondary"
                                         },
                                         "children": [
                                             {
@@ -1640,14 +1638,13 @@
                                             },
                                             {
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "A",
                                                 "actions": [
                                                     {
                                                         "comment": "준비 안내의 [설정으로] — 연결 탭으로 보낸다(같은 화면의 탭 전환이라 mergeQuery·replace).",
                                                         "type": "click",
                                                         "handler": "navigate",
                                                         "params": {
-                                                            "path": "/admin/plugins/{{route.identifier}}/settings",
                                                             "mergeQuery": true,
                                                             "replace": true,
                                                             "query": {
@@ -1657,8 +1654,9 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
-                                                    "className": "btn btn-secondary btn-sm whitespace-nowrap"
+                                                    "href": "/admin/plugins/{{route.identifier}}/settings?tab=connection",
+                                                    "mergeQuery": true,
+                                                    "className": "button btn btn-secondary btn-sm whitespace-nowrap"
                                                 },
                                                 "children": [
                                                     {
@@ -2742,6 +2740,8 @@
                                                     }
                                                 ],
                                                 "props": {
+                                                    "pageHrefMergeQuery": true,
+                                                    "pageHref": "/admin/plugins/{{route.identifier}}/settings?bz_page={page}",
                                                     "currentPage": "{{bizppurio_templates_list?.data?.pagination?.current_page ?? 1}}",
                                                     "totalPages": "{{bizppurio_templates_list?.data?.pagination?.last_page ?? null}}",
                                                     "hasMorePages": "{{bizppurio_templates_list?.data?.pagination?.has_more_pages ?? false}}"

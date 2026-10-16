@@ -120,20 +120,17 @@
                                     {
                                         "comment": "뒤로가기: 상위 카테고리 있으면 상위로, 없으면 /shop으로",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "{{(category?.data?.breadcrumb ?? []).length > 1 ? _global.shopBase + '/category/' + (category?.data?.breadcrumb ?? []).slice(-2, -1)[0]?.slug : _global.shopBase + '/products'}}"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
+                                            "href": "{{(category?.data?.breadcrumb ?? []).length > 1 ? _global.shopBase + '/category/' + (category?.data?.breadcrumb ?? []).slice(-2, -1)[0]?.slug : _global.shopBase + '/products'}}",
                                             "aria-label": "$t:common.back",
-                                            "className": "p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                            "className": "inline-flex items-center justify-center p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                         },
                                         "children": [
                                             {
@@ -353,19 +350,17 @@
                                 "children": [
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "comment": "audit:allow layout-list-context-navigate-merge-query 하위 카테고리 이동 — 다른 목록으로의 이동이라 상위 카테고리의 검색·정렬·페이지를 승계하지 않는다",
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "{{_global.shopBase}}/category/{{sub?.slug}}"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "className": "max-w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600"
+                                            "href": "{{_global.shopBase}}/category/{{sub?.slug}}",
+                                            "className": "inline-flex items-center justify-center max-w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600"
                                         },
                                         "children": [
                                             {

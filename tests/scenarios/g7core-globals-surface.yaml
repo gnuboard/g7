@@ -70,6 +70,7 @@ effects:
   - module_settings_are_readable_by_key_and_in_bulk
   - module_settings_support_default_values
   - navigation_api_reports_pending_and_notifies_on_complete
+  - navigation_api_judges_plain_click_and_merges_link_query
   - plugin_settings_are_readable_by_key_and_in_bulk
   - plugin_settings_missing_sources_return_empty
   - plugin_settings_support_default_values

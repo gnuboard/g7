@@ -180,7 +180,7 @@
                    동안 화면이 멈춘 것처럼 보이고, 이동 자체는 읽음 성공에 걸 이유가 없다.
                    알림에 링크가 없으면 알림 이력 화면으로 보낸다. 읽음 처리 권한이 없으면 이동만 한다. -->
               <parallel>
-                <navigate path="{{$args[0].url ?? '/admin/notification-logs'}}"/>
+                <navigate path="{{$args[0].url}}" fallbackPath="/admin/notification-logs"/>
                 <conditions>
                   <when if="{{notifications?.data?.abilities?.can_update === true}}">
                     <api-call :auth_required="true" target="/api/admin/notifications/{{$args[0].id}}/read" method="PATCH">
@@ -194,6 +194,22 @@
                   </when>
                 </conditions>
               </parallel>
+            </on>
+            <on event="onNotificationRead">
+              <!-- 링크 알림을 Ctrl·가운데 클릭이나 바깥 주소로 새 탭에 열었을 때 — 이 화면은 그대로이므로 이동 없이
+                   읽음 처리만 한다(컴포넌트가 안 읽은 알림·읽음 권한일 때만 부른다). -->
+              <conditions>
+                <when if="{{notifications?.data?.abilities?.can_update === true}}">
+                  <api-call :auth_required="true" target="/api/admin/notifications/{{$args[0].id}}/read" method="PATCH">
+                    <success>
+                      <refetch-data-source dataSourceId="notification_unread_count"/>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
+                  </api-call>
+                </when>
+              </conditions>
             </on>
             <on event="onMarkAllRead">
               <!-- 전부 읽음. 목록과 배지를 함께 다시 부르고 페이지 상태를 1로 되돌린다 —
@@ -312,7 +328,7 @@
                    동안 화면이 멈춘 것처럼 보이고, 이동 자체는 읽음 성공에 걸 이유가 없다.
                    알림에 링크가 없으면 알림 이력 화면으로 보낸다. 읽음 처리 권한이 없으면 이동만 한다. -->
               <parallel>
-                <navigate path="{{$args[0].url ?? '/admin/notification-logs'}}"/>
+                <navigate path="{{$args[0].url}}" fallbackPath="/admin/notification-logs"/>
                 <conditions>
                   <when if="{{notifications?.data?.abilities?.can_update === true}}">
                     <api-call :auth_required="true" target="/api/admin/notifications/{{$args[0].id}}/read" method="PATCH">
@@ -326,6 +342,22 @@
                   </when>
                 </conditions>
               </parallel>
+            </on>
+            <on event="onNotificationRead">
+              <!-- 링크 알림을 Ctrl·가운데 클릭이나 바깥 주소로 새 탭에 열었을 때 — 이 화면은 그대로이므로 이동 없이
+                   읽음 처리만 한다(컴포넌트가 안 읽은 알림·읽음 권한일 때만 부른다). -->
+              <conditions>
+                <when if="{{notifications?.data?.abilities?.can_update === true}}">
+                  <api-call :auth_required="true" target="/api/admin/notifications/{{$args[0].id}}/read" method="PATCH">
+                    <success>
+                      <refetch-data-source dataSourceId="notification_unread_count"/>
+                    </success>
+                    <fail>
+                      <toast type="error" message="{{error.message}}"/>
+                    </fail>
+                  </api-call>
+                </when>
+              </conditions>
             </on>
             <on event="onMarkAllRead">
               <!-- 전부 읽음. 목록과 배지를 함께 다시 부르고 페이지 상태를 1로 되돌린다 —

@@ -219,7 +219,7 @@
           </select>
         </div>
       </div>
-      <data-grid data-type="composite" rowLabelField="product.name" data-ref="wishlists_datagrid" :data-blur-until-loaded="true" data="{{wishlists?.data?.data}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{wishlists?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{wishlists?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{wishlists?.data?.pagination?.has_more_pages ?? false}}" selectable="{{wishlists?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedItems_wishlists || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-ecommerce.admin.wishlists.table.empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
+      <data-grid data-type="composite" pageHref="/admin/ecommerce/wishlists?page={page}" :pageHrefMergeQuery="true" rowLabelField="product.name" data-ref="wishlists_datagrid" :data-blur-until-loaded="true" data="{{wishlists?.data?.data}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{wishlists?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{wishlists?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{wishlists?.data?.pagination?.has_more_pages ?? false}}" selectable="{{wishlists?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedItems_wishlists || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-ecommerce.admin.wishlists.table.empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
         <column field="created_at" header="$t:sirsoft-ecommerce.admin.wishlists.columns.created_at">
           <cell>
             <span class="text-sm text-gray-900 dark:text-white">{{row.created_at}}</span>
@@ -229,13 +229,13 @@
           <cell>
             <div class="flex flex-col">
               <div class="flex items-center gap-2">
-                <span data-if="{{!!row.member?.uuid}}" class="font-medium text-gray-900 dark:text-white cursor-pointer hover:underline">
+                <a href="/admin/users/{{row.member?.uuid}}" data-if="{{!!row.member?.uuid}}" class="font-medium text-gray-900 dark:text-white cursor-pointer hover:underline">
                   <on type="click">
                     <!-- 회원 이름을 누르면 그 회원 상세로 간다 — 지우기 전에 "누구인가" 를 확인하는 자리다 -->
-                    <navigate path="/admin/users/{{row.member?.uuid}}"/>
+                    <navigate/>
                   </on>
                   {{row.member?.name}}
-                </span>
+                </a>
                 <span data-if="{{!row.member}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.wishlists.badges.guest</span>
                 <badge data-type="composite" data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-ecommerce.admin.wishlists.badges.withdrawn</badge>
               </div>
@@ -256,7 +256,7 @@
         </column>
         <prop name="rowActions">
           <item id="delete" label="$t:sirsoft-ecommerce.admin.wishlists.actions.delete" iconName="trash" disabled="{{wishlists?.data?.abilities?.can_manage !== true}}"/>
-          <item id="go_to_member" label="$t:sirsoft-ecommerce.admin.wishlists.actions.view_member" iconName="user"/>
+          <item id="go_to_member" href="/admin/users/{{row.member?.uuid}}" label="$t:sirsoft-ecommerce.admin.wishlists.actions.view_member" iconName="user"/>
         </prop>
         <on type="change" event="onSelectionChange">
           <!-- 선택 행 ID 를 전역에 둔다 — 일괄 삭제 버튼과 확인 모달이 같은 값을 읽는다 -->

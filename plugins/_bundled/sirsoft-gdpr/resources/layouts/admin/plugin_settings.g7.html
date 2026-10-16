@@ -732,10 +732,10 @@
                 </on>
                 <span>$t:sirsoft-gdpr.annual_notice.test_send</span>
               </button>
-              <button type="button" class="btn btn-secondary">
-                <on type="click"><navigate path="/admin/plugins/sirsoft-gdpr/notice-log"/></on>
+              <a href="/admin/plugins/sirsoft-gdpr/notice-log" class="button btn btn-secondary">
+                <on type="click"><navigate/></on>
                 <span>$t:sirsoft-gdpr.annual_notice.log_title</span>
-              </button>
+              </a>
             </div>
             <p class="form-hint">$t:sirsoft-gdpr.annual_notice.save_before_test</p>
           </div>
@@ -881,12 +881,12 @@
           <icon name="circle-dot" size="xs"/>
           <span>$t:sirsoft-gdpr.settings.unsaved_changes</span>
         </div>
-        <button data-ref="footer_cancel_button" type="button" class="btn btn-secondary text-sm">
+        <a href="/admin/plugins" data-ref="footer_cancel_button" class="button btn btn-secondary text-sm">
           <on type="click">
-            <navigate path="/admin/plugins"/>
+            <navigate/>
           </on>
           <span>$t:common.cancel</span>
-        </button>
+        </a>
         <button data-ref="footer_save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5 text-sm">
           <on type="click">
             <!-- 설정 저장. 실패 안내는 서버가 준 검증 오류의 첫 항목을 그대로 쓴다 — 어느 항목이 왜 막혔는지 알려 주지 않으면 운영자가 같은 저장을 반복하게 된다 -->

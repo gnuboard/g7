@@ -72,16 +72,16 @@ initLocal 의 claimListPath / claimDetailPathBase 는 접수·저장 뒤에 갈 
         <responsive on="portable" class="py-4"/>
         <!-- 뒤로가기 — 주문상세로 돌아간다. 같은 목록 클러스터 안의 이동이므로 목록 상태를 그대로 물려준다. -->
         <div class="flex items-center gap-2 mb-4">
-          <button type="button" class="flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
+          <a href="{{route.claim_number ? ('/mypage/claims/' + route.claim_number) : ('/mypage/orders/' + (route.order_number ?? ''))}}" :mergeQuery="true" class="flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
             <on type="click">
               <!-- 돌아갈 곳은 들어온 곳이다 — 작성은 주문 상세, 수정은 그 신청서의 상세. 수정에서 주문 상세로 보내면 방금 고친 내용을 확인할 자리가 아니다. -->
-              <navigate path="{{route.claim_number ? ('/mypage/claims/' + route.claim_number) : ('/mypage/orders/' + (route.order_number ?? ''))}}" :mergeQuery="true">
+              <navigate :mergeQuery="true">
                 <query/>
               </navigate>
             </on>
             <icon name="chevron-left" class="text-base"/>
             <span class="text-base font-medium">{{route.claim_number ? $t('claim.edit.back') : $t('claim.apply.back')}}</span>
-          </button>
+          </a>
         </div>
         <!-- 화면 제목 — 취소·환불은 분기에 따라 라벨만 바뀐다(§6-3). 사유 카드 구성과 수량 입력은 분기와 무관하게 같다. 분기는 **지금 고른 상품**을 1순위로 읽는다 — 서버의 resolved_type 은 주문 전체의 판정이라 두 분기가 섞인 주문에서 mixed 이고, 그 값으로 제목을 정하면 결제완료 상품만 골라 즉시 취소되는데도 화면은 "환불 신청" 이라고 부른다. 아직 아무것도 고르지 않았으면 서버 판정으로 떨어진다. -->
         <div class="mb-6">

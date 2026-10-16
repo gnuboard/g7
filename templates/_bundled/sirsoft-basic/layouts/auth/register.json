@@ -94,18 +94,16 @@
                                     },
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/login"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                            "href": "/login",
+                                            "className": "inline-flex items-center justify-center text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                         },
                                         "text": "$t:auth.login"
                                     }

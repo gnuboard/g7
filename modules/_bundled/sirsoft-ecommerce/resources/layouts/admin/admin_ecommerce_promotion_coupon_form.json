@@ -192,22 +192,22 @@
                                             {
                                                 "id": "back_button",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "A",
                                                 "actions": [
                                                     {
                                                         "comment": "목록으로. 보던 검색·필터·페이지를 이고 가므로 폼을 열었다 닫아도 목록이 되감기지 않는다",
                                                         "type": "click",
                                                         "handler": "navigate",
                                                         "params": {
-                                                            "path": "/admin/ecommerce/promotion-coupons",
                                                             "mergeQuery": true,
                                                             "query": {}
                                                         }
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
-                                                    "className": "p-1.5 rounded-lg hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-700 transition-colors",
+                                                    "href": "/admin/ecommerce/promotion-coupons",
+                                                    "mergeQuery": true,
+                                                    "className": "button p-1.5 rounded-lg hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-700 transition-colors",
                                                     "aria-label": "$t:common.back"
                                                 },
                                                 "children": [
@@ -266,21 +266,21 @@
                                                 "comment": "취소하고 목록으로. 위 뒤로가기 버튼과 같은 이동이며 화면 위아래 어디서든 빠져나갈 수 있게 둘 다 둔다",
                                                 "id": "cancel_button_top",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "A",
                                                 "actions": [
                                                     {
                                                         "type": "click",
                                                         "handler": "navigate",
                                                         "params": {
-                                                            "path": "/admin/ecommerce/promotion-coupons",
                                                             "mergeQuery": true,
                                                             "query": {}
                                                         }
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
-                                                    "className": "btn btn-outline"
+                                                    "href": "/admin/ecommerce/promotion-coupons",
+                                                    "mergeQuery": true,
+                                                    "className": "button btn btn-outline"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.button.cancel"
                                             },

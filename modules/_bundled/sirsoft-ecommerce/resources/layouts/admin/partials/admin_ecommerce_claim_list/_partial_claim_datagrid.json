@@ -162,6 +162,8 @@
                         }
                     ],
                     "props": {
+                        "pageHref": "/admin/ecommerce/claims?page={page}",
+                        "pageHrefMergeQuery": true,
                         "rowLabelField": "claim_number",
                         "data": "{{claims?.data?.data ?? []}}",
                         "selectable": "{{(query.type ?? 'exchange') !== 'cancel' && claims?.data?.abilities?.can_update_status === true}}",
@@ -182,6 +184,7 @@
                         "rowActions": [
                             {
                                 "id": "view_detail",
+                                "href": "/admin/ecommerce/claims/{{row.claim_number}}",
                                 "label": "$t:sirsoft-ecommerce.admin.claim.action.view_detail",
                                 "iconName": "eye"
                             }
@@ -211,19 +214,20 @@
                                     {
                                         "comment": "클레임번호를 눌러 상세로. 보던 목록 조건(유형·필터·쪽)을 주소에 이고 가므로 상세의 [목록] 버튼이 같은 자리로 되돌아온다.",
                                         "type": "basic",
-                                        "name": "Span",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/ecommerce/claims/{{row.claim_number}}",
                                                     "mergeQuery": true,
                                                     "query": {}
                                                 }
                                             }
                                         ],
                                         "props": {
+                                            "href": "/admin/ecommerce/claims/{{row.claim_number}}",
+                                            "mergeQuery": true,
                                             "className": "font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
                                         },
                                         "text": "{{row.claim_number}}"
@@ -287,14 +291,14 @@
                                                         "type": "click",
                                                         "handler": "navigate",
                                                         "params": {
-                                                            "path": "/admin/ecommerce/claims/{{row.refund_progress.claim_number}}",
                                                             "mergeQuery": true,
                                                             "query": {}
                                                         }
                                                     }
                                                 ],
                                                 "props": {
-                                                    "href": "#",
+                                                    "href": "/admin/ecommerce/claims/{{row.refund_progress.claim_number}}",
+                                                    "mergeQuery": true,
                                                     "className": "inline-flex items-center gap-1 cursor-pointer"
                                                 },
                                                 "children": [

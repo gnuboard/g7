@@ -317,15 +317,15 @@
         <div data-if="{{post?.data?.is_guest_post || post?.data?.is_author || post?.data?.abilities?.can_manage || post?.data?.board?.use_reply || (_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report) || post?.data?.board?.use_scrap}}" class="flex flex-wrap items-center justify-end gap-2 ml-auto">
           <responsive on="portable" class="contents"/>
           <!-- 답변 버튼 (답변 기능 활성화 + depth 제한 + 블라인드 아닌 게시글 + 비밀글은 검증 후 + 열 수 없는 비밀 조상이 없을 때). 남의 비밀글 아래 공개 답변에 답변을 달면 그 사람이 스레드의 앵커가 되어 비밀 조상이 열리므로, 서버가 막는 경우(reply_locked_by_secret_ancestor)를 미리 감춘다. -->
-          <button data-if="{{post?.data?.board?.use_reply &amp;&amp; !post?.data?.is_notice &amp;&amp; (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) &amp;&amp; post?.data?.abilities?.can_write &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; !post?.data?.deleted_at &amp;&amp; (!post?.data?.is_secret || post?.data?.content !== null) &amp;&amp; !post?.data?.reply_locked_by_secret_ancestor}}" class="px-4 py-2 text-sm border border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center gap-1 cursor-pointer">
+          <a href="/board/{{route.slug}}/write?parent_id={{route.id}}" :mergeQuery="true" data-if="{{post?.data?.board?.use_reply &amp;&amp; !post?.data?.is_notice &amp;&amp; (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) &amp;&amp; post?.data?.abilities?.can_write &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; !post?.data?.deleted_at &amp;&amp; (!post?.data?.is_secret || post?.data?.content !== null) &amp;&amp; !post?.data?.reply_locked_by_secret_ancestor}}" class="px-4 py-2 text-sm border border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center gap-1 cursor-pointer">
             <on type="click">
-              <navigate path="/board/{{route.slug}}/write" :mergeQuery="true">
+              <navigate :mergeQuery="true">
                 <query parent_id="{{route.id}}"/>
               </navigate>
             </on>
             <icon name="reply" size="sm"/>
             <span>$t:board.post.reply</span>
-          </button>
+          </a>
           <!-- 신고 버튼 — 미신고 상태 (모달 오픈) -->
           <button data-if="{{_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report &amp;&amp; !post?.data?.is_author &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; (!post?.data?.is_secret || post?.data?.content !== null) &amp;&amp; !post?.data?.is_already_reported}}" class="px-4 py-2 text-sm border border-orange-300 dark:border-orange-600 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors flex items-center gap-1 cursor-pointer">
             <on type="click">
@@ -386,16 +386,16 @@
             <span>{{(_local.isScraped ?? post?.data?.is_scraped) ? '$t:board.post.scrapped' : '$t:board.post.scrap'}} {{_local.scrapCount ?? post?.data?.scrap_count ?? 0}}</span>
           </button>
           <!-- 수정 버튼 ((회원 권한 && 본인 글) || 비회원 글 || manager 권한) && 삭제되지 않은 글 -->
-          <button data-if="{{!post?.data?.deleted_at &amp;&amp; ((post?.data?.is_author &amp;&amp; post?.data?.abilities?.can_write) || post?.data?.is_guest_post || post?.data?.abilities?.can_manage)}}" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer">
+          <a href="/board/{{route.slug}}/{{route.id}}/edit" :mergeQuery="true" data-if="{{!post?.data?.deleted_at &amp;&amp; ((post?.data?.is_author &amp;&amp; post?.data?.abilities?.can_write) || post?.data?.is_guest_post || post?.data?.abilities?.can_manage)}}" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer">
             <on type="click">
               <!-- 비회원/회원 모두 form.json에서 비밀번호 검증 처리 -->
-              <navigate path="/board/{{route.slug}}/{{route.id}}/edit" :mergeQuery="true">
+              <navigate :mergeQuery="true">
                 <query/>
               </navigate>
             </on>
             <icon name="pencil" class="text-sm"/>
             <span>$t:common.edit</span>
-          </button>
+          </a>
           <!-- 삭제 버튼 ((회원 권한 && 본인 글) || 비회원 글 || manager 권한) && 삭제되지 않은 글 -->
           <button data-if="{{!post?.data?.deleted_at &amp;&amp; ((post?.data?.is_author &amp;&amp; post?.data?.abilities?.can_write) || post?.data?.is_guest_post || post?.data?.abilities?.can_manage)}}" class="px-4 py-2 text-sm border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1 cursor-pointer">
             <on type="click">

@@ -6,18 +6,18 @@
         <icon name="clock" class="text-xl text-gray-500 dark:text-gray-400"/>
         <span>$t:home.recent_posts</span>
       </h3>
-      <button class="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer">
+      <a href="/boards/popular" class="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer">
         <on type="click">
-          <navigate path="/boards/popular"/>
+          <navigate/>
         </on>
         <span>$t:common.more</span>
         <icon name="arrow-right" class="text-base"/>
-      </button>
+      </a>
     </div>
     <div data-if="{{recent_posts.data &amp;&amp; recent_posts.data.length > 0}}" data-each="post in {{recent_posts.data ?? []}}" class="space-y-2 mb-1">
-      <button class="block w-full text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg py-2 transition-colors cursor-pointer">
+      <a href="/board/{{post.board_slug}}/{{post.id}}" class="block w-full text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg py-2 transition-colors cursor-pointer">
         <on type="click">
-          <navigate path="/board/{{post.board_slug}}/{{post.id}}"/>
+          <navigate/>
         </on>
         <div class="flex items-center justify-between gap-2 text-xs">
           <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -30,7 +30,7 @@
           </div>
           <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0" title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
         </div>
-      </button>
+      </a>
     </div>
     <div data-if="{{!recent_posts.data || recent_posts.data.length === 0}}" class="text-center py-8 text-gray-500 dark:text-gray-400 flex-grow flex flex-col items-center justify-center">
       <icon name="inbox" class="text-[2rem] mx-auto mb-2 opacity-50"/>

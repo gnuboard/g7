@@ -89,6 +89,41 @@ function collectNavActions(node: unknown): NavAction[] {
  * @param raw 원본 경로
  * @returns 표준형 경로 (판정 불가 시 null)
  */
+/**
+ * 목적지로 가는 leg 액션을 찾습니다.
+ *
+ * 링크(#757)가 된 자리는 목적지가 링크의 `href` 에 있고 클릭 액션은 경로 없는 navigate 다 — 엔진은
+ * 그 navigate 를 클릭한 링크의 href 로 보낸다. 실행 재현을 위해 그 href 를 경로로 채운 액션을 돌려준다.
+ *
+ * @param rel 레이아웃 상대 경로
+ * @param destPath 목적지 경로(원문 그대로)
+ * @returns 액션(링크면 mergeQuery 는 링크와 navigate 둘 다 true 여야 true)
+ */
+function findLeg(rel: string, destPath: string): NavAction {
+    const layout = readLayout(rel);
+    const direct = collectNavActions(layout).find((a) => a.params.path === destPath);
+    if (direct) return direct;
+
+    let found: NavAction | null = null;
+    const walk = (n: unknown): void => {
+        if (found || !n || typeof n !== 'object') return;
+        if (Array.isArray(n)) return n.forEach(walk);
+        const obj = n as Record<string, any>;
+        if (obj.props?.href === destPath) {
+            const nav = collectNavActions(obj.actions ?? []).find((a) => !a.params.path);
+            if (nav) {
+                const linkMerge = obj.props.mergeQuery === true;
+                found = { ...nav, params: { ...nav.params, path: destPath, mergeQuery: linkMerge && nav.params.mergeQuery === true ? true : false } };
+                return;
+            }
+        }
+        Object.values(obj).forEach(walk);
+    };
+    walk(layout);
+    if (!found) throw new Error(`${rel} 에서 "${destPath}" 로 가는 navigate·링크를 찾지 못했습니다.`);
+    return found;
+}
+
 function normalizePath(raw: unknown): string | null {
     if (typeof raw !== 'string' || raw === '') return null;
     const p = raw.replace(/\{\{[^}]*\}\}/g, '*').split('?')[0].replace(/\/+$/, '');
@@ -117,6 +152,8 @@ function readLayout(rel: string): unknown {
 }
 
 describe('#75 관리자 게시판 목록 컨텍스트 왕복 — mergeQuery 전수', () => {
+    // @scenario leg=enter, leg=back, leg=prev, leg=next
+    // @effects navigation_preserves_list_query, list_return_preserves_query
     it.each(CLUSTER_FILES)('%s (클러스터 %s) 내 navigate 는 모두 mergeQuery: true', (rel, list) => {
         const offenders = collectNavActions(readLayout(rel))
             .filter((a) => {
@@ -140,12 +177,10 @@ describe('#75 개별 leg 고정', () => {
      * @param destPath 목적지 경로(원문 그대로)
      * @returns 액션
      */
-    const leg = (rel: string, destPath: string): NavAction => {
-        const hit = collectNavActions(readLayout(rel)).find((a) => a.params.path === destPath);
-        if (!hit) throw new Error(`${rel} 에서 "${destPath}" navigate 를 찾지 못했습니다.`);
-        return hit;
-    };
+    const leg = (rel: string, destPath: string): NavAction => findLeg(rel, destPath);
 
+    // @scenario leg=prev
+    // @effects navigation_preserves_list_query
     it('상세 이전글 leg 이 목록 상태를 승계한다', () => {
         const a = leg(
             'partials/admin_board_post_detail/_post_card_content.json',
@@ -154,6 +189,8 @@ describe('#75 개별 leg 고정', () => {
         expect(a.params.mergeQuery).toBe(true);
     });
 
+    // @scenario leg=next
+    // @effects navigation_preserves_list_query
     it('상세 다음글 leg 이 목록 상태를 승계한다', () => {
         const a = leg(
             'partials/admin_board_post_detail/_post_card_content.json',
@@ -162,16 +199,22 @@ describe('#75 개별 leg 고정', () => {
         expect(a.params.mergeQuery).toBe(true);
     });
 
+    // @scenario leg=back
+    // @effects list_return_preserves_query
     it("상세 '목록' 버튼이 목록 상태를 복원한다", () => {
         const a = leg('admin_board_post_detail.json', '/admin/board/{{route.slug}}');
         expect(a.params.mergeQuery).toBe(true);
     });
 
+    // @scenario leg=enter
+    // @effects navigation_preserves_list_query
     it('목록 행 클릭이 목록 상태를 상세로 나른다', () => {
         const a = leg('admin_board_posts_index.json', '/admin/board/{{row.slug}}/post/{{row.id}}');
         expect(a.params.mergeQuery).toBe(true);
     });
 
+    // @scenario leg=back
+    // @effects list_return_preserves_query
     it('삭제 확인 후 복귀 navigate 의 mergeQuery 가 분기 표현식이 아니다', () => {
         const dynamic = collectNavActions(readLayout('admin_board_post_detail.json')).filter(
             (a) => 'mergeQuery' in a.params && typeof a.params.mergeQuery !== 'boolean'
@@ -225,9 +268,7 @@ function queryOf(dest: string): URLSearchParams {
  * @returns 액션
  */
 function navLeg(rel: string, destPath: string): NavAction {
-    const hit = collectNavActions(readLayout(rel)).find((a) => a.params.path === destPath);
-    if (!hit) throw new Error(`${rel} 에서 "${destPath}" navigate 를 찾지 못했습니다.`);
-    return hit;
+    return findLeg(rel, destPath);
 }
 
 describe('#75 관리자 게시판 목록 컨텍스트 왕복 — 실행 결과 URL', () => {
@@ -240,6 +281,8 @@ describe('#75 관리자 게시판 목록 컨텍스트 왕복 — 실행 결과 U
         ['다음글', '/admin/board/{{route.slug}}/post/{{post?.data?.navigation?.next?.id}}'],
     ];
 
+    // @scenario leg=prev, leg=next
+    // @effects navigation_preserves_list_query
     it.each(legs)('%s leg 실행 시 page/search/category 가 모두 살아남는다', async (_label, destPath) => {
         window.history.replaceState({}, '', '/admin/board/free/post/45?page=2&search=테스트&category=공지');
 
@@ -250,6 +293,8 @@ describe('#75 관리자 게시판 목록 컨텍스트 왕복 — 실행 결과 U
         expect(q.get('category')).toBe('공지');
     });
 
+    // @scenario leg=back
+    // @effects list_return_preserves_query
     it("상세 '목록' 버튼 실행 시 목록 상태가 그대로 복귀된다", async () => {
         window.history.replaceState({}, '', '/admin/board/free/post/45?page=2&search=테스트');
 
@@ -259,6 +304,8 @@ describe('#75 관리자 게시판 목록 컨텍스트 왕복 — 실행 결과 U
         expect(q.get('search')).toBe('테스트');
     });
 
+    // @scenario leg=enter
+    // @effects list_search_resets_page
     it('검색 실행(Enter) 은 page 를 떨구고 표시 개수는 유지한다', async () => {
         window.history.replaceState({}, '', '/admin/board/free?page=5&per_page=30&sort_by=created_at');
 
@@ -275,6 +322,8 @@ describe('#75 관리자 게시판 목록 컨텍스트 왕복 — 실행 결과 U
         expect(q.get('sort_by')).toBe('created_at');
     });
 
+    // @scenario leg=prev, leg=back
+    // @effects navigation_preserves_list_query, list_return_preserves_query
     it('이전글 → 목록 순서로 이어가도 목록 페이지가 복원된다', async () => {
         window.history.replaceState({}, '', '/admin/board/free/post/45?page=2&search=테스트');
 
@@ -313,6 +362,8 @@ function isPageReset(value: unknown): boolean {
 }
 
 describe('#75 검색·필터 액션은 page 를 되돌린다 — 전수', () => {
+    // @scenario leg=enter
+    // @effects list_search_resets_page
     it.each([['admin_board_posts_index.json'], ['admin_board_reports_index.json']])(
         '%s 의 조건 변경 navigate 는 모두 page 를 되돌린다',
         (rel) => {
@@ -334,6 +385,8 @@ describe('#75 검색·필터 액션은 page 를 되돌린다 — 전수', () => 
 
     // mergeQuery 가 이미 현재 정렬을 나르므로, 검색 액션이 정렬을 다시 적어 보낼 필요가 없다.
     // 열거가 남아 있으면 다음 편집자가 "여기에 적힌 값이 정렬의 근거" 로 오해한다 (기본값은 데이터소스가 정한다).
+    // @scenario leg=enter
+    // @effects list_search_resets_page
     it('신고 목록 검색 액션은 정렬 키를 다시 적어 보내지 않는다', () => {
         const search = (readLayout('admin_board_reports_index.json') as {
             named_actions: { searchBoardReports: NavAction };

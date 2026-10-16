@@ -359,9 +359,8 @@
                                     },
                                     {
                                         "type": "basic",
-                                        "name": "A",
+                                        "name": "Span",
                                         "props": {
-                                            "href": "#",
                                             "className": "flex-center text-sm text-blue-600 dark:text-blue-400 hover:underline gap-1"
                                         },
                                         "children": [
@@ -501,9 +500,8 @@
                                                         "children": [
                                                             {
                                                                 "type": "basic",
-                                                                "name": "A",
+                                                                "name": "Span",
                                                                 "props": {
-                                                                    "href": "#",
                                                                     "className": "text-blue-600 dark:text-blue-400 hover:underline"
                                                                 },
                                                                 "text": "user005"
@@ -651,9 +649,8 @@
                                                         "children": [
                                                             {
                                                                 "type": "basic",
-                                                                "name": "A",
+                                                                "name": "Span",
                                                                 "props": {
-                                                                    "href": "#",
                                                                     "className": "text-blue-600 dark:text-blue-400 hover:underline"
                                                                 },
                                                                 "text": "ORD20251028-5678"

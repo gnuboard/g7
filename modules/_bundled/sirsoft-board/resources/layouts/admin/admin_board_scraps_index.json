@@ -393,6 +393,8 @@
                             }
                         ],
                         "props": {
+                            "pageHrefMergeQuery": true,
+                            "pageHref": "/admin/boards/scraps?page={page}",
                             "rowLabelField": "post_title",
                             "data": "{{scraps?.data?.data}}",
                             "sortable": true,
@@ -417,15 +419,18 @@
                             "selectedCountText": "",
                             "rowActions": [
                                 {
+                                    "href": "/admin/board/{{row.board?.slug}}/post/{{row.post_id}}",
                                     "id": "go_to_post",
                                     "label": "$t:sirsoft-board.admin.scraps.actions.go_to_post",
                                     "iconName": "file-lines",
                                     "disabledField": "board.slug"
                                 },
                                 {
+                                    "href": "/admin/users/{{row.member?.uuid}}",
                                     "id": "go_to_member",
                                     "label": "$t:sirsoft-board.admin.scraps.actions.go_to_member",
-                                    "iconName": "user"
+                                    "iconName": "user",
+                                    "disabledField": "member.uuid"
                                 },
                                 {
                                     "id": "delete",
@@ -475,16 +480,10 @@
                                                             "if": "{{!!row.member?.uuid}}",
                                                             "actions": [
                                                                 {
-                                                                    "comment": "반응 관리와 같은 두 갈래 — 상세는 새 창(이 목록의 검색 조건 보존), 「이 회원으로 검색」은\n                         같은 창에서 회원 조건만 갈아끼운다(user_uuid — 목록이 이미 읽는 필터).",
+                                                                    "comment": "반응 관리와 같다 — 「회원 정보 보기」는 항목 자체가 새 탭 링크(href + target=_blank, #757)라 갈래가 없고,\n                         「이 회원으로 검색」만 같은 창에서 회원 조건을 갈아끼운다(user_uuid — 목록이 이미 읽는 필터).",
                                                                     "event": "onItemClick",
                                                                     "handler": "switch",
                                                                     "cases": {
-                                                                        "view_member": {
-                                                                            "handler": "openWindow",
-                                                                            "params": {
-                                                                                "path": "/admin/users/{{row.member?.uuid}}"
-                                                                            }
-                                                                        },
                                                                         "search_member": {
                                                                             "handler": "navigate",
                                                                             "params": {
@@ -504,6 +503,8 @@
                                                                 "position": "right",
                                                                 "items": [
                                                                     {
+                                                                        "href": "/admin/users/{{row.member?.uuid}}",
+                                                                        "target": "_blank",
                                                                         "id": "view_member",
                                                                         "label": "$t:sirsoft-board.admin.scraps.cell.view_member",
                                                                         "iconName": "user"
@@ -618,19 +619,17 @@
                                             "children": [
                                                 {
                                                     "type": "basic",
-                                                    "name": "Span",
+                                                    "name": "A",
                                                     "if": "{{!row.is_deleted && !!row.board}}",
                                                     "actions": [
                                                         {
                                                             "comment": "살아 있는 글이고 게시판도 남아 있을 때만 원글로 건너뛴다 — 삭제글·게시판 삭제 행은 갈 곳이 없다",
                                                             "type": "click",
-                                                            "handler": "navigate",
-                                                            "params": {
-                                                                "path": "/admin/board/{{row.board?.slug}}/post/{{row.post_id}}"
-                                                            }
+                                                            "handler": "navigate"
                                                         }
                                                     ],
                                                     "props": {
+                                                        "href": "/admin/board/{{row.board?.slug}}/post/{{row.post_id}}",
                                                         "className": "font-medium truncate cursor-pointer hover:underline"
                                                     },
                                                     "text": "{{row.post_title}}"

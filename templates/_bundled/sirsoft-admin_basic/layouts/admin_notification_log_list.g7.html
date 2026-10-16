@@ -78,7 +78,7 @@
           <icon name="refresh" class="text-xl"/>
         </button>
       </div>
-      <tab-navigation data-type="composite" data-ref="channel_tabs" tabs="{{[{id: '', label: '$t:admin.notification_log.tab_all'}].concat((notificationChannels?.data?.channels ?? []).map(ch => ({id: ch.id, label: (ch.name ?? ch.id) + (ch.source &amp;&amp; ch.source !== 'core' ? ' (' + (ch.source_label ?? ch.source) + ')' : ''), iconName: ch.icon})))}}" activeTabId="{{query.channel ?? ''}}" variant="default" class="sticky-tab-nav mb-6">
+      <tab-navigation data-type="composite" data-ref="channel_tabs" tabs="{{[{id: '', label: '$t:admin.notification_log.tab_all', href: '/admin/notification-logs'}].concat((notificationChannels?.data?.channels ?? []).map(ch => ({id: ch.id, label: (ch.name ?? ch.id) + (ch.source &amp;&amp; ch.source !== 'core' ? ' (' + (ch.source_label ?? ch.source) + ')' : ''), iconName: ch.icon, href: '/admin/notification-logs?channel=' + encodeURIComponent(ch.id) + '&amp;page=1'})))}}" activeTabId="{{query.channel ?? ''}}" variant="default" class="sticky-tab-nav mb-6">
         <on type="change" event="onTabChange">
           <!-- audit:allow layout-list-context-navigate-merge-query 채널 탭 전환 — 탭마다 다루는 대상이 다르고 '전체' 선택 시 query 가 [] 로 리셋되어야 한다. 병합하면 이전 채널의 조건이 남는다. -->
           <navigate path="/admin/notification-logs" :replace="true" query="{{$args[0] ? {channel: $args[0], page: 1} : []}}" transition_overlay_target="notification_log_datagrid__body"/>

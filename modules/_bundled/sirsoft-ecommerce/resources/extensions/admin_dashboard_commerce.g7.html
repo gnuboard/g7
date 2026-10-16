@@ -17,48 +17,48 @@
       <div data-ref="commerce_today_summary" class="flex items-center flex-wrap gap-2 md:col-span-2 lg:col-span-4">
         <blur-until-loaded sources="commerce_overview"/>
         <span data-ref="commerce_today_label" class="text-sm font-semibold text-slate-500 dark:text-slate-400">$t:admin.dashboard.stats.today</span>
-        <span data-ref="today_pending_payment_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+        <a href="/admin/ecommerce/orders?order_status[]=pending_payment&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}" data-ref="today_pending_payment_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
           <on type="click">
-            <navigate path="/admin/ecommerce/orders?order_status[]=pending_payment&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"/>
+            <navigate/>
           </on>
           $t:sirsoft-ecommerce.admin.dashboard.today_badges.pending_payment|count={{commerce_overview?.data?.pending_payment ?? 0}}
-        </span>
-        <span data-ref="today_payment_complete_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+        </a>
+        <a href="/admin/ecommerce/orders?order_status[]=payment_complete&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}" data-ref="today_payment_complete_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
           <on type="click">
-            <navigate path="/admin/ecommerce/orders?order_status[]=payment_complete&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"/>
+            <navigate/>
           </on>
           $t:sirsoft-ecommerce.admin.dashboard.today_badges.payment_complete|count={{commerce_overview?.data?.payment_complete ?? 0}}
-        </span>
-        <span data-ref="today_preparing_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+        </a>
+        <a href="/admin/ecommerce/orders?order_status[]=preparing&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}" data-ref="today_preparing_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
           <on type="click">
-            <navigate path="/admin/ecommerce/orders?order_status[]=preparing&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"/>
+            <navigate/>
           </on>
           $t:sirsoft-ecommerce.admin.dashboard.today_badges.preparing|count={{commerce_overview?.data?.preparing ?? 0}}
-        </span>
-        <span data-ref="today_shipping_ready_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+        </a>
+        <a href="/admin/ecommerce/orders?order_status[]=shipping_ready&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}" data-ref="today_shipping_ready_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
           <on type="click">
-            <navigate path="/admin/ecommerce/orders?order_status[]=shipping_ready&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"/>
+            <navigate/>
           </on>
           $t:sirsoft-ecommerce.admin.dashboard.today_badges.shipping_ready|count={{commerce_overview?.data?.shipping_ready ?? 0}}
-        </span>
-        <span data-ref="today_shipping_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+        </a>
+        <a href="/admin/ecommerce/orders?order_status[]=shipping&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}" data-ref="today_shipping_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
           <on type="click">
-            <navigate path="/admin/ecommerce/orders?order_status[]=shipping&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"/>
+            <navigate/>
           </on>
           $t:sirsoft-ecommerce.admin.dashboard.today_badges.shipping|count={{commerce_overview?.data?.shipping ?? 0}}
-        </span>
-        <span data-ref="today_cancellations_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+        </a>
+        <a href="/admin/ecommerce/orders?order_status[]=cancelled&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}" data-ref="today_cancellations_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
           <on type="click">
-            <navigate path="/admin/ecommerce/orders?order_status[]=cancelled&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"/>
+            <navigate/>
           </on>
           $t:sirsoft-ecommerce.admin.dashboard.today_badges.cancellations|count={{commerce_overview?.data?.cancellations ?? 0}}
-        </span>
-        <span data-ref="today_returns_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+        </a>
+        <a href="/admin/ecommerce/orders?claim_return_statuses[]=completed&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}" data-ref="today_returns_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
           <on type="click">
-            <navigate path="/admin/ecommerce/orders?claim_return_statuses[]=completed&amp;date_type=ordered_at&amp;date_basis=site&amp;start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&amp;end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"/>
+            <navigate/>
           </on>
           $t:sirsoft-ecommerce.admin.dashboard.today_badges.returns|count={{commerce_overview?.data?.returns ?? 0}}
-        </span>
+        </a>
         <extension-badge data-type="composite" data-ref="commerce_section_badge" class="ml-auto" type="module" identifier="sirsoft-ecommerce" installedModules="{{_global.installedModules}}"/>
       </div>
       <div data-ref="sales_graph_card" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl md:col-span-2 h-full flex flex-col">
@@ -105,9 +105,9 @@
         </div>
         <p data-ref="latest_reviews_empty" data-if="{{(commerce_recent_reviews?.data ?? []).length === 0}}" class="text-sm text-slate-500 dark:text-slate-400 text-center py-6">$t:sirsoft-ecommerce.admin.dashboard.community.no_reviews</p>
         <div data-ref="latest_reviews_list" data-if="{{(commerce_recent_reviews?.data ?? []).length > 0}}" class="divide-y divide-slate-200 dark:divide-slate-700">
-          <div data-ref="latest_review_item_{{i}}" data-each="review, i in commerce_recent_reviews?.data" class="py-3 min-h-12 flex flex-col justify-center cursor-pointer">
+          <a href="/admin/ecommerce/reviews" data-ref="latest_review_item_{{i}}" data-each="review, i in commerce_recent_reviews?.data" class="py-3 min-h-12 flex flex-col justify-center cursor-pointer">
             <on type="click">
-              <navigate path="/admin/ecommerce/reviews"/>
+              <navigate/>
             </on>
             <div data-ref="latest_review_header_{{i}}" class="flex-between gap-2">
               <p data-ref="latest_review_product_{{i}}" class="flex-1 min-w-0 text-sm font-medium text-slate-900 dark:text-white truncate">{{review?.product_name ?? ''}}</p>
@@ -117,7 +117,7 @@
               </span>
             </div>
             <p data-ref="latest_review_meta_{{i}}" class="text-xs text-slate-500 dark:text-slate-400">{{(review?.author_name ?? '') + ' · ' + (review?.created_at ?? '')}}</p>
-          </div>
+          </a>
         </div>
       </div>
       <div data-ref="pending_inquiries_card" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl h-full flex flex-col">
@@ -131,13 +131,13 @@
         </div>
         <p data-ref="pending_inquiries_empty" data-if="{{(commerce_pending_inquiries?.data?.items ?? []).length === 0}}" class="text-sm text-slate-500 dark:text-slate-400 text-center py-6">$t:sirsoft-ecommerce.admin.dashboard.community.no_inquiries</p>
         <div data-ref="pending_inquiries_list" data-if="{{(commerce_pending_inquiries?.data?.items ?? []).length > 0}}" class="divide-y divide-slate-200 dark:divide-slate-700">
-          <div data-ref="pending_inquiry_item_{{i}}" data-each="inquiry, i in commerce_pending_inquiries?.data?.items" class="py-3 min-h-12 flex flex-col justify-center cursor-pointer">
+          <a href="/admin/board/{{commerce_pending_inquiries?.data?.board_slug}}/post/{{inquiry?.inquirable_id}}" data-ref="pending_inquiry_item_{{i}}" data-each="inquiry, i in commerce_pending_inquiries?.data?.items" class="py-3 min-h-12 flex flex-col justify-center cursor-pointer">
             <on type="click">
-              <navigate path="/admin/board/{{commerce_pending_inquiries?.data?.board_slug}}/post/{{inquiry?.inquirable_id}}"/>
+              <navigate/>
             </on>
             <p data-ref="pending_inquiry_title_{{i}}" class="text-sm font-medium text-slate-900 dark:text-white truncate">{{inquiry?.product_name ?? ''}}</p>
             <p data-ref="pending_inquiry_meta_{{i}}" class="text-xs text-slate-500 dark:text-slate-400">{{(inquiry?.author_name ?? '익명') + ' · ' + (inquiry?.created_at ?? '')}}</p>
-          </div>
+          </a>
         </div>
       </div>
     </div>

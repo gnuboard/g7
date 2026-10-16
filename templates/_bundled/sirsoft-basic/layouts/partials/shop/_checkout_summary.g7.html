@@ -210,7 +210,7 @@
                           </api-call>
                         </when>
                       </conditions>
-                      <navigate path="{{$results[0]?.redirect_url ?? response.data.redirect_url ?? _global.shopBase + '/orders/' + response.data.order.order_number + '/complete'}}"/>
+                      <navigate path="{{$results[0]?.redirect_url ?? response.data.redirect_url ?? _global.shopBase + '/orders/' + response.data.order.order_number + '/complete'}}" fallbackPath="{{_global.shopBase}}/orders/{{response.data.order.order_number}}/complete"/>
                     </sequence>
                   </else>
                 </conditions>

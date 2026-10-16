@@ -92,25 +92,25 @@
       </div>
       <!-- 최상위 카테고리 버튼 (전체 + 1단계 카테고리) -->
       <div class="flex flex-wrap gap-2 mb-4">
-        <button class="{{!query.category ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}">
+        <a href="{{_global.shopBase}}/products" class="inline-flex items-center justify-center {{!query.category ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}">
           <on type="click">
             <!-- audit:allow layout-list-context-navigate-merge-query 카테고리 '전체' 선택 — 카테고리 필터를 푸는 의도적 리셋이므로 병합하지 않는다 -->
-            <navigate path="{{_global.shopBase}}/products">
+            <navigate>
               <query/>
             </navigate>
           </on>
           $t:shop.category.all
-        </button>
+        </a>
         <div data-each="cat in {{categories?.data ?? []}}">
-          <button class="{{query.category == cat?.id ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}">
+          <a href="{{_global.shopBase}}/products?category={{cat?.id}}&page=1" class="inline-flex items-center justify-center {{query.category == cat?.id ? 'px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full text-sm font-medium' : 'px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600'}}">
             <on type="click">
               <!-- audit:allow layout-list-context-navigate-merge-query 카테고리 전환 — 다른 목록으로의 이동이라 이전 카테고리의 검색·정렬 상태를 승계하지 않는다 -->
-              <navigate path="{{_global.shopBase}}/products">
+              <navigate>
                 <query category="{{cat?.id}}" page="1"/>
               </navigate>
             </on>
             {{cat?.name_localized}}
-          </button>
+          </a>
         </div>
       </div>
       <include src="partials/shop/list/_search_filter_bar.g7.html"/>

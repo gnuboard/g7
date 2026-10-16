@@ -8,18 +8,18 @@
       <div data-ref="post_graph_today_summary" class="flex items-center flex-wrap gap-2 md:col-span-2 lg:col-span-4">
         <blur-until-loaded sources="board_overview"/>
         <span data-ref="post_graph_today_label" class="text-sm font-semibold text-slate-500 dark:text-slate-400">$t:admin.dashboard.stats.today</span>
-        <span data-ref="today_new_posts_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+        <a href="/admin/boards" data-ref="today_new_posts_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
           <on type="click">
-            <navigate path="/admin/boards"/>
+            <navigate/>
           </on>
           $t:sirsoft-board.admin.dashboard.today_badges.new_posts|count={{board_overview?.data?.today_posts ?? 0}}
-        </span>
-        <span data-ref="today_new_comments_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+        </a>
+        <a href="/admin/boards" data-ref="today_new_comments_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
           <on type="click">
-            <navigate path="/admin/boards"/>
+            <navigate/>
           </on>
           $t:sirsoft-board.admin.dashboard.today_badges.new_comments|count={{board_overview?.data?.today_comments ?? 0}}
-        </span>
+        </a>
         <extension-badge data-type="composite" data-ref="community_section_badge" class="ml-auto" type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
       </div>
       <div data-ref="post_graph_card" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl md:col-span-2 h-full flex flex-col">
@@ -67,16 +67,16 @@
         </div>
         <p data-ref="latest_posts_empty" data-if="{{(board_recent_posts?.data ?? []).length === 0}}" class="text-sm text-slate-500 dark:text-slate-400 text-center py-6">$t:sirsoft-board.admin.dashboard.community.no_posts</p>
         <div data-ref="latest_posts_list" data-if="{{(board_recent_posts?.data ?? []).length > 0}}" class="divide-y divide-slate-200 dark:divide-slate-700">
-          <div data-ref="latest_post_item_{{i}}" data-each="post, i in board_recent_posts?.data" class="py-3 min-h-12 flex flex-col justify-center cursor-pointer">
+          <a href="/admin/board/{{post?.board_slug}}/post/{{post?.id}}" data-ref="latest_post_item_{{i}}" data-each="post, i in board_recent_posts?.data" class="py-3 min-h-12 flex flex-col justify-center cursor-pointer">
             <on type="click">
-              <navigate path="/admin/board/{{post?.board_slug}}/post/{{post?.id}}"/>
+              <navigate/>
             </on>
             <p data-ref="latest_post_title_{{i}}" class="text-sm font-medium text-slate-900 dark:text-white truncate">{{post?.title ?? ''}}</p>
             <div data-ref="latest_post_meta_{{i}}" class="flex items-center min-w-0 text-xs text-slate-500 dark:text-slate-400">
               <span class="min-w-0 truncate">{{(post?.board_name ?? '') + ' · ' + (post?.author_name ?? '')}}</span>
               <span class="shrink-0 whitespace-nowrap">{{' · ' + (post?.created_at ?? '')}}</span>
             </div>
-          </div>
+          </a>
         </div>
       </div>
       <div data-ref="report_management_card" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl h-full flex flex-col">
@@ -90,9 +90,9 @@
         </div>
         <p data-ref="report_management_empty" data-if="{{(board_pending_reports?.data?.items ?? []).length === 0}}" class="text-sm text-slate-500 dark:text-slate-400 text-center py-6">$t:sirsoft-board.admin.dashboard.community.no_reports</p>
         <div data-ref="report_management_list" data-if="{{(board_pending_reports?.data?.items ?? []).length > 0}}" class="divide-y divide-slate-200 dark:divide-slate-700">
-          <div data-ref="report_item_{{i}}" data-each="report, i in board_pending_reports?.data?.items" class="py-3 min-h-12 flex flex-col justify-center cursor-pointer">
+          <a href="/admin/boards/reports/{{report?.id}}" data-ref="report_item_{{i}}" data-each="report, i in board_pending_reports?.data?.items" class="py-3 min-h-12 flex flex-col justify-center cursor-pointer">
             <on type="click">
-              <navigate path="/admin/boards/reports/{{report?.id}}"/>
+              <navigate/>
             </on>
             <div data-ref="report_header_{{i}}" class="flex items-center gap-2">
               <span data-ref="report_target_type_badge_{{i}}" class="{{report?.target_type === 'comment' ? 'shrink-0 px-2 text-xs font-medium rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : 'shrink-0 px-2 text-xs font-medium rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'}}">{{report?.target_type_label ?? ''}}</span>
@@ -100,7 +100,7 @@
               <span data-ref="report_status_badge_{{i}}" data-if="{{!!report?.status_label}}" class="shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{report?.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : report?.status === 'review' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : report?.status === 'rejected' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : report?.status === 'suspended' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : report?.status === 'deleted' ? 'bg-gray-600 text-white dark:bg-gray-600 dark:text-gray-100' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}">{{report?.status_label ?? ''}}</span>
             </div>
             <p data-ref="report_meta_{{i}}" class="text-xs text-slate-500 dark:text-slate-400">{{(report?.board_name ?? '') + ' · ' + (report?.author_name ?? '익명') + ' · ' + (report?.last_reported_at ?? '')}}</p>
-          </div>
+          </a>
         </div>
       </div>
     </div>

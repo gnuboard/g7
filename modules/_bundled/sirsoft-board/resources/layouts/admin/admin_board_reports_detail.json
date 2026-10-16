@@ -131,21 +131,22 @@
                             {
                                 "id": "back_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "신고 목록으로. 보던 목록 상태를 이고 간다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/boards/reports",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "className": "flex-center gap-2 btn btn-secondary"
+                                    "href": "/admin/boards/reports",
+                                    "mergeQuery": true,
+                                    "className": "button flex-center gap-2 btn btn-secondary"
                                 },
                                 "children": [
                                     {

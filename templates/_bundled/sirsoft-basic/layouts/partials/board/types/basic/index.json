@@ -98,14 +98,13 @@
                 {
                     "comment": "삭제된 게시글 포함 토글 버튼 (manager 권한 보유 시에만 표시)",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "if": "{{posts?.data?.abilities?.can_view_deleted}}",
                     "actions": [
                         {
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "/board/{{route.slug}}",
                                 "mergeQuery": true,
                                 "query": {
                                     "del": "{{query.del === '1' ? '' : '1'}}",
@@ -115,7 +114,8 @@
                         }
                     ],
                     "props": {
-                        "type": "button",
+                        "href": "/board/{{route.slug}}?del={{query.del === '1' ? '' : '1'}}&page=1",
+                        "mergeQuery": true,
                         "className": "{{query.del === '1' ? 'inline-flex items-center gap-1.5 px-3 py-2 border-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium' : 'inline-flex items-center gap-1.5 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700'}}"
                     },
                     "children": [
@@ -281,22 +281,32 @@
                                 {
                                     "comment": "행 클릭 시 현재 목록 상태(category/search/page/del/filters)를 상세 URL 에 부착 (45-1 목록 복귀)",
                                     "type": "basic",
-                                    "name": "Button",
-                                    "actions": [
-                                        {
-                                            "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/board/{{route?.slug}}/{{post?.id}}",
-                                                "mergeQuery": true,
-                                                "query": {}
-                                            }
-                                        }
-                                    ],
+                                    "name": "Div",
                                     "props": {
-                                        "className": "{{post?.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}} block w-full text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer border-b border-gray-100 dark:border-gray-700"
+                                        "className": "relative {{post?.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}} block w-full text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer border-b border-gray-100 dark:border-gray-700"
                                     },
                                     "children": [
+                                        {
+                                            "comment": "카드 전체가 링크다 — 안쪽 조작(작성자 메뉴·삭제 등)을 링크 밖에 두려고 빈 링크가 카드를 덮고, 그 조작은 링크 위(z-20)에 둔다",
+                                            "type": "basic",
+                                            "name": "A",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "mergeQuery": true,
+                                                        "query": {}
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "href": "/board/{{route?.slug}}/{{post?.id}}",
+                                                "mergeQuery": true,
+                                                "aria-label": "{{post?.title ?? ''}}",
+                                                "className": "absolute inset-0 z-10 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400"
+                                            }
+                                        },
                                         {
                                             "comment": "데스크톱: 테이블 행",
                                             "type": "basic",
@@ -501,7 +511,7 @@
                                                                 "author": "{{post?.author}}",
                                                                 "showDropdown": true,
                                                                 "stopPropagation": true,
-                                                                "className": "text-sm {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"
+                                                                "className": "relative z-20 text-sm {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"
                                                             }
                                                         }
                                                     ]
@@ -749,7 +759,7 @@
                                                                         "author": "{{post?.author}}",
                                                                         "showDropdown": true,
                                                                         "stopPropagation": true,
-                                                                        "className": "text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"
+                                                                        "className": "relative z-20 text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"
                                                                     }
                                                                 }
                                                             ]
@@ -815,6 +825,8 @@
                 }
             ],
             "props": {
+                "pageHref": "/board/{{route?.slug}}?page={page}",
+                "pageHrefMergeQuery": true,
                 "currentPage": "{{posts?.data?.pagination?.current_page ?? 1}}",
                 "totalPages": "{{posts?.data?.pagination?.last_page ?? null}}",
                 "hasMorePages": "{{posts?.data?.pagination?.has_more_pages ?? false}}",

@@ -9,15 +9,13 @@
         <h4 class="text-body font-medium">$t:admin.analytics.settings.reports.definitions_title</h4>
         <p class="text-label-subtle">$t:admin.analytics.settings.reports.definitions_description</p>
       </div>
-      <button data-ref="definitions_settings_link" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.settings.read'))}}" type="button" class="btn btn-secondary btn-sm">
+      <a data-ref="definitions_settings_link" href="/admin/settings?tab=notification_definitions" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.settings.read'))}}" class="button btn btn-secondary btn-sm">
         <on type="click">
           <!-- 템플릿 편집은 환경설정의 알림 정의 탭 몫이다 — 그 탭으로 바로 간다. 환경설정 읽기 권한이 없으면 버튼을 그리지 않는다. -->
-          <navigate path="/admin/settings">
-            <query tab="notification_definitions"/>
-          </navigate>
+          <navigate/>
         </on>
         $t:admin.analytics.settings.reports.edit_templates
-      </button>
+      </a>
     </div>
     <div data-ref="definition_state_alert" data-if="{{(_local.form?.settings?.report_weekly_enabled === true &amp;&amp; (analytics_notification_definitions?.data?.data ?? []).some(d => d.type === 'analytics_weekly_report' &amp;&amp; d.is_active !== true)) || (_local.form?.settings?.report_monthly_enabled === true &amp;&amp; (analytics_notification_definitions?.data?.data ?? []).some(d => d.type === 'analytics_monthly_report' &amp;&amp; d.is_active !== true))}}" class="alert-warning mb-3">
       <div class="flex-center gap-3">

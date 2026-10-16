@@ -846,18 +846,16 @@
                                                     "children": [
                                                         {
                                                             "type": "basic",
-                                                            "name": "Button",
+                                                            "name": "A",
                                                             "actions": [
                                                                 {
                                                                     "type": "click",
-                                                                    "handler": "navigate",
-                                                                    "params": {
-                                                                        "path": "/board/{{reaction.board_slug}}/{{reaction.post_id}}"
-                                                                    }
+                                                                    "handler": "navigate"
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "className": "justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer truncate"
+                                                                "href": "/board/{{reaction.board_slug}}/{{reaction.post_id}}",
+                                                                "className": "inline-block justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer truncate"
                                                             },
                                                             "text": "{{reaction.excerpt ?? reaction.title}}"
                                                         },
@@ -1536,18 +1534,16 @@
                                         {
                                             "comment": "살아 있으면 눌러서 이동, 아니면 글자만",
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "if": "{{reaction.reaction_enabled && !reaction.target_deleted && !reaction.board_deleted}}",
                                             "actions": [
                                                 {
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/board/{{reaction.board_slug}}/{{reaction.post_id}}"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
+                                                "href": "/board/{{reaction.board_slug}}/{{reaction.post_id}}",
                                                 "className": "justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2"
                                             },
                                             "text": "{{reaction.excerpt ?? reaction.title}}"
@@ -1668,18 +1664,16 @@
                 },
                 {
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/boards"
-                            }
+                            "handler": "navigate"
                         }
                     ],
                     "props": {
-                        "className": "inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                        "href": "/boards",
+                        "className": "text-center inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                     },
                     "text": "$t:mypage.board_activities.go_boards"
                 }

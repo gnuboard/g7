@@ -49,7 +49,7 @@
                  평시 로그인에는 뜨지 않는다. 안내 없이 되돌리면 회원은 자기 계정이 잠겼다
                  풀린 사실을 끝내 모른다. -->
             <toast if="{{!response.two_factor_required &amp;&amp; !response.password_change_required &amp;&amp; response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
-            <navigate if="{{!response.two_factor_required &amp;&amp; !response.password_change_required}}" path="{{query.redirect ?? '/'}}"/>
+            <navigate if="{{!response.two_factor_required &amp;&amp; !response.password_change_required}}" path="{{query.redirect ?? '/'}}" fallbackPath="/"/>
           </success>
           <fail>
             <set-state target="global" :isLoggingIn="false" loginError="{{error.message}}" loginErrors="{{error.errors}}"/>
@@ -79,7 +79,7 @@
             <!-- 2단계 인증 사이트도 같은 안내를 받는다 — 한쪽에만 두면 사이트 설정에 따라
                  해제 사실이 보이기도 하고 안 보이기도 한다. -->
             <toast if="{{!response.password_change_required &amp;&amp; response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
-            <navigate if="{{!response.password_change_required}}" path="{{query.redirect ?? '/'}}"/>
+            <navigate if="{{!response.password_change_required}}" path="{{query.redirect ?? '/'}}" fallbackPath="/"/>
           </success>
           <fail>
             <!-- 423 잠금은 1단계와 같은 문구 규칙을 따르도록 loginErrors 도 함께 싣는다. -->
@@ -96,7 +96,7 @@
             <action handler="clearGuestOrderToken"/>
             <toast type="success" message="$t:auth.password_change.changed_toast"/>
             <toast if="{{response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
-            <navigate path="{{query.redirect ?? '/'}}"/>
+            <navigate path="{{query.redirect ?? '/'}}" fallbackPath="/"/>
           </success>
           <fail>
             <set-state if="{{error.errors?.challenge_id}}" target="global" :isLoggingIn="false" :passwordChange="null" loginError="{{$t('auth.password_change.restart_required')}}" :loginErrors="null"/>
@@ -272,7 +272,7 @@
                   <action handler="clearGuestOrderToken"/>
                   <toast type="info" message="$t:auth.password_change.postponed_toast|date={{response.postponed_until | date}}"/>
                   <toast if="{{response.dormancy_restored}}" type="info" message="$t:auth.dormancy_restored"/>
-                  <navigate path="{{query.redirect ?? '/'}}"/>
+                  <navigate path="{{query.redirect ?? '/'}}" fallbackPath="/"/>
                 </success>
                 <fail>
                   <set-state if="{{error.errors?.challenge_id}}" target="global" :isLoggingIn="false" :passwordChange="null" loginError="{{$t('auth.password_change.restart_required')}}" :loginErrors="null"/>

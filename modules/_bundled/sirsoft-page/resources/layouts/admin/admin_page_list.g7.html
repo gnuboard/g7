@@ -52,16 +52,16 @@
           </on>
           <icon name="refresh" size="sm"/>
         </button>
-        <button data-ref="add_page_button" class="btn btn-primary" disabled="{{pages?.data?.abilities?.can_create !== true}}">
+        <a href="/admin/pages/create" :mergeQuery="true" data-ref="add_page_button" class="button btn btn-primary" disabled="{{pages?.data?.abilities?.can_create !== true}}">
           <on type="click">
             <!-- 새 페이지 작성. 작성 취소로 목록에 돌아왔을 때 보던 자리가 유지되도록 목록 상태를 넘긴다 -->
-            <navigate path="/admin/pages/create" :mergeQuery="true">
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
           <icon name="plus" size="sm"/>
           <span>$t:sirsoft-page.admin.page.add_page</span>
-        </button>
+        </a>
       </page-header>
       <div data-ref="search_filter_area" class="admin-card">
         <div data-ref="search_row" class="flex-center flex-row gap-3">
@@ -197,7 +197,7 @@
           </button>
         </div>
       </div>
-      <data-grid data-type="composite" data-ref="pages_data_grid" rowLabelField="title" :data-blur-until-loaded="true" data="{{pages?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{pages?.data?.meta?.current_page ?? 1}}" serverTotalPages="{{pages?.data?.meta?.last_page ?? null}}" serverHasMorePages="{{pages?.data?.meta?.has_more_pages ?? false}}" selectable="{{pages?.data?.abilities?.can_update === true}}" selectionScope="page" selectedCountText="" selectedIds="{{_global.selectedIds_admin_pages || []}}" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+      <data-grid :pageHrefMergeQuery="true" pageHref="/admin/pages?page={page}" data-type="composite" data-ref="pages_data_grid" rowLabelField="title" :data-blur-until-loaded="true" data="{{pages?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{pages?.data?.meta?.current_page ?? 1}}" serverTotalPages="{{pages?.data?.meta?.last_page ?? null}}" serverHasMorePages="{{pages?.data?.meta?.has_more_pages ?? false}}" selectable="{{pages?.data?.abilities?.can_update === true}}" selectionScope="page" selectedCountText="" selectedIds="{{_global.selectedIds_admin_pages || []}}" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
         <column field="title" header="$t:sirsoft-page.admin.page.columns.title" :sortable="false" :required="true">
           <cell>
             <div class="stack-flush gap-0.5">
@@ -224,8 +224,8 @@
         <column field="created_at" header="$t:sirsoft-page.admin.page.columns.created_at" :sortable="true"/>
         <column field="published_at" header="$t:sirsoft-page.admin.page.columns.published_at" :sortable="true"/>
         <prop name="rowActions">
-          <item id="view" label="$t:sirsoft-page.admin.page.actions.view" iconName="eye"/>
-          <item id="edit" label="$t:sirsoft-page.admin.page.actions.edit" iconName="pencil" disabledField="abilities.can_update"/>
+          <item href="/admin/pages/{{row.id}}" id="view" label="$t:sirsoft-page.admin.page.actions.view" iconName="eye"/>
+          <item href="/admin/pages/{{row.id}}/edit" id="edit" label="$t:sirsoft-page.admin.page.actions.edit" iconName="pencil" disabledField="abilities.can_update"/>
           <item id="delete" label="$t:sirsoft-page.admin.page.actions.delete" iconName="trash" variant="danger" disabledField="abilities.can_delete"/>
         </prop>
         <on type="change" event="onSelectionChange">

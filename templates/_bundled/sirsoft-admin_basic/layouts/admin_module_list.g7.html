@@ -301,7 +301,7 @@
              폭으로 정한다 — 사이드바 개폐까지 따라간다.
              버튼 잠금은 서버가 거절하는 상태와 맞춘다: 코어 요구 버전 미충족(`core_compatible=false`)이면
              설치와 켜기를, 설치·삭제·업데이트가 진행 중이면 스위치·삭제·업데이트를 잠근다(둘 다 서버 422). -->
-        <extension-card-grid data-type="composite" data-ref="module_card_grid" :data-blur-until-loaded="true" viewMode="{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}" :minCardWidth="250" :maxColumns="5" resyncKey="{{_global.extensionToggleResync ?? 0}}" loading="{{modules?.loading ?? false}}" :pagination="true" :alwaysShowPagination="true" currentPage="{{modules?.data?.pagination?.current_page ?? 1}}" totalPages="{{modules?.data?.pagination?.last_page ?? null}}" hasMorePages="{{modules?.data?.pagination?.has_more_pages ?? false}}" items="{{(modules?.data?.data ?? []).map(p => ({
+        <extension-card-grid pageHref="/admin/modules?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="module_card_grid" :data-blur-until-loaded="true" viewMode="{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}" :minCardWidth="250" :maxColumns="5" resyncKey="{{_global.extensionToggleResync ?? 0}}" loading="{{modules?.loading ?? false}}" :pagination="true" :alwaysShowPagination="true" currentPage="{{modules?.data?.pagination?.current_page ?? 1}}" totalPages="{{modules?.data?.pagination?.last_page ?? null}}" hasMorePages="{{modules?.data?.pagination?.has_more_pages ?? false}}" items="{{(modules?.data?.data ?? []).map(p => ({
           id: p.identifier,
           row: p,
           name: p.name ?? p.identifier,
@@ -327,7 +327,7 @@
             : (p.update_available &amp;&amp; !['installing', 'uninstalling', 'updating'].includes(p.status) ? { label: '$t:admin.modules.actions.update', icon: 'refresh', variant: 'outline', disabled: p.abilities?.can_install !== true } : null),
           actions: [
             { id: 'refresh_layouts', label: '$t:admin.modules.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },
-            { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', disabled: p.status !== 'active' || modules?.data?.abilities?.can_view_language_packs !== true },
+            { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', href: '/admin/modules/' + p.identifier + '/language-packs', mergeQuery: true, disabled: p.status !== 'active' || modules?.data?.abilities?.can_view_language_packs !== true },
             { id: 'view_detail', label: '$t:admin.modules.actions.view_detail', iconName: 'info-circle' },
             { id: 'uninstall', label: '$t:admin.modules.actions.uninstall', iconName: 'trash', variant: 'danger', disabled: p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_uninstall !== true }
           ]

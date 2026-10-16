@@ -56,7 +56,7 @@
                             "comment": "상태 칸은 셀렉트와 같은 필터다 — 누르면 셀렉트가 읽는 값과 목록이 읽는 주소 쿼리를 함께 그 상태로 바꾸고 쪽수를 1로 되돌린다. 같은 칸을 다시 눌러도 전체 보기로 돌아가지 않으므로 해제는 셀렉트의 '전체'로 한다.",
                             "id": "order_summary_step_{{stepIdx}}",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "A",
                             "iteration": {
                                 "source": "{{orders.data?.status_summary ?? []}}",
                                 "item_var": "step",
@@ -91,8 +91,9 @@
                                 }
                             ],
                             "props": {
+                                "href": "/mypage/orders?status={{step.key}}&page=1",
+                                "mergeQuery": true,
                                 "className": "relative flex flex-col items-center gap-2 min-w-0 cursor-pointer",
-                                "role": "button",
                                 "data-summary-key": "{{step.key ?? ''}}",
                                 "data-summary-count": "{{step.count ?? 0}}"
                             },
@@ -908,11 +909,10 @@
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "responsive": {
                                                 "portable": {
                                                     "props": {
-                                                        "type": "button",
                                                         "className": "inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
                                                     }
                                                 }
@@ -923,14 +923,14 @@
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
-                                                        "path": "/mypage/orders/{{order.order_number}}",
                                                         "mergeQuery": true,
                                                         "query": {}
                                                     }
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
+                                                "href": "/mypage/orders/{{order.order_number}}",
+                                                "mergeQuery": true,
                                                 "className": "inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
                                             },
                                             "children": [
@@ -1006,12 +1006,11 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "type": "button",
-                                        "className": "inline-block mt-3 px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium cursor-pointer"
+                                        "className": "text-center inline-block mt-3 px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium cursor-pointer"
                                     }
                                 }
                             },
@@ -1019,15 +1018,12 @@
                                 {
                                     "comment": "audit:allow layout-list-context-navigate-merge-query 쇼핑하러 가기 — 주문 내역이 비었을 때 상품 목록으로 내보내는 이동이다.",
                                     "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "{{_global.shopBase}}/products"
-                                    }
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
-                                "type": "button",
-                                "className": "inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer"
+                                "href": "{{_global.shopBase}}/products",
+                                "className": "text-center inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer"
                             },
                             "text": "$t:mypage.orders.go_shopping"
                         }
@@ -1075,6 +1071,8 @@
                         }
                     ],
                     "props": {
+                        "pageHref": "/mypage/orders?page={page}",
+                        "pageHrefMergeQuery": true,
                         "currentPage": "{{orders.data.pagination.current_page}}",
                         "totalPages": "{{orders.data.pagination.last_page ?? null}}",
                         "hasMorePages": "{{orders.data.pagination.has_more_pages ?? false}}",

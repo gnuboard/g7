@@ -200,12 +200,12 @@
             </td>
             <td class="px-4 py-3">
               <div class="flex flex-col">
-                <button class="justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer truncate">
+                <a href="/board/{{reaction.board_slug}}/{{reaction.post_id}}" class="inline-block justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer truncate">
                   <on type="click">
-                    <navigate path="/board/{{reaction.board_slug}}/{{reaction.post_id}}"/>
+                    <navigate/>
                   </on>
                   {{reaction.excerpt ?? reaction.title}}
-                </button>
+                </a>
                 <!-- 댓글이면 본문 발췌가 제목 자리에 오므로, 어느 글의 댓글인지를 작은 글씨로 덧붙인다 -->
                 <span data-if="{{reaction.target_type === 'comment' &amp;&amp; !!reaction.title}}" class="text-xs text-gray-400 dark:text-gray-500 truncate">{{reaction.title}}</span>
               </div>
@@ -364,12 +364,12 @@
               <span data-if="{{reaction.target_deleted}}" class="inline-flex items-center px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded">$t:mypage.board_activities.reactions.deleted_flag</span>
             </div>
             <!-- 살아 있으면 눌러서 이동, 아니면 글자만 -->
-            <button data-if="{{reaction.reaction_enabled &amp;&amp; !reaction.target_deleted &amp;&amp; !reaction.board_deleted}}" class="justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2">
+            <a href="/board/{{reaction.board_slug}}/{{reaction.post_id}}" data-if="{{reaction.reaction_enabled &amp;&amp; !reaction.target_deleted &amp;&amp; !reaction.board_deleted}}" class="justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2">
               <on type="click">
-                <navigate path="/board/{{reaction.board_slug}}/{{reaction.post_id}}"/>
+                <navigate/>
               </on>
               {{reaction.excerpt ?? reaction.title}}
-            </button>
+            </a>
             <span data-if="{{reaction.target_deleted}}" class="block text-sm italic text-gray-400 dark:text-gray-500">{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.reactions.deleted_comment' : '$t:mypage.board_activities.reactions.deleted_post'}}</span>
             <span data-if="{{!reaction.target_deleted &amp;&amp; (!reaction.reaction_enabled || reaction.board_deleted)}}" class="block text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{{reaction.excerpt ?? reaction.title}}</span>
             <div class="mt-2 flex items-center justify-between gap-2">
@@ -401,12 +401,12 @@
       <!-- 검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다 -->
       <p data-if="{{!(!!_global.myReactionsSearchApplied || !!_global.myReactionsBoard || !!_global.myReactionsTypeId || !!_global.myReactionsTargetType)}}" class="text-gray-500 dark:text-gray-400">$t:mypage.board_activities.reactions.empty</p>
       <p data-if="{{!!_global.myReactionsSearchApplied || !!_global.myReactionsBoard || !!_global.myReactionsTypeId || !!_global.myReactionsTargetType}}" class="text-gray-500 dark:text-gray-400">$t:board.no_search_results</p>
-      <button class="inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+      <a href="/boards" class="text-center inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
         <on type="click">
-          <navigate path="/boards"/>
+          <navigate/>
         </on>
         $t:mypage.board_activities.go_boards
-      </button>
+      </a>
     </div>
     <!-- 페이지네이션 — 쪽을 옮기면 화면에 없는 건이 선택에 남지 않도록 먼저 비운다 -->
     <pagination data-type="composite" currentPage="{{myReactions?.data?.pagination?.current_page ?? 1}}" totalPages="{{myReactions?.data?.pagination?.last_page ?? null}}" hasMorePages="{{myReactions?.data?.pagination?.has_more_pages ?? false}}" class="mt-4 flex justify-center">

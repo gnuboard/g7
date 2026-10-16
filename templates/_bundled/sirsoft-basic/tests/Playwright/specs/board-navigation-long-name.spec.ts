@@ -32,7 +32,7 @@ const LONG_BOARD_NAME = '아주 긴 이름을 가진 커뮤니티 게시판입�
 
 /** 상단 네비게이션 컨테이너 — 목록(fa-list) + 게시판명 + 이전/다음 그룹 */
 function navLocator(page: Page): Locator {
-  return page.locator('div.mb-6').filter({ has: page.locator('button i.fa-list') }).first();
+  return page.locator('div.mb-6').filter({ has: page.locator(':is(a, button) i.fa-list') }).first();
 }
 
 /**
@@ -96,7 +96,7 @@ async function measureShortVsLongName(nav: Locator, shortName: string, longName:
         containerWidth: Math.round(el.getBoundingClientRect().width),
         viewportWidth: document.documentElement.clientWidth,
         docOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        buttons: [...el.querySelectorAll('button')].map((b) => ({
+        buttons: [...el.querySelectorAll(':is(a, button)')].map((b) => ({
           icon: b.querySelector('i')?.className ?? '',
           width: Math.round(b.getBoundingClientRect().width),
           left: Math.round(b.getBoundingClientRect().left),
@@ -133,9 +133,9 @@ async function gotoPostWithNeighbors(page: Page): Promise<Locator> {
   await expect(nav).toBeVisible({ timeout: 15_000 });
 
   // 라벨은 브라우저 로케일에 따라 영문이 되므로 아이콘으로 확인한다
-  await expect(nav.locator('button i.fa-chevron-left')).toBeVisible();
-  await expect(nav.locator('button i.fa-chevron-right')).toBeVisible();
-  await expect(nav.locator('button')).toHaveCount(3);
+  await expect(nav.locator(':is(a, button) i.fa-chevron-left')).toBeVisible();
+  await expect(nav.locator(':is(a, button) i.fa-chevron-right')).toBeVisible();
+  await expect(nav.locator(':is(a, button)')).toHaveCount(3);
   return nav;
 }
 
@@ -158,6 +158,8 @@ function expectButtonsUnaffectedByBoardName(
 }
 
 test.describe('게시글 상단 네비 — 긴 게시판명', () => {
+  // @scenario case=post_navigation_long_board_name
+  // @effects post_navigation_buttons_not_squeezed
   test('@smoke 모바일(390px)에서 이전글/다음글이 압착되지 않고 게시판명은 자기 줄을 갖는다', async ({
     page,
   }) => {
@@ -187,6 +189,10 @@ test.describe('게시글 상단 네비 — 긴 게시판명', () => {
     expect(withLongName.docOverflow).toBe(0);
   });
 
+  // @scenario case=post_navigation_long_board_name
+
+  // @effects post_navigation_buttons_not_squeezed
+
   test('320px 에서도 버튼 폭이 게시판명 길이와 무관하다', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 844 });
     const nav = await gotoPostWithNeighbors(page);
@@ -206,6 +212,10 @@ test.describe('게시글 상단 네비 — 긴 게시판명', () => {
     expect(withLongName.docOverflow).toBe(0);
   });
 
+  // @scenario case=post_navigation_long_board_name
+
+  // @effects post_navigation_buttons_not_squeezed
+
   test('태블릿(768px)은 한 줄을 유지하면서도 버튼이 압착되지 않는다', async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 900 });
     const nav = await gotoPostWithNeighbors(page);
@@ -223,6 +233,10 @@ test.describe('게시글 상단 네비 — 긴 게시판명', () => {
     expectButtonsUnaffectedByBoardName(withShortName, withLongName);
     expect(withLongName.docOverflow).toBe(0);
   });
+
+  // @scenario case=post_navigation_long_board_name
+
+  // @effects post_navigation_buttons_not_squeezed
 
   test('데스크톱(1280px)은 기존 한 줄 레이아웃을 유지한다 (모바일 오버라이드 누출 없음)', async ({
     page,

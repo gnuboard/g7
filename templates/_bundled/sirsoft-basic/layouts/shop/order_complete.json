@@ -36,7 +36,8 @@
                         {
                             "handler": "navigate",
                             "params": {
-                                "path": "{{error.errors?.redirect_to ?? '/login'}}"
+                                "path": "{{error.errors?.redirect_to ?? '/login'}}",
+                                "fallbackPath": "/login"
                             }
                         }
                     ]
@@ -54,7 +55,8 @@
                         {
                             "handler": "navigate",
                             "params": {
-                                "path": "{{error.errors?.redirect_to ?? '/login'}}"
+                                "path": "{{error.errors?.redirect_to ?? '/login'}}",
+                                "fallbackPath": "/login"
                             }
                         }
                     ]
@@ -1272,9 +1274,33 @@
                                 },
                                 "children": [
                                     {
-                                        "comment": "회원: 마이페이지 주문 상세(/mypage/orders/:order_number, auth_required:true), 비회원: 비회원 주문 상세(/{shopBase}/guest/orders/:order_number, auth_required:false + X-Guest-Order-Token globalHeader 자동 주입). 분기 없이 마이페이지로만 보내면 비회원이 라우트 가드에 막혀 로그인 페이지로 튕긴다.",
+                                        "comment": "회원: 마이페이지 주문 상세(/mypage/orders/:order_number, auth_required:true), 비회원: 비회원 주문 상세(/{shopBase}/guest/orders/:order_number, auth_required:false + X-Guest-Order-Token globalHeader 자동 주입). 분기 없이 마이페이지로만 보내면 비회원이 라우트 가드에 막혀 로그인 페이지로 튕긴다. 회원 갈래는 주소 있는 링크(가운데 클릭·Ctrl+클릭 새 탭), 비회원 갈래는 단추 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않는다.",
+                                        "type": "basic",
+                                        "name": "A",
+                                        "if": "{{_global.currentUser?.uuid}}",
+                                        "responsive": {
+                                            "portable": {
+                                                "props": {
+                                                    "className": "inline-flex items-center justify-center w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-lg font-medium"
+                                                }
+                                            }
+                                        },
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate"
+                                            }
+                                        ],
+                                        "props": {
+                                            "href": "/mypage/orders/{{orderData?.data?.order_number}}",
+                                            "className": "inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-lg font-medium"
+                                        },
+                                        "text": "$t:shop.order_complete.view_order_detail"
+                                    },
+                                    {
                                         "type": "basic",
                                         "name": "Button",
+                                        "if": "{{!_global.currentUser?.uuid}}",
                                         "responsive": {
                                             "portable": {
                                                 "props": {
@@ -1287,7 +1313,7 @@
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "{{_global.currentUser?.uuid ? ('/mypage/orders/' + orderData?.data?.order_number) : ((_global.shopBase ?? '/shop') + '/guest/orders/' + orderData?.data?.order_number)}}"
+                                                    "path": "{{(_global.shopBase ?? '/shop') + '/guest/orders/' + orderData?.data?.order_number}}"
                                                 }
                                             }
                                         ],
@@ -1299,26 +1325,23 @@
                                     },
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "responsive": {
                                             "portable": {
                                                 "props": {
-                                                    "className": "w-full px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                    "className": "inline-flex items-center justify-center w-full px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700"
                                                 }
                                             }
                                         },
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700"
+                                            "href": "/",
+                                            "className": "inline-flex items-center justify-center px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700"
                                         },
                                         "text": "$t:shop.order_complete.continue_shopping"
                                     }

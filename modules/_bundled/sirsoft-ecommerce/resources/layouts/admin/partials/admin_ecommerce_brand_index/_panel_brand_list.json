@@ -272,6 +272,8 @@
                         }
                     ],
                     "props": {
+                        "itemHref": "/admin/ecommerce/brands?id={{row.id}}&mode=view",
+                        "itemHrefMergeQuery": true,
                         "items": "{{brands?.data?.data ?? []}}",
                         "selectedId": "{{_global.selectedBrandId}}",
                         "className": "p-2 max-h-[calc(90vh-140px)] overflow-y-auto",

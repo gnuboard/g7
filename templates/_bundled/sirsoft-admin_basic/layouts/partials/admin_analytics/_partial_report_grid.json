@@ -220,6 +220,8 @@
                         }
                     ],
                     "props": {
+                        "pageHref": "{{_local.periodPath}}?page={page}",
+                        "pageHrefMergeQuery": true,
                         "visibleColumns": "{{(function(r) { const name = String(r ?? ''); const ext = name.startsWith('ext:'); const action = ext || ['site_search', 'download', 'outlink', 'goal', 'search_tab', 'event_name'].includes(name); const extra = ext || ['site_search', 'goal'].includes(name); return ['label_display', 'visits', 'hits'].concat(action ? [] : ['bounce_rate', 'avg_time', 'pages_per_visit'], extra ? ['extra'] : [], ['trend']); })(_computed.reportName)}}",
                         "data": "{{analytics_report?.data?.data ?? []}}",
                         "pagination": true,
@@ -239,28 +241,25 @@
                                 "header": "$t:admin.analytics.common.label",
                                 "cellChildren": [
                                     {
-                                        "comment": "라벨을 눌러 한 단계 더 들어가는 화면은 `_local.labelDrilldownKey` 를 채운다. 지금은\n              유입 경로>유입 사이트 하나가 쓴다 — 도메인 행을 누르면 그 도메인의 전체 유입 주소가 열린다.\n              질의 키(`host`)는 `<query>` 가 정적 이름만 받아 여기 박아 두고, 켤지 말지만 화면이 정한다.\n              켜지 않은 화면은 종전대로 글자다(#682 라운드 4, 검수 지적 ⑥).",
+                                        "comment": "라벨을 눌러 한 단계 더 들어가는 화면은 `_local.labelDrilldownKey` 를 채운다. 지금은\n              유입 경로>유입 사이트 하나가 쓴다 — 도메인 행을 누르면 그 도메인의 전체 유입 주소가 열린다.\n              질의 키(`host`)는 링크 주소(href)에 박아 두고, 켤지 말지만 화면이 정한다 — 링크라 새 탭으로도 열린다(#757).\n              켜지 않은 화면은 종전대로 글자다(#682 라운드 4, 검수 지적 ⑥).",
                                         "id": "report_label_link",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "if": "{{_local.labelDrilldownKey === 'host'}}",
                                         "actions": [
                                             {
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "{{_local.periodPath}}",
                                                     "mergeQuery": true,
-                                                    "query": {
-                                                        "host": "{{row.label ?? ''}}",
-                                                        "page": 1
-                                                    }
+                                                    "query": {}
                                                 }
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "justify-start text-link whitespace-normal break-all text-left",
+                                            "href": "{{_local.periodPath}}?host={{row.label ?? ''}}&page=1",
+                                            "mergeQuery": true,
+                                            "className": "button justify-start text-link whitespace-normal break-all text-left",
                                             "title": "{{row.label ?? ''}}"
                                         },
                                         "text": "{{row.label_display ?? row.label ?? '-'}}"
@@ -483,19 +482,16 @@
                 {
                     "id": "report_empty_diagnostics_link",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/admin/analytics/diagnostics"
-                            }
+                            "handler": "navigate"
                         }
                     ],
                     "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary"
+                        "href": "/admin/analytics/diagnostics",
+                        "className": "button btn btn-secondary"
                     },
                     "text": "$t:admin.analytics.common.empty_diagnostics_link"
                 }

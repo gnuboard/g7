@@ -75,16 +75,16 @@
           <h1 class="page-title">$t:sirsoft-ecommerce.admin.shipping_policy.title</h1>
           <p class="text-label-subtle mt-1">$t:sirsoft-ecommerce.admin.shipping_policy.description</p>
         </div>
-        <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{shipping_policies?.data?.abilities?.can_create !== true}}">
+        <a href="/admin/ecommerce/shipping-policies/create" :mergeQuery="true" class="button btn btn-primary aria-disabled:opacity-50 aria-disabled:cursor-not-allowed" disabled="{{shipping_policies?.data?.abilities?.can_create !== true}}">
           <on type="click">
             <!-- 새 배송정책 등록. 등록을 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다 -->
-            <navigate path="/admin/ecommerce/shipping-policies/create" :mergeQuery="true">
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
           <icon name="plus" size="sm"/>
           <span>$t:sirsoft-ecommerce.admin.shipping_policy.add</span>
-        </button>
+        </a>
       </div>
       <include src="partials/admin_ecommerce_shipping_policy_list/_partial_filter.g7.html"/>
       <div data-ref="data_table_section" class="mt-6">

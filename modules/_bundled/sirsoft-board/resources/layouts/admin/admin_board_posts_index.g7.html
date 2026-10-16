@@ -53,16 +53,16 @@
             </on>
             <icon name="refresh" class="text-xl"/>
           </button>
-          <button data-ref="create_post_button" disabled="{{posts?.data?.abilities?.can_write !== true}}" class="flex-center gap-2 px-4 py-2 bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <a href="/admin/board/{{route.slug}}/create" :mergeQuery="true" data-ref="create_post_button" disabled="{{posts?.data?.abilities?.can_write !== true}}" class="button flex-center gap-2 px-4 py-2 bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed">
             <on type="click">
               <!-- 새 글 작성. 작성을 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다 -->
-              <navigate path="/admin/board/{{route.slug}}/create" :mergeQuery="true">
+              <navigate :mergeQuery="true">
                 <query/>
               </navigate>
             </on>
             <icon name="plus" class="text-base"/>
             <span>$t:sirsoft-board.admin.posts.actions.create</span>
-          </button>
+          </a>
         </div>
       </page-header>
       <div data-ref="search_filter_area" class="admin-card">
@@ -238,7 +238,7 @@
           </button>
         </div>
       </div>
-      <data-grid data-type="composite" selectedCountText="" data-ref="posts_data_grid" rowLabelField="title" :data-blur-until-loaded="true" rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : (row.row_type === 'reply' ? 'bg-gray-50 dark:bg-gray-800/50' : '')}}" data="{{posts?.data?.data}}" :sortable="true" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{posts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{posts?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" selectable="{{posts?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_board_posts || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" columnSelectorText="$t:common.column_selector" emptyMessage="$t:common.no_data" requiredText="$t:common.required">
+      <data-grid :pageHrefMergeQuery="true" pageHref="/admin/board/{{route.slug}}?page={page}" data-type="composite" selectedCountText="" data-ref="posts_data_grid" rowLabelField="title" :data-blur-until-loaded="true" rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : (row.row_type === 'reply' ? 'bg-gray-50 dark:bg-gray-800/50' : '')}}" data="{{posts?.data?.data}}" :sortable="true" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{posts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{posts?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" selectable="{{posts?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_board_posts || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" columnSelectorText="$t:common.column_selector" emptyMessage="$t:common.no_data" requiredText="$t:common.required">
         <column field="number" header="$t:sirsoft-board.admin.posts.columns.number" :sortable="false" :required="true">
           <cell>
             <span data-if="{{row.row_type === 'notice'}}" class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500">{{row.number ?? '-'}}</span>
@@ -263,14 +263,14 @@
                   <!-- 블라인드 배지 -->
                   <span data-if="{{row?.status === 'blinded'}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">$t:sirsoft-board.admin.posts.status.blinded</span>
                   <!-- 제목 -->
-                  <span class="min-w-0 wrap-anywhere font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                  <a href="/admin/board/{{row.slug}}/post/{{row.id}}" :mergeQuery="true" class="min-w-0 wrap-anywhere font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                     <on type="click">
-                      <navigate path="/admin/board/{{row.slug}}/post/{{row.id}}" :mergeQuery="true">
+                      <navigate :mergeQuery="true">
                         <query/>
                       </navigate>
                     </on>
                     {{row.title}}
-                  </span>
+                  </a>
                   <!-- 첨부파일 아이콘 -->
                   <icon data-if="{{row.has_attachment}}" name="paperclip" class="text-sm text-gray-400 dark:text-gray-500"/>
                   <!-- 댓글 수 -->
@@ -288,13 +288,13 @@
           <cell>
             <div class="row-stack">
               <div class="flex-center gap-2">
-                <span data-if="{{!row.author.is_guest}}" class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                <a href="/admin/users/{{row.author.uuid}}" data-if="{{!row.author.is_guest &amp;&amp; row.author.uuid}}" class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                   <on type="click">
-                    <navigate path="/admin/users/{{row.author.uuid}}"/>
+                    <navigate/>
                   </on>
                   {{row.author.name}}
-                </span>
-                <span data-if="{{row.author.is_guest}}" class="font-medium text-gray-900 dark:text-white">{{row.author.name}}</span>
+                </a>
+                <span data-if="{{row.author.is_guest || !row.author.uuid}}" class="font-medium text-gray-900 dark:text-white">{{row.author.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}</span>
                 <span data-if="{{row.author.is_guest}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">$t:sirsoft-board.admin.posts.guest</span>
               </div>
               <span data-if="{{!row.author.is_guest &amp;&amp; row.author.email}}" class="text-tertiary">({{row.author.email}})</span>

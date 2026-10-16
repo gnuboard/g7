@@ -670,7 +670,8 @@
                                                         {
                                                             "handler": "navigate",
                                                             "params": {
-                                                                "path": "{{$args[0].url ?? '/admin/notification-logs'}}"
+                                                                "path": "{{$args[0].url}}",
+                                                                "fallbackPath": "/admin/notification-logs"
                                                             }
                                                         },
                                                         {
@@ -701,6 +702,37 @@
                                                                     }
                                                                 }
                                                             ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "링크 알림을 Ctrl·가운데 클릭이나 바깥 주소로 새 탭에 열었을 때 — 이 화면은 그대로이므로 이동 없이\n                   읽음 처리만 한다(컴포넌트가 안 읽은 알림·읽음 권한일 때만 부른다).",
+                                                    "event": "onNotificationRead",
+                                                    "handler": "conditions",
+                                                    "conditions": [
+                                                        {
+                                                            "if": "{{notifications?.data?.abilities?.can_update === true}}",
+                                                            "then": {
+                                                                "handler": "apiCall",
+                                                                "target": "/api/admin/notifications/{{$args[0].id}}/read",
+                                                                "auth_required": true,
+                                                                "params": {
+                                                                    "method": "PATCH"
+                                                                },
+                                                                "onSuccess": {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "notification_unread_count"
+                                                                    }
+                                                                },
+                                                                "onError": {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message}}"
+                                                                    }
+                                                                }
+                                                            }
                                                         }
                                                     ]
                                                 },
@@ -1160,7 +1192,8 @@
                                                         {
                                                             "handler": "navigate",
                                                             "params": {
-                                                                "path": "{{$args[0].url ?? '/admin/notification-logs'}}"
+                                                                "path": "{{$args[0].url}}",
+                                                                "fallbackPath": "/admin/notification-logs"
                                                             }
                                                         },
                                                         {
@@ -1191,6 +1224,37 @@
                                                                     }
                                                                 }
                                                             ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "comment": "링크 알림을 Ctrl·가운데 클릭이나 바깥 주소로 새 탭에 열었을 때 — 이 화면은 그대로이므로 이동 없이\n                   읽음 처리만 한다(컴포넌트가 안 읽은 알림·읽음 권한일 때만 부른다).",
+                                                    "event": "onNotificationRead",
+                                                    "handler": "conditions",
+                                                    "conditions": [
+                                                        {
+                                                            "if": "{{notifications?.data?.abilities?.can_update === true}}",
+                                                            "then": {
+                                                                "handler": "apiCall",
+                                                                "target": "/api/admin/notifications/{{$args[0].id}}/read",
+                                                                "auth_required": true,
+                                                                "params": {
+                                                                    "method": "PATCH"
+                                                                },
+                                                                "onSuccess": {
+                                                                    "handler": "refetchDataSource",
+                                                                    "params": {
+                                                                        "dataSourceId": "notification_unread_count"
+                                                                    }
+                                                                },
+                                                                "onError": {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message}}"
+                                                                    }
+                                                                }
+                                                            }
                                                         }
                                                     ]
                                                 },

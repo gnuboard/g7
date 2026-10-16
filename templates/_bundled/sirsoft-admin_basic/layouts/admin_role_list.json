@@ -122,22 +122,23 @@
                             {
                                 "id": "add_role_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "새 역할 만들기. 만들기를 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/roles/create",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
+                                    "href": "/admin/roles/create",
+                                    "mergeQuery": true,
                                     "disabled": "{{roles?.data?.abilities?.can_create !== true}}",
-                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "button flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                                 },
                                 "children": [
                                     {
@@ -348,6 +349,8 @@
                             }
                         ],
                         "props": {
+                            "pageHref": "/admin/roles?page={page}",
+                            "pageHrefMergeQuery": true,
                             "data": "{{roles?.data?.data}}",
                             "pagination": true,
                             "serverSidePagination": true,
@@ -364,12 +367,16 @@
                                     "id": "edit",
                                     "label": "$t:common.edit",
                                     "iconName": "pencil",
+                                    "href": "/admin/roles/{{row.id}}/edit",
+                                    "mergeQuery": true,
                                     "disabledField": "abilities.can_update"
                                 },
                                 {
                                     "id": "clone",
                                     "label": "$t:admin.roles.actions.clone",
                                     "iconName": "copy",
+                                    "href": "/admin/roles/create?clone_from={{row.id}}",
+                                    "mergeQuery": true,
                                     "disabledField": "abilities.can_create"
                                 },
                                 {

@@ -10,7 +10,7 @@
   다른 쪽도 함께 고쳐야 한다(한쪽만 고치면 화면 폭에 따라 동작이 갈린다). -->
 <partial>
   <div data-ref="table_card" class="p-0 md:p-0">
-    <data-grid data-type="composite" data-ref="product_datagrid" rowLabelField="name_localized" data="{{products?.data?.data}}" idField="id" :sortable="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{products?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{products?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{products?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" :showColumnSelector="false" visibleColumns="{{_local.visibleColumns}}" emptyMessage="$t:sirsoft-ecommerce.admin.product.table.no_data" actionsColumnHeader="$t:sirsoft-ecommerce.admin.product.table.column.actions" columnSelectorText="$t:common.column_selector" selectedCountText="" :responsiveBreakpoint="768">
+    <data-grid data-type="composite" pageHref="/admin/ecommerce/products?page={page}" :pageHrefMergeQuery="true" data-ref="product_datagrid" rowLabelField="name_localized" data="{{products?.data?.data}}" idField="id" :sortable="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{products?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{products?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{products?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" :showColumnSelector="false" visibleColumns="{{_local.visibleColumns}}" emptyMessage="$t:sirsoft-ecommerce.admin.product.table.no_data" actionsColumnHeader="$t:sirsoft-ecommerce.admin.product.table.column.actions" columnSelectorText="$t:common.column_selector" selectedCountText="" :responsiveBreakpoint="768">
       <column field="thumbnail" header="$t:sirsoft-ecommerce.admin.product.table.column.image" width="140px" :sortable="false" :required="true">
         <cell>
           <div class="w-full aspect-square md:w-20 md:h-20 flex-shrink-0 {{row.thumbnail_url ? '' : 'bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center'}}">
@@ -132,7 +132,7 @@
       </column>
       <column field="shipping_policy_name" header="$t:sirsoft-ecommerce.admin.product.table.column.shipping_policy" width="130px" :sortable="false">
         <cell>
-          <a data-if="{{row.shipping_policy_id}}" href="#" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+          <a data-if="{{row.shipping_policy_id}}" href="/admin/ecommerce/products?shipping_policy_id={{row.shipping_policy_id}}" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
             <on type="click">
               <!-- 배송정책 이름을 누르면 그 정책으로 목록을 거른다 — 화면의 필터 입력값과 URL query 를 함께 갈아 끼운다(둘 중 하나만 하면 입력칸과 결과가 어긋난다). -->
               <sequence>
@@ -158,7 +158,7 @@
         </cell>
       </column>
       <prop name="rowActions">
-        <item id="edit" label="$t:sirsoft-ecommerce.admin.product.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
+        <item id="edit" href="/admin/ecommerce/products/{{row.product_code ?? row.id}}/edit" label="$t:sirsoft-ecommerce.admin.product.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
         <item id="copy" label="$t:sirsoft-ecommerce.admin.product.action.copy" iconName="fa-regular fa-copy" disabled="{{products?.data?.abilities?.can_create !== true}}"/>
         <item id="divider" :divider="true"/>
         <item id="delete" label="$t:sirsoft-ecommerce.admin.product.action.delete" iconName="fa-regular fa-trash-can" variant="danger" disabledField="abilities.can_delete"/>

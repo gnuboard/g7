@@ -621,15 +621,18 @@ describe('페이지 헤더', () => {
 
     // @scenario section=page_header
     // @effects page_header_rendered
-    it('배송정책 등록 버튼이 create 페이지로 이동한다', () => {
-        const buttons = allNodes.filter((n: any) => n.name === 'Button');
-        const createBtn = buttons.find((btn: any) => {
-            const children = flattenAll(btn);
+    it('배송정책 등록 링크가 create 페이지로 이동한다', () => {
+        // 새 탭으로도 열리도록 링크(A href)다 — 보통 클릭은 path 없는 navigate 가 href 로 이동(#757 2단계)
+        const links = allNodes.filter((n: any) => n.name === 'A');
+        const createLink = links.find((a: any) => {
+            const children = flattenAll(a);
             return children.some((c: any) => c.text?.includes('shipping_policy.add'));
         });
-        expect(createBtn).toBeDefined();
-        const navAction = createBtn.actions?.find((a: any) => a.handler === 'navigate');
-        expect(navAction.params.path).toContain('/create');
+        expect(createLink).toBeDefined();
+        expect(createLink.props.href).toContain('/create');
+        const navAction = createLink.actions?.find((a: any) => a.handler === 'navigate');
+        expect(navAction.params.path).toBeUndefined();
+        expect(navAction.params.mergeQuery).toBe(true);
     });
 });
 

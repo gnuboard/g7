@@ -139,13 +139,12 @@ describe('회원 상세 쇼핑 데이터 탭 (#524 WP-E)', () => {
 
             expect(link).toBeTruthy();
 
-            // 이동은 `navigate` 액션이 한다. `href="{{식}}"` 로 주면 렌더 시 prop 값이
-            // undefined 가 되어 DOM 에 속성이 실리지 않는다 — 링크가 조용히 죽는다
-            // (2026-09-15 브라우저 실측). 그래서 href 가 «없는 것» 까지 계약으로 고정한다.
-            expect(link.props.href).toBeUndefined();
-
-            const nav = JSON.stringify(link).match(/"handler":"navigate"[^}]*"path":"([^"]+)"/);
-            expect(nav?.[1]).toBe(path);
+            // 링크다(#757 WP-L) — 주소는 href 한 곳(회원 uuid 를 쿼리에 싣는다)에 두고, 보통 클릭의 navigate 는
+            // path 없이 그 href 로 간다. 2026-09-15 실측의 「href 바인딩이 undefined 로 죽는다」는 종전 A 컴포넌트
+            // 조건이었고, 이번 A 는 바인딩된 href 를 그대로 그린다 — 브라우저 확인은 M1 링크 실측(T1·T2) 몫이다.
+            expect(String(link.props.href).split('?')[0]).toBe(path);
+            expect(JSON.stringify(link)).toMatch(/"handler":"navigate"/);
+            expect(JSON.stringify(link)).not.toMatch(/"handler":"navigate"[^}]*"path":/);
             expect(JSON.stringify(link)).toMatch(/user_uuid/);
             expect(JSON.stringify(link)).toMatch(/user\?\.data\?\.uuid/);
 

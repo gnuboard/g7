@@ -31,6 +31,7 @@ E2E spec 이 "특정 유저 + 특정 역할 + 특정 도메인 상황" 에서 �
 | 모듈 권한 (`sirsoft-ecommerce.*`) | 코어 커맨드의 `--permissions=` 임의 식별자 (Permission::firstOrCreate 자동 생성) |
 | 모듈 도메인 데이터 (상품/카테고리/주문/배송지) | 본 모듈 `src/Console/Commands/PlaywrightSeedEcommerce.php` |
 | 사이트 하루 경계 결제완료 주문 (대시보드 배지 ↔ 목록 일치) | 본 모듈 `src/Console/Commands/PlaywrightSeedSiteDayOrders.php` — `playwright:seed-site-day-orders [--teardown] --json` (주문 시각을 과거로 만들 화면·API 가 없어 시드로 고정, 집계 행도 다시 굽는다) |
+| 관리자 클레임 상세 실측 신청서 (옵션 변경 교환 · 상품 1건 승인 반품 · 계좌 빈 승인 환불) | 본 모듈 `src/Console/Commands/PlaywrightSeedClaimDetail.php` — `playwright:seed-claim-detail --tag=<워커별> [--teardown] --json` (`--teardown` 단독은 전량 정리). fixture `tests/Playwright/fixtures/claim-detail-seed.ts` 가 워커마다 다른 tag 로 세우고 워커 끝에 지운다 — `fullyParallel` 워커끼리 서로의 신청서를 지우지 않게 |
 | 외부 의존 데이터 (토스 결제창 응답 등) | spec 안에서 `page.route()` mock |
 
 **핵심 원칙**: 코어는 모듈 도메인을 모른다. 모듈 도메인 시드 커맨드를 코어에 두면 코어 ↔ 모듈 의존이 뒤집힘.

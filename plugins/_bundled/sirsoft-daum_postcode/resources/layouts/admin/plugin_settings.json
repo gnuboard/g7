@@ -72,7 +72,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-warning-soft"
+                                    "className": "text-xs text-yellow-700 dark:text-yellow-300"
                                 },
                                 "text": "$t:sirsoft-daum_postcode.plugin_read_only"
                             }
@@ -105,7 +105,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-info-soft"
+                                            "className": "text-xs text-blue-700 dark:text-blue-300"
                                         },
                                         "text": "$t:sirsoft-daum_postcode.settings.notice"
                                     }
@@ -535,18 +535,16 @@
                             {
                                 "id": "cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/plugins"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
-                                    "className": "btn btn-secondary"
+                                    "href": "/admin/plugins",
+                                    "className": "button btn btn-secondary"
                                 },
                                 "children": [
                                     {

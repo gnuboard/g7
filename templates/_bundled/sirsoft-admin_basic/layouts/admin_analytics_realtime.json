@@ -572,19 +572,11 @@
                                                                 {
                                                                     "id": "realtime_member_link_{{$idx}}",
                                                                     "type": "basic",
-                                                                    "name": "Button",
+                                                                    "name": "A",
                                                                     "if": "{{!!row.user?.uuid && (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.users.read')}}",
-                                                                    "actions": [
-                                                                        {
-                                                                            "type": "click",
-                                                                            "handler": "openWindow",
-                                                                            "params": {
-                                                                                "path": "/admin/users/{{row.user.uuid}}"
-                                                                            }
-                                                                        }
-                                                                    ],
                                                                     "props": {
-                                                                        "type": "button",
+                                                                        "href": "/admin/users/{{row.user.uuid}}",
+                                                                        "target": "_blank",
                                                                         "className": "text-hint underline block text-left"
                                                                     },
                                                                     "text": "{{row.user.name}}"

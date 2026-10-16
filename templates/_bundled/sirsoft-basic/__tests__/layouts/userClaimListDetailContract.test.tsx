@@ -31,9 +31,21 @@ function flatten(node: any, out: any[] = []): any[] {
   return out;
 }
 
-/** 노드 트리에서 특정 핸들러를 쓰는 액션을 모은다. */
+/**
+ * 노드 트리에서 특정 핸들러를 쓰는 액션을 모은다.
+ * 경로 없는 navigate 는 그것을 가진 링크(A)의 href 로 간다(엔진 규칙) — 그 href 를 path 로 채워 돌려준다.
+ */
 function actionsWith(root: any, handler: string): any[] {
-  return flatten(root).filter((n) => n.handler === handler);
+  const resolved = new Map<any, any>();
+  for (const link of flatten(root).filter((n) => n.name === 'A' && typeof n.props?.href === 'string')) {
+    for (const a of flatten(link.actions ?? [])) {
+      if (a.handler === 'navigate' && !a.params?.path) {
+        resolved.set(a, { ...a, params: { ...a.params, path: link.props.href } });
+      }
+    }
+  }
+
+  return flatten(root).filter((n) => n.handler === handler).map((a) => resolved.get(a) ?? a);
 }
 
 const listShell = load('layouts/mypage/claims.json');
@@ -150,7 +162,7 @@ describe('철회·수정 진입점 — 목록과 상세 두 곳에 있다', () =
     expect(editNavigate).toBeTruthy();
 
     // 노출 조건은 서버 판정이다 — 화면이 상태 문자열로 재현하면 상태가 늘 때마다 갈린다.
-    const buttons = flatten(listPartial).filter((n) => n.name === 'Button' && n.if);
+    const buttons = flatten(listPartial).filter((n) => ['A', 'Button'].includes(n.name) && n.if);
     expect(buttons.some((b) => String(b.if).includes('is_editable'))).toBe(true);
     expect(buttons.some((b) => String(b.if).includes('is_withdrawable'))).toBe(true);
   });

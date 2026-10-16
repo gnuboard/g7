@@ -30,21 +30,21 @@
       <!-- 버튼 그룹 - 수정하기 + 비밀번호 변경 -->
       <div class="flex items-center gap-2">
         <!-- 비밀번호 변경 버튼 -->
-        <button type="button" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <a href="/mypage/change-password" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <on type="click">
-            <navigate path="/mypage/change-password"/>
+            <navigate/>
           </on>
           <icon name="lock" size="sm"/>
           <span>$t:mypage.profile.change_password_button</span>
-        </button>
+        </a>
         <!-- 수정하기 버튼 - 편집 페이지로 이동 -->
-        <button type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <a href="/mypage/profile/edit" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
           <on type="click">
-            <navigate path="/mypage/profile/edit"/>
+            <navigate/>
           </on>
           <icon name="pen-to-square" size="sm"/>
           <span>$t:mypage.profile.edit_button</span>
-        </button>
+        </a>
       </div>
     </div>
     <!-- 프로필 카드 - 아바타 + 이름 + 이메일 + 가입일/마지막 로그인 -->

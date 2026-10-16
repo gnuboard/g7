@@ -362,7 +362,7 @@
                         "children": [
                             {
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "responsive": {
                                     "portable": {
                                         "props": {
@@ -373,13 +373,11 @@
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "{{_global.shopBase}}/cart"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
+                                    "href": "{{_global.shopBase}}/cart",
                                     "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 text-sm cursor-pointer"
                                 },
                                 "children": [

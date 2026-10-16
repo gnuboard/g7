@@ -1658,7 +1658,7 @@ SEO 렌더링 시 `navigate`/`openWindow` 핸들러가 정의된 컴포넌트에
 | 핸들러 | 변환 결과 | 비고 |
 |--------|----------|------|
 | `navigate` | `<a href="...">` | 내부 페이지 이동 |
-| `openWindow` | `<a href="..." target="_blank">` | 새 탭/외부 링크 |
+| `openWindow` | `<a href="..." target="_blank" rel="noopener noreferrer">` | 새 탭/외부 링크 (`target: "_self"` 는 `navigate` 와 같이 같은 탭 링크) |
 
 #### 지원 패턴
 
@@ -1677,6 +1677,13 @@ SEO 렌더링 시 `navigate`/`openWindow` 핸들러가 정의된 컴포넌트에
 | 미해석 `{{}}` 잔존 | `_local.*`, `$event.*` 등 런타임 전용 값 |
 | `_global` 참조 + globalResolver 미설정/실패 | SEO 컨텍스트에서 해석 불가 |
 | Fragment (빈 태그) | 래퍼 없어 링크 적용 불가 |
+| 실행 스킴(`javascript:`·`vbscript:`·`data:`) | 클라이언트 이동 판정과 같음 |
+| 같은 탭 이동의 다른 출처(`https://다른 사이트`·`//host`·`/\host`·사용자 정보 포함) | 클라이언트가 이동하지 않는 값 — 쿼리 유래 주소의 외부 링크 주입 방지 |
+| 새 창의 https 아닌 외부 주소 | 클라이언트 `openWindow` 가 열지 않는 값 |
+
+navigate 의 대체 경로 `fallbackPath` 도 클라이언트와 같습니다 — path 가 비었거나 거부되면 `fallbackPath` 로 링크하고, 그것도 거부되면 링크를 만들지 않습니다. path 가 봇이 모르는 실행 시점 값(`_local`·`_isolated`·`$event`·`$args`)이면 대체 경로로도 링크하지 않습니다. 정적 경로는 식 평가를 거치지 않습니다(첫 화면 `/` 가 평가기의 남은 연산자 정리에 지워지지 않게).
+
+같은 출처 판정은 사이트 주소(`app.url`) 또는 이 요청의 주소와 스킴·호스트·포트(기본 포트 정규화)를 비교합니다. 같은 출처 전체 주소(`https://이 사이트/board/free?page=2`)는 경로(`/board/free?page=2`)로 바꿔 링크에 씁니다.
 
 #### 태그별 변환 전략
 

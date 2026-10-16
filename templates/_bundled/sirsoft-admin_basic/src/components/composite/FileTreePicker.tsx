@@ -31,6 +31,8 @@ export interface FileTreePickerProps {
   /** 파일 조작 가능 여부 (권한) */
   canManage?: boolean;
   isLoading?: boolean;
+  /** 참이면 현재 주소의 쿼리를 파일 주소(`nodes[].href`)에 합친다(#757) */
+  hrefMergeQuery?: boolean;
   /**
    * 내용 검색이 걸린 파일 수 — 0 이면 요약을 보이지 않는다.
    *
@@ -109,6 +111,7 @@ export const FileTreePicker: React.FC<FileTreePickerProps> = ({
   storageKey,
   canManage = true,
   isLoading = false,
+  hrefMergeQuery = false,
   searchFileCount = 0,
   searchMatchCount = 0,
   focusSearchNonce = 0,
@@ -329,6 +332,7 @@ export const FileTreePicker: React.FC<FileTreePickerProps> = ({
         storageKey={storageKey ? `${storageKey}.expanded` : undefined}
         canManage={canManage}
         isLoading={isLoading}
+        hrefMergeQuery={hrefMergeQuery}
         className="flex-1 min-h-0 py-1"
         onSelect={(key, revealAt) => {
           onSelect?.(key, revealAt);

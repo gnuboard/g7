@@ -39,23 +39,31 @@ type NavAction = { type?: string; handler: string; params: Record<string, unknow
  */
 function collectNavActions(node: unknown): NavAction[] {
   const out: NavAction[] = [];
-  const walk = (n: unknown): void => {
+  // 경로 없는 navigate 는 그것을 가진 링크(A)의 href 로 간다(엔진 규칙) — 그 href 를 path 로 채워 모은다
+  const walk = (n: unknown, linkHref: string | null): void => {
     if (Array.isArray(n)) {
-      n.forEach(walk);
+      n.forEach((c) => walk(c, linkHref));
       return;
     }
     if (!n || typeof n !== 'object') return;
     const obj = n as Record<string, unknown>;
+    const props = obj.props as { href?: unknown } | undefined;
+    const href = obj.name === 'A' && typeof props?.href === 'string' ? props.href : linkHref;
     if (
       (obj.handler === 'navigate' || obj.handler === 'replaceUrl') &&
       obj.params &&
       typeof obj.params === 'object'
     ) {
-      out.push(obj as unknown as NavAction);
+      const params = obj.params as Record<string, unknown>;
+      out.push(
+        (obj.handler === 'navigate' && !params.path && href
+          ? { ...obj, params: { ...params, path: href } }
+          : obj) as unknown as NavAction
+      );
     }
-    Object.values(obj).forEach(walk);
+    Object.values(obj).forEach((c) => walk(c, href));
   };
-  walk(node);
+  walk(node, null);
   return out;
 }
 
@@ -174,10 +182,6 @@ async function runNav(action: NavAction): Promise<string> {
   return dest;
 }
 
-/**
- * @scenario post_kind=original
- * @effects list_return_preserves_query
- */
 describe('45-1 행 클릭 시 목록 상태(query)를 상세 URL 에 부착 (실 JSON)', () => {
   beforeEach(() => {
     setupTestRegistry();
@@ -192,6 +196,8 @@ describe('45-1 행 클릭 시 목록 상태(query)를 상세 URL 에 부착 (실
     ['gallery', galleryIndexPartial],
   ];
 
+  // @scenario leg=enter
+  // @effects list_return_preserves_query
   it.each(rowClickCases)(
     '%s 타입 행 클릭이 목록 query(category/search/page)를 상세로 나른다',
     async (_type, partial) => {
@@ -211,6 +217,8 @@ describe('45-1 행 클릭 시 목록 상태(query)를 상세 URL 에 부착 (실
     }
   );
 
+  // @scenario leg=enter
+  // @effects list_return_preserves_query
   it('del=1(권한자 토글)도 상세 URL 로 함께 전달된다', async () => {
     setUrl('?del=1&page=3');
 
@@ -237,6 +245,8 @@ describe("45-1 '목록' 버튼이 상세 URL 의 목록 상태를 목록으로 �
     window.history.replaceState({}, '', '/');
   });
 
+  // @scenario leg=back
+  // @effects list_return_preserves_query
   it('상세 URL 의 query 가 목록 경로로 그대로 복귀된다', async () => {
     // 상세 화면 URL 에 목록 상태가 실려 있음
     window.history.replaceState({}, '', '/board/free/77?category=공지&search=테스트&page=2');
@@ -258,10 +268,6 @@ describe("45-1 '목록' 버튼이 상세 URL 의 목록 상태를 목록으로 �
 // #75: 이전글/다음글 → 목록 상태를 형제 상세로 승계 (실 _navigation.json)
 // ============================================================
 
-/**
- * @scenario leg=prev|next
- * @effects navigation_preserves_list_query
- */
 describe('#75 이전글/다음글 버튼이 목록 상태를 형제 상세로 승계 (실 JSON)', () => {
   beforeEach(() => {
     setupTestRegistry();
@@ -275,6 +281,10 @@ describe('#75 이전글/다음글 버튼이 목록 상태를 형제 상세로 �
     ['다음글', '/board/{{route.slug}}/{{navigation.data.next.id}}'],
   ];
 
+  // @scenario leg=prev
+  // @effects navigation_preserves_list_query
+  // @scenario leg=next
+  // @effects navigation_preserves_list_query
   it.each(legs)('%s 클릭 시 page/search/category 가 모두 살아남는다', async (_label, destPath) => {
     window.history.replaceState(
       {},
@@ -291,6 +301,10 @@ describe('#75 이전글/다음글 버튼이 목록 상태를 형제 상세로 �
     expect(q.get('del')).toBe('1');
   });
 
+  // @scenario leg=prev
+  // @effects navigation_preserves_list_query
+  // @scenario leg=back
+  // @effects list_return_preserves_query
   it('이전글 → 목록 순서로 이어가도 목록 페이지가 복원된다', async () => {
     window.history.replaceState({}, '', '/board/free/45?page=2&search=테스트');
 
@@ -359,6 +373,8 @@ describe('47-4 답글 상세에서 이전/다음 버튼 미렌더', () => {
     ],
   };
 
+  // @scenario post_kind=reply
+  // @effects navigation_null_for_reply
   it('답글 상세(navigation prev/next null) → 이전/다음 버튼 모두 미렌더', async () => {
     const testUtils = createLayoutTest(navButtonsLayout);
     testUtils.mockApi('navigation', {
@@ -372,6 +388,8 @@ describe('47-4 답글 상세에서 이전/다음 버튼 미렌더', () => {
     testUtils.cleanup();
   });
 
+  // @scenario post_kind=original
+  // @effects navigation_null_for_reply
   it('원글 상세(navigation prev/next 존재) → 이전/다음 버튼 렌더 (대조군)', async () => {
     const testUtils = createLayoutTest(navButtonsLayout);
     testUtils.mockApi('navigation', {

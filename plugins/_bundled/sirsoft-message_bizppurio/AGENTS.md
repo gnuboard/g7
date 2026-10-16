@@ -216,7 +216,7 @@ HookManager::addAction(
 | PHPUnit | 45개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
 | Vitest | 19개 | `vitest.config.ts` |
 | Playwright | 3개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 21개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 22개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

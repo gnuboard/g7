@@ -511,21 +511,25 @@
                             "tabs": [
                                 {
                                     "id": "exchange",
+                                    "href": "/admin/ecommerce/claims?type=exchange",
                                     "label": "$t:sirsoft-ecommerce.admin.claim.subtab.exchange",
                                     "badge": "{{claims?.data?.counts?.exchange ?? 0}}"
                                 },
                                 {
                                     "id": "return",
+                                    "href": "/admin/ecommerce/claims?type=return",
                                     "label": "$t:sirsoft-ecommerce.admin.claim.subtab.return",
                                     "badge": "{{claims?.data?.counts?.return ?? 0}}"
                                 },
                                 {
                                     "id": "refund",
+                                    "href": "/admin/ecommerce/claims?type=refund",
                                     "label": "$t:sirsoft-ecommerce.admin.claim.subtab.refund",
                                     "badge": "{{claims?.data?.counts?.refund ?? 0}}"
                                 },
                                 {
                                     "id": "cancel",
+                                    "href": "/admin/ecommerce/claims?type=cancel",
                                     "label": "$t:sirsoft-ecommerce.admin.claim.subtab.cancel",
                                     "badge": "{{claims?.data?.counts?.cancel ?? 0}}"
                                 }

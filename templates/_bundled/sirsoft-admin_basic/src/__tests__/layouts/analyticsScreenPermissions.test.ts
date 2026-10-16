@@ -165,6 +165,9 @@ function navigateTargets(node: Record<string, any>): string[] {
     if (!value || typeof value !== 'object') return;
     if (value.handler === 'navigate' && typeof value?.params?.path === 'string') {
       found.push(value.params.path);
+    } else if (value.handler === 'navigate' && node.name === 'A' && typeof node.props?.href === 'string') {
+      // 링크(#757) — path 없는 navigate 는 클릭한 A 의 href 로 간다
+      found.push(node.props.href);
     }
     Object.entries(value).forEach(([key, child]) => {
       // 자식 노드(children)로는 내려가지 않는다 — 그 버튼은 그 노드 차례에 따로 검사한다.

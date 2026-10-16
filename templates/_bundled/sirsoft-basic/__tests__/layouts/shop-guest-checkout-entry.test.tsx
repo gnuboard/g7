@@ -64,6 +64,10 @@ describe.each([
   ['상품상세 _purchase_card', purchaseCardJson],
   ['장바구니 _cart_summary', cartSummaryJson],
 ])('비회원 주문 진입 분기 - %s (Issue #55)', (_label, layout) => {
+  // @scenario actor=logged_in_member, entry_point=product_detail_buy_now
+  // @effects currentUser_uuid_login_check_not_auth_isLoggedIn
+  // @scenario actor=logged_in_member, entry_point=cart_order_button
+  // @effects currentUser_uuid_login_check_not_auth_isLoggedIn
   it('checkout 성공 후 로그인 분기는 _global.currentUser?.uuid 로 판정해야 한다', () => {
     const conditions = findCheckoutConditions(layout);
     const loginBranch = conditions[0];
@@ -78,6 +82,10 @@ describe.each([
     expect(loginBranch.then.params.path).toBe('{{_global.shopBase}}/checkout');
   });
 
+  // @scenario actor=guest, entry_point=product_detail_buy_now
+  // @effects buy_now_when_guest_creates_temp_order_then_navigates_to_login_with_redirect_query
+  // @scenario actor=guest, entry_point=cart_order_button
+  // @effects cart_order_when_guest_creates_temp_order_then_navigates_to_login_with_redirect_query
   it('비로그인 분기(else)는 /login?redirect={shopBase}/checkout 로 이동해야 한다', () => {
     const conditions = findCheckoutConditions(layout);
     const guestBranch = conditions[conditions.length - 1];
@@ -103,6 +111,8 @@ describe('로그인 화면 - 비회원 주문하기 버튼 (Issue #55)', () => {
       n.if.includes('checkout')
   );
 
+  // @scenario actor=guest
+  // @effects continue_as_guest_button_navigates_to_redirect_path_without_login
   it('비회원 주문 버튼 블록은 Form 바깥(auth/login.json) 에 위치해야 한다', () => {
     expect(guestBlock).toBeDefined();
     // 회귀 차단: 폼 partial(_login_form.json) 에는 비회원 버튼이 없어야 한다
@@ -115,6 +125,8 @@ describe('로그인 화면 - 비회원 주문하기 버튼 (Issue #55)', () => {
     expect(formPartialRef).toBeDefined();
   });
 
+  // @scenario actor=guest
+  // @effects login_screen_shows_continue_as_guest_button_only_when_query_redirect_contains_checkout
   it('redirect 가 checkout 을 포함할 때만 노출되는 컨테이너가 존재해야 한다', () => {
     expect(guestBlock).toBeDefined();
     // if 식 전체가 {{}} 로 감싸져야 ConditionEvaluator 가 식으로 평가
@@ -123,20 +135,26 @@ describe('로그인 화면 - 비회원 주문하기 버튼 (Issue #55)', () => {
     expect(guestBlock.if).toBe("{{query.redirect && query.redirect.includes('checkout')}}");
   });
 
-  it('비회원 주문 버튼은 type=button 이며 redirect 경로로 navigate 해야 한다', () => {
-    const button = findNode(
+  // @scenario actor=guest
+  // @effects continue_as_guest_button_navigates_to_redirect_path_without_login
+  it('비회원 주문 진입은 redirect 경로를 주소로 가진 링크이며 그 주소로 navigate 한다', () => {
+    // 새 탭으로도 열 수 있게 링크로 그린다 — 링크는 폼 제출 단추가 아니므로 type 이 없다
+    const link = findNode(
       guestBlock,
-      (n) => n.name === 'Button' && n.text === '$t:auth.guest_checkout.continue'
+      (n) => n.name === 'A' && n.text === '$t:auth.guest_checkout.continue'
     );
-    expect(button).toBeDefined();
-    // submit 방지를 위해 type=button 명시 (Form 바깥이지만 명시는 회귀 차단에 안전)
-    expect(button.props.type).toBe('button');
+    expect(link).toBeDefined();
+    expect(link.props.href).toBe('{{query.redirect}}');
+    expect(link.props.type).toBeUndefined();
 
-    const navAction = asArray(button?.actions).find((a: any) => a.handler === 'navigate');
+    // 경로 없는 navigate 는 누른 링크의 href 로 간다
+    const navAction = asArray(link?.actions).find((a: any) => a.handler === 'navigate');
     expect(navAction).toBeDefined();
-    expect(navAction.params.path).toBe('{{query.redirect}}');
+    expect(navAction.params?.path).toBeUndefined();
   });
 
+  // @scenario screen=login
+  // @effects guest_checkout_texts_registered_ko_en
   it('번역 키가 i18n 자원에 등록되어 있어야 한다 (ko/en partial)', async () => {
     const koAuth: any = (await import('../../lang/partial/ko/auth.json')).default;
     const enAuth: any = (await import('../../lang/partial/en/auth.json')).default;
@@ -161,6 +179,8 @@ describe('결제하기 엔드포인트 분기 - _checkout_summary (Issue #55)', 
       n.target.includes('orders')
   );
 
+  // @scenario screen=checkout
+  // @effects checkout_posts_member_and_guest_orders_to_single_endpoint
   it('결제 target 은 회원/비회원 공통 단일 endpoint user/orders 여야 한다 (PG 인터셉터 매칭 회복)', () => {
     expect(ordersApiCall).toBeDefined();
     // PG 플러그인 fetch 인터셉터가 /api/modules/sirsoft-ecommerce/user/orders 한 경로만 매칭하므로
@@ -171,10 +191,14 @@ describe('결제하기 엔드포인트 분기 - _checkout_summary (Issue #55)', 
     expect(ordersApiCall.target).toBe('/api/modules/sirsoft-ecommerce/user/orders');
   });
 
+  // @scenario actor=guest
+  // @effects checkout_summary_sends_x_cart_key_header_for_guest_temp_order_matching
   it('cart_key 헤더가 전달되어야 guest/orders 가 비회원 임시주문을 매칭할 수 있다', () => {
     expect(ordersApiCall.params?.headers?.['X-Cart-Key']).toBe('{{_global.cartKey}}');
   });
 
+  // @scenario actor=guest
+  // @effects checkout_summary_includes_guest_lookup_password_in_body_only_for_guest
   it('body 에 비회원 조회 비밀번호 + 확인이 비로그인일 때만 값으로 전송되어야 한다', () => {
     // body 는 통짜 표현식이다(#454 확장 병합 칸). 표현식 문자열을 substring 으로 훑는 대신
     // 실제로 평가해 "회원=null / 비회원=입력값" 동작 자체를 고정한다.
@@ -216,11 +240,15 @@ describe('비회원 조회 비밀번호 입력 섹션 - _checkout_orderer (Issue
       findNode(n, (c: any) => c.name === 'PasswordInput' && c.props?.name === 'guest_lookup_password') !== undefined
   );
 
+  // @scenario actor=guest
+  // @effects checkout_orderer_shows_guest_lookup_password_fields_only_when_no_currentUser
   it('비로그인(_global.currentUser?.uuid 없음)일 때만 노출되는 컨테이너가 존재해야 한다', () => {
     expect(guestSection).toBeDefined();
     expect(guestSection.if).toBe('{{!_global.currentUser?.uuid}}');
   });
 
+  // @scenario actor=guest
+  // @effects checkout_orderer_shows_guest_lookup_password_fields_only_when_no_currentUser
   it('조회 비밀번호 + 확인 PasswordInput 2개가 포함되어야 한다', () => {
     const passwordInput = findNode(
       guestSection,
@@ -241,6 +269,8 @@ describe('비회원 조회 비밀번호 입력 섹션 - _checkout_orderer (Issue
     expect(confirmInput.props.showToggle).toBe(true);
   });
 
+  // @scenario actor=guest
+  // @effects checkout_summary_includes_guest_lookup_password_in_body_only_for_guest
   it('PasswordInput 의 onChange 가 _local.guestLookupPassword(_Confirmation) 에 저장해야 한다', () => {
     const passwordInput = findNode(
       guestSection,
@@ -259,6 +289,8 @@ describe('비회원 조회 비밀번호 입력 섹션 - _checkout_orderer (Issue
     expect(confirmChange.params.guestLookupPasswordConfirmation).toBe('{{$event.target.value}}');
   });
 
+  // @scenario screen=checkout
+  // @effects guest_checkout_texts_registered_ko_en
   it('번역 키가 i18n 자원에 등록되어 있어야 한다 (ko/en partial)', async () => {
     const koShop: any = (await import('../../lang/partial/ko/shop.json')).default;
     const enShop: any = (await import('../../lang/partial/en/shop.json')).default;
@@ -280,11 +312,15 @@ describe('주문자 이메일 필수 표시 - _checkout_orderer (Issue #55)', ()
     (n) => n.name === 'Input' && n.props?.name === 'orderer_email'
   );
 
+  // @scenario screen=checkout
+  // @effects checkout_orderer_email_input_is_email_type
   it('orderer_email 입력란이 존재해야 한다', () => {
     expect(emailInput).toBeDefined();
     expect(emailInput.props.type).toBe('email');
   });
 
+  // @scenario actor=guest
+  // @effects checkout_orderer_email_shows_required_mark_only_when_no_currentUser
   it('이메일 라벨에 비회원일 때만 노출되는 필수 표시(*) Span 이 있어야 한다', () => {
     // 라벨(orderer_email 텍스트)을 children 으로 가진 Label 노드
     const emailLabel = findNode(
@@ -304,6 +340,8 @@ describe('주문자 이메일 필수 표시 - _checkout_orderer (Issue #55)', ()
     expect(requiredMark.if).toBe('{{!_global.currentUser?.uuid}}');
   });
 
+  // @scenario actor=guest
+  // @effects checkout_orderer_email_required_for_guest_optional_for_member
   it('이메일 오류 메시지 표시 Span 이 errors[orderer.email] 에 바인딩되어야 한다', () => {
     const errorSpan = findNode(
       checkoutOrdererJson,

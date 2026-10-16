@@ -41,17 +41,15 @@
                 },
                 {
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/boards/popular"
-                            }
+                            "handler": "navigate"
                         }
                     ],
                     "props": {
+                        "href": "/boards/popular",
                         "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
                     },
                     "children": [
@@ -86,17 +84,15 @@
             "children": [
                 {
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/board/{{post.board_slug}}/{{post.id}}"
-                            }
+                            "handler": "navigate"
                         }
                     ],
                     "props": {
+                        "href": "/board/{{post.board_slug}}/{{post.id}}",
                         "className": "block w-full text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg py-2 transition-colors cursor-pointer"
                     },
                     "children": [

@@ -237,16 +237,16 @@
             </on>
             <icon name="arrows-rotate" class="text-xl"/>
           </button>
-          <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_create !== true}}">
+          <a href="/admin/ecommerce/products/create" :mergeQuery="true" class="button btn btn-primary aria-disabled:opacity-50 aria-disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_create !== true}}">
             <on type="click">
               <!-- 새 상품 등록. 등록을 취소하고 돌아왔을 때 보던 목록이 그대로 서도록 목록 상태를 넘긴다 -->
-              <navigate path="/admin/ecommerce/products/create" :mergeQuery="true">
+              <navigate :mergeQuery="true">
                 <query/>
               </navigate>
             </on>
             <icon name="plus" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.product.add</span>
-          </button>
+          </a>
         </div>
       </div>
       <include src="partials/admin_ecommerce_product_list/_partial_filter_section.g7.html"/>

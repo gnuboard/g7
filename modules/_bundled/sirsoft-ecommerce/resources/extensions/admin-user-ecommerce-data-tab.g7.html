@@ -96,43 +96,35 @@
     </div>
   </div>
         <div data-ref="ecommerce_data_links" class="flex flex-wrap gap-2">
-          <a data-ref="view_member_wishlists" data-testid="user-wishlists-link" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+          <a href="/admin/ecommerce/wishlists?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_wishlists" data-testid="user-wishlists-link" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
             <on type="click">
               <!-- 이 회원으로 한정한 찜 목록으로 — user_uuid 를 실어 보내면 목록 화면이 회원 배너를 띄운다 -->
-              <navigate path="/admin/ecommerce/wishlists">
-                <query user_uuid="{{user?.data?.uuid ?? ''}}"/>
-              </navigate>
+              <navigate/>
             </on>
             <icon name="heart" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.user_ecommerce_data.view_wishlists</span>
           </a>
-          <a data-ref="view_member_carts" data-testid="user-carts-link" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+          <a href="/admin/ecommerce/carts?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_carts" data-testid="user-carts-link" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
             <on type="click">
               <!-- 이 회원으로 한정한 장바구니 목록으로 — user_uuid 를 실어 보낸다 -->
-              <navigate path="/admin/ecommerce/carts">
-                <query user_uuid="{{user?.data?.uuid ?? ''}}"/>
-              </navigate>
+              <navigate/>
             </on>
             <icon name="cart-shopping" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.user_ecommerce_data.view_carts</span>
           </a>
-          <a data-ref="view_member_addresses" data-testid="user-addresses-link" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+          <a href="/admin/ecommerce/user-addresses?user_uuids[]={{user?.data?.uuid ?? ''}}" data-ref="view_member_addresses" data-testid="user-addresses-link" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
             <on type="click">
               <!-- 이 회원으로 한정한 배송지 목록으로 — 그 화면의 전용 회원 필터가 읽는 키로 보낸다.
                    레거시 단건 키(user_uuid)도 흡수되지만, 링크가 화면의 현재 계약을 가리키는 편이 낫다 -->
-              <navigate path="/admin/ecommerce/user-addresses">
-                <query user_uuids[]="{{[user?.data?.uuid ?? '']}}"/>
-              </navigate>
+              <navigate/>
             </on>
             <icon name="map-pin" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.user_ecommerce_data.view_addresses</span>
           </a>
-          <a data-ref="view_member_inquiries" data-testid="user-inquiries-link" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+          <a href="/admin/ecommerce/inquiries?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_inquiries" data-testid="user-inquiries-link" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
             <on type="click">
               <!-- 이 회원으로 한정한 상품문의 목록으로 — user_uuid 를 실어 보낸다 -->
-              <navigate path="/admin/ecommerce/inquiries">
-                <query user_uuid="{{user?.data?.uuid ?? ''}}"/>
-              </navigate>
+              <navigate/>
             </on>
             <icon name="comments" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.user_ecommerce_data.view_inquiries</span>

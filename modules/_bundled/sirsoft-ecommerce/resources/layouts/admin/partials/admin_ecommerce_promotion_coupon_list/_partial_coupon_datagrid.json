@@ -352,6 +352,8 @@
                 }
             ],
             "props": {
+                "pageHref": "/admin/ecommerce/promotion-coupons?page={page}",
+                "pageHrefMergeQuery": true,
                 "rowLabelField": "localized_name",
                 "data": "{{coupons?.data?.data || []}}",
                 "pagination": true,
@@ -371,6 +373,7 @@
                 "rowActions": [
                     {
                         "id": "edit",
+                        "href": "/admin/ecommerce/promotion-coupons/{{row.id}}/edit",
                         "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit",
                         "iconName": "fa-regular fa-pen-to-square",
                         "disabledField": "abilities.can_update"
@@ -447,14 +450,14 @@
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/ecommerce/promotion-coupons/{{row.id}}/edit",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "href": "#",
+                                    "href": "/admin/ecommerce/promotion-coupons/{{row.id}}/edit",
+                                    "mergeQuery": true,
                                     "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"
                                 },
                                 "text": "{{row.localized_name}}"
@@ -625,12 +628,6 @@
                                         "event": "onItemClick",
                                         "handler": "switch",
                                         "cases": {
-                                            "view_member": {
-                                                "handler": "openWindow",
-                                                "params": {
-                                                    "path": "/admin/users/{{row.created_by}}"
-                                                }
-                                            },
                                             "search_by_creator": {
                                                 "handler": "sequence",
                                                 "actions": [
@@ -665,6 +662,8 @@
                                     "items": [
                                         {
                                             "id": "view_member",
+                                            "href": "/admin/users/{{row.created_by}}",
+                                            "target": "_blank",
                                             "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member",
                                             "iconName": "user",
                                             "if": "{{!!row.created_by}}"

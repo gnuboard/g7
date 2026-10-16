@@ -32,12 +32,12 @@
         </div>
       </div>
       <p data-ref="contact_message" class="text-sm text-gray-400 dark:text-gray-500 mb-8">$t:errors.503.contact_admin</p>
-      <button data-ref="back_button" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+      <a data-ref="back_button" href="/admin" class="button px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white dark:text-white font-medium rounded-lg transition-colors">
         <on type="click">
-          <navigate path="/admin"/>
+          <navigate/>
         </on>
         $t:errors.back_home
-      </button>
+      </a>
     </div>
   </slot>
 </layout>

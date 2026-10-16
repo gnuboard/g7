@@ -47,18 +47,15 @@
                                 {
                                     "id": "manage_my_addresses",
                                     "type": "basic",
-                                    "name": "Button",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/mypage/addresses"
-                                            }
+                                            "handler": "navigate"
                                         }
                                     ],
                                     "props": {
-                                        "type": "button",
+                                        "href": "/mypage/addresses",
                                         "className": "flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
                                     },
                                     "children": [

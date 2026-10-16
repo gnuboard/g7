@@ -307,7 +307,7 @@
                             }
                         ],
                         "props": {
-                            "tabs": "{{[{id: '', label: '$t:admin.identity.logs.tab_all'}].concat((identityProviders?.data ?? []).map(pv => ({id: pv.id, label: pv.label ?? pv.id, iconName: pv.icon})))}}",
+                            "tabs": "{{[{id: '', label: '$t:admin.identity.logs.tab_all', href: '/admin/identity/logs'}].concat((identityProviders?.data ?? []).map(pv => ({id: pv.id, label: pv.label ?? pv.id, iconName: pv.icon, href: '/admin/identity/logs?provider_id=' + encodeURIComponent(pv.id) + '&page=1'})))}}",
                             "activeTabId": "{{query.provider_id ?? ''}}",
                             "variant": "default",
                             "className": "sticky-tab-nav mb-6"

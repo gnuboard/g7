@@ -6,9 +6,9 @@
         <span data-ref="depth_indicator_{{comment.id}}" data-if="{{comment.depth > 0}}" class="text-gray-400 dark:text-gray-500 flex-shrink-0 text-sm">↳</span>
         <div class="flex-1 min-w-0">
           <div class="flex-center gap-2">
-            <action-menu data-type="composite" data-ref="author_name_menu_{{comment.id}}" data-if="{{!comment?.author?.is_guest}}" triggerLabel="{{comment?.author?.name}}" triggerIconName="" triggerClassName="font-semibold text-gray-900 dark:text-white" position="right">
+            <action-menu data-type="composite" data-ref="author_name_menu_{{comment.id}}" data-if="{{!comment?.author?.is_guest &amp;&amp; comment?.author?.uuid}}" triggerLabel="{{comment?.author?.name}}" triggerIconName="" triggerClassName="font-semibold text-gray-900 dark:text-white" position="right">
               <prop name="items">
-                <item id="view_user_info" label="$t:sirsoft-board.admin.posts.detail.user_info" iconName="user"/>
+                <item href="/admin/users/{{comment?.author?.uuid}}" id="view_user_info" label="$t:sirsoft-board.admin.posts.detail.user_info" iconName="user"/>
               </prop>
               <on type="click" event="onItemClick">
                 <!-- 글쓴이 이름을 누르면 그 회원의 관리자 상세로 — 비회원은 이 메뉴 자체가 없다(uuid 가 없어 갈 곳이 없다) -->
@@ -19,7 +19,7 @@
                 </switch>
               </on>
             </action-menu>
-            <span data-if="{{comment?.author?.is_guest}}" class="text-primary text-sm font-semibold">{{comment?.author?.name}}</span>
+            <span data-if="{{comment?.author?.is_guest || !comment?.author?.uuid}}" class="text-primary text-sm font-semibold">{{comment?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}</span>
             <span data-if="{{comment?.author?.email}}" class="text-tertiary">({{comment?.author?.email}})</span>
             <span data-if="{{comment?.author.is_guest}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.posts.guest</span>
             <span data-if="{{comment?.author.is_admin}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">$t:sirsoft-board.admin.posts.detail.admin_badge</span>

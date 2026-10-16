@@ -64,6 +64,10 @@ function findAll(node: any, predicate: (n: any) => boolean): any[] {
 describe('마일리지 설정 — 환경설정 서브탭 통합 (별도 화면 아님)', () => {
   const content = (settingsLayout as any).slots.content[0];
 
+  /**
+   * @scenario surface=settings_tab
+   * @effects mileage_tab_registered_in_settings
+   */
   it('환경설정 TabNavigation 에 mileage 탭이 등록된다', () => {
     const tabNav = findById(content, 'tab_navigation');
     const tabIds = tabNav.props.tabs.map((t: any) => t.id);
@@ -72,11 +76,19 @@ describe('마일리지 설정 — 환경설정 서브탭 통합 (별도 화면 �
     expect(mileageTab.label).toBe('$t:sirsoft-ecommerce.admin.settings.tabs.mileage');
   });
 
+  /**
+   * @scenario surface=settings_tab
+   * @effects mileage_tab_registered_in_settings
+   */
   it('환경설정 메인이 마일리지 탭 콘텐츠 partial 을 참조한다', () => {
     const json = JSON.stringify(settingsLayout);
     expect(json).toContain('_tab_mileage.json');
   });
 
+  /**
+   * @scenario surface=settings_tab
+   * @effects mileage_save_sends_only_its_category
+   */
   it('저장 body 분기에 mileage 탭이 해당 카테고리만 전송한다', () => {
     const save = findById(content, 'save_button');
     const apiCall = findFirst(asArray(save?.actions)[0], (n) => n.handler === 'apiCall');
@@ -85,6 +97,10 @@ describe('마일리지 설정 — 환경설정 서브탭 통합 (별도 화면 �
     expect(apiCall.params.body).toContain('mileage: form.mileage');
   });
 
+  /**
+   * @scenario surface=settings_tab
+   * @effects pending_inline_currency_blocks_save
+   */
   it('인라인 통화 추가가 미확정(체크 버튼 미클릭) 상태면 저장을 차단하고 경고한다 (회귀 가드)', () => {
     // 회귀: 통화 추가 인라인 입력 행을 열고 입력만 한 채 체크 버튼을 누르지 않고 저장하면,
     // 임시 입력(newMileageCurrency)이 currency_rules 배열에 확정되지 않아 저장 시 조용히 사라진다.
@@ -115,6 +131,10 @@ describe('마일리지 설정 — 환경설정 서브탭 통합 (별도 화면 �
     expect(savingSetState.if).toContain('!(');
   });
 
+  /**
+   * @scenario surface=settings_tab
+   * @effects standalone_mileage_layout_removed
+   */
   it('별도 마일리지 설정 화면(독립 레이아웃)이 제거되었다', async () => {
     // 별도 레이아웃 파일이 더 이상 존재하지 않아야 한다 (import 실패 = 통과)
     await expect(
@@ -124,11 +144,19 @@ describe('마일리지 설정 — 환경설정 서브탭 통합 (별도 화면 �
 });
 
 describe('마일리지 탭 콘텐츠 (_tab_mileage.json)', () => {
+  /**
+   * @scenario surface=mileage_tab
+   * @effects mileage_tab_registered_in_settings
+   */
   it('탭 if 가드가 mileage 탭 활성 시에만 렌더한다', () => {
     expect(tabMileage.if).toContain("=== 'mileage'");
     expect(tabMileage.if).toContain('activeEcommerceSettingsTab');
   });
 
+  /**
+   * @scenario surface=mileage_tab
+   * @effects mileage_partials_are_well_formed
+   */
   it('카드 partial 5종을 모두 참조한다', () => {
     const json = JSON.stringify(tabMileage);
     expect(json).toContain('_tab_mileage_basic_card.json');
@@ -138,6 +166,10 @@ describe('마일리지 탭 콘텐츠 (_tab_mileage.json)', () => {
     expect(json).toContain('_tab_mileage_notification_card.json');
   });
 
+  /**
+   * @scenario surface=mileage_tab
+   * @effects mileage_partials_are_well_formed
+   */
   it('중첩 partial 참조는 디렉토리 경로 없이 파일명만 사용한다 (partial 내부 partial 해석 기준)', () => {
     // partial 내부에서 다른 partial 을 참조할 때 부모 partial 디렉토리 기준 상대 경로(파일명)만 허용.
     // 전체 경로(partials/...)를 쓰면 경로가 중복 해석되어 빈 화면으로 렌더된다 (회귀 가드).
@@ -159,6 +191,10 @@ describe('마일리지 탭 콘텐츠 (_tab_mileage.json)', () => {
     }
   });
 
+  /**
+   * @scenario surface=mileage_tab
+   * @effects currency_rules_swap_to_cards_on_portable
+   */
   it('통화 카드는 responsive.portable 로 모바일 카드 partial 을 전환한다', () => {
     const view = findById(tabMileage, 'currency_rules_view');
     expect(view.children[0].partial).toContain('_tab_mileage_currency_table.json');
@@ -167,6 +203,10 @@ describe('마일리지 탭 콘텐츠 (_tab_mileage.json)', () => {
     );
   });
 
+  /**
+   * @scenario surface=mileage_tab
+   * @effects inline_currency_add_flow
+   */
   it('[+ 통화 추가] 버튼이 즉시 push 가 아니라 인라인 입력 행을 연다 (환율 설정 패턴 일관)', () => {
     const addBtn = findById(tabMileage, 'add_currency_rule_button');
     const setState = asArray(addBtn?.actions)[0];
@@ -180,24 +220,39 @@ describe('마일리지 탭 콘텐츠 (_tab_mileage.json)', () => {
     expect(addBtn.props.disabled).toContain('_local.isAddingMileageCurrency === true');
   });
 
+  /**
+   * @scenario surface=basic_card
+   * @effects basic_card_links_to_transactions
+   */
   it('마일리지 내역 보기 버튼이 기본 설정 카드 헤더에 있고 내역 화면으로 이동한다', () => {
     // 공간 절약 위해 별도 헤더 행 대신 기본 설정 카드 우측 상단으로 이동 (요청)
     const btn = findById(basicCard, 'view_transactions_button');
     expect(btn, '내역 보기 버튼이 기본 설정 카드에 없다').toBeTruthy();
     expect(asArray(btn?.actions)[0].handler).toBe('navigate');
-    expect(asArray(btn?.actions)[0].params.path).toBe('/admin/ecommerce/mileage-transactions');
+    // 링크다(#757 WP-L) — 주소는 href, navigate 는 path 없이 그 href 로 간다
+    expect(btn?.name).toBe('A');
+    expect(btn?.props?.href).toBe('/admin/ecommerce/mileage-transactions');
+    expect(asArray(btn?.actions)[0].params?.path).toBeUndefined();
     // _tab_mileage.json 의 기존 별도 헤더 행은 제거됨
     expect(findById(tabMileage, 'mileage_tab_header')).toBeNull();
   });
 });
 
 describe('기본 설정 카드 (_tab_mileage_basic_card.json)', () => {
+  /**
+   * @scenario surface=basic_card
+   * @effects basic_card_bindings_and_defaults
+   */
   it('enabled 토글이 form.mileage.enabled 에 바인딩되고 read-only 시 disabled', () => {
     const toggle = findFirst(basicCard, (n) => n.name === 'Toggle' && n.props?.name === 'mileage.enabled');
     expect(toggle).toBeTruthy();
     expect(toggle.props.disabled).toContain('_computed.isReadOnly');
   });
 
+  /**
+   * @scenario surface=basic_card
+   * @effects basic_card_bindings_and_defaults
+   */
   it('적립 시점 Select 기본값이 구매확정(confirmed)이다', () => {
     const select = findFirst(basicCard, (n) => n.name === 'Select' && n.props?.name === 'mileage.earn_trigger');
     expect(select.props.value).toContain("'confirmed'");
@@ -205,6 +260,10 @@ describe('기본 설정 카드 (_tab_mileage_basic_card.json)', () => {
     expect(values).toEqual(['confirmed', 'delivered']);
   });
 
+  /**
+   * @scenario surface=basic_card
+   * @effects basic_card_bindings_and_defaults
+   */
   it('단일 차감 시점 Select(mileage.deduction_timing)는 더 이상 존재하지 않는다 (결제수단별로 이전 — MP06)', () => {
     // 마일리지 차감 시점은 주문설정 탭의 결제수단별 컨트롤(mileage_deduction_timing)로 이전됨.
     // 마일리지 기본 설정 카드에는 단일 차감 시점 Select 가 없어야 한다.
@@ -212,6 +271,10 @@ describe('기본 설정 카드 (_tab_mileage_basic_card.json)', () => {
     expect(select, '단일 차감 시점 Select 가 아직 남아있다').toBeNull();
   });
 
+  /**
+   * @scenario surface=basic_card
+   * @effects basic_card_bindings_and_defaults
+   */
   it('적립률 입력이 음수 검증 오류를 표시한다', () => {
     const errSpan = findFirst(basicCard, (n) => n.if && String(n.if).includes('mileage.default_earn_rate'));
     expect(errSpan).toBeTruthy();
@@ -219,6 +282,10 @@ describe('기본 설정 카드 (_tab_mileage_basic_card.json)', () => {
 });
 
 describe('통화 규칙 테이블 (_tab_mileage_currency_table.json)', () => {
+  /**
+   * @scenario surface=currency_table
+   * @effects currency_rule_rows_bind_by_index
+   */
   it('currency_rules 를 iteration 하며 item_var/index_var 를 쓴다', () => {
     const row = findFirst(currencyTable, (n) => n.iteration);
     expect(row.iteration.item_var).toBe('rule');
@@ -226,6 +293,10 @@ describe('통화 규칙 테이블 (_tab_mileage_currency_table.json)', () => {
     expect(row.iteration.source).toContain('currency_rules');
   });
 
+  /**
+   * @scenario surface=currency_table
+   * @effects currency_rule_rows_bind_by_index
+   */
   it('기본통화 행(_idx === 0)은 통화코드 입력과 삭제 버튼이 비활성/숨김이다', () => {
     const codeInput = findFirst(currencyTable, (n) => n.name === 'Input' && String(n.props?.name).includes('currency_code'));
     expect(codeInput.props.disabled).toContain('rule._idx === 0');
@@ -233,6 +304,10 @@ describe('통화 규칙 테이블 (_tab_mileage_currency_table.json)', () => {
     expect(delBtn).toBeTruthy();
   });
 
+  /**
+   * @scenario surface=currency_table
+   * @effects currency_rule_rows_bind_by_index
+   */
   it('삭제 버튼이 행 제거 시 hasChanges 를 true 로 만든다', () => {
     const delBtn = findFirst(currencyTable, (n) => n.name === 'Button' && n.if && String(n.if).includes('rule._idx !== 0'));
     const setState = asArray(delBtn?.actions)[0];
@@ -240,6 +315,10 @@ describe('통화 규칙 테이블 (_tab_mileage_currency_table.json)', () => {
     expect(setState.params.hasChanges).toBe(true);
   });
 
+  /**
+   * @scenario surface=currency_table
+   * @effects max_use_type_radio_controls
+   */
   it('max_use_type 라디오(percent/fixed) 가 있고 비선택 입력이 disabled 된다', () => {
     const radios = findAll(currencyTable, (n) => n.name === 'Input' && n.props?.type === 'radio');
     const values = radios.map((r) => r.props.value);
@@ -248,6 +327,10 @@ describe('통화 규칙 테이블 (_tab_mileage_currency_table.json)', () => {
     expect(percentInput.props.disabled).toContain("rule.max_use_type !== 'percent'");
   });
 
+  /**
+   * @scenario surface=currency_table
+   * @effects max_use_type_radio_controls
+   */
   it('max_use_type 라디오는 라디오 자신과 부모 Label 양쪽에서 상태를 바꾼다 (키보드 조작 가능)', () => {
     // 회귀: 라디오 자동바인딩은 문자열 값을 value 바인딩으로 처리해 라디오 그룹을 깨뜨린다.
     // 그래서 자동바인딩 대신 명시적 setState 로 해당 행(rule._idx)의 max_use_type 을
@@ -312,6 +395,10 @@ describe('통화 규칙 테이블 (_tab_mileage_currency_table.json)', () => {
     }
   });
 
+  /**
+   * @scenario surface=currency_table
+   * @effects inline_currency_add_flow
+   */
   it('인라인 추가 행(new_mileage_currency_row)이 isAddingMileageCurrency 조건으로 노출된다 (환율 설정 패턴)', () => {
     const newRow = findById(currencyTable, 'new_mileage_currency_row');
     expect(newRow).toBeTruthy();
@@ -324,6 +411,10 @@ describe('통화 규칙 테이블 (_tab_mileage_currency_table.json)', () => {
     expect(freeInput).toBeNull();
   });
 
+  /**
+   * @scenario surface=currency_table
+   * @effects inline_currency_add_flow
+   */
   it('통화 추가 Select 옵션은 등록 통화(language_currency.currencies) 중 미추가분만 노출한다 (M1)', () => {
     const newRow = findById(currencyTable, 'new_mileage_currency_row');
     const codeSelect = findFirst(newRow, (n) => n.name === 'Select' && n.props?.name === 'newMileageCurrency.currency_code');
@@ -335,6 +426,10 @@ describe('통화 규칙 테이블 (_tab_mileage_currency_table.json)', () => {
     expect(opts).toContain('.some(');
   });
 
+  /**
+   * @scenario surface=currency_cards
+   * @effects inline_currency_add_flow
+   */
   it('모바일 카드의 통화 추가도 Select 드롭다운이다 (M1 패리티)', () => {
     const newCardSelect = findFirst(currencyCards, (n) => n.name === 'Select' && n.props?.name === 'newMileageCurrency.currency_code');
     expect(newCardSelect).toBeTruthy();
@@ -342,6 +437,10 @@ describe('통화 규칙 테이블 (_tab_mileage_currency_table.json)', () => {
     expect(freeInput).toBeNull();
   });
 
+  /**
+   * @scenario surface=currency_table
+   * @effects inline_currency_add_flow
+   */
   it('인라인 추가 행의 체크 버튼이 중복 검사 후 currency_rules 에 push 한다', () => {
     const newRow = findById(currencyTable, 'new_mileage_currency_row');
     const seq = findFirst(newRow, (n) => n.handler === 'sequence');
@@ -359,6 +458,10 @@ describe('통화 규칙 테이블 (_tab_mileage_currency_table.json)', () => {
 });
 
 describe('통화 규칙 모바일 카드 (_tab_mileage_currency_cards.json)', () => {
+  /**
+   * @scenario surface=currency_cards
+   * @effects currency_rule_rows_bind_by_index
+   */
   it('PC 테이블과 동일하게 currency_rules 를 iteration 한다', () => {
     const card = findFirst(currencyCards, (n) => n.iteration);
     expect(card.iteration.source).toContain('currency_rules');
@@ -371,6 +474,10 @@ describe('적립 절사 기준 (earn_rounding_unit / earn_rounding_method)', () 
     method: findFirst(root, (n) => n.name === 'Select' && String(n.props?.name).includes(`${접두}earn_rounding_method`)),
   });
 
+  /**
+   * @scenario viewport=desktop_table
+   * @effects settings_controls_render_in_both_viewports
+   */
   it('테이블 행에 단위/방식 Select 가 통화 규칙 인덱스로 바인딩된다', () => {
     const { unit, method } = 절사_컨트롤(currencyTable, "mileage.currency_rules.' + rule._idx + '.");
 
@@ -381,6 +488,10 @@ describe('적립 절사 기준 (earn_rounding_unit / earn_rounding_method)', () 
     expect(method.props.value).toContain("?? 'floor'");
   });
 
+  /**
+   * @scenario viewport=desktop_table
+   * @effects settings_screen_options_match_server_vocabulary
+   */
   it('절사 방식 옵션은 서버 허용 어휘(floor/round/ceil)와 일치한다', () => {
     const { method } = 절사_컨트롤(currencyTable, "mileage.currency_rules.' + rule._idx + '.");
 
@@ -388,6 +499,10 @@ describe('적립 절사 기준 (earn_rounding_unit / earn_rounding_method)', () 
     expect(method.props.options.map((o: any) => o.value)).toEqual(['floor', 'round', 'ceil']);
   });
 
+  /**
+   * @scenario viewport=desktop_table
+   * @effects settings_earn_rounding_separate_from_exchange
+   */
   it('절사 단위 옵션은 정수 포인트 단위만 제공한다 (통화 환산 절사의 소수 단위와 다름)', () => {
     const { unit } = 절사_컨트롤(currencyTable, "mileage.currency_rules.' + rule._idx + '.");
     const opts = String(unit.props.options);
@@ -399,6 +514,10 @@ describe('적립 절사 기준 (earn_rounding_unit / earn_rounding_method)', () 
     expect(opts).not.toContain("value: '0.01'");
   });
 
+  /**
+   * @scenario viewport=mobile_cards
+   * @effects settings_controls_render_in_both_viewports
+   */
   it('모바일 카드 뷰에도 동일 항목이 있다 (한쪽만 있으면 모바일에서 설정 불가)', () => {
     const { unit, method } = 절사_컨트롤(currencyCards, "mileage.currency_rules.' + rule._idx + '.");
 
@@ -406,6 +525,10 @@ describe('적립 절사 기준 (earn_rounding_unit / earn_rounding_method)', () 
     expect(method).toBeTruthy();
   });
 
+  /**
+   * @scenario viewport=desktop_table
+   * @effects settings_new_currency_row_includes_rounding
+   */
   it.each([
     ['테이블', currencyTable, 'new_mileage_currency_row'],
     ['모바일 카드', currencyCards, 'new_mileage_currency_card'],
@@ -427,6 +550,10 @@ describe('적립 절사 기준 (earn_rounding_unit / earn_rounding_method)', () 
 });
 
 describe('유효기간 / 소멸 알림 카드', () => {
+  /**
+   * @scenario surface=expiry_cards
+   * @effects expiry_toggles_bound
+   */
   it('expiry_enabled / expiry_notification_enabled 토글 바인딩', () => {
     const expiryToggle = findFirst(expiryCard, (n) => n.name === 'Toggle' && n.props?.name === 'mileage.expiry_enabled');
     expect(expiryToggle).toBeTruthy();
@@ -434,6 +561,10 @@ describe('유효기간 / 소멸 알림 카드', () => {
     expect(notiToggle).toBeTruthy();
   });
 
+  /**
+   * @scenario surface=expiry_cards
+   * @effects expiring_notification_shows_template_status
+   */
   it('채널 직접 선택 대신 mileage_expiring_soon definition 의 템플릿별 활성 상태를 읽기전용 표시한다', () => {
     // 코어 알림 인프라 도입 후, 채널은 알림 설정에서 관리. 설정 카드는 상태만 표시.
     const json = JSON.stringify(notificationCard);
@@ -456,6 +587,10 @@ describe('유효기간 / 소멸 알림 카드', () => {
     expect(subject).toBeTruthy();
   });
 
+  /**
+   * @scenario surface=expiry_cards
+   * @effects expiring_notification_shows_template_status
+   */
   it('연결된 템플릿이 0개면 안내 문구가 노출된다', () => {
     const empty = findFirst(
       notificationCard,
@@ -467,6 +602,10 @@ describe('유효기간 / 소멸 알림 카드', () => {
   // URL 갱신은 navigate + replace:true 로 수행한다 — updateQueryParams 를 거쳐야
   // 데이터소스의 `if` 가 재평가되어 알림 탭 전용 소스가 로드된다.
   // 가드: admin-ecommerce-settings-tab-scoped-datasources.test.tsx
+  /**
+   * @scenario surface=expiry_cards
+   * @effects go_to_notification_settings_switches_tab
+   */
   it('알림 설정으로 이동 버튼이 환경설정 알림 탭으로 전환한다', () => {
     const btn = findById(notificationCard, 'go_to_notification_settings');
     const seq = asArray(btn?.actions)[0];

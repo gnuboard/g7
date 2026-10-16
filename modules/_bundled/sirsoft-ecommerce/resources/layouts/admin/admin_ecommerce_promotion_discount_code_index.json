@@ -1930,10 +1930,9 @@
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
-                                                                        "name": "A",
+                                                                        "name": "Span",
                                                                         "props": {
-                                                                            "href": "#",
-                                                                            "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                                                                            "className": "font-medium text-gray-900 dark:text-gray-100"
                                                                         },
                                                                         "text": "신규회원 10% 할인코"
                                                                     }
@@ -2133,10 +2132,9 @@
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
-                                                                        "name": "A",
+                                                                        "name": "Span",
                                                                         "props": {
-                                                                            "href": "#",
-                                                                            "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                                                                            "className": "font-medium text-gray-900 dark:text-gray-100"
                                                                         },
                                                                         "text": "첫구매 5천원 할인"
                                                                     }

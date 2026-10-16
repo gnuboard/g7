@@ -11,7 +11,7 @@
         "en": "Plugin for managing email subscriptions, marketing consent, and third-party data sharing consent"
     },
     "license": "MIT",
-    "g7_version": ">=7.1.0",
+    "g7_version": ">=7.1.1",
     "dependencies": {
         "modules": {
             "sirsoft-page": ">=1.0.0"

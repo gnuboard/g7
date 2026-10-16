@@ -1093,6 +1093,8 @@
                         "resyncKey": "{{_global.extensionToggleResync ?? 0}}",
                         "loading": "{{language_packs?.loading ?? false}}",
                         "pagination": true,
+                        "pageHref": "{{route.path}}?page={page}",
+                        "pageHrefMergeQuery": true,
                         "alwaysShowPagination": true,
                         "currentPage": "{{language_packs?.data?.pagination?.current_page ?? 1}}",
                         "totalPages": "{{language_packs?.data?.pagination?.last_page ?? null}}",

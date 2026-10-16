@@ -1482,18 +1482,10 @@
                                                     "id": "cst_014_linked_refund_link_{{lrIdx}}",
                                                     "type": "basic",
                                                     "name": "A",
-                                                    "actions": [
-                                                        {
-                                                            "comment": "후속 환불신청서를 새 창으로 연다",
-                                                            "type": "click",
-                                                            "handler": "openWindow",
-                                                            "params": {
-                                                                "path": "{{linkedRefund.detail_url}}"
-                                                            }
-                                                        }
-                                                    ],
                                                     "props": {
-                                                        "href": "#",
+                                                        "href": "{{linkedRefund.detail_url}}",
+                                                        "target": "_blank",
+                                                        "rel": "noopener noreferrer",
                                                         "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                                     },
                                                     "text": "{{linkedRefund.claim_number}}"

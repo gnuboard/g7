@@ -213,8 +213,8 @@
       <div data-ref="tab_navigation_wrapper" class="sticky-tab-nav-responsive">
         <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeTemplateTab || route.type || 'user'}}" variant="default">
           <prop name="tabs">
-            <item id="user" label="$t:admin.templates.tabs.user"/>
-            <item id="admin" label="$t:admin.templates.tabs.admin"/>
+            <item id="user" href="/admin/templates/user{{query.include_hidden === '1' ? '?include_hidden=1' : ''}}" label="$t:admin.templates.tabs.user"/>
+            <item id="admin" href="/admin/templates/admin{{query.include_hidden === '1' ? '?include_hidden=1' : ''}}" label="$t:admin.templates.tabs.admin"/>
           </prop>
           <on type="change" event="onTabChange">
             <!-- 종류 탭 전환 — 종류가 **URL 경로에 있으므로 이동**이다(쿼리 변경이 아니다).

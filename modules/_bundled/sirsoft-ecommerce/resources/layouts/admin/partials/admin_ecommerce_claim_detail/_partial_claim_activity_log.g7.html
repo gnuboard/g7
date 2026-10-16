@@ -55,15 +55,8 @@
               <!-- 행위자 이름을 누르면 그 회원 상세를 새 창으로 연다 — 보던 신청서를 잃지 않고 누가 처리했는지 확인하게 한다. 행위자가 없는 시스템 기록에는 메뉴 대신 글자만 선다. -->
               <action-menu data-type="composite" data-if="{{!!log.user?.uuid}}" position="left">
                 <prop name="items">
-                  <item id="view_member" label="$t:sirsoft-ecommerce.admin.claim.detail.activity_log.actor_action.view_member" iconName="user"/>
+                  <item id="view_member" href="/admin/users/{{log.user.uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.claim.detail.activity_log.actor_action.view_member" iconName="user"/>
                 </prop>
-                <on event="onItemClick">
-                  <switch on="{{$args[0]}}">
-                    <case when="view_member">
-                      <open-window path="/admin/users/{{log.user.uuid}}"/>
-                    </case>
-                  </switch>
-                </on>
                 <div class="flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
                   <div class="flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
                     <span aria-hidden="true" class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.user?.name ?? 'S').charAt(0).toUpperCase()}}</span>
@@ -115,15 +108,8 @@
               <!-- 좁은 화면 카드의 행위자 메뉴 — 넓은 화면 행의 메뉴와 같은 동작이므로 한쪽을 고치면 다른 쪽도 함께 고친다. -->
               <action-menu data-type="composite" data-if="{{!!log.user?.uuid}}" position="left">
                 <prop name="items">
-                  <item id="view_member" label="$t:sirsoft-ecommerce.admin.claim.detail.activity_log.actor_action.view_member" iconName="user"/>
+                  <item id="view_member" href="/admin/users/{{log.user.uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.claim.detail.activity_log.actor_action.view_member" iconName="user"/>
                 </prop>
-                <on event="onItemClick">
-                  <switch on="{{$args[0]}}">
-                    <case when="view_member">
-                      <open-window path="/admin/users/{{log.user.uuid}}"/>
-                    </case>
-                  </switch>
-                </on>
                 <div class="flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
                   <div class="flex-center w-5 h-5 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
                     <span aria-hidden="true" class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.user?.name ?? 'S').charAt(0).toUpperCase()}}</span>

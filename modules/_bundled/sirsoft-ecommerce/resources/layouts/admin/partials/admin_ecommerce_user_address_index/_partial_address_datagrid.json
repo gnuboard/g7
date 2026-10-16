@@ -249,12 +249,6 @@
                     "event": "onRowAction",
                     "handler": "switch",
                     "cases": {
-                        "view_member": {
-                            "handler": "openWindow",
-                            "params": {
-                                "path": "/admin/users/{{$args[1]?.member?.uuid}}"
-                            }
-                        },
                         "search_member": {
                             "handler": "sequence",
                             "actions": [
@@ -307,6 +301,8 @@
                 }
             ],
             "props": {
+                "pageHref": "/admin/ecommerce/user-addresses?page={page}",
+                "pageHrefMergeQuery": true,
                 "rowLabelField": "recipient_name",
                 "data": "{{addresses?.data?.data || []}}",
                 "pagination": true,
@@ -327,6 +323,8 @@
                 "rowActions": [
                     {
                         "id": "view_member",
+                        "href": "/admin/users/{{row.member?.uuid}}",
+                        "target": "_blank",
                         "label": "$t:sirsoft-ecommerce.admin.user_addresses.actions.view_member",
                         "iconName": "fa-regular fa-user",
                         "disabledField": "member.uuid"
@@ -386,12 +384,6 @@
                                         "event": "onItemClick",
                                         "handler": "switch",
                                         "cases": {
-                                            "view_member": {
-                                                "handler": "openWindow",
-                                                "params": {
-                                                    "path": "/admin/users/{{row.member?.uuid}}"
-                                                }
-                                            },
                                             "search_member": {
                                                 "comment": "손에 든 회원 한정도 이 한 명으로 맞춘다 — URL 만 갈면 필터 칸이 이전 선택을 든 채로 남는다",
                                                 "handler": "sequence",
@@ -429,6 +421,8 @@
                                     "items": [
                                         {
                                             "id": "view_member",
+                                            "href": "/admin/users/{{row.member?.uuid}}",
+                                            "target": "_blank",
                                             "label": "$t:sirsoft-ecommerce.admin.user_addresses.actions.view_member",
                                             "iconName": "user"
                                         },

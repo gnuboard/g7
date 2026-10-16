@@ -151,6 +151,8 @@ describe('productFormLayouts', () => {
 
     describe('Label Form Modal Layout (_modal_label_form.json)', () => {
         describe('레이아웃 구조 검증', () => {
+            // @scenario section=label_modal
+            // @effects label_modal_has_name_color_preview_only
             it('라벨 폼 모달이 올바른 구조를 가져야 한다', () => {
                 expect(labelFormModal.id).toBe('modal_label_form');
                 expect(labelFormModal.type).toBe('composite');
@@ -161,6 +163,8 @@ describe('productFormLayouts', () => {
                 expect(labelFormModal.props.title).toContain('labels.modal_title_edit');
             });
 
+            // @scenario section=label_modal
+            // @effects label_modal_has_name_color_preview_only
             it('라벨 모달에는 기간 편집 섹션이 더 이상 없다 (인라인 편집으로 분리됨)', () => {
                 // date_preset_section / date_range_section / start_date / end_date 입력은
                 // 라벨 모달 partial 에서 제거되고, 라벨별 인라인 위젯 (DateRangePicker)
@@ -180,18 +184,24 @@ describe('productFormLayouts', () => {
 
     describe('Notice Template Confirm Modal Layout (_modal_notice_template_confirm.json)', () => {
         describe('레이아웃 구조 검증', () => {
+            // @scenario section=notice_confirm_modal
+            // @effects notice_template_confirm_applies_template
             it('확인 모달이 올바른 구조를 가져야 한다', () => {
                 expect(noticeTemplateConfirmModal.id).toBe('notice_template_confirm_modal');
                 expect(noticeTemplateConfirmModal.type).toBe('composite');
                 expect(noticeTemplateConfirmModal.name).toBe('Modal');
             });
 
+            // @scenario section=notice_confirm_modal
+            // @effects notice_template_confirm_applies_template
             it('모달 partial 이 단독 if 표현식 없이 modals 섹션의 isolated 스코프로 관리된다', () => {
                 // 기존에는 _global.showNoticeTemplateConfirmModal 로 직접 표시 토글 → modals
                 // 섹션 isolated scope 로 이전됨. 모달 루트의 if 는 더 이상 없음
                 expect(noticeTemplateConfirmModal.if).toBeUndefined();
             });
 
+            // @scenario section=notice_confirm_modal
+            // @effects notice_template_confirm_applies_template
             it('경고 메시지가 alert-warning 시맨틱 자산으로 표시되어야 한다', () => {
                 const content = noticeTemplateConfirmModal.children[0];
                 const warningBox = content.children[0];
@@ -199,6 +209,8 @@ describe('productFormLayouts', () => {
                 expect(warningBox.props.className).toContain('alert-warning');
             });
 
+            // @scenario section=notice_confirm_modal
+            // @effects notice_template_confirm_applies_template
             it('취소 버튼이 sequence(setState pending=null + closeModal) 패턴이다', () => {
                 const content = noticeTemplateConfirmModal.children[0];
                 const buttonContainer = content.children[1];
@@ -213,6 +225,8 @@ describe('productFormLayouts', () => {
                 expect(cancelInner.some((a: any) => a.handler === 'closeModal')).toBe(true);
             });
 
+            // @scenario section=notice_confirm_modal
+            // @effects notice_template_confirm_applies_template
             it('확인 버튼 sequence 가 closeModal → 템플릿 적용 → pending 초기화 순으로 실행된다', () => {
                 const content = noticeTemplateConfirmModal.children[0];
                 const buttonContainer = content.children[1];
@@ -238,6 +252,8 @@ describe('productFormLayouts', () => {
         });
 
         describe('다국어 키 검증', () => {
+            // @scenario section=notice_confirm_modal
+            // @effects product_form_modal_texts_use_lang_keys
             it('모든 텍스트가 다국어 키를 사용해야 한다', () => {
                 expect(noticeTemplateConfirmModal.props.title).toBe('$t:sirsoft-ecommerce.admin.product.notice.confirm_change_title');
 
@@ -280,6 +296,8 @@ describe('productFormLayouts', () => {
             return collect;
         };
 
+        // @scenario section=delete_modal
+        // @effects product_delete_navigates_to_list_by_path
         it('삭제 성공(onSuccess) navigate 가 params.path 로 목록 경로를 전달한다 (url 키 금지)', () => {
             const navigateActions = findNavigateInOnSuccess(deleteConfirmModal);
             expect(navigateActions.length).toBeGreaterThan(0);
@@ -296,6 +314,8 @@ describe('productFormLayouts', () => {
         // setLabelDatePreset / 프리셋 버튼은 라벨 모달에서 인라인 위젯으로 분리되어
         // 본 partial 테스트 범위에서 제외됨 (별도 모달 기간 위젯 테스트 필요 시 분리 작성)
 
+        // @scenario section=notice_confirm_modal
+        // @effects notice_template_confirm_applies_template
         it('확인 모달의 취소 버튼이 sequence 로 pending 만 초기화한다', () => {
             const content = noticeTemplateConfirmModal.children[0];
             const buttonContainer = content.children[1];
@@ -313,6 +333,8 @@ describe('productFormLayouts', () => {
 
     describe('레이아웃 스타일 및 반응형 검증', () => {
         // 날짜 범위 섹션 / 프리셋 flex wrap 검증은 라벨 모달 섹션 제거에 따라 함께 제거
+        // @scenario section=label_modal
+        // @effects label_modal_has_name_color_preview_only
         it('라벨 모달은 이름/색상/미리보기 섹션만 가지며 기간 섹션을 포함하지 않는다', () => {
             const labelFormContent = labelFormModal.children[0];
             const ids = asArray(labelFormContent?.children).map((c: any) => c.id);
@@ -325,6 +347,8 @@ describe('productFormLayouts', () => {
     });
 
     describe('_partial_activity_log.json (활동 로그 섹션)', () => {
+        // @scenario section=activity_log
+        // @effects activity_log_section_wired
         it('최상위에 type과 name이 정의되어 있다', () => {
             expect(activityLogPartial.type).toBe('basic');
             // 시맨틱화: Section → Div (의미 없는 빈 wrapper 정리, 표준 Div 환원)
@@ -332,6 +356,8 @@ describe('productFormLayouts', () => {
             expect(activityLogPartial.children).toBeDefined();
         });
 
+        // @scenario section=activity_log
+        // @effects activity_log_section_wired
         it('정렬 드롭다운이 존재한다', () => {
             const json = JSON.stringify(activityLogPartial);
             expect(json).toContain('activityLogSort');
@@ -339,35 +365,47 @@ describe('productFormLayouts', () => {
             expect(json).toContain('"asc"');
         });
 
+        // @scenario section=activity_log
+        // @effects activity_log_section_wired
         it('페이지당 드롭다운이 존재한다', () => {
             const json = JSON.stringify(activityLogPartial);
             expect(json).toContain('activityLogPerPage');
         });
 
+        // @scenario section=activity_log
+        // @effects activity_log_section_wired
         it('Select에서 $event.target.value를 사용한다 (not $event)', () => {
             const json = JSON.stringify(activityLogPartial);
             expect(json).toContain('$event.target.value');
             expect(json).not.toMatch(/"\\{\\{\\$event\\}\\}"/);
         });
 
+        // @scenario section=activity_log
+        // @effects activity_log_section_wired
         it('refetchDataSource 핸들러를 사용한다 (not refreshDataSource)', () => {
             const json = JSON.stringify(activityLogPartial);
             expect(json).toContain('refetchDataSource');
             expect(json).not.toContain('refreshDataSource');
         });
 
+        // @scenario section=activity_log
+        // @effects activity_log_section_wired
         it('로그 iteration이 activity_logs API 데이터를 소스로 사용한다', () => {
             const json = JSON.stringify(activityLogPartial);
             expect(json).toContain('activity_logs');
             expect(json).toContain('iteration');
         });
 
+        // @scenario section=activity_log
+        // @effects activity_log_section_wired
         it('빈 상태 조건이 올바른 경로를 사용한다', () => {
             const json = JSON.stringify(activityLogPartial);
             expect(json).toContain('activity_logs.data?.data ?? []');
             expect(json).not.toContain('!activity_logs?.data?.length');
         });
 
+        // @scenario section=activity_log
+        // @effects activity_log_section_wired
         it('Pagination 컴포넌트가 존재한다', () => {
             const json = JSON.stringify(activityLogPartial);
             expect(json).toContain('"name":"Pagination"');
@@ -375,6 +413,8 @@ describe('productFormLayouts', () => {
             expect(json).toContain('totalPages');
         });
 
+        // @scenario section=activity_log
+        // @effects activity_log_section_wired
         it('Pagination이 onPageChange 이벤트와 $args[0] 패턴을 사용한다', () => {
             const json = JSON.stringify(activityLogPartial);
             expect(json).toContain('"event":"onPageChange"');
@@ -382,6 +422,8 @@ describe('productFormLayouts', () => {
             expect(json).not.toContain('"type":"pageChange"');
         });
 
+        // @scenario section=activity_log
+        // @effects activity_log_section_wired
         it('Pagination이 항상 표시된다 (if 조건 없음)', () => {
             const findById = (children: any[], id: string): any => {
                 for (const child of children) {
@@ -398,12 +440,16 @@ describe('productFormLayouts', () => {
             expect(pagination.if).toBeUndefined();
         });
 
+        // @scenario section=activity_log
+        // @effects activity_log_section_wired
         it('데이터 경로가 meta 를 사용한다 (Collection 응답 구조)', () => {
             // ProductLogCollection 의 페이지네이션 메타가 pagination → meta 로 정규화됨
             const json = JSON.stringify(activityLogPartial);
             expect(json).toContain('activity_logs.data?.meta');
         });
 
+        // @scenario section=activity_log
+        // @effects activity_log_section_wired
         it('작업(action) 컬럼이 제거되었다', () => {
             const json = JSON.stringify(activityLogPartial);
             expect(json).not.toContain('columns.action');
@@ -411,6 +457,8 @@ describe('productFormLayouts', () => {
             expect(json).not.toContain('log.action ===');
         });
 
+        // @scenario section=activity_log
+        // @effects activity_log_member_menu_opens_new_window_link
         it('처리자에 ActionMenu가 적용되어 있다 (PC+모바일)', () => {
             const json = JSON.stringify(activityLogPartial);
             expect(json).toContain('"name":"ActionMenu"');
@@ -418,23 +466,46 @@ describe('productFormLayouts', () => {
             expect(json).toContain('!log.user?.uuid');
         });
 
+        // @scenario section=activity_log
+        // @effects activity_log_member_menu_opens_new_window_link
         it('ActionMenu에 회원정보 보기 메뉴가 있다', () => {
             const json = JSON.stringify(activityLogPartial);
             expect(json).toContain('view_member');
             expect(json).toContain('actor_action.view_member');
         });
 
-        it('회원 클릭 시 openWindow로 회원 상세 페이지를 연다', () => {
+        // @scenario section=activity_log
+        // @effects activity_log_member_menu_opens_new_window_link
+        it('회원 메뉴 「회원 보기」는 회원 상세를 새 창으로 여는 링크다(href + target=_blank)', () => {
+            // 새 창은 메뉴 항목 링크가 연다 — 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」도 된다(#757 결정 2026-10-15).
+            // 항목 링크가 새 창을 열고 항목 동작은 부르지 않으므로 openWindow 갈래는 남기지 않는다.
             const json = JSON.stringify(activityLogPartial);
-            expect(json).toContain('"handler":"openWindow"');
-            expect(json).toContain('/admin/users/{{log.user.uuid}}');
+            const items: any[] = [];
+            const walk = (n: any): void => {
+                if (Array.isArray(n)) return n.forEach(walk);
+                if (!n || typeof n !== 'object') return;
+                if (n.name === 'ActionMenu') items.push(...(n.props?.items ?? []).filter((i: any) => i.id === 'view_member'));
+                Object.values(n).forEach(walk);
+            };
+            walk(activityLogPartial);
+
+            expect(items.length).toBe(2); // 넓은 화면 표 · 좁은 화면 카드
+            items.forEach((i) => {
+                expect(i.href).toBe('/admin/users/{{log.user.uuid}}');
+                expect(i.target).toBe('_blank');
+            });
+            expect(json).not.toContain('"handler":"openWindow"');
         });
 
+        // @scenario section=activity_log
+        // @effects activity_log_member_menu_opens_new_window_link
         it('시스템 사용자는 ActionMenu 없이 아바타+이름만 표시된다', () => {
             const json = JSON.stringify(activityLogPartial);
             expect(json).toContain('activity_log.system');
         });
 
+        // @scenario section=activity_log
+        // @effects activity_log_section_wired
         it('빈 상태의 colSpan이 3이다 (작업 컬럼 제거 반영)', () => {
             const json = JSON.stringify(activityLogPartial);
             expect(json).toContain('"colSpan":3');
@@ -450,6 +521,8 @@ describe('productFormLayouts', () => {
          *       (none 라디오에는 초기화가 있었음 — 비대칭)
          * 해결: restricted 라디오 change handler 에도 form.allowed_roles: [] 추가
          */
+        // @scenario section=purchase_limits
+        // @effects purchase_restriction_resets_allowed_roles
         it('"제한 없음" 라디오는 form.allowed_roles 를 빈 배열로 초기화한다', () => {
             const params = findRestrictionRadioParams(otherInfoPartial, 'none');
             expect(params).not.toBeNull();
@@ -457,6 +530,8 @@ describe('productFormLayouts', () => {
             expect(params['form.allowed_roles']).toEqual([]);
         });
 
+        // @scenario section=purchase_limits
+        // @effects purchase_restriction_resets_allowed_roles
         it('"구매 대상 제한" 라디오도 form.allowed_roles 를 빈 배열로 초기화한다 (빈 칩 버그 수정)', () => {
             const params = findRestrictionRadioParams(otherInfoPartial, 'restricted');
             expect(params).not.toBeNull();
@@ -465,6 +540,8 @@ describe('productFormLayouts', () => {
             expect(params['form.allowed_roles']).toEqual([]);
         });
 
+        // @scenario section=purchase_limits
+        // @effects purchase_restriction_resets_allowed_roles
         it('두 라디오 모두 target=local 로 setState 한다', () => {
             const noneParams = findRestrictionRadioParams(otherInfoPartial, 'none');
             const restrictedParams = findRestrictionRadioParams(otherInfoPartial, 'restricted');
@@ -495,6 +572,8 @@ describe('productFormLayouts', () => {
             return null;
         };
 
+        // @scenario section=purchase_limits
+        // @effects purchase_quantity_inputs_autobind
         it('최소 구매 수량 Input 은 name 으로 자동바인딩하며 값-setState 핸들러가 없다', () => {
             const input = findQtyInput(otherInfoPartial, 'field_min_purchase_qty');
             expect(input).not.toBeNull();
@@ -509,6 +588,8 @@ describe('productFormLayouts', () => {
             expect(valueSetState).toBeUndefined();
         });
 
+        // @scenario section=purchase_limits
+        // @effects purchase_quantity_inputs_autobind
         it('최대 구매 수량 Input 은 name 으로 자동바인딩하며 값-setState 핸들러가 없다', () => {
             const input = findQtyInput(otherInfoPartial, 'field_max_purchase_qty');
             expect(input).not.toBeNull();
@@ -522,6 +603,8 @@ describe('productFormLayouts', () => {
             expect(valueSetState).toBeUndefined();
         });
 
+        // @scenario section=purchase_limits
+        // @effects purchase_quantity_inputs_autobind
         it('두 필드 모두 깨진 $event(이벤트 객체) parseInt 패턴을 사용하지 않는다', () => {
             const serialized = JSON.stringify([
                 findNodeById(otherInfoPartial, 'field_min_purchase_qty'),
@@ -535,6 +618,8 @@ describe('productFormLayouts', () => {
     });
 
     describe('activity_logs 데이터소스 (admin_ecommerce_product_form.json)', () => {
+        // @scenario section=activity_log
+        // @effects activity_log_section_wired
         it('activity_logs 데이터소스가 정의되어 있다', () => {
             const ds = productFormLayout.data_sources.find(
                 (d: any) => d.id === 'activity_logs'
@@ -544,6 +629,8 @@ describe('productFormLayouts', () => {
             expect(ds.auto_fetch).toBe(true);
         });
 
+        // @scenario section=activity_log
+        // @effects activity_log_section_wired
         it('sort_order 파라미터가 포함되어 있다', () => {
             const ds = productFormLayout.data_sources.find(
                 (d: any) => d.id === 'activity_logs'
@@ -552,6 +639,8 @@ describe('productFormLayouts', () => {
             expect(ds.params.sort_order).toContain('activityLogSort');
         });
 
+        // @scenario section=activity_log
+        // @effects activity_log_section_wired
         it('per_page 파라미터가 상태 바인딩을 사용한다', () => {
             const ds = productFormLayout.data_sources.find(
                 (d: any) => d.id === 'activity_logs'
@@ -586,6 +675,8 @@ describe('productFormLayouts', () => {
             return acc;
         };
 
+        // @scenario section=layout_semantics
+        // @effects product_form_layout_semantics_intact
         it('서브탭 네비게이션이 스크롤 콘텐츠 직계 자식에 위치하고 sticky-tab-nav 가 직접 부여된다 (sticky 복원)', () => {
             // 메인 폼 레이아웃은 slots.content 하위에 트리가 있으므로 슬롯 루트에서 탐색
             const contentRoot = { children: (productFormLayout as any).slots?.content ?? [] };
@@ -608,6 +699,8 @@ describe('productFormLayouts', () => {
             expect(directChildIds).toContain('tab_navigation');
         });
 
+        // @scenario section=layout_semantics
+        // @effects product_form_layout_semantics_intact
         it('카드 헤더가 group-stack 없이 표준 card-header 시맨틱으로 아이콘+제목을 가로 정렬한다', () => {
             // 표준: 카드 헤더는 .card-header 시맨틱이 정렬을 책임진다 (아이콘+제목+아코디언
             // 아이콘이 직계 자식으로 가로 배치). 옛 product_options_header(flex-center 행 래퍼)는
@@ -625,6 +718,8 @@ describe('productFormLayouts', () => {
             expect(title).toBeDefined();
         });
 
+        // @scenario section=layout_semantics
+        // @effects product_form_layout_semantics_intact
         it('옵션 목록 제목/토글 헤더 행이 group-stack 없이 flex-between 으로 좌우 정렬된다', () => {
             const optionsSection = findNodeById(productOptionsPartial, 'option_table_section');
             const titleRow = asArray(optionsSection?.children).find(
@@ -637,6 +732,8 @@ describe('productFormLayouts', () => {
             expect(titleRow.props.className).toContain('flex-between');
         });
 
+        // @scenario section=layout_semantics
+        // @effects product_form_layout_semantics_intact
         it('다통화는 별도 입력 컬럼이 아니라 판매가 셀 하단에 읽기전용 환산값으로 세로 표시된다', () => {
             // 회귀 가드: 옵션별 통화 입력 컬럼(헤더/셀)은 제거되었다.
             // 다통화 가격은 저장 컬럼이 없어 입력해도 버려지므로, base 판매가에서
@@ -656,6 +753,8 @@ describe('productFormLayouts', () => {
             expect(previewSpan?.text).toContain('formatted');
         });
 
+        // @scenario section=layout_semantics
+        // @effects product_form_layout_semantics_intact
         it('옵션 행(Tr)이 align-top 으로 상단 정렬된다 (판매가 하단 환산값이 입력칸 라인을 밀지 않음)', () => {
             // 회귀 가드: 판매가 셀에 다통화 환산값이 세로로 쌓여 셀 높이가 커져도,
             // 기본 vertical-align: middle 이면 정가/SKU/재고 입력칸이 중앙으로 내려가
@@ -676,6 +775,8 @@ describe('productFormLayouts', () => {
             expect(optionRow.props.className).toContain('align-top');
         });
 
+        // @scenario section=layout_semantics
+        // @effects product_form_layout_semantics_intact
         it('추가옵션 헤더 래퍼가 base flex/gap 을 가져 좁은 폭에서도 제목과 토글 사이 간격이 유지된다', () => {
             const addSection = findNodeById(productOptionsPartial, 'additional_options_section');
             const headerRow = asArray(addSection?.children).find(
@@ -692,6 +793,8 @@ describe('productFormLayouts', () => {
         const findDataSource = (layout: any, id: string): any =>
             (layout.data_sources ?? []).find((ds: any) => ds.id === id) ?? null;
 
+        // @scenario section=common_info
+        // @effects product_form_requests_active_common_infos_only
         it('common_infos 데이터소스가 active_only=true 파라미터로 활성 항목만 요청한다', () => {
             const ds = findDataSource(productFormLayout, 'common_infos');
             expect(ds).not.toBeNull();
@@ -701,6 +804,8 @@ describe('productFormLayouts', () => {
             expect(ds.params.is_active).toBeUndefined();
         });
 
+        // @scenario section=common_info
+        // @effects product_form_requests_active_common_infos_only
         it('common_infos 의 active 필터 파라미터명이 notice_templates 와 동일하다', () => {
             const commonDs = findDataSource(productFormLayout, 'common_infos');
             const noticeDs = findDataSource(productFormLayout, 'notice_templates');
@@ -733,6 +838,8 @@ describe('productFormLayouts', () => {
             ['브랜드관리', brandIndexLayout],
         ];
 
+        // @scenario section=master_detail
+        // @effects master_detail_layouts_keep_grid_ratio
         it.each(MASTER_DETAIL_LAYOUTS)(
             '%s panel_layout 이 3컬럼 그리드(좌 1/3 목록 · 우 2/3 상세) 자산을 사용한다',
             (_name, layout) => {
@@ -765,6 +872,8 @@ describe('productFormLayouts', () => {
 
         // 공통정보/제공고시: 고정 높이 viewport(overflow-hidden) → 페이지 스크롤 컨테이너로 교체
         // 좌측 리스트는 자체 max-h + overflow-y-auto 로 내부 스크롤, 우측 detail 은 페이지 전체 스크롤.
+        // @scenario section=master_detail
+        // @effects master_detail_content_uses_page_scroll
         it.each([
             ['공통정보관리', commonInfoIndexLayout],
             ['상품정보제공고시', noticeIndexLayout],
@@ -779,6 +888,8 @@ describe('productFormLayouts', () => {
         );
 
         // 좌측 리스트 partial 은 내부 스크롤(max-h + overflow-y-auto)을 유지해야 한다.
+        // @scenario section=master_detail
+        // @effects master_detail_content_uses_page_scroll
         it.each([
             ['공통정보관리', commonInfoListPanel],
             ['상품정보제공고시', noticeListPanel],
@@ -800,6 +911,8 @@ describe('productFormLayouts', () => {
          *       대체됨 — keystroke 마다 setState 하지 않으므로 타이핑 지연도 함께 해소.)
          */
 
+        // @scenario section=seo
+        // @effects seo_inputs_multilingual_autobind
         it('SEO 제목 커스텀 입력이 MultilingualInput(name=meta_title, tabs) 자동바인딩이다', () => {
             const node = findNodeById(seoSettingsPartial, 'meta_title_custom');
             expect(node).not.toBeNull();
@@ -815,6 +928,8 @@ describe('productFormLayouts', () => {
             expect(setStateChange).toBeUndefined();
         });
 
+        // @scenario section=seo
+        // @effects seo_inputs_multilingual_autobind
         it('SEO 설명 커스텀 입력이 MultilingualInput(name=meta_description, textarea) 자동바인딩이다', () => {
             const node = findNodeById(seoSettingsPartial, 'meta_desc_custom');
             expect(node).not.toBeNull();
@@ -827,6 +942,8 @@ describe('productFormLayouts', () => {
             expect(setStateChange).toBeUndefined();
         });
 
+        // @scenario section=seo
+        // @effects seo_inputs_multilingual_autobind
         it('글자수 카운터·미리보기가 $localized 로 현재 로케일 문자열을 추출한다 (다국어 객체 직접 출력 금지)', () => {
             const json = JSON.stringify(seoSettingsPartial);
             // 회귀 가드: 다국어 객체를 .length / 직접 출력하면 [object Object] 또는 NaN
@@ -837,6 +954,8 @@ describe('productFormLayouts', () => {
             expect(json).toContain('$localized(_local.form.meta_description)');
         });
 
+        // @scenario section=seo
+        // @effects seo_inputs_multilingual_autobind
         it('동기화(상품명과 동일) 토글이 name/description 다국어 객체를 통째로 미러한다', () => {
             const json = JSON.stringify(seoSettingsPartial);
             // sync ON→OFF 전환 시 초기값으로 name/description 다국어 객체 통째 복사

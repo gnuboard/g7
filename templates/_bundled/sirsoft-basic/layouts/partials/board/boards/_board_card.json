@@ -5,7 +5,7 @@
         "description": "게시판 카드 (전체 게시판 목록용)"
     },
     "type": "basic",
-    "name": "Button",
+    "name": "A",
     "responsive": {
         "portable": {
             "props": {
@@ -16,13 +16,11 @@
     "actions": [
         {
             "type": "click",
-            "handler": "navigate",
-            "params": {
-                "path": "/board/{{board.slug}}"
-            }
+            "handler": "navigate"
         }
     ],
     "props": {
+        "href": "/board/{{board.slug}}",
         "className": "block w-full text-left bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm transition-all cursor-pointer"
     },
     "children": [
@@ -75,7 +73,7 @@
         {
             "comment": "설명",
             "type": "basic",
-            "name": "P",
+            "name": "Div",
             "props": {
                 "className": "text-sm text-gray-600 dark:text-gray-400 line-clamp-2 break-words mb-3"
             },

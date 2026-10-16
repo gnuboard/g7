@@ -151,9 +151,9 @@ User 템플릿은 자기가 그리고 싶은 화면에 필요한 API 를 `data_s
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 4개 | `vitest.config.ts` |
+| Vitest | 6개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 2개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 5개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

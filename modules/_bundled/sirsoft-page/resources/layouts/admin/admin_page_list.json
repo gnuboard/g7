@@ -136,21 +136,22 @@
                             {
                                 "id": "add_page_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "새 페이지 작성. 작성 취소로 목록에 돌아왔을 때 보던 자리가 유지되도록 목록 상태를 넘긴다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/pages/create",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "className": "btn btn-primary",
+                                    "href": "/admin/pages/create",
+                                    "mergeQuery": true,
+                                    "className": "button btn btn-primary",
                                     "disabled": "{{pages?.data?.abilities?.can_create !== true}}"
                                 },
                                 "children": [
@@ -767,6 +768,8 @@
                             }
                         ],
                         "props": {
+                            "pageHrefMergeQuery": true,
+                            "pageHref": "/admin/pages?page={page}",
                             "rowLabelField": "title",
                             "data": "{{pages?.data?.data}}",
                             "sortable": true,
@@ -788,11 +791,13 @@
                             "actionsColumnHeader": "$t:common.actions",
                             "rowActions": [
                                 {
+                                    "href": "/admin/pages/{{row.id}}",
                                     "id": "view",
                                     "label": "$t:sirsoft-page.admin.page.actions.view",
                                     "iconName": "eye"
                                 },
                                 {
+                                    "href": "/admin/pages/{{row.id}}/edit",
                                     "id": "edit",
                                     "label": "$t:sirsoft-page.admin.page.actions.edit",
                                     "iconName": "pencil",

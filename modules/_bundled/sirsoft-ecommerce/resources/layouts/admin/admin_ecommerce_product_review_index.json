@@ -1806,14 +1806,11 @@
                                                             "actions": [
                                                                 {
                                                                     "type": "click",
-                                                                    "handler": "navigate",
-                                                                    "params": {
-                                                                        "path": "/admin/users/{{row.user_id}}"
-                                                                    }
+                                                                    "handler": "navigate"
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "href": "#",
+                                                                "href": "/admin/users/{{row.user_id}}",
                                                                 "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"
                                                             },
                                                             "text": "{{row.user?.name ?? ''}}"
@@ -3020,6 +3017,8 @@
                             }
                         ],
                         "props": {
+                            "pageHref": "/admin/ecommerce/reviews?page={page}",
+                            "pageHrefMergeQuery": true,
                             "currentPage": "{{reviews.data?.meta?.current_page ?? 1}}",
                             "totalPages": "{{reviews.data?.meta?.last_page ?? null}}",
                             "hasMorePages": "{{reviews.data?.meta?.has_more_pages ?? false}}",

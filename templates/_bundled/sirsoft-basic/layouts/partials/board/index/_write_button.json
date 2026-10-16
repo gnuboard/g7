@@ -3,73 +3,111 @@
         "is_partial": true,
         "description": "글쓰기 버튼 (권한/로그인 체크 포함)"
     },
-    "comment": "글쓰기 버튼 - 로그인했는데 권한이 없으면 비활성화. 비로그인은 눌러서 로그인 화면으로 간다(로그인하면 쓸 수 있는 게시판이 있다)",
+    "comment": "글쓰기 — 쓸 수 있으면 글쓰기 화면 링크(가운데 클릭·Ctrl+클릭 새 탭, 목록 쿼리 유지). 그 밖에는 단추: 로그인했는데 권한이 없으면 비활성화, 비로그인은 눌러서 로그인 화면으로 간다(로그인하면 쓸 수 있는 게시판이 있다). 감싸개는 배치에 끼지 않는다(display: contents)",
     "type": "basic",
-    "name": "Button",
-    "actions": [
-        {
-            "type": "click",
-            "handler": "switch",
-            "params": {
-                "value": "{{posts?.data?.abilities?.can_write ? 'allowed' : (_global.currentUser?.uuid ? 'no_permission' : 'not_logged_in')}}"
-            },
-            "cases": {
-                "allowed": {
-                    "handler": "navigate",
-                    "params": {
-                        "path": "/board/{{route.slug}}/write",
-                        "mergeQuery": true,
-                        "query": {}
-                    }
-                },
-                "no_permission": {
-                    "handler": "toast",
-                    "params": {
-                        "type": "warning",
-                        "message": "$t:board.no_write_permission"
-                    }
-                },
-                "not_logged_in": {
-                    "handler": "sequence",
-                    "actions": [
-                        {
-                            "handler": "toast",
-                            "params": {
-                                "type": "info",
-                                "message": "$t:board.login_required_to_write"
-                            }
-                        },
-                        {
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/login",
-                                "query": {
-                                    "redirect": "/board/{{route.slug}}/write"
-                                }
-                            }
-                        }
-                    ]
-                }
-            }
-        }
-    ],
+    "name": "Div",
     "props": {
-        "disabled": "{{!!_global.currentUser?.uuid && posts?.data?.abilities?.can_write !== true}}",
-        "className": "inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-700 text-white dark:text-gray-100 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-600 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        "className": "contents"
     },
     "children": [
         {
             "type": "basic",
-            "name": "Icon",
+            "name": "A",
+            "if": "{{posts?.data?.abilities?.can_write === true}}",
+            "actions": [
+                {
+                    "type": "click",
+                    "handler": "navigate",
+                    "params": {
+                        "mergeQuery": true,
+                        "query": {}
+                    }
+                }
+            ],
             "props": {
-                "name": "pencil",
-                "size": "sm"
-            }
+                "href": "/board/{{route.slug}}/write",
+                "mergeQuery": true,
+                "className": "inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-700 text-white dark:text-gray-100 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-600 font-medium transition-colors"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "pencil",
+                        "size": "sm"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:board.write"
+                }
+            ]
         },
         {
             "type": "basic",
-            "name": "Span",
-            "text": "$t:board.write"
+            "name": "Button",
+            "if": "{{posts?.data?.abilities?.can_write !== true}}",
+            "actions": [
+                {
+                    "type": "click",
+                    "handler": "switch",
+                    "params": {
+                        "value": "{{_global.currentUser?.uuid ? 'no_permission' : 'not_logged_in'}}"
+                    },
+                    "cases": {
+                        "no_permission": {
+                            "handler": "toast",
+                            "params": {
+                                "type": "warning",
+                                "message": "$t:board.no_write_permission"
+                            }
+                        },
+                        "not_logged_in": {
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "toast",
+                                    "params": {
+                                        "type": "info",
+                                        "message": "$t:board.login_required_to_write"
+                                    }
+                                },
+                                {
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/login",
+                                        "query": {
+                                            "redirect": "/board/{{route.slug}}/write"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            ],
+            "props": {
+                "type": "button",
+                "disabled": "{{!!_global.currentUser?.uuid && posts?.data?.abilities?.can_write !== true}}",
+                "className": "inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-700 text-white dark:text-gray-100 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-600 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "pencil",
+                        "size": "sm"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:board.write"
+                }
+            ]
         }
     ]
 }

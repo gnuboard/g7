@@ -284,12 +284,12 @@
         </div>
       </div>
       <div data-ref="footer_buttons" class="sticky-footer-buttons">
-        <button data-ref="cancel_button" class="btn btn-secondary">
+        <a href="/admin/plugins" data-ref="cancel_button" class="button btn btn-secondary">
           <on type="click">
-            <navigate path="/admin/plugins"/>
+            <navigate/>
           </on>
           <span>$t:common.cancel</span>
-        </button>
+        </a>
         <button data-ref="save_button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!-- 저장. 직전 오류를 먼저 지워야 이번 시도의 결과만 화면에 남는다. 성공 후 설정을 다시 불러오는 것은 서버가 비밀키를 마스크해 돌려주기 때문이다 — 다시 싣지 않으면 화면의 폼 값과 저장값이 어긋난 채 다음 저장이 나간다 -->

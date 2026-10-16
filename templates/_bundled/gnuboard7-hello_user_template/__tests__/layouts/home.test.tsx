@@ -152,6 +152,8 @@ describe('home 레이아웃 (gnuboard7-hello_user_template)', () => {
     testUtils?.cleanup();
   });
 
+  // @scenario case=render
+  // @effects home_layout_renders_contract
   it('환영 카드가 렌더링된다', async () => {
     const registry = setupTestRegistry();
     testUtils = createLayoutTest(flattenHomeLayoutForTest() as any, {
@@ -171,6 +173,8 @@ describe('home 레이아웃 (gnuboard7-hello_user_template)', () => {
     ).toBeInTheDocument();
   });
 
+  // @scenario case=render
+  // @effects home_layout_renders_contract
   it('memos 데이터소스의 항목이 iteration 으로 렌더링된다', async () => {
     const registry = setupTestRegistry();
     testUtils = createLayoutTest(flattenHomeLayoutForTest() as any, {
@@ -197,6 +201,8 @@ describe('home 레이아웃 (gnuboard7-hello_user_template)', () => {
     expect(screen.getByText('반갑습니다')).toBeInTheDocument();
   });
 
+  // @scenario case=render
+  // @effects home_layout_renders_contract
   it('memos 가 비어 있으면 빈 상태 메시지가 표시된다', async () => {
     const registry = setupTestRegistry();
     testUtils = createLayoutTest(flattenHomeLayoutForTest() as any, {
@@ -213,7 +219,9 @@ describe('home 레이아웃 (gnuboard7-hello_user_template)', () => {
     expect(screen.getByText('표시할 메모가 없습니다.')).toBeInTheDocument();
   });
 
-  it('홈으로 돌아가기 버튼이 렌더링된다', async () => {
+  // @scenario case=render
+  // @effects home_layout_renders_contract
+  it('홈으로 돌아가기 링크가 렌더링된다', async () => {
     const registry = setupTestRegistry();
     testUtils = createLayoutTest(flattenHomeLayoutForTest() as any, {
       componentRegistry: registry,
@@ -226,10 +234,14 @@ describe('home 레이아웃 (gnuboard7-hello_user_template)', () => {
 
     await testUtils.render();
 
-    expect(screen.getByTestId('home-button')).toBeInTheDocument();
-    expect(screen.getByText('홈으로')).toBeInTheDocument();
+    // 홈 이동은 링크(#757 — 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있게)
+    const home = screen.getByText('홈으로').closest('a');
+    expect(home).not.toBeNull();
+    expect(home?.getAttribute('href')).toBe('/');
   });
 
+  // @scenario case=render
+  // @effects home_layout_renders_contract
   it('home 레이아웃이 _user_base 를 extends 한다', () => {
     expect((homeLayout as any).extends).toBe('_user_base');
     expect((baseLayout as any).layout_name).toBe('_user_base');

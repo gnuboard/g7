@@ -18,20 +18,20 @@
             <span data-ref="status_badge_deleted_{{item.id}}" data-if="{{item.deleted_at}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-white dark:bg-gray-600 dark:text-gray-100">$t:sirsoft-board.admin.posts.detail.status_deleted</span>
           </h2>
         </div>
-        <button data-ref="detail_button_{{item.id}}" data-if="{{item.id != route.id}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors">
+        <a href="/admin/board/{{route.slug}}/post/{{item.id}}" :mergeQuery="true" data-ref="detail_button_{{item.id}}" data-if="{{item.id != route.id}}" class="button flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors">
           <on type="click">
-            <!-- 댓글 작성자의 회원 상세로. 같은 사람이 여러 건에 걸려 있는지 확인하는 자리다 -->
-            <navigate path="/admin/board/{{route.slug}}/post/{{item.id}}" :mergeQuery="true">
+            <!-- 이 답글의 상세 화면으로. 보던 목록 상태를 이고 간다 -->
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
           <span>$t:sirsoft-board.admin.posts.detail.view_detail_button</span>
-        </button>
+        </a>
       </div>
       <div data-ref="reply_meta_{{item.id}}" class="flex-center flex-wrap gap-2 text-label">
-        <action-menu data-type="composite" data-ref="author_name_menu_{{item.id}}" data-if="{{!item.author?.is_guest}}" triggerLabel="{{item.author?.name}}" triggerIconName="" triggerClassName="font-medium text-gray-900 dark:text-white" position="right">
+        <action-menu data-type="composite" data-ref="author_name_menu_{{item.id}}" data-if="{{!item.author?.is_guest &amp;&amp; item.author?.uuid}}" triggerLabel="{{item.author?.name}}" triggerIconName="" triggerClassName="font-medium text-gray-900 dark:text-white" position="right">
           <prop name="items">
-            <item id="view_user_info" label="$t:sirsoft-board.admin.posts.detail.user_info" iconName="user"/>
+            <item href="/admin/users/{{item.author?.uuid}}" id="view_user_info" label="$t:sirsoft-board.admin.posts.detail.user_info" iconName="user"/>
           </prop>
           <on type="click" event="onItemClick">
             <!-- 답글 쓴 사람의 관리자 상세로 — 대상이 반복 변수 `item` 이라 여러 답글이 각자 자기 글쓴이를 가리킨다 -->
@@ -42,7 +42,7 @@
             </switch>
           </on>
         </action-menu>
-        <span data-if="{{item.author?.is_guest}}" class="text-heading">{{item.author?.name}}</span>
+        <span data-if="{{item.author?.is_guest || !item.author?.uuid}}" class="text-heading">{{item.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}</span>
         <span data-if="{{item.author?.email}}" class="text-label-subtle">({{item.author?.email}})</span>
         <span data-if="{{item.author?.is_guest}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-board.admin.posts.guest</span>
         <span>·</span>

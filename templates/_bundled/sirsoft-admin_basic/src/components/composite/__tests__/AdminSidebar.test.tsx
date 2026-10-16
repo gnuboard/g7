@@ -53,11 +53,15 @@ describe('AdminSidebar', () => {
     (window as any).G7Core = originalG7Core;
   });
 
+  // @scenario surface=render
+  // @effects renders_menu_and_logo
   it('컴포넌트가 렌더링됨', () => {
     render(<AdminSidebar menu={mockMenu} />);
     expect(screen.getByText('대시보드')).toBeInTheDocument();
   });
 
+  // @scenario surface=render
+  // @effects renders_menu_and_logo
   it('로고가 표시됨', () => {
     render(<AdminSidebar logo="/logo.png" logoAlt="Test Logo" menu={mockMenu} />);
 
@@ -66,6 +70,8 @@ describe('AdminSidebar', () => {
     expect(logo).toHaveAttribute('src', '/logo.png');
   });
 
+  // @scenario surface=render
+  // @effects renders_menu_and_logo
   it('메뉴 아이템이 모두 표시됨', () => {
     render(<AdminSidebar menu={mockMenu} />);
 
@@ -74,6 +80,8 @@ describe('AdminSidebar', () => {
     expect(screen.getByText('설정')).toBeInTheDocument();
   });
 
+  // @scenario surface=leaf
+  // @effects menu_navigates_spa
   it('메뉴 아이템 클릭 시 G7Core.dispatch로 네비게이션', async () => {
     const user = userEvent.setup();
     render(<AdminSidebar menu={mockMenu} />);
@@ -87,6 +95,8 @@ describe('AdminSidebar', () => {
     });
   });
 
+  // @scenario surface=toggle_parent
+  // @effects parent_toggles_submenu
   it('하위 메뉴가 있는 아이템 클릭 시 하위 메뉴가 표시됨', async () => {
     const user = userEvent.setup();
     render(<AdminSidebar menu={mockMenu} />);
@@ -98,6 +108,8 @@ describe('AdminSidebar', () => {
     expect(screen.getByText('페이지')).toBeInTheDocument();
   });
 
+  // @scenario surface=toggle_parent
+  // @effects parent_toggles_submenu
   it('하위 메뉴가 표시된 후 다시 클릭하면 닫힘', async () => {
     const user = userEvent.setup();
     render(<AdminSidebar menu={mockMenu} />);
@@ -112,6 +124,8 @@ describe('AdminSidebar', () => {
     // 하위 메뉴가 닫혀야 하지만 실제로는 DOM에 남아있을 수 있음 (CSS로 숨김)
   });
 
+  // @scenario surface=collapsed
+  // @effects collapsed_hides_labels
   it('collapsed 모드에서 메뉴 라벨이 숨겨짐', () => {
     render(<AdminSidebar menu={mockMenu} collapsed={true} />);
 
@@ -121,6 +135,8 @@ describe('AdminSidebar', () => {
     expect(screen.queryByText('설정')).not.toBeInTheDocument();
   });
 
+  // @scenario surface=collapsed
+  // @effects collapsed_hides_labels
   it('토글 버튼을 클릭하면 onToggleCollapse가 호출됨', async () => {
     const user = userEvent.setup();
     const onToggleCollapse = vi.fn();
@@ -132,12 +148,16 @@ describe('AdminSidebar', () => {
     expect(onToggleCollapse).toHaveBeenCalledTimes(1);
   });
 
+  // @scenario surface=collapsed
+  // @effects collapsed_hides_labels
   it('collapsed 모드에서 토글 버튼 라벨이 변경됨', () => {
     render(<AdminSidebar menu={mockMenu} collapsed={true} onToggleCollapse={vi.fn()} />);
 
     expect(screen.getByLabelText('사이드바 펼치기')).toBeInTheDocument();
   });
 
+  // @scenario surface=collapsed
+  // @effects collapsed_hides_labels
   it('collapsed 모드에서 하위 메뉴가 표시되지 않음', () => {
     render(<AdminSidebar menu={mockMenu} collapsed={true} />);
 
@@ -146,12 +166,16 @@ describe('AdminSidebar', () => {
     expect(screen.queryByText('페이지')).not.toBeInTheDocument();
   });
 
+  // @scenario surface=render
+  // @effects renders_menu_and_logo
   it('className prop이 적용됨', () => {
     const { container } = render(<AdminSidebar menu={mockMenu} className="custom-class" />);
     expect(container.firstChild).toHaveClass('custom-class');
   });
 
   describe('G7Core 통합', () => {
+    // @scenario surface=locale
+    // @effects locale_follows_core
     it('G7Core.locale.current()에서 로케일을 자동으로 가져옴', () => {
       mockLocale.current.mockReturnValue('en');
       render(<AdminSidebar menu={mockMenu} />);
@@ -162,6 +186,8 @@ describe('AdminSidebar', () => {
       expect(screen.getByText('Settings')).toBeInTheDocument();
     });
 
+    // @scenario surface=locale
+    // @effects locale_follows_core
     it('currentLocale prop이 G7Core.locale보다 우선 적용됨', () => {
       mockLocale.current.mockReturnValue('en');
       render(<AdminSidebar menu={mockMenu} currentLocale="ko" />);
@@ -170,12 +196,16 @@ describe('AdminSidebar', () => {
       expect(screen.getByText('대시보드')).toBeInTheDocument();
     });
 
+    // @scenario surface=locale
+    // @effects locale_follows_core
     it('G7Core.state.subscribe로 로케일 변경 구독', () => {
       render(<AdminSidebar menu={mockMenu} />);
 
       expect(mockState.subscribe).toHaveBeenCalled();
     });
 
+    // @scenario surface=locale
+    // @effects locale_follows_core
     it('컴포넌트 언마운트 시 구독 해제', () => {
       const unsubscribe = vi.fn();
       mockState.subscribe.mockReturnValue(unsubscribe);
@@ -186,6 +216,8 @@ describe('AdminSidebar', () => {
       expect(unsubscribe).toHaveBeenCalled();
     });
 
+    // @scenario surface=locale
+    // @effects locale_follows_core
     it('G7Core 없이도 fallback으로 동작함', async () => {
       // G7Core 제거
       delete (window as any).G7Core;
@@ -206,6 +238,28 @@ describe('AdminSidebar', () => {
       expect(window.location.href).toBe('/admin');
 
       // 원복
+      window.location = originalLocation;
+    });
+
+    // @scenario surface=leaf
+    // @effects menu_navigates_spa
+    it('G7Core 없을 때 Ctrl+클릭은 지금 탭을 옮기지 않는다(브라우저가 새 탭으로 연다)', async () => {
+      delete (window as any).G7Core;
+
+      const user = userEvent.setup();
+      const originalLocation = window.location;
+      // @ts-ignore
+      delete window.location;
+      window.location = { ...originalLocation, href: '' } as Location;
+
+      render(<AdminSidebar menu={mockMenu} />);
+
+      await user.keyboard('{Control>}');
+      await user.click(screen.getByText('대시보드'));
+      await user.keyboard('{/Control}');
+
+      expect(window.location.href).toBe('');
+
       window.location = originalLocation;
     });
   });
@@ -242,6 +296,9 @@ describe('AdminSidebar', () => {
       window.location = { ...originalLocation, pathname } as Location;
     };
 
+    // URL 메뉴는 `<a href>` 로 그린다(#757 링크 단계) — 활성 스타일도 링크에 붙는다
+    // @scenario surface=active_match
+    // @effects active_menu_by_longest_prefix
     it('정확한 URL 매칭: /admin/boards에서 "게시판 관리"만 활성화', () => {
       setPathname('/admin/boards');
       render(<AdminSidebar menu={prefixConflictMenu} currentLocale="ko" />);
@@ -251,11 +308,13 @@ describe('AdminSidebar', () => {
       const boardReports = screen.getByText('게시판 신고 관리');
 
       // "게시판 관리" 버튼에 활성 스타일 적용
-      expect(boardMgmt.closest('button')).toHaveClass('admin-sidebar-item-active');
+      expect(boardMgmt.closest('a')).toHaveClass('admin-sidebar-item-active');
       // "게시판 신고 관리" 버튼에 활성 스타일 미적용
-      expect(boardReports.closest('button')).not.toHaveClass('admin-sidebar-item-active');
+      expect(boardReports.closest('a')).not.toHaveClass('admin-sidebar-item-active');
     });
 
+    // @scenario surface=active_match
+    // @effects active_menu_by_longest_prefix
     it('접두사 충돌 해결: /admin/boards/reports에서 "게시판 신고 관리"만 활성화', () => {
       setPathname('/admin/boards/reports');
       render(<AdminSidebar menu={prefixConflictMenu} currentLocale="ko" />);
@@ -264,11 +323,13 @@ describe('AdminSidebar', () => {
       const boardReports = screen.getByText('게시판 신고 관리');
 
       // "게시판 신고 관리"만 활성 스타일 적용
-      expect(boardReports.closest('button')).toHaveClass('admin-sidebar-item-active');
+      expect(boardReports.closest('a')).toHaveClass('admin-sidebar-item-active');
       // "게시판 관리"는 비활성
-      expect(boardMgmt.closest('button')).not.toHaveClass('admin-sidebar-item-active');
+      expect(boardMgmt.closest('a')).not.toHaveClass('admin-sidebar-item-active');
     });
 
+    // @scenario surface=active_match
+    // @effects active_menu_by_longest_prefix
     it('하위 경로에서 가장 가까운 메뉴 활성화: /admin/boards/123', () => {
       setPathname('/admin/boards/123');
       render(<AdminSidebar menu={prefixConflictMenu} currentLocale="ko" />);
@@ -277,11 +338,13 @@ describe('AdminSidebar', () => {
       const boardReports = screen.getByText('게시판 신고 관리');
 
       // "게시판 관리" (/admin/boards)가 가장 긴 접두사 매칭
-      expect(boardMgmt.closest('button')).toHaveClass('admin-sidebar-item-active');
+      expect(boardMgmt.closest('a')).toHaveClass('admin-sidebar-item-active');
       // "게시판 신고 관리" (/admin/boards/reports)는 매칭 안됨
-      expect(boardReports.closest('button')).not.toHaveClass('admin-sidebar-item-active');
+      expect(boardReports.closest('a')).not.toHaveClass('admin-sidebar-item-active');
     });
 
+    // @scenario surface=active_match
+    // @effects active_menu_by_longest_prefix
     it('부모 메뉴 자동 펼침: 활성 자식이 있으면 부모 펼침', () => {
       setPathname('/admin/boards/reports');
       render(<AdminSidebar menu={prefixConflictMenu} currentLocale="ko" />);
@@ -291,13 +354,15 @@ describe('AdminSidebar', () => {
       expect(screen.getByText('게시판 신고 관리')).toBeInTheDocument();
     });
 
+    // @scenario surface=active_match
+    // @effects active_menu_by_longest_prefix
     it('무관한 경로에서는 게시판 메뉴 비활성', () => {
       setPathname('/admin/settings');
       render(<AdminSidebar menu={prefixConflictMenu} currentLocale="ko" />);
 
       // "설정" 메뉴만 활성
       const settings = screen.getByText('설정');
-      expect(settings.closest('button')).toHaveClass('admin-sidebar-item-active');
+      expect(settings.closest('a')).toHaveClass('admin-sidebar-item-active');
 
       // 게시판 관련 하위 메뉴는 부모가 펼쳐지지 않아 DOM에 없음
       expect(screen.queryByText('게시판 관리')).not.toBeInTheDocument();

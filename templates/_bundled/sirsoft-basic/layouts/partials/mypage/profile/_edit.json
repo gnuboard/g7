@@ -171,7 +171,7 @@
                         {
                             "comment": "취소 버튼",
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "responsive": {
                                 "portable": {
                                     "props": {
@@ -182,14 +182,11 @@
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/mypage/profile"
-                                    }
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
-                                "type": "button",
+                                "href": "/mypage/profile",
                                 "className": "inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             },
                             "children": [
@@ -1813,11 +1810,10 @@
                         {
                             "comment": "취소 버튼",
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "type": "button",
                                         "className": "w-full inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-base font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                     }
                                 }
@@ -1825,14 +1821,11 @@
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/mypage/profile"
-                                    }
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
-                                "type": "button",
+                                "href": "/mypage/profile",
                                 "className": "inline-flex items-center justify-center gap-2 px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             },
                             "children": [

@@ -172,14 +172,14 @@
           </div>
           <div class="page-actions">
             <!-- 주문 목록으로. 보던 검색·상태 필터·페이지를 그대로 이고 간다 — 주문 하나를 처리하고 목록으로 돌아가는 왕복이 이 화면의 기본 동선이다 -->
-            <button data-ref="list_button" type="button" class="btn btn-outline">
+            <a href="/admin/ecommerce/orders" :mergeQuery="true" data-ref="list_button" class="btn btn-outline">
               <on type="click">
-                <navigate path="/admin/ecommerce/orders" :mergeQuery="true">
+                <navigate :mergeQuery="true">
                   <query/>
                 </navigate>
               </on>
               $t:sirsoft-ecommerce.common.list
-            </button>
+            </a>
           </div>
         </div>
         <include src="partials/admin_ecommerce_order_detail/_partial_order_progress.g7.html"/>

@@ -385,17 +385,15 @@
                             "comment": "모바일 헤더 좌측 - 로고. 이름이 길어도 우측 단추를 밀지 않도록 이 칸이 줄어들고(min-w-0 flex-1) 이름은 한 줄 … 로 자른다(#143 — 공백 없는 23자 이름에서 414px 까지 메뉴 단추가 화면 밖, 공백·한글 긴 이름은 4줄로 접혀 h-14 헤더를 위아래로 넘쳤다).",
                             "id": "mobile_header_left",
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/"
-                                    }
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
+                                "href": "/",
                                 "className": "justify-start flex items-center min-w-0 flex-1 cursor-pointer"
                             },
                             "children": [
@@ -496,7 +494,8 @@
                                                 {
                                                     "handler": "navigate",
                                                     "params": {
-                                                        "path": "{{$args[0].url ?? '/mypage/notifications'}}"
+                                                        "path": "{{$args[0].url ?? '/mypage/notifications'}}",
+                                                        "fallbackPath": "/mypage/notifications"
                                                     }
                                                 },
                                                 {
@@ -721,20 +720,17 @@
                                     "comment": "장바구니 — PC와 동일 순서 (알림 → 장바구니)",
                                     "id": "mobile_cart_btn",
                                     "type": "basic",
-                                    "name": "Button",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "{{_global.shopBase}}/cart"
-                                            }
+                                            "handler": "navigate"
                                         }
                                     ],
                                     "props": {
-                                        "type": "button",
+                                        "href": "{{_global.shopBase}}/cart",
                                         "aria-label": "$t:nav.cart_with_count|count={{_global.cartCount ?? 0}}",
-                                        "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative cursor-pointer"
+                                        "className": "inline-flex items-center justify-center p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative cursor-pointer"
                                     },
                                     "children": [
                                         {
@@ -761,20 +757,17 @@
                                     "comment": "사용자 아이콘 (로그인 시) / 로그인 버튼. 아이콘만 있는 단추라 aria-label 로 용도를 말한다(7.1.0 O-C1-3) — 장바구니는 담긴 수, 메뉴는 열림 여부(aria-expanded)도 함께 알린다.",
                                     "id": "mobile_user_btn",
                                     "type": "basic",
-                                    "name": "Button",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "{{_global.currentUser ? '/mypage' : '/login'}}"
-                                            }
+                                            "handler": "navigate"
                                         }
                                     ],
                                     "props": {
-                                        "type": "button",
+                                        "href": "{{_global.currentUser ? '/mypage' : '/login'}}",
                                         "aria-label": "{{_global.currentUser?.uuid ? '$t:common.mypage' : '$t:common.login'}}",
-                                        "className": "p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
+                                        "className": "inline-flex items-center justify-center p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
                                     },
                                     "children": [
                                         {
@@ -1213,7 +1206,7 @@
                                                 {
                                                     "comment": "마이페이지",
                                                     "type": "basic",
-                                                    "name": "Button",
+                                                    "name": "A",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1237,6 +1230,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "href": "/mypage",
                                                         "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
                                                     },
                                                     "children": [
@@ -1258,7 +1252,7 @@
                                                 {
                                                     "comment": "주문 내역",
                                                     "type": "basic",
-                                                    "name": "Button",
+                                                    "name": "A",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1282,6 +1276,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "href": "/mypage/orders",
                                                         "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
                                                     },
                                                     "children": [
@@ -1303,7 +1298,7 @@
                                                 {
                                                     "comment": "위시리스트",
                                                     "type": "basic",
-                                                    "name": "Button",
+                                                    "name": "A",
                                                     "actions": [
                                                         {
                                                             "type": "click",
@@ -1327,6 +1322,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "href": "/mypage/wishlist",
                                                         "className": "w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
                                                     },
                                                     "children": [
@@ -1406,7 +1402,7 @@
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "로그인으로 — 드로어는 라우트가 바뀌어도 살아 있으므로 이동 전에 직접 닫는다.",
@@ -1430,13 +1426,14 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "flex-1 py-2.5 text-center bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm cursor-pointer"
+                                                "href": "/login",
+                                                "className": "inline-block flex-1 py-2.5 text-center bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium text-sm cursor-pointer"
                                             },
                                             "text": "$t:auth.login"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "회원가입으로 — 드로어를 닫고 이동한다.",
@@ -1460,7 +1457,8 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "flex-1 py-2.5 text-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium text-sm cursor-pointer"
+                                                "href": "/register",
+                                                "className": "inline-block flex-1 py-2.5 text-center border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium text-sm cursor-pointer"
                                             },
                                             "text": "$t:auth.register_link"
                                         }
@@ -1469,7 +1467,7 @@
                                 {
                                     "comment": "비회원 주문 조회 진입 — 비로그인일 때만 노출 (모바일 nav)",
                                     "type": "basic",
-                                    "name": "Button",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "type": "click",
@@ -1493,6 +1491,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "href": "/login?redirect=/mypage/orders",
                                         "className": "block w-full mt-3 py-2 text-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
                                     },
                                     "text": "$t:shop.guest_order_form.nav_link"
@@ -1509,7 +1508,7 @@
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Button",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "comment": "홈으로 — 드로어를 닫고 이동한다.",
@@ -1533,6 +1532,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "href": "/",
                                         "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium cursor-pointer"
                                     },
                                     "children": [
@@ -1553,7 +1553,7 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Button",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "comment": "인기글 모아보기로 — 특정 게시판이 아니라 전 게시판 통합 목록이다.",
@@ -1577,6 +1577,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "href": "/boards/popular",
                                         "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
                                     },
                                     "children": [
@@ -1624,7 +1625,7 @@
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "그 게시판 목록으로 — 경로는 관리자가 정한 슬러그라 게시판이 늘면 메뉴도 따라 는다(boards 응답이 곧 이 목록).",
@@ -1648,6 +1649,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "href": "/board/{{board.slug}}",
                                                 "className": "w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
                                             },
                                             "children": [
@@ -1692,7 +1694,7 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Button",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "comment": "상품 목록으로 — 앞머리(shopBase)는 이커머스 설정에서 온다. 쇼핑을 루트에 붙이는 설정이면 빈 문자열이라 그냥 /products 가 된다.",
@@ -1716,6 +1718,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "href": "{{_global.shopBase}}/products",
                                         "className": "w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
                                     },
                                     "children": [
@@ -1736,7 +1739,7 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Button",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "comment": "장바구니로 — 옆 배지 수량은 cart 데이터소스가 채우므로 비회원도 담은 것이 보인다.",
@@ -1760,6 +1763,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "href": "{{_global.shopBase}}/cart",
                                         "className": "w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer"
                                     },
                                     "children": [
@@ -1827,7 +1831,7 @@
                                                 },
                                                 {
                                                     "type": "basic",
-                                                    "name": "Button",
+                                                    "name": "A",
                                                     "actions": [
                                                         {
                                                             "comment": "소개 문서로 — /page/* 는 페이지 모듈이 슬러그로 서빙하므로 관리자가 그 슬러그의 문서를 만들지 않았으면 빈 화면이 된다.",
@@ -1851,13 +1855,14 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "href": "/page/about",
                                                         "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
                                                     },
                                                     "text": "$t:user.footer.about"
                                                 },
                                                 {
                                                     "type": "basic",
-                                                    "name": "Button",
+                                                    "name": "A",
                                                     "actions": [
                                                         {
                                                             "comment": "자주 묻는 질문 문서로.",
@@ -1881,13 +1886,14 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "href": "/page/faq",
                                                         "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
                                                     },
                                                     "text": "$t:user.footer.faq"
                                                 },
                                                 {
                                                     "type": "basic",
-                                                    "name": "Button",
+                                                    "name": "A",
                                                     "actions": [
                                                         {
                                                             "comment": "문의 안내 문서로 — 문의 폼이 아니라 페이지 모듈 문서다.",
@@ -1911,6 +1917,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "href": "/page/contact",
                                                         "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
                                                     },
                                                     "text": "$t:user.footer.contact"
@@ -1931,7 +1938,7 @@
                                                 },
                                                 {
                                                     "type": "basic",
-                                                    "name": "Button",
+                                                    "name": "A",
                                                     "actions": [
                                                         {
                                                             "comment": "이용약관 문서로 — 회원가입 폼의 약관 모달과 다른 경로다(그쪽은 가입 화면 안에서 띄우는 조각).",
@@ -1955,13 +1962,14 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "href": "/page/terms",
                                                         "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
                                                     },
                                                     "text": "$t:user.footer.terms"
                                                 },
                                                 {
                                                     "type": "basic",
-                                                    "name": "Button",
+                                                    "name": "A",
                                                     "actions": [
                                                         {
                                                             "comment": "개인정보처리방침 문서로.",
@@ -1985,13 +1993,14 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "href": "/page/privacy",
                                                         "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
                                                     },
                                                     "text": "$t:user.footer.privacy"
                                                 },
                                                 {
                                                     "type": "basic",
-                                                    "name": "Button",
+                                                    "name": "A",
                                                     "actions": [
                                                         {
                                                             "comment": "환불·교환 정책 문서로 — 주문 화면의 실제 취소/환불 흐름과는 무관한 안내 문서다.",
@@ -2015,6 +2024,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "href": "/page/refund",
                                                         "className": "block w-full py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-left cursor-pointer"
                                                     },
                                                     "text": "$t:user.footer.refund"
@@ -2129,7 +2139,8 @@
                                     "handler": "navigate",
                                     "if": "{{$args[0].url}}",
                                     "params": {
-                                        "path": "{{$args[0].url ?? '/mypage/notifications'}}"
+                                        "path": "{{$args[0].url ?? '/mypage/notifications'}}",
+                                        "fallbackPath": "/mypage/notifications"
                                     }
                                 }
                             ]

@@ -151,6 +151,7 @@
         "labelDrilldownKey": ""
     },
     "computed": {
+        "tabQuery": "{{['preset', 'from', 'to', 'unit', 'exclude', 'per_page'].filter(k => query[k]).map(k => '&' + k + '=' + encodeURIComponent(query[k])).join('')}}",
         "reportEmptyHint": "{{(query.tab || 'types') === 'mediums' ? $t('admin.analytics.referrers.mediums_empty') : null}}",
         "reportName": "{{({types: 'referrer_type', sites: 'referrer_name', keywords: 'referrer_keyword', campaigns: 'campaign', mediums: 'campaign_medium'})[query.tab || 'types'] || 'referrer_type'}}",
         "csvUrl": "{{((query.tab || 'types') === 'sites' && !!query.host) ? '' : '/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&from=' + query.from + '&to=' + (query.to || query.from) : '&preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&exclude[]=' + e).join('') + (query.q ? '&q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&sort=' + query.sort : '')}}",
@@ -283,22 +284,27 @@
                             "tabs": [
                                 {
                                     "id": "types",
+                                    "href": "/admin/analytics/referrers?tab=types{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.referrers.tabs.types"
                                 },
                                 {
                                     "id": "sites",
+                                    "href": "/admin/analytics/referrers?tab=sites{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.referrers.tabs.sites"
                                 },
                                 {
                                     "id": "keywords",
+                                    "href": "/admin/analytics/referrers?tab=keywords{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.referrers.tabs.keywords"
                                 },
                                 {
                                     "id": "campaigns",
+                                    "href": "/admin/analytics/referrers?tab=campaigns{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.referrers.tabs.campaigns"
                                 },
                                 {
                                     "id": "mediums",
+                                    "href": "/admin/analytics/referrers?tab=mediums{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.referrers.tabs.mediums"
                                 }
                             ]
@@ -385,10 +391,10 @@
                                     {
                                         "id": "referrer_urls_back",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
-                                                "comment": "사이트 목록으로 — 라벨 링크를 다시 켜고 `host` 만 지워 1쪽으로 돌아간다. 기간·쪽 크기는 병합으로 남는다.",
+                                                "comment": "사이트 목록으로 — 링크(#757)라 새 탭으로도 연다. 주소는 href 한 곳: 지금 탭과 기간·쪽 크기(`tabQuery`)만 싣고\n                   `host` 는 싣지 않아 1쪽 사이트 목록으로 돌아간다(현재 쿼리를 병합하면 지우려는 host 가 남는다).",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -401,24 +407,19 @@
                                                         }
                                                     },
                                                     {
+                                                        "comment": "audit:allow layout-list-context-navigate-merge-query 사이트 목록 복귀 — 현재 쿼리를 병합하면 지우려는 host 가 남아 다시 주소 목록이 열린다. 이어받을 기간·쪽 크기는 href 의 tabQuery 가 싣는다.",
                                                         "handler": "navigate",
                                                         "params": {
-                                                            "path": "/admin/analytics/referrers",
-                                                            "mergeQuery": true,
                                                             "replace": true,
-                                                            "transition_overlay_target": "referrer_urls_grid__body",
-                                                            "query": {
-                                                                "host": "{{undefined}}",
-                                                                "page": 1
-                                                            }
+                                                            "transition_overlay_target": "referrer_urls_grid__body"
                                                         }
                                                     }
                                                 ]
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "btn-icon",
+                                            "href": "/admin/analytics/referrers?tab={{query.tab || 'sites'}}{{_computed.tabQuery}}",
+                                            "className": "button btn-icon",
                                             "aria-label": "$t:admin.analytics.referrers.urls_back"
                                         },
                                         "children": [
@@ -493,6 +494,8 @@
                                             }
                                         ],
                                         "props": {
+                                            "pageHref": "/admin/analytics/referrers?page={page}",
+                                            "pageHrefMergeQuery": true,
                                             "data": "{{analytics_referrer_urls?.data?.data ?? []}}",
                                             "pagination": true,
                                             "serverSidePagination": true,

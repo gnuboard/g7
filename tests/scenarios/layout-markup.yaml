@@ -1086,6 +1086,14 @@ effects:
   - security_violation_carries_source_line
   - returned_json_has_no_position_markers
   - init_layout_with_unlocated_warning_compiles
+  # #757 링크 — `NavigationLinkMarkupTest` 가 게이트에서 돌므로 그 효과를 여기에도 둔다. 조합 축(컴파일러 / 봇 HTML)은
+  # `navigation-link-markup.yaml` 이 소유한다.
+  - prevent_default_key_is_top_level
+  - navigate_without_path_compiles_inside_link
+  - bot_html_keeps_anchor_href
+  # #757 추가 11 — `NavigateFallbackPathMarkupTest` 가 게이트에서 돌므로 그 효과를 여기에도 둔다. 조합 축(path_kind × fallback_path)은
+  # `navigate-fallback-path.yaml` 이 소유한다.
+  - markup_fallback_path_compiles_to_params
 
 # S18.5 축 B — 설치/업데이트/삭제 × 소스 매트릭스.
 #
@@ -1301,3 +1309,9 @@ test_files:
   # 에만 등재돼 있었다(#712 리베이스 뒤 종료 게이트에서 `test_every_gate_resident_test_is_declared_in_manifest` 가 red).
   - tests/Feature/LayoutMarkup/LegacyJsonPartialToleranceTest.php
   - tests/Feature/LayoutMarkup/TemplateActivationFragmentOrderTest.php
+  # #757 링크 — 네임스페이스 `Tests\Unit\Support\LayoutMarkup` 이라 게이트에서 돈다. 조합 축(컴파일러 / 봇 HTML)은
+  # `navigation-link-markup.yaml` 이 소유한다(액션 키 `preventDefault` top-level · 링크 안 path 없는 navigate).
+  - tests/Unit/Support/LayoutMarkup/NavigationLinkMarkupTest.php
+  # #757 추가 11 — 네임스페이스 `TestsUnitSupportLayoutMarkup` 이라 게이트에서 돈다. 조합 축은 `navigate-fallback-path.yaml` 이
+  # 소유한다(`<navigate fallbackPath>` → `params.fallbackPath` · 마크업 왕복).
+  - tests/Unit/Support/LayoutMarkup/NavigateFallbackPathMarkupTest.php

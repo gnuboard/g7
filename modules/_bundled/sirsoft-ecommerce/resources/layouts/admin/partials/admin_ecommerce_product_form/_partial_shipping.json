@@ -611,20 +611,17 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "actions": [
                                 {
                                     "comment": "audit:allow layout-list-context-navigate-merge-query 상품 폼에서 배송정책 목록 클러스터로 나가는 이동이다 — 상품 목록의 페이지·필터를 물려주지 않는다.",
                                     "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/admin/ecommerce/shipping-policies/create"
-                                    }
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
-                                "type": "button",
-                                "className": "mt-3 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-700 dark:hover:bg-blue-600"
+                                "href": "/admin/ecommerce/shipping-policies/create",
+                                "className": "button mt-3 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-700 dark:hover:bg-blue-600"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.buttons.create_shipping_policy"
                         }

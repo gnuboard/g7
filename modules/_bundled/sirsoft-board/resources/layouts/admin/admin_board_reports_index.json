@@ -1997,6 +1997,8 @@
                             }
                         ],
                         "props": {
+                            "pageHrefMergeQuery": true,
+                            "pageHref": "/admin/boards/reports?page={page}",
                             "rowLabelField": "board.title",
                             "data": "{{reports?.data?.data}}",
                             "sortable": true,
@@ -2024,17 +2026,20 @@
                             "selectedCountText": "",
                             "rowActions": [
                                 {
+                                    "href": "/admin/boards/reports/{{row.id}}",
                                     "id": "view",
                                     "label": "$t:sirsoft-board.admin.reports.actions.view",
                                     "iconName": "eye",
                                     "disabledField": "abilities.can_view"
                                 },
                                 {
+                                    "href": "/admin/board/{{row.board?.slug}}",
                                     "id": "go_to_board",
                                     "label": "$t:sirsoft-board.admin.reports.actions.go_to_board",
                                     "iconName": "folder"
                                 },
                                 {
+                                    "href": "/admin/board/{{row.board?.slug}}/post/{{row.post_id}}",
                                     "id": "go_to_post",
                                     "label": "$t:sirsoft-board.admin.reports.actions.go_to_post",
                                     "iconName": "file-lines"

@@ -166,23 +166,23 @@
                                 "children": [
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
-                                                "comment": "쿼리를 떨어뜨린 처음 상태로 되돌린다",
+                                                "comment": "지금 검색 조건 그대로 목록을 다시 불러온다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/ecommerce/orders",
                                                     "mergeQuery": true,
                                                     "query": {}
                                                 }
                                             }
                                         ],
                                         "props": {
+                                            "href": "/admin/ecommerce/orders",
+                                            "mergeQuery": true,
                                             "aria-label": "$t:common.refresh",
                                             "title": "$t:common.refresh",
-                                            "type": "button",
                                             "className": "btn btn-icon"
                                         },
                                         "children": [

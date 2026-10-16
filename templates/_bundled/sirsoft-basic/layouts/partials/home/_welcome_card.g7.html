@@ -9,26 +9,26 @@
     <h2 class="text-xl font-bold mb-2 break-words">{{_global.settings?.general?.site_name ?? 'Site'}}$t:home.welcome_suffix</h2>
     <p class="text-sm opacity-90 mb-4 break-words">{{_global.settings?.general?.site_description ?? '$t:home.welcome_description'}}</p>
     <div class="flex gap-3">
-      <button data-ref="register_button" data-if="{{!_global.currentUser?.uuid}}" class="px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer">
+      <a href="/register" data-ref="register_button" data-if="{{!_global.currentUser?.uuid}}" class="px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer">
         <on type="click">
-          <navigate path="/register"/>
+          <navigate/>
         </on>
         <span>$t:home.get_started</span>
         <icon name="arrow-right" class="text-base"/>
-      </button>
-      <button data-ref="dashboard_button" data-if="{{_global.currentUser?.uuid}}" class="px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer">
+      </a>
+      <a href="/mypage" data-ref="dashboard_button" data-if="{{_global.currentUser?.uuid}}" class="px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer">
         <on type="click">
-          <navigate path="/mypage"/>
+          <navigate/>
         </on>
         <span>$t:home.go_to_mypage</span>
         <icon name="arrow-right" class="text-base"/>
-      </button>
-      <button class="px-4 py-2 bg-white/20 text-white rounded-lg font-medium text-sm hover:bg-white/30 transition-colors cursor-pointer">
+      </a>
+      <a href="/page/about" class="inline-flex items-center justify-center px-4 py-2 bg-white/20 text-white rounded-lg font-medium text-sm hover:bg-white/30 transition-colors cursor-pointer">
         <on type="click">
-          <navigate path="/page/about"/>
+          <navigate/>
         </on>
         $t:home.learn_more
-      </button>
+      </a>
     </div>
   </div>
 </partial>

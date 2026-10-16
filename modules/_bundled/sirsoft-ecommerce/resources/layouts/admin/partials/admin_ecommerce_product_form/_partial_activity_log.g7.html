@@ -74,16 +74,8 @@
               <td class="px-4 py-3 whitespace-nowrap">
                 <action-menu data-type="composite" data-if="{{!!log.user?.uuid}}" position="left">
                   <prop name="items">
-                    <item id="view_member" label="$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member" iconName="user"/>
+                    <item id="view_member" href="/admin/users/{{log.user.uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member" iconName="user"/>
                   </prop>
-                  <on event="onItemClick">
-                    <!-- 기록을 남긴 사람이 회원일 때만 이름이 메뉴가 된다 — 고르면 회원 상세를 새 창으로 연다(편집 중이던 상품 폼을 잃지 않기 위해서다) -->
-                    <switch>
-                      <case when="view_member">
-                        <open-window path="/admin/users/{{log.user.uuid}}"/>
-                      </case>
-                    </switch>
-                  </on>
                   <div class="flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
                     <div class="flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
                       <span aria-hidden="true" class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.actor_name ?? 'S').charAt(0).toUpperCase()}}</span>
@@ -144,16 +136,8 @@
             <div class="flex-center gap-2">
               <action-menu data-type="composite" data-if="{{!!log.user?.uuid}}" position="left">
                 <prop name="items">
-                  <item id="view_member" label="$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member" iconName="user"/>
+                  <item id="view_member" href="/admin/users/{{log.user.uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member" iconName="user"/>
                 </prop>
-                <on event="onItemClick">
-                  <!-- 좁은 화면 카드에서도 같다 — 회원 상세를 새 창으로 연다 -->
-                  <switch>
-                    <case when="view_member">
-                      <open-window path="/admin/users/{{log.user.uuid}}"/>
-                    </case>
-                  </switch>
-                </on>
                 <div class="flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
                   <div class="flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
                     <span aria-hidden="true" class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.actor_name ?? 'S').charAt(0).toUpperCase()}}</span>

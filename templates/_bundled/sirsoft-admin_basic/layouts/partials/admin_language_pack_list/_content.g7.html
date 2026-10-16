@@ -226,7 +226,7 @@
            언어팩은 대개 자기 그림이 없어 대상 확장·코어의 아이콘을 빌려 쓰므로, 무엇의 어떤
            언어인지 아이콘 위 로케일 표식으로 구분한다(국기는 쓰지 않는다 — 언어는 나라가
            아니다). 대상 식별자는 `identifier` 가 아니라 설치 행의 `id` 다. -->
-      <extension-card-grid data-type="composite" data-ref="lp_card_grid" data-if="{{(language_packs?.data?.data?.length ?? 0) > 0}}" viewMode="{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}" :minCardWidth="250" :maxColumns="5" resyncKey="{{_global.extensionToggleResync ?? 0}}" loading="{{language_packs?.loading ?? false}}" :pagination="true" :alwaysShowPagination="true" currentPage="{{language_packs?.data?.pagination?.current_page ?? 1}}" totalPages="{{language_packs?.data?.pagination?.last_page ?? null}}" hasMorePages="{{language_packs?.data?.pagination?.has_more_pages ?? false}}" items="{{(language_packs?.data?.data ?? []).map(p => ({
+      <extension-card-grid data-type="composite" data-ref="lp_card_grid" data-if="{{(language_packs?.data?.data?.length ?? 0) > 0}}" viewMode="{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}" :minCardWidth="250" :maxColumns="5" resyncKey="{{_global.extensionToggleResync ?? 0}}" loading="{{language_packs?.loading ?? false}}" :pagination="true" pageHref="{{route.path}}?page={page}" :pageHrefMergeQuery="true" :alwaysShowPagination="true" currentPage="{{language_packs?.data?.pagination?.current_page ?? 1}}" totalPages="{{language_packs?.data?.pagination?.last_page ?? null}}" hasMorePages="{{language_packs?.data?.pagination?.has_more_pages ?? false}}" items="{{(language_packs?.data?.data ?? []).map(p => ({
         id: String(p.id ?? p.bundled_identifier ?? p.identifier),
         row: p,
         name: p.name ?? p.identifier,

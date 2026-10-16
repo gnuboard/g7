@@ -33,14 +33,14 @@
       <div class="flex items-center gap-2">
         <responsive on="portable" class="flex items-center gap-2 w-full"/>
         <!-- 취소 버튼 -->
-        <button type="button" class="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <a href="/mypage/profile" class="inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <responsive on="portable" class="inline-flex items-center justify-center gap-2 flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
           <on type="click">
-            <navigate path="/mypage/profile"/>
+            <navigate/>
           </on>
           <icon name="x" size="sm"/>
           <span>$t:common.cancel</span>
-        </button>
+        </a>
         <!-- 저장 버튼 -->
         <button type="submit" form="profileEditForm" disabled="{{_local.isSavingProfile}}" class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
           <responsive on="portable" class="inline-flex items-center justify-center gap-2 flex-1 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"/>
@@ -374,14 +374,14 @@
       <div class="flex justify-end gap-2">
         <responsive on="portable" class="flex flex-col-reverse gap-2"/>
         <!-- 취소 버튼 -->
-        <button type="button" class="inline-flex items-center justify-center gap-2 px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-          <responsive on="portable" type="button" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-base font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
+        <a href="/mypage/profile" class="inline-flex items-center justify-center gap-2 px-6 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          <responsive on="portable" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-base font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"/>
           <on type="click">
-            <navigate path="/mypage/profile"/>
+            <navigate/>
           </on>
           <icon name="x" size="md"/>
           <span>$t:common.cancel</span>
-        </button>
+        </a>
         <!-- 저장 버튼 -->
         <button type="submit" disabled="{{_local.isSavingProfile}}" class="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
           <responsive on="portable" type="submit" disabled="{{_local.isSavingProfile}}" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-base font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"/>

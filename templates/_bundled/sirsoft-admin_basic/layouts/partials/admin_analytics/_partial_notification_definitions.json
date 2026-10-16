@@ -43,24 +43,18 @@
                 {
                     "id": "definitions_settings_link",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read'))}}",
                     "actions": [
                         {
                             "comment": "템플릿 편집은 환경설정의 알림 정의 탭 몫이다 — 그 탭으로 바로 간다. 환경설정 읽기 권한이 없으면 버튼을 그리지 않는다.",
                             "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/admin/settings",
-                                "query": {
-                                    "tab": "notification_definitions"
-                                }
-                            }
+                            "handler": "navigate"
                         }
                     ],
                     "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary btn-sm"
+                        "href": "/admin/settings?tab=notification_definitions",
+                        "className": "button btn btn-secondary btn-sm"
                     },
                     "text": "$t:admin.analytics.settings.reports.edit_templates"
                 }

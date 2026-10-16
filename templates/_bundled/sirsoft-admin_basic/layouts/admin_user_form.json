@@ -2221,23 +2221,17 @@
                                                 "children": [
                                                     {
                                                         "type": "basic",
-                                                        "name": "Button",
+                                                        "name": "A",
                                                         "actions": [
                                                             {
                                                                 "comment": "이 회원의 알림 발송 이력으로 이동한다 — 회원 UUID 로 목록을 거른다",
                                                                 "type": "click",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/admin/member-notifications",
-                                                                    "query": {
-                                                                        "user_uuid": "{{user?.data?.uuid}}"
-                                                                    }
-                                                                }
+                                                                "handler": "navigate"
                                                             }
                                                         ],
                                                         "props": {
-                                                            "type": "button",
-                                                            "className": "btn btn-secondary"
+                                                            "href": "/admin/member-notifications?user_uuid={{user?.data?.uuid}}",
+                                                            "className": "button btn btn-secondary"
                                                         },
                                                         "children": [
                                                             {

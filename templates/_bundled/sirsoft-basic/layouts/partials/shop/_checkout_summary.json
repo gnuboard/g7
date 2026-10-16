@@ -903,7 +903,8 @@
                                                         {
                                                             "handler": "navigate",
                                                             "params": {
-                                                                "path": "{{$results[0]?.redirect_url ?? response.data.redirect_url ?? _global.shopBase + '/orders/' + response.data.order.order_number + '/complete'}}"
+                                                                "path": "{{$results[0]?.redirect_url ?? response.data.redirect_url ?? _global.shopBase + '/orders/' + response.data.order.order_number + '/complete'}}",
+                                                                "fallbackPath": "{{_global.shopBase}}/orders/{{response.data.order.order_number}}/complete"
                                                             }
                                                         }
                                                     ]

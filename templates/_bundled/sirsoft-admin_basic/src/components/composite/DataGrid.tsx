@@ -306,6 +306,12 @@ export interface DataGridProps {
   serverSidePagination?: boolean;
   serverCurrentPage?: number;
   /**
+   * 페이지 번호 주소 틀 — `{page}` 자리에 번호(예: `/admin/users?page={page}`). 주면 내장 페이지 번호가 링크가 된다(#757).
+   */
+  pageHref?: string;
+  /** 페이지 주소에 현재 주소의 쿼리를 합친다 */
+  pageHrefMergeQuery?: boolean;
+  /**
    * 서버가 알려준 마지막 페이지 번호
    *
    * 총 건수를 상한까지만 센 목록은 마지막 페이지를 계산할 수 없어 서버가 `null` 을 보낸다.
@@ -609,6 +615,32 @@ const resolveRowClassName = (rowClassName: string | undefined, row: any): string
 };
 
 /**
+ * 행 메뉴 항목의 주소(`href`)를 그 행 문맥으로 평가합니다.
+ *
+ * `components.json` 의 `skipBindingKeys` 에 `href` 를 두어 엔진이 행 문맥 없이 먼저 풀지 않게 하고(그러면 `{{row.uuid}}` 가
+ * 빈 값이 된다), 행마다 여기서 푼다(#757 링크 단계 — 행 메뉴 「보기」「수정」을 새 탭으로 열기).
+ *
+ * @param href 항목 주소 틀 (예: `/admin/users/{{row.uuid}}/edit`)
+ * @param row 행 데이터
+ * @returns 평가한 주소 (식이 없으면 그대로, 풀 수 없으면 undefined)
+ */
+const resolveRowHref = (href: unknown, row: any): string | undefined => {
+  if (typeof href !== 'string' || href.trim() === '') return undefined;
+  if (!href.includes('{{')) return href;
+
+  const engine = (window as any).G7Core?.getDataBindingEngine?.();
+  if (!engine?.resolveBindings) return undefined;
+
+  try {
+    const resolved = engine.resolveBindings(href, { row, item: row, $item: row }, { skipCache: true });
+    return typeof resolved === 'string' && resolved !== '' ? resolved : undefined;
+  } catch (error) {
+    logger.warn('행 메뉴 주소 해석 실패:', error);
+    return undefined;
+  }
+};
+
+/**
  * cellChildren 배열을 React 요소로 렌더링합니다.
  *
  * G7Core.renderItemChildren을 사용하여 템플릿 엔진의 모든 표현식 처리 기능을 활용합니다.
@@ -780,6 +812,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
   // 서버 사이드 페이지네이션
   serverSidePagination = false,
   serverCurrentPage,
+  pageHref,
+  pageHrefMergeQuery,
   serverTotalPages,
   serverHasMorePages,
   onPageChange,
@@ -1281,6 +1315,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
           // 해석을 마쳤으므로 지운다 — ActionMenu 는 남아 있는 disabledField 를 「해석 안 됨」으로 보고 잠근다
           disabledField: undefined,
           disabled: isDisabled,
+          // 주소가 있는 항목(보기·수정)은 행 메뉴에서 링크로 그려진다 — 행마다 평가(가운데 클릭·Ctrl+클릭 새 탭)
+          href: resolveRowHref((action as ActionMenuItem).href, row),
           onClick: () => handleRowAction(action.id, row),
         };
       });
@@ -1563,6 +1599,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
               totalPages={effectiveTotalPages}
               hasMorePages={serverSidePagination ? serverHasMorePages : undefined}
               onPageChange={handlePageChange}
+              pageHref={pageHref}
+              pageHrefMergeQuery={pageHrefMergeQuery}
               showFirstLast={showFirstLast}
               maxVisiblePages={5}
               prevText={resolvedPrevText}
@@ -1890,6 +1928,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
             totalPages={effectiveTotalPages}
             hasMorePages={serverSidePagination ? serverHasMorePages : undefined}
             onPageChange={handlePageChange}
+            pageHref={pageHref}
+            pageHrefMergeQuery={pageHrefMergeQuery}
             showFirstLast={showFirstLast}
             maxVisiblePages={5}
             prevText={resolvedPrevText}

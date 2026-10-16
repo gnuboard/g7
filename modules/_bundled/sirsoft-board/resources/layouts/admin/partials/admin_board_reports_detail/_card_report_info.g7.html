@@ -36,9 +36,9 @@
         <div data-ref="field_author">
           <span class="text-tertiary block font-medium mb-1">{{report_detail?.data?.target_type === 'post' ? '$t:sirsoft-board.admin.reports.detail.content_author_label' : '$t:sirsoft-board.admin.reports.detail.comment_author_label'}}</span>
           <!-- 회원 작성자: ActionMenu로 사용자 정보 드롭다운 -->
-          <action-menu data-type="composite" data-if="{{!(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest)}}" triggerLabel="{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name}}" triggerIconName="" position="right">
+          <action-menu data-type="composite" data-if="{{!(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest) &amp;&amp; (report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.uuid : report_detail?.data?.comment?.author?.uuid)}}" triggerLabel="{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name}}" triggerIconName="" position="right">
             <prop name="items">
-              <item id="view_author" label="$t:sirsoft-board.admin.reports.detail.user_info" iconName="user"/>
+              <item href="/admin/users/{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.uuid : report_detail?.data?.comment?.author?.uuid}}" id="view_author" label="$t:sirsoft-board.admin.reports.detail.user_info" iconName="user"/>
             </prop>
             <on type="click" event="onItemClick">
               <switch>
@@ -48,6 +48,8 @@
               </switch>
             </on>
           </action-menu>
+          <!-- 회원 계정이 남지 않은 작성자(uuid 없음): 갈 곳이 없어 이름만 -->
+          <span data-if="{{!(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest) &amp;&amp; !(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.uuid : report_detail?.data?.comment?.author?.uuid)}}" class="text-heading">{{(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name) ?? '$t:sirsoft-board.admin.posts.unknown_author'}}</span>
           <!-- 비회원 작성자: 이름 + 배지 (드롭다운 없음) -->
           <div data-if="{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest}}" class="flex-center gap-2">
             <span class="text-heading">{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name}}</span>
@@ -57,13 +59,13 @@
         </div>
         <div data-ref="field_board">
           <label class="text-label-subtle block font-medium mb-1">$t:sirsoft-board.admin.reports.detail.board_label</label>
-          <span data-if="{{report_detail?.data?.board?.slug}}" class="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group">
+          <a href="/admin/board/{{report_detail?.data?.board?.slug}}" data-if="{{report_detail?.data?.board?.slug}}" class="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group">
             <on type="click">
-              <navigate path="/admin/board/{{report_detail?.data?.board?.slug}}"/>
+              <navigate/>
             </on>
             <span class="border-b border-transparent board-link-underline transition-all">{{report_detail?.data?.board?.name}}</span>
             <icon name="arrow-up-right-from-square" class="text-xs"/>
-          </span>
+          </a>
           <span data-if="{{!report_detail?.data?.board?.slug}}" class="inline-flex items-center gap-1.5 text-label-subtle">
             <span>{{report_detail?.data?.board?.name}}</span>
             <span class="text-xs board-muted-note">($t:sirsoft-board.admin.reports.detail.board_deleted)</span>
@@ -71,24 +73,24 @@
         </div>
         <div data-ref="field_post_title" data-if="{{report_detail?.data?.target_type === 'comment'}}">
           <label class="text-label-subtle block font-medium mb-1">$t:sirsoft-board.admin.reports.detail.post_title_label</label>
-          <span data-if="{{report_detail?.data?.board?.slug &amp;&amp; report_detail?.data?.post?.id}}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group">
+          <a href="/admin/board/{{report_detail?.data?.board?.slug}}/post/{{report_detail?.data?.post?.id}}" data-if="{{report_detail?.data?.board?.slug &amp;&amp; report_detail?.data?.post?.id}}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group">
             <on type="click">
-              <navigate path="/admin/board/{{report_detail?.data?.board?.slug}}/post/{{report_detail?.data?.post?.id}}"/>
+              <navigate/>
             </on>
             <span class="border-b border-transparent board-link-underline transition-all">{{report_detail?.data?.post?.title}}</span>
             <icon name="arrow-up-right-from-square" class="text-xs board-external-icon transition-all"/>
-          </span>
+          </a>
           <span data-if="{{!report_detail?.data?.board?.slug || !report_detail?.data?.post?.id}}" class="text-primary text-sm">{{report_detail?.data?.post?.title}}</span>
         </div>
         <div data-ref="field_title" data-if="{{report_detail?.data?.target_type === 'post'}}">
           <label class="text-label-subtle block font-medium mb-1">$t:sirsoft-board.admin.reports.detail.title_label</label>
-          <span data-if="{{report_detail?.data?.board?.slug &amp;&amp; report_detail?.data?.post?.id}}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group">
+          <a href="/admin/board/{{report_detail?.data?.board?.slug}}/post/{{report_detail?.data?.post?.id}}" data-if="{{report_detail?.data?.board?.slug &amp;&amp; report_detail?.data?.post?.id}}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group">
             <on type="click">
-              <navigate path="/admin/board/{{report_detail?.data?.board?.slug}}/post/{{report_detail?.data?.post?.id}}"/>
+              <navigate/>
             </on>
             <span class="border-b border-transparent board-link-underline transition-all">{{report_detail?.data?.post?.title}}</span>
             <icon name="arrow-up-right-from-square" class="text-xs board-external-icon transition-all"/>
-          </span>
+          </a>
           <span data-if="{{!report_detail?.data?.board?.slug || !report_detail?.data?.post?.id}}" class="text-primary text-sm">{{report_detail?.data?.post?.title}}</span>
         </div>
         <div data-ref="field_created_at">
@@ -121,9 +123,9 @@
             <div data-ref="card_inner_grid_{{reporterIdx}}" class="grid-2col lg:grid-cols-5">
               <div data-ref="reporter_field_{{reporterIdx}}">
                 <span class="text-tertiary block font-medium mb-1">$t:sirsoft-board.admin.reports.detail.reporter_label</span>
-                <action-menu data-type="composite" data-if="{{reporter.reporter}}" triggerLabel="{{reporter.reporter?.name ?? '-'}}" triggerIconName="" position="right">
+                <action-menu data-type="composite" data-if="{{reporter.reporter?.uuid}}" triggerLabel="{{reporter.reporter?.name ?? '-'}}" triggerIconName="" position="right">
                   <prop name="items">
-                    <item id="view_reporter" label="$t:sirsoft-board.admin.reports.detail.user_info" iconName="user"/>
+                    <item href="/admin/users/{{reporter.reporter?.uuid}}" id="view_reporter" label="$t:sirsoft-board.admin.reports.detail.user_info" iconName="user"/>
                   </prop>
                   <on type="click" event="onItemClick">
                     <!-- 신고한 사람의 관리자 상세로 — 탈퇴해 회원이 남지 않은 신고는 이 메뉴 대신 「삭제된 사용자」 문구가 선다 -->
@@ -134,7 +136,7 @@
                     </switch>
                   </on>
                 </action-menu>
-                <span data-if="{{!reporter.reporter}}" class="text-label-subtle">$t:sirsoft-board.admin.reports.detail.deleted_user</span>
+                <span data-if="{{!reporter.reporter?.uuid}}" class="text-label-subtle">$t:sirsoft-board.admin.reports.detail.deleted_user</span>
                 <span data-if="{{reporter.reporter?.email}}" class="form-hint">{{reporter.reporter?.email}}</span>
               </div>
               <div data-ref="reported_at_field_{{reporterIdx}}">

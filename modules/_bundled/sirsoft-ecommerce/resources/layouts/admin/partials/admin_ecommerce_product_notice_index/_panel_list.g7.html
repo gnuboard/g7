@@ -63,7 +63,20 @@
             </sequence>
           </on>
           <div class="flex-between">
-            <span class="text-primary text-sm font-medium">{{$localized(template.name)}}</span>
+            <!-- 항목 이름은 링크 — 가운데 클릭·Ctrl+클릭으로 그 템플릿을 새 탭에 연다(#757 결정 2026-10-15). 카드 전체를
+                 링크로 감싸지 않는 것은 노출 스위치가 링크 안에 들어가기 때문이다. 보통 클릭은 카드와 같은 선택을 하고
+                 전파를 끊어 카드 클릭이 한 번 더 돌지 않게 한다(카드의 나머지 자리는 카드 클릭이 맡는다). -->
+            <a href="/admin/ecommerce/product-notices?id={{template.id}}&amp;mode=view" :mergeQuery="true" class="text-primary text-sm font-medium hover:underline">
+              <on type="click">
+                <sequence :stopPropagation="true">
+                  <set-state target="global" selectedTemplateId="{{template.id}}" selectedTemplate="{{template}}" panelMode="view"/>
+                  <replace-url :mergeQuery="true">
+                    <query id="{{template.id}}" mode="view"/>
+                  </replace-url>
+                </sequence>
+              </on>
+              {{$localized(template.name)}}
+            </a>
             <div class="flex-center gap-2">
               <span class="text-secondary px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700">{{template.fields_count ?? 0}}</span>
               <toggle data-type="composite" ariaLabel="$t:common.item_enabled|name={{$localized(template.name)}}" size="sm" checked="{{template.is_active}}" disabled="{{!template.abilities?.can_update}}">

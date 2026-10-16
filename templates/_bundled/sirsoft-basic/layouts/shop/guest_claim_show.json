@@ -60,7 +60,8 @@
                         {
                             "handler": "navigate",
                             "params": {
-                                "path": "{{error.errors?.redirect_to ?? ((_global.shopBase ?? '') + '/guest/orders')}}"
+                                "path": "{{error.errors?.redirect_to ?? ((_global.shopBase ?? '') + '/guest/orders')}}",
+                                "fallbackPath": "{{(_global.shopBase ?? '') + '/guest/orders'}}"
                             }
                         }
                     ]
@@ -81,7 +82,8 @@
                         {
                             "handler": "navigate",
                             "params": {
-                                "path": "{{error.errors?.redirect_to ?? ((_global.shopBase ?? '') + '/guest/orders')}}"
+                                "path": "{{error.errors?.redirect_to ?? ((_global.shopBase ?? '') + '/guest/orders')}}",
+                                "fallbackPath": "{{(_global.shopBase ?? '') + '/guest/orders'}}"
                             }
                         }
                     ]

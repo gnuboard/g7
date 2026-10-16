@@ -87,6 +87,8 @@
         }
     ],
     "props": {
+        "pageHref": "/admin/ecommerce/shipping-policies?page={page}",
+        "pageHrefMergeQuery": true,
         "rowLabelField": "name_localized",
         "data": "{{shipping_policies?.data?.data || []}}",
         "idField": "id",
@@ -106,6 +108,7 @@
         "rowActions": [
             {
                 "id": "edit",
+                "href": "/admin/ecommerce/shipping-policies/{{row.id}}/edit",
                 "label": "$t:sirsoft-ecommerce.admin.shipping_policy.action.edit",
                 "iconName": "fa-regular fa-pen-to-square",
                 "disabledField": "abilities.can_update"

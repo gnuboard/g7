@@ -573,9 +573,9 @@
           <column field="reviewer" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.reviewer" width="120px" :sortable="false">
             <cell>
               <div>
-                <a data-if="{{!!row.user_id}}" href="#" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium">
+                <a data-if="{{!!row.user_id}}" href="/admin/users/{{row.user_id}}" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium">
                   <on type="click">
-                    <navigate path="/admin/users/{{row.user_id}}"/>
+                    <navigate/>
                   </on>
                   {{row.user?.name ?? ''}}
                 </a>
@@ -900,7 +900,7 @@
           </on>
         </data-grid>
       </div>
-      <pagination data-type="composite" data-if="{{((reviews.data?.meta?.last_page ?? 0) > 1) || (reviews.data?.meta?.has_more_pages === true) || ((reviews.data?.meta?.current_page ?? 1) > 1)}}" currentPage="{{reviews.data?.meta?.current_page ?? 1}}" totalPages="{{reviews.data?.meta?.last_page ?? null}}" hasMorePages="{{reviews.data?.meta?.has_more_pages ?? false}}" class="flex justify-center mt-4">
+      <pagination data-type="composite" pageHref="/admin/ecommerce/reviews?page={page}" :pageHrefMergeQuery="true" data-if="{{((reviews.data?.meta?.last_page ?? 0) > 1) || (reviews.data?.meta?.has_more_pages === true) || ((reviews.data?.meta?.current_page ?? 1) > 1)}}" currentPage="{{reviews.data?.meta?.current_page ?? 1}}" totalPages="{{reviews.data?.meta?.last_page ?? null}}" hasMorePages="{{reviews.data?.meta?.has_more_pages ?? false}}" class="flex justify-center mt-4">
         <on event="onPageChange">
           <!-- 쪽 넘김도 주소로 나간다 — 걸어 둔 조건은 그대로 두고 쪽 번호만 갈아 끼운다 -->
           <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">

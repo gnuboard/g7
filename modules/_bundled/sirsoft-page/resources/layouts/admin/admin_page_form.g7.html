@@ -54,7 +54,7 @@
         <div class="flex-start gap-3">
           <icon name="circle-exclamation" class="text-red-500 dark:text-red-400 mt-0.5"/>
           <div>
-            <h3 class="text-sm font-medium text-danger-soft">$t:sirsoft-page.admin.page.form.validation_error</h3>
+            <h3 class="text-sm font-medium page-tone-danger">$t:sirsoft-page.admin.page.form.validation_error</h3>
             <div class="mt-2 text-sm text-red-700 dark:text-red-400 space-y-1">
               <span data-if="{{_local.errors?.slug}}" class="block">{{_local.errors?.slug?.[0]}}</span>
               <span data-if="{{_local.errors?.['title.ko'] || _local.errors?.title}}" class="block">{{_local.errors?.['title.ko']?.[0] ?? _local.errors?.title?.[0]}}</span>
@@ -66,7 +66,7 @@
       </div>
       <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="flex-center mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg gap-3">
         <icon name="lock" class="text-yellow-600 dark:text-yellow-400"/>
-        <span class="text-warning-soft">{{route?.id ? '$t:sirsoft-page.admin.page.form.read_only_message' : '$t:sirsoft-page.admin.page.form.read_only_message_create'}}</span>
+        <span class="text-xs page-tone-warning">{{route?.id ? '$t:sirsoft-page.admin.page.form.read_only_message' : '$t:sirsoft-page.admin.page.form.read_only_message_create'}}</span>
       </div>
       <div data-ref="section_basic_info" class="admin-card">
         <div data-ref="basic_info_header" class="flex-center gap-2 mb-4">
@@ -246,15 +246,15 @@
         </div>
       </div>
       <div data-ref="footer_buttons" class="sticky-footer-buttons">
-        <button data-ref="footer_cancel_button" type="button" class="btn btn-secondary" data-testid="page-form-cancel">
+        <a href="{{route?.id ? '/admin/pages/' + route.id : '/admin/pages'}}" :mergeQuery="true" data-ref="footer_cancel_button" class="button btn btn-secondary" data-testid="page-form-cancel">
           <on type="click">
             <!-- 취소. 수정 중이면 그 페이지 상세로, 새로 만드는 중이면 목록으로 돌아간다. 어느 쪽이든 목록 상태를 이고 가므로 목록까지 되짚어 나가도 보던 자리가 남는다 -->
-            <navigate path="{{route?.id ? '/admin/pages/' + route.id : '/admin/pages'}}" :mergeQuery="true">
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
           <span>$t:common.cancel</span>
-        </button>
+        </a>
         <button data-ref="footer_save_button" data-if="{{!_computed.isReadOnly}}" type="button" disabled="{{_local.saving}}" class="btn btn-primary flex-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 저장 — 슬러그 중복확인을 통과했는지 먼저 보고, 통과하지 못했으면 서버에 보내지 않고 그 필드에 오류를 세운다 -->

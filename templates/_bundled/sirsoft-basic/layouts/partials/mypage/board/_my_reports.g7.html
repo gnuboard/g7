@@ -126,12 +126,12 @@
               <span data-if="{{report.target_deleted}}" class="inline-flex items-center px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded">$t:mypage.board_activities.reports.target_deleted</span>
             </div>
             <!-- 신고한 글·댓글. 글은 제목, 댓글은 본문 요약(댓글 스냅샷에는 제목이 없다). 살아 있으면 눌러서 원글로 간다 -->
-            <button data-if="{{!report.target_deleted &amp;&amp; !!report.board_slug &amp;&amp; !!report.post_id}}" class="justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2">
+            <a href="/board/{{report.board_slug}}/{{report.post_id}}" data-if="{{!report.target_deleted &amp;&amp; !!report.board_slug &amp;&amp; !!report.post_id}}" class="justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2">
               <on type="click">
-                <navigate path="/board/{{report.board_slug}}/{{report.post_id}}"/>
+                <navigate/>
               </on>
               {{raw:report.title ?? report.excerpt ?? ''}}
-            </button>
+            </a>
             <span data-if="{{report.target_deleted || !report.board_slug || !report.post_id}}" class="block text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{{raw:report.title ?? report.excerpt ?? ''}}</span>
             <!-- 내가 고른 사유와 덧붙인 설명 -->
             <div class="mt-2 flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400">

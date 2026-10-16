@@ -406,7 +406,18 @@
       <p class="text-sm font-semibold text-gray-900 dark:text-white">$t:claim.detail.linked_title</p>
       <div data-ref="claim_linked_source" data-if="{{!!claim.data?.linked_claims?.source}}" class="flex items-baseline justify-between gap-2">
         <span class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.linked_source</span>
-        <button type="button" class="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
+        <a data-if="{{!_local.isGuest}}" href="{{claim.data.linked_claims.source.detail_url}}" :mergeQuery="true" class="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
+          <on type="click">
+            <!-- 앞 신청서의 결제 오류 문구를 지우고 원 신청서로 옮긴다 -->
+            <sequence>
+              <set-state target="_local" claimPayError=""/>
+              <navigate path="{{claim.data.linked_claims.source.detail_url}}" :mergeQuery="true"><query/></navigate>
+            </sequence>
+          </on>
+          {{(claim.data?.linked_claims?.source?.claim_type_label ?? '') + ' ' + (claim.data?.linked_claims?.source?.claim_number ?? '')}}
+        </a>
+        <!-- 비회원 갈래는 단추로 둔다 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않는다 -->
+        <button data-if="{{_local.isGuest}}" type="button" class="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
           <on type="click">
             <!-- 앞 신청서의 결제 오류 문구를 지우고 원 신청서로 옮긴다 -->
             <sequence>
@@ -420,7 +431,18 @@
       <p data-ref="claim_linked_refunds_empty" data-if="{{['exchange', 'return'].includes(claim.data?.claim?.claim_type ?? '') &amp;&amp; (claim.data?.linked_claims?.refunds ?? []).length === 0}}" class="text-sm text-gray-500 dark:text-gray-400">$t:claim.detail.linked_empty</p>
       <div data-each="linkedRefund in {{claim.data?.linked_claims?.refunds ?? []}}" class="flex items-baseline justify-between gap-2 flex-wrap">
         <div class="flex items-center gap-2">
-          <button type="button" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
+          <a data-if="{{!_local.isGuest}}" href="{{linkedRefund.detail_url}}" :mergeQuery="true" class="inline-flex items-center justify-center text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
+            <on type="click">
+              <!-- 앞 신청서의 결제 오류 문구를 지우고 후속 환불로 옮긴다 -->
+              <sequence>
+                <set-state target="_local" claimPayError=""/>
+                <navigate path="{{linkedRefund.detail_url}}" :mergeQuery="true"><query/></navigate>
+              </sequence>
+            </on>
+            {{linkedRefund.claim_number}}
+          </a>
+          <!-- 비회원 갈래는 단추로 둔다 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않는다 -->
+          <button data-if="{{_local.isGuest}}" type="button" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
             <on type="click">
               <!-- 앞 신청서의 결제 오류 문구를 지우고 후속 환불로 옮긴다 -->
               <sequence>

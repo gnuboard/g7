@@ -28,7 +28,7 @@
     </div>
     <div data-ref="claim_datagrid_card" class="p-0 md:p-0">
       <!-- DataGrid 의 id 가 전환 오버레이 대상(`claim_datagrid__body`)의 앞자리를 정한다 — 셸의 `named_actions.searchClaims` 와 이 파일의 페이지·페이지크기 이동이 같은 이름을 가리킨다. -->
-      <data-grid data-type="composite" data-ref="claim_datagrid" rowLabelField="claim_number" data="{{claims?.data?.data ?? []}}" selectable="{{(query.type ?? 'exchange') !== 'cancel' &amp;&amp; claims?.data?.abilities?.can_update_status === true}}" selectionScope="page" selectedIds="{{_local.selectedItems ?? []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.claim.message.no_claims" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{claims?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{claims?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{claims?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
+      <data-grid data-type="composite" data-ref="claim_datagrid" pageHref="/admin/ecommerce/claims?page={page}" :pageHrefMergeQuery="true" rowLabelField="claim_number" data="{{claims?.data?.data ?? []}}" selectable="{{(query.type ?? 'exchange') !== 'cancel' &amp;&amp; claims?.data?.abilities?.can_update_status === true}}" selectionScope="page" selectedIds="{{_local.selectedItems ?? []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.claim.message.no_claims" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{claims?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{claims?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{claims?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
         <column field="requested_at" header="$t:sirsoft-ecommerce.admin.claim.column.requested_at" width="140px" :sortable="false" :required="true">
           <cell>
             <span>{{row.requested_at_formatted ?? '-'}}</span>
@@ -37,14 +37,14 @@
         <column field="claim_number" header="$t:sirsoft-ecommerce.admin.claim.column.claim_number" width="160px" :sortable="false" :required="true">
           <cell>
             <!-- 클레임번호를 눌러 상세로. 보던 목록 조건(유형·필터·쪽)을 주소에 이고 가므로 상세의 [목록] 버튼이 같은 자리로 되돌아온다. -->
-            <span class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
+            <a href="/admin/ecommerce/claims/{{row.claim_number}}" :mergeQuery="true" class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
               <on type="click">
-                <navigate path="/admin/ecommerce/claims/{{row.claim_number}}" :mergeQuery="true">
+                <navigate :mergeQuery="true">
                   <query/>
                 </navigate>
               </on>
               {{row.claim_number}}
-            </span>
+            </a>
             <!-- 행 뱃지 — 판매자 접수(D8)·선교환·회수 지연(선교환 반송 기한 경과)·환불 미접수(D9). 판정은 전부 서버가 행에 실어 준다. -->
             <div class="flex flex-wrap gap-1 mt-0.5">
               <badge data-type="composite" data-if="{{row.is_admin_requested === true}}" variant="warning" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.admin_requested_badge</badge>
@@ -52,10 +52,10 @@
               <badge data-type="composite" data-if="{{row.is_collection_overdue === true}}" variant="danger" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.overdue_badge|days={{row.collection_overdue_days ?? 0}}</badge>
               <badge data-type="composite" data-if="{{row.has_pending_refund === true}}" variant="warning" size="sm">$t:defer:sirsoft-ecommerce.admin.claim.column.pending_refund_badge</badge>
               <!-- 환불 진행 상태(보완 5 · Q7) — 교환·반품에서 생긴 최신 환불신청서의 상태. 누르면 그 환불신청서 상세로 간다(번호 클릭과 같은 목록 조건 승계). -->
-              <a data-if="{{!!row.refund_progress}}" href="#" class="inline-flex items-center gap-1 cursor-pointer">
+              <a href="/admin/ecommerce/claims/{{row.refund_progress.claim_number}}" :mergeQuery="true" data-if="{{!!row.refund_progress}}" class="inline-flex items-center gap-1 cursor-pointer">
                 <on type="click">
                   <!-- 최신 환불신청서 상세로 이동 — 목록 조건을 이어 받는다 -->
-                  <navigate path="/admin/ecommerce/claims/{{row.refund_progress.claim_number}}" :mergeQuery="true"><query/></navigate>
+                  <navigate :mergeQuery="true"><query/></navigate>
                 </on>
                 <badge data-type="composite" variant="{{row.refund_progress.status_variant ?? 'default'}}" icon="{{row.refund_progress.status_icon ?? ''}}" size="sm">{{row.refund_progress.status_label ?? ''}}</badge>
                 <span data-if="{{(row.refund_progress.count ?? 0) > 1}}" class="text-xs text-gray-500 dark:text-gray-400">$t:defer:sirsoft-ecommerce.admin.claim.column.refund_progress_more|count={{(row.refund_progress.count ?? 1) - 1}}</span>
@@ -135,7 +135,7 @@
           </cell>
         </column>
         <prop name="rowActions">
-          <item id="view_detail" label="$t:sirsoft-ecommerce.admin.claim.action.view_detail" iconName="eye"/>
+          <item id="view_detail" href="/admin/ecommerce/claims/{{row.claim_number}}" label="$t:sirsoft-ecommerce.admin.claim.action.view_detail" iconName="eye"/>
         </prop>
         <on type="change" event="onSelectionChange">
           <!-- 체크할 때뿐 아니라 재조회·쪽 이동으로 행이 빠질 때도 그리드가 남은 선택만 다시 올려 보낸다(selectionScope page) — 그래서 일괄 변경 바가 읽는 선택은 언제나 지금 보이는 행이다. -->

@@ -3,7 +3,7 @@
   변경 내역이 있는 줄만 펼칠 수 있고(`has_changes`), 펼친 자리에는 한 건짜리 수정과 여러 건을
   한 번에 고친 일괄 수정이 서로 다른 모양으로 실린다. 일괄 쪽은 대상 ID 별로 묶여 온다. -->
 <partial description="Activity Log List DataGrid">
-  <data-grid data-type="composite" data-ref="activity_log_datagrid" rowLabelField="localized_description" data="{{activityLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{activityLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{activityLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{activityLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{activityLogs?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_admin_activity_logs || []}}" selectedCountText="" loading="{{activityLogs?.loading}}" :expandable="true" expandConditionField="has_changes" actionsColumnHeader="$t:common.actions">
+  <data-grid data-type="composite" data-ref="activity_log_datagrid" rowLabelField="localized_description" data="{{activityLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" pageHref="/admin/activity-logs?page={page}" :pageHrefMergeQuery="true" serverCurrentPage="{{activityLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{activityLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{activityLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{activityLogs?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_admin_activity_logs || []}}" selectedCountText="" loading="{{activityLogs?.loading}}" :expandable="true" expandConditionField="has_changes" actionsColumnHeader="$t:common.actions">
     <expand>
       <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-4">
         <div class="flex flex-wrap items-center gap-4 text-sm">
@@ -82,7 +82,7 @@
         <span data-if="{{!row.user?.uuid}}" class="text-gray-500 dark:text-gray-400">{{row.actor_name ?? row.user?.name ?? '-'}}</span>
         <action-menu data-type="composite" data-if="{{!!row.user?.uuid}}" position="right">
           <prop name="items">
-            <item id="view_member" label="$t:admin.activity_log.action.view_member" iconName="user" if="{{!!row.user?.uuid}}"/>
+            <item id="view_member" label="$t:admin.activity_log.action.view_member" iconName="user" href="/admin/users/{{row.user.uuid}}" target="_blank" if="{{!!row.user?.uuid}}"/>
             <item id="search_by_actor" label="$t:admin.activity_log.action.search_by_actor" iconName="search"/>
           </prop>
           <on event="onItemClick">
@@ -90,9 +90,6 @@
               잃지 않게 하고, 「이 사람으로 검색」은 조건 칸에도 그 회원을 앉힌 뒤 주소를 바꿔
               곧바로 조회한다 — 조건만 바꾸면 검색 버튼을 한 번 더 눌러야 한다. -->
             <switch>
-              <case when="view_member">
-                <open-window path="/admin/users/{{row.user.uuid}}"/>
-              </case>
               <case when="search_by_actor">
                 <set-state target="local" filter.createdBy="{{row.user.uuid}}" actorSearchResults="{{[{ value: row.user.uuid, label: row.user.name, description: row.user.email }]}}"/>
                 <navigate path="/admin/activity-logs" :mergeQuery="true" :replace="true" transition_overlay_target="activity_log_datagrid__body">

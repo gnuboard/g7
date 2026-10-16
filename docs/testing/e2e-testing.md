@@ -170,10 +170,13 @@ Firefox/WebKit 프로젝트를 상시 스위트에 넣지 않은 이유:
 |---|---|---|---|
 | 코어 권한/역할/유저/Sanctum 토큰 | 코어 | `app/Console/Commands/PlaywrightIssueToken.php` | `php artisan playwright:issue-token --permissions=core.xxx` (권한 경계 검증은 `--no-admin-role` 추가 — §5.1) |
 | 편집기 저장 spec 대상 시드 화면 | 코어 | `app/Console/Commands/PlaywrightSeedLayout.php` | `php artisan playwright:seed-layout [--remove]` (globalSetup/globalTeardown 자동 호출) |
+| 회원 알림(안 읽음 2·읽음 1) | 코어 | `app/Console/Commands/PlaywrightSeedMemberNotification.php` | `php artisan playwright:seed-member-notification [--user=<uuid\|email>] [--url=<이동 주소>] [--teardown] --json` — `--user` 를 주면 그 회원(토큰 회원 — uuid 는 토큰으로 `GET /api/admin/auth/user`)에게 심고, `--teardown --user` 는 심은 알림만 지운다(회원·다른 알림 유지). 없으면 고정 회원을 만들고 지운다 |
 | 로그인 2단계 인증 계정·인증번호 | 코어 | `app/Console/Commands/PlaywrightSeedTwoFactor.php` | `php artisan playwright:seed-two-factor --ensure-user=… \| --plant=<challenge_id>` (§4.2) |
 | 인증 앱(TOTP) 자격증명·현재 코드 | 플러그인 | `plugins/_bundled/sirsoft-totp/src/Console/Commands/PlaywrightSeedTotp.php` | `php artisan playwright:seed-totp --enroll=<email> \| --code=<secret>` (§4.2) |
 | 모듈 권한 (`sirsoft-ecommerce.*`) | 모듈 | 그 모듈이 정의한 권한(설치 때 생성)·게시판별 권한(게시판 생성 때 생성) | 코어 커맨드의 `--permissions=` — **DB 에 있는 식별자만** 받는다(없으면 발급 거절 — 아래 「없는 권한 식별자」) |
 | 모듈 도메인 데이터 (상품/주문) | 모듈 | `modules/_bundled/{id}/src/Console/Commands/PlaywrightSeed{id}.php` | `php artisan playwright:seed-{id}` |
+| 관리자 클레임 상세 신청서(옵션 변경 교환·상품 1건 승인 반품·계좌 빈 승인 환불) | 모듈 | `modules/_bundled/sirsoft-ecommerce/src/Console/Commands/PlaywrightSeedClaimDetail.php` | `php artisan playwright:seed-claim-detail --tag=<워커 꼬리표> [--teardown] --json` — 워커마다 다른 `--tag` 로 심고, `--teardown --tag` 는 그 꼬리표만, `--tag` 없는 `--teardown` 은 심은 것 전량을 지운다. 신청서는 팩토리로 목표 상태에 바로 세워 알림·활동 로그를 내보내지 않는다 |
+| 두 쪽인 공개 게시판(쪽당 2건·글 3건 — 페이지 번호·게시글 행·글쓰기 링크 실측) | 모듈 | `modules/_bundled/sirsoft-board/src/Console/Commands/PlaywrightSeedBoardPosts.php` | `php artisan playwright:seed-board-posts --tag=<워커 꼬리표> [--posts=3] [--per-page=2] [--teardown] --json` — 게시판 `e2e-nav-{tag}` 를 만들고(기본 권한: 비로그인 읽기 · 회원 쓰기) 글을 DB 로 바로 심는다(글 쿨다운 우회). 기본 `user` 역할 회원 `e2e-nav-{tag}@example.test` 도 만들어 `member_token` 을 낸다 — 역할 없는 `issueScopedToken()` 계정은 회원 쓰기 권한을 받지 못한다. `--teardown --tag` 는 그 꼬리표의 게시판·글·게시판별 권한·회원만 지운다 |
 | 플러그인 도메인 데이터 (결제 키) | 플러그인 | `plugins/_bundled/{id}/src/Console/Commands/PlaywrightSeed{id}.php` | 동일 |
 | 외부 의존 (토스 결제창 응답) | spec 안 mock | `page.route(...)` | 호출 없음 |
 

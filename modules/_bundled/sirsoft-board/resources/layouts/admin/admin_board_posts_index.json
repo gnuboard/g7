@@ -177,22 +177,23 @@
                                     {
                                         "id": "create_post_button",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "comment": "새 글 작성. 작성을 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/board/{{route.slug}}/create",
                                                     "mergeQuery": true,
                                                     "query": {}
                                                 }
                                             }
                                         ],
                                         "props": {
+                                            "href": "/admin/board/{{route.slug}}/create",
+                                            "mergeQuery": true,
                                             "disabled": "{{posts?.data?.abilities?.can_write !== true}}",
-                                            "className": "flex-center gap-2 px-4 py-2 bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            "className": "button flex-center gap-2 px-4 py-2 bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                                         },
                                         "children": [
                                             {
@@ -937,6 +938,8 @@
                             }
                         ],
                         "props": {
+                            "pageHrefMergeQuery": true,
+                            "pageHref": "/admin/board/{{route.slug}}?page={page}",
                             "selectedCountText": "",
                             "rowLabelField": "title",
                             "rowClassName": "{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : (row.row_type === 'reply' ? 'bg-gray-50 dark:bg-gray-800/50' : '')}}",
@@ -1067,19 +1070,20 @@
                                                                 {
                                                                     "comment": "제목",
                                                                     "type": "basic",
-                                                                    "name": "Span",
+                                                                    "name": "A",
                                                                     "actions": [
                                                                         {
                                                                             "type": "click",
                                                                             "handler": "navigate",
                                                                             "params": {
-                                                                                "path": "/admin/board/{{row.slug}}/post/{{row.id}}",
                                                                                 "mergeQuery": true,
                                                                                 "query": {}
                                                                             }
                                                                         }
                                                                     ],
                                                                     "props": {
+                                                                        "href": "/admin/board/{{row.slug}}/post/{{row.id}}",
+                                                                        "mergeQuery": true,
                                                                         "className": "min-w-0 wrap-anywhere font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                                                     },
                                                                     "text": "{{row.title}}"
@@ -1153,18 +1157,16 @@
                                                     "children": [
                                                         {
                                                             "type": "basic",
-                                                            "name": "Span",
-                                                            "if": "{{!row.author.is_guest}}",
+                                                            "name": "A",
+                                                            "if": "{{!row.author.is_guest && row.author.uuid}}",
                                                             "actions": [
                                                                 {
                                                                     "type": "click",
-                                                                    "handler": "navigate",
-                                                                    "params": {
-                                                                        "path": "/admin/users/{{row.author.uuid}}"
-                                                                    }
+                                                                    "handler": "navigate"
                                                                 }
                                                             ],
                                                             "props": {
+                                                                "href": "/admin/users/{{row.author.uuid}}",
                                                                 "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                                             },
                                                             "text": "{{row.author.name}}"
@@ -1172,11 +1174,11 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
-                                                            "if": "{{row.author.is_guest}}",
+                                                            "if": "{{row.author.is_guest || !row.author.uuid}}",
                                                             "props": {
                                                                 "className": "font-medium text-gray-900 dark:text-white"
                                                             },
-                                                            "text": "{{row.author.name}}"
+                                                            "text": "{{row.author.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}"
                                                         },
                                                         {
                                                             "type": "basic",

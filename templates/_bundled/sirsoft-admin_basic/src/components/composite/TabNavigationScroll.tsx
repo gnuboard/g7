@@ -7,6 +7,7 @@ import { Span } from '../basic/Span';
 import { Select } from '../basic/Select';
 import { scrollToSectionHandler } from '../../handlers/scrollToSectionHandler';
 import type { EditorAttrs } from '../../types';
+import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖이면 대체 문구를 쓴다
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
@@ -42,6 +43,11 @@ export interface Tab {
   scrollDelay?: number;
   /** 개별 탭 클릭 시 실행될 콜백 (우선순위: 개별 > 공통 > 기본) */
   onClick?: (tabId: string | number) => void;
+  /**
+   * 탭이 가리키는 주소 — 주면 `<a role="tab" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다.
+   * 보통 클릭은 지금처럼 탭 전환(onTabChange — 저장 안 한 변경 확인 흐름 유지)(#757).
+   */
+  href?: string;
 }
 
 /**
@@ -165,7 +171,7 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
   const pinnedTabRef = useRef<string | number | null>(null);
 
   /** 탭 버튼 DOM 참조 — 화살표 이동 시 초점을 옮기기 위해 보관한다. */
-  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const tabRefs = useRef<Array<HTMLElement | null>>([]);
 
   /**
    * 탭 클릭 핸들러
@@ -240,7 +246,7 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
    * @param e 키보드 이벤트
    * @param currentIndex 이벤트가 발생한 탭의 인덱스
    */
-  const handleTabKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
+  const handleTabKeyDown = (e: React.KeyboardEvent<HTMLElement>, currentIndex: number) => {
     const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
 
     let nextIndex: number | null = null;
@@ -488,7 +494,31 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
       id={id}
       {...editorAttrs}
     >
-      {tabs.map((tab, tabIndex) => (
+      {tabs.map((tab, tabIndex) => {
+        const link = tab.disabled ? null : resolveLinkHref(tab.href);
+        if (link && !link.external) {
+          return (
+            <a
+              key={tab.id}
+              ref={(el) => {
+                tabRefs.current[tabIndex] = el;
+              }}
+              href={link.href}
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              tabIndex={tabIndex === focusableIndex ? 0 : -1}
+              className={`button ${activeTab === tab.id ? activeClassName : inactiveClassName}`}
+              onClick={(event) => handleLinkClick(event, () => handleTabClick(tab))}
+              onKeyDown={(e) => handleTabKeyDown(e, tabIndex)}
+            >
+              {tab.iconName && (
+                <Icon name={tab.iconName} size="sm" />
+              )}
+              <Span>{tab.label}</Span>
+            </a>
+          );
+        }
+        return (
         <Button
           key={tab.id}
           ref={(el) => {
@@ -508,7 +538,8 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
           )}
           <Span>{tab.label}</Span>
         </Button>
-      ))}
+        );
+      })}
     </Div>
   );
 };

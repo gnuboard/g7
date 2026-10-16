@@ -120,17 +120,15 @@
                                 {
                                     "id": "today_pending_payment_badge",
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/ecommerce/orders?order_status[]=pending_payment&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"
-                                            }
+                                            "handler": "navigate"
                                         }
                                     ],
                                     "props": {
+                                        "href": "/admin/ecommerce/orders?order_status[]=pending_payment&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}",
                                         "className": "px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.dashboard.today_badges.pending_payment|count={{commerce_overview?.data?.pending_payment ?? 0}}"
@@ -138,17 +136,15 @@
                                 {
                                     "id": "today_payment_complete_badge",
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/ecommerce/orders?order_status[]=payment_complete&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"
-                                            }
+                                            "handler": "navigate"
                                         }
                                     ],
                                     "props": {
+                                        "href": "/admin/ecommerce/orders?order_status[]=payment_complete&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}",
                                         "className": "px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.dashboard.today_badges.payment_complete|count={{commerce_overview?.data?.payment_complete ?? 0}}"
@@ -156,17 +152,15 @@
                                 {
                                     "id": "today_preparing_badge",
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/ecommerce/orders?order_status[]=preparing&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"
-                                            }
+                                            "handler": "navigate"
                                         }
                                     ],
                                     "props": {
+                                        "href": "/admin/ecommerce/orders?order_status[]=preparing&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}",
                                         "className": "px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.dashboard.today_badges.preparing|count={{commerce_overview?.data?.preparing ?? 0}}"
@@ -174,17 +168,15 @@
                                 {
                                     "id": "today_shipping_ready_badge",
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/ecommerce/orders?order_status[]=shipping_ready&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"
-                                            }
+                                            "handler": "navigate"
                                         }
                                     ],
                                     "props": {
+                                        "href": "/admin/ecommerce/orders?order_status[]=shipping_ready&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}",
                                         "className": "px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.dashboard.today_badges.shipping_ready|count={{commerce_overview?.data?.shipping_ready ?? 0}}"
@@ -192,17 +184,15 @@
                                 {
                                     "id": "today_shipping_badge",
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/ecommerce/orders?order_status[]=shipping&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"
-                                            }
+                                            "handler": "navigate"
                                         }
                                     ],
                                     "props": {
+                                        "href": "/admin/ecommerce/orders?order_status[]=shipping&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}",
                                         "className": "px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.dashboard.today_badges.shipping|count={{commerce_overview?.data?.shipping ?? 0}}"
@@ -210,17 +200,15 @@
                                 {
                                     "id": "today_cancellations_badge",
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/ecommerce/orders?order_status[]=cancelled&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"
-                                            }
+                                            "handler": "navigate"
                                         }
                                     ],
                                     "props": {
+                                        "href": "/admin/ecommerce/orders?order_status[]=cancelled&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}",
                                         "className": "px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.dashboard.today_badges.cancellations|count={{commerce_overview?.data?.cancellations ?? 0}}"
@@ -228,17 +216,15 @@
                                 {
                                     "id": "today_returns_badge",
                                     "type": "basic",
-                                    "name": "Span",
+                                    "name": "A",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/admin/ecommerce/orders?claim_return_statuses[]=completed&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}"
-                                            }
+                                            "handler": "navigate"
                                         }
                                     ],
                                     "props": {
+                                        "href": "/admin/ecommerce/orders?claim_return_statuses[]=completed&date_type=ordered_at&date_basis=site&start_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}&end_date={{new Date().toLocaleDateString('sv-SE', { timeZone: _global.settings?.general?.timezone || undefined })}}",
                                         "className": "px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.dashboard.today_badges.returns|count={{commerce_overview?.data?.returns ?? 0}}"
@@ -538,7 +524,7 @@
                                         {
                                             "id": "latest_review_item_{{i}}",
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "A",
                                             "iteration": {
                                                 "source": "commerce_recent_reviews?.data",
                                                 "item_var": "review",
@@ -547,13 +533,11 @@
                                             "actions": [
                                                 {
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/ecommerce/reviews"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
+                                                "href": "/admin/ecommerce/reviews",
                                                 "className": "py-3 min-h-12 flex flex-col justify-center cursor-pointer"
                                             },
                                             "children": [
@@ -697,7 +681,7 @@
                                         {
                                             "id": "pending_inquiry_item_{{i}}",
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "A",
                                             "iteration": {
                                                 "source": "commerce_pending_inquiries?.data?.items",
                                                 "item_var": "inquiry",
@@ -706,13 +690,11 @@
                                             "actions": [
                                                 {
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/board/{{commerce_pending_inquiries?.data?.board_slug}}/post/{{inquiry?.inquirable_id}}"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
+                                                "href": "/admin/board/{{commerce_pending_inquiries?.data?.board_slug}}/post/{{inquiry?.inquirable_id}}",
                                                 "className": "py-3 min-h-12 flex flex-col justify-center cursor-pointer"
                                             },
                                             "children": [

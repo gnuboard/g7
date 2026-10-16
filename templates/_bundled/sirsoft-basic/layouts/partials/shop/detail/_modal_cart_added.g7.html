@@ -23,7 +23,7 @@
         </on>
         $t:shop.product.continue_shopping
       </button>
-      <button class="flex-1 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isNavigatingToCart}}">
+      <a href="{{_global.shopBase}}/cart" class="flex-1 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer flex items-center justify-center gap-2 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed" disabled="{{_global.isNavigatingToCart}}">
         <on type="click">
           <!-- 장바구니로 이동. 이동 표시를 먼저 세우고 창을 닫는다 — 상품 목록 클러스터 밖으로 나가는 이동이라 목록 상태를 승계하지 않는다 -->
           <sequence>
@@ -35,7 +35,7 @@
         </on>
         <icon data-if="{{_global.isNavigatingToCart}}" name="spinner" size="sm" class="animate-spin"/>
         <span>$t:shop.product.go_to_cart</span>
-      </button>
+      </a>
     </div>
   </modal>
 </partial>

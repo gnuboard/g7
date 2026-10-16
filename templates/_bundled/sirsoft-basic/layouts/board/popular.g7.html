@@ -33,34 +33,34 @@
       </div>
       <!-- 기간 단추는 칸이 모자라면 다음 줄로 내린다 — 297px 에서 마지막 단추가 화면 밖(302px)으로 나갔다(#143 실측). -->
       <div class="flex flex-wrap gap-2 mb-6">
-        <button class="{{(query.period ?? 'week') === 'today' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}">
+        <a href="/boards/popular?period=today" class="inline-flex items-center justify-center {{(query.period ?? 'week') === 'today' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}">
           <on type="click">
-            <navigate path="/boards/popular?period=today"/>
+            <navigate/>
           </on>
           <icon name="clock" size="sm" class="mr-1.5 inline"/>
           <span>$t:board.popular.today</span>
-        </button>
-        <button class="{{(query.period ?? 'week') === 'week' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}">
+        </a>
+        <a href="/boards/popular?period=week" class="inline-flex items-center justify-center {{(query.period ?? 'week') === 'week' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}">
           <on type="click">
-            <navigate path="/boards/popular?period=week"/>
+            <navigate/>
           </on>
           <icon name="calendar" size="sm" class="mr-1.5 inline"/>
           <span>$t:board.popular.this_week</span>
-        </button>
-        <button class="{{(query.period ?? 'week') === 'month' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}">
+        </a>
+        <a href="/boards/popular?period=month" class="inline-flex items-center justify-center {{(query.period ?? 'week') === 'month' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}">
           <on type="click">
-            <navigate path="/boards/popular?period=month"/>
+            <navigate/>
           </on>
           <icon name="calendar" size="sm" class="mr-1.5 inline"/>
           <span>$t:board.popular.this_month</span>
-        </button>
-        <button class="{{(query.period ?? 'week') === 'year' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}">
+        </a>
+        <a href="/boards/popular?period=year" class="inline-flex items-center justify-center {{(query.period ?? 'week') === 'year' ? 'px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium' : 'px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700'}}">
           <on type="click">
-            <navigate path="/boards/popular?period=year"/>
+            <navigate/>
           </on>
           <icon name="calendar-alt" size="sm" class="mr-1.5 inline"/>
           <span>$t:board.popular.year</span>
-        </button>
+        </a>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow divide-y divide-gray-200 dark:divide-gray-700">
         <blur-until-loaded sources="popularPosts"/>

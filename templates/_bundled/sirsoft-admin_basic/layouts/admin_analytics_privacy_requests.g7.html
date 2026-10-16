@@ -238,17 +238,15 @@
             </column>
             <column field="visitor_key" header="$t:admin.analytics.privacy_requests.columns.visitor_key" width="140px">
               <cell>
-                <button type="button" class="text-blue-600 dark:text-blue-400 hover:underline font-mono text-sm">
+                <a href="/admin/analytics/visitors/{{row.visitor_key}}" :mergeQuery="true" class="button text-blue-600 dark:text-blue-400 hover:underline font-mono text-sm">
                   <on type="click">
                     <!-- 이 화면은 검색 조건(대상·값·기간)을 주소에 싣는다. 병합하지 않고 이동하면
                          상세 화면이 기간 없이 열리고 그 화면의 단건 CSV 도 다른 기간을 내려준다 —
                          형제 화면(방문자 목록)의 같은 드릴다운과도 어긋난다(#682 S3 라운드 5). -->
-                    <navigate path="/admin/analytics/visitors/{{row.visitor_key}}" :mergeQuery="true">
-                      <query/>
-                    </navigate>
+                    <navigate :mergeQuery="true"><query/></navigate>
                   </on>
                   {{String(row.visitor_key ?? '').slice(0, 8)}}
-                </button>
+                </a>
               </cell>
             </column>
             <column field="visitor_type" header="$t:admin.analytics.visitors.columns.type" width="90px">

@@ -1162,14 +1162,13 @@
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "이전 쪽 — 1 밑으로 내려가지 않게 바닥을 잡아 둔다(버튼 자체도 첫 쪽에서는 잠긴다). 쪽수만 URL 에 다시 적으므로 걸어 둔 범위·검색은 그대로 남는다",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
-                                                        "path": "/admin/boards/settings",
                                                         "replace": true,
                                                         "mergeQuery": true,
                                                         "transition_overlay_target": "policy_table_card",
@@ -1188,9 +1187,10 @@
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
+                                                "href": "/admin/boards/settings?tab=identity_policies&page={{Math.max(1, (boardIdentityPolicies?.data?.meta?.current_page ?? 1) - 1)}}",
+                                                "mergeQuery": true,
                                                 "disabled": "{{(boardIdentityPolicies?.data?.meta?.current_page ?? 1) <= 1}}",
-                                                "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                "className": "button px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                                             },
                                             "children": [
                                                 {
@@ -1210,14 +1210,13 @@
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "다음 쪽 — 마지막 쪽을 넘지 않게 천장을 잡아 둔다. 이전 쪽 버튼과 대칭이다",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
-                                                        "path": "/admin/boards/settings",
                                                         "replace": true,
                                                         "mergeQuery": true,
                                                         "transition_overlay_target": "policy_table_card",
@@ -1236,9 +1235,10 @@
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
+                                                "href": "/admin/boards/settings?tab=identity_policies&page={{boardIdentityPolicies?.data?.meta?.last_page ? Math.min(boardIdentityPolicies?.data?.meta?.last_page, (boardIdentityPolicies?.data?.meta?.current_page ?? 1) + 1) : ((boardIdentityPolicies?.data?.meta?.current_page ?? 1) + 1)}}",
+                                                "mergeQuery": true,
                                                 "disabled": "{{boardIdentityPolicies?.data?.meta?.last_page ? ((boardIdentityPolicies?.data?.meta?.current_page ?? 1) >= boardIdentityPolicies?.data?.meta?.last_page) : (boardIdentityPolicies?.data?.meta?.has_more_pages !== true)}}",
-                                                "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                "className": "button px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                                             },
                                             "children": [
                                                 {

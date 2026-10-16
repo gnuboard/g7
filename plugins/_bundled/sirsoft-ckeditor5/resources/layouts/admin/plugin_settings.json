@@ -72,7 +72,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-warning-soft"
+                                    "className": "text-xs text-yellow-700 dark:text-yellow-300"
                                 },
                                 "text": "$t:sirsoft-ckeditor5.plugin_read_only"
                             }
@@ -106,7 +106,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-info-soft"
+                                            "className": "text-xs text-blue-700 dark:text-blue-300"
                                         },
                                         "text": "$t:sirsoft-ckeditor5.settings.notice"
                                     }
@@ -547,7 +547,7 @@
                                                         "if": "{{!!_local.form?.public_asset_disk_unavailable}}",
                                                         "props": {
                                                             "role": "status",
-                                                            "className": "text-warning-soft mt-2"
+                                                            "className": "text-xs text-yellow-700 dark:text-yellow-300 mt-2"
                                                         },
                                                         "text": "$t:sirsoft-ckeditor5.settings.fields.public_asset_disk.unavailable|disk={{_local.form?.public_asset_disk_unavailable}}"
                                                     }
@@ -719,19 +719,16 @@
                                             {
                                                 "id": "open_uploads_button",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "A",
                                                 "actions": [
                                                     {
                                                         "type": "click",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/plugins/sirsoft-ckeditor5/uploads"
-                                                        }
+                                                        "handler": "navigate"
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
-                                                    "className": "btn btn-secondary"
+                                                    "href": "/admin/plugins/sirsoft-ckeditor5/uploads",
+                                                    "className": "button btn btn-secondary"
                                                 },
                                                 "children": [
                                                     {
@@ -926,19 +923,16 @@
                             {
                                 "id": "cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/plugins"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary"
+                                    "href": "/admin/plugins",
+                                    "className": "button btn btn-secondary"
                                 },
                                 "children": [
                                     {

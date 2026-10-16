@@ -55,6 +55,7 @@ effects:
   - outer_result_order_matches_inner_order
   - preserve_id_order_restores_inner_sequence
   - simple_mode_reports_last_page_without_next
+  - notices_appear_only_on_first_page          # 게시판 공지는 1쪽에만 붙고 2쪽 이후에는 다시 붙지 않는다
   # ── 스코프 보존 (P1) ──
   - soft_deleted_rows_stay_excluded
   - with_trashed_scope_is_preserved

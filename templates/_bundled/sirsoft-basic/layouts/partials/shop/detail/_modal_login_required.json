@@ -60,7 +60,7 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "actions": [
                                 {
                                     "comment": "로그인으로 — 보고 있던 상품 주소를 `redirect` 로 실어 보내 로그인 후 제자리로 돌아오게 한다",
@@ -83,8 +83,8 @@
                                 }
                             ],
                             "props": {
-                                "type": "button",
-                                "className": "px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                                "href": "/login?redirect={{location.pathname}}",
+                                "className": "inline-flex items-center justify-center px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                             },
                             "text": "$t:shop.coupon_download.go_login"
                         }

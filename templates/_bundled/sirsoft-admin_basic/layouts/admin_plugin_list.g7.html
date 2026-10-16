@@ -300,7 +300,7 @@
              폭으로 정한다 — 사이드바 개폐까지 따라간다.
              버튼 잠금은 서버가 거절하는 상태와 맞춘다: 코어 요구 버전 미충족(`core_compatible=false`)이면
              설치와 켜기를, 설치·삭제·업데이트가 진행 중이면 스위치·삭제·업데이트를 잠근다(둘 다 서버 422). -->
-        <extension-card-grid data-type="composite" data-ref="plugin_card_grid" :data-blur-until-loaded="true" viewMode="{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}" :minCardWidth="250" :maxColumns="5" resyncKey="{{_global.extensionToggleResync ?? 0}}" loading="{{plugins?.loading ?? false}}" :pagination="true" :alwaysShowPagination="true" currentPage="{{plugins?.data?.pagination?.current_page ?? 1}}" totalPages="{{plugins?.data?.pagination?.last_page ?? null}}" hasMorePages="{{plugins?.data?.pagination?.has_more_pages ?? false}}" items="{{(plugins?.data?.data ?? []).map(p => ({
+        <extension-card-grid pageHref="/admin/plugins?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="plugin_card_grid" :data-blur-until-loaded="true" viewMode="{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}" :minCardWidth="250" :maxColumns="5" resyncKey="{{_global.extensionToggleResync ?? 0}}" loading="{{plugins?.loading ?? false}}" :pagination="true" :alwaysShowPagination="true" currentPage="{{plugins?.data?.pagination?.current_page ?? 1}}" totalPages="{{plugins?.data?.pagination?.last_page ?? null}}" hasMorePages="{{plugins?.data?.pagination?.has_more_pages ?? false}}" items="{{(plugins?.data?.data ?? []).map(p => ({
           id: p.identifier,
           row: p,
           name: p.name ?? p.identifier,
@@ -325,9 +325,9 @@
             ? { label: '$t:admin.plugins.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true || p.core_compatible === false }
             : (p.update_available &amp;&amp; !['installing', 'uninstalling', 'updating'].includes(p.status) ? { label: '$t:admin.plugins.actions.update', icon: 'refresh', variant: 'outline', disabled: p.abilities?.can_install !== true } : null),
           actions: [
-            { id: 'settings', label: '$t:admin.plugins.actions.settings', iconName: 'cog', disabled: !p.has_settings || p.status !== 'active' || p.abilities?.can_update !== true },
+            { id: 'settings', label: '$t:admin.plugins.actions.settings', iconName: 'cog', href: p.settings_route, disabled: !p.has_settings || p.status !== 'active' || p.abilities?.can_update !== true },
             { id: 'refresh_layouts', label: '$t:admin.plugins.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },
-            { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', disabled: p.status !== 'active' || plugins?.data?.abilities?.can_view_language_packs !== true },
+            { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', href: '/admin/plugins/' + p.identifier + '/language-packs', mergeQuery: true, disabled: p.status !== 'active' || plugins?.data?.abilities?.can_view_language_packs !== true },
             { id: 'view_detail', label: '$t:admin.plugins.actions.view_detail', iconName: 'info-circle' },
             { id: 'uninstall', label: '$t:admin.plugins.actions.uninstall', iconName: 'trash', variant: 'danger', disabled: p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_uninstall !== true }
           ]
@@ -434,7 +434,7 @@
             <switch>
               <case when="settings">
                 <!-- audit:allow layout-list-context-navigate-merge-query 플러그인 설정 화면으로 이동 — 목적지는 각 플러그인이 선언한 임의 경로로, 플러그인 목록 클러스터 밖이다. -->
-                <navigate path="{{$args[1].settings_route}}"/>
+                <navigate path="{{$args[1].settings_route}}" fallbackPath="/admin/plugins"/>
               </case>
               <case when="refresh_layouts">
                 <set-state target="global" selectedPlugin="{{$args[1]}}" pluginLayoutSource="auto" :pluginLayoutSourceOpen="false"/>

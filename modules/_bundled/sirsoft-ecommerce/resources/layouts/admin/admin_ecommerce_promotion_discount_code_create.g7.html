@@ -36,24 +36,24 @@
       <div data-ref="page_header" class="flex-start justify-between gap-4 mb-6">
         <responsive on="portable" class="row-stack mb-6"/>
         <div data-ref="page_header_left" class="flex-center gap-3">
-          <button aria-label="$t:common.back" type="button" class="btn btn-icon">
+          <a href="/admin/ecommerce/promotion-discount-codes" aria-label="$t:common.back" class="button btn btn-icon">
             <on type="click">
-              <navigate path="/admin/ecommerce/promotion-discount-codes"/>
+              <navigate/>
             </on>
             <icon name="arrow-left" class="text-xl"/>
-          </button>
+          </a>
           <div>
             <h1 class="page-title mb-1">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.title</h1>
             <p class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.description</p>
           </div>
         </div>
         <div data-ref="page_header_actions" class="flex-center gap-2 flex-shrink-0">
-          <button type="button" class="btn btn-outline">
+          <a href="/admin/ecommerce/promotion-discount-codes" class="button btn btn-outline">
             <on type="click">
-              <navigate path="/admin/ecommerce/promotion-discount-codes"/>
+              <navigate/>
             </on>
             $t:sirsoft-ecommerce.common.cancel
-          </button>
+          </a>
           <button type="button" class="btn btn-primary">
             <icon name="save" class="text-base mr-1.5"/>
             <span>$t:sirsoft-ecommerce.common.save</span>
@@ -265,12 +265,12 @@
       <div data-ref="footer_buttons" class="sticky-footer-buttons-between">
         <div class=""/>
         <div class="flex-center gap-3">
-          <button data-ref="cancel_button" type="button" class="btn btn-secondary">
+          <a href="/admin/ecommerce/promotion-discount-codes" data-ref="cancel_button" class="button btn btn-secondary">
             <on type="click">
-              <navigate path="/admin/ecommerce/promotion-discount-codes"/>
+              <navigate/>
             </on>
             <span>$t:sirsoft-ecommerce.common.cancel</span>
-          </button>
+          </a>
           <button data-ref="save_button" type="button" class="flex-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors">
             <icon name="save" class="text-base"/>
             <span>$t:sirsoft-ecommerce.common.save</span>

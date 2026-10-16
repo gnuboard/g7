@@ -518,22 +518,23 @@
                             {
                                 "id": "add_user_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "등록 폼은 회원 목록 클러스터 안이다 — 취소하고 돌아왔을 때 보고 있던 페이지·검색 조건이 그대로여야 한다 (#75).",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/users/create",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
+                                    "href": "/admin/users/create",
+                                    "mergeQuery": true,
                                     "disabled": "{{users?.data?.abilities?.can_create !== true}}",
-                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "button flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                                 },
                                 "children": [
                                     {
@@ -1160,6 +1161,8 @@
                             }
                         ],
                         "props": {
+                            "pageHref": "/admin/users?page={page}",
+                            "pageHrefMergeQuery": true,
                             "selectedCountText": "",
                             "rowLabelField": "name",
                             "data": "{{users?.data?.data}}",
@@ -1186,12 +1189,16 @@
                                 {
                                     "id": "view",
                                     "label": "$t:admin.users.actions.view",
-                                    "iconName": "eye"
+                                    "iconName": "eye",
+                                    "href": "/admin/users/{{row.uuid}}",
+                                    "mergeQuery": true
                                 },
                                 {
                                     "id": "edit",
                                     "label": "$t:admin.users.actions.edit",
                                     "iconName": "pencil",
+                                    "href": "/admin/users/{{row.uuid}}/edit",
+                                    "mergeQuery": true,
                                     "disabledField": "abilities.can_update"
                                 },
                                 {

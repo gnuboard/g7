@@ -67,7 +67,7 @@ describe('Header(PC) 긴 사이트 이름·사용자 이름', () => {
     render(<Header siteName={LONG_NAME} availableLocales={['ko', 'en']} currentLocale="ko" />);
     const name = screen.getByText(LONG_NAME);
     expect(tokens(name)).toContain('truncate');
-    const logoButton = name.closest('button');
+    const logoButton = name.closest('a, button');
     expect(tokens(logoButton)).toContain('min-w-0');
     expect(tokens(logoButton)).not.toContain('flex-shrink-0');
     // 52자 이름에서 로고 칸이 646px 를 차지해 검색창이 57px 로 눌렸다(1280 실측) — 로고 칸 상한과 검색창 하한
@@ -110,7 +110,7 @@ describe('Header(PC) 긴 게시판 이름 탭', () => {
     render(<Header siteName="사이트" boards={[{ id: 1, slug: 'b', name: LONG_NAME } as any]} availableLocales={['ko', 'en']} currentLocale="ko" />);
     const label = screen.getAllByText(LONG_NAME)[0];
     expect(tokens(label)).toEqual(expect.arrayContaining(['min-w-0', 'truncate']));
-    expect(tokens(label.closest('button'))).toContain('max-w-xs');
+    expect(tokens(label.closest('a, button'))).toContain('max-w-xs');
   });
 });
 
@@ -195,7 +195,7 @@ describe('MobileNav 긴 이름', () => {
     );
     const site = screen.getByText(LONG_NAME);
     expect(tokens(site)).toContain('truncate');
-    const siteButton = site.closest('button')!;
+    const siteButton = site.closest('a, button')!;
     expect(tokens(siteButton)).toEqual(expect.arrayContaining(['min-w-0', 'flex-1']));
     expect(tokens(siteButton.nextElementSibling)).toContain('shrink-0');
     const userName = screen.getByText(`${LONG_NAME}-user`);

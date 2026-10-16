@@ -327,14 +327,11 @@
                                                         "actions": [
                                                             {
                                                                 "type": "click",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/admin/users/{{claim?.data?.claim?.requester_user_uuid}}"
-                                                                }
+                                                                "handler": "navigate"
                                                             }
                                                         ],
                                                         "props": {
-                                                            "href": "#",
+                                                            "href": "/admin/users/{{claim?.data?.claim?.requester_user_uuid}}",
                                                             "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                                         },
                                                         "text": "{{claim?.data?.claim?.requester_name ?? '-'}}"
@@ -415,22 +412,15 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.button"
                                             },
                                             {
+                                                "comment": "원 주문은 이 목록 클러스터 밖이다 — 새 창 링크로 열어 지금 보던 신청서를 잃지 않게 한다(주소가 href 에 있어 가운데 클릭·새 탭도 같다).",
                                                 "id": "cd_009_order_link_button",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "A",
                                                 "if": "{{!!claim?.data?.claim?.order_number}}",
-                                                "actions": [
-                                                    {
-                                                        "comment": "원 주문은 이 목록 클러스터 밖이다 — 새 창으로 열어 지금 보던 신청서를 잃지 않게 한다.",
-                                                        "type": "click",
-                                                        "handler": "openWindow",
-                                                        "params": {
-                                                            "path": "/admin/ecommerce/orders/{{claim.data.claim.order_number}}"
-                                                        }
-                                                    }
-                                                ],
                                                 "props": {
-                                                    "type": "button",
+                                                    "href": "/admin/ecommerce/orders/{{claim.data.claim.order_number}}",
+                                                    "target": "_blank",
+                                                    "rel": "noopener noreferrer",
                                                     "className": "btn btn-outline"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.claim.detail.view_order"
@@ -438,21 +428,21 @@
                                             {
                                                 "id": "cd_010_list_button",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "A",
                                                 "actions": [
                                                     {
                                                         "comment": "목록 복귀는 보던 조건 그대로다 — 검색어·필터·페이지·유형 서브탭을 URL 에서 승계한다.",
                                                         "type": "click",
                                                         "handler": "navigate",
                                                         "params": {
-                                                            "path": "/admin/ecommerce/claims",
                                                             "mergeQuery": true,
                                                             "query": {}
                                                         }
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
+                                                    "href": "/admin/ecommerce/claims",
+                                                    "mergeQuery": true,
                                                     "className": "btn btn-outline"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.common.list"
@@ -628,18 +618,10 @@
                                         "type": "basic",
                                         "name": "A",
                                         "if": "{{!!claim?.data?.linked_claims?.source}}",
-                                        "actions": [
-                                            {
-                                                "comment": "원 신청서를 새 창으로 연다 — 지금 보던 신청서의 입력 상태를 잃지 않게 한다",
-                                                "type": "click",
-                                                "handler": "openWindow",
-                                                "params": {
-                                                    "path": "{{claim.data.linked_claims.source.detail_url}}"
-                                                }
-                                            }
-                                        ],
                                         "props": {
-                                            "href": "#",
+                                            "href": "{{claim.data.linked_claims.source.detail_url}}",
+                                            "target": "_blank",
+                                            "rel": "noopener noreferrer",
                                             "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                         },
                                         "text": "{{(claim?.data?.linked_claims?.source?.claim_type_label ?? '') + ' ' + (claim?.data?.linked_claims?.source?.claim_number ?? '')}}"
@@ -680,18 +662,10 @@
                                             {
                                                 "type": "basic",
                                                 "name": "A",
-                                                "actions": [
-                                                    {
-                                                        "comment": "후속 환불신청서를 새 창으로 연다",
-                                                        "type": "click",
-                                                        "handler": "openWindow",
-                                                        "params": {
-                                                            "path": "{{linkedRefund.detail_url}}"
-                                                        }
-                                                    }
-                                                ],
                                                 "props": {
-                                                    "href": "#",
+                                                    "href": "{{linkedRefund.detail_url}}",
+                                                    "target": "_blank",
+                                                    "rel": "noopener noreferrer",
                                                     "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                                 },
                                                 "text": "{{linkedRefund.claim_number}}"
@@ -721,18 +695,10 @@
                                         "type": "basic",
                                         "name": "A",
                                         "if": "{{!!claim?.data?.linked_claims?.result_cancel}}",
-                                        "actions": [
-                                            {
-                                                "comment": "환불이 실행돼 생긴 취소 내역을 새 창으로 연다",
-                                                "type": "click",
-                                                "handler": "openWindow",
-                                                "params": {
-                                                    "path": "{{claim.data.linked_claims.result_cancel.detail_url}}"
-                                                }
-                                            }
-                                        ],
                                         "props": {
-                                            "href": "#",
+                                            "href": "{{claim.data.linked_claims.result_cancel.detail_url}}",
+                                            "target": "_blank",
+                                            "rel": "noopener noreferrer",
                                             "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                         },
                                         "text": "{{claim?.data?.linked_claims?.result_cancel?.claim_number ?? ''}}"

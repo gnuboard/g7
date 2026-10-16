@@ -150,9 +150,9 @@ Filter 구독에는 `'type' => 'filter'` 선언이 반드시 필요합니다. �
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 2개 | `plugins/_bundled/gnuboard7-hello_plugin/tests` |
-| Vitest | 1개 | `vitest.config.ts` |
+| Vitest | 2개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 1개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 2개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -26,18 +26,18 @@
       </div>
     </div>
     <div data-ref="board_channel_sub_tabs" class="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
-      <button data-each="ch, chIdx in {{(availableChannels?.data?.channels ?? []).filter(c => c.hidden_tab !== true &amp;&amp; (c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false : (c.tab_channels ?? [c.id]).filter(tc => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === tc)?.is_active === true).length > 0))}}" type="button" class="{{(query.channel ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2">
+      <a href="/admin/boards/settings?channel={{ch.id}}&amp;page=1" :mergeQuery="true" data-each="ch, chIdx in {{(availableChannels?.data?.channels ?? []).filter(c => c.hidden_tab !== true &amp;&amp; (c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false : (c.tab_channels ?? [c.id]).filter(tc => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === tc)?.is_active === true).length > 0))}}" aria-current="{{(query.channel ?? 'mail') === ch.id ? 'page' : undefined}}" class="button {{(query.channel ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2">
         <on type="click">
-          <!-- 채널 서브탭 갈아타기 — 고른 채널을 지역 상태와 URL 양쪽에 남긴다(둘 다 두는 이유는 아래 목록이 지역 값을 먼저 보고 없으면 URL 을 보기 때문). 채널이 바뀌면 보이는 문안 집합이 통째로 달라지므로 쪽수는 1 로 되돌린다 -->
+          <!-- 채널 서브탭 갈아타기 — 주소는 링크 href 한 곳(새 탭으로도 열린다, #757). 채널이 바뀌면 보이는 문안 집합이 통째로 달라지므로 쪽수는 1 로 되돌린다 -->
           <sequence>
-            <navigate path="/admin/boards/settings" :replace="true" :mergeQuery="true">
+            <navigate :replace="true" :mergeQuery="true">
               <query channel="{{ch.id}}" :page="1"/>
             </navigate>
           </sequence>
         </on>
         <icon name="{{ch.icon ?? 'fas fa-bell'}}" class="text-sm"/>
         <span>{{ch.tab_label_key ? $t(ch.tab_label_key) : (ch.name ?? ch.id)}}</span>
-      </button>
+      </a>
     </div>
     <!-- 알림 정의 행 하단 확장 슬롯(범용). 각 소유 확장이 알림별 부가 UI(예: 채널 연동)를 이 자리에 주입한다. 특정 확장을 알지 못하며, 확장 미설치 시 빈 자리로 남는다. def·현재 채널을 extensionPointProps 로 전달한다. -->
     <div data-ref="board_notif_channel_content">
@@ -163,7 +163,7 @@
         </div>
       </div>
       <div data-ref="board_notif_pagination" class="flex justify-center">
-        <pagination data-type="composite" currentPage="{{boardNotificationDefinitions?.data?.pagination?.current_page || 1}}" totalPages="{{boardNotificationDefinitions?.data?.pagination?.last_page ?? null}}" hasMorePages="{{boardNotificationDefinitions?.data?.pagination?.has_more_pages ?? false}}">
+        <pagination :pageHrefMergeQuery="true" pageHref="/admin/boards/settings?page={page}" data-type="composite" currentPage="{{boardNotificationDefinitions?.data?.pagination?.current_page || 1}}" totalPages="{{boardNotificationDefinitions?.data?.pagination?.last_page ?? null}}" hasMorePages="{{boardNotificationDefinitions?.data?.pagination?.has_more_pages ?? false}}">
           <on type="action" event="onPageChange">
             <!-- 쪽 넘기기 — 쪽수만 URL 에 다시 적으므로 고른 채널과 한 쪽 건수는 그대로 남는다 -->
             <navigate path="/admin/boards/settings" :replace="true" :mergeQuery="true">

@@ -157,9 +157,9 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 2개 | `plugins/_bundled/sirsoft-daum_postcode/tests` |
-| Vitest | 7개 | `vitest.config.ts` |
+| Vitest | 8개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 7개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 8개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

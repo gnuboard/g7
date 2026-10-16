@@ -1546,6 +1546,8 @@
                 "data": "{{schedules?.data?.data}}",
                 "pagination": true,
                 "serverSidePagination": true,
+                "pageHref": "/admin/schedules?page={page}",
+                "pageHrefMergeQuery": true,
                 "serverCurrentPage": "{{schedules?.data?.pagination?.current_page ?? 1}}",
                 "serverTotalPages": "{{schedules?.data?.pagination?.last_page ?? null}}",
                 "serverHasMorePages": "{{schedules?.data?.pagination?.has_more_pages ?? false}}",

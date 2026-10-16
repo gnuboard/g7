@@ -76,9 +76,10 @@ export function sanitizeNavPath(target: unknown): string | null {
         return null;
     }
 
-    // scheme 포함(`https:`·`javascript:` 등) 은 path-only 가 아님
+    // scheme 포함(`https:`·`javascript:` 등) 은 path-only 가 아님 — 단 이 사이트와 같은 출처의 전체 주소는
+    // 경로로 바꿔 통과시킨다(서버가 알림 이동 주소를 전체 주소로 준다). 다른 출처·실행 스킴은 거부 그대로.
     if (/^[a-z][a-z0-9+.-]*:/i.test(normalized)) {
-        return null;
+        return toSameOriginNavPath(trimmed);
     }
 
     // 절대 경로만 허용 — 상대경로·제어문자 선행 입력은 거부
@@ -90,14 +91,90 @@ export function sanitizeNavPath(target: unknown): string | null {
 }
 
 /**
- * 이동 대상이 안전하지 않으면 fallback 경로를 돌려줍니다.
+ * 같은 출처의 전체 주소(`http(s)://이 사이트/…`)를 「경로?쿼리#해시」로 바꿉니다.
  *
- * @param target 이동 대상 문자열
- * @param fallback 안전하지 않을 때 쓸 경로 (호출부가 보장하는 same-origin 경로)
- * @returns 안전한 이동 경로
+ * 판정은 브라우저 URL 파서(`new URL`)의 origin 비교라 사용자 정보(`https://site@evil/`)·다른 스킴·다른 포트·
+ * 비슷한 호스트는 다른 출처로 떨어진다. `http:`·`https:` 전체 주소만 다루고, 스킴 없는 값(경로·상대경로·
+ * `//host`)은 null — 같은 탭 sink 의 경로 판정은 {@link sanitizeNavPath} 가 한다. 링크 href 처럼 상대 주소도
+ * 받아야 하는 자리는 `base` 를 넘긴다(`navigationLinks.toSameOriginPath`).
+ *
+ * @param target 주소 문자열
+ * @param base 상대 주소 해석 기준(넘기면 스킴 없는 값도 그 기준으로 해석한다)
+ * @returns 같은 출처면 경로(+쿼리·해시), 아니면 null
+ * @since engine-v1.80.1
  */
-export function resolveSafeNavPath(target: unknown, fallback: string): string {
-    return sanitizeNavPath(target) ?? fallback;
+export function toSameOriginNavPath(target: unknown, base?: string): string | null {
+    if (typeof target !== 'string' || typeof window === 'undefined') {
+        return null;
+    }
+
+    const trimmed = target.trim();
+    if (trimmed === '') {
+        return null;
+    }
+    if (base === undefined && !/^https?:/i.test(normalizeScriptSrcForOriginCheck(trimmed))) {
+        return null;
+    }
+
+    let url: URL;
+    try {
+        url = base === undefined ? new URL(trimmed) : new URL(trimmed, base);
+    } catch {
+        return null;
+    }
+
+    if ((url.protocol !== 'http:' && url.protocol !== 'https:') || url.origin !== window.location.origin) {
+        return null;
+    }
+
+    // `https://이 사이트//다른호스트`(백슬래시 변형 포함)의 경로는 `//다른호스트` — 경로로 돌려주면 같은 탭 sink 가
+    // 프로토콜 상대 주소로 읽어 바깥으로 간다. 봇 화면 `ComponentHtmlMapper::toSameOriginLinkPath` 와 같은 거부.
+    if (url.pathname.startsWith('//')) {
+        return null;
+    }
+
+    return `${url.pathname}${url.search}${url.hash}`;
+}
+
+/**
+ * 같은 탭 이동 sink(openWindow `_self`·redirect·navigate 미매칭 폴백)가 갈 경로를 정합니다.
+ *
+ * - 주소가 비었으면 `fallback` — 「어디든 가야 하는」 자리의 기본 경로(호출부가 정한다).
+ * - 안전한 같은 출처 경로(같은 출처 전체 주소 포함)면 그 경로.
+ * - 주소가 있는데 거부되면(실행 스킴·다른 출처·`//host`·백슬래시 우회) `null` — 호출부는 **이동하지 않는다**.
+ *   종전(engine-v1.73.0~)에는 거부된 주소도 `fallback`(`/`)으로 바꿔 첫 화면으로 문서 전체 이동했다
+ *   (결정 2026-10-15, engine-v1.80.1).
+ *
+ * @since engine-v1.80.1
+ * @param target 이동 대상
+ * @param fallback 주소가 비었을 때 쓸 경로 (호출부가 보장하는 same-origin 경로)
+ * @returns 이동할 경로, 거부된 주소면 null
+ */
+export function resolveSameTabNavPath(target: unknown, fallback: string): string | null {
+    if (typeof target !== 'string' || target.trim() === '') {
+        return fallback;
+    }
+
+    return sanitizeNavPath(target);
+}
+
+/**
+ * navigate 의 `params.fallbackPath` 가 있을 때 갈 경로를 정합니다.
+ *
+ * 로그인 완료처럼 반드시 어딘가로 가야 하는 자리에서 레이아웃이 안전한 착지점을 명시한다 — 이동 주소(`path`)가
+ * 비었거나 거부되면(실행 스킴·다른 출처·`//host`·상대 경로) `fallbackPath` 로 가고, 그것도 같은 판정에서 거부되면
+ * null(이동하지 않음). 레이아웃이 표현식으로 주소를 직접 거르면 우회 변형을 화면마다 다시 짜야 하므로 판정을 엔진 한 곳에 둔다.
+ *
+ * 판정은 같은 탭 sink 의 최종 판정 {@link sanitizeNavPath} 그 자체다 — 대체 경로를 쓸지 정하는 판정과 실제 이동을
+ * 거부하는 판정이 갈리면 「여기서 통과했는데 sink 에서 거부돼 이동 0」 이 생긴다(상대 경로 `admin/users` 실측).
+ *
+ * @param target navigate 이동 주소
+ * @param fallbackPath 대체 경로
+ * @returns 갈 경로, 둘 다 갈 수 없으면 null
+ * @since engine-v1.80.1
+ */
+export function resolveNavigatePathWithFallback(target: unknown, fallbackPath: unknown): string | null {
+    return sanitizeNavPath(target) ?? sanitizeNavPath(fallbackPath);
 }
 
 /**

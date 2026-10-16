@@ -285,10 +285,17 @@ describe('⑥ 전체 유입 주소를 볼 길이 있다', () => {
     // 모집단은 손으로 적지 않는다 — `tab`·`host` 를 바꾸는 `replace` 이동을 레이아웃에서 전부 뽑는다.
     const layout = loadLayout('admin_analytics_referrers.json');
     const sequences = collectObjects(layout).filter((o) => o.handler === 'sequence' && Array.isArray(o.actions));
-    const moves = collectObjects(layout).filter(
+    const tabMoves = collectObjects(layout).filter(
       (o) => o.handler === 'navigate' && o.params?.replace === true
         && o.params?.query && ('tab' in o.params.query || o.params.query.host === '{{undefined}}'),
     );
+    // 「사이트 목록으로」는 링크(#757) — 주소는 href 한 곳(host 를 싣지 않음), navigate 는 path·query 없이 그 href 로 간다
+    const backLink = collectObjects(layout).find((o) => o.name === 'A' && o.id === 'referrer_urls_back');
+    expect(backLink, '사이트 목록으로 링크').toBeTruthy();
+    expect(String(backLink?.props?.href)).toMatch(/^\/admin\/analytics\/referrers\?/);
+    expect(String(backLink?.props?.href)).not.toContain('host');
+    const backMoves = collectObjects(backLink?.actions ?? []).filter((o) => o.handler === 'navigate' && o.params?.replace === true);
+    const moves = [...tabMoves, ...backMoves];
 
     expect(moves.length, '탭 전환·목록 복귀 이동이 비면 아무것도 재지 않은 채 초록이 된다').toBeGreaterThanOrEqual(2);
 
@@ -300,7 +307,7 @@ describe('⑥ 전체 유입 주소를 볼 길이 있다', () => {
 
       // 새 탭이 사이트면 켜고 아니면 끈다 · 주소 목록에서 돌아오면 켠다.
       const expr = String(keySet.params.labelDrilldownKey);
-      if ('tab' in move.params.query) {
+      if (move.params.query && 'tab' in move.params.query) {
         const evalKey = new Function('$args', `return (${expr.replace(/^\{\{|\}\}$/g, '')});`);
         expect(evalKey(['sites'])).toBe('host');
         expect(evalKey(['types'])).toBe('');
@@ -374,9 +381,11 @@ describe('⑦ 회원 방문자는 이름으로 알아본다', () => {
     expect(menus.length, '이름을 눌렀을 때 뜨는 메뉴가 있어야 한다').toBeGreaterThanOrEqual(1);
 
     const menuJson = stringify(menus);
-    // 회원 화면은 새 창으로 — 보던 목록을 잃지 않는다(활동 로그와 같은 규약).
-    expect(menuJson).toContain('openWindow');
-    expect(menuJson).toContain('/admin/users/');
+    // 회원 화면은 새 창으로 — 보던 목록을 잃지 않는다(활동 로그와 같은 규약). #757 부터는 항목이 새 창 링크다
+    // (`href` + `target="_blank"` — 가운데 클릭·주소 복사도 된다).
+    const viewMember = menus.flatMap((m: any) => (Array.isArray(m.props?.items) ? m.props.items : [])).find((it: any) => it?.id === 'view_member');
+    expect(viewMember?.href).toMatch(/^\/admin\/users\//);
+    expect(viewMember?.target).toBe('_blank');
     expect(menuJson).toContain('admin.analytics.visitors.action.view_member');
     expect(menuJson).toContain('admin.analytics.visitors.action.search_by_member');
   });
@@ -614,9 +623,15 @@ describe('⑪ 회원 화면으로 건너뛰는 자리는 목적지 권한을 먼
         if (Array.isArray(value)) { value.forEach((v) => walk(v, chain)); return; }
         if (!value || typeof value !== 'object') return;
         const node = value as Record<string, any>;
-        if ((node.handler === 'openWindow' || node.handler === 'navigate') && String(node.params?.path ?? '').startsWith('/admin/users/')) {
+        // 이동은 액션(openWindow·navigate)이거나 링크(#757 — `A` 의 href, 메뉴 항목의 href)다
+        const jumpPath = node.handler === 'openWindow' || node.handler === 'navigate'
+          ? String(node.params?.path ?? '')
+          : node.name === 'A' ? String(node.props?.href ?? '') : typeof node.href === 'string' && node.id !== undefined ? node.href : '';
+        if (jumpPath.startsWith('/admin/users/')) {
           jumps.push(file);
-          const guards = chain.flatMap((owner) => [
+          // 링크는 그 노드·항목 자신의 조건도 가드다
+          const owners = node.handler ? chain : [...chain, node];
+          const guards = owners.flatMap((owner) => [
             ...(typeof owner.if === 'string' ? [owner.if] : []),
             ...((owner.props?.items ?? []) as any[]).filter((item) => typeof item?.if === 'string').map((item) => item.if as string),
           ]);
@@ -626,7 +641,7 @@ describe('⑪ 회원 화면으로 건너뛰는 자리는 목적지 권한을 먼
             with: evaluateWith(g, computeds, { ...row, ...perms(['core.analytics.read', 'core.analytics.privacy', 'core.users.read']) }),
           }));
           if (!verdicts.some((v) => !v.without && v.without !== 'error' && !!v.with && v.with !== 'error')) {
-            ungated.push(`${file}: ${node.params.path} 앞 조건 ${guards.length}개 중 core.users.read 로 갈리는 것이 없다`);
+            ungated.push(`${file}: ${jumpPath} 앞 조건 ${guards.length}개 중 core.users.read 로 갈리는 것이 없다`);
           }
         }
         for (const v of Object.values(node)) walk(v, [...chain, node]);

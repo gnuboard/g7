@@ -135,16 +135,16 @@
               고친다. 여기서는 그중 어느 것을 쓸지만 고르므로, 만들거나 고치러 갈 길을 열어 둔다
               (형제 화면 「게시판 유형」의 관리 버튼과 같은 모양). 옮겨 간 환경설정에서 유형을 고치려면 게시판
               환경설정 수정 권한이 필요하다(form-data _meta.can_manage_reaction_types) — 없으면 잠그고 이유를 툴팁으로 알린다. -->
-            <button data-ref="board_form_btn_manage_reaction_types" data-testid="board-form-manage-reaction-types" type="button" class="inline-flex items-center gap-1 text-xs rounded-full px-2.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed" title="{{_local.form?._meta?.can_manage_reaction_types === true ? '' : '$t:sirsoft-board.admin.form.fields.manage_reaction_types_no_permission'}}" disabled="{{_local.form?._meta?.can_manage_reaction_types !== true}}">
+            <a href="/admin/boards/settings?tab=basic_defaults" data-ref="board_form_btn_manage_reaction_types" data-testid="board-form-manage-reaction-types" class="button inline-flex items-center gap-1 text-xs rounded-full px-2.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 shrink-0 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed" title="{{_local.form?._meta?.can_manage_reaction_types === true ? '' : '$t:sirsoft-board.admin.form.fields.manage_reaction_types_no_permission'}}" disabled="{{_local.form?._meta?.can_manage_reaction_types !== true}}">
               <on type="click">
                 <!-- audit:allow layout-list-context-navigate-merge-query 목록 왕복이 아니라 **다른 화면**(환경설정)으로 건너가는 이동이다. 게시판 목록의 쪽·검색 조건을 그쪽 주소에 실어 보낼 이유가 없고, 실으면 환경설정이 알지 못하는 조건이 주소에 남는다. 되돌아오는 것은 브라우저 뒤로가기가 맡는다. -->
-                <navigate path="/admin/boards/settings">
+                <navigate>
                   <query tab="basic_defaults"/>
                 </navigate>
               </on>
               <icon name="gear" size="sm"/>
               <span>$t:sirsoft-board.admin.form.fields.manage_reaction_types</span>
-            </button>
+            </a>
           </div>
           <div class="flex flex-col gap-2">
             <div data-each="reactionType, reactionIdx in {{reactionTypes?.data?.reaction_types ?? []}}">

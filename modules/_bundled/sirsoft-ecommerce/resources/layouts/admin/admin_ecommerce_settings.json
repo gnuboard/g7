@@ -444,46 +444,57 @@
                             "tabs": [
                                 {
                                     "id": "basic_info",
+                                    "href": "/admin/ecommerce/settings?tab=basic_info",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.basic_info"
                                 },
                                 {
                                     "id": "language_currency",
+                                    "href": "/admin/ecommerce/settings?tab=language_currency",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.language_currency"
                                 },
                                 {
                                     "id": "seo",
+                                    "href": "/admin/ecommerce/settings?tab=seo",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.seo"
                                 },
                                 {
                                     "id": "order_settings",
+                                    "href": "/admin/ecommerce/settings?tab=order_settings",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.order_settings"
                                 },
                                 {
                                     "id": "claim",
+                                    "href": "/admin/ecommerce/settings?tab=claim",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.claim"
                                 },
                                 {
                                     "id": "shipping",
+                                    "href": "/admin/ecommerce/settings?tab=shipping",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.shipping"
                                 },
                                 {
                                     "id": "review_settings",
+                                    "href": "/admin/ecommerce/settings?tab=review_settings",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.review_settings"
                                 },
                                 {
                                     "id": "notification_definitions",
+                                    "href": "/admin/ecommerce/settings?tab=notification_definitions",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.notification_definitions"
                                 },
                                 {
                                     "id": "identity_policies",
+                                    "href": "/admin/ecommerce/settings?tab=identity_policies",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.identity_policies"
                                 },
                                 {
                                     "id": "mileage",
+                                    "href": "/admin/ecommerce/settings?tab=mileage",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.mileage"
                                 },
                                 {
                                     "id": "privacy_retention",
+                                    "href": "/admin/ecommerce/settings?tab=privacy_retention",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.privacy_retention"
                                 }
                             ]
@@ -674,17 +685,15 @@
                             {
                                 "id": "cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
+                                    "href": "/admin",
                                     "className": "btn btn-secondary"
                                 },
                                 "children": [

@@ -194,19 +194,16 @@
                             {
                                 "id": "koreaexim_back",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/plugins"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary whitespace-nowrap",
+                                    "href": "/admin/plugins",
+                                    "className": "button btn btn-secondary whitespace-nowrap",
                                     "aria-label": "$t:admin.plugins.back_to_list"
                                 },
                                 "children": [
@@ -264,10 +261,12 @@
                             "className": "sticky-tab-nav-responsive",
                             "tabs": [
                                 {
+                                    "href": "/admin/plugins/sirsoft-koreaexim/settings?tab=settings",
                                     "id": "settings",
                                     "label": "$t:sirsoft-koreaexim.settings_tab"
                                 },
                                 {
+                                    "href": "/admin/plugins/sirsoft-koreaexim/settings?tab=history",
                                     "id": "history",
                                     "label": "$t:sirsoft-koreaexim.history_tab"
                                 }
@@ -297,7 +296,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-warning-soft"
+                                    "className": "text-xs text-yellow-700 dark:text-yellow-300"
                                 },
                                 "text": "$t:sirsoft-koreaexim.plugin_read_only"
                             }
@@ -351,19 +350,16 @@
                         "children": [
                             {
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/plugins"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary"
+                                    "href": "/admin/plugins",
+                                    "className": "button btn btn-secondary"
                                 },
                                 "children": [
                                     {

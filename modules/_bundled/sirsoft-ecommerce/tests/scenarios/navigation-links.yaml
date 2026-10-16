@@ -1,0 +1,64 @@
+# 시나리오 매니페스트 — 이커머스 관리자 화면 이동은 링크(`<a href>`)다 (#757 WP-L)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: ecommerce_navigation_links
+
+description: >-
+  화면 이동이 단추·span 에 navigate 액션을 붙인 구조라 렌더 시점에 주소가 없어 가운데 클릭·Ctrl+클릭·우클릭
+  「새 탭에서 열기」 가 되지 않았다(2026-10-14 — 운영자는 여러 관리 화면을 동시에 열어 둔다). 이동은 레이아웃에
+  `<a href>` 로 직접 쓰고(D10) 보통 클릭은 path 없는 navigate 가 그 href 로 SPA 이동한다(D12). 합성 컴포넌트는
+  주소를 prop 으로 받는다(D14 — DataGrid 행 메뉴 `href`, 쪽수 `pageHref`, 메뉴 항목 `href`).
+
+  잠금 시험은 이커머스 관리자 레이아웃·확장 조각 JSON 전체에서 모집단을 파생한다. 자기 화면을 다시 부르는
+  새로고침·필터·검색·초기화(W6)와 저장·삭제 뒤 이동·확인 창 이동(D13)은 링크 대상이 아니다 — 시험은 라우트 표에서
+  그 화면 자신의 경로를 파생해 가른다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/navigation-links.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/initPanelFromUrl.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-panel-direct-entry.spec.ts
+
+coverage_strategy: pairwise
+
+axes:
+  surface:
+    - admin_layout   # 단추·글자(Span)·A 의 click 이동 — 등록·목록·뒤로·취소·회원 바로가기·연동 설정
+    - admin_row   # DataGrid 행 메뉴(onRowAction)·ActionMenu 항목(onItemClick)·쪽 번호(onPageChange)
+
+exclusions:
+  - { surface: admin_layout, reason: "제외 없음 — 레이아웃·확장 조각 JSON 전체에서 모집단을 파생한다" }
+
+effects:
+  - screen_moves_are_links   # 다른 화면으로 옮기는 단추·글자는 실제 주소를 가진 A(href) — `#`·빈 주소의 A 도 실제 주소로
+  - row_menu_items_are_links   # 행 메뉴·메뉴 항목·탭 항목(onTabChange 가 주소를 바꾸면) 중 다른 화면·주소로 옮기는 항목은 href
+  - page_numbers_are_links   # 쪽 번호 이동이 있는 DataGrid·Pagination 은 pageHref
+  - panel_item_links_open_item_on_direct_entry   # 목록-편집 패널 화면(브랜드·카테고리·공통정보·고시)은 ?id&mode 주소 직접 진입·새 탭에서 그 항목을 고르고 패널을 연다
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: Playwright   # 관리자 템플릿 admin-navigation-links.spec.ts(C1) + M1 §9 링크 행 실측
+  note: |
+    수정 전 red(2026-10-15, 시험 첫 실행): 링크 아님 43(EA 20 · EB 23) · 행 메뉴 href 없음 9(EA 7 · EB 2) ·
+    pageHref 없음 12(EA 8 · EB 4).
+    모집단 보강(EB 제안 + L0 판정 2026-10-15 — 회원 화면 확장 조각, 같은 라우트라도 쿼리의 쪽·탭만 바꾸는 직접 그린 이동) 뒤:
+    링크 아님 52(EA 20 · EB 32) · 행 메뉴 9(EA 7 · EB 2) · pageHref 12(EA 8 · EB 4).
+    시험 안 제외 목록 3칸(EB 판정 — 확인 창 안 「떠나기」 D13 · 필터 초기화 2 W6) 뒤: 링크 아님 49(EA 20 · EB 29 = EB 판정표 변환 29).
+    제외 목록은 「낡지 않았다」 단언이 항목마다 실제로 걸리는 칸이 있는지 확인한다.
+    href="#" 보강(액션 없는 # 링크도 셈, M1 수정 전 실측 T10) 뒤: 링크 아님 54(EA 22 · EB 32) · 행 메뉴 9(EA 7 · EB 2) · pageHref 12(EA 8 · EB 4).
+    새 창 기준(L0 판정 2026-10-15 — openWindow 를 쓰는 A 는 실제 href + target=_blank, 링크 아닌 단추·글자의 openWindow 는 제외:
+    이미 새 창, D13 밖) 뒤: 링크 아님 58(EA 22 · EB 36) · 행 메뉴 9 · pageHref 12.
+    변환 뒤(EA·EB 마감 2026-10-15): 5 전부 green.
+    키 이름 재점검(L0 2026-10-15 — BP1 이 `tab` 만 보다 `channel` 탭을 놓친 결함군): 쪽·탭 키를 이름 끝(`*_tab`·`*_page` 등)으로 보고
+    replaceUrl 도 셈 · 탭 컴포넌트(onTabChange)가 주소를 바꾸면 키 이름과 무관하게 탭 항목 href 를 요구 → 새로 걸린 칸 1
+    (EB 환경설정 클레임 사유 하위 탭 `claim_reason_sub_tabs` 3항목, `sub_tab`).
+    클릭·항목 고르기(onSelect)가 replaceUrl 로 쿼리를 남기면 판정 대상(①''''')으로 셈 → 목록-편집 패널 항목 선택 4칸(브랜드·카테고리·
+    공통정보·고시 `?id&mode`)은 L0 답(questions/EA-p2.closed.md Q1)대로 제외 목록에 넣음(같은 화면 안 패널 선택 — D13 밖).
+    EB 하위 탭 href 반영 뒤 5 전부 green.
+    클릭 진입 판정 넓힘(validate-plan 라운드 3 대조 C, L0 2026-10-15): `event` 만 보던 판정을 type·event 어느 키로 적어도
+    (생략·click·onClick) 같은 클릭으로 보게 했다(엔진 DOM_EVENT_PROP_MAP click → onClick). 이커머스에 onClick 형식 이동 0곳 →
+    새로 걸린 칸 0. 판정 함수 단언 it 1개 추가(6 passed).
+    라운드 6 사각 대조(L0 2026-10-16 — U1 사용자 잠금 시험의 switch 갈래·삼항 path 사각 결함군): 판정식을 파일 하나 단위
+    judgeFile 로 떼고 픽스처 11개(잡을 것 5 · 뺄 것 6)로 쟀다. 수정 전 red 5 — switch·sequence·conditions·sequence 안 switch
+    갈래 이동을 놓쳤고, 자기 화면으로만 가는 삼항 경로를 다른 화면으로 셌다. ① 을 「클릭에서 동기로 곧바로 닿는 이동」
+    (directNavigates — sequence 는 apiCall·openModal·confirm 에서 멈춤)으로, 경로 비교를 삼항 안 경로 글자 전부(isOwnPath)로 넓혔다.
+    새로 잡힌 실제 칸 1(EA 배송정책 복사 확인 창 「복사 진행」 — D13 확인 창 이동, 제외 목록에 사유와 함께). 17 passed.
