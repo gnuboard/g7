@@ -1,0 +1,27 @@
+feature: 게시판 시험 설정 저장소 복원 (#789 P17)
+
+description: |
+  테스트 환경의 게시판 설정 저장소(storage/framework/testing/modules/sirsoft-board/settings)는 DB 트랜잭션
+  롤백이 닿지 않는 실제 디렉터리다. 신고 알림 시험이 저장한 auto_hide_threshold = 100 이 되돌려지지 않아,
+  뒤에 도는 샘플 시더 시험의 「대량 신고 케이스」 기준이 바뀌어 환경마다 결과가 갈렸다.
+
+  ModuleTestCase 가 시험마다 setUp 첫머리에서 설정 디렉터리의 파일 내용을 떠 두고, tearDown 끝에서 그 상태로
+  되돌린다(RestoresBoardSettingsStorage). 바뀐 파일은 원래 내용으로, 새 파일은 삭제, 지워진 파일은 되살리고,
+  원래 없던 디렉터리는 통째로 지운다. 하위 시험이 자기 tearDown 에서 디렉터리를 지워도 최종 상태는 시험 전 상태다.
+
+axes:
+  # 저장소의 시작 상태별로 되돌림 결과가 다르다 — 시작 상태를 한 축으로 둔다
+  case:
+    - previous_test_writes_do_not_leak
+    - storage_absent_on_first_run
+    - storage_partially_present
+
+effects:
+  - next_test_sees_storage_as_before_previous_test
+  - directory_created_during_test_removed
+  - changed_file_restored_new_file_removed
+  - deleted_directory_recreated
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/BoardSettingsStorageRestoreTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/BoardSettingsStorageRestoreTraitTest.php

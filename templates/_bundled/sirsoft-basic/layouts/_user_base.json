@@ -272,6 +272,10 @@
             "handler": "initGuestOrderToken"
         },
         {
+            "comment": "비밀글 열람 토큰 복원 — 비밀번호로 연 사실을 탭 세션(sessionStorage)에서 _global.secretViewToken 으로 되살린다. 답변 링크(전체 이동)·새로고침 뒤에도 globalHeaders 의 X-Board-Secret-View-Token 이 실려 같은 스레드의 답변·원글이 다시 잠기지 않는다. 탭을 닫으면 사라진다.",
+            "handler": "initSecretViewToken"
+        },
+        {
             "handler": "setState",
             "params": {
                 "target": "global",

@@ -15,6 +15,7 @@ use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\OrderCancellationService;
+use Plugins\Sirsoft\PayNicepayments\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayNicepayments\Http\Requests\VbankRefundRequest;
 use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 
@@ -27,6 +28,14 @@ use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
  */
 class AdminVbankRefundController extends AdminBaseController
 {
+    use GuardsOrderScope;
+
+    /**
+     * 의존성을 주입받습니다.
+     *
+     * @param  NicePaymentsApiService  $apiService  나이스페이먼츠 API 서비스
+     * @param  OrderCancellationService  $cancellationService  주문 취소 서비스
+     */
     public function __construct(
         private readonly NicePaymentsApiService $apiService,
         private readonly OrderCancellationService $cancellationService,
@@ -49,6 +58,14 @@ class AdminVbankRefundController extends AdminBaseController
      */
     public function refund(VbankRefundRequest $request): JsonResponse
     {
+        if ($denied = $this->transactionScopeDenial(trim((string) $request->validated('tid')), 'sirsoft-ecommerce.claims.execute-refund')) {
+            return $denied;
+        }
+
+        if ($denied = $this->orderScopeDenial(trim((string) $request->validated('moid')), 'sirsoft-ecommerce.claims.execute-refund')) {
+            return $denied;
+        }
+
         $tid = trim((string) $request->validated('tid'));
         $moid = trim((string) $request->validated('moid'));
         $cancelAmt = (int) $request->validated('cancel_amt');
@@ -119,7 +136,12 @@ class AdminVbankRefundController extends AdminBaseController
     }
 
     /**
-     * @return array{order?: Order, payment?: OrderPayment, error_key?: string, status?: int}
+     * 환불 대상 주문·결제를 잠그고 환불 가능 여부를 확인해 선점합니다.
+     *
+     * @param  string  $moid  주문번호
+     * @param  string  $tid  거래번호
+     * @param  int  $cancelAmt  취소 금액
+     * @return array{order?: Order, payment?: OrderPayment, error_key?: string, status?: int} 선점 결과 또는 실패 사유
      */
     private function claimRefund(string $moid, string $tid, int $cancelAmt): array
     {
@@ -173,6 +195,13 @@ class AdminVbankRefundController extends AdminBaseController
         });
     }
 
+    /**
+     * 결제 레코드가 이 거래번호의 환불 가능한 나이스페이먼츠 가상계좌 결제인지 판별합니다.
+     *
+     * @param  OrderPayment  $payment  결제 레코드
+     * @param  string  $tid  거래번호
+     * @return bool 환불 가능하면 true
+     */
     private function isRefundableVbankPayment(OrderPayment $payment, string $tid): bool
     {
         return $payment->pg_provider === 'nicepayments'
@@ -183,6 +212,12 @@ class AdminVbankRefundController extends AdminBaseController
             && hash_equals((string) $payment->transaction_id, $tid);
     }
 
+    /**
+     * 결제 당시의 상점 자격으로 API 서비스를 맞춥니다.
+     *
+     * @param  OrderPayment  $payment  결제 레코드
+     * @return void 반환값 없음
+     */
     private function useStoredCredentials(OrderPayment $payment): void
     {
         $meta = $payment->payment_meta ?? [];
@@ -194,6 +229,16 @@ class AdminVbankRefundController extends AdminBaseController
         $this->apiService->useStoredCredentials((bool) $meta['is_test_mode'], $mid);
     }
 
+    /**
+     * PG 취소 응답의 거래번호·금액이 요청과 같은지 확인합니다.
+     *
+     * @param  array<string, mixed>  $result  PG 취소 응답
+     * @param  string  $tid  거래번호
+     * @param  int  $cancelAmt  취소 금액
+     * @return void 반환값 없음
+     *
+     * @throws \RuntimeException 응답이 요청과 다른 경우
+     */
     private function assertCancelResponseMatches(array $result, string $tid, int $cancelAmt): void
     {
         $responseTid = trim((string) ($result['TID'] ?? ''));
@@ -206,6 +251,13 @@ class AdminVbankRefundController extends AdminBaseController
         }
     }
 
+    /**
+     * 결제 레코드에 환불 완료를 기록합니다.
+     *
+     * @param  OrderPayment|null  $payment  결제 레코드
+     * @param  array<string, mixed>  $result  PG 취소 응답
+     * @return void 반환값 없음
+     */
     private function markRefundCompleted(?OrderPayment $payment, array $result): void
     {
         if (! $payment) {
@@ -222,6 +274,14 @@ class AdminVbankRefundController extends AdminBaseController
         ]);
     }
 
+    /**
+     * 결제 레코드에 환불 실패를 기록합니다.
+     *
+     * @param  OrderPayment|null  $payment  결제 레코드
+     * @param  \Throwable  $e  실패 원인
+     * @param  bool  $pgCancelled  PG 취소까지는 성공했는지
+     * @return void 반환값 없음
+     */
     private function markRefundFailed(?OrderPayment $payment, \Throwable $e, bool $pgCancelled): void
     {
         if (! $payment) {
@@ -238,6 +298,13 @@ class AdminVbankRefundController extends AdminBaseController
         ]);
     }
 
+    /**
+     * 환불 실패 사유 키로 오류 응답을 만듭니다.
+     *
+     * @param  string  $key  실패 사유 메시지 키
+     * @param  int  $status  HTTP 상태 코드
+     * @return JsonResponse 오류 응답
+     */
     private function refundError(string $key, int $status): JsonResponse
     {
         return ResponseHelper::error('common.failed', $status, [

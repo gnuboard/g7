@@ -18,6 +18,7 @@
             "auth_mode": "required",
             "params": {
                 "search": "{{query.search}}",
+                "extension_type": "{{query.extension_type}}",
                 "page": "{{query.page ?? 1}}",
                 "per_page": 20
             },
@@ -173,14 +174,71 @@
                         "responsive": {
                             "portable": {
                                 "props": {
-                                    "className": "mb-6"
+                                    "className": "flex flex-col gap-2 mb-6"
                                 }
                             }
                         },
                         "props": {
-                            "className": "flex justify-end mb-6"
+                            "className": "flex justify-end gap-2 mb-6"
                         },
                         "children": [
+                            {
+                                "id": "extension_type_filter",
+                                "type": "basic",
+                                "name": "Select",
+                                "responsive": {
+                                    "portable": {
+                                        "props": {
+                                            "className": "w-full"
+                                        }
+                                    }
+                                },
+                                "actions": [
+                                    {
+                                        "comment": "소유 구분 — 시스템(코어)·모듈·플러그인이 만든 역할과 직접 만든 역할을 나눠 본다. 검색어는 잇고 쪽은 1로 되돌린다",
+                                        "type": "change",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/roles",
+                                            "mergeQuery": true,
+                                            "replace": true,
+                                            "transition_overlay_target": "roles_data_grid__body",
+                                            "query": {
+                                                "extension_type": "{{$event.target.value || undefined}}",
+                                                "page": 1
+                                            }
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "name": "extension_type",
+                                    "className": "w-40",
+                                    "value": "{{query.extension_type || ''}}",
+                                    "aria-label": "$t:admin.roles.filters.extension_type",
+                                    "options": [
+                                        {
+                                            "value": "",
+                                            "label": "$t:admin.roles.filters.extension_type_all"
+                                        },
+                                        {
+                                            "value": "core",
+                                            "label": "$t:admin.roles.filters.extension_type_core"
+                                        },
+                                        {
+                                            "value": "module",
+                                            "label": "$t:admin.roles.filters.extension_type_module"
+                                        },
+                                        {
+                                            "value": "plugin",
+                                            "label": "$t:admin.roles.filters.extension_type_plugin"
+                                        },
+                                        {
+                                            "value": "custom",
+                                            "label": "$t:admin.roles.filters.extension_type_custom"
+                                        }
+                                    ]
+                                }
+                            },
                             {
                                 "id": "search_bar",
                                 "type": "composite",

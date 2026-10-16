@@ -94,6 +94,7 @@
     "use_reply": "답변글 사용",
     "max_reply_depth": "답변글 최대 깊이",
     "reply_delete_policy": "답변글 삭제 방식",
+    "secret_reply_visibility": "비밀 답변 열람 범위",
     "use_comment": "댓글 사용",
     "comment_order": "댓글 정렬 순서",
     "min_comment_length": "최소 댓글 글자 수",
@@ -188,6 +189,7 @@
       "use_reply": "ON으로 설정해야 새 게시판에 답변글 기능이 적용됩니다.",
       "max_reply_depth": "답변글의 최대 중첩 깊이를 설정합니다 ({{min}}~{{max}})",
       "reply_delete_policy": "답변글이 달린 글을 삭제할 때의 동작을 설정합니다",
+      "secret_reply_visibility": "비밀글 스레드에서 원글·답변 작성자와 비밀번호 확인자가 서로의 글을 어디까지 볼지 설정합니다",
       "blocked_keywords": "등록된 키워드가 포함된 게시글/댓글은 작성이 차단됩니다",
       "use_comment": "ON으로 설정해야 새 게시판에 댓글 기능이 적용됩니다. 아래 댓글 세부 설정도 함께 적용됩니다.",
       "comment_order": "댓글의 기본 정렬 방향을 설정합니다",
@@ -224,6 +226,16 @@
     "reply_delete_policy": {
       "block": "삭제 차단",
       "cascade": "함께 삭제"
+    },
+    "secret_reply_visibility": {
+      "thread_path": "경로 규칙 (기본)",
+      "descendants_only": "하위만",
+      "per_post": "답변마다 따로"
+    },
+    "secret_reply_visibility_descriptions": {
+      "thread_path": "원글을 볼 수 있는 사람은 그 아래 답변을, 답변 작성자는 자기 답변의 원글까지 봅니다. 다른 사람의 답변 가지는 가려집니다.",
+      "descendants_only": "원글을 볼 수 있는 사람은 그 아래 답변을 봅니다. 답변 작성자는 자기 답변과 그 아래만 봅니다.",
+      "per_post": "비밀 답변은 그 답변의 작성자와 비밀글 조회 권한자만 봅니다. 원글 작성자도 답변을 볼 수 없습니다."
     },
     "order_by": {
       "created_at": "최신순",
@@ -314,6 +326,7 @@
       "use_comment_reaction": "댓글 반응 사용",
       "max_reply_depth": "답변글 최대 깊이",
       "reply_delete_policy": "답변글 삭제 방식",
+      "secret_reply_visibility": "비밀 답변 열람 범위",
       "max_comment_depth": "대댓글 최대 깊이",
       "comment_order": "댓글 정렬 순서",
       "show_view_count": "조회수 표시",

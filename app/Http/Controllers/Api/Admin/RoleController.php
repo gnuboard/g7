@@ -49,7 +49,7 @@ class RoleController extends AdminBaseController
     public function index(RoleListRequest $request): JsonResponse
     {
         try {
-            $filters = $request->only(['search', 'is_active']);
+            $filters = $request->only(['search', 'is_active', 'extension_type']);
             $perPage = $request->input('per_page', 20);
 
             $roles = $this->roleService->getPaginatedRoles($filters, $perPage);

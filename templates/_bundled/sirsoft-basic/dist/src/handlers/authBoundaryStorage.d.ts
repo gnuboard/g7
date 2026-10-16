@@ -6,6 +6,8 @@
  * - 카트키(`localStorage.g7_cart_key`) — 로그아웃한 뒤에도 회원 장바구니 키가 남고, 로그인 전후로 같은 키를 썼다.
  * - 비회원 주문 토큰(세션 저장소 `g7_guest_order_token` · `_number` · `_expires_at`) — `_global.guestOrderToken` 에 다시 실려
  *   로그인한 회원의 요청에도 `X-Guest-Order-Token` 헤더가 섞여 나갔다.
+ * - 비밀글 열람 토큰(세션 저장소 `g7_board_secret_view_token` · `_expires_at`) — 서버는 토큰을 발급한 신원(비회원·회원)에
+ *   묶으므로 경계를 넘은 토큰은 쓸모가 없고, 공용 PC 에서는 다음 사람에게 남는다. 로그인·로그아웃 모두에서 지운다.
  *
  * 처치:
  * - **로그아웃**(인증 → 비인증): 카트키와 토큰 3키를 지우고 `_global.cartKey`·`_global.guestOrderToken` 을 비운다.

@@ -8,7 +8,7 @@
 | 모델 | 테이블 | fillable | 관계 | 특성 |
 |---|---|---|---|---|
 | `Attachment` | `board_attachments` | 15 | board→Board, post→Post, creator→User | SoftDeletes |
-| `Board` | `boards` | 41 | creator→User, updater→User, posts→Post, comments→Comment, attachments→Attachment, reports→Report | - |
+| `Board` | `boards` | 42 | creator→User, updater→User, posts→Post, comments→Comment, attachments→Attachment, reports→Report | - |
 | `BoardStat` | `board_stats` | 3 | - | - |
 | `BoardType` | `board_types` | 3 | - | HasUserOverrides |
 | `Comment` | `board_comments` | 15 | board→Board, post→Post, user→User, parent→self, replies→self | SoftDeletes |
@@ -62,7 +62,7 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 44개.
+마이그레이션 45개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -110,6 +110,7 @@
 | `2026_09_15_000003_add_use_comment_reaction_to_boards_table.php` | - | `boards` | ✅ |
 | `2026_09_15_000004_add_admin_indexes_to_board_reactions_table.php` | - | `board_reactions` | ✅ |
 | `2026_09_23_000001_make_ip_address_nullable_in_board_posts_table.php` | - | `board_posts` | ✅ |
+| `2026_10_15_000001_add_secret_reply_visibility_to_boards_table.php` | - | `boards` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -153,6 +154,7 @@ MySQL 은 DDL 을 롤백하지 않으므로 한 파일이 컬럼 → 인덱스 �
 | `ReportStatus` | `string` | 5 | `pending`, `review`, `rejected`, `suspended`, `deleted` |
 | `ReportType` | `string` | 2 | `post`, `comment` |
 | `SecretMode` | `string` | 3 | `disabled`, `enabled`, `always` |
+| `SecretReplyVisibility` | `string` | 3 | `thread_path`, `descendants_only`, `per_post` |
 | `TriggerType` | `string` | 6 | `report`, `admin`, `system`, `auto_hide`, `user`, `cascade` |
 <!-- @generated:enums END -->
 

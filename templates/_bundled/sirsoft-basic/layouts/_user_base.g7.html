@@ -117,6 +117,8 @@
     <set-state target="global" availableShippingCountries="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ code: c.code, name: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code), flag_class: ('fi fi-' + (c.code ?? '').toLowerCase()) }))}}"/>
     <!-- 비회원 주문 조회 토큰 (30분 유효) — 커스텀 핸들러가 localStorage 의 g7_guest_order_token 을 G7Core.state.set 으로 _global.guestOrderToken 에 직접 저장. 표준 loadFromLocalStorage 는 context.setState 를 통해 _local 에만 영향을 주므로 _global 에 토큰이 안 들어가는 문제 회피. initCartKey 패턴 동일. -->
     <action handler="initGuestOrderToken"/>
+    <!-- 비밀글 열람 토큰 복원 — 비밀번호로 연 사실을 탭 세션(sessionStorage)에서 _global.secretViewToken 으로 되살린다. 답변 링크(전체 이동)·새로고침 뒤에도 globalHeaders 의 X-Board-Secret-View-Token 이 실려 같은 스레드의 답변·원글이 다시 잠기지 않는다. 탭을 닫으면 사라진다. -->
+    <action handler="initSecretViewToken"/>
     <set-state target="global" shopBase="{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : ('/' + (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop'))}}"/>
   </init>
   <!-- 통화 선택기 슬롯 주입 앵커 — 이커머스 모듈이 layout_extensions 로 'header_currency' 슬롯 노드를 여기에 주입한다(slot 노드는 원위치 렌더 안 함, SlotContext 등록만 → 헤더의 SlotContainer 가 떙겨 렌더). 미설치 시 빈 슬롯(렌더 영향 0). 헤더는 주입 모듈을 모른다. -->

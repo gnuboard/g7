@@ -10,6 +10,7 @@ use Modules\Sirsoft\Board\Http\Requests\Admin\IndexReactionRequest;
 use Modules\Sirsoft\Board\Http\Resources\AdminReactionCollection;
 use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 관리자용 반응 관리 컨트롤러
@@ -88,6 +89,9 @@ class ReactionController extends AdminBaseController
             }
 
             return $this->success('sirsoft-board::messages.reaction.admin.removed');
+        } catch (AccessDeniedHttpException) {
+            // 반응 관리 권한의 스코프 밖 — Exception 이 삼켜 500 이 되지 않게 먼저 받는다
+            return $this->error('auth.scope_denied', 403);
         } catch (Exception $e) {
             return $this->error('sirsoft-board::messages.reaction.delete_failed', 500);
         }
@@ -111,6 +115,9 @@ class ReactionController extends AdminBaseController
                 200,
                 ['count' => $count]
             );
+        } catch (AccessDeniedHttpException) {
+            // 범위 밖 반응이 섞였다 — 전량 거부(아무것도 지우지 않음)
+            return $this->error('auth.scope_denied', 403);
         } catch (Exception $e) {
             return $this->error('sirsoft-board::messages.reaction.admin.bulk_delete_failed', 500);
         }

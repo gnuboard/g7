@@ -20,6 +20,13 @@ return [
         'cascade' => '함께 삭제 (원글 삭제 시 답글도 함께 삭제)',
     ],
 
+    // 비밀 답변 열람 범위
+    'secret_reply_visibility' => [
+        'thread_path' => '경로 규칙 (기본)',
+        'descendants_only' => '하위만',
+        'per_post' => '답변마다 따로',
+    ],
+
     // 정렬 방향
     'order_direction' => [
         'asc' => '오름차순',

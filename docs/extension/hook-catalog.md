@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (611)
+- [코어](#코어) (612)
 - [기본 제공 확장](#기본-제공-확장) (15)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -415,6 +415,7 @@
 | `core.pagination.filter_result_cap` | filter | 2 |  |
 | `core.permission.filter_tree_result` | filter | 1 |  |
 | `core.permission.query_scoped_permissions` | filter | 1 |  |
+| `core.permission.scope_enforcement_ledger` | filter | 1 |  |
 | `core.permission.update_validation_rules` | filter | 2 |  |
 | `core.permissions.config` | filter | 1 |  |
 | `core.plugin.activate_validation_rules` | filter | 2 |  |

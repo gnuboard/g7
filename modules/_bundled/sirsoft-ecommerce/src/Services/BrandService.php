@@ -18,6 +18,11 @@ class BrandService
 {
     use ReappliesPermissionScope;
 
+    /**
+     * 의존성을 주입받습니다.
+     *
+     * @param  BrandRepositoryInterface  $repository  브랜드 저장소
+     */
     public function __construct(
         protected BrandRepositoryInterface $repository
     ) {}
@@ -61,6 +66,9 @@ class BrandService
         $brand = $this->repository->findById($id, ['products']);
 
         if ($brand) {
+            // 상세 라우트는 `{id}` 라 미들웨어 스코프 검사가 돌지 않는다 — 목록과 같은 `brands.read` 범위를 재적용
+            $this->assertWithinScope($brand, 'sirsoft-ecommerce.brands.read');
+
             // 필터 훅 - 조회 결과 변형
             $brand = HookManager::applyFilters('sirsoft-ecommerce.brand.filter_show_result', $brand);
 

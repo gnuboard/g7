@@ -84,11 +84,13 @@ class ParentPostValidationRule implements ValidationRule
         // 2-1. 비밀글 하위 쓰기 게이트 (KVE-2026-2044)
         // 답글도 비밀글의 하위 콘텐츠이므로 원문 열람과 같은 기준을 적용한다.
         // 판정 SSoT 는 읽기 게이트와 동일한 SecretContentGate 다.
+        // 답글은 작성자를 스레드 앵커로 만들어 조상 경로를 열므로, 부모의 모든 비밀 조상을 지금 열 수
+        // 있어야 한다(canWriteReply) — 남의 비밀글 아래 공개 답변에 답변을 달아 원글을 여는 권한 상승 차단.
         if (! $parentPost->relationLoaded('board')) {
             $parentPost->setRelation('board', $board);
         }
 
-        if (! app(SecretContentGate::class)->canWriteChild($parentPost)) {
+        if (! app(SecretContentGate::class)->canWriteReply($parentPost)) {
             $fail(__('sirsoft-board::validation.post.parent_id.secret'));
 
             return;

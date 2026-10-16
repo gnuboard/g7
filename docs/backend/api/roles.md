@@ -31,6 +31,7 @@
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
 | search | query | string | 아니오 | max 255 | 검색어 (지정한 검색 대상 필드에서 부분 일치) |
 | is_active | query | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
+| extension_type | query | string | 아니오 | `core`, `module`, `plugin`, `custom` | 소유 구분 (core 시스템 역할 / module·plugin 그 확장이 만든 역할 / custom 관리자가 직접 만든 역할). 허용값 밖이면 422 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.role.list_validation_rules`).
 
@@ -169,7 +170,7 @@ HTTP/1.1 200
 
 **설명**
 
-역할 관리 화면(`admin_role_list.g7.html`)의 목록 데이터를 제공하는 페이지네이션 조회 엔드포인트다. `search`(identifier/name 텍스트 검색)와 `is_active`(활성 여부)로 필터링하며 `per_page` 로 페이지 크기를 조절한다. 응답에는 소유 확장 정보, 사용자 수(`users_count`), 할당 권한 개수(`permissions_count`), 현재 사용자의 조작 가능 여부(abilities)가 포함된다. 목록에는 **할당 권한의 목록(`permission_ids`/`permission_values`/`permissions`)이 실리지 않는다** — 권한 트리는 역할 하나당 수백 건까지 갈 수 있어 목록을 여는 것만으로 전 행의 권한이 전송됐다. 권한 목록이 필요하면 단건 조회(`GET /api/admin/roles/{role}`)를 사용한다. `core.permissions.read` 권한이 필요하다.
+역할 관리 화면(`admin_role_list.g7.html`)의 목록 데이터를 제공하는 페이지네이션 조회 엔드포인트다. `search`(identifier/name 텍스트 검색), `is_active`(활성 여부), `extension_type`(소유 구분 — 시스템·모듈·플러그인·직접 추가)으로 필터링하며 `per_page` 로 페이지 크기를 조절한다. 응답에는 소유 확장 정보, 사용자 수(`users_count`), 할당 권한 개수(`permissions_count`), 현재 사용자의 조작 가능 여부(abilities)가 포함된다. 목록에는 **할당 권한의 목록(`permission_ids`/`permission_values`/`permissions`)이 실리지 않는다** — 권한 트리는 역할 하나당 수백 건까지 갈 수 있어 목록을 여는 것만으로 전 행의 권한이 전송됐다. 권한 목록이 필요하면 단건 조회(`GET /api/admin/roles/{role}`)를 사용한다. `core.permissions.read` 권한이 필요하다.
 
 
 ### POST /api/admin/roles
@@ -286,7 +287,7 @@ HTTP/1.1 201
 
 **설명**
 
-새 역할을 생성한다. `identifier` 는 소문자로 시작하는 영숫자·언더스코어 형식(`^[a-z][a-z0-9_]*$`)이어야 하고 전역 고유해야 한다. `name`·`description` 은 다국어 필드로, 문자열로 보내면 설정된 로케일 전체에 동일 값이 채워지고 객체(`{"ko":..., "en":...}`)로도 보낼 수 있다. `permissions` 는 `[{id, scope_type}]` 형식으로 부여할 권한과 각 권한의 적용 범위(scope_type: null=전체, role, self)를 지정한다. 검증 규칙은 `core.role.store_validation_rules` 필터 훅으로 확장이 확장할 수 있다. `core.permissions.create` 권한이 필요하며 성공 시 201 로 생성된 역할을 반환한다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「역할 이름의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the role name field is required.").
+새 역할을 생성한다. `identifier` 는 소문자로 시작하는 영숫자·언더스코어 형식(`^[a-z][a-z0-9_]*$`)이어야 하고 전역 고유해야 한다. `name`·`description` 은 다국어 필드로, 문자열로 보내면 설정된 로케일 전체에 동일 값이 채워지고 객체(`{"ko":..., "en":...}`)로도 보낼 수 있다. `permissions` 는 `[{id, scope_type}]` 형식으로 부여할 권한과 각 권한의 적용 범위(scope_type: null=전체, role, self)를 지정한다. 검증 규칙은 `core.role.store_validation_rules` 필터 훅으로 확장이 확장할 수 있다. `core.permissions.create` 권한이 필요하며 성공 시 201 로 생성된 역할을 반환한다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「역할 이름의 한국어(ko) 값은 필수입니다.」 / "The English (en) value of the role name field is required."). `identifier` 가 `guest` 이면(고유 규칙과 별개로) `scope_type` 이 실린 권한 항목마다 422 `errors["permissions.{N}.scope_type"]` 「비회원 역할은 권한 범위를 지정할 수 없습니다. 범위 없이(전체) 부여해 주세요.」 를 함께 낸다(7.1.1). 비회원 역할을 복제(clone_from)해 다른 식별자로 만드는 새 역할은 일반 역할이라 범위를 저장한다.
 
 
 ### GET /api/admin/roles/active
@@ -565,7 +566,7 @@ HTTP/1.1 200
 
 **설명**
 
-단일 역할의 상세 정보를 조회한다. 역할 편집 화면과 복제(clone_from) 시 원본 값을 채우는 데 사용된다. 목록 응답과 달리 permissions 관계를 pivot(scope_type)과 함께 로드하므로 `permission_ids`·`permission_values`·`permissions`(계층 트리)와 `users_count` 가 항상 포함된다. `core.permissions.read` 권한이 필요하다.
+단일 역할의 상세 정보를 조회한다. 역할 편집 화면과 복제(clone_from) 시 원본 값을 채우는 데 사용된다. 목록 응답과 달리 permissions 관계를 pivot(scope_type)과 함께 로드하므로 `permission_ids`·`permission_values`·`permissions`(계층 트리)와 `users_count` 가 항상 포함된다. `core.permissions.read` 권한이 필요하다. 응답의 `supports_permission_scope`(bool, 7.1.1)는 이 역할의 권한에 범위(scope_type)를 지정할 수 있는지다 — 비회원(`guest`) 역할만 `false` 이고, 역할 폼은 이 값이 `false` 이면 범위 선택 상자를 숨긴다(목록·상세 공통 필드).
 
 **응답 필드(7.1.0)** `is_active_locked`(불리언) — 사용 여부를 바꿀 수 없는 역할(최고관리자 역할)인지. 역할 폼이 사용 여부 토글을 잠그는 값이다.
 
@@ -683,7 +684,7 @@ HTTP/1.1 200
 
 **설명**
 
-기존 역할의 `name`·`description`·`is_active`·`permissions` 를 수정한다. 생성과 달리 `identifier` 는 변경 대상이 아니며, 각 필드는 `sometimes` 규칙이라 전달된 항목만 갱신된다. `permissions` 를 보내면 `[{id, scope_type}]` 형식으로 역할의 권한 집합 전체가 동기화된다(전달된 목록 기준으로 재설정). `name`·`description` 은 문자열/다국어 객체 양쪽을 받는다. 검증 규칙은 `core.role.update_validation_rules` 필터 훅으로 확장할 수 있다. `core.permissions.update` 권한이 필요하다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「역할 이름의 한국어(ko) 값은 필수입니다.」).
+기존 역할의 `name`·`description`·`is_active`·`permissions` 를 수정한다. 생성과 달리 `identifier` 는 변경 대상이 아니며, 각 필드는 `sometimes` 규칙이라 전달된 항목만 갱신된다. `permissions` 를 보내면 `[{id, scope_type}]` 형식으로 역할의 권한 집합 전체가 동기화된다(전달된 목록 기준으로 재설정). `name`·`description` 은 문자열/다국어 객체 양쪽을 받는다. 검증 규칙은 `core.role.update_validation_rules` 필터 훅으로 확장할 수 있다. `core.permissions.update` 권한이 필요하다. 대상이 비회원(`guest`) 역할이면 `scope_type` 이 null 이 아닌 권한 항목마다 422 `errors["permissions.{N}.scope_type"]` 「비회원 역할은 권한 범위를 지정할 수 없습니다. 범위 없이(전체) 부여해 주세요.」 이고 아무것도 저장하지 않는다(7.1.1 — 비회원은 「본인」 을 판정할 신원이 없어 범위가 실제로는 「전체」 였다). 범위 없는(null) 항목은 그대로 저장된다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「역할 이름의 한국어(ko) 값은 필수입니다.」).
 
 **최고관리자 역할(7.1.0)** `admin` 역할에 `is_active: false` 를 보내면 422(`exceptions.role_active_state_locked`)이고 아무것도 바뀌지 않는다.
 

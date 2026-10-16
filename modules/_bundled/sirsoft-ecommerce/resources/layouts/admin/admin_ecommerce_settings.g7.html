@@ -1,6 +1,7 @@
 <!-- 쇼핑몰 환경설정 (운영자) — 열 개 탭을 한 레이아웃에 싣고 탭 이름을 URL 쿼리에 남긴다. 탭마다
   필요한 자료가 달라 각 데이터소스에 `if` 로 자기 탭 조건을 걸어 두었고(안 보는 탭 것은 부르지
-  않는다), 저장은 아래 버튼 하나가 현재 탭 몫만 골라 보낸다. -->
+  않는다), 저장은 아래 버튼 하나가 현재 탭 몫만 골라 보낸다. e2e:allow 탭 전환 이벤트 받기의 세 동작을
+  `<sequence>` 로 감싸 주석 자리를 맞춘 것뿐이라 산출 JSON 은 comment 외 동일하다 — 화면 동작 변화 없음(#789). -->
 <layout name="admin_ecommerce_settings" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-ecommerce.admin.settings.title" description="$t:sirsoft-ecommerce.admin.settings.description"/>
   <!-- 전 탭의 설정값을 한 덩어리로 받아 폼에 심는다 — 이 한 응답이 열 탭을 모두 덮는다. 탭 전환은 같은 화면으로의 재진입(navigate replace)이라 refetchOnMount 로 다시 받아 폼을 덮는다 — 그래서 저장하지 않은 변경이 있으면 탭 줄이 옮기기 전에 묻는다. 저장 뒤에는 서버가 정규화한 값으로 되맞추려고 다시 받는다 -->
@@ -220,12 +221,14 @@
       <div data-ref="ecommerce_settings_tab_content" class="tab-content">
         <on listen="sirsoft-ecommerce:settings-switch-tab">
           <!-- 탭 전환의 단일 처리처 — 탭 줄(변경 없음)과 확인 창 [이동] 이 이 이벤트만 보낸다. 정리 목록은 여기 한 곳(새 인라인 폼이 생기면 여기에만 더한다). 페이지 [저장] 가드는 인라인 추가 폼 플래그를 탭과 무관하게 읽으므로, 남겨 두면 폼을 연 채 다른 탭으로 간 운영자는 어느 탭에서도 저장하지 못한다(S10 17차). 각 폼의 '취소' 가 비우는 범위(플래그 + 입력 버퍼 + 그 폼의 오류)와 「변경 있음」·오류를 비운다. 이 받기는 페이지 문맥이라 target=local 이 페이지 폼 렌더러 상태에 닿는다(모달 문맥의 local 은 닿지 않아 옮긴 뒤 첫 입력에 옛 값이 되살아났다 — G2 실측 C7) -->
-          <set-state target="local" :hasChanges="false" :errors="null" :isAddingExchangeReason="false" :exchangeReasonForm="null" :exchangeReasonFormErrors="null" :isAddingReturnReason="false" :returnReasonForm="null" :returnReasonFormErrors="null" :isAddingRefundReason="false" :refundReasonForm="null" :refundReasonFormErrors="null" :isAddingCarrier="false" :carrierForm="null" :carrierFormErrors="null" :isAddingShippingType="false" :shippingTypeForm="null" :shippingTypeFormErrors="null" :isAddingCountry="false" :newCountry="null" :isAddingCurrency="false" :form.newCurrency="null" :isAddingMileageCurrency="false" :form.newMileageCurrency="null" :claimReasonTab="null"/>
-          <set-state target="global" activeEcommerceSettingsTab="{{_eventData.tab}}" :pendingEcommerceSettingsTab="null"/>
-          <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
-          <navigate path="/admin/ecommerce/settings" :replace="true">
-            <query tab="{{_eventData.tab}}"/>
-          </navigate>
+          <sequence>
+            <set-state target="local" :hasChanges="false" :errors="null" :isAddingExchangeReason="false" :exchangeReasonForm="null" :exchangeReasonFormErrors="null" :isAddingReturnReason="false" :returnReasonForm="null" :returnReasonFormErrors="null" :isAddingRefundReason="false" :refundReasonForm="null" :refundReasonFormErrors="null" :isAddingCarrier="false" :carrierForm="null" :carrierFormErrors="null" :isAddingShippingType="false" :shippingTypeForm="null" :shippingTypeFormErrors="null" :isAddingCountry="false" :newCountry="null" :isAddingCurrency="false" :form.newCurrency="null" :isAddingMileageCurrency="false" :form.newMileageCurrency="null" :claimReasonTab="null"/>
+            <set-state target="global" activeEcommerceSettingsTab="{{_eventData.tab}}" :pendingEcommerceSettingsTab="null"/>
+            <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
+            <navigate path="/admin/ecommerce/settings" :replace="true">
+              <query tab="{{_eventData.tab}}"/>
+            </navigate>
+          </sequence>
         </on>
         <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
           <div class="flex gap-3">

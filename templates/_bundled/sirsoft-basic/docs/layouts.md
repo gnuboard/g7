@@ -1203,11 +1203,24 @@ _user_base.g7.html
   - `/api/modules/sirsoft-ecommerce/*` — `X-Cart-Key`, `X-Currency`, `X-Shipping-Country`
   - `/api/modules/sirsoft-ecommerce/guest/orders/*` — `X-Guest-Order-Token` (비회원 주문 후속 액션)
   - `/api/modules/sirsoft-board/*` — `X-Board-Secret-View-Token`
-    비밀번호를 입력해 비밀글 원문을 연 사실을 다음 요청으로 넘기는 값입니다. 서버는 이
-    사실을 검증 응답 하나에만 담고 있어서, 토큰을 싣지 않으면 원문을 연 사용자도 댓글·답글·
-    신고에서 전부 거부됩니다. 토큰은 게시글에 결속되므로 다른 글에는 통하지 않고, 비밀글이
-    아닌 요청에서는 서버가 아예 평가하지 않습니다. `templates/_bundled/sirsoft-basic/layouts/partials/board/types/basic/show.g7.html` 의
-    비밀번호 검증 `onSuccess` 가 `_global.secretViewToken` 에 넣습니다.
+    비밀번호를 입력해 비밀글 원문을 연 사실을 다음 요청으로 넘기는 값입니다. 서버는 토큰
+    하나에 글별 인증(grant)을 기록하므로, 토큰을 싣지 않으면 원문을 연 사용자도 댓글·답글·
+    신고·답변 열람에서 전부 거부됩니다. 같은 탭에서 다른 글을 인증하면 같은 토큰에 그 글의
+    인증만 더해지고, 비밀번호가 다른 글끼리는 서로 열리지 않습니다. 비밀글이 아닌 요청에서는
+    서버가 아예 평가하지 않습니다.
+    - **보관**: `partials/board/types/basic/show.g7.html` 의 글 비밀번호 확인(`verify-password`)과
+      답변 화면의 원글 비밀번호 확인(`verify-thread-password`) `onSuccess` 가 `saveSecretViewToken`
+      으로 토큰·만료 시각을 탭 세션(sessionStorage `g7_board_secret_view_token`·`_expires_at`)에
+      두고 `_global.secretViewToken` 을 세웁니다.
+    - **복원**: `init` 의 `initSecretViewToken` 이 부팅마다 탭 세션에서 되살립니다 — 답변
+      링크(`<a href>` 전체 이동)·새로고침 뒤에도 헤더가 실립니다. 만료됐으면 지웁니다.
+    - **폐기**: 탭을 닫으면 사라지고, 로그인·로그아웃 경계에서 인증 경계 정리가 지웁니다.
+    - **동의 플러그인**: 저장소 동의 플러그인이 켜져 있으면 두 키는 게시판 모듈이 필수 저장 항목으로
+      제공해야 기록됩니다(비회원 주문 토큰을 이커머스 모듈이 제공하는 것과 같은 방식). 제공되지 않으면
+      저장이 막혀 현재 화면에서만 열리고 전체 이동·새로고침 뒤에는 다시 잠깁니다.
+    - 답변 화면의 원글 비밀번호 폼은 상세 응답의 `thread_password_available` 이 참일 때(조상에
+      비밀번호가 있는 비회원 글이 있고 본문이 가려짐) 잠금 안내 아래에 함께 보입니다. 답변
+      버튼은 `reply_locked_by_secret_ancestor` 가 참이면 감춥니다.
 - `transition_overlay.style: "skeleton"`: 페이지 전환 시 PageSkeleton 표시
 - `responsive`: 모바일 오버레이/네비게이션은 `portable` breakpoint에서만 표시
 - `auth_mode: "optional"`: 비회원도 장바구니 카운트 조회 가능

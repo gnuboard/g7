@@ -10,6 +10,8 @@
  * - G7Core.state.set() - 전역 상태 설정
  * - G7Core.state.get()?.currentUser - 현재 사용자 확인 (반환값이 곧 `_global` 이라 `._global` 을 덧붙이지 않는다)
  */
+export declare const SECRET_VIEW_TOKEN_STORAGE_NAME = "g7_board_secret_view_token";
+export declare const SECRET_VIEW_EXPIRES_AT_STORAGE_NAME = "g7_board_secret_view_expires_at";
 /**
  * 백엔드 API를 통해 Cart Key 발급
  *
@@ -130,3 +132,38 @@ export declare function clearGuestOrderTokenHandler(_action?: any, _context?: an
  * @param _context 액션 컨텍스트 (사용하지 않음)
  */
 export declare function clearGuestTokenOnEntryHandler(_action?: any, _context?: any): void;
+/**
+ * 비밀글 열람 토큰 초기화 (init_actions 전용)
+ *
+ * 비밀번호로 비밀글을 연 사실은 서버가 토큰 하나에 글별 인증으로 기록하고, 화면은 그 토큰을
+ * `_user_base.globalHeaders` 의 `X-Board-Secret-View-Token` 으로 게시판 요청에 싣는다. 토큰이
+ * 메모리(`_global.secretViewToken`)에만 있으면 답변 링크(`<a href>` 전체 이동)·새로고침에서 사라져
+ * 원글 비밀번호를 맞힌 비회원도 답변 화면에서 다시 잠긴다. 그래서 탭 세션(sessionStorage)에 두고
+ * 부팅마다 여기서 `_global` 로 복원한다 — 탭을 닫으면 사라지므로 공용 PC 에 남지 않는다.
+ *
+ * - 만료됐거나 만료 시각이 날짜가 아니면(NaN) 두 키를 지우고 null 로 둔다.
+ * - 저장 토큰이 없는데 같은 화면에서 막 받은 in-memory 토큰이 있으면 덮어쓰지 않는다
+ *   (sessionStorage 를 쓸 수 없는 환경 — `initGuestOrderToken` 과 같은 이유).
+ *
+ * @param _action 액션 정의 (사용하지 않음)
+ * @param _context 액션 컨텍스트 (사용하지 않음)
+ */
+export declare function initSecretViewTokenHandler(_action?: any, _context?: any): void;
+/**
+ * 비밀글 열람 토큰을 sessionStorage 에 저장하고 `_global.secretViewToken` 에 동기 set 합니다.
+ *
+ * 비밀번호 확인(글 비밀번호·원글 비밀번호) 성공 응답의 `secret_view_token`·`secret_view_expires_at`
+ * 을 받는다. 서버는 같은 탭의 두 번째 인증에 같은 토큰을 다시 돌려주고 그 토큰에 글별 인증만 더하므로,
+ * 여기서는 마지막 응답 값으로 덮어쓰면 된다. 토큰이 비면(응답에 없음) 기존 값을 건드리지 않는다.
+ *
+ * @param action params.token, params.expiresAt
+ * @param _context 액션 컨텍스트 (사용하지 않음)
+ */
+export declare function saveSecretViewTokenHandler(action?: any, _context?: any): void;
+/**
+ * 비밀글 열람 토큰을 sessionStorage 에서 지우고 `_global.secretViewToken` 도 비웁니다.
+ *
+ * @param _action 액션 정의 (사용하지 않음)
+ * @param _context 액션 컨텍스트 (사용하지 않음)
+ */
+export declare function clearSecretViewTokenHandler(_action?: any, _context?: any): void;

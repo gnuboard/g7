@@ -375,6 +375,8 @@ class Plugin extends AbstractPlugin
             Listeners\EnsureAdminOrderDetailPaymentQueryLayoutListener::class,
             Listeners\ValidateCbtSettingsListener::class,
             Listeners\ProvideNecessaryStorageKeysListener::class,
+            // 스코프 강제 지점 원장 (core.permission.scope_enforcement_ledger 필터)
+            Listeners\OrderScopeLedgerListener::class,
         ];
     }
 

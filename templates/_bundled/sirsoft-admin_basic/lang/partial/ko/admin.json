@@ -1275,6 +1275,14 @@
       "module": "모듈",
       "plugin": "플러그인"
     },
+    "filters": {
+      "extension_type": "구분",
+      "extension_type_all": "전체 구분",
+      "extension_type_core": "시스템",
+      "extension_type_module": "모듈",
+      "extension_type_plugin": "플러그인",
+      "extension_type_custom": "직접 추가"
+    },
     "actions": {
       "clone": "복제"
     },
@@ -1300,6 +1308,7 @@
       "permissions_section": "권한 설정",
       "permissions_selected_suffix": "개 선택됨",
       "permissions_hint": "이 역할에 부여할 권한을 선택하세요. 그룹을 클릭하여 펼치거나 접을 수 있습니다.",
+      "guest_scope_unsupported_hint": "비회원 역할은 범위를 지정할 수 없습니다. 비회원 본인 글은 비밀번호로 확인합니다.",
       "no_permissions_in_type": "등록된 권한이 없습니다.",
       "menus_section": "접근 가능 메뉴",
       "menus_hint": "체크한 메뉴가 이 역할의 관리자 메뉴에 보입니다. 하위 메뉴를 고르면 상위 메뉴도 함께 선택되고, 상위 메뉴를 빼면 하위 메뉴도 함께 빠집니다.",

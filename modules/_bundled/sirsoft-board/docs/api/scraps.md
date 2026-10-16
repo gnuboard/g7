@@ -123,10 +123,12 @@
 **응답 메타**: `data.abilities{can_view,can_manage}` + `data.boards[]`(게시판 필터 선택지 — `id`·`slug`·`name`, 비활성 게시판 포함, 최근 생성 순) + `data.pagination`.
 게시판 선택지를 목록 응답에 싣는 이유는 게시판 목록 API 가 게시판 관리 권한이 있어야 열려,
 `scraps.view` 만 가진 매니저가 그 API 로는 게시판을 고를 수 없기 때문입니다.
+권한 범위가 「본인만」·「소유역할」이면 그 범위의 글(항목)만 담깁니다(1.2.1+).
 
 ### DELETE /api/modules/sirsoft-board/admin/scraps/{id}
 
 - **권한**: `sirsoft-board.scraps.manage`
+- 권한 범위가 「본인만」·「소유역할」이면 그 범위 밖 회원의 스크랩은 **403** `auth.scope_denied` (1.2.1+)
 
 삭제하면 원글의 `scrap_count` 가 줄고 훅 `after_toggle` 이 **스크랩 소유자 id** 로 발화합니다.
 활동 로그의 `user_id` 는 그와 별개로 **로그인한 관리자**입니다 — 로그는 «누가 했나» 를 남기고,
@@ -136,6 +138,7 @@
 
 - **권한**: `sirsoft-board.scraps.manage`
 - 라우트는 `{id}` 보다 **먼저** 선언되어 있습니다 — 그러지 않으면 `bulk` 가 id 로 잡힙니다.
+- 범위 밖 스크랩이 하나라도 섞이면 아무것도 지우지 않고 **403** `auth.scope_denied` (1.2.1+)
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |

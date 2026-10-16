@@ -370,6 +370,32 @@ class BoardRequestTest extends ModuleTestCase
     }
 
     /**
+     * 비밀 답변 열람 범위(secret_reply_visibility)는 세 값만 받는다 — 생성·수정·환경설정 기본값 (#789 D19)
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario request=store_board
+     *
+     * @effects store_board_request_rules_enforced
+     */
+    public function test_secret_reply_visibility_accepts_only_three_values(): void
+    {
+        $cases = [
+            'secret_reply_visibility' => (new StoreBoardRequest)->rules()['secret_reply_visibility'] ?? null,
+            'update' => (new UpdateBoardRequest)->rules()['secret_reply_visibility'] ?? null,
+            'basic_defaults.secret_reply_visibility' => (new StoreBoardSettingsRequest)->rules()['basic_defaults.secret_reply_visibility'] ?? null,
+        ];
+
+        foreach ($cases as $label => $rules) {
+            $this->assertNotNull($rules, "{$label} 규칙이 있어야 한다");
+            foreach (['thread_path', 'descendants_only', 'per_post'] as $value) {
+                $this->assertTrue(Validator::make(['v' => $value], ['v' => $rules])->passes(), "{$label}={$value} 통과");
+            }
+            $this->assertFalse(Validator::make(['v' => 'everyone'], ['v' => $rules])->passes(), "{$label}=everyone 거부");
+        }
+    }
+
+    /**
      * max_comment_depth 범위 검증 테스트 (rules만 독립 검증)
      *
      * @return void 반환값 없음

@@ -32,6 +32,7 @@ use Modules\Sirsoft\Ecommerce\Listeners\CouponRestoreListener;
 use Modules\Sirsoft\Ecommerce\Listeners\CouponUseListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceAdminActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceNotificationDataListener;
+use Modules\Sirsoft\Ecommerce\Listeners\EcommerceScopeLedgerListener;
 use Modules\Sirsoft\Ecommerce\Listeners\EcommerceUserActivityLogListener;
 use Modules\Sirsoft\Ecommerce\Listeners\InjectAppConfigDeviceListener;
 use Modules\Sirsoft\Ecommerce\Listeners\IssueCashReceiptOnDepositListener;
@@ -1084,8 +1085,8 @@ class Module extends AbstractModule
                                 'en' => 'Confirm purchase of order item',
                             ],
                             'roles' => ['*'],
-                            'resource_route_key' => 'id',
-                            'owner_key' => 'user_id',
+                            // 소유 검증은 ConfirmOrderOptionRequest(회원)·주문 토큰(비회원)이 맡는다.
+                            // 권한 단위 resource_route_key/owner_key 는 ModuleManager 가 읽지 않으므로 선언하지 않는다.
                         ],
                     ],
                 ],
@@ -3752,6 +3753,8 @@ class Module extends AbstractModule
             UserListMileageFilterListener::class,
             UserListAddressFilterListener::class,
             ProvideNecessaryStorageKeysListener::class,
+            // 스코프 강제 지점 원장 (core.permission.scope_enforcement_ledger 필터)
+            EcommerceScopeLedgerListener::class,
         ];
     }
 

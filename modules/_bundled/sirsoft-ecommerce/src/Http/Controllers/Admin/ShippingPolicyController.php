@@ -158,7 +158,11 @@ class ShippingPolicyController extends AdminBaseController
      */
     public function claimSettings(int $id): JsonResponse
     {
-        $shippingPolicy = $this->shippingPolicyService->getDetail($id);
+        try {
+            $shippingPolicy = $this->shippingPolicyService->getDetailForRead($id);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        }
 
         if (! $shippingPolicy) {
             return ResponseHelper::notFound(
@@ -239,7 +243,11 @@ class ShippingPolicyController extends AdminBaseController
      */
     public function show(int $id): JsonResponse
     {
-        $shippingPolicy = $this->shippingPolicyService->getDetail($id);
+        try {
+            $shippingPolicy = $this->shippingPolicyService->getDetailForRead($id);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        }
 
         if (! $shippingPolicy) {
             return ResponseHelper::notFound(

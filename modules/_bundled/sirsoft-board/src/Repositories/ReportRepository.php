@@ -2,7 +2,6 @@
 
 namespace Modules\Sirsoft\Board\Repositories;
 
-use App\Helpers\PermissionHelper;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Repositories\Concerns\ResolvesSortSpec;
@@ -59,8 +58,7 @@ class ReportRepository implements ReportRepositoryInterface
     {
         $query = Report::query();
 
-        // 권한 스코프 필터링
-        PermissionHelper::applyPermissionScope($query, 'sirsoft-board.reports.view');
+        // 신고 관리 권한에는 범위(본인만·소유역할)가 없다 — 권한 보유만으로 판정한다(#789)
 
         // 검색
         $this->applySearchConditions($query, $filters);
@@ -683,9 +681,6 @@ class ReportRepository implements ReportRepositoryInterface
             // 비활성 게시판의 신고는 대시보드 집계에서 제외한다(활성 게시판 스코프).
             ->whereHas('board', fn ($q) => $q->where('is_active', true));
 
-        // 신고 조회 권한 스코프 필터링 (목록 엔드포인트와 동일 게이트)
-        PermissionHelper::applyPermissionScope($query, 'sirsoft-board.reports.view');
-
         return $query
             ->with(['board', 'author'])
             ->orderByDesc('last_reported_at')
@@ -704,8 +699,6 @@ class ReportRepository implements ReportRepositoryInterface
             ->whereIn('status', [ReportStatus::Pending, ReportStatus::Review])
             // 목록(getPendingAcrossBoards)과 동일 스코프여야 배지 건수와 목록 건수가 일치한다.
             ->whereHas('board', fn ($q) => $q->where('is_active', true));
-
-        PermissionHelper::applyPermissionScope($query, 'sirsoft-board.reports.view');
 
         return $query->count();
     }

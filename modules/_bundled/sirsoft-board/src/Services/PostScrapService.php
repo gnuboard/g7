@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Board\Services;
 
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Extension\HookManager;
+use App\Helpers\PermissionHelper;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Exceptions\PostNotFoundException;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostScrapRepositoryInterface;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 게시글 스크랩 서비스
@@ -21,6 +23,11 @@ use Modules\Sirsoft\Board\Repositories\Contracts\PostScrapRepositoryInterface;
  */
 class PostScrapService
 {
+    /**
+     * 관리자 스크랩 삭제의 스코프 기준 권한 식별자
+     */
+    private const ADMIN_MANAGE_PERMISSION = 'sirsoft-board.scraps.manage';
+
     /**
      * PostScrapService 생성자
      *
@@ -171,6 +178,12 @@ class PostScrapService
      */
     public function removeByAdmin(int $id): bool
     {
+        // 스크랩 관리 권한의 스코프(본인만·소유역할)를 다시 본다 — 라우트가 {id} 라 미들웨어가 보지 않는다
+        $target = $this->repository->findById($id);
+        if ($target !== null && ! PermissionHelper::checkScopeAccess($target, self::ADMIN_MANAGE_PERMISSION)) {
+            throw new AccessDeniedHttpException(__('auth.scope_denied'));
+        }
+
         $scrap = DB::transaction(function () use ($id) {
             $scrap = $this->repository->deleteById($id);
 
@@ -200,6 +213,12 @@ class PostScrapService
      */
     public function removeManyByAdmin(array $ids): int
     {
+        // 범위 밖 스크랩이 하나라도 섞이면 아무것도 지우지 않고 전량 거부한다
+        $targets = $this->repository->findManyByIds($ids);
+        if (count(PermissionHelper::filterByScope($targets, self::ADMIN_MANAGE_PERMISSION)) !== $targets->count()) {
+            throw new AccessDeniedHttpException(__('auth.scope_denied'));
+        }
+
         $deleted = DB::transaction(function () use ($ids) {
             $scraps = $this->repository->deleteManyByIds($ids);
 

@@ -28,6 +28,18 @@
 
 ---
 
+
+## 권한 범위(본인만·소유역할)
+
+관리자 역할에 `sirsoft-ecommerce.user-addresses.read`·`.manage` 를 「본인만」 또는 「소유역할」 범위로 주면 그 범위가
+목록과 삭제 모두에 적용됩니다(판정 기준은 배송지 행의 회원).
+
+- 목록: 범위 밖 회원의 행은 목록·건수에서 빠집니다. 비회원 행(회원 없음)은 「전체」 범위에서만 보입니다.
+- 단건 삭제: 범위 밖 행이면 403(`auth.scope_denied`), 없는 행이면 404 입니다.
+- 일괄 삭제: 범위 밖 행이 하나라도 섞이면 403(`auth.scope_denied`)으로 전체를 거부하고 아무것도 지우지 않습니다.
+
+---
+
 ### GET /api/modules/sirsoft-ecommerce/admin/user-addresses
 
 - **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-ecommerce.user-addresses.read`

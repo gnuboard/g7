@@ -97,7 +97,7 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  Builder  $query  쿼리 빌더
      * @param  array  $filters  필터 조건
-     * @return void
+     * @return void 반환값 없음
      */
     private function applyFilters($query, array $filters): void
     {
@@ -754,6 +754,10 @@ class PostRepository implements PostRepositoryInterface
             $boardId = $board->id;
         }
 
+        // 목록과 같은 읽기 스코프로 이전/다음 후보를 거른다 — 서비스가 컨텍스트별 식별자를 넘긴다(#789)
+        $scopePermission = $filters['scope_permission'] ?? null;
+        unset($filters['scope_permission']);
+
         $category = $filters['category'] ?? null;
         $orderBy = $filters['order_by'] ?? 'id';
         $orderDirection = $filters['order_direction'] ?? 'desc';
@@ -796,6 +800,7 @@ class PostRepository implements PostRepositoryInterface
             ->where('status', PostStatus::Published->value)
             ->when(! $withTrashed, fn ($q) => $q->whereNull('deleted_at'))
             ->when($category, fn ($q) => $q->where('category', $category))
+            ->when($scopePermission, fn ($q) => PermissionHelper::applyPermissionScope($q, $scopePermission))
             ->select(['id', 'title']);
 
         // 이전/다음 글 조회 (2단계: strict 비교 → tie-breaking)
@@ -1606,6 +1611,7 @@ class PostRepository implements PostRepositoryInterface
      * @param  string  $direction  정렬 방향 (asc, desc)
      * @param  int  $perPage  페이지당 항목 수
      * @param  int  $page  페이지 번호
+     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve() — 비면 스코프 없음)
      * @return BoundedPage 페이지 결과 (총 건수 정확도 포함)
      */
     public function searchAcrossBoards(
@@ -1614,11 +1620,12 @@ class PostRepository implements PostRepositoryInterface
         string $orderBy = 'created_at',
         string $direction = 'desc',
         int $perPage = 10,
-        int $page = 1
+        int $page = 1,
+        array $readScope = []
     ): BoundedPage {
         // count() + get() 이중 실행을 페이지네이터 한 번으로 합친다.
         // 다른 탭 조회 시 배지용 COUNT 까지 더해 같은 술어가 3회 실행되던 경로다.
-        $query = $this->buildPublicSearchQueryByIds($boardIds, $keyword)
+        $query = $this->buildPublicSearchQueryByIds($boardIds, $keyword, $readScope)
             ->with('user', 'board')
             ->orderBy($orderBy, $direction)
             ->orderBy('id', $direction === 'asc' ? 'asc' : 'desc');
@@ -1639,11 +1646,12 @@ class PostRepository implements PostRepositoryInterface
         string $keyword,
         array $sortKeys,
         int $perPage = 10,
-        ?string $cursor = null
+        ?string $cursor = null,
+        array $readScope = []
     ): CursorPaginator {
         // 커서 모드에는 OFFSET 이 없다. 깊은 페이지에서 건너뛸 행을 실제로 읽던 비용이
         // 사라지므로 상한 COUNT 도 이 경로에서는 하지 않는다 (총 건수는 배지 집계 담당).
-        $query = $this->buildPublicSearchQueryByIds($boardIds, $keyword)
+        $query = $this->buildPublicSearchQueryByIds($boardIds, $keyword, $readScope)
             ->with('user', 'board');
 
         return KeysetPaginator::paginate(
@@ -1660,12 +1668,13 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  array  $boardIds  검색 대상 게시판 ID 목록
      * @param  string  $keyword  검색 키워드
+     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve() — 비면 스코프 없음)
      * @return BoundedCount 키워드와 일치하는 게시글 수 (정확도 포함)
      */
-    public function countAcrossBoards(array $boardIds, string $keyword): BoundedCount
+    public function countAcrossBoards(array $boardIds, string $keyword, array $readScope = []): BoundedCount
     {
         return BoundedPaginator::count(
-            $this->buildPublicSearchQueryByIds($boardIds, $keyword),
+            $this->buildPublicSearchQueryByIds($boardIds, $keyword, $readScope),
             PaginationLimits::resultCap('search')
         );
     }
@@ -1696,18 +1705,66 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  array  $boardIds  게시판 ID 목록
      * @param  string  $keyword  검색 키워드
+     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve() — 비면 스코프 없음)
      * @return Builder
      */
-    private function buildPublicSearchQueryByIds(array $boardIds, string $keyword)
+    private function buildPublicSearchQueryByIds(array $boardIds, string $keyword, array $readScope = [])
     {
         $query = Post::query()
             ->whereIn('board_id', $boardIds)
             ->where('status', PostStatus::Published->value)
             ->where('is_secret', false);
 
+        $this->applyCrossBoardReadScope($query, $readScope);
         $this->applyKeywordSearch($query, $keyword);
 
         return $query;
+    }
+
+    /**
+     * 여러 게시판을 가로지르는 쿼리에 게시판별 읽기 스코프(본인만·소유역할)를 겁니다.
+     *
+     * `posts.read` 의 스코프는 게시판마다 다르다 — 전체인 게시판은 그대로, 본인만인 게시판은 내 글만,
+     * 소유역할인 게시판은 나와 역할을 공유하는 회원의 글만 남긴다(비회원 글은 닫힌다). 코어
+     * `PermissionHelper::applyPermissionScope` 와 같은 의미를 게시판별로 OR 로 묶은 것이다.
+     * 명세의 self·role 이 모두 비면 아무것도 덧붙이지 않는다(전 게시판이 전체 범위).
+     *
+     * @param  Builder  $query  게시글 쿼리
+     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve())
+     * @return void 반환값 없음
+     */
+    private function applyCrossBoardReadScope(Builder $query, array $readScope): void
+    {
+        $self = $readScope['self'] ?? [];
+        $role = $readScope['role'] ?? [];
+
+        if ($self === [] && $role === []) {
+            return;
+        }
+
+        $full = $readScope['full'] ?? [];
+        $userId = $readScope['user_id'] ?? null;
+        $roleIds = $readScope['role_ids'] ?? [];
+
+        $query->where(function (Builder $w) use ($full, $self, $role, $userId, $roleIds) {
+            // 조건이 하나도 붙지 않으면 행이 없어야 한다(fail-closed)
+            $w->whereRaw('1 = 0');
+
+            if ($full !== []) {
+                $w->orWhereIn('board_id', $full);
+            }
+
+            if ($self !== [] && $userId !== null) {
+                $w->orWhere(fn (Builder $q) => $q->whereIn('board_id', $self)->where('user_id', $userId));
+            }
+
+            if ($role !== [] && $roleIds !== []) {
+                // 코어 PermissionHelper::applyPermissionScope 의 소유역할 판정과 같은 서브쿼리
+                $w->orWhere(fn (Builder $q) => $q->whereIn('board_id', $role)->whereIn('user_id', function ($sub) use ($roleIds) {
+                    $sub->select('user_id')->from('user_roles')->whereIn('role_id', $roleIds);
+                }));
+            }
+        });
     }
 
     /**
@@ -1720,7 +1777,7 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  Builder  $query  쿼리 빌더
      * @param  string  $keyword  검색 키워드
-     * @return void
+     * @return void 반환값 없음
      */
     private function applyKeywordSearch(Builder $query, string $keyword): void
     {
@@ -2175,7 +2232,7 @@ class PostRepository implements PostRepositoryInterface
      * @param  int  $boardId  게시판 ID
      * @param  int  $size  청크 크기
      * @param  callable  $callback  청크마다 호출될 콜백 (int[] $postIds)
-     * @return void
+     * @return void 반환값 없음
      */
     public function eachIdChunkByBoardId(int $boardId, int $size, callable $callback): void
     {
@@ -2324,5 +2381,107 @@ class PostRepository implements PostRepositoryInterface
             ->orderByDesc('created_at')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findThreadNodes(int $boardId, array $ids): array
+    {
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+
+        if ($ids === []) {
+            return [];
+        }
+
+        return $this->threadNodeQuery($boardId)->whereIn('id', $ids)->get()
+            ->map(fn ($row) => $this->toThreadNode($row))
+            ->all();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findThreadChildNodes(int $boardId, array $parentIds): array
+    {
+        $parentIds = array_values(array_unique(array_map('intval', $parentIds)));
+
+        if ($parentIds === []) {
+            return [];
+        }
+
+        // audit:allow query-unbounded-get reason: 대상은 한 스레드 답변 트리의 한 레벨 — 경로 판정은 레벨 전량을 봐야 앵커 누락이 없고(collectDescendantIds 와 같은 사유), 호출부의 방문 가드·순회 상한(SecretThreadAccess::MAX_WALK)이 유한 종료를 보장한다
+        return $this->threadNodeQuery($boardId)->whereIn('parent_id', $parentIds)->get()
+            ->map(fn ($row) => $this->toThreadNode($row))
+            ->all();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function userHasReplyInBoard(int $boardId, int $userId): bool
+    {
+        return Post::query()
+            ->where('board_id', $boardId)
+            ->where('user_id', $userId)
+            ->whereNotNull('parent_id')
+            ->exists();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findPasswordHashesByIds(int $boardId, array $ids): array
+    {
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+
+        if ($ids === []) {
+            return [];
+        }
+
+        return Post::query()
+            ->where('board_id', $boardId)
+            ->whereIn('id', $ids)
+            ->whereNotNull('password')
+            ->toBase()
+            ->pluck('password', 'id')
+            ->mapWithKeys(fn ($hash, $id) => [(int) $id => (string) $hash])
+            ->all();
+    }
+
+    /**
+     * 스레드 노드 요약 조회의 공통 쿼리를 만듭니다.
+     *
+     * 삭제 글도 싣는다 — 구조(부모 사슬)는 삭제와 무관한 사실이고, 앵커 자격만 살아 있는 글로
+     * 제한한다. 비밀번호는 해시 대신 존재 여부만 싣는다.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @return \Illuminate\Database\Query\Builder 쿼리 빌더
+     */
+    private function threadNodeQuery(int $boardId): \Illuminate\Database\Query\Builder
+    {
+        return Post::withTrashed()
+            ->where('board_id', $boardId)
+            ->select(['id', 'parent_id', 'user_id', 'is_secret', 'deleted_at'])
+            ->selectRaw('(password IS NOT NULL) as has_password')
+            ->toBase();
+    }
+
+    /**
+     * 쿼리 행을 스레드 노드 요약 배열로 바꿉니다.
+     *
+     * @param  object  $row  쿼리 행
+     * @return array{id: int, parent_id: int|null, user_id: int|null, is_secret: bool, alive: bool, has_password: bool} 노드 요약
+     */
+    private function toThreadNode(object $row): array
+    {
+        return [
+            'id' => (int) $row->id,
+            'parent_id' => $row->parent_id !== null ? (int) $row->parent_id : null,
+            'user_id' => $row->user_id !== null ? (int) $row->user_id : null,
+            'is_secret' => (bool) $row->is_secret,
+            'alive' => $row->deleted_at === null,
+            'has_password' => (bool) $row->has_password,
+        ];
     }
 }

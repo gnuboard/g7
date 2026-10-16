@@ -11,6 +11,11 @@ use Illuminate\Database\Eloquent\Collection;
 
 class PermissionService
 {
+    /**
+     * 권한 서비스를 생성합니다.
+     *
+     * @param  PermissionRepositoryInterface  $permissionRepository  권한 저장소
+     */
     public function __construct(
         private PermissionRepositoryInterface $permissionRepository
     ) {}
@@ -97,6 +102,9 @@ class PermissionService
             'is_assignable' => $permission->children->isEmpty(),
             'resource_route_key' => $permission->resource_route_key,
             'owner_key' => $permission->owner_key,
+            // 범위(본인·소유역할)를 고를 수 있는 권한인지 — 둘 중 하나라도 없으면 스코프가 강제될 자리가 없다.
+            // 트리는 역할과 무관하게 공유되므로 비회원 여부는 RoleResource.supports_permission_scope 가 따로 싣는다.
+            'scope_supported' => ! empty($permission->resource_route_key) && ! empty($permission->owner_key),
             'children' => [],
             'leaf_count' => $this->countLeafNodes($permission),
         ];

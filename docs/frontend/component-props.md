@@ -49,6 +49,7 @@
 export interface SelectOption {
   value: string | number;      // 옵션 값 (필수)
   label: string;               // 표시될 라벨 (필수)
+  description?: string;        // 목록에서 라벨 아래 작은 글자로 보이는 설명 (options 모드만, 두 템플릿 공통)
   disabled?: boolean;          // 옵션 비활성화 여부
 }
 

@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Log;
 class AuthServiceProvider extends ServiceProvider
 {
     /**
-     * Register any authentication / authorization services.
+     * 인증·인가 서비스를 등록합니다 (Gate 판정 훅).
+     *
+     * @return void 반환값 없음
      */
     public function boot(): void
     {
@@ -221,6 +223,10 @@ class AuthServiceProvider extends ServiceProvider
     /**
      * 비회원(guest) role의 권한을 확인합니다.
      *
+     * 비회원은 권한 범위(본인·소유역할)를 가질 수 없다(7.1.1) — 보유 여부만 판정하고 범위는 보지 않는다.
+     * 비회원 역할에 범위를 저장하는 경로는 역할 수정 요청(422)·RoleService·확장 동기화가 막고,
+     * 업그레이드가 남아 있던 부여를 회수한다.
+     *
      * @param  string  $ability  권한 식별자
      * @return bool|null 권한 있으면 true, 없으면 null (다음 Gate로 위임)
      */
@@ -239,6 +245,8 @@ class AuthServiceProvider extends ServiceProvider
 
     /**
      * guest role을 캐싱하여 조회합니다.
+     *
+     * @return Role|null 비회원 역할 (미정의 시 null)
      */
     protected static function getGuestRole(): ?Role
     {
@@ -247,6 +255,8 @@ class AuthServiceProvider extends ServiceProvider
 
     /**
      * guest role 캐시를 초기화합니다. (테스트용)
+     *
+     * @return void 반환값 없음
      */
     public static function clearGuestRoleCache(): void
     {

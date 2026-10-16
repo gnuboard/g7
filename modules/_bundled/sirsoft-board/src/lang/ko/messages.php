@@ -98,6 +98,8 @@ return [
         'password_incorrect' => '비밀번호가 일치하지 않습니다.',
         'password_verify_not_allowed' => '회원 게시글은 비밀번호 검증을 사용할 수 없습니다.',
         'no_password_set' => '비밀번호가 설정되지 않은 게시글입니다.',
+        'thread_password_verified' => '원글 비밀번호가 확인되었습니다.',
+        'thread_password_not_applicable' => '원글 비밀번호로 열 수 있는 답변이 아닙니다.',
     ],
 
     // 댓글 작업 메시지

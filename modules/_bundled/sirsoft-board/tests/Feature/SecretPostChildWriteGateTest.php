@@ -53,6 +53,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
 
     /**
      * 테스트 게시판 slug
+     *
+     * @return string 문자열
      */
     protected function getTestBoardSlug(): string
     {
@@ -83,6 +85,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
 
     /**
      * 테스트 사전 준비를 수행합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -110,6 +114,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
 
     /**
      * 게시판 관리자(manager) 역할을 만들어 manager 사용자에게 부여합니다.
+     *
+     * @return void 반환값 없음
      */
     private function setupManagerRole(): void
     {
@@ -154,21 +160,44 @@ class SecretPostChildWriteGateTest extends BoardTestCase
         ], $attributes));
     }
 
+    /**
+     * 게시글 댓글 API 주소를 반환합니다.
+     *
+     * @param  int  $postId  게시글 ID
+     * @return string 문자열
+     */
     private function commentsUrl(int $postId): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/comments";
     }
 
+    /**
+     * 게시글 API 주소를 반환합니다.
+     *
+     * @return string 문자열
+     */
     private function postsUrl(): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts";
     }
 
+    /**
+     * 게시글 신고 API 주소를 반환합니다.
+     *
+     * @param  int  $postId  게시글 ID
+     * @return string 문자열
+     */
     private function postReportUrl(int $postId): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/reports";
     }
 
+    /**
+     * 댓글 신고 API 주소를 반환합니다.
+     *
+     * @param  int  $commentId  댓글 ID
+     * @return string 문자열
+     */
     private function commentReportUrl(int $commentId): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/comments/{$commentId}/reports";
@@ -176,6 +205,9 @@ class SecretPostChildWriteGateTest extends BoardTestCase
 
     /**
      * 지정 사용자로 요청 컨텍스트를 준비합니다.
+     *
+     * @param  User  $user  대상 회원
+     * @return self 체이닝용 자기 자신
      */
     private function asUser(User $user): self
     {
@@ -187,6 +219,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
 
     /**
      * board_comments 총 건수를 반환합니다.
+     *
+     * @return int 정수
      */
     private function commentCount(): int
     {
@@ -195,6 +229,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
 
     /**
      * board_posts 총 건수를 반환합니다.
+     *
+     * @return int 정수
      */
     private function postCount(): int
     {
@@ -203,6 +239,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
 
     /**
      * board_reports 총 건수를 반환합니다.
+     *
+     * @return int 정수
      */
     private function reportCount(): int
     {
@@ -219,6 +257,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=outsider, target=secret_post
      *
      * @effects secret_post_comment_blocked_for_outsider
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function outsider_cannot_comment_on_secret_post(): void
@@ -240,6 +280,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=outsider, target=secret_post_comment
      *
      * @effects secret_post_reply_comment_blocked_for_outsider
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function outsider_cannot_reply_to_comment_on_secret_post(): void
@@ -266,6 +308,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=outsider, target=secret_post
      *
      * @effects secret_post_reply_post_blocked_for_outsider
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function outsider_cannot_write_reply_post_under_secret_post(): void
@@ -289,6 +333,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=outsider, target=secret_post
      *
      * @effects secret_post_report_blocked_for_outsider
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function outsider_cannot_report_secret_post(): void
@@ -311,6 +357,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=outsider, target=secret_post_comment
      *
      * @effects secret_comment_report_blocked_for_outsider
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function outsider_cannot_report_comment_on_secret_post(): void
@@ -342,6 +390,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=outsider, target=secret_post, layer=service
      *
      * @effects secret_post_comment_blocked_for_outsider
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_service_layer_gate_blocks_even_when_the_request_layer_is_bypassed(): void
@@ -376,6 +426,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=author, target=secret_post, layer=service
      *
      * @effects secret_post_comment_allowed_for_author
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_service_layer_gate_allows_the_author(): void
@@ -405,6 +457,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=author, target=secret_post
      *
      * @effects secret_post_comment_allowed_for_author
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function author_can_comment_on_own_secret_post(): void
@@ -426,6 +480,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=manager, target=secret_post
      *
      * @effects secret_post_comment_allowed_for_manager
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function manager_can_comment_on_secret_post(): void
@@ -447,6 +503,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=outsider, target=public_post
      *
      * @effects normal_post_comment_unaffected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function outsider_can_still_comment_on_public_post(): void
@@ -474,6 +532,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=author, target=secret_post
      *
      * @effects secret_post_comment_allowed_for_author
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function author_can_write_reply_post_under_own_secret_post(): void
@@ -497,6 +557,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=outsider, target=public_post
      *
      * @effects normal_post_comment_unaffected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function outsider_can_still_write_reply_post_under_public_post(): void
@@ -526,6 +588,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=outsider, target=public_post
      *
      * @effects normal_post_comment_unaffected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function outsider_can_still_report_public_post(): void
@@ -554,6 +618,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=password_holder, target=secret_post
      *
      * @effects secret_view_token_issued_on_password_verify
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function password_verification_issues_a_view_token(): void
@@ -582,6 +648,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=password_holder, target=secret_post
      *
      * @effects secret_post_comment_allowed_for_password_holder
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function password_holder_can_comment_on_secret_post(): void
@@ -609,6 +677,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=password_holder, target=secret_post
      *
      * @effects secret_post_reply_allowed_for_password_holder
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function password_holder_can_write_reply_post_under_secret_post(): void
@@ -641,6 +711,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=password_holder, target=other_secret_post
      *
      * @effects secret_view_token_is_bound_to_its_post
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function view_token_does_not_work_on_another_post(): void
@@ -672,6 +744,8 @@ class SecretPostChildWriteGateTest extends BoardTestCase
      * @scenario actor=outsider, target=secret_post
      *
      * @effects secret_view_token_rejects_forged_value
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function forged_view_token_is_rejected(): void
@@ -692,6 +766,12 @@ class SecretPostChildWriteGateTest extends BoardTestCase
         $this->assertSame($before, $this->commentCount());
     }
 
+    /**
+     * 비밀글 비밀번호 확인 API 주소를 반환합니다.
+     *
+     * @param  int  $postId  게시글 ID
+     * @return string 문자열
+     */
     private function verifyPasswordUrl(int $postId): string
     {
         return "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/verify-password";
@@ -699,6 +779,10 @@ class SecretPostChildWriteGateTest extends BoardTestCase
 
     /**
      * 비밀번호를 검증해 열람 확인 토큰을 발급받습니다 (실제 엔드포인트 경유).
+     *
+     * @param  int  $postId  게시글 ID
+     * @param  string  $password  평문 비밀번호
+     * @return string 문자열
      */
     private function issueViewToken(int $postId, string $password): string
     {
@@ -706,5 +790,77 @@ class SecretPostChildWriteGateTest extends BoardTestCase
         $response->assertStatus(200);
 
         return (string) $response->json('secret_view_token');
+    }
+
+    /**
+     * 경로 규칙 앵커(비밀 답변 B 의 작성자)는 조상 A 에 비밀 댓글을 달고 읽을 수 있다 (#789 D1·D12).
+     *
+     * 하위 쓰기 게이트는 canView 를 재사용하므로 경로 규칙이 자동으로 적용된다 — 답변 작성자는
+     * 자기 답변의 원글을 볼 수 있고, 그래서 그 원글에 댓글을 달 수 있다.
+     *
+     * @scenario link=board-secret-thread-visibility
+     *
+     * @effects thread_anchor_comments_on_ancestor_secret_post
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function thread_anchor_can_comment_on_and_read_ancestor_secret_post(): void
+    {
+        $rootId = $this->createSecretPost();
+        $this->createSecretPost([
+            'user_id' => $this->outsider->id,
+            'author_name' => 'replier',
+            'parent_id' => $rootId,
+            'depth' => 1,
+            'title' => 'Re: 비밀 게시글',
+        ]);
+        $before = $this->commentCount();
+
+        $this->asUser($this->outsider)->postJson($this->commentsUrl($rootId), [
+            'content' => '답변 작성자가 원글에 남기는 비밀 댓글',
+            'is_secret' => true,
+        ])->assertStatus(201);
+        $this->assertSame($before + 1, $this->commentCount());
+
+        $contents = array_column($this->asUser($this->outsider)->getJson($this->commentsUrl($rootId))->assertOk()->json('data'), 'content');
+        $this->assertContains('답변 작성자가 원글에 남기는 비밀 댓글', $contents);
+    }
+
+    /**
+     * 경로 규칙 앵커라도 형제 가지(남의 비밀 답변 C)에는 댓글을 달 수 없다.
+     *
+     * @scenario link=board-secret-thread-visibility
+     *
+     * @effects thread_anchor_cannot_comment_on_sibling_branch
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function thread_anchor_cannot_comment_on_sibling_branch(): void
+    {
+        $rootId = $this->createSecretPost();
+        $this->createSecretPost([
+            'user_id' => $this->outsider->id,
+            'author_name' => 'replier',
+            'parent_id' => $rootId,
+            'depth' => 1,
+        ]);
+        // 형제 가지 C — 다른 회원의 비밀 답변. outsider 의 앵커(B)와 조상·자손 관계가 아니다
+        $other = User::factory()->create();
+        $siblingId = $this->createSecretPost([
+            'user_id' => $other->id,
+            'author_name' => 'sibling',
+            'parent_id' => $rootId,
+            'depth' => 1,
+        ]);
+        $before = $this->commentCount();
+
+        $response = $this->asUser($this->outsider)->postJson($this->commentsUrl($siblingId), [
+            'content' => '형제 가지 댓글',
+        ]);
+
+        $this->assertContains($response->status(), [403, 422]);
+        $this->assertSame($before, $this->commentCount());
     }
 }

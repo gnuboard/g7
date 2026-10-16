@@ -1586,9 +1586,16 @@ class CoreUpdateService
 
         // 스코프가 붙었지만 어디서도 강제되지 않는 부여를 드러낸다 — 운영자가 역할 편집으로
         // 만든 부여일 수 있어 업데이트를 막지는 않는다(ScopedPermissionEnforcement 참고).
-        $unenforced = app(ScopedPermissionEnforcement::class)->findUnenforcedScopedGrants();
+        $enforcement = app(ScopedPermissionEnforcement::class);
+        $unenforced = $enforcement->findUnenforcedScopedGrants();
         if ($unenforced !== []) {
             Log::channel('upgrade')->warning('스코프가 강제되지 않는 권한 부여가 있습니다', ['grants' => $unenforced]);
+        }
+
+        // 비회원 역할은 스코프를 가질 수 없다(7.1.1) — 업그레이드 스텝이 회수한 뒤에도 DB 를 직접 고쳐 남은 행을 드러낸다.
+        $guestScoped = $enforcement->findGuestScopedGrants();
+        if ($guestScoped !== []) {
+            Log::channel('upgrade')->warning('비회원 역할에 권한 범위가 붙은 부여가 있습니다 — 비회원은 범위를 가질 수 없어 실제로는 전체 접근입니다', ['grants' => $guestScoped]);
         }
     }
 

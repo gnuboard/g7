@@ -747,7 +747,7 @@ Select 는 `props.options` **유무로 렌더 컴포넌트 자체가 갈린다**
 </select>
 ```
 
-- `<options>` 안은 `<option>` 만 온다(다른 태그는 자리 오류). `value=`(문자열)·`:value=`(타입 리터럴)·`disabled`·본문 텍스트(label)만 읽는다.
+- `<options>` 안은 `<option>` 만 온다(다른 태그는 자리 오류). `value=`(문자열)·`:value=`(타입 리터럴)·`disabled`·본문 텍스트(label)만 읽는다. 옵션에 그 밖의 키(예: 목록에서 라벨 아래 보이는 `description`)가 있으면 `<prop name="options"><item value="…" label="$t:…" description="$t:…"/></prop>` 로 적는다 — 역변환도 이 표기로 되돌린다.
 - `<options>` 와 `:options` 는 같은 자리를 다투므로 함께 쓰면 충돌로 잡힌다.
 - 래퍼 밖 `<option>` 은 **절대 접지 않는다**. `multiple`/`size` 여부와 무관하다.
 

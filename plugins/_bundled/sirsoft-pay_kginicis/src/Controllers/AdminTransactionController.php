@@ -14,11 +14,19 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Plugins\Sirsoft\PayKginicis\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayKginicis\Http\Requests\TransactionQueryRequest;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
 class AdminTransactionController extends AdminBaseController
 {
+    use GuardsOrderScope;
+
+    /**
+     * 의존성을 주입받습니다.
+     *
+     * @param  KgInicisApiService  $apiService  KG이니시스 API 서비스
+     */
     public function __construct(
         private readonly KgInicisApiService $apiService,
     ) {
@@ -33,6 +41,10 @@ class AdminTransactionController extends AdminBaseController
      */
     public function query(TransactionQueryRequest $request): JsonResponse
     {
+        if ($denied = $this->transactionScopeDenial(trim((string) $request->validated('tid')), 'sirsoft-ecommerce.orders.read')) {
+            return $denied;
+        }
+
         return $this->queryByTid(trim((string) $request->validated('tid')));
     }
 
@@ -44,6 +56,10 @@ class AdminTransactionController extends AdminBaseController
      */
     public function queryByOrder(string $orderNumber): JsonResponse
     {
+        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.orders.read')) {
+            return $denied;
+        }
+
         $orders = (new Order)->getTable();
         $payments = (new OrderPayment)->getTable();
 
@@ -64,6 +80,12 @@ class AdminTransactionController extends AdminBaseController
         return $this->queryByTid($payment->transaction_id);
     }
 
+    /**
+     * 거래번호로 거래를 조회해 화면 표시용 응답을 만듭니다(로컬 결제 기록으로 보강).
+     *
+     * @param  string  $tid  거래번호
+     * @return JsonResponse 거래 조회 응답
+     */
     private function queryByTid(string $tid): JsonResponse
     {
         try {
@@ -197,6 +219,13 @@ class AdminTransactionController extends AdminBaseController
         return null;
     }
 
+    /**
+     * 콜백 원본 응답에 빠진 값을 로컬 결제 레코드로 채웁니다.
+     *
+     * @param  array<string, mixed>  $localRaw  결제 콜백 시 저장한 원본 응답
+     * @param  mixed  $localPayment  로컬 결제 레코드 (없으면 null)
+     * @return array<string, mixed> 보강된 원본 응답
+     */
     private function mergeLocalPaymentFallback(array $localRaw, mixed $localPayment): array
     {
         if (! $localPayment) {
@@ -229,6 +258,15 @@ class AdminTransactionController extends AdminBaseController
         return $localRaw;
     }
 
+    /**
+     * 로컬 결제가 해외(CBT) 결제인지 판별합니다.
+     *
+     * @param  mixed  $localPayment  로컬 결제 레코드
+     * @param  array<string, mixed>  $localMeta  결제 메타
+     * @param  array<string, mixed>  $localRaw  결제 콜백 원본 응답
+     * @param  string  $tid  거래번호
+     * @return bool 해외 결제면 true
+     */
     private function isCbtLocalPayment(mixed $localPayment, array $localMeta, array $localRaw, string $tid): bool
     {
         if (($localMeta['is_cbt'] ?? false) === true || ($localMeta['cbt_type'] ?? '') !== '') {
@@ -251,6 +289,16 @@ class AdminTransactionController extends AdminBaseController
         return $currency === 'JPY' && str_starts_with($tid, 'INIJPG');
     }
 
+    /**
+     * 해외(CBT) 결제는 조회 API 대신 로컬 기록으로 거래 응답을 만듭니다.
+     *
+     * @param  string  $tid  거래번호
+     * @param  mixed  $localPayment  로컬 결제 레코드
+     * @param  array<string, mixed>  $localMeta  결제 메타
+     * @param  array<string, mixed>  $localRaw  결제 콜백 원본 응답
+     * @param  string|null  $embeddedPgProvider  간편결제 제공자
+     * @return array<string, mixed> 거래 응답
+     */
     private function buildLocalCbtTransactionResult(
         string $tid,
         mixed $localPayment,
@@ -361,11 +409,24 @@ class AdminTransactionController extends AdminBaseController
         return $result;
     }
 
+    /**
+     * 해외 결제수단 코드를 비교용 대문자로 정규화합니다.
+     *
+     * @param  string  $code  결제수단 코드
+     * @return string 정규화된 코드
+     */
     private function normalizeCbtPayMethod(string $code): string
     {
         return strtoupper(trim($code));
     }
 
+    /**
+     * 해외 결제의 날짜·시각 문자열을 표시 형식으로 바꿉니다.
+     *
+     * @param  string|null  $date  날짜
+     * @param  string|null  $time  시각
+     * @return string|null 표시용 일시 (값이 없으면 null)
+     */
     private function formatCbtDateTime(?string $date, ?string $time): ?string
     {
         if ($date === null || $date === '') {
@@ -379,6 +440,12 @@ class AdminTransactionController extends AdminBaseController
         return $this->formatDateTime($date, $time);
     }
 
+    /**
+     * 14자리 일시(YmdHis)를 표시 형식으로 바꿉니다.
+     *
+     * @param  string|null  $value  14자리 일시
+     * @return string|null 표시용 일시 (형식이 다르면 null)
+     */
     private function formatCompactDateTime(?string $value): ?string
     {
         if ($value === null || preg_match('/^\d{14}$/', $value) !== 1) {
@@ -393,6 +460,12 @@ class AdminTransactionController extends AdminBaseController
             .substr($value, 12, 2);
     }
 
+    /**
+     * 일시 문자열을 표시 형식으로 바꿉니다.
+     *
+     * @param  string  $value  일시 문자열
+     * @return string|null 표시용 일시 (빈 값이면 null)
+     */
     private function formatTimestamp(string $value): ?string
     {
         if ($value === '') {
@@ -415,6 +488,7 @@ class AdminTransactionController extends AdminBaseController
      * @param  array  $localRaw  결제 콜백 시 저장한 raw 응답
      * @param  bool  $isEscrow  로컬 결제 레코드의 에스크로 여부
      * @param  string|null  $localVbankDueAt  로컬 DB 의 vbank_due_at (정확한 cutoff timestamp)
+     * @param  string|null  $embeddedPgProvider  간편결제 제공자
      * @return array 보강된 응답
      */
     private function enrichResult(
@@ -556,6 +630,12 @@ class AdminTransactionController extends AdminBaseController
         };
     }
 
+    /**
+     * 간편결제 제공자 코드의 표시 이름을 돌려줍니다.
+     *
+     * @param  string|null  $provider  간편결제 제공자 코드
+     * @return string|null 표시 이름 (없으면 null)
+     */
     private function embeddedPgProviderLabel(?string $provider): ?string
     {
         if ($provider === null || $provider === '') {

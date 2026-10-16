@@ -83,6 +83,8 @@ return [
         'password_incorrect' => 'パスワードが一致しません。',
         'password_verify_not_allowed' => '会員投稿はパスワードバリデーションを使用できません。',
         'no_password_set' => 'パスワードが設定されていない投稿です。',
+        'thread_password_verified' => '元の投稿のパスワードが確認されました。',
+        'thread_password_not_applicable' => '元の投稿のパスワードで開ける返信ではありません。',
     ],
     'comment' => [
         'not_found' => 'コメントが見つかりません。',

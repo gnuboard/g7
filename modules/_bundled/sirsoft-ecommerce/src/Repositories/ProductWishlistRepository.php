@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use App\Helpers\PermissionHelper;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
@@ -129,6 +130,9 @@ class ProductWishlistRepository implements ProductWishlistRepositoryInterface
     {
         $table = $this->model->getTable();
         $query = $this->model->newQuery();
+
+        // 권한 스코프 필터링 (`wishlists.read` 의 본인·역할 범위) — 목록 라우트는 미들웨어 스코프 검사 대상이 아니다
+        PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.wishlists.read');
 
         $this->applyAdminMemberFilter($query, $table, $filters);
         $this->applyViewerDateRangeFilter($query, "{$table}.created_at", $filters['start_date'] ?? null, $filters['end_date'] ?? null);

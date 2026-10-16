@@ -19,9 +19,10 @@ interface MenuRepositoryInterface
     /**
      * 최상위 메뉴들을 조회합니다.
      *
+     * @param  string|null  $scopePermission  조회 범위를 걸 권한 식별자 (null 이면 범위 미적용 — 내부·동기화 경로)
      * @return Collection 최상위 메뉴 컬렉션 (활성화된 것만)
      */
-    public function getTopLevelMenus(): Collection;
+    public function getTopLevelMenus(?string $scopePermission = null): Collection;
 
     /**
      * 관리 화면용 최상위 메뉴(자식 포함)를 조회합니다.
@@ -121,9 +122,10 @@ interface MenuRepositoryInterface
      *
      * @param  ExtensionOwnerType  $type  확장 타입
      * @param  string  $identifier  확장 식별자
+     * @param  string|null  $scopePermission  조회 범위를 걸 권한 식별자 (null 이면 범위 미적용 — 내부·동기화 경로)
      * @return Collection 확장에 속한 메뉴 컬렉션
      */
-    public function getMenusByExtension(ExtensionOwnerType $type, string $identifier): Collection;
+    public function getMenusByExtension(ExtensionOwnerType $type, string $identifier, ?string $scopePermission = null): Collection;
 
     /**
      * 부모 메뉴의 자식 메뉴들을 조회합니다.

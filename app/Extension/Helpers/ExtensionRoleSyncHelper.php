@@ -402,7 +402,20 @@ class ExtensionRoleSyncHelper
         $definedPermIdentifiers = array_map(fn ($e) => $e['identifier'], $definedPermEntries);
         $scopeTypeMap = [];
         foreach ($definedPermEntries as $entry) {
-            $scopeTypeMap[$entry['identifier']] = $entry['scope_type'];
+            $scopeType = $entry['scope_type'];
+
+            // 비회원 역할은 권한 범위를 가질 수 없다(7.1.1) — 확장 정의(와일드카드 '*' 포함)가 범위를 주면
+            // 범위 없이 부여하고 경고만 남긴다. 설치·업데이트를 멈추면 확장 하나 때문에 사이트가 막힌다.
+            if ($scopeType !== null && ! $role->supportsPermissionScope()) {
+                Log::warning('비회원 역할에는 권한 범위를 지정할 수 없어 범위 없이 부여합니다', [
+                    'role' => $role->identifier,
+                    'permission' => $entry['identifier'],
+                    'scope_type' => $scopeType instanceof \BackedEnum ? $scopeType->value : $scopeType,
+                ]);
+                $scopeType = null;
+            }
+
+            $scopeTypeMap[$entry['identifier']] = $scopeType;
         }
 
         // DB에서 이 역할이 현재 갖고 있는 이 확장의 권한 목록

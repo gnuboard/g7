@@ -800,11 +800,11 @@
                                                     }
                                                 },
                                                 {
-                                                    "comment": "열람 확인 토큰 보관 — 비밀번호를 맞혔다는 사실은 이 응답에서만 살아 있다. 댓글·답글·신고는 각각 별도 요청이라, 이 토큰을 넘기지 않으면 원문을 연 사람도 화면이 내준 버튼에서 전부 거부된다. _user_base 의 globalHeaders 가 board API 요청에 자동으로 싣는다.",
-                                                    "handler": "setState",
+                                                    "comment": "열람 확인 토큰 보관 — 비밀번호를 맞혔다는 사실은 이 응답의 토큰에 실려 온다. 댓글·답글·신고·답변 열람은 각각 별도 요청이라, 이 토큰을 넘기지 않으면 원문을 연 사람도 화면이 내준 버튼에서 전부 거부된다. 탭 세션(sessionStorage)에 두어 답변 링크(전체 이동)·새로고침 뒤에도 남게 하고, _user_base 의 globalHeaders 가 board API 요청에 자동으로 싣는다.",
+                                                    "handler": "saveSecretViewToken",
                                                     "params": {
-                                                        "target": "global",
-                                                        "secretViewToken": "{{result.secret_view_token ?? ''}}"
+                                                        "token": "{{result.secret_view_token ?? ''}}",
+                                                        "expiresAt": "{{result.secret_view_expires_at ?? ''}}"
                                                     }
                                                 },
                                                 {
@@ -902,6 +902,167 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "text": "{{_local?.isVerifyingPassword ? '$t:common.confirming' : '$t:common.confirm'}}"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "원글 비밀번호로 열기 — 이 답변의 조상에 비밀번호가 있는 비회원 글이 있으면(서버가 thread_password_available 로 알려 준다) 위 잠금 안내 아래에 함께 보인다. 답변 주소로 바로 들어온 비회원 질문자가 자기 원글 비밀번호로 답변을 연다. 로그인 버튼은 위 안내에 그대로 남는다. 어느 조상이 맞았는지는 서버가 알려 주지 않는다.",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{post?.data?.content === null && post?.data?.thread_password_available && post?.data?.status !== 'blinded'}}",
+                            "props": {
+                                "className": "text-center pb-12 {{post?.data?.is_guest_post ? '' : 'border-t border-gray-200 dark:border-gray-700 pt-8'}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-gray-600 dark:text-gray-400 mb-4"
+                                    },
+                                    "text": "$t:board.secret_thread_password_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Form",
+                                    "dataKey": "threadPasswordForm",
+                                    "actions": [
+                                        {
+                                            "comment": "확인 중 표시를 먼저 켠다 — 요청을 내는 아래 블록과 나란히 걸려 있어 순서가 곧 이 표시가 먼저 켜짐을 뜻한다.",
+                                            "type": "submit",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "isVerifyingThreadPassword": true
+                                            }
+                                        },
+                                        {
+                                            "comment": "원글 비밀번호 확인 — 맞으면 서버가 그 원글에 대한 열람 확인을 같은 토큰에 더하고, 이제 열리는 이 답변을 돌려준다. 받은 글로 데이터소스를 갈아끼우고 토큰을 탭 세션에 둔다(같은 스레드의 다른 답변·원글도 이 토큰으로 열린다). 틀리면 입력칸만 비운다.",
+                                            "type": "submit",
+                                            "handler": "apiCall",
+                                            "target": "/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/verify-thread-password",
+                                            "auth_mode": "optional",
+                                            "params": {
+                                                "method": "POST",
+                                                "body": "{{_local?.threadPasswordForm}}"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "updateDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "post",
+                                                        "data": "{{result}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "saveSecretViewToken",
+                                                    "params": {
+                                                        "token": "{{result.secret_view_token ?? ''}}",
+                                                        "expiresAt": "{{result.secret_view_expires_at ?? ''}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "isVerifyingThreadPassword": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:board.password_verified"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "isVerifyingThreadPassword": false,
+                                                        "threadPasswordForm": {
+                                                            "password": ""
+                                                        }
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "id": "threadPasswordForm",
+                                        "className": "max-w-md mx-auto"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-col sm:flex-row gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "원글 비밀번호 입력 — 폼 자동바인딩과 같은 이름(threadPasswordForm)에 담아 제출이 그대로 실어 보내게 한다.",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "threadPasswordForm": {
+                                                                    "password": "{{$event.target.value}}"
+                                                                }
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "password",
+                                                        "name": "password",
+                                                        "placeholder": "$t:board.secret_thread_password_placeholder",
+                                                        "aria-label": "$t:board.secret_thread_password_placeholder",
+                                                        "className": "flex-1 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                                                        "value": "{{_local.threadPasswordForm?.password ?? ''}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "props": {
+                                                        "type": "submit",
+                                                        "className": "px-6 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "disabled": "{{_local?.isVerifyingThreadPassword}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{_local?.isVerifyingThreadPassword}}",
+                                                            "props": {
+                                                                "name": "spinner",
+                                                                "size": "sm",
+                                                                "className": "animate-spin mr-2"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "{{_local?.isVerifyingThreadPassword ? '$t:common.confirming' : '$t:common.confirm'}}"
                                                         }
                                                     ]
                                                 }
@@ -1145,10 +1306,10 @@
                             },
                             "children": [
                                 {
-                                    "comment": "답변 버튼 (답변 기능 활성화 + depth 제한 + 블라인드 아닌 게시글 + 비밀글은 검증 후)",
+                                    "comment": "답변 버튼 (답변 기능 활성화 + depth 제한 + 블라인드 아닌 게시글 + 비밀글은 검증 후 + 열 수 없는 비밀 조상이 없을 때). 남의 비밀글 아래 공개 답변에 답변을 달면 그 사람이 스레드의 앵커가 되어 비밀 조상이 열리므로, 서버가 막는 경우(reply_locked_by_secret_ancestor)를 미리 감춘다.",
                                     "type": "basic",
                                     "name": "Button",
-                                    "if": "{{post?.data?.board?.use_reply && !post?.data?.is_notice && (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) && post?.data?.abilities?.can_write && post?.data?.status !== 'blinded' && !post?.data?.deleted_at && (!post?.data?.is_secret || post?.data?.content !== null)}}",
+                                    "if": "{{post?.data?.board?.use_reply && !post?.data?.is_notice && (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) && post?.data?.abilities?.can_write && post?.data?.status !== 'blinded' && !post?.data?.deleted_at && (!post?.data?.is_secret || post?.data?.content !== null) && !post?.data?.reply_locked_by_secret_ancestor}}",
                                     "actions": [
                                         {
                                             "type": "click",

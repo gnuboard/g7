@@ -146,7 +146,7 @@ class ProductController extends AdminBaseController
     public function show(string $identifier): JsonResponse
     {
         try {
-            $product = $this->productService->findByIdOrCode($identifier);
+            $product = $this->productService->findForAdminRead($identifier);
 
             if (! $product) {
                 return ResponseHelper::notFound(
@@ -546,7 +546,7 @@ class ProductController extends AdminBaseController
     public function showByCode(string $itemCode): JsonResponse
     {
         try {
-            $product = $this->productService->findByCode($itemCode);
+            $product = $this->productService->findForAdminRead($itemCode, codeOnly: true);
 
             if (! $product) {
                 return ResponseHelper::notFound(

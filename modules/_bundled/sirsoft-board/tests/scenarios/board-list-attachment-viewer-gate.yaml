@@ -21,6 +21,9 @@ axes:
     - member
     - owner
     - manager
+    # 스레드 경로 규칙 앵커(답변 작성자)·비밀글 조회 「본인만」 (#789)
+    - thread_anchor
+    - read_secret_self
 
 effects:
   # 1. 블라인드 글 첨부 표시
@@ -29,6 +32,8 @@ effects:
   # 2. 비밀글 목록 썸네일
   - secret_post_thumbnail_signed_for_owner_and_manager_in_list
   - normal_post_thumbnail_stays_plain_in_list
+  - thread_anchor_can_download_root_secret_attachment
+  - self_scoped_read_secret_cannot_download_others_secret_attachment
   # 3. 공개 프로필 화면
   - public_profile_post_sources_send_viewer_token
 

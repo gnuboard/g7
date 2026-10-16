@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Plugins\Sirsoft\PayNhnkcp\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayNhnkcp\Http\Requests\EscrowDeliveryRegisterRequest;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
@@ -26,6 +27,7 @@ use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
  */
 class AdminEscrowDeliveryController extends AdminBaseController
 {
+    use GuardsOrderScope;
     use SanitizesPgResponse;
 
     private const ESCROW_DELIVERY_RESPONSE_KEYS = [
@@ -52,6 +54,11 @@ class AdminEscrowDeliveryController extends AdminBaseController
         '40' => '기타',
     ];
 
+    /**
+     * 의존성을 주입받습니다.
+     *
+     * @param  NhnKcpApiService  $apiService  NHN KCP API 서비스
+     */
     public function __construct(
         private readonly NhnKcpApiService $apiService,
     ) {
@@ -71,6 +78,10 @@ class AdminEscrowDeliveryController extends AdminBaseController
      */
     public function formData(string $orderNumber): JsonResponse
     {
+        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.orders.read')) {
+            return $denied;
+        }
+
         $payment = $this->findEscrowPayment($orderNumber);
 
         if (! $payment) {
@@ -125,6 +136,10 @@ class AdminEscrowDeliveryController extends AdminBaseController
      */
     public function register(EscrowDeliveryRegisterRequest $request, string $orderNumber): JsonResponse
     {
+        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.orders.update')) {
+            return $denied;
+        }
+
         $deliNumb = trim((string) $request->validated('deli_numb'));
         $deliCorp = trim((string) $request->validated('deli_corp'));
 
@@ -193,6 +208,12 @@ class AdminEscrowDeliveryController extends AdminBaseController
         }
     }
 
+    /**
+     * 주문번호의 NHN KCP 에스크로 결제 레코드를 찾습니다.
+     *
+     * @param  string  $orderNumber  주문번호
+     * @return object|null 결제 레코드 (없으면 null)
+     */
     private function findEscrowPayment(string $orderNumber): ?object
     {
         // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그

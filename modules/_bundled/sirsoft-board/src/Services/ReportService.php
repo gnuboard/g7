@@ -5,7 +5,6 @@ namespace Modules\Sirsoft\Board\Services;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Extension\HookManager;
-use App\Helpers\PermissionHelper;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -27,7 +26,6 @@ use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Support\SecretContentGate;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 신고 관리 서비스 클래스
@@ -132,14 +130,8 @@ class ReportService
      */
     public function getReport(int $id): Report
     {
-        $report = $this->reportRepository->findOrFail($id);
-
-        // 권한 스코프 접근 체크 (본인만/역할/전체)
-        if (! PermissionHelper::checkScopeAccess($report, 'sirsoft-board.reports.view')) {
-            throw new AccessDeniedHttpException(__('auth.scope_denied'));
-        }
-
-        return $report;
+        // 신고 관리 권한에는 범위(본인만·소유역할)가 없다 — 권한 보유만으로 판정한다(#789)
+        return $this->reportRepository->findOrFail($id);
     }
 
     /**
@@ -153,12 +145,8 @@ class ReportService
      */
     public function getGroupedReportDetail(int $id): array
     {
+        // 신고 관리 권한에는 범위(본인만·소유역할)가 없다 — 권한 보유만으로 판정한다(#789)
         $report = $this->reportRepository->findOrFail($id);
-
-        // 권한 스코프 접근 체크 (본인만/역할/전체)
-        if (! PermissionHelper::checkScopeAccess($report, 'sirsoft-board.reports.view')) {
-            throw new AccessDeniedHttpException(__('auth.scope_denied'));
-        }
 
         // 신고자 로그 목록 로드 (reporter 관계 eager load)
         $report->load(['logs' => fn ($q) => $q->latest()->with('reporter'), 'board']);
@@ -316,12 +304,8 @@ class ReportService
      */
     public function updateReportStatus(int $id, array $data): Report
     {
+        // 신고 관리 권한에는 범위(본인만·소유역할)가 없다 — 권한 보유만으로 판정한다(#789)
         $report = $this->reportRepository->findOrFail($id);
-
-        // 권한 스코프 접근 체크 (본인만/역할/전체)
-        if (! PermissionHelper::checkScopeAccess($report, 'sirsoft-board.reports.manage')) {
-            throw new AccessDeniedHttpException(__('auth.scope_denied'));
-        }
 
         // deleted 상태에서는 다른 상태로 변경 불가 (2차 방어선).
         // 정상 API 경로는 UpdateStatusRequest 검증이 422로 선차단하므로 여기 도달하지 않는다.
@@ -553,12 +537,8 @@ class ReportService
      */
     public function deleteReport(int $id): bool
     {
+        // 신고 관리 권한에는 범위(본인만·소유역할)가 없다 — 권한 보유만으로 판정한다(#789)
         $report = $this->reportRepository->findOrFail($id);
-
-        // 권한 스코프 접근 체크 (본인만/역할/전체)
-        if (! PermissionHelper::checkScopeAccess($report, 'sirsoft-board.reports.manage')) {
-            throw new AccessDeniedHttpException(__('auth.scope_denied'));
-        }
 
         // 훅: before_delete
         HookManager::doAction('sirsoft-board.report.before_delete', $report);

@@ -30,6 +30,11 @@ export interface PermissionNode {
     leaf_count: number;
     resource_route_key?: string | null;
     owner_key?: string | null;
+    /**
+     * 범위(스코프)를 적용할 수 있는 권한인지 — 서버가 `resource_route_key && owner_key` 로 판정해 싣는다.
+     * 없으면(구버전 서버) 두 키로 같은 판정을 폴백한다.
+     */
+    scope_supported?: boolean;
     children: PermissionNode[];
 }
 export interface PermissionTreeProps {
@@ -45,6 +50,11 @@ export interface PermissionTreeProps {
     }) => void;
     /** 스코프 옵션 (드롭다운 선택지) */
     scopeOptions?: ScopeOption[];
+    /**
+     * 역할 단위로 범위 선택을 끈다 — 비회원 역할처럼 소유자를 가릴 수 없어 범위가 적용되지 않는 역할.
+     * 켜면 체크한 권한에도 범위 드롭다운을 그리지 않는다(저장 값 정규화는 레이아웃 몫).
+     */
+    scopeDisabled?: boolean;
     /** 추가 클래스명 */
     className?: string;
     /** 비활성화 여부 */
@@ -76,7 +86,8 @@ export interface PermissionTreeProps {
  *   "props": {
  *     "data": "{{permissions?.data?.data?.permissions?.[permType]?.permissions ?? []}}",
  *     "value": "{{_local.form.permission_values ?? []}}",
- *     "scopeOptions": "{{permissions?.data?.data?.scope_options ?? []}}"
+ *     "scopeOptions": "{{permissions?.data?.data?.scope_options ?? []}}",
+ *     "scopeDisabled": "{{!!route?.id && _local.form?.supports_permission_scope === false}}"
  *   },
  *   "actions": [
  *     {

@@ -20,6 +20,7 @@ use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Support\SecretContentGate;
+use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -30,6 +31,8 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  */
 class AttachmentService
 {
+    use ChecksBoardPermission;
+
     /**
      * AttachmentService 생성자
      *
@@ -428,8 +431,9 @@ class AttachmentService
             return;
         }
 
-        $canManage = PermissionHelper::check("sirsoft-board.{$slug}.manager")
-            || PermissionHelper::check("sirsoft-board.{$slug}.admin.manage");
+        // 게시판 관리 권한은 게시판 스코프까지 본다 — 보유만 보면 「본인이 만든 게시판만」 위임 관리자가
+        // 남의 게시판 삭제·블라인드 글 첨부를 받는다.
+        $canManage = $this->hasBoardManagePermission($slug);
 
         if (! $canManage) {
             throw new AccessDeniedHttpException(__('auth.scope_denied'));
@@ -507,8 +511,9 @@ class AttachmentService
             return;
         }
 
-        $canManage = PermissionHelper::check("sirsoft-board.{$slug}.manager")
-            || PermissionHelper::check("sirsoft-board.{$slug}.admin.manage");
+        // 게시판 관리 권한은 게시판 스코프까지 본다 — 보유만 보면 「본인이 만든 게시판만」 위임 관리자가
+        // 남의 게시판 삭제·블라인드 글 첨부를 받는다.
+        $canManage = $this->hasBoardManagePermission($slug);
 
         if (! $canManage) {
             throw new AccessDeniedHttpException(__('auth.scope_denied'));

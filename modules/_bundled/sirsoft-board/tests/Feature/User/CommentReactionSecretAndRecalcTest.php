@@ -48,6 +48,10 @@ class CommentReactionSecretAndRecalcTest extends BoardTestCase
             'use_comment' => true,
             'active_reaction_types' => ['like', 'dislike'],
         ]);
+
+        // 반응 엔드포인트는 그 게시판 글 읽기 권한을 요구한다(7.1.0 abilities 게이트 S7) — 회원 역할에 부여해 둔다.
+        // 없으면 라우트 미들웨어가 403 으로 먼저 막아 아래 비밀글 판정(422)에 닿지 못한다(ReactionApiTest 와 같은 준비).
+        $this->grantUserRolePermissions(['posts.read', 'comments.read']);
     }
 
     /**
@@ -227,5 +231,65 @@ class CommentReactionSecretAndRecalcTest extends BoardTestCase
         $decoded = json_decode((string) $raw, true) ?: [];
 
         return (int) ($decoded[(string) $reactionTypeId] ?? 0);
+    }
+
+    /**
+     * 비밀 댓글 반응은 canViewSecretComment 로 판정된다 — 부모 댓글 작성자는 그 비밀 대댓글에 반응할 수 있고,
+     * 무관한 회원은 못 한다 (#789 D6, 댓글 목록과 같은 판정).
+     *
+     * @scenario case=secret_post_comment_reaction_denied
+     *
+     * @effects comment_reaction_uses_secret_comment_gate
+     *
+     * @return void 반환값 없음
+     */
+    public function test_secret_reply_comment_reaction_follows_secret_comment_gate(): void
+    {
+        $postAuthor = $this->createUser();
+        $parentCommenter = $this->createUser();
+        $replier = $this->createUser();
+        $outsider = $this->createUser();
+
+        $postId = $this->createTestPost(['user_id' => $postAuthor->id]);
+        $parentId = $this->createTestComment($postId, ['user_id' => $parentCommenter->id]);
+        $secretReplyId = $this->createTestComment($postId, [
+            'user_id' => $replier->id,
+            'parent_id' => $parentId,
+            'depth' => 1,
+            'is_secret' => true,
+        ]);
+
+        $this->actingAs($parentCommenter, 'sanctum')
+            ->postJson($this->reactUrl($secretReplyId), ['reaction_type_id' => $this->likeId])
+            ->assertOk();
+
+        $this->actingAs($outsider, 'sanctum')
+            ->postJson($this->reactUrl($secretReplyId), ['reaction_type_id' => $this->likeId])
+            ->assertStatus(422);
+    }
+
+    /**
+     * 비밀글의 댓글 반응은 글 canView 로 판정된다 — 경로 규칙 앵커(비밀 답변 작성자)는 조상 비밀글의
+     * 댓글에 반응할 수 있다 (#789 D1·D6).
+     *
+     * @scenario case=secret_post_comment_reaction_denied
+     *
+     * @effects comment_reaction_uses_secret_comment_gate
+     *
+     * @return void 반환값 없음
+     */
+    public function test_thread_anchor_can_react_to_comment_on_ancestor_secret_post(): void
+    {
+        $author = $this->createUser();
+        $replier = $this->createUser();
+        $commenter = $this->createUser();
+
+        $rootId = $this->createTestPost(['user_id' => $author->id, 'is_secret' => true]);
+        $this->createTestPost(['user_id' => $replier->id, 'is_secret' => true, 'parent_id' => $rootId, 'depth' => 1]);
+        $commentId = $this->createTestComment($rootId, ['user_id' => $commenter->id]);
+
+        $this->actingAs($replier, 'sanctum')
+            ->postJson($this->reactUrl($commentId), ['reaction_type_id' => $this->likeId])
+            ->assertOk();
     }
 }

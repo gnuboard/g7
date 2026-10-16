@@ -98,6 +98,8 @@ return [
         'password_incorrect' => 'The password is incorrect.',
         'password_verify_not_allowed' => 'Password verification is not available for member posts.',
         'no_password_set' => 'No password has been set for this post.',
+        'thread_password_verified' => 'Original post password verified.',
+        'thread_password_not_applicable' => 'This reply cannot be opened with an original post password.',
     ],
 
     // Comment operation messages

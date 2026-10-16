@@ -516,7 +516,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.brands.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.brands.read`)이 없거나, 대상 브랜드가 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 404 | Not Found | 해당 `id` 의 브랜드가 없는 경우 (`messages.brands.not_found`) |
 
 <!-- @generated:end -->

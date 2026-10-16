@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use App\Helpers\PermissionHelper;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
@@ -45,6 +46,10 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
         // 관계는 아래 relations: 인자로만 넘긴다 — 여기서 with() 해도 지연 조인 트레이트가
         // 지우므로 실제로 로드되지 않는다(중복 선언은 계약을 오해하게 만든다).
         $query = $this->model->newQuery();
+
+        // 권한 스코프 필터링 — 관리자 리뷰 목록 전용 쿼리다(호출부: ProductReviewService::getAdminList 하나).
+        // 공개 리뷰 목록은 findByProduct 등 별도 메서드가 맡는다.
+        PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.reviews.read');
 
         // 검색 키워드
         if (! empty($filters['search_keyword'])) {

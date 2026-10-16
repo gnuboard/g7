@@ -33,6 +33,7 @@
 | `core.layout_extension.after_apply` | filter | `AdjustEcommercePaymentMethodsLayoutListener` | `adjustPaymentMethodsLayout` | 20 |
 | `core.layout_extension.after_apply` | filter | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | `ensurePaymentQueryLayout` | 66 |
 | `core.layout_extension.after_apply` | filter | `EnsureAdminOrderDetailTestModeLayoutListener` | `ensureTestModeLayout` | 65 |
+| `core.permission.scope_enforcement_ledger` | filter | `OrderScopeLedgerListener` | `addLedgerEntries` | 20 |
 | `core.plugin_settings.before_save` | action (미선언) | `ValidateCbtSettingsListener` | `validateBeforeSave` | 10 |
 | `core.plugin_settings.update_validation_rules` | filter | `ValidateRedirectUrlSettingsListener` | `rules` | 10 |
 | `sirsoft-ecommerce.cash_receipt.cancel` | filter | `RegisterCashReceiptProviderListener` | `cancel` | 10 |
@@ -133,6 +134,7 @@ API 가 그 자리에서 환불하므로 `true` 입니다. 예외는 `kginicis_j
 | `ClaimPaymentRefundListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentRefundListener.php` |
 | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderDetailPaymentQueryLayoutListener.php` |
 | `EnsureAdminOrderDetailTestModeLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderDetailTestModeLayoutListener.php` |
+| `OrderScopeLedgerListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/OrderScopeLedgerListener.php` |
 | `PaymentRefundListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/PaymentRefundListener.php` |
 | `ProvideNecessaryStorageKeysListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvideNecessaryStorageKeysListener.php` |
 | `RegisterCashReceiptProviderListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/RegisterCashReceiptProviderListener.php` |

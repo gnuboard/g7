@@ -14,11 +14,19 @@ use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Plugins\Sirsoft\PayNicepayments\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayNicepayments\Http\Requests\EscrowDeliveryRegisterRequest;
 use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 
 class AdminEscrowController extends AdminBaseController
 {
+    use GuardsOrderScope;
+
+    /**
+     * 의존성을 주입받습니다.
+     *
+     * @param  NicePaymentsApiService  $apiService  나이스페이먼츠 API 서비스
+     */
     public function __construct(
         private readonly NicePaymentsApiService $apiService,
     ) {
@@ -41,6 +49,10 @@ class AdminEscrowController extends AdminBaseController
      */
     public function getEscrowPayments(string $orderNumber): JsonResponse
     {
+        if ($denied = $this->orderScopeDenial($orderNumber, 'sirsoft-ecommerce.orders.read')) {
+            return $denied;
+        }
+
         // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
         $payments = DB::table((new OrderPayment)->getTable().' as p')
             ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
@@ -75,6 +87,10 @@ class AdminEscrowController extends AdminBaseController
      */
     public function registerDelivery(EscrowDeliveryRegisterRequest $request): JsonResponse
     {
+        if ($denied = $this->transactionScopeDenial((string) $request->validated('tid'), 'sirsoft-ecommerce.orders.update')) {
+            return $denied;
+        }
+
         $validated = $request->validated();
 
         try {
@@ -117,6 +133,12 @@ class AdminEscrowController extends AdminBaseController
         }
     }
 
+    /**
+     * 배송 등록할 수 있는 에스크로 결제 레코드를 거래번호로 찾습니다.
+     *
+     * @param  string  $tid  거래번호
+     * @return OrderPayment|null 결제 레코드 (없으면 null)
+     */
     private function findRegisterableEscrowPayment(string $tid): ?OrderPayment
     {
         // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
@@ -128,6 +150,12 @@ class AdminEscrowController extends AdminBaseController
             ->first();
     }
 
+    /**
+     * 결제 당시의 상점 자격으로 API 서비스를 맞춥니다.
+     *
+     * @param  OrderPayment  $payment  결제 레코드
+     * @return void 반환값 없음
+     */
     private function useStoredCredentials(OrderPayment $payment): void
     {
         $meta = $payment->payment_meta ?? [];

@@ -7,6 +7,7 @@ use App\Enums\TotalRelation;
 use App\Http\Resources\BaseApiCollection;
 use App\Support\Query\BoundedCount;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Board\Support\SecretThreadAccess;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
 /**
@@ -67,6 +68,10 @@ class PostCollection extends BaseApiCollection
 
         // 현재 페이지의 일반 게시글 시작 순번 계산
         $currentNumber = $this->calculateStartNumber($normalPostsTotal, $currentPage, $perPage, $isDescending);
+
+        // 비밀글 썸네일 판정(SecretContentGate)이 글마다 스레드를 따로 읽지 않게, 이 페이지의 비밀글
+        // 노드를 레벨당 1쿼리로 미리 채운다. 게이트는 전역 request() 로 판정하므로 같은 인스턴스에 채운다.
+        app(SecretThreadAccess::class)->prime($this->collection, request());
 
         $data = $this->collection->map(function ($post) use ($request, &$currentNumber, $isDescending) {
             $postData = (new PostResource($post))->toListArray($request);

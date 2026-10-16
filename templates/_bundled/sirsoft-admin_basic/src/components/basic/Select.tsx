@@ -41,6 +41,8 @@ const DROPDOWN_VIEWPORT_MARGIN = 8;
 export interface SelectOption {
   value: string | number;
   label: string;
+  /** 드롭다운 목록에서 라벨 아래 작은 글자로 보이는 설명 (트리거 버튼에는 보이지 않는다) */
+  description?: string;
   disabled?: boolean;
 }
 
@@ -405,16 +407,23 @@ export const Select: React.FC<SelectProps> = ({
                   type="button"
                   onClick={() => !option.disabled && handleSelect(option.value)}
                   disabled={option.disabled}
-                  className={`w-full px-4 py-3 text-left text-sm flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                  className={`w-full px-4 py-3 text-left text-sm flex items-center justify-between gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
                     isSelected ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-200'
                   } ${option.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   role="option"
                   aria-selected={isSelected}
                 >
-                  <Span>{option.label}</Span>
+                  {option.description ? (
+                    <Div className="flex flex-col gap-0.5 min-w-0">
+                      <Span>{option.label}</Span>
+                      <Span className="text-xs font-normal text-gray-500 dark:text-gray-400 whitespace-normal">{option.description}</Span>
+                    </Div>
+                  ) : (
+                    <Span>{option.label}</Span>
+                  )}
                   {isSelected && (
                     <Svg
-                      className="w-5 h-5 text-blue-600 dark:text-blue-400"
+                      className="w-5 h-5 flex-shrink-0 text-blue-600 dark:text-blue-400"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"

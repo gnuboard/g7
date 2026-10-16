@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.2.1] - 2026-10-15
+
+### Added
+
+- 게시글 답변 화면의 원글 비밀번호 폼 문구(`board.secret_thread_password_hint` — 원글 비밀번호로 이 답변을 열 수 있다는 안내, `board.secret_thread_password_placeholder` — 입력칸 예시)의 일본어 번역을 추가했습니다. 없으면 일본어 화면에서 이 폼만 한국어로 보입니다.
+- 레이아웃 편집기의 「비밀글 열람 토큰 저장」 액션 이름과 입력 이름(`editor.action.save_secret_view_token.*`)의 일본어 번역을 추가했습니다.
+
 ## [1.2.0] - 2026-10-10
 
 ### Added

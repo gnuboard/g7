@@ -1273,6 +1273,14 @@
       "module": "モジュール",
       "plugin": "プラグイン"
     },
+    "filters": {
+      "extension_type": "区分",
+      "extension_type_all": "すべての区分",
+      "extension_type_core": "システム",
+      "extension_type_module": "モジュール",
+      "extension_type_plugin": "プラグイン",
+      "extension_type_custom": "直接追加"
+    },
     "actions": {
       "clone": "複製"
     },
@@ -1298,6 +1306,7 @@
       "permissions_section": "権限設定",
       "permissions_selected_suffix": "個選択されました",
       "permissions_hint": "このロールに付与する権限を選択してください。グループをクリックして展開または折りたたむことができます。",
+      "guest_scope_unsupported_hint": "非会員ロールには範囲を指定できません。非会員本人の投稿はパスワードで確認します。",
       "no_permissions_in_type": "登録された権限がありません。",
       "menus_section": "アクセス可能なメニュー",
       "menus_hint": "チェックしたメニューがこのロールの管理メニューに表示されます。下位メニューを選ぶと上位メニューも併せて選択され、上位メニューを外すと下位メニューも併せて外れます。",

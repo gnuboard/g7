@@ -631,7 +631,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `FilterGroup` | 다중 필터 그룹 | title, filters, onChange, onReset, showResetButton, ... |
 | `FilterVisibilitySelector` | 필터 가시성 상태 관리 (UI 없음, localStorage 저장) | id, visibleFilters, defaultFilters, onFilterVisibilityChange |
 | `ColumnSelector` | 테이블 컬럼 표시/숨김 선택 드롭다운 | columns, visibleColumns, onColumnVisibilityChange, triggerLabel, triggerIconName, ... |
-| `PermissionTree` | 계층형 권한 트리 (체크박스 선택) | data, value, onChange, disabled, desktopColumns |
+| `PermissionTree` | 계층형 권한 트리 (체크박스 선택 + 권한별 범위 드롭다운 — 범위를 적용할 수 있는 권한(`scope_supported`, 없으면 `resource_route_key && owner_key`)에만, `scopeDisabled` 면 숨김. 역할 폼은 `{{!!route?.id && _local.form?.supports_permission_scope === false}}` 로 켠다 — 비회원 역할 수정에서만 켜지고 비회원 역할을 복제한 새 역할에서는 꺼진다) | data, value, onChange, scopeOptions, scopeDisabled, disabled, desktopColumns |
 | `CategoryTree` | 계층형 카테고리 트리 (체크박스 선택) | data, expandedIds, selectedIds, searchKeyword, showProductCount, ... |
 | `MenuAccessTree` | 역할이 접근할 관리자 메뉴 체크 트리 (하위 선택 시 상위 자동, 상위 해제 시 하위 해제) | data, value, onChange, disabled, lockedAll, installedModules, installedPlugins |
 | `SortableMenuList` | 드래그앤드롭 계층형 메뉴 목록 (선택 모드·행별 역할 배지) | items, selectedId, onSelect, onOrderChange, onToggleStatus, selectionMode, selectedIds, onSelectionChange, roleOptions, ... |

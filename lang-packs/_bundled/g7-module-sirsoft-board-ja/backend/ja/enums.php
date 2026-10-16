@@ -10,6 +10,11 @@ return [
         'block' => '削除をブロック（返信がある間は元の投稿を削除できません）',
         'cascade' => '一緒に削除（元の投稿の削除時に返信も削除されます）',
     ],
+    'secret_reply_visibility' => [
+        'thread_path' => 'パスルール（既定）',
+        'descendants_only' => '下位のみ',
+        'per_post' => '返信ごとに個別',
+    ],
     'order_direction' => [
         'asc' => '昇順',
         'desc' => '降順',

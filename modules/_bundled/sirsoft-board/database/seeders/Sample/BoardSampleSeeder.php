@@ -254,6 +254,8 @@ class BoardSampleSeeder extends Seeder implements TranslatableSeederInterface
             'active_reaction_types' => ['like', 'dislike'],
             // 답글 삭제 정책 block — 답글이 달린 질문은 삭제할 수 없다
             'reply_delete_policy' => 'block',
+            // 비밀 답변 열람 범위 per_post — 답변마다 따로 (경로 규칙을 쓰지 않는 게시판 예시)
+            'secret_reply_visibility' => 'per_post',
             // 기본값: posts.read-secret = ['admin'] → user 추가
             // 비밀글을 작성자 외 로그인 회원도 읽을 수 있는 케이스 (고객센터 담당자 등)
             'permissions' => [

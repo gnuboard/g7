@@ -901,7 +901,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.read`)이 없거나, 대상 상품이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
@@ -1407,7 +1407,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 400 | Bad Request | 순서 갱신 처리 중 오류가 발생한 경우 (`exceptions.operation_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없거나, 대상 이미지가 속한 상품(하나라도)이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
@@ -1461,7 +1461,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 400 | Bad Request | 삭제 처리 중 오류가 발생한 경우 (`exceptions.operation_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없거나, 대상 이미지가 속한 상품이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 404 | Not Found | `id` 에 해당하는 이미지가 없는 경우 (`messages.product_images.not_found`) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
@@ -1603,7 +1603,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.read`)이 없거나, 대상 상품이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
@@ -1721,7 +1721,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 400 | Bad Request | 파일 저장 등 업로드 처리 중 오류가 발생한 경우 (`exceptions.operation_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없거나, 대상 상품이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) 또는 상품 이미지 개수 상한 초과 (`ProductImageUploadLimitException`) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
@@ -1777,7 +1777,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 400 | Bad Request | 대표 이미지 설정 처리 중 오류가 발생한 경우 (`exceptions.operation_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update`)이 없거나, 대상 상품이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 

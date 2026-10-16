@@ -465,24 +465,32 @@ class ReportSampleSeeder extends Seeder
         $this->command->info('');
         $this->command->info('대량 신고자 케이스 생성 중...');
 
-        $board = $boards->first();
         $caseCount = 0;
 
         foreach ([ReportType::Post, ReportType::Comment] as $targetType) {
-            $target = $this->pickTarget($board, $targetType);
-            if (! $target) {
-                continue;
-            }
+            // 한 게시판만 보면 앞 단계가 대상을 다 쓴 경우 0건이 된다 — 대상을 찾을 때까지 게시판을 돈다
+            foreach ($boards->shuffle() as $board) {
+                $target = $this->pickTarget($board, $targetType);
+                if (! $target) {
+                    continue;
+                }
 
-            $reporters = $this->pickReporters($users, $target, $users->count());
-            if ($reporters->count() < 2) {
-                continue;
-            }
+                $reporters = $this->pickReporters($users, $target, $users->count());
+                if ($reporters->count() < 2) {
+                    continue;
+                }
 
-            if ($this->createCase($board, $targetType, $target, ReportStatus::Pending, $reporters, 'Many-Reporters-Test')) {
-                $this->command->line("  - [{$board->slug}] {$targetType->value} #{$target->id}: {$reporters->count()}명 신고");
-                $caseCount++;
+                if ($this->createCase($board, $targetType, $target, ReportStatus::Pending, $reporters, 'Many-Reporters-Test')) {
+                    $this->command->line("  - [{$board->slug}] {$targetType->value} #{$target->id}: {$reporters->count()}명 신고");
+                    $caseCount++;
+                }
+
+                break;
             }
+        }
+
+        if ($caseCount === 0) {
+            $this->command->warn('대량 신고자 케이스를 만들 대상 글·댓글이 남아 있지 않습니다.');
         }
 
         $this->command->line("대량 신고자 케이스 생성 완료: {$caseCount}건 (자동 블라인드 기준 {$this->autoHideThreshold}명)");

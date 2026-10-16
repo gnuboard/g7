@@ -22,6 +22,7 @@ return [
         'permission_ids_array' => '권한 목록은 배열 형태여야 합니다.',
         'permission_ids_exists' => '선택한 권한 중 유효하지 않은 권한이 있습니다.',
         'permission_ids_integer' => '권한 ID는 정수여야 합니다.',
+        'guest_scope_not_allowed' => '비회원 역할은 권한 범위를 지정할 수 없습니다. 범위 없이(전체) 부여해 주세요.',
     ],
 
     // 에러 메시지

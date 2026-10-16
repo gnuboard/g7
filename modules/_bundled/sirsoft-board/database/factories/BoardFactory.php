@@ -47,6 +47,7 @@ class BoardFactory extends Factory
             'use_comment_reaction' => true,
             'active_reaction_types' => ['like'],
             'reply_delete_policy' => 'cascade',
+            'secret_reply_visibility' => 'thread_path',
             'use_file_upload' => false,
             'max_file_size' => 10, // 10MB
             'max_file_count' => 5,

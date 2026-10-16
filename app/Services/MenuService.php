@@ -376,17 +376,20 @@ class MenuService
      */
     public function getMenusByExtension(ExtensionOwnerType $type, string $identifier): Collection
     {
-        return $this->menuRepository->getMenusByExtension($type, $identifier);
+        // 관리자 조회 경로 — 메뉴 목록과 같은 범위(core.menus.read)를 건다(7.1.1)
+        return $this->menuRepository->getMenusByExtension($type, $identifier, 'core.menus.read');
     }
 
     /**
      * 메뉴의 계층 구조를 Collection으로 반환합니다.
      *
+     * 관리자 조회 경로(`GET admin/menus/hierarchy`)라 메뉴 목록과 같은 범위(core.menus.read)를 건다(7.1.1).
+     *
      * @return Collection 메뉴 계층 구조 컬렉션
      */
     public function getMenuHierarchy(): Collection
     {
-        return $this->menuRepository->getTopLevelMenus();
+        return $this->menuRepository->getTopLevelMenus('core.menus.read');
     }
 
     /**

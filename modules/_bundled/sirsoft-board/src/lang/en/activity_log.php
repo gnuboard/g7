@@ -109,6 +109,7 @@ return [
         'use_reply' => 'Use Replies',
         'max_reply_depth' => 'Max Reply Depth',
         'reply_delete_policy' => 'Reply Delete Policy',
+        'secret_reply_visibility' => 'Secret Reply Visibility',
         'use_report' => 'Use Reports',
         'use_scrap' => 'Use Scrap',
         'use_comment_reaction' => 'Use Comment Reaction',
