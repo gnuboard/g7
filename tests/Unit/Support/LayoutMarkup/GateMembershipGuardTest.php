@@ -104,8 +104,8 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-board/tests/Feature/PostSearchKeywordSanitizationTest.php' => '게시판 트랙 소유 (전문검색 연산자 입력의 500 방지).',
         // ── develop 8차 병합 유입분(7.0.10 · KVE-2026 보안 6묶음). 같은 형태 — develop 라인이 마킹은 달고
         //    매니페스트는 두지 않았다. 귀속 실측: 커밋 `07fd45e6b`(#645) 도입, 이 트랙 변경 0.
-        'modules/_bundled/sirsoft-board/tests/Feature/SecretPostChildWriteGateTest.php' => '게시판 트랙 소유 (비밀글 하위 쓰기 게이트 — 댓글·답글·신고의 부모 열람 권한 재적용, KVE-2026-2044).',
-        'modules/_bundled/sirsoft-board/tests/Feature/User/PostSecretVerifyPasswordTest.php' => '게시판 트랙 소유 (비밀글 비밀번호 검증 응답 형상과 열람 확인 토큰 발급).',
+        //    #789 가 게시판 매니페스트(`board-secret-thread-visibility`·`board-secret-content-bypass-paths`)에 등재해
+        //    `SecretPostChildWriteGateTest`·`PostSecretVerifyPasswordTest` 2행을 해소했다.
         'modules/_bundled/sirsoft-board/tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
         'modules/_bundled/sirsoft-board/tests/Unit/Repositories/UserCommentedActivityDeferredJoinTest.php' => '목록 지연 조인 트랙 소유 (그룹 쿼리 총 건수·컬럼 프루닝).',
         'modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductListPayloadSizeBenchmarkTest.php' => '목록 응답 축소 트랙 소유 (페이로드 바이트·쿼리 수).',
