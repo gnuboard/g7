@@ -135,8 +135,8 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 105개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 100개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 20개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 102개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 22개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 7개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -187,6 +187,8 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 | 게시판별 동적 권한/역할을 board 삭제와 별도 시점에 정리 | `BoardService` 삭제 흐름 안에서 즉시 정리(또는 stale cleanup 이 `getDynamicPermissionIdentifiers()` 로 정확히 판정하게 유지) | 정리가 늦으면 존재하지 않는 게시판의 권한이 역할에 남아 관리 화면에 유령 항목이 뜬다 |
 | 새 콘텐츠 타입을 board 코드에 `if ($type === 'inquiry')` 로 직접 분기 | `EcommerceInquiryHookListener` 처럼 필터 훅으로 CRUD 를 위임 | board 코드가 알지 못하는 도메인이 늘어날수록 분기가 무한 증식한다 |
 | 레이아웃 표현식에서 누산기에 멤버 대입 (`grouped[k] = []` · `.push()`) 하거나 rest 구조분해 (`const { a, ...rest } = obj`) 사용 | `map` / `filter` / `reduce(Object.assign)` / `Object.fromEntries` 로 누산 없이 구성 | 표현식 평가기가 그 구문을 거부해 **식 전체가 평가되지 않는다.** `iteration.source` 면 배열이 아니게 되어 그 목록이 통째로 렌더되지 않고, `apiCall` body 면 원문 문자열이 그대로 전송된다 — 둘 다 오류도 경고도 남지 않는다 (일괄 적용 확인 창에서 실제 발생) |
+| 게시판 관리 권한(`manager`·`admin.manage`)을 `PermissionHelper::check()` 로 직접 판정 | `ChecksBoardPermission`(`hasBoardManagePermission`·`checkBoardPermission`) 을 거친다 | 보유만 보면 「본인이 만든 게시판만」 위임 관리자가 남의 게시판에서 관리자로 판정된다 — 게시판 라우트는 미들웨어 범위 검사가 돌지 않는다(#789). 래칫 테스트가 0건을 고정한다 |
+| 비밀글 하위 쓰기 중 답변(답글)만 `canWriteChild()` 로 판정 | 답변은 `SecretContentGate::canWriteReply()` — 부모의 모든 비밀 조상을 지금 열 수 있어야 한다 | 경로 규칙은 답변 작성자에게 조상 글을 열어 준다. 비밀글 아래 공개 답변에 외부인이 답변을 달 수 있으면 그 외부인이 비밀글을 본다(#789). 댓글·신고는 앵커를 만들지 않아 `canWriteChild()` 그대로다 |
 | 일괄 적용 대상 설정 키를 `sectionMap` 에만 추가 | 같은 키의 `bulk_apply.field_labels` 라벨을 ko/en(+번들 ja)에 함께 추가 | 라벨이 없으면 확인 창에 원시 다국어 키가 그대로 노출된다 |
 | 게시판 권한(role_permissions)이나 게시판 관리자·스텝 명단을 바꾸는 새 경로를 `BoardPermissionService::assignRolesToPermission()`·`syncBoardRoleUsers()` 를 거치지 않고 직접 `attach`/`sync` | 기존 두 지점을 재사용하거나, 새 지점에서 `PermissionEscalationGuard`(권한은 `assertGrantWithinActorCeiling`, 역할 배정은 `assertRoleAssignmentWithinActorCeiling`)를 쓰기 전에 호출 | 한 경로만 상한을 걸면 나머지가 자기부여 우회로가 된다 — 권한 저장만 막았을 때 담당자 지정·일괄 적용이 같은 결과를 냈다 (KVE-2026-2367) |
 | 요청의 `temp_key` 를 형식 검증 없이 임시 경로(`{slug}/temp/{temp_key}`)에 넣거나, 조회된 임시 첨부가 없는데도 그 디렉토리를 `deleteDirectory` | `ValidatesTempKey`(UUID 만) + 현재 사용자가 올린 임시 첨부가 있을 때만 이동·정리 | `../../..` 같은 키가 정리 경로를 모듈 저장소 루트로 끌어올려 전 모듈 파일이 지워진다 (KVE-2026-2349 — 응답은 201 이라 드러나지 않았다) |
@@ -199,10 +201,10 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 235개 | `modules/_bundled/sirsoft-board/tests` |
+| PHPUnit | 250개 | `modules/_bundled/sirsoft-board/tests` |
 | Vitest | 84개 | `vitest.config.ts` |
 | Playwright | 36개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 141개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 146개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

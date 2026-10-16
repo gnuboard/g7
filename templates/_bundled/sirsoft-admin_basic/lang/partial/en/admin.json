@@ -1298,6 +1298,14 @@
       "module": "Module",
       "plugin": "Plugin"
     },
+    "filters": {
+      "extension_type": "Origin",
+      "extension_type_all": "All origins",
+      "extension_type_core": "System",
+      "extension_type_module": "Module",
+      "extension_type_plugin": "Plugin",
+      "extension_type_custom": "Custom"
+    },
     "actions": {
       "clone": "Clone"
     },
@@ -1323,6 +1331,7 @@
       "permissions_section": "Permission Settings",
       "permissions_selected_suffix": " selected",
       "permissions_hint": "Select permissions to grant to this role. Click a group to expand or collapse.",
+      "guest_scope_unsupported_hint": "The guest role cannot have a scope. Guests verify their own posts with a password.",
       "no_permissions_in_type": "No permissions registered.",
       "menus_section": "Accessible Menus",
       "menus_hint": "Checked menus appear in the admin menu for this role. Choosing a submenu also selects its parent; unchecking a parent also clears its submenus.",

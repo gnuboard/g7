@@ -97,6 +97,14 @@ interface PostScrapRepositoryInterface
     public function findById(int $id): ?PostScrap;
 
     /**
+     * 스크랩 레코드를 ID 목록으로 조회합니다 (소유자 무관 — 관리자 일괄 처리의 스코프 판정용).
+     *
+     * @param  array<int, int>  $ids  스크랩 레코드 ID 목록
+     * @return Collection<int, PostScrap> 존재하는 레코드
+     */
+    public function findManyByIds(array $ids): Collection;
+
+    /**
      * 스크랩 레코드를 ID 로 삭제합니다 (소유자 무관 — 관리자 전용).
      *
      * @param  int  $id  스크랩 레코드 ID

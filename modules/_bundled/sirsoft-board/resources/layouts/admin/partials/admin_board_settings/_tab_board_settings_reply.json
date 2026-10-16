@@ -304,6 +304,130 @@
                                             ]
                                         }
                                     ]
+                                },
+                                {
+                                    "id": "field_secret_reply_visibility",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": ""
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center gap-4"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "flex-start gap-2 text-body font-medium flex-1 cursor-pointer"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "이 항목을 일괄 적용 대상에 넣고 뺀다. 배열에서 빼고 다시 넣는 식이라 같은 값이 두 번 들어가지 않는다",
+                                                                    "type": "change",
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "bulkApplyFields": "{{(_local.bulkApplyFields ?? []).includes('secret_reply_visibility') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'secret_reply_visibility') : [...(_local.bulkApplyFields ?? []), 'secret_reply_visibility']}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "checkbox",
+                                                                "className": "checkbox-aligned",
+                                                                "checked": "{{(_local.bulkApplyFields ?? []).includes('secret_reply_visibility')}}",
+                                                                "disabled": "{{!_computed.canBulkApply}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:sirsoft-board.admin.settings.fields.secret_reply_visibility"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "props": {
+                                                                        "className": "text-field-hint"
+                                                                    },
+                                                                    "text": "$t:sirsoft-board.admin.settings.fields.descriptions.secret_reply_visibility"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Select",
+                                                    "props": {
+                                                        "name": "basic_defaults.secret_reply_visibility",
+                                                        "className": "w-48 flex-shrink-0 text-sm",
+                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "options": [
+                                                            {
+                                                                "value": "thread_path",
+                                                                "label": "$t:sirsoft-board.admin.settings.options.secret_reply_visibility.thread_path",
+                                                                "description": "$t:sirsoft-board.admin.settings.options.secret_reply_visibility_descriptions.thread_path"
+                                                            },
+                                                            {
+                                                                "value": "descendants_only",
+                                                                "label": "$t:sirsoft-board.admin.settings.options.secret_reply_visibility.descendants_only",
+                                                                "description": "$t:sirsoft-board.admin.settings.options.secret_reply_visibility_descriptions.descendants_only"
+                                                            },
+                                                            {
+                                                                "value": "per_post",
+                                                                "label": "$t:sirsoft-board.admin.settings.options.secret_reply_visibility.per_post",
+                                                                "description": "$t:sirsoft-board.admin.settings.options.secret_reply_visibility_descriptions.per_post"
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "secret_reply_visibility_description_thread_path",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{(_local.form?.basic_defaults?.secret_reply_visibility ?? 'thread_path') === 'thread_path'}}",
+                                            "props": {
+                                                "className": "text-field-hint mt-1"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.settings.options.secret_reply_visibility_descriptions.thread_path"
+                                        },
+                                        {
+                                            "id": "secret_reply_visibility_description_descendants_only",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{_local.form?.basic_defaults?.secret_reply_visibility === 'descendants_only'}}",
+                                            "props": {
+                                                "className": "text-field-hint mt-1"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.settings.options.secret_reply_visibility_descriptions.descendants_only"
+                                        },
+                                        {
+                                            "id": "secret_reply_visibility_description_per_post",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{_local.form?.basic_defaults?.secret_reply_visibility === 'per_post'}}",
+                                            "props": {
+                                                "className": "text-field-hint mt-1"
+                                            },
+                                            "text": "$t:sirsoft-board.admin.settings.options.secret_reply_visibility_descriptions.per_post"
+                                        }
+                                    ]
                                 }
                             ]
                         }

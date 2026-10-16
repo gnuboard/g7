@@ -1,0 +1,19 @@
+feature: 템플릿 브라우저 저장소 핸들러 (장바구니 키·일반 값·비회원 주문 토큰)
+
+description: |
+  sirsoft-basic 의 저장소 핸들러(`src/handlers/storageHandlers.ts`) 기본 동작.
+    - 장바구니 키: localStorage 에 있으면 그대로 쓰고, 없으면 서버에서 발급해 저장한다(로그인 회원도 키가 필요하다).
+    - 일반 값: `saveToStorage`·`loadFromStorage` 로 localStorage 에 쓰고 읽으며, 없으면 기본값을 돌려준다.
+    - 비회원 주문 토큰: 탭 세션 토큰을 `_global` 로 복원하고, 저장소가 비어도 같은 화면에서 막 받은 메모리 토큰은 덮지 않는다.
+  비밀글 열람 토큰은 board-secret-view-token.yaml 이, 비회원 클레임 화면 흐름은 이커머스 guest-claim-screens.yaml 이 맡는다.
+
+axes:
+  storage: [cart_key, generic_value, guest_order_token]
+
+effects:
+  - cart_key_loaded_or_issued
+  - storage_value_round_trips
+  - guest_order_token_restored_or_preserved
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/handlers/__tests__/storageHandlers.test.ts

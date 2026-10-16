@@ -12,6 +12,7 @@ use App\Support\Query\BoundedCount;
 use App\Support\Query\BoundedPage;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -19,7 +20,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Enums\TriggerType;
@@ -30,6 +30,9 @@ use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Support\BoardManageScope;
+use Modules\Sirsoft\Board\Support\BoardReadScope;
+use Modules\Sirsoft\Board\Support\SecretThreadAccess;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
@@ -541,6 +544,12 @@ class PostService
         // 게시판 존재성 검증
         $this->validateBoardExists($slug);
 
+        // 관리자 직접 처리(triggerType 없음)는 게시판 관리 권한의 게시판 스코프를 다시 본다 —
+        // 라우트가 {slug} 라 미들웨어 스코프 검사가 돌지 않는다. 신고 처리·자동 블라인드는 reports.manage 관할.
+        if ($triggerType === null) {
+            BoardManageScope::assert($slug);
+        }
+
         $post = $this->postRepository->findOrFail($slug, $id);
 
         // 삭제된 글은 블라인드하지 않는다 — 상태 변경이 deleted_at 을 지워 삭제가 풀린다.
@@ -604,6 +613,11 @@ class PostService
     {
         // 게시판 존재성 검증
         $this->validateBoardExists($slug);
+
+        // 관리자 직접 처리만 게시판 스코프 재적용 (blindPost 와 같은 이유)
+        if ($triggerType === null) {
+            BoardManageScope::assert($slug);
+        }
 
         $post = $this->postRepository->findOrFail($slug, $id);
 
@@ -691,6 +705,10 @@ class PostService
         if (! $board) {
             throw new ModelNotFoundException(__('sirsoft-board::messages.errors.board_not_found'));
         }
+
+        // 게시판 스코프 밖이면 아무 항목도 건드리지 않고 전량 거부한다(항목별 건너뜀 사유가 아니다 —
+        // 게시판 단위 스코프라 한 항목이 막히면 전부 막힌다).
+        BoardManageScope::assert($slug);
 
         // 일괄 훅 1회 — IDV 정책은 이 훅을 대상으로 선언돼 있어, 인증이 필요하면
         // 아무 항목도 건드리기 전에 428 로 끝난다(부수효과 0).
@@ -948,7 +966,8 @@ class PostService
      */
     public function getAdjacentPosts(string $slug, int $id, array $filters = [], bool $withTrashed = false, ?Board $board = null): array
     {
-        // 게시판 존재성 검증 및 조회 (이전/다음 조회는 스코프 체크 불필요)
+        // 게시판 존재성 검증 및 조회. 이전/다음 후보에는 목록과 같은 읽기 스코프(본인만·소유역할)를 건다 —
+        // 걸지 않으면 목록에서 걸러진 남의 글 제목·ID 가 이전/다음 글로 나간다(#789).
         if (! $board) {
             $board = $this->boardService->getBoardBySlug($slug, checkScope: false);
         }
@@ -967,14 +986,20 @@ class PostService
             $filters['order_direction'] = $orderDirDefault instanceof \BackedEnum ? $orderDirDefault->value : ($orderDirDefault ?? 'desc');
         }
 
+        // 스코프 기준 권한 — 호출부가 정하지 않으면 사용자 목록과 같은 posts.read
+        $filters['scope_permission'] ??= "sirsoft-board.{$slug}.posts.read";
+
         $ttl = (int) g7_core_settings('cache.default_ttl', 86400);
         $category = $filters['category'] ?? null;
         $orderBy = $filters['order_by'] ?? 'id';
         $orderDirection = $filters['order_direction'] ?? 'desc';
+        // 스코프가 걸린 열람자는 결과가 사람마다 다르므로 키를 나눈다 — 전체 열람자는 지금처럼 공용 키
+        $scope = PermissionHelper::getEffectiveScope($filters['scope_permission']);
         $cacheKey = "adjacent_{$slug}_{$id}"
             .($category ? "_{$category}" : '')
             ."_{$orderBy}_{$orderDirection}"
-            .($withTrashed ? '_trashed' : '');
+            .($withTrashed ? '_trashed' : '')
+            .($scope !== null ? "_{$filters['scope_permission']}_{$scope}_".Auth::id() : '');
 
         return $this->cache->remember(
             $cacheKey,
@@ -1029,6 +1054,10 @@ class PostService
         $post->navigation = $this->getAdjacentPosts($slug, $id, filters: [
             'order_by' => $board->order_by instanceof \BackedEnum ? $board->order_by->value : $board->order_by,
             'order_direction' => $board->order_direction instanceof \BackedEnum ? $board->order_direction->value : $board->order_direction,
+            // 상세와 같은 컨텍스트의 읽기 스코프로 이전/다음 후보를 거른다
+            'scope_permission' => $context === 'admin'
+                ? "sirsoft-board.{$slug}.admin.posts.read"
+                : "sirsoft-board.{$slug}.posts.read",
         ], withTrashed: $canViewDeleted, board: $board);
 
         return $post;
@@ -1357,6 +1386,57 @@ class PostService
     }
 
     /**
+     * 스레드 비밀번호(답변의 비회원 조상 글 비밀번호)를 검증합니다.
+     *
+     * 비회원이 쓴 글(비밀글이든 공개 질문이든)에 달린 비밀 답변을, 그 비회원이 자기 글 비밀번호로
+     * 여는 경로입니다. 후보는 가까운 조상부터 「비회원·비밀번호 있음·살아 있음」인 글
+     * (최대 10개)이고, 처음 일치한 조상이 앵커가 됩니다. 해시는 한 번의 조회로 읽습니다.
+     * 게시판 설정이 답변마다 따로(per_post)이면 후보가 없어 적용 대상이 아닙니다.
+     *
+     * @param  Post  $post  열려는 답변 게시글
+     * @param  string  $password  입력된 비밀번호
+     * @param  Request|null  $request  HTTP 요청 (미지정 시 현재 요청)
+     * @return array{success: bool, error_key: string|null, error_code: int|null, anchor_id: int|null} 검증 결과
+     */
+    public function verifyThreadPassword(Post $post, string $password, ?Request $request = null): array
+    {
+        $notApplicable = [
+            'success' => false,
+            'error_key' => 'sirsoft-board::messages.posts.thread_password_not_applicable',
+            'error_code' => 400,
+            'anchor_id' => null,
+        ];
+
+        if (! $post->parent_id) {
+            return $notApplicable;
+        }
+
+        $candidates = app(SecretThreadAccess::class)->guestPasswordAncestorIds($post, $request ?? request());
+        if ($candidates === []) {
+            return $notApplicable;
+        }
+
+        $hashes = $this->postRepository->findPasswordHashesByIds((int) $post->board_id, $candidates);
+        foreach ($candidates as $candidateId) {
+            if (isset($hashes[$candidateId]) && Hash::check($password, $hashes[$candidateId])) {
+                return [
+                    'success' => true,
+                    'error_key' => null,
+                    'error_code' => null,
+                    'anchor_id' => $candidateId,
+                ];
+            }
+        }
+
+        return [
+            'success' => false,
+            'error_key' => 'sirsoft-board::messages.posts.password_incorrect',
+            'error_code' => 403,
+            'anchor_id' => null,
+        ];
+    }
+
+    /**
      * 사용자의 게시글 활동 목록을 조회합니다.
      *
      * 사용자가 작성한 게시글, 댓글을 단 게시글을 통합하여 반환합니다.
@@ -1465,7 +1545,7 @@ class PostService
             'viewer_id' => $viewerId,       // 비로그인은 null → 타인 관점
             'exclude_board_ids' => $viewerId !== null && $viewerId === $userId
                 ? []
-                : $this->boardService->getUnreadableActiveBoardIds(),
+                : $this->publicProfileExcludedBoardIds($userId),
         ]), $perPage);
     }
 
@@ -1484,7 +1564,7 @@ class PostService
         $viewerId = Auth::id();
         $excludeBoardIds = $viewerId !== null && $viewerId === $userId
             ? []
-            : $this->boardService->getUnreadableActiveBoardIds();
+            : $this->publicProfileExcludedBoardIds($userId);
         sort($excludeBoardIds);
         $cacheKey = "user_public_stats_v2_{$userId}_".md5(implode(',', $excludeBoardIds));
 
@@ -1494,6 +1574,29 @@ class PostService
             g7_core_settings('cache.default_ttl', 86400),
             tags: ['board-stats']
         );
+    }
+
+    /**
+     * 공개 프로필(남의 작성글·통계)에서 뺄 게시판 ID 를 돌려줍니다.
+     *
+     * 읽을 수 없는 게시판에 더해, 읽기 권한이 「본인만」·「소유역할」이라 그 작성자의 글이 범위 밖인
+     * 게시판도 뺀다 — 보유만 보면 상세는 403 인 글의 제목이 프로필 목록으로 나갔다.
+     *
+     * @param  int  $ownerId  프로필 주인 회원 ID
+     * @return array<int, int> 제외할 게시판 ID
+     */
+    private function publicProfileExcludedBoardIds(int $ownerId): array
+    {
+        $excluded = $this->boardService->getUnreadableActiveBoardIds();
+
+        if (! Auth::check()) {
+            return $excluded;
+        }
+
+        return array_values(array_unique(array_merge(
+            $excluded,
+            BoardReadScope::excludedBoardIdsForOwner($this->boardService->getReadableActiveBoards(), $ownerId)
+        )));
     }
 
     // =========================================================================
@@ -1553,13 +1656,14 @@ class PostService
      * @param  string  $sort  정렬 옵션
      * @param  int  $perPage  페이지당 항목 수
      * @param  int  $page  페이지 번호
+     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve() — 비면 스코프 없음)
      * @return BoundedPage 페이지 결과 (총 건수 정확도 포함)
      */
-    public function searchAcrossBoards(array $boardIds, string $keyword, string $sort = 'latest', int $perPage = 10, int $page = 1): BoundedPage
+    public function searchAcrossBoards(array $boardIds, string $keyword, string $sort = 'latest', int $perPage = 10, int $page = 1, array $readScope = []): BoundedPage
     {
         [$orderBy, $direction] = $this->resolveSortColumn($sort);
 
-        return $this->postRepository->searchAcrossBoards($boardIds, $keyword, $orderBy, $direction, $perPage, $page);
+        return $this->postRepository->searchAcrossBoards($boardIds, $keyword, $orderBy, $direction, $perPage, $page, $readScope);
     }
 
     /**
@@ -1575,6 +1679,7 @@ class PostService
      * @param  int  $perPage  페이지당 항목 수
      * @param  string|null  $cursor  인코딩된 커서 (첫 페이지면 null)
      * @param  int  $page  요청이 지목한 페이지 번호 (딥링크 판정용, 없으면 1)
+     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve() — 비면 스코프 없음)
      * @return CursorPaginator|null 커서 페이지 결과 (커서 적용 불가 시 null)
      */
     public function searchAcrossBoardsByCursor(
@@ -1583,7 +1688,8 @@ class PostService
         string $sort = 'latest',
         int $perPage = 10,
         ?string $cursor = null,
-        int $page = 1
+        int $page = 1,
+        array $readScope = []
     ): ?CursorPaginator {
         $sortKeys = SearchPagePolicy::sortKeys($sort, self::SEARCH_SORT_MAP);
 
@@ -1596,7 +1702,8 @@ class PostService
             $keyword,
             $sortKeys,
             $perPage,
-            $cursor
+            $cursor,
+            $readScope
         );
     }
 
@@ -1605,11 +1712,12 @@ class PostService
      *
      * @param  array  $boardIds  검색 대상 게시판 ID 목록
      * @param  string  $keyword  검색 키워드
+     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve() — 비면 스코프 없음)
      * @return BoundedCount 일치하는 게시글 수 (정확도 포함)
      */
-    public function countAcrossBoards(array $boardIds, string $keyword): BoundedCount
+    public function countAcrossBoards(array $boardIds, string $keyword, array $readScope = []): BoundedCount
     {
-        return $this->postRepository->countAcrossBoards($boardIds, $keyword);
+        return $this->postRepository->countAcrossBoards($boardIds, $keyword, $readScope);
     }
 
     // =========================================================================
@@ -1712,36 +1820,25 @@ class PostService
     }
 
     /**
-     * 비밀글 열람 확인 토큰을 발급해 캐시에 저장합니다.
+     * 비밀글 열람 토큰에 이 글의 grant 를 더해 돌려줍니다 (SecretViewTokenService 위임).
      *
      * 비밀번호를 맞혔다는 사실은 그 응답 하나에만 살아 있고 다음 요청으로 이어지지 않습니다
-     * (`$post->password_verified` 는 메모리 플래그입니다). 그런데 화면은 원문이 열린 사람에게
-     * 댓글·답글·신고를 내주므로, 그 후속 요청이 같은 사실을 제시할 통로가 필요합니다.
-     *
-     * 수정·삭제용 토큰(storeDeleteVerifyToken)과 달리 **소비하지 않습니다** — 열람자는 한
-     * 화면에서 댓글을 여러 번 달 수 있고, 1회용이면 두 번째부터 다시 비밀번호를 물어야 합니다.
-     * 대신 게시글 단위로 묶이고 유효기간이 있어, 권한 범위는 비밀번호를 아는 것과 같습니다.
+     * (`$post->password_verified` 는 메모리 플래그입니다). 그래서 브라우저 토큰 1개에 글별 grant 를
+     * 쌓아 후속 요청(댓글·답글·신고·답변 열람)이 같은 사실을 제시하게 합니다. 요청이 재사용 가능한
+     * 토큰을 제시했으면 그 토큰에 grant 만 더합니다.
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $postId  게시글 ID
+     * @param  Request|null  $request  HTTP 요청 (미지정 시 현재 요청)
      * @return array{token: string, expires_at: string} 토큰 및 만료 시각
      */
-    public function issueSecretViewToken(string $slug, int $postId): array
+    public function issueSecretViewToken(string $slug, int $postId, ?Request $request = null): array
     {
-        $ttl = (int) g7_core_settings('cache.post_verify_token_ttl', 3600);
-        $token = Str::random(40);
-        $expiresAt = now()->addSeconds($ttl);
-
-        $this->cache->put(self::secretViewTokenKey($slug, $postId, $token), true, $ttl);
-
-        return [
-            'token' => $token,
-            'expires_at' => $expiresAt->toIso8601String(),
-        ];
+        return app(SecretViewTokenService::class)->grant($request ?? request(), $slug, $postId);
     }
 
     /**
-     * 비밀글 열람 확인 토큰이 그 게시글에 대해 유효한지 확인합니다 (소비하지 않음).
+     * 비밀글 열람 토큰이 그 게시글의 살아 있는 grant 를 가졌는지 확인합니다 (SecretViewTokenService 위임).
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $postId  게시글 ID
@@ -1750,26 +1847,7 @@ class PostService
      */
     public function hasValidSecretViewToken(string $slug, int $postId, ?string $token): bool
     {
-        if (! is_string($token) || $token === '') {
-            return false;
-        }
-
-        return $this->cache->has(self::secretViewTokenKey($slug, $postId, $token));
-    }
-
-    /**
-     * 비밀글 열람 확인 토큰의 캐시 키를 만듭니다.
-     *
-     * 게시판 슬러그와 게시글 ID 를 키에 넣어, 한 글에서 받은 토큰이 다른 글에 통하지 않게 합니다.
-     *
-     * @param  string  $slug  게시판 슬러그
-     * @param  int  $postId  게시글 ID
-     * @param  string  $token  토큰
-     * @return string 캐시 키
-     */
-    private static function secretViewTokenKey(string $slug, int $postId, string $token): string
-    {
-        return "board_post_secret_view_{$slug}_{$postId}_{$token}";
+        return app(SecretViewTokenService::class)->tokenHasGrant($token, $slug, $postId);
     }
 
     /**

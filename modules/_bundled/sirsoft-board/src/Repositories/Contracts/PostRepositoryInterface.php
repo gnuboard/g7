@@ -234,6 +234,7 @@ interface PostRepositoryInterface
      * @param  string  $direction  정렬 방향 (asc, desc)
      * @param  int  $perPage  페이지당 항목 수
      * @param  int  $page  페이지 번호
+     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve() — 비면 스코프 없음)
      * @return array{total: int, items: Collection} 결과 객체
      */
     public function searchAcrossBoards(
@@ -242,7 +243,8 @@ interface PostRepositoryInterface
         string $orderBy = 'created_at',
         string $direction = 'desc',
         int $perPage = 10,
-        int $page = 1
+        int $page = 1,
+        array $readScope = []
     ): BoundedPage;
 
     /**
@@ -256,6 +258,7 @@ interface PostRepositoryInterface
      * @param  array<int, array{0: string, 1: string}>  $sortKeys  [[컬럼, 방향], ...]
      * @param  int  $perPage  페이지당 항목 수
      * @param  string|null  $cursor  인코딩된 커서 (첫 페이지면 null)
+     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve() — 비면 스코프 없음)
      * @return CursorPaginator 커서 페이지 결과
      */
     public function searchAcrossBoardsByCursor(
@@ -263,7 +266,8 @@ interface PostRepositoryInterface
         string $keyword,
         array $sortKeys,
         int $perPage = 10,
-        ?string $cursor = null
+        ?string $cursor = null,
+        array $readScope = []
     ): CursorPaginator;
 
     /**
@@ -271,9 +275,10 @@ interface PostRepositoryInterface
      *
      * @param  array  $boardIds  검색 대상 게시판 ID 목록
      * @param  string  $keyword  검색 키워드
+     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve() — 비면 스코프 없음)
      * @return BoundedCount 키워드와 일치하는 게시글 수 (정확도 포함)
      */
-    public function countAcrossBoards(array $boardIds, string $keyword): BoundedCount;
+    public function countAcrossBoards(array $boardIds, string $keyword, array $readScope = []): BoundedCount;
 
     /**
      * 사용자의 게시글 활동 통계를 조회합니다.
@@ -516,4 +521,42 @@ interface PostRepositoryInterface
      * @return Collection<int, Post> 최신 게시글 컬렉션
      */
     public function getRecentAcrossBoards(int $limit): Collection;
+
+    /**
+     * 비밀글 스레드 판정용 노드 요약을 ID 로 조회합니다 (삭제 글 포함, 게시판 한정).
+     *
+     * @param  int  $boardId  게시판 ID
+     * @param  array<int, int>  $ids  게시글 ID 목록
+     * @return array<int, array{id: int, parent_id: int|null, user_id: int|null, is_secret: bool, alive: bool, has_password: bool}> 노드 요약 목록
+     */
+    public function findThreadNodes(int $boardId, array $ids): array;
+
+    /**
+     * 비밀글 스레드 판정용 자식 노드 요약을 부모 ID 로 조회합니다 (삭제 글 포함, 게시판 한정).
+     *
+     * @param  int  $boardId  게시판 ID
+     * @param  array<int, int>  $parentIds  부모 게시글 ID 목록
+     * @return array<int, array{id: int, parent_id: int|null, user_id: int|null, is_secret: bool, alive: bool, has_password: bool}> 노드 요약 목록
+     */
+    public function findThreadChildNodes(int $boardId, array $parentIds): array;
+
+    /**
+     * 회원이 이 게시판에 답변(부모가 있는 글)을 하나라도 썼는지 확인합니다 (삭제 글 제외).
+     *
+     * @param  int  $boardId  게시판 ID
+     * @param  int  $userId  회원 ID
+     * @return bool 답변 존재 여부
+     */
+    public function userHasReplyInBoard(int $boardId, int $userId): bool;
+
+    /**
+     * 스레드 비밀번호 검증 전용으로 글 비밀번호 해시를 조회합니다.
+     *
+     * 해시를 읽는 경로를 이 메서드 하나로 모은다 — 다른 조회는 해시를 싣지 않는다.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @param  array<int, int>  $ids  게시글 ID 목록
+     * @return array<int, string> 게시글 ID ⇒ 비밀번호 해시 (비밀번호 없는 글은 빠진다)
+     */
+    public function findPasswordHashesByIds(int $boardId, array $ids): array;
 }

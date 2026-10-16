@@ -13,7 +13,7 @@
 | 스타일 시스템 | `tailwind` |
 | 다크 모드 전략 | `ancestor-class` |
 
-> 분할 13블록 · 팔레트 45 · 스타일 컨트롤 175 · 편집 역량 51 · 중첩 컨테이너 14 · 프리뷰 샘플 66 · 엔드포인트 샘플 1 · 페이지 상태 48 · 액션 레시피 20
+> 분할 13블록 · 팔레트 45 · 스타일 컨트롤 175 · 편집 역량 51 · 중첩 컨테이너 14 · 프리뷰 샘플 66 · 엔드포인트 샘플 1 · 페이지 상태 48 · 액션 레시피 21
 <!-- @generated:editor-spec-summary END -->
 
 <!-- @intent START -->
@@ -41,7 +41,7 @@
 | `sampleGlobal` | `_global.*` 프리뷰 baseline 시드 | 7 | `editor-spec/sampleGlobal.json` |
 | `states.groups` | 상태 변종을 적용할 범위(라우트·베이스 레이아웃) | 48 | `editor-spec/states.json` |
 | `stateLabels` | 상태값 친화 명칭 카탈로그 | 7 | `editor-spec/stateLabels.json` |
-| `actionRecipes` | 친화 명칭 → 액션 JSON 레시피 | 20 | `editor-spec/actionRecipes.json` |
+| `actionRecipes` | 친화 명칭 → 액션 JSON 레시피 | 21 | `editor-spec/actionRecipes.json` |
 | `conditionRecipes.operators` | 조건 표현식에 쓸 수 있는 연산자 | 37 | `editor-spec/conditionRecipes.json` |
 | `computedRecipes` | 계산값 레시피 | 4 | `editor-spec/computedRecipes.json` |
 | `errorRecipes` | 오류 처리 레시피 | 7 | `editor-spec/errorRecipes.json` |

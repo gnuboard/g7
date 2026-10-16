@@ -9,6 +9,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\AdminUserAddressBulkDeleteRequ
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\AdminUserAddressListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\AdminUserAddressCollection;
 use Modules\Sirsoft\Ecommerce\Services\UserAddressService;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 관리자 회원 배송지 관리 컨트롤러
@@ -69,7 +70,13 @@ class AdminUserAddressController extends AdminBaseController
      */
     public function destroy(int $id): JsonResponse
     {
-        if (! $this->addressService->deleteByAdmin($id)) {
+        try {
+            $deleted = $this->addressService->deleteByAdmin($id);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        }
+
+        if (! $deleted) {
             return ResponseHelper::notFound('common.not_found');
         }
 
@@ -85,7 +92,11 @@ class AdminUserAddressController extends AdminBaseController
     public function bulkDestroy(AdminUserAddressBulkDeleteRequest $request): JsonResponse
     {
         $ids = array_map('intval', $request->validated()['ids']);
-        $count = $this->addressService->bulkDeleteByAdmin($ids);
+        try {
+            $count = $this->addressService->bulkDeleteByAdmin($ids);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        }
 
         return ResponseHelper::moduleSuccess(
             'sirsoft-ecommerce',

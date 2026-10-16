@@ -4106,7 +4106,19 @@
           "onChange": {
             "type": "function",
             "required": false,
-            "description": "선택 변경 콜백 (e: { target: { value: number[] } }) => void"
+            "description": "선택 변경 콜백 (e: { target: { value: { id: number, scope_type: string | null }[] } }) => void"
+          },
+          "scopeOptions": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "범위 드롭다운 선택지 ({ value, label }[] — 권한 API 의 scope_options). 비면 드롭다운을 그리지 않음"
+          },
+          "scopeDisabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "역할 단위로 범위 드롭다운을 숨김 — 범위를 가질 수 없는 역할(비회원, 역할 응답의 supports_permission_scope === false)"
           },
           "disabled": {
             "type": "boolean",

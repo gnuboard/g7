@@ -156,7 +156,8 @@ describe('게시판 환경설정 일괄 적용 (제품 결정: 환경설정 수�
    */
   it('일괄 적용 체크박스 전부가 canBulkApply=false 면 disabled', () => {
     const boxes = subTabs.flatMap((tab) => collect(tab, (n) => n.props?.type === 'checkbox' && String(n.props?.checked ?? '').includes('bulkApplyFields')));
-    expect(boxes.length).toBe(35);
+    // 36 = 기존 35 + 답변 탭의 「비밀 답변 열람 범위」(secret_reply_visibility, #789)
+    expect(boxes.length).toBe(36);
     for (const box of boxes) {
       expect(evaluate(box.props.disabled, { _computed: { canBulkApply: false } })).toBe(true);
       expect(evaluate(box.props.disabled, { _computed: { canBulkApply: true } })).toBe(false);

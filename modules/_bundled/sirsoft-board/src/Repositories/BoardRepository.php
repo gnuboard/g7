@@ -229,7 +229,7 @@ class BoardRepository implements BoardRepositoryInterface
         }
 
         // 반응 합계는 이 캐시 컬럼에서 나온다 — 빼면 위젯에서만 반응이 항상 0/누락된다.
-        $columns = ['id', 'board_id', 'title', 'author_name', 'created_at', 'view_count', 'is_secret', 'comments_count', 'reaction_counts'];
+        $columns = ['id', 'board_id', 'user_id', 'title', 'author_name', 'created_at', 'view_count', 'is_secret', 'comments_count', 'reaction_counts'];
 
         // board_id IN (...) + ORDER BY created_at DESC → 풀스캔 방지
         // 각 board_id별 개별 쿼리(인덱스 활용) 후 UNION ALL로 합침
@@ -282,6 +282,8 @@ class BoardRepository implements BoardRepositoryInterface
             'is_new' => $post->created_at && $post->created_at->diffInHours(now()) < $newHours,
             // 캐시에서 꺼낼 때 보는 사람의 시간대·지금 시각으로 날짜 표기와 New 를 다시 계산하는 원본(UTC) — 응답 전에 뺀다
             '_created_at' => $post->created_at?->toIso8601String(),
+            // 읽기 스코프(본인만·소유역할) 판정용 작성자 ID — 응답 전에 뺀다
+            '_owner_id' => $post->user_id !== null ? (int) $post->user_id : null,
         ])->toArray();
     }
 
@@ -350,8 +352,8 @@ class BoardRepository implements BoardRepositoryInterface
      */
     public function getBoardRecentPostsById(int $boardId, int $limit): array
     {
-        // 반응 게이트 판정용 — 설정 두 칸만 읽는다
-        $board = Board::select(['id', 'use_reaction', 'active_reaction_types'])->find($boardId);
+        // 반응 게이트 판정용 설정 두 칸 + 읽기 스코프 판정용 슬러그
+        $board = Board::select(['id', 'slug', 'use_reaction', 'active_reaction_types'])->find($boardId);
 
         $posts = Post::query()
             ->select([
@@ -370,6 +372,8 @@ class BoardRepository implements BoardRepositoryInterface
             ->whereNull('deleted_at')
             ->whereNull('parent_id')
             ->where('status', 'published')
+            // 게시판 디렉터리의 내장 최근글도 목록과 같은 읽기 스코프(본인만·소유역할)를 건다
+            ->when($board?->slug, fn ($q, $slug) => PermissionHelper::applyPermissionScope($q, "sirsoft-board.{$slug}.posts.read"))
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();

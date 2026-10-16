@@ -395,6 +395,9 @@ class PostController extends AdminBaseController
             return $this->error($e->getMessageKey(), 409);
         } catch (ModelNotFoundException $e) {
             throw new PostNotFoundException($id);
+        } catch (AccessDeniedHttpException $e) {
+            // 게시판 관리 권한의 게시판 스코프 밖 — \Exception 이 삼켜 500 이 되지 않게 먼저 받는다
+            return $this->error('auth.scope_denied', 403);
         } catch (BoardNotFoundException|PostNotFoundException $e) {
             // 404 예외는 그대로 던짐
             throw $e;
@@ -429,6 +432,9 @@ class PostController extends AdminBaseController
             );
         } catch (ModelNotFoundException $e) {
             throw new PostNotFoundException($id);
+        } catch (AccessDeniedHttpException $e) {
+            // 게시판 관리 권한의 게시판 스코프 밖 — \Exception 이 삼켜 500 이 되지 않게 먼저 받는다
+            return $this->error('auth.scope_denied', 403);
         } catch (BoardNotFoundException|PostNotFoundException $e) {
             // 404 예외는 그대로 던짐
             throw $e;
@@ -724,6 +730,9 @@ class PostController extends AdminBaseController
             throw new BoardNotFoundException($slug);
         } catch (BoardNotFoundException $e) {
             throw $e;
+        } catch (AccessDeniedHttpException $e) {
+            // 게시판 스코프 밖 — 전량 거부(아무 항목도 처리하지 않음). \Exception 보다 먼저 받아 403 으로 낸다
+            return $this->error('auth.scope_denied', 403);
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.posts_bulk.action_failed', 500, $e->getMessage());
         }

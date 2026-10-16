@@ -17,6 +17,7 @@ use Modules\Sirsoft\Board\Listeners\BoardCommentsCountSyncListener;
 use Modules\Sirsoft\Board\Listeners\BoardNotificationChannelListener;
 use Modules\Sirsoft\Board\Listeners\BoardNotificationDataListener;
 use Modules\Sirsoft\Board\Listeners\BoardPostsCountSyncListener;
+use Modules\Sirsoft\Board\Listeners\BoardScopeLedgerListener;
 use Modules\Sirsoft\Board\Listeners\Ckeditor5ReferenceSourcesListener;
 use Modules\Sirsoft\Board\Listeners\CommentReplySyncListener;
 use Modules\Sirsoft\Board\Listeners\EcommerceInquiryHookListener;
@@ -24,6 +25,7 @@ use Modules\Sirsoft\Board\Listeners\PostAttachmentCountSyncListener;
 use Modules\Sirsoft\Board\Listeners\PostCountSyncListener;
 use Modules\Sirsoft\Board\Listeners\PostReplySyncListener;
 use Modules\Sirsoft\Board\Listeners\PrivacyRetentionHandlerListener;
+use Modules\Sirsoft\Board\Listeners\ProvideNecessaryStorageKeysListener;
 use Modules\Sirsoft\Board\Listeners\SearchPostsListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardCacheListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardRegenerateListener;
@@ -297,10 +299,10 @@ class Module extends AbstractModule
                     ],
                 ],
                 // 신고 관리 권한 (type: admin)
+                // 범위(resource_route_key·owner_key)를 선언하지 않는다 — 신고는 게시판을 가로지르는 운영 업무라
+                // 「본인만」의 자연스러운 뜻이 없고, 1케이스 구조 뒤 케이스 테이블에 신고자 컬럼도 없다(#789).
                 [
                     'identifier' => 'reports',
-                    'resource_route_key' => 'report',
-                    'owner_key' => 'reporter_id',
                     'name' => [
                         'ko' => '게시판 신고 관리',
                         'en' => 'Report Management',
@@ -557,6 +559,10 @@ class Module extends AbstractModule
             UserScrapInfoListener::class,
             UserReactionInfoListener::class,
             PrivacyRetentionHandlerListener::class,
+            // 개인정보 동의 플러그인에 비밀글 열람 토큰 키를 필수 저장 키로 제공 (#789)
+            ProvideNecessaryStorageKeysListener::class,
+            // 스코프 강제 지점 원장 — 감사 전용(런타임 동작 무변경), #789
+            BoardScopeLedgerListener::class,
         ];
     }
 

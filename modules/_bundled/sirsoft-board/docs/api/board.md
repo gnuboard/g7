@@ -1581,6 +1581,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.manage`)이 없는 경우 |
+| 403 | Forbidden | 게시판 관리 권한의 범위(「본인이 만든 게시판만」·「소유역할」) 밖 게시판 (`auth.scope_denied`, 1.2.1+) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1747,6 +1748,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.manage`)이 없는 경우 |
+| 403 | Forbidden | 게시판 관리 권한의 범위(「본인이 만든 게시판만」·「소유역할」) 밖 게시판 (`auth.scope_denied`, 1.2.1+) |
 | 404 | Not Found | 슬러그에 해당하는 게시판 또는 ID 에 해당하는 게시글이 없는 경우 (`존재하지 않는 게시글입니다.`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`reason` 이 1000자를 초과하는 등) |
 | 500 | Internal Server Error | 복원 처리 실패 (`게시글 복원에 실패했습니다.`) |
@@ -2172,6 +2174,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.manage`)이 없는 경우 |
+| 403 | Forbidden | 게시판 관리 권한의 범위(「본인이 만든 게시판만」·「소유역할」) 밖 게시판 (`auth.scope_denied`, 1.2.1+) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -2306,6 +2309,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.manage`)이 없거나, 게시판의 댓글 기능이 꺼진 경우 (`이 게시판은 댓글 기능이 비활성화되어 있습니다.`) |
+| 403 | Forbidden | 게시판 관리 권한의 범위(「본인이 만든 게시판만」·「소유역할」) 밖 게시판 (`auth.scope_denied`, 1.2.1+) |
 | 404 | Not Found | ID 에 해당하는 댓글 또는 슬러그에 해당하는 게시판이 없는 경우 (`댓글을 찾을 수 없습니다.`) |
 | 409 | Conflict | 원글이 삭제된 상태에서 댓글만 복구하려 한 경우 (`원글이 삭제된 상태라 댓글만 복구할 수 없습니다. 원글을 먼저 복구해 주세요.`) — 원글을 복구하면 함께 지워진 댓글도 돌아온다(1.2.0+) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
@@ -2415,6 +2419,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | `sirsoft-board.{slug}.admin.manage` 권한이 없는 경우 |
+| 403 | Forbidden | 게시판 관리 권한의 범위 밖 게시판 — 아무 글도 처리하지 않고 전량 거부 (`auth.scope_denied`, 1.2.1+) |
 | 404 | Not Found | 슬러그에 해당하는 게시판이 없는 경우 |
 | 422 | Unprocessable Entity | `ids` 가 비었거나 100개를 넘거나 정수가 아닌 경우 |
 | 428 | Identity Verification Required | 본인인증 정책이 켜져 있고 미충족인 경우 (아무 항목도 처리되지 않음) |

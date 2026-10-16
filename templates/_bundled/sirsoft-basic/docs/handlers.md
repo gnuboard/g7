@@ -5,7 +5,7 @@
 ## 템플릿 전용 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 34개 (정의: `src/handlers/index.ts`).
+핸들러 37개 (정의: `src/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -43,11 +43,14 @@
 | `saveGuestOrderToken` | (템플릿 전용 — 네임스페이스 없음) |
 | `clearGuestOrderToken` | (템플릿 전용 — 네임스페이스 없음) |
 | `clearGuestTokenOnEntry` | (템플릿 전용 — 네임스페이스 없음) |
+| `initSecretViewToken` | (템플릿 전용 — 네임스페이스 없음) |
+| `saveSecretViewToken` | (템플릿 전용 — 네임스페이스 없음) |
+| `clearSecretViewToken` | (템플릿 전용 — 네임스페이스 없음) |
 <!-- @generated:handlers END -->
 
 <!-- @intent START -->
-33개가 **두 종류로 갈립니다** — 네임스페이스를 붙여 등록한 11개(`sirsoft-basic.*`)와 붙이지
-않은 22개. 레이아웃에서 부를 때 전자는 전체 이름을 그대로 써야 하고, 후자는 이름만 씁니다.
+37개가 **두 종류로 갈립니다** — 네임스페이스를 붙여 등록한 12개(`sirsoft-basic.*`)와 붙이지
+않은 25개. 레이아웃에서 부를 때 전자는 전체 이름을 그대로 써야 하고, 후자는 이름만 씁니다.
 
 | 무리 | 예 | 무엇을 하는가 |
 |---|---|---|
@@ -57,6 +60,7 @@
 | 장바구니 8 | `toggleCartItemSelection` · `setCartOption` · `recalculateCart` · `findMatchingOption` 등 | 선택·옵션 변경·재계산 |
 | 저장소 6 | `initCartKey` · `getCartKey` · `saveToStorage` 등 | 비회원 장바구니 키 관리(localStorage + API 발급) |
 | 비회원 주문 4 | `initGuestOrderToken` · `saveGuestOrderToken` · `clearGuestOrderToken` · `clearGuestTokenOnEntry` | 비회원 주문 조회 토큰 보관·폐기 |
+| 비밀글 열람 3 | `initSecretViewToken` · `saveSecretViewToken` · `clearSecretViewToken` | 비밀번호로 연 비밀글의 열람 토큰을 탭 세션에 보관·복원·폐기 |
 | 기타 2 | `redirectToLoginWithReturn` · `downloadAttachment` | 로그인 후 원래 자리 복귀, 첨부 내려받기 |
 | 가드 (`sirsoft-basic.*` 1) | `markLocalOnce` | 데이터소스 onSuccess 를 화면 진입마다 한 번만 돌게 한다 |
 
@@ -71,6 +75,12 @@
 (서버측 `VerifyGuestOrderToken` 이 그것만 보고 주문을 엽니다), 브라우저에 남아 있으면 다음
 사용자가 남의 주문을 열 수 있습니다. `clearGuestTokenOnEntry` 가 진입 시점에 정리하는 것이
 그 방어입니다.
+
+**비밀글 열람 토큰 3종도 같은 이유로 탭 세션(sessionStorage)에만 둡니다.** 비밀번호로 비밀글을
+연 사실은 서버가 토큰 하나에 글별로 기록하고, 화면은 그 토큰을 `X-Board-Secret-View-Token` 헤더로
+싣습니다. 메모리에만 두면 답변 링크(전체 이동)·새로고침에서 사라져 같은 스레드의 답변이 다시 잠기고,
+localStorage 에 두면 탭을 닫아도 남습니다. 로그인·로그아웃 경계에서는 인증 경계 정리
+(`authBoundaryStorage`)가 함께 지웁니다 — 서버가 토큰을 발급한 신원에 묶기 때문입니다.
 
 `setLocale` 은 이 템플릿의 핸들러가 아닙니다 — 엔진(`ActionDispatcher`) 빌트인이라 등록이
 필요 없습니다.

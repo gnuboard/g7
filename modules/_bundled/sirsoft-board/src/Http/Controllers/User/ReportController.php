@@ -17,6 +17,8 @@ use Modules\Sirsoft\Board\Http\Resources\UserReportCollection;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\BoardSettingsService;
 use Modules\Sirsoft\Board\Services\ReportService;
+use Modules\Sirsoft\Board\Support\BoardReadScope;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 사용자용 신고 컨트롤러
@@ -91,6 +93,10 @@ class ReportController extends AuthBaseController
                 return $this->error('sirsoft-board::messages.reports.report_disabled', 403);
             }
 
+            // 읽기 스코프(본인만·소유역할) 밖 글·댓글은 신고할 수 없다 — 라우트가 {postId}·{commentId} 라
+            // 미들웨어 스코프 검사가 돌지 않는다
+            BoardReadScope::assertTargetReadable($board, $targetType->value, $targetId);
+
             // 본인 글 신고 검증
             if ($this->reportService->isOwnContent($board->id, $targetType->value, $targetId, Auth::id())) {
                 return $this->error('sirsoft-board::messages.reports.cannot_report_own', 403);
@@ -140,6 +146,8 @@ class ReportController extends AuthBaseController
             return $this->notFound('sirsoft-board::messages.boards.error_404');
         } catch (DuplicateReportException $e) {
             return $this->error('sirsoft-board::messages.reports.duplicate_report', 409);
+        } catch (AccessDeniedHttpException) {
+            return $this->error('auth.scope_denied', 403);
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.reports.create_failed', 500, $e->getMessage());
         }

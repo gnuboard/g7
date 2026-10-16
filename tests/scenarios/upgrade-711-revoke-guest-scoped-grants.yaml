@@ -1,0 +1,29 @@
+feature: 7.1.1 업그레이드 — 비회원 역할 권한 범위 회수
+
+description: |
+  업그레이드 스텝 RevokeGuestScopedPermissionGrants 가 비회원 역할에 범위(본인·소유역할)가 붙은 부여를 삭제하고
+  건마다 경고 로그를 남긴다. 범위를 지우고 「전체」 로 남기면 좁히려던 권한이 오히려 넓어지므로 삭제한다.
+  회수한 식별자를 비회원 역할 user_overrides 에 합집합으로 기록해, 이후 코어·확장 동기화가 범위 없이(전체)
+  되살리지 못하게 한다. 다른 역할과 범위 없는 비회원 부여는 그대로다. 두 번째 실행은 바꿀 것이 없다.
+
+test_files:
+  - tests/Feature/Upgrades/Upgrade_7_1_1_RevokeGuestScopedGrantsTest.php
+
+axes:
+  case:
+    - revoke_scoped_guest_grants
+    - resync_after_revoke
+    - idempotent
+    - overrides_already_recorded
+    - no_guest_role
+
+effects:
+  - guest_scoped_grants_deleted
+  - revoke_logged_per_grant
+  - other_roles_untouched
+  - unscoped_guest_grants_untouched
+  - revoked_identifiers_recorded_in_user_overrides
+  - later_sync_does_not_reattach_as_full_access
+  - revoke_step_is_idempotent
+  - missing_guest_role_is_skipped_with_log
+  - already_recorded_overrides_untouched_and_logged

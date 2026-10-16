@@ -68,6 +68,32 @@
               </select>
             </div>
           </div>
+          <div data-ref="field_secret_reply_visibility" class="">
+            <div class="flex-center gap-4">
+              <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
+                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('secret_reply_visibility')}}" disabled="{{!_computed.canBulkApply}}">
+                  <on type="change">
+                    <!-- 이 항목을 일괄 적용 대상에 넣고 뺀다. 배열에서 빼고 다시 넣는 식이라 같은 값이 두 번 들어가지 않는다 -->
+                    <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('secret_reply_visibility') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'secret_reply_visibility') : [...(_local.bulkApplyFields ?? []), 'secret_reply_visibility']}}"/>
+                  </on>
+                </input>
+                <div>
+                  <span>$t:sirsoft-board.admin.settings.fields.secret_reply_visibility</span>
+                  <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.secret_reply_visibility</p>
+                </div>
+              </label>
+              <select name="basic_defaults.secret_reply_visibility" class="w-48 flex-shrink-0 text-sm" disabled="{{_computed.isReadOnly}}">
+                <prop name="options">
+                  <item value="thread_path" label="$t:sirsoft-board.admin.settings.options.secret_reply_visibility.thread_path" description="$t:sirsoft-board.admin.settings.options.secret_reply_visibility_descriptions.thread_path"/>
+                  <item value="descendants_only" label="$t:sirsoft-board.admin.settings.options.secret_reply_visibility.descendants_only" description="$t:sirsoft-board.admin.settings.options.secret_reply_visibility_descriptions.descendants_only"/>
+                  <item value="per_post" label="$t:sirsoft-board.admin.settings.options.secret_reply_visibility.per_post" description="$t:sirsoft-board.admin.settings.options.secret_reply_visibility_descriptions.per_post"/>
+                </prop>
+              </select>
+            </div>
+            <p data-ref="secret_reply_visibility_description_thread_path" data-if="{{(_local.form?.basic_defaults?.secret_reply_visibility ?? 'thread_path') === 'thread_path'}}" class="text-field-hint mt-1">$t:sirsoft-board.admin.settings.options.secret_reply_visibility_descriptions.thread_path</p>
+            <p data-ref="secret_reply_visibility_description_descendants_only" data-if="{{_local.form?.basic_defaults?.secret_reply_visibility === 'descendants_only'}}" class="text-field-hint mt-1">$t:sirsoft-board.admin.settings.options.secret_reply_visibility_descriptions.descendants_only</p>
+            <p data-ref="secret_reply_visibility_description_per_post" data-if="{{_local.form?.basic_defaults?.secret_reply_visibility === 'per_post'}}" class="text-field-hint mt-1">$t:sirsoft-board.admin.settings.options.secret_reply_visibility_descriptions.per_post</p>
+          </div>
         </div>
       </section-layout>
     </div>

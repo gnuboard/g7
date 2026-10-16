@@ -90,6 +90,7 @@
     "use_reply": "回答投稿の使用",
     "max_reply_depth": "回答投稿の最大深さ",
     "reply_delete_policy": "返信の削除方式",
+    "secret_reply_visibility": "非公開返信の閲覧範囲",
     "use_comment": "コメントの使用",
     "comment_order": "コメント並べ替え順序",
     "min_comment_length": "最小コメント文字数",
@@ -179,6 +180,7 @@
       "use_reply": "ON に設定する必要があります。新規掲示板に返信投稿機能が適用されます。",
       "max_reply_depth": "返信投稿の最大ネスト深さを設定します ({{min}}~{{max}})",
       "reply_delete_policy": "返信が付いた投稿を削除するときの動作を設定します",
+      "secret_reply_visibility": "非公開投稿のスレッドで、元の投稿・返信の作成者とパスワード確認者が互いの投稿をどこまで閲覧できるかを設定します",
       "blocked_keywords": "登録されたキーワードを含む投稿/コメントは作成がブロックされます",
       "use_comment": "ON に設定する必要があります。新規掲示板にコメント機能が適用されます。以下のコメント詳細設定も一緒に適用されます。",
       "comment_order": "コメントのデフォルト並べ替え方向を設定します",
@@ -224,6 +226,16 @@
     "reply_delete_policy": {
       "block": "削除をブロック",
       "cascade": "一緒に削除"
+    },
+    "secret_reply_visibility": {
+      "thread_path": "パスルール（既定）",
+      "descendants_only": "下位のみ",
+      "per_post": "返信ごとに個別"
+    },
+    "secret_reply_visibility_descriptions": {
+      "thread_path": "元の投稿を閲覧できる人はその下の返信を、返信の作成者は自分の返信の元の投稿まで閲覧できます。他の人の返信の枝は非表示になります。",
+      "descendants_only": "元の投稿を閲覧できる人はその下の返信を閲覧できます。返信の作成者は自分の返信とその下だけを閲覧できます。",
+      "per_post": "非公開の返信は、その返信の作成者と非公開投稿の閲覧権限を持つ人だけが閲覧できます。元の投稿の作成者も返信を閲覧できません。"
     },
     "order_by": {
       "created_at": "最新順",
@@ -311,6 +323,7 @@
       "use_reply": "返信コメント使用",
       "max_reply_depth": "返信コメント最大深さ",
       "reply_delete_policy": "返信の削除方式",
+      "secret_reply_visibility": "非公開返信の閲覧範囲",
       "max_comment_depth": "返信の返信最大深さ",
       "comment_order": "コメント並べ替え順序",
       "show_view_count": "閲覧数表示",

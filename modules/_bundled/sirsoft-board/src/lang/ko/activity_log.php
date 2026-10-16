@@ -109,6 +109,7 @@ return [
         'use_reply' => '답글 사용',
         'max_reply_depth' => '최대 답글 깊이',
         'reply_delete_policy' => '답글 삭제 방식',
+        'secret_reply_visibility' => '비밀 답변 열람 범위',
         'use_report' => '신고 사용',
         'use_scrap' => '스크랩 사용',
         'use_comment_reaction' => '댓글 반응 사용',

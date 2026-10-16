@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class RoleService
 {
@@ -289,6 +290,10 @@ class RoleService
         // 자신의 범위(scope)보다 넓은 범위의 권한을 부여할 수 없다(SSoT 가드에 위임).
         $this->escalationGuard->assertGrantWithinActorCeiling($permissions);
 
+        // 비회원 역할은 권한 범위(본인·소유역할)를 가질 수 없다(7.1.1). 요청 검증(422)과 같은 판정 —
+        // 이 메서드는 public 이라 확장이 요청을 거치지 않고 부를 수 있으므로 여기서도 막는다.
+        $this->assertScopeSupported($role, $permissions);
+
         // 동기화 전 현재 권한 식별자 캡처 (Listener diff 계산용)
         $previousPermIdentifiers = $role->permissions()->pluck('identifier')->toArray();
 
@@ -310,6 +315,33 @@ class RoleService
 
         // 훅: 권한 동기화 후 (이전/이후 식별자 모두 전달)
         HookManager::doAction('core.role.after_sync_permissions', $role, $previousPermIdentifiers, $currentPermIdentifiers);
+    }
+
+    /**
+     * 스코프를 지원하지 않는 역할(비회원)에 스코프가 실린 부여가 있으면 거부합니다.
+     *
+     * @param  Role  $role  대상 역할
+     * @param  array<int, array{id: int, scope_type?: string|null}>  $permissions  부여할 권한 목록
+     * @return void 반환값 없음
+     *
+     * @throws ValidationException 비회원 역할에 스코프가 실렸을 때
+     */
+    private function assertScopeSupported(Role $role, array $permissions): void
+    {
+        if ($role->supportsPermissionScope()) {
+            return;
+        }
+
+        $errors = [];
+        foreach (array_values($permissions) as $index => $permission) {
+            if (($permission['scope_type'] ?? null) !== null) {
+                $errors["permissions.{$index}.scope_type"] = __('role.validation.guest_scope_not_allowed');
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
     }
 
     /**

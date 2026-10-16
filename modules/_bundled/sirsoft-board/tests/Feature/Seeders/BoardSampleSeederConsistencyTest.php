@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Tests\Feature\Seeders;
 use App\Models\ActivityLog;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\ExtensionStoragePath;
 use Illuminate\Console\Command;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,7 @@ use Modules\Sirsoft\Board\Database\Seeders\Sample\ReactionScrapSampleSeeder;
 use Modules\Sirsoft\Board\Database\Seeders\Sample\ReportSampleSeeder;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Models\Report;
+use Modules\Sirsoft\Board\Services\BoardSettingsService;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\NullOutput;
@@ -125,13 +127,48 @@ class BoardSampleSeederConsistencyTest extends ModuleTestCase
      */
     public function test_fresh_sample_seed_keeps_operational_invariants(): void
     {
-        ['blocked' => $blocked] = $this->prepareUsers();
-        $this->runSampleSeeders();
+        $restore = $this->pinDefaultReportPolicy();
 
-        $this->assertBoardSettings();
-        $this->assertPostInvariants($blocked);
-        $this->assertReactionInvariants();
-        $this->assertReportInvariants();
+        try {
+            ['blocked' => $blocked] = $this->prepareUsers();
+            $this->runSampleSeeders();
+
+            $this->assertBoardSettings();
+            $this->assertPostInvariants($blocked);
+            $this->assertReactionInvariants();
+            $this->assertReportInvariants();
+        } finally {
+            $restore();
+        }
+    }
+
+    /**
+     * 신고 정책을 모듈 기본값으로 고정하고, 끝나면 원래 파일 상태로 되돌리는 함수를 돌려줍니다.
+     *
+     * 테스트 환경의 모듈 설정 저장소는 프로세스·세션 사이에서 공유되는 실제 디렉터리라, 다른 시험
+     * (신고 알림 시험의 `auto_hide_threshold = 100` 등)이 남긴 값이 시더와 단언으로 새어 「대량 신고 케이스」
+     * 기준이 준비한 회원 수보다 커지면 이 시험이 환경에 따라 실패했다(#789 V8). 기본값으로 고정해 전제를 지킨다.
+     *
+     * @return \Closure 원래 상태로 되돌리는 함수
+     */
+    private function pinDefaultReportPolicy(): \Closure
+    {
+        $service = app(BoardSettingsService::class);
+        $file = ExtensionStoragePath::module('sirsoft-board', 'settings').'/report_policy.json';
+        $original = is_file($file) ? file_get_contents($file) : null;
+
+        $defaults = json_decode((string) file_get_contents((string) $service->getSettingsDefaultsPath()), true);
+        $service->setSetting('report_policy.auto_hide_threshold', (int) ($defaults['defaults']['report_policy']['auto_hide_threshold'] ?? 5));
+        $service->clearCache();
+
+        return function () use ($service, $file, $original): void {
+            if ($original === null) {
+                @unlink($file);
+            } else {
+                file_put_contents($file, $original);
+            }
+            $service->clearCache();
+        };
     }
 
     /**
@@ -152,6 +189,9 @@ class BoardSampleSeederConsistencyTest extends ModuleTestCase
         $this->assertSame(['like'], json_decode($boards['gallery']->active_reaction_types, true));
         $this->assertSame(0, (int) $boards['notice']->use_reaction);
         $this->assertSame('block', $boards['qna']->reply_delete_policy);
+        // 비밀 답변 열람 범위(#789 D19): qna 는 답변마다 따로, 지정하지 않은 게시판은 기본값 경로 규칙
+        $this->assertSame('per_post', $boards['qna']->secret_reply_visibility);
+        $this->assertSame('thread_path', $boards['free']->secret_reply_visibility);
         $this->assertSame(0, (int) $boards['qna']->use_comment_reaction);
 
         // B-23: 지정 안 한 입력 제한은 DB 기본값(10)이 아니라 모듈 기본값(2)

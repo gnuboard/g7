@@ -215,8 +215,9 @@ class BoardRecentPostsApiTest extends ModuleTestCase
         $response1 = $this->getJson('/api/modules/sirsoft-board/boards/posts/recent?limit=5');
         $response1->assertStatus(200);
 
-        // 캐시 키 확인 (ModuleCacheDriver 접두사 `g7:module.sirsoft-board:` + key, 게시판 이름이 언어별 값이라 키에 언어가 붙는다)
-        $this->assertTrue(Cache::has('g7:module.sirsoft-board:recent_posts_5_'.app()->getLocale()));
+        // 캐시 키 확인 (ModuleCacheDriver 접두사 `g7:module.sirsoft-board:` + key, 게시판 이름이 언어별 값이라 키에 언어가 붙는다).
+        // v2 는 항목에 작성자 ID(읽기 범위 판정용)를 담은 뒤의 키다(#789 B12)
+        $this->assertTrue(Cache::has('g7:module.sirsoft-board:recent_posts_v2_5_'.app()->getLocale()));
 
         // When: 두 번째 API 호출
         $response2 = $this->getJson('/api/modules/sirsoft-board/boards/posts/recent?limit=5');

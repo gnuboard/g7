@@ -9,6 +9,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
+use Modules\Sirsoft\Board\Enums\SecretReplyVisibility;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Models\ReactionType;
@@ -226,6 +227,7 @@ class StoreBoardSettingsRequest extends FormRequest
             'basic_defaults.use_reply' => ['nullable', 'boolean'],
             'basic_defaults.max_reply_depth' => ['nullable', 'integer', "min:{$maxReplyDepthMin}", "max:{$maxReplyDepthMax}"],
             'basic_defaults.reply_delete_policy' => ['nullable', 'string', Rule::in(ReplyDeletePolicy::values())],
+            'basic_defaults.secret_reply_visibility' => ['nullable', 'string', Rule::in(SecretReplyVisibility::values())],
             'basic_defaults.max_comment_depth' => ['nullable', 'integer', "min:{$maxCommentDepthMin}", "max:{$maxCommentDepthMax}"],
             'basic_defaults.comment_order' => ['nullable', 'string', 'in:ASC,DESC'],
             'basic_defaults.show_view_count' => ['nullable', 'boolean'],

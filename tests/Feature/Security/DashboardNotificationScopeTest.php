@@ -239,6 +239,35 @@ class DashboardNotificationScopeTest extends TestCase
     }
 
     /**
+     * 비회원(guest) 역할 정의가 스코프를 걸면 메타가 있어도 위반이다 — 비회원은 범위를 가질 수 없다(7.1.1).
+     * 배포 정의에는 그런 항목이 없다.
+     *
+     * @scenario case=config_guest_scope
+     *
+     * @effects guest_config_scope_reported
+     *
+     * @return void 반환값 없음
+     */
+    public function test_guest_scope_in_role_config_is_reported_even_with_metadata(): void
+    {
+        $permissions = config('core.permissions');
+        $roles = config('core.roles');
+
+        foreach ($roles as $role) {
+            if ($role['identifier'] === 'guest') {
+                $this->assertSame([], array_filter($role['permission_scopes'] ?? [], fn ($scope) => $scope !== null));
+            }
+        }
+
+        $roles[] = ['identifier' => 'guest', 'permission_scopes' => ['core.users.read' => 'self', 'core.menus.read' => null]];
+
+        $this->assertSame(
+            [['role' => 'guest', 'permission' => 'core.users.read', 'scope_type' => 'self']],
+            ScopedPermissionEnforcement::findUnenforcedInConfig($permissions, $roles),
+        );
+    }
+
+    /**
      * DB 에 저장된 부여 중 스코프가 붙었는데 강제 수단이 없는 것을 찾아낸다 — 관리자가 역할
      * 편집으로 메타 없는 권한에 스코프를 걸어도 시드·코어 업데이트 때 경고로 드러난다.
      *

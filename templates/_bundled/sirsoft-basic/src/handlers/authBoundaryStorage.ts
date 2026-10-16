@@ -6,6 +6,8 @@
  * - 카트키(`localStorage.g7_cart_key`) — 로그아웃한 뒤에도 회원 장바구니 키가 남고, 로그인 전후로 같은 키를 썼다.
  * - 비회원 주문 토큰(세션 저장소 `g7_guest_order_token` · `_number` · `_expires_at`) — `_global.guestOrderToken` 에 다시 실려
  *   로그인한 회원의 요청에도 `X-Guest-Order-Token` 헤더가 섞여 나갔다.
+ * - 비밀글 열람 토큰(세션 저장소 `g7_board_secret_view_token` · `_expires_at`) — 서버는 토큰을 발급한 신원(비회원·회원)에
+ *   묶으므로 경계를 넘은 토큰은 쓸모가 없고, 공용 PC 에서는 다음 사람에게 남는다. 로그인·로그아웃 모두에서 지운다.
  *
  * 처치:
  * - **로그아웃**(인증 → 비인증): 카트키와 토큰 3키를 지우고 `_global.cartKey`·`_global.guestOrderToken` 을 비운다.
@@ -21,10 +23,15 @@
  * 로케일 재초기화로 템플릿 초기화가 다시 돌아도 구독은 하나다 — 이전 구독을 먼저 해제한다.
  */
 
-import { issueCartKeyFromApi } from './storageHandlers';
+import {
+    issueCartKeyFromApi,
+    SECRET_VIEW_TOKEN_STORAGE_NAME,
+    SECRET_VIEW_EXPIRES_AT_STORAGE_NAME,
+} from './storageHandlers';
 
 const CART_KEY_STORAGE_NAME = 'g7_cart_key';
 const GUEST_ORDER_STORAGE_NAMES = ['g7_guest_order_token', 'g7_guest_order_number', 'g7_guest_order_expires_at'];
+const SECRET_VIEW_STORAGE_NAMES = [SECRET_VIEW_TOKEN_STORAGE_NAME, SECRET_VIEW_EXPIRES_AT_STORAGE_NAME];
 
 interface AuthStateLike {
     isAuthenticated: boolean;
@@ -60,12 +67,21 @@ function setGlobal(updates: Record<string, unknown>): void {
 }
 
 /**
+ * 비밀글 열람 토큰을 지우고 전역 값을 비웁니다 — 로그인·로그아웃 경계 공통.
+ */
+function clearSecretViewToken(): void {
+    SECRET_VIEW_STORAGE_NAMES.forEach((name) => safely(() => sessionStorage.removeItem(name)));
+    setGlobal({ secretViewToken: null });
+}
+
+/**
  * 로그아웃 — 비회원 저장값을 지우고 전역 값을 비웁니다.
  */
 function clearGuestStorage(): void {
     safely(() => localStorage.removeItem(CART_KEY_STORAGE_NAME));
     GUEST_ORDER_STORAGE_NAMES.forEach((name) => safely(() => sessionStorage.removeItem(name)));
     setGlobal({ cartKey: null, guestOrderToken: null });
+    clearSecretViewToken();
 }
 
 /**
@@ -112,6 +128,7 @@ function handleLogin(state: AuthStateLike): void {
     // 경계 하나에서 함께 비워 회원 요청에 비회원 조회 헤더가 섞이지 않게 한다.
     GUEST_ORDER_STORAGE_NAMES.forEach((name) => safely(() => sessionStorage.removeItem(name)));
     setGlobal({ guestOrderToken: null });
+    clearSecretViewToken();
 
     void reissueCartKey();
 }

@@ -2,6 +2,8 @@
 
 namespace Modules\Sirsoft\Board\Tests\Feature;
 
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
@@ -178,5 +180,58 @@ class PostDetailQueryCountRegressionTest extends BoardTestCase
             grow: fn () => $seedComments(9, '추가'),
             context: '게시글 상세(댓글 3건 → 12건)'
         );
+    }
+
+    /**
+     * 비밀 답변 스레드 상세의 경로 판정 쿼리 수 — 토큰 없는 비회원은 +0, 답변을 쓴 적 없는 회원은
+     * 「답변 존재」 확인 한 번(+≤1) (#789 §4.2 성능).
+     *
+     * 같은 비밀 스레드를 게시판 설정 「답변마다 따로」(per_post — 경로 판정을 하지 않음)일 때와
+     * 「경로 규칙」(thread_path)일 때의 쿼리 수를 비교해 경로 판정이 더한 몫만 잰다.
+     *
+     * @scenario link=board-secret-thread-visibility
+     *
+     * @effects secret_thread_detail_query_budget
+     *
+     * @return void 반환값 없음
+     */
+    public function test_secret_thread_detail_query_budget(): void
+    {
+        DB::table('board_posts')->where('id', $this->post->id)->update(['is_secret' => true]);
+        Post::create([
+            'board_id' => $this->board->id,
+            'parent_id' => $this->post->id,
+            'depth' => 1,
+            'title' => '답변',
+            'content' => '답변 본문',
+            'author_name' => '답변자',
+            'is_secret' => true,
+            'status' => 'published',
+            'ip_address' => '127.0.0.1',
+        ]);
+        $member = User::factory()->create();
+        $member->roles()->attach(Role::where('identifier', 'user')->value('id'));
+        $this->grantUserRolePermissions(['posts.read', 'comments.read']);
+
+        $measure = function (string $mode, ?User $viewer): int {
+            $this->updateBoardSettings(['secret_reply_visibility' => $mode]);
+            if ($viewer) {
+                $this->actingAs($viewer);
+            } else {
+                $this->app['auth']->forgetGuards();
+            }
+
+            return count($this->captureQueries(function () {
+                $this->getJson('/api/modules/sirsoft-board/boards/'.$this->board->slug.'/posts/'.$this->post->id)->assertOk();
+            }));
+        };
+
+        $guestOff = $measure('per_post', null);
+        $guestOn = $measure('thread_path', null);
+        $this->assertLessThanOrEqual($guestOff, $guestOn, '토큰 없는 비회원: 경로 판정이 쿼리를 더하지 않는다(+0)');
+
+        $memberOff = $measure('per_post', $member);
+        $memberOn = $measure('thread_path', $member);
+        $this->assertLessThanOrEqual($memberOff + 1, $memberOn, '답변을 쓴 적 없는 회원: +≤1 (답변 존재 확인)');
     }
 }

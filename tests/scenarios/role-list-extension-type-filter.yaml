@@ -1,0 +1,27 @@
+feature: 역할 목록 소유 구분 필터 (7.1.1)
+
+description: |
+  역할 목록 API(`GET /api/admin/roles`)의 `extension_type` 쿼리로 역할을 소유 주체별로 거른다.
+  core(시스템)·module·plugin 은 그 주체가 만든 역할, custom 은 관리자가 직접 만든 역할(extension_type 이 비어 있는 행)이다.
+  허용값 밖이면 422. 관리자 템플릿 역할 목록의 「구분」 선택 상자가 이 쿼리를 쓴다.
+
+test_files:
+  - tests/Feature/Api/Admin/RoleListExtensionTypeFilterTest.php
+
+axes:
+  extension_type:
+    - core
+    - module
+    - custom
+    - invalid
+
+effects:
+  - filters_core_roles_only          # core → 시스템 역할만
+  - filters_module_roles_only        # module → 모듈 역할만
+  - filters_custom_roles_only        # custom → extension_type null 만
+  - rejects_unknown_extension_type   # 허용값 밖 → 422
+
+validation:
+  note: |
+    plugin 은 module 과 같은 분기(where extension_type = 값)라 축에서 뺀다. 화면 쪽 연결(쿼리 전달·쪽 1로 되돌림)은
+    templates/_bundled/sirsoft-admin_basic/tests/scenarios/admin-role-save-stay-and-filter.yaml 이 맡는다.

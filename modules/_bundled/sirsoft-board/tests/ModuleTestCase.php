@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Providers\BoardServiceProvider;
+use Modules\Sirsoft\Board\Tests\Concerns\RestoresBoardSettingsStorage;
 use Tests\TestCase;
 
 /**
@@ -34,6 +35,7 @@ abstract class ModuleTestCase extends TestCase
     use DatabaseTransactions {
         beginDatabaseTransaction as protected beginTransactionAfterSchema;
     }
+    use RestoresBoardSettingsStorage;
 
     /**
      * 모듈 루트 경로를 반환합니다.
@@ -73,6 +75,9 @@ abstract class ModuleTestCase extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // 설정 저장소(파일)는 트랜잭션 롤백이 닿지 않는다 — 시험 전 상태를 떠 두고 tearDown 에서 되돌린다 (#789 P17)
+        $this->snapshotBoardSettingsStorage();
 
         // 모듈 오토로드 등록 (테스트 환경)
         $this->registerModuleAutoload();
@@ -119,13 +124,14 @@ abstract class ModuleTestCase extends TestCase
     }
 
     /**
-     * tearDown 에 HookManager 상태 복원.
+     * tearDown 에 HookManager 상태·설정 저장소 복원.
      *
      * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
         $this->restoreHookManager();
+        $this->restoreBoardSettingsStorage();
 
         parent::tearDown();
     }
@@ -328,6 +334,10 @@ abstract class ModuleTestCase extends TestCase
                 ->name('api.modules.sirsoft-board.')
                 ->middleware('api')
                 ->group($apiRoutesFile);
+
+            // 라우트 이름은 등록 뒤 `->name()` 으로 붙으므로 부팅 이후 추가한 라우트는 이름 색인에 없다.
+            // 색인을 다시 만들지 않으면 route()·서명 URL 발급(첨부 미리보기 서명 주소)이 RouteNotFound 로 실패한다.
+            Route::getRoutes()->refreshNameLookups();
         }
     }
 

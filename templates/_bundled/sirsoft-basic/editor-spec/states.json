@@ -623,7 +623,7 @@
       ]
     },
     {
-      "comment": " states 전수 — 공통 레이아웃. 모바일 메뉴 드로어(mobile_nav_drawer)는 _global.mobileMenuOpen 게이트(닫힘=translate-x-full 화면 밖)라 편집기 정적 시뮬레이션에서 편집 불가. 이 상태로 펼침을 시뮬레이션해 모바일 디바이스 탭과 조합 편집한다.",
+      "comment": " states 전수 — 공통 레이아웃. 모바일 메뉴 드로어(mobile_nav_drawer)는 _global.mobileMenuOpen 게이트(닫힘=translate-x-full 화면 밖)라 편집기 정적 시뮬레이션에서 편집 불가. 이 상태로 펼침을 시뮬레이션해 모바일 디바이스 탭과 조합 편집한다. screen_filled 의 secretViewToken 은 비밀번호로 연 비밀글의 열람 토큰(탭 세션 sessionStorage 에서 init 의 initSecretViewToken 이 복원, globalHeaders 가 게시판 요청의 X-Board-Secret-View-Token 으로 실음)이다 — 편집기에서는 값이 있어도 화면 모양이 바뀌지 않는 샘플이다.",
       "scope": {
         "kind": "base",
         "match": "_user_base"

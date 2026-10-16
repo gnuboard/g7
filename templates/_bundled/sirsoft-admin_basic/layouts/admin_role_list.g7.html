@@ -6,7 +6,7 @@
   <!-- 역할 목록. 어떤 실패든 화면을 에러로 갈아끼운다 — 역할이 안 보이는 상태에서 "역할 없음" 으로
        읽히면 새로 만들려 들기 때문이다. -->
   <data-source id="roles" label_key="$t:editor.data_source.roles" type="api" endpoint="/api/admin/roles" method="GET" :auto_fetch="true" auth_mode="required">
-    <params search="{{query.search}}" page="{{query.page ?? 1}}" :per_page="20"/>
+    <params search="{{query.search}}" extension_type="{{query.extension_type}}" page="{{query.page ?? 1}}" :per_page="20"/>
     <error-handling>
       <on-code code="403">
         <show-error-page target="content"/>
@@ -60,8 +60,24 @@
            잠금 자체는 서버가 행마다 실어 준 `abilities` 가 정한다(코어·확장 역할 삭제 불가,
            수정·토글은 슈퍼 관리자만 — 서버 가드와 같은 판정). -->
       <p data-ref="protected_roles_hint" class="text-xs text-gray-500 dark:text-gray-400 mb-2">$t:admin.roles.protected_roles_hint</p>
-      <div data-ref="search_bar_wrapper" class="flex justify-end mb-6">
-        <responsive on="portable" class="mb-6"/>
+      <div data-ref="search_bar_wrapper" class="flex justify-end gap-2 mb-6">
+        <responsive on="portable" class="flex flex-col gap-2 mb-6"/>
+        <select data-ref="extension_type_filter" name="extension_type" class="w-40" value="{{query.extension_type || ''}}" aria-label="$t:admin.roles.filters.extension_type">
+          <responsive on="portable" class="w-full"/>
+          <options>
+            <option value="">$t:admin.roles.filters.extension_type_all</option>
+            <option value="core">$t:admin.roles.filters.extension_type_core</option>
+            <option value="module">$t:admin.roles.filters.extension_type_module</option>
+            <option value="plugin">$t:admin.roles.filters.extension_type_plugin</option>
+            <option value="custom">$t:admin.roles.filters.extension_type_custom</option>
+          </options>
+          <on type="change">
+            <!-- 소유 구분 — 시스템(코어)·모듈·플러그인이 만든 역할과 직접 만든 역할을 나눠 본다. 검색어는 잇고 쪽은 1로 되돌린다 -->
+            <navigate path="/admin/roles" :mergeQuery="true" :replace="true" transition_overlay_target="roles_data_grid__body">
+              <query extension_type="{{$event.target.value || undefined}}" :page="1"/>
+            </navigate>
+          </on>
+        </select>
         <search-bar data-type="composite" data-ref="search_bar" placeholder="$t:admin.roles.search_placeholder" value="{{_local.searchQuery || ''}}" class="w-64">
           <responsive on="portable" class="w-full"/>
           <on type="change">

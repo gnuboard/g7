@@ -18,6 +18,7 @@ use Modules\Sirsoft\Board\Http\Resources\CommentResource;
 use Modules\Sirsoft\Board\Services\BoardService;
 use Modules\Sirsoft\Board\Services\CommentService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 관리자용 댓글 컨트롤러
@@ -245,6 +246,9 @@ class CommentController extends AdminBaseController
             return $this->error($e->getMessageKey(), 409);
         } catch (ModelNotFoundException) {
             return $this->notFound('sirsoft-board::messages.comment.not_found');
+        } catch (AccessDeniedHttpException) {
+            // 게시판 관리 권한의 게시판 스코프 밖 — \Exception 이 삼켜 500 이 되지 않게 먼저 받는다
+            return $this->error('auth.scope_denied', 403);
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.comment.blind_failed', 500, $e->getMessage());
         }
@@ -284,6 +288,9 @@ class CommentController extends AdminBaseController
             return $this->error($e->getMessageKey(), 409);
         } catch (ModelNotFoundException) {
             return $this->notFound('sirsoft-board::messages.comment.not_found');
+        } catch (AccessDeniedHttpException) {
+            // 게시판 관리 권한의 게시판 스코프 밖 — \Exception 이 삼켜 500 이 되지 않게 먼저 받는다
+            return $this->error('auth.scope_denied', 403);
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.comment.restore_failed', 500, $e->getMessage());
         }

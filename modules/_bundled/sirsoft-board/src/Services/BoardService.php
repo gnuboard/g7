@@ -36,6 +36,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Support\BoardReadScope;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -328,14 +329,17 @@ class BoardService
         // 게시판 이름은 언어별 값이라 캐시를 언어마다 나눈다 — 키에 언어가 없으면 먼저 채운 언어의 이름이
         // 다른 언어 화면에 그대로 나갔다(2026-10-07 실측: 한국어 화면에 영어 게시판 이름·「10 minutes ago」).
         $locale = app()->getLocale();
+        // 키의 v2 는 항목에 작성자 ID(읽기 스코프 판정용)를 담기 전의 캐시를 다시 읽지 않기 위한 것이다.
         $posts = $this->cache->remember(
-            "recent_posts_{$limit}_{$locale}",
+            "recent_posts_v2_{$limit}_{$locale}",
             fn () => $this->getRecentPosts($limit),
             $ttl,
             tags: ['board-posts']
         );
 
-        return $this->refreshCachedPostTimes($this->filterItemsByBoardReadPermission($posts, 'board_slug'));
+        return $this->refreshCachedPostTimes(
+            $this->filterItemsByBoardReadPermission($posts, 'board_slug', fn (array $item) => $item['_owner_id'] ?? null)
+        );
     }
 
     /**
@@ -364,7 +368,9 @@ class BoardService
             tags: ['board-posts']
         );
 
-        return $this->refreshCachedPostTimes($this->filterItemsByBoardReadPermission($posts, 'board_slug'));
+        return $this->refreshCachedPostTimes(
+            $this->filterItemsByBoardReadPermission($posts, 'board_slug', fn (array $item) => $item['author']['id'] ?? null)
+        );
     }
 
     /**
@@ -1426,20 +1432,39 @@ class BoardService
      * 현재 호출자 기준으로 적용한다. 고권한 사용자의 결과가 캐시에 남아 저권한/비회원
      * 사용자에게 새는 것을 막는다.
      *
+     * 글 항목이면 읽기 권한의 스코프(본인만·소유역할)도 본다 — 보유만 보면 「본인 글만」 회원에게
+     * 남의 글 제목이 최근글·인기글로 나간다. 판정용 작성자 키(`_owner_id`)는 응답에서 뺀다.
+     *
      * @param  array<int, array<string, mixed>>  $items  캐시된 목록
      * @param  string  $slugKey  각 항목에서 게시판 슬러그를 담은 키
+     * @param  callable|null  $ownerOf  항목의 작성자 회원 ID 를 꺼내는 함수 (게시판 항목이면 null — 스코프 미적용)
      * @return array<int, array<string, mixed>> 읽기 권한을 통과한 항목만 남긴 목록
      */
-    private function filterItemsByBoardReadPermission(array $items, string $slugKey): array
+    private function filterItemsByBoardReadPermission(array $items, string $slugKey, ?callable $ownerOf = null): array
     {
         $user = Auth::user();
 
-        return array_values(array_filter($items, function ($item) use ($slugKey, $user) {
+        $allowed = array_filter($items, function ($item) use ($slugKey, $user, $ownerOf) {
             $slug = $item[$slugKey] ?? null;
 
-            return $slug !== null
-                && PermissionHelper::check("sirsoft-board.{$slug}.posts.read", $user);
-        }));
+            if ($slug === null || ! PermissionHelper::check("sirsoft-board.{$slug}.posts.read", $user)) {
+                return false;
+            }
+
+            if ($ownerOf === null) {
+                return true;
+            }
+
+            $ownerId = $ownerOf($item);
+
+            return BoardReadScope::allowsItem($slug, $ownerId !== null ? (int) $ownerId : null);
+        });
+
+        return array_values(array_map(function (array $item) {
+            unset($item['_owner_id']);
+
+            return $item;
+        }, $allowed));
     }
 
     /**

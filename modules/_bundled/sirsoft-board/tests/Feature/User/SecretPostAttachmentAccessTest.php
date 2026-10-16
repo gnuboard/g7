@@ -816,4 +816,63 @@ class SecretPostAttachmentAccessTest extends BoardTestCase
 
         $this->assertSame($this->previewUrl('normserialAA'), $previewUrl);
     }
+
+    /**
+     * 비밀글 아래 답변을 쓴 회원은 경로 규칙으로 원글 첨부를 내려받는다 (#789 D1 — 첨부도 본문과 같은 게이트).
+     *
+     * @scenario viewer=thread_anchor
+     *
+     * @effects thread_anchor_can_download_root_secret_attachment
+     *
+     * @return void 반환값 없음
+     */
+    public function test_reply_author_can_download_root_secret_attachment(): void
+    {
+        $rootId = $this->secretPost();
+        $this->createTestPost([
+            'title' => 'Re: 비밀글 첨부',
+            'status' => 'published',
+            'is_secret' => true,
+            'user_id' => $this->regularUser->id,
+            'author_name' => 'replier',
+            'parent_id' => $rootId,
+            'depth' => 1,
+        ]);
+        $this->createAttachment($rootId, 'secdlanchorA');
+
+        $response = $this->actingAs($this->regularUser, 'sanctum')
+            ->get($this->downloadUrl('secdlanchorA'));
+
+        $this->assertNotSame(403, $response->getStatusCode(), '답변 작성자는 원글 첨부를 경로 규칙으로 받아야 합니다');
+        $this->assertLessThan(500, $response->getStatusCode());
+    }
+
+    /**
+     * 비밀글 조회 권한을 「본인만」으로 받은 회원은 남의 비밀글 첨부를 받을 수 없다 (#789 D9·B1).
+     *
+     * @scenario viewer=read_secret_self
+     *
+     * @effects self_scoped_read_secret_cannot_download_others_secret_attachment
+     *
+     * @return void 반환값 없음
+     */
+    public function test_self_scoped_read_secret_cannot_download_others_secret_attachment(): void
+    {
+        $slug = $this->board->slug;
+        $permission = Permission::firstOrCreate(
+            ['identifier' => "sirsoft-board.{$slug}.posts.read-secret"],
+            ['name' => ['ko' => 'read-secret', 'en' => 'read-secret'], 'type' => 'user']
+        );
+        $permission->forceFill(['resource_route_key' => 'post', 'owner_key' => 'user_id'])->save();
+        $role = Role::create(['identifier' => 'attach-self-secret', 'name' => ['ko' => 's', 'en' => 's']]);
+        $role->permissions()->attach($permission->id, ['scope_type' => 'self', 'granted_at' => now()]);
+        $this->regularUser->roles()->attach($role->id);
+
+        $postId = $this->secretPost();
+        $this->createAttachment($postId, 'secdlselfAAA');
+
+        $this->actingAs($this->regularUser, 'sanctum')
+            ->get($this->downloadUrl('secdlselfAAA'))
+            ->assertStatus(403);
+    }
 }

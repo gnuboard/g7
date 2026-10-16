@@ -119,7 +119,9 @@
                다르게 낸다. 어느 갈래든 진행 표시를 끈다(빠뜨리면 저장 버튼이 잠긴 채 남는다).
                접근 가능 메뉴(menu_ids)는 메뉴 수정 권한이 있고 관리자 역할이 아닐 때만 싣는다 — 안 실으면 서버는 메뉴를
                건드리지 않는다. 트리에 보이는 메뉴(관리할 수 있는 메뉴)로만 거른다: 관리 밖 메뉴의 기존 할당은 서버가
-               보존하고, 복제 진입이 원본의 관리 밖 메뉴를 새 역할로 끌어오지 않게 한다. -->
+               보존하고, 복제 진입이 원본의 관리 밖 메뉴를 새 역할로 끌어오지 않게 한다.
+               범위를 가질 수 없는 역할(비회원 — 응답의 supports_permission_scope 가 false)을 수정할 때는 권한마다
+               scope_type 을 null 로 비워 보낸다. 예전에 저장된 범위 값이 남아 있으면 서버가 422 로 거부한다. -->
           <sequence>
             <set-state target="global" :isSaving="true" :formErrors="null"/>
             <api-call auth_mode="required" target="{{route?.id ? '/api/admin/roles/' + route.id : '/api/admin/roles'}}" method="{{route?.id ? 'PUT' : 'POST'}}">
@@ -127,7 +129,10 @@
                 <sequence>
                   <set-state target="global" :isSaving="false"/>
                   <toast type="success" message="{{route?.id ? $t:admin.roles.modals.update_success : $t:admin.roles.modals.create_success}}"/>
-                  <navigate path="/admin/roles" :mergeQuery="true">
+                  <!-- 수정이면 화면에 머문다 — 역할을 다시 받아 폼을 서버 값(정규화된 범위·메뉴)으로 채우고 변경 표시를 푼다 -->
+                  <refetch-data-source if="{{!!route?.id}}" dataSourceId="role"/>
+                  <!-- 등록·복제면 방금 만든 역할의 수정 화면으로 간다. 뒤로 가기로 빈 등록 폼에 돌아오지 않게 기록을 바꿔 낀다 -->
+                  <navigate if="{{!route?.id}}" path="{{'/admin/roles/' + response.data.id + '/edit'}}" :mergeQuery="true" :replace="true">
                     <query/>
                   </navigate>
                 </sequence>
@@ -150,7 +155,7 @@
                   </sequence>
                 </on-code>
               </error-handling>
-              <body identifier="{{!route?.id ? (_local.form.identifier ?? '') : undefined}}" name="{{_local.form.name_raw ?? form.name}}" description="{{_local.form.description_raw ?? form.description}}" is_active="{{_local.form.is_active === true}}" password_expiry_policy="{{_local.form.password_expiry_policy ?? 'inherit'}}" permissions="{{_local.form.permission_values ?? []}}" menu_ids="{{role_menus_tree?.data?.abilities?.can_update === true &amp;&amp; _local.form?.identifier !== 'admin' ? (_local.form?.menu_ids ?? []).filter(menuId => (role_menus_tree?.data?.data ?? []).flatMap(m => [m.id, ...(m.children ?? []).map(c => c.id)]).includes(menuId)) : undefined}}"/>
+              <body identifier="{{!route?.id ? (_local.form.identifier ?? '') : undefined}}" name="{{_local.form.name_raw ?? form.name}}" description="{{_local.form.description_raw ?? form.description}}" is_active="{{_local.form.is_active === true}}" password_expiry_policy="{{_local.form.password_expiry_policy ?? 'inherit'}}" permissions="{{!!route?.id &amp;&amp; _local.form?.supports_permission_scope === false ? (_local.form.permission_values ?? []).map(v => ({ id: v.id, scope_type: null })) : (_local.form.permission_values ?? [])}}" menu_ids="{{role_menus_tree?.data?.abilities?.can_update === true &amp;&amp; _local.form?.identifier !== 'admin' ? (_local.form?.menu_ids ?? []).filter(menuId => (role_menus_tree?.data?.data ?? []).flatMap(m => [m.id, ...(m.children ?? []).map(c => c.id)]).includes(menuId)) : undefined}}"/>
             </api-call>
           </sequence>
         </on>
@@ -219,9 +224,14 @@
             </on>
           </tab-navigation>
           <div data-ref="permission_tab_contents" class="mt-4">
+            <!-- 비회원 역할 안내 — 소유자를 가릴 수 없어 범위가 적용되지 않으므로 트리가 범위 드롭다운을 그리지 않는다. 그 이유를 같은 자리에서 알린다. 수정 모드에서만 — 비회원 역할을 복제한 새 역할은 일반 역할이라 범위를 고를 수 있다. -->
+            <div data-ref="guest_scope_unsupported_hint" data-if="{{!!route?.id &amp;&amp; _local.form?.supports_permission_scope === false}}" class="flex-center gap-2 mb-3 text-sm text-gray-600 dark:text-gray-400">
+              <icon name="circle-info" class="text-base text-blue-500 dark:text-blue-400 flex-shrink-0"/>
+              <span>$t:admin.roles.form.guest_scope_unsupported_hint</span>
+            </div>
             <div data-each="permType, typeIndex in {{permissions?.data?.data?.types ?? []}}">
               <div data-if="{{(_global.activePermissionTab || permissions?.data?.data?.default_type || 'admin') === permType}}">
-                <permission-tree data-type="composite" data="{{permissions?.data?.data?.permissions?.[permType]?.permissions ?? []}}" value="{{_local.form.permission_values ?? []}}" scopeOptions="{{permissions?.data?.data?.scope_options ?? []}}" class="max-h-[500px] overflow-y-auto" installedModules="{{_global.installedModules}}" installedPlugins="{{_global.installedPlugins}}">
+                <permission-tree data-type="composite" data="{{permissions?.data?.data?.permissions?.[permType]?.permissions ?? []}}" value="{{_local.form.permission_values ?? []}}" scopeOptions="{{permissions?.data?.data?.scope_options ?? []}}" scopeDisabled="{{!!route?.id &amp;&amp; _local.form?.supports_permission_scope === false}}" class="max-h-[500px] overflow-y-auto" installedModules="{{_global.installedModules}}" installedPlugins="{{_global.installedPlugins}}">
                   <on type="change">
                     <!-- 권한 선택. 트리는 탭마다 따로 렌더되지만 **쓰는 값은 한 배열**이라, 어느 탭에서
                          골랐든 여기 모이고 상단 개수 배지도 그 길이를 센다. 설치된 확장 목록을 넘겨

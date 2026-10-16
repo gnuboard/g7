@@ -22,6 +22,7 @@ use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Support\BoardManageScope;
 use Modules\Sirsoft\Board\Support\SecretContentGate;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
@@ -511,6 +512,12 @@ class CommentService
      */
     public function blindComment(string $slug, int $id, string $reason, ?string $triggerType = null, ?int $postId = null): Comment
     {
+        // 관리자 직접 처리(triggerType 없음)는 게시판 관리 권한의 게시판 스코프를 다시 본다 —
+        // 라우트가 {slug} 라 미들웨어 스코프 검사가 돌지 않는다. 신고 처리·자동 블라인드는 reports.manage 관할.
+        if ($triggerType === null) {
+            BoardManageScope::assert($slug);
+        }
+
         $comment = $this->commentRepository->findOrFail($slug, $id, $postId);
 
         // 삭제된 댓글은 블라인드하지 않는다 — 상태 변경이 deleted_at 을 지워 삭제가 풀린다.
@@ -553,6 +560,11 @@ class CommentService
      */
     public function restoreComment(string $slug, int $id, ?string $reason = null, ?string $triggerType = null, ?int $postId = null): Comment
     {
+        // 관리자 직접 처리만 게시판 스코프 재적용 (blindComment 와 같은 이유)
+        if ($triggerType === null) {
+            BoardManageScope::assert($slug);
+        }
+
         $comment = $this->commentRepository->findOrFail($slug, $id, $postId);
 
         // 멱등성: 이미 게시됨 상태이면 중복 처리 방지 — 원글 삭제로 함께 지워진 댓글은 상태가 게시인 채

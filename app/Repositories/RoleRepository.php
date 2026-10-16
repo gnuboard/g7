@@ -349,6 +349,16 @@ class RoleRepository implements RoleRepositoryInterface
             $query->where('is_active', $filters['is_active']);
         }
 
+        // 소유 구분 필터 — core·module·plugin 은 그 주체가 만든 역할, custom 은 관리자가 직접 만든 역할
+        // (extension_type 이 비어 있는 행). 목록의 「시스템」·「모듈」·「플러그인」 배지와 같은 기준이다.
+        if (! empty($filters['extension_type'])) {
+            if ($filters['extension_type'] === 'custom') {
+                $query->whereNull('extension_type');
+            } else {
+                $query->where('extension_type', $filters['extension_type']);
+            }
+        }
+
         // 정렬 (코어/확장 소유 역할 먼저, 그 다음 사용자 생성 역할)
         // 정렬 마지막의 기본키는 전순서 보장용이다. 시더가 일괄 생성한 역할은 created_at 이
         // 한 타임스탬프에 몰려 있어(실측: 한 값에 최대 10행) 키가 없으면 동률 구간의 순서가

@@ -6,6 +6,7 @@ use App\Contracts\Extension\StorageInterface;
 use App\Exceptions\UnsafeStoragePathException;
 use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
+use App\Helpers\PermissionHelper;
 use App\Support\ImageResizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
@@ -21,7 +22,9 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInter
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesStoredExtension;
+use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 상품 이미지 서비스
@@ -30,6 +33,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class ProductImageService
 {
+    use ReappliesPermissionScope;
     use ResolvesRowStorage;
     use ResolvesStoredExtension;
 
@@ -68,6 +72,12 @@ class ProductImageService
         ?string $tempKey = null,
         ?array $altText = null
     ): ProductImage {
+        // 상품에 직접 붙이는 업로드는 그 상품의 `products.update` 스코프 안이어야 한다 —
+        // 라우트 파라미터가 `{productId}` 라 미들웨어 스코프 검사가 돌지 않는다. 파일을 쓰기 전에 거부한다.
+        if ($productId) {
+            $this->assertProductsWithinUpdateScope([$productId]);
+        }
+
         // productId와 tempKey 모두 없으면 tempKey 자동 생성
         if (! $productId && ! $tempKey) {
             $tempKey = Str::uuid()->toString();
@@ -284,6 +294,11 @@ class ProductImageService
             return false;
         }
 
+        // 임시 업로드(상품 미귀속)는 상품 스코프 대상이 아니다
+        if ($image->product_id) {
+            $this->assertProductsWithinUpdateScope([(int) $image->product_id]);
+        }
+
         // 삭제 후 재정렬을 위해 정보 저장
         $productId = $image->product_id;
         $collection = $image->collection;
@@ -324,6 +339,9 @@ class ProductImageService
      */
     public function reorder(array $orders): bool
     {
+        // 정적 경로라 미들웨어가 건너뛴다 — 이미지가 속한 상품 전량이 스코프 안이어야 한다(전량 거부)
+        $this->assertProductsWithinUpdateScope(fn () => $this->repository->pluckProductIdsByIds(array_map('intval', array_keys($orders))));
+
         // Before 훅
         HookManager::doAction('sirsoft-ecommerce.product-image.before_reorder', $orders);
 
@@ -346,6 +364,8 @@ class ProductImageService
      */
     public function setThumbnail(int $productId, int $imageId): bool
     {
+        $this->assertProductsWithinUpdateScope([$productId]);
+
         $images = $this->repository->getByProductId($productId);
 
         // 대상 이미지가 이 상품에 속하는지 먼저 확인 (교차 상품 오염 차단)
@@ -676,5 +696,32 @@ class ProductImageService
         if (! empty($orders)) {
             $this->repository->reorder($orders);
         }
+    }
+
+    /**
+     * 상품 집합 전량이 액터의 `products.update` 스코프 안인지 단언합니다.
+     *
+     * 이미지 경로(`{productId}`·`images/{id}`·`images/reorder`)는 권한의 `resource_route_key`(`product`)
+     * 와 이름이 달라 미들웨어 스코프 검사가 돌지 않으므로 여기서 재적용한다. 없는 상품 ID 는 건너뛴다 —
+     * 부재 판정은 각 호출부의 기존 계약(404·400)을 따른다. 범위가 「전체」인 액터(와 비인증 내부 호출)는
+     * 대상 상품도 다시 읽지 않고 통과한다 — 판정 결과가 같으므로 조회를 아낀다(대상 ID 계산도 그때만 한다).
+     *
+     * @param  array<int, int>|\Closure(): array<int, int>  $productIds  상품 ID 목록 (조회가 필요하면 지연 계산 클로저)
+     * @return void
+     *
+     * @throws AccessDeniedHttpException 스코프 밖 상품이 하나라도 있는 경우
+     */
+    private function assertProductsWithinUpdateScope(array|\Closure $productIds): void
+    {
+        if (PermissionHelper::getEffectiveScope('sirsoft-ecommerce.products.update') === null) {
+            return;
+        }
+
+        $productIds = $productIds instanceof \Closure ? $productIds() : $productIds;
+        if ($productIds === []) {
+            return;
+        }
+
+        $this->assertAllWithinScope($this->productRepository->findByIdsKeyed($productIds), 'sirsoft-ecommerce.products.update');
     }
 }

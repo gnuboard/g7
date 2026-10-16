@@ -20,6 +20,14 @@ interface ProductImageRepositoryInterface
     public function findById(int $id): ?ProductImage;
 
     /**
+     * 이미지 ID 목록이 속한 상품 ID 를 중복 없이 조회 (임시 업로드 이미지는 제외)
+     *
+     * @param  array<int, int>  $ids  이미지 ID 목록
+     * @return array<int, int> 상품 ID 목록
+     */
+    public function pluckProductIdsByIds(array $ids): array;
+
+    /**
      * 해시로 이미지 조회
      *
      * @param  string  $hash  이미지 해시 (12자)

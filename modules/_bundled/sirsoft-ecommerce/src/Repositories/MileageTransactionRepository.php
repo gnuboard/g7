@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use App\Helpers\PermissionHelper;
 use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
@@ -280,6 +281,10 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
         // (inner 에 두면 건너뛸 행 전체에 상관 서브쿼리가 돌아 깊은 OFFSET 비용이 그대로 남는다).
         $query = MileageTransaction::query();
 
+        // 권한 스코프 필터링 (`mileage.read` 의 본인·역할 범위) — 관리자 내역 목록 전용 쿼리다
+        // (호출부: UserMileageService::paginateAdminHistory 하나. 회원 본인 내역은 paginateForUser).
+        PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.mileage.read');
+
         if (! empty($filters['user_id'])) {
             $query->where('user_id', $filters['user_id']);
         }
@@ -486,6 +491,14 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     public function findById(int $id): ?MileageTransaction
     {
         return MileageTransaction::query()->find($id);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function makeOwnedBy(int $userId): MileageTransaction
+    {
+        return (new MileageTransaction)->forceFill(['user_id' => $userId]);
     }
 
     /**

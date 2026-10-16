@@ -208,4 +208,31 @@ class PermissionRepository implements PermissionRepositoryInterface
             ])
             ->all();
     }
+
+    /**
+     * 한 역할의 부여 중 스코프(self·role)가 붙은 것을 조회합니다.
+     *
+     * @param  string  $roleIdentifier  역할 식별자 (예: guest)
+     * @return array<int, array{role: string, permission: string, scope_type: string}> 부여 목록
+     */
+    public function getScopedGrantsForRole(string $roleIdentifier): array
+    {
+        $roles = (new Role)->getTable();
+        $permissions = (new Permission)->getTable();
+
+        // audit:allow repository-raw-hardcoded-table reason: role_permissions 는 모델이 없는 피벗 테이블
+        return DB::table('role_permissions')
+            ->join($roles, "{$roles}.id", '=', 'role_permissions.role_id')
+            ->join($permissions, "{$permissions}.id", '=', 'role_permissions.permission_id')
+            ->where("{$roles}.identifier", $roleIdentifier)
+            ->whereNotNull('role_permissions.scope_type')
+            ->orderBy("{$permissions}.identifier")
+            ->get(["{$roles}.identifier as role", "{$permissions}.identifier as permission", 'role_permissions.scope_type'])
+            ->map(static fn ($row) => [
+                'role' => $row->role,
+                'permission' => $row->permission,
+                'scope_type' => (string) $row->scope_type,
+            ])
+            ->all();
+    }
 }

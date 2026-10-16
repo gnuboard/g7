@@ -58,7 +58,11 @@ class ExtraFeeTemplateController extends AdminBaseController
      */
     public function show(int $id): JsonResponse
     {
-        $template = $this->extraFeeTemplateService->getDetail($id);
+        try {
+            $template = $this->extraFeeTemplateService->getDetailForRead($id);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        }
 
         if (! $template) {
             return ResponseHelper::notFound(

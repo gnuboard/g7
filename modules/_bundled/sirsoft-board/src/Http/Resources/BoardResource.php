@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Board\Http\Resources;
 
+use App\Helpers\PermissionHelper;
 use App\Http\Resources\BaseApiResource;
 use App\Models\Permission;
 use App\Models\Role;
@@ -59,6 +60,7 @@ class BoardResource extends BaseApiResource
             'use_reply' => $this->use_reply,
             'max_reply_depth' => $this->max_reply_depth,
             'reply_delete_policy' => $this->reply_delete_policy,
+            'secret_reply_visibility' => $this->secret_reply_visibility,
             'use_report' => $this->use_report,
             'use_scrap' => $this->use_scrap,
             'use_reaction' => $this->use_reaction,
@@ -540,6 +542,14 @@ class BoardResource extends BaseApiResource
 
                 $typeValue = $permission->type instanceof \BackedEnum ? $permission->type->value : $permission->type;
                 $result[$canKey] = in_array($permission->identifier.'|'.$typeValue, $userPermissions);
+            }
+
+            // 게시판 관리 권한(manager·admin.manage)은 스코프 메타가 게시판 단위다 — 보유만 보면
+            // 「본인이 만든 게시판만」 위임 관리자에게 남의 게시판 관리 버튼이 켜지고 서버는 거부한다
+            foreach (['can_manage', 'can_access_admin'] as $scopedKey) {
+                if (! empty($result[$scopedKey])) {
+                    $result[$scopedKey] = PermissionHelper::checkScopeAccess($this->resource, $permissionMap[$scopedKey]);
+                }
             }
         } else {
             foreach ($permissionMap as $canKey => $identifier) {
