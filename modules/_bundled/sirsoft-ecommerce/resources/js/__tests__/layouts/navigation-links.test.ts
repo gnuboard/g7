@@ -300,11 +300,8 @@ function hasSelectionLinkInside(n: any, a: any): boolean {
  * 쓰이지 않게 된 항목은 시험이 알린다(아래 「제외 목록이 낡지 않았다」).
  */
 const EXCLUDE: { file: string; reason: string; match: (n: any, a: any) => boolean }[] = [
-    {
-        file: 'layouts/admin/partials/admin_ecommerce_settings/_modal_unsaved_tab_switch.json',
-        reason: 'D13 — 저장 안 한 변경 확인 창 안의 「떠나기」(확인 창이 뜨는 이동)',
-        match: (n) => n.props?.['data-testid'] === 'ecommerce-settings-unsaved-tab-leave',
-    },
+    // 저장 안 한 변경 확인 창의 「떠나기」는 이동을 직접 하지 않고 탭 전환 이벤트만 보낸다(#753 — 이동은
+    // 탭 본문 틀의 이벤트 받기가 한다). 판정식이 잡을 칸이 없어져 제외 항목을 두지 않는다.
     {
         file: 'layouts/admin/partials/admin_ecommerce_settings/_tab_identity_policies.json',
         reason: 'W6 — 필터 초기화(쿼리를 지금 탭 하나로 비운다)',

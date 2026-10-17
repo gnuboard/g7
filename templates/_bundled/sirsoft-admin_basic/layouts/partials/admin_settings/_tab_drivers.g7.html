@@ -416,7 +416,7 @@
               <div data-each="conn in _computed.queueConnectionList" data-testid="{{'queue-names-' + conn}}" class="flex flex-col md:flex-row md:items-start gap-2 py-2 border-l-2 border-blue-200 dark:border-blue-800 pl-3 mt-2">
                 <span class="text-sm font-mono text-gray-700 dark:text-gray-300 md:w-40 shrink-0 break-all">{{conn}}</span>
                 <div class="flex-1 min-w-0">
-                  <tag-input data-type="composite" value="{{_local.form?.drivers?.queue_names?.[conn] ?? (conn.endsWith('-long') ? ['long'] : ['default'])}}" :creatable="true" placeholder="$t:admin.settings.drivers.queue.worker.queues.placeholder" class="w-full" defaultVariant="green" disabled="{{_computed.isReadOnly}}">
+                  <tag-input data-type="composite" aria-label="$t:common.row_cell|row={{conn}}|column={{$t('admin.settings.drivers.queue.worker.queues.label')}}" value="{{_local.form?.drivers?.queue_names?.[conn] ?? (conn.endsWith('-long') ? ['long'] : ['default'])}}" :creatable="true" placeholder="$t:admin.settings.drivers.queue.worker.queues.placeholder" class="w-full" defaultVariant="green" disabled="{{_computed.isReadOnly}}">
                     <on type="change">
                       <!-- 연결별 큐 — 맵 하나를 통째로 다시 만든다(배열로 굳은 옛 값이면 빈 맵에서 시작한다). 키가 없으면 기본값을 그렸으므로 첫 변경에 기본값이 함께 담긴다 -->
                       <set-state target="local" form.drivers.queue_names="{{({...(Array.isArray(_local.form?.drivers?.queue_names) ? {} : (_local.form?.drivers?.queue_names ?? {})), [conn]: $event.target.value})}}" :hasChanges="true"/>

@@ -121,7 +121,7 @@ describe('C2 PermissionTree — 그룹·개별·범위 이름', () => {
         {
           id: 2, identifier: 'core.users', name: '회원 관리', is_assignable: false, leaf_count: 1,
           children: [
-            { id: 3, identifier: 'core.users.read', name: '회원 조회', description: '회원 목록과 상세를 봅니다', is_assignable: true, leaf_count: 1, resource_route_key: 'user', children: [] },
+            { id: 3, identifier: 'core.users.read', name: '회원 조회', description: '회원 목록과 상세를 봅니다', is_assignable: true, leaf_count: 1, resource_route_key: 'user', scope_supported: true, children: [] },
           ],
         },
       ],

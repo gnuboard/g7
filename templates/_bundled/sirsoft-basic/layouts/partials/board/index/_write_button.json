@@ -11,6 +11,7 @@
     },
     "children": [
         {
+            "comment": "쓸 수 있을 때 — 보통 클릭은 href(글쓰기 화면)로 SPA 이동하며 목록 쿼리를 이어 붙인다",
             "type": "basic",
             "name": "A",
             "if": "{{posts?.data?.abilities?.can_write === true}}",
@@ -46,6 +47,7 @@
             ]
         },
         {
+            "comment": "쓸 수 없을 때 — 로그인했으면 권한 없음 안내, 비로그인이면 안내 후 돌아올 주소를 실어 로그인 화면으로",
             "type": "basic",
             "name": "Button",
             "if": "{{posts?.data?.abilities?.can_write !== true}}",
