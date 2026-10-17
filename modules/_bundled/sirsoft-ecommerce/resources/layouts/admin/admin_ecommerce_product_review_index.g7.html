@@ -95,7 +95,7 @@
       <div data-ref="filter_card" class="admin-card mb-6">
         <div data-ref="search_row" class="mb-4">
           <div class="flex-center flex-wrap gap-3 mb-3">
-            <select name="searchField" class="w-36 text-sm" value="{{_local.filter.searchField ?? 'product_name'}}">
+            <select name="searchField" aria-label="$t:common.search_field" class="w-36 text-sm" value="{{_local.filter.searchField ?? 'product_name'}}">
               <options>
                 <option value="order_number">$t:sirsoft-ecommerce.admin.product_review.search.field.order_number</option>
                 <option value="product_name">$t:sirsoft-ecommerce.admin.product_review.search.field.product_name</option>
@@ -479,7 +479,7 @@
       <div data-ref="batch_actions" class="bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-between flex-wrap gap-3">
         <div class="flex-center flex-wrap gap-3">
           <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.product_review.batch.selected_count|count={{_local.selectedReviews.length ?? 0}}</span>
-          <select name="batchAction" class="w-48" value="{{_local.batchAction ?? ''}}" disabled="{{reviews.data?.abilities?.can_update !== true}}">
+          <select name="batchAction" aria-label="$t:sirsoft-ecommerce.admin.product_review.batch.status_change" class="w-48" value="{{_local.batchAction ?? ''}}" disabled="{{reviews.data?.abilities?.can_update !== true}}">
             <options>
               <option value="" disabled>$t:sirsoft-ecommerce.admin.product_review.batch.status_change</option>
               <option value="visible">$t:sirsoft-ecommerce.admin.product_review.filter.visible</option>
@@ -503,7 +503,7 @@
       <div data-ref="table_header" class="flex-between flex-wrap gap-4 mb-4">
         <span class="text-primary font-bold">$t:sirsoft-ecommerce.admin.product_review.table.total_count|count={{reviews.data?.meta?.total ?? 0}}</span>
         <div class="flex-center gap-3">
-          <select name="sortBy" class="w-40 text-sm" value="{{query.sort || 'created_at_desc'}}">
+          <select name="sortBy" aria-label="$t:common.sort_order" class="w-40 text-sm" value="{{query.sort || 'created_at_desc'}}">
             <options>
               <option value="created_at_desc">$t:sirsoft-ecommerce.admin.product_review.table.sort.created_at_desc</option>
               <option value="created_at_asc">$t:sirsoft-ecommerce.admin.product_review.table.sort.created_at_asc</option>
@@ -517,7 +517,7 @@
               </navigate>
             </on>
           </select>
-          <select name="perPage" class="w-32 text-sm" value="{{query.per_page || '20'}}">
+          <select name="perPage" aria-label="$t:common.per_page" class="w-32 text-sm" value="{{query.per_page || '20'}}">
             <options>
               <option value="10">$t:sirsoft-ecommerce.admin.product_review.table.per_page.10</option>
               <option value="20">$t:sirsoft-ecommerce.admin.product_review.table.per_page.20</option>
@@ -534,7 +534,7 @@
         </div>
       </div>
       <div data-ref="table_container" class="overflow-hidden mb-4">
-        <data-grid data-type="composite" selectedCountText="" data-ref="review_datagrid" data="{{reviews.data?.data ?? []}}" idField="id" selectable="{{reviews.data?.abilities?.can_update === true}}" selectionScope="page" selectedIds="{{_local.selectedReviews ?? []}}" :expandable="true" expandedRowIds="{{_local.expandedRows ?? []}}" visibleColumns="{{_local.visibleColumns ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.product_review.table.empty">
+        <data-grid data-type="composite" rowLabelField="product.name" selectedCountText="" data-ref="review_datagrid" data="{{reviews.data?.data ?? []}}" idField="id" selectable="{{reviews.data?.abilities?.can_update === true}}" selectionScope="page" selectedIds="{{_local.selectedReviews ?? []}}" :expandable="true" expandedRowIds="{{_local.expandedRows ?? []}}" visibleColumns="{{_local.visibleColumns ?? []}}" emptyMessage="$t:sirsoft-ecommerce.admin.product_review.table.empty">
           <blur-until-loaded sources="reviews"/>
           <prop name="expandContext">
             <field name="rowId" value="{{row.id}}"/>
@@ -573,9 +573,9 @@
           <column field="reviewer" header="$t:sirsoft-ecommerce.admin.product_review.table.columns.reviewer" width="120px" :sortable="false">
             <cell>
               <div>
-                <a data-if="{{!!row.user_id}}" href="#" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium">
+                <a data-if="{{!!row.user_id}}" href="/admin/users/{{row.user_id}}" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium">
                   <on type="click">
-                    <navigate path="/admin/users/{{row.user_id}}"/>
+                    <navigate/>
                   </on>
                   {{row.user?.name ?? ''}}
                 </a>
@@ -809,7 +809,7 @@
                     </div>
                     <!-- 카드 본문: 답변 수정 폼 (편집 모드) -->
                     <div data-if="{{_local.editingReviewId === row.id}}" class="px-4 py-3">
-                      <textarea placeholder="$t:sirsoft-ecommerce.admin.product_review.detail.reply_form.placeholder" class="textarea w-full h-24 resize-none p-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600" value="{{_local.editReplyContent ?? ''}}" disabled="{{row.abilities?.can_update !== true}}">
+                      <textarea aria-label="$t:defer:common.row_cell|row={{row.product?.name ?? ''}}|column={{$t('sirsoft-ecommerce.admin.product_review.detail.reply_form.title')}}" placeholder="$t:sirsoft-ecommerce.admin.product_review.detail.reply_form.placeholder" class="textarea w-full h-24 resize-none p-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600" value="{{_local.editReplyContent ?? ''}}" disabled="{{row.abilities?.can_update !== true}}">
                         <on type="change">
                           <!-- 고치는 중인 답글 본문 -->
                           <set-state target="local" editReplyContent="{{$event.target.value}}"/>
@@ -855,7 +855,7 @@
                     </div>
                     <!-- 카드 본문: 답변 입력 폼 -->
                     <div class="px-4 py-3">
-                      <textarea placeholder="$t:sirsoft-ecommerce.admin.product_review.detail.reply_form.placeholder" class="textarea w-full h-24 resize-none p-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600" value="{{_local.replyText ?? ''}}" disabled="{{row.abilities?.can_update !== true}}">
+                      <textarea aria-label="$t:defer:common.row_cell|row={{row.product?.name ?? ''}}|column={{$t('sirsoft-ecommerce.admin.product_review.detail.reply_form.title')}}" placeholder="$t:sirsoft-ecommerce.admin.product_review.detail.reply_form.placeholder" class="textarea w-full h-24 resize-none p-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600" value="{{_local.replyText ?? ''}}" disabled="{{row.abilities?.can_update !== true}}">
                         <on type="change">
                           <!-- 새로 다는 답글 본문 — 고치기용 입력칸과 따로 둔다(둘이 같은 자리를 쓰면 편집 중에 다른 행의 등록 폼이 그 값을 물고 있는다) -->
                           <set-state target="local" replyText="{{$event.target.value}}"/>
@@ -900,7 +900,7 @@
           </on>
         </data-grid>
       </div>
-      <pagination data-type="composite" data-if="{{((reviews.data?.meta?.last_page ?? 0) > 1) || (reviews.data?.meta?.has_more_pages === true) || ((reviews.data?.meta?.current_page ?? 1) > 1)}}" currentPage="{{reviews.data?.meta?.current_page ?? 1}}" totalPages="{{reviews.data?.meta?.last_page ?? null}}" hasMorePages="{{reviews.data?.meta?.has_more_pages ?? false}}" class="flex justify-center mt-4">
+      <pagination data-type="composite" pageHref="/admin/ecommerce/reviews?page={page}" :pageHrefMergeQuery="true" data-if="{{((reviews.data?.meta?.last_page ?? 0) > 1) || (reviews.data?.meta?.has_more_pages === true) || ((reviews.data?.meta?.current_page ?? 1) > 1)}}" currentPage="{{reviews.data?.meta?.current_page ?? 1}}" totalPages="{{reviews.data?.meta?.last_page ?? null}}" hasMorePages="{{reviews.data?.meta?.has_more_pages ?? false}}" class="flex justify-center mt-4">
         <on event="onPageChange">
           <!-- 쪽 넘김도 주소로 나간다 — 걸어 둔 조건은 그대로 두고 쪽 번호만 갈아 끼운다 -->
           <navigate path="/admin/ecommerce/reviews" :mergeQuery="true" :replace="true" transition_overlay_target="review_datagrid__body">

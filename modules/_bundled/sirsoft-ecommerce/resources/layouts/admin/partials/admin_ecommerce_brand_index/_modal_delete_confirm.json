@@ -71,7 +71,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-sm font-semibold text-danger-soft mb-1"
+                                                        "className": "text-sm font-semibold ecommerce-tone-error-soft mb-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.brand.delete_modal.cannot_delete_title"
                                                 },
@@ -79,7 +79,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-error-soft"
+                                                        "className": "ecommerce-tone-error-soft text-sm"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.brand.delete_modal.has_products_cannot_delete|count={{_global.modal_data?.productsCount ?? 0}}"
                                                 }

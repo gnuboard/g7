@@ -41,7 +41,7 @@
         <span data-if="{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0}}" class="ml-2 text-xs text-blue-600 dark:text-blue-400">({{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length}}$t:shop.checkout.coupon_count_suffix)</span>
       </label>
       <!-- 주문 쿠폰 드롭다운 -->
-      <select name="order_coupon_issue_id" value="{{_local.checkout?.order_coupon_issue_id ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+      <select name="order_coupon_issue_id" aria-label="$t:shop.checkout.order_coupon_select" value="{{_local.checkout?.order_coupon_issue_id ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
         <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
         <on type="change">
           <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { order_coupon_issue_id: $event.target.value || null })}}"/>
@@ -72,7 +72,7 @@
         <span data-if="{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0}}" class="ml-2 text-xs text-blue-600 dark:text-blue-400">({{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length}}$t:shop.checkout.coupon_count_suffix)</span>
       </label>
       <!-- 배송비 쿠폰 드롭다운 -->
-      <select name="shipping_coupon_issue_id" value="{{_local.checkout?.shipping_coupon_issue_id ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+      <select name="shipping_coupon_issue_id" aria-label="$t:shop.checkout.shipping_coupon_select" value="{{_local.checkout?.shipping_coupon_issue_id ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
         <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
         <on type="change">
           <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { shipping_coupon_issue_id: $event.target.value || null })}}"/>

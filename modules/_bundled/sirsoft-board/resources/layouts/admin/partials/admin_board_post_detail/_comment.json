@@ -52,7 +52,7 @@
                                             "id": "author_name_menu_{{comment.id}}",
                                             "type": "composite",
                                             "name": "ActionMenu",
-                                            "if": "{{!comment?.author?.is_guest}}",
+                                            "if": "{{!comment?.author?.is_guest && comment?.author?.uuid}}",
                                             "actions": [
                                                 {
                                                     "comment": "글쓴이 이름을 누르면 그 회원의 관리자 상세로 — 비회원은 이 메뉴 자체가 없다(uuid 가 없어 갈 곳이 없다)",
@@ -76,6 +76,7 @@
                                                 "position": "right",
                                                 "items": [
                                                     {
+                                                        "href": "/admin/users/{{comment?.author?.uuid}}",
                                                         "id": "view_user_info",
                                                         "label": "$t:sirsoft-board.admin.posts.detail.user_info",
                                                         "iconName": "user"
@@ -86,11 +87,11 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "if": "{{comment?.author?.is_guest}}",
+                                            "if": "{{comment?.author?.is_guest || !comment?.author?.uuid}}",
                                             "props": {
                                                 "className": "text-primary text-sm font-semibold"
                                             },
-                                            "text": "{{comment?.author?.name}}"
+                                            "text": "{{comment?.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}"
                                         },
                                         {
                                             "type": "basic",
@@ -634,6 +635,7 @@
                     ],
                     "props": {
                         "value": "{{_local.edit_comment_content ?? comment.content}}",
+                        "aria-label": "$t:sirsoft-board.attributes.comment.content",
                         "rows": 3,
                         "className": "text-primary w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 mb-2"
                     }

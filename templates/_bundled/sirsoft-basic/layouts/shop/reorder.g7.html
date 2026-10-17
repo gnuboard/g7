@@ -46,18 +46,18 @@
           </li>
         </ul>
         <div class="flex gap-3">
-          <button type="button" class="flex-1 px-4 py-2.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-lg font-medium cursor-pointer">
+          <a href="{{_global.shopBase}}/cart" class="inline-flex items-center justify-center flex-1 px-4 py-2.5 bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-lg font-medium cursor-pointer">
             <on type="click">
-              <navigate path="{{_global.shopBase}}/cart"/>
+              <navigate/>
             </on>
             $t:shop.reorder.go_cart
-          </button>
-          <button type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+          </a>
+          <a href="/mypage/orders" class="inline-flex items-center justify-center flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
             <on type="click">
-              <navigate path="/mypage/orders"/>
+              <navigate/>
             </on>
             $t:shop.reorder.back_to_orders
-          </button>
+          </a>
         </div>
       </div>
       <!-- 에러 — 사용자에게 알린 후 마이페이지로 돌아가기 옵션 -->
@@ -67,12 +67,12 @@
           <span>$t:shop.reorder.error_title</span>
         </h1>
         <p class="text-gray-600 dark:text-gray-300 mb-6">{{_local.message !== '' ? _local.message : '$t:shop.reorder.failed'}}</p>
-        <button type="button" class="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
+        <a href="/mypage/orders" class="inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer">
           <on type="click">
-            <navigate path="/mypage/orders"/>
+            <navigate/>
           </on>
           $t:shop.reorder.back_to_orders
-        </button>
+        </a>
       </div>
     </container>
   </slot>

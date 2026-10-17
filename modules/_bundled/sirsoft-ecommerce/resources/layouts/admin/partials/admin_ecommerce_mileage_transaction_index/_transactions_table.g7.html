@@ -12,7 +12,7 @@
   `_global.mileageEdit` 에 조립해 넘긴다 — 표시용 문구(부호 붙은 금액 등)를 여기서 만든다. -->
 <partial description="마일리지 내역 DataGrid (셀 인터랙션 + 행 확장 연결 거래)">
   <div data-ref="mileage_transactions_grid_wrap" class="overflow-hidden mb-4">
-    <data-grid data-type="composite" data-ref="mileage_transactions_datagrid" data="{{transactions?.data?.data || []}}" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :showColumnSelector="false" selectedCountText="" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.mileage_transactions.message.empty" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{transactions?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{transactions?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{transactions?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{query.per_page || 20}}" :alwaysShowPagination="true">
+    <data-grid data-type="composite" data-ref="mileage_transactions_datagrid" pageHref="/admin/ecommerce/mileage-transactions?page={page}" :pageHrefMergeQuery="true" rowLabelField="number" data="{{transactions?.data?.data || []}}" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :showColumnSelector="false" selectedCountText="" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.mileage_transactions.message.empty" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{transactions?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{transactions?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{transactions?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{query.per_page || 20}}" :alwaysShowPagination="true">
       <blur-until-loaded sources="transactions"/>
       <prop name="expandContext">
         <field name="linkedTransactions" value="{{_local.linkedTransactions}}"/>
@@ -31,15 +31,12 @@
         <cell>
           <action-menu data-type="composite" data-if="{{!!row.user_uuid}}" position="right">
             <prop name="items">
-              <item id="view_member" label="$t:sirsoft-ecommerce.admin.mileage_transactions.cell.view_member" iconName="user"/>
+              <item id="view_member" href="/admin/users/{{row.user_uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.mileage_transactions.cell.view_member" iconName="user"/>
               <item id="search_member" label="$t:sirsoft-ecommerce.admin.mileage_transactions.cell.search_member" iconName="magnifying-glass"/>
             </prop>
             <on event="onItemClick">
               <!-- 회원 이름 메뉴 — 상세는 **새 창**으로 열고(이 목록의 검색 조건을 잃지 않게), 회원으로 거르기는 같은 창에서 조건만 갈아끼운다. -->
               <switch>
-                <case when="view_member">
-                  <open-window path="/admin/users/{{row.user_uuid}}"/>
-                </case>
                 <case when="search_member">
                   <navigate path="/admin/ecommerce/mileage-transactions" :mergeQuery="true" :replace="true" transition_overlay_target="mileage_transactions_datagrid__body">
                     <query search_field="member_id" search_keyword="{{row.user_id}}" :page="1"/>
@@ -88,12 +85,9 @@
       </column>
       <column field="order" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.order" width="120px" :sortable="false">
         <cell>
-          <span data-if="{{row.order_number}}" class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
-            <on type="click">
-              <open-window path="/admin/ecommerce/orders/{{row.order_number}}"/>
-            </on>
+          <a href="/admin/ecommerce/orders/{{row.order_number}}" target="_blank" rel="noopener noreferrer" data-if="{{row.order_number}}" class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
             {{row.order_number}}
-          </span>
+          </a>
           <span data-if="{{!row.order_number}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.none</span>
         </cell>
       </column>
@@ -101,16 +95,8 @@
         <cell>
           <action-menu data-type="composite" data-if="{{!!row.granted_by_uuid}}" position="right">
             <prop name="items">
-              <item id="view_admin" label="$t:sirsoft-ecommerce.admin.mileage_transactions.cell.view_admin" iconName="user-shield"/>
+              <item id="view_admin" href="/admin/users/{{row.granted_by_uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.mileage_transactions.cell.view_admin" iconName="user-shield"/>
             </prop>
-            <on event="onItemClick">
-              <!-- 처리한 관리자 이름 메뉴. 회원 쪽과 달리 '이 관리자로 거르기' 가 없다 — 조건 목록에 처리자 항목이 없기 때문이다. -->
-              <switch>
-                <case when="view_admin">
-                  <open-window path="/admin/users/{{row.granted_by_uuid}}"/>
-                </case>
-              </switch>
-            </on>
             <div class="flex items-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
               <icon name="fa-solid fa-user-shield" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
               <span class="font-medium text-gray-900 dark:text-gray-100 truncate">{{row.granted_by_name}}</span>
@@ -130,12 +116,9 @@
               <span class="text-gray-500 dark:text-gray-400">{{linked.created_at_formatted}}</span>
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{{linked.type_label}}</span>
               <span class="{{linked.amount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}">{{(linked.amount >= 0 ? '+' : '') + (linked.amount_formatted ?? linked.amount)}}</span>
-              <span data-if="{{linked.order_number}}" class="inline-flex items-center gap-1 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
-                <on type="click">
-                  <open-window path="/admin/ecommerce/orders/{{linked.order_number}}"/>
-                </on>
+              <a href="/admin/ecommerce/orders/{{linked.order_number}}" target="_blank" rel="noopener noreferrer" data-if="{{linked.order_number}}" class="inline-flex items-center gap-1 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
                 {{linked.order_number}}
-              </span>
+              </a>
               <span data-if="{{linked.granted_by_name}}" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                 <icon name="fa-solid fa-user-shield" class="text-gray-400 dark:text-gray-500"/>
                 <span>{{linked.granted_by_name}}</span>

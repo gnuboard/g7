@@ -39,7 +39,7 @@
         <div>
           <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:claim.apply.recipient_name</label>
           <!-- 교환품을 받을 사람 — 원 주문의 수령인과 달라도 된다. 금액과 무관한 칸이라 입력 중에는 미리보기를 부르지 않고, 편집 중인 주소에 쌓였다가 제출 때 함께 실린다. -->
-          <input type="text" :maxLength="50" value="{{_local.claimRedelivery?.recipient_name ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+          <input type="text" aria-label="$t:claim.apply.recipient_name" :maxLength="50" value="{{_local.claimRedelivery?.recipient_name ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
             <on type="input">
               <set-state target="_local" claimRedelivery.recipient_name="{{$event.target.value}}"/>
             </on>
@@ -48,7 +48,7 @@
         <div>
           <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:claim.apply.recipient_phone</label>
           <!-- 재발송 연락처 — 칸의 최대 길이는 서버 규칙과 같은 값이라, 길이 초과로 제출이 거절되는 일을 입력 단계에서 막는다. -->
-          <input type="text" :maxLength="20" value="{{_local.claimRedelivery?.phone ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+          <input type="text" aria-label="$t:claim.apply.recipient_phone" :maxLength="20" value="{{_local.claimRedelivery?.phone ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
             <on type="input">
               <set-state target="_local" claimRedelivery.phone="{{$event.target.value}}"/>
             </on>
@@ -58,7 +58,7 @@
       <div>
         <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:claim.apply.zipcode</label>
         <!-- 우편번호는 도서산간 판정의 입력이라 이 카드에서 배송비를 바꿀 수 있는 유일한 칸이다. 입력마다 다시 계산하지 않고 [적용]에서 한 번 미리보기를 부르며, 비워 두면 재발송지가 신청서에 아예 실리지 않는다. -->
-        <input type="text" :maxLength="20" value="{{_local.claimRedelivery?.zipcode ?? ''}}" class="w-40 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <input type="text" aria-label="$t:claim.apply.zipcode" :maxLength="20" value="{{_local.claimRedelivery?.zipcode ?? ''}}" class="w-40 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
           <on type="input">
             <set-state target="_local" claimRedelivery.zipcode="{{$event.target.value}}"/>
           </on>
@@ -67,7 +67,7 @@
       <div>
         <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:claim.apply.address1</label>
         <!-- 기본 주소 — 처음 [변경]을 누르면 원 배송지 값으로 채워지고, 한 번 적용한 뒤에는 그 값에서 다시 고친다. 주소 검색 없이 직접 고치는 칸이다. -->
-        <input type="text" :maxLength="255" value="{{_local.claimRedelivery?.address1 ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <input type="text" aria-label="$t:claim.apply.address1" :maxLength="255" value="{{_local.claimRedelivery?.address1 ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
           <on type="input">
             <set-state target="_local" claimRedelivery.address1="{{$event.target.value}}"/>
           </on>
@@ -76,7 +76,7 @@
       <div>
         <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:claim.apply.address2</label>
         <!-- 상세 주소 — 비워 둬도 접수가 막히지 않는 선택 칸이다(서버 규칙이 재발송지의 모든 칸을 비워 둘 수 있게 둔다). -->
-        <input type="text" :maxLength="255" value="{{_local.claimRedelivery?.address2 ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <input type="text" aria-label="$t:claim.apply.address2" :maxLength="255" value="{{_local.claimRedelivery?.address2 ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
           <on type="input">
             <set-state target="_local" claimRedelivery.address2="{{$event.target.value}}"/>
           </on>
@@ -87,7 +87,7 @@
         <responsive on="portable" class="grid grid-cols-1 gap-3"/>
         <div>
           <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:claim.apply.city</label>
-          <input type="text" :maxLength="100" value="{{_local.claimRedelivery?.city ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+          <input type="text" aria-label="$t:claim.apply.city" :maxLength="100" value="{{_local.claimRedelivery?.city ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
             <on type="input">
               <!-- 해외 재발송지의 도시 칸 값을 신청서 재발송지(claimRedelivery.city)에 그대로 둔다 -->
               <set-state target="_local" claimRedelivery.city="{{$event.target.value}}"/>
@@ -96,7 +96,7 @@
         </div>
         <div>
           <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">$t:claim.apply.state</label>
-          <input type="text" :maxLength="100" value="{{_local.claimRedelivery?.state ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+          <input type="text" aria-label="$t:claim.apply.state" :maxLength="100" value="{{_local.claimRedelivery?.state ?? ''}}" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
             <on type="input">
               <!-- 해외 재발송지의 주·도 칸 값을 신청서 재발송지(claimRedelivery.state)에 그대로 둔다 -->
               <set-state target="_local" claimRedelivery.state="{{$event.target.value}}"/>

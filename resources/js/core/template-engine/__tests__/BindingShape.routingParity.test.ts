@@ -1,3 +1,4 @@
+// e2e:allow 저장소 레이아웃 JSON 을 읽어 판정 차이를 스냅숏으로 고정하는 정적 하네스 — 브라우저 동작 변경 없음(링크 이동 런타임은 admin/user-navigation-links E2E 가 덮는다)
 /**
  * 판정기 통일 라우팅 diff 하네스
  *
@@ -137,12 +138,16 @@ function collectOccurrences(): Occurrence[] {
 const occurrences = collectOccurrences();
 
 describe('BindingShape 라우팅 diff 하네스', () => {
+  // @scenario aspect=population
+  // @effects harness_collects_layout_population
   it('레이아웃 모집단을 실제로 수집한다 (하네스 자체 회귀 방지)', () => {
     const files = new Set(occurrences.map((o) => o.file));
     expect(files.size).toBeGreaterThan(100);
     expect(occurrences.length).toBeGreaterThan(1000);
   });
 
+  // @scenario aspect=single_binding_total
+  // @effects single_binding_divergence_total_locked
   it('단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량', () => {
     const values = new Set<string>();
     for (const occ of occurrences) {
@@ -156,9 +161,21 @@ describe('BindingShape 라우팅 diff 하네스', () => {
     expect(values.size).toMatchSnapshot();
   });
 
-  it('단일 바인딩 판정: greedy 정규식이 실제로 쓰이는 지점(액션/데이터소스 params)의 갈리는 값', () => {
+  // @scenario aspect=greedy_and_link_sites
+  // @effects greedy_site_divergence_listed_with_files, link_target_sites_counted_as_greedy_sites
+  it('단일 바인딩 판정: greedy 정규식이 실제로 쓰이는 지점(액션/데이터소스 params · 링크 목적지)의 갈리는 값', () => {
+    // 링크 목적지: 화면 이동을 `<a href>` + path 없는 navigate 로 바꾸면 navigate `params.path`
+    // 에 있던 주소가 링크 props 로 옮겨 간다. 그 자리를 빼면 옮겨 간 값이 이 목록에서 조용히
+    // 사라져 잠금이 약해지므로 같이 센다 — `props.href`(A 등) · `props.pageHref`(Pagination·
+    // DataGrid·CardGrid) · `props.cardHref`(CardGrid — 카드 전체 링크) · `props.tabs[].href`(TabNavigation) ·
+    // `props.rowActions[].href`(DataGrid) 등 props 아래 `href`/`…Href` 로 끝나는 자리 전부(새 링크 prop 도 이름만
+    // 이 규칙을 따르면 따로 적지 않아도 잡힌다). 이 값들은 DynamicRenderer 의 props 해석
+    // (문자열은 `extractSingleBinding`, 중첩 배열·객체는 `resolveObject`)이나 `skipBindingKeys` 뒤
+    // 컴포넌트의 `resolveBindings`(`scanBindings`) 로 풀려 정본 판정만 거친다.
+    const isLinkTargetSite = (jsonPath: string) => /(^|\.)props\.(.+\.)?([a-z][A-Za-z]*Href|href)$/.test(jsonPath);
     const isGreedySite = (jsonPath: string) =>
       /(^|\.)data_sources\./.test(jsonPath) ||
+      isLinkTargetSite(jsonPath) ||
       (/\.params(\.|$)/.test(jsonPath) &&
         (/(^|\.)actions?\./.test(jsonPath) || /(^|\.)init_actions\./.test(jsonPath) || /\.on[A-Z]/.test(jsonPath)));
 
@@ -186,6 +203,8 @@ describe('BindingShape 라우팅 diff 하네스', () => {
     expect(report).toMatchSnapshot();
   });
 
+  // @scenario aspect=complex_dialects
+  // @effects complex_expression_divergence_listed
   it('표현식/경로 판정: 구 방언과 신 정본이 갈리는 식 목록', () => {
     const diffs = new Map<string, { files: Set<string>; old: Record<string, boolean>; canonical: boolean }>();
 
@@ -222,6 +241,8 @@ describe('BindingShape 라우팅 diff 하네스', () => {
     expect(report).toMatchSnapshot();
   });
 
+  // @scenario aspect=divergence_summary
+  // @effects divergence_category_counts_locked
   it('판정이 갈리는 식의 분류별 건수 요약', () => {
     let quotedBracket = 0;
     let numericIndex = 0;
@@ -246,6 +267,8 @@ describe('BindingShape 라우팅 diff 하네스', () => {
     expect({ quotedBracket, numericIndex, other, total: seen.size }).toMatchSnapshot();
   });
 
+  // @scenario aspect=empty_binding
+  // @effects no_empty_binding_in_repo
   it('빈 바인딩(`{{}}`)은 저장소에 존재하지 않는다', () => {
     const empties = occurrences.filter((o) => {
       const inner = canonicalExtract(o.value);
@@ -254,6 +277,8 @@ describe('BindingShape 라우팅 diff 하네스', () => {
     expect(empties.map((o) => `${o.file} :: ${o.jsonPath}`)).toEqual([]);
   });
 
+  // @scenario aspect=pipe_classification
+  // @effects pipe_expression_classified_as_pipe
   it('파이프 식은 파이프로 분류된다 (분류 순서 회귀 방지)', () => {
     const pipeExprs = occurrences
       .map((o) => canonicalExtract(o.value))
@@ -265,6 +290,8 @@ describe('BindingShape 라우팅 diff 하네스', () => {
     }
   });
 
+  // @scenario aspect=literal_classification
+  // @effects literal_not_resolved_as_path
   it('리터럴 식은 경로로 해석되지 않는다', () => {
     for (const literal of LITERALS.keys()) {
       expect(classifyExpression(literal)).toBe('literal');

@@ -145,16 +145,16 @@
     <container data-type="layout" class="py-4">
       <responsive on="desktop" class="py-8"/>
       <!-- 뒤로가기 버튼 -->
-      <button class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 cursor-pointer">
+      <a href="{{_global.shopBase}}/products" :mergeQuery="true" class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 cursor-pointer">
         <responsive on="desktop" class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6 cursor-pointer"/>
         <on type="click">
-          <navigate path="{{_global.shopBase}}/products" :mergeQuery="true">
+          <navigate :mergeQuery="true">
             <query/>
           </navigate>
         </on>
         <icon name="chevron-left" size="sm"/>
         <span>$t:shop.back</span>
-      </button>
+      </a>
       <!-- 상품 정보 영역 - PC: 2열, 모바일: 1열 -->
       <div class="flex flex-col mb-8">
         <blur-until-loaded sources="product"/>
@@ -190,11 +190,11 @@
         </div>
       </div>
       <!-- 탭 네비게이션 -->
-      <tab-navigation data-type="composite" hiddenTabIds="{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ? [] : ['qna']}}" activeTabId="{{_local.activeTab ?? 'info'}}" variant="underline">
+      <tab-navigation data-type="composite" :tabHrefMergeQuery="true" hiddenTabIds="{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ? [] : ['qna']}}" activeTabId="{{_local.activeTab ?? 'info'}}" variant="underline">
         <prop name="tabs">
-          <item id="info" label="$t:shop.tabs.detail_info" iconName="file-text"/>
-          <item id="reviews" label="$t:shop.tabs.reviews" badge="{{reviews.data?.total_count ?? 0}}" iconName="star"/>
-          <item id="qna" label="$t:shop.tabs.qna" badge="{{qna.data.meta.total ?? 0}}" iconName="comment"/>
+          <item id="info" href="{{route.path}}?tab=info" label="$t:shop.tabs.detail_info" iconName="file-text"/>
+          <item id="reviews" href="{{route.path}}?tab=reviews" label="$t:shop.tabs.reviews" badge="{{reviews.data?.total_count ?? 0}}" iconName="star"/>
+          <item id="qna" href="{{route.path}}?tab=qna" label="$t:shop.tabs.qna" badge="{{qna.data.meta.total ?? 0}}" iconName="comment"/>
         </prop>
         <on event="onTabChange">
           <set-state target="local" activeTab="{{$args[0]}}"/>

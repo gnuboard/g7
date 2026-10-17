@@ -1308,14 +1308,13 @@
                                 {
                                     "comment": "답변 버튼 (답변 기능 활성화 + depth 제한 + 블라인드 아닌 게시글 + 비밀글은 검증 후 + 열 수 없는 비밀 조상이 없을 때). 남의 비밀글 아래 공개 답변에 답변을 달면 그 사람이 스레드의 앵커가 되어 비밀 조상이 열리므로, 서버가 막는 경우(reply_locked_by_secret_ancestor)를 미리 감춘다.",
                                     "type": "basic",
-                                    "name": "Button",
+                                    "name": "A",
                                     "if": "{{post?.data?.board?.use_reply && !post?.data?.is_notice && (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) && post?.data?.abilities?.can_write && post?.data?.status !== 'blinded' && !post?.data?.deleted_at && (!post?.data?.is_secret || post?.data?.content !== null) && !post?.data?.reply_locked_by_secret_ancestor}}",
                                     "actions": [
                                         {
                                             "type": "click",
                                             "handler": "navigate",
                                             "params": {
-                                                "path": "/board/{{route.slug}}/write",
                                                 "mergeQuery": true,
                                                 "query": {
                                                     "parent_id": "{{route.id}}"
@@ -1324,6 +1323,8 @@
                                         }
                                     ],
                                     "props": {
+                                        "href": "/board/{{route.slug}}/write?parent_id={{route.id}}",
+                                        "mergeQuery": true,
                                         "className": "px-4 py-2 text-sm border border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center gap-1 cursor-pointer"
                                     },
                                     "children": [
@@ -1541,7 +1542,7 @@
                                 {
                                     "comment": "수정 버튼 ((회원 권한 && 본인 글) || 비회원 글 || manager 권한) && 삭제되지 않은 글",
                                     "type": "basic",
-                                    "name": "Button",
+                                    "name": "A",
                                     "if": "{{!post?.data?.deleted_at && ((post?.data?.is_author && post?.data?.abilities?.can_write) || post?.data?.is_guest_post || post?.data?.abilities?.can_manage)}}",
                                     "actions": [
                                         {
@@ -1549,13 +1550,14 @@
                                             "type": "click",
                                             "handler": "navigate",
                                             "params": {
-                                                "path": "/board/{{route.slug}}/{{route.id}}/edit",
                                                 "mergeQuery": true,
                                                 "query": {}
                                             }
                                         }
                                     ],
                                     "props": {
+                                        "href": "/board/{{route.slug}}/{{route.id}}/edit",
+                                        "mergeQuery": true,
                                         "className": "px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer"
                                     },
                                     "children": [

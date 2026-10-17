@@ -6,7 +6,7 @@
     <div class="space-y-4">
       <div class="space-y-1">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:shop.qna.reply_content</label>
-        <textarea class="{{(_global.qnaErrors?.content) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none'}}" placeholder="$t:shop.qna.reply_content_placeholder" :rows="5" value="{{_global.qnaReplyForm.content ?? ''}}" disabled="{{_global.qnaSubmitting}}">
+        <textarea aria-label="$t:shop.qna.reply_content" class="{{(_global.qnaErrors?.content) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none'}}" placeholder="$t:shop.qna.reply_content_placeholder" :rows="5" value="{{_global.qnaReplyForm.content ?? ''}}" disabled="{{_global.qnaSubmitting}}">
           <on event="onChange">
             <!-- 답변 본문. 문의 작성 창과 같은 이유로 값이 `_global` 에 산다(모달은 부모 `_local` 을 못 읽는다) -->
             <set-state target="global">

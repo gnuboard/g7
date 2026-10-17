@@ -84,6 +84,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.date",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('date')}}"
                             }
@@ -468,6 +469,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.order_status",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('orderStatus')}}"
                             }
@@ -791,6 +793,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.delivery_method",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('deliveryMethod')}}"
                             }
@@ -890,6 +893,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.payment_method",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('paymentMethod')}}"
                             }
@@ -989,6 +993,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.category",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('category')}}"
                             }
@@ -1029,6 +1034,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.category_level|level=1",
                                         "name": "category1",
                                         "value": "{{_local.filter.category1}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.category_placeholder",
@@ -1055,6 +1061,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.category_level|level=2",
                                         "name": "category2",
                                         "value": "{{_local.filter.category2}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.category_placeholder",
@@ -1080,6 +1087,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.category_level|level=3",
                                         "name": "category3",
                                         "value": "{{_local.filter.category3}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.category_placeholder",
@@ -1104,6 +1112,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.category_level|level=4",
                                         "name": "category4",
                                         "value": "{{_local.filter.category4}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.category_placeholder",
@@ -1149,6 +1158,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.price",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('price')}}"
                             }
@@ -1281,6 +1291,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.country",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('country')}}"
                             }
@@ -1387,6 +1398,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.device",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('device')}}"
                             }
@@ -1520,6 +1532,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.shipping_policy",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('shippingPolicy')}}"
                             }
@@ -1592,6 +1605,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.shipping_fee",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('shippingFee')}}"
                             }
@@ -1711,6 +1725,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.orderer",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('orderer')}}"
                             }
@@ -1779,6 +1794,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.orderer",
                                         "options": "{{_local.ordererSearchResults ?? []}}",
                                         "value": "{{_local.filter.ordererUuid || ''}}",
                                         "triggerLabel": "$t:sirsoft-ecommerce.admin.order.filter.orderer_select",
@@ -1859,6 +1875,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.member_type",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('memberType')}}"
                             }
@@ -1944,6 +1961,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.claim.presence",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2 mt-1' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('claim')}}"
                             }
@@ -3395,6 +3413,7 @@
                             ],
                             "props": {
                                 "name": "searchField",
+                                "aria-label": "$t:common.search_field",
                                 "className": "w-80 shrink-0",
                                 "value": "{{_local.filter.searchField}}",
                                 "options": [

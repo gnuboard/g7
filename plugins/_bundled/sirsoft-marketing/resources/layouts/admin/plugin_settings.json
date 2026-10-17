@@ -93,7 +93,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-warning-soft"
+                                    "className": "text-xs text-yellow-700 dark:text-yellow-300"
                                 },
                                 "text": "$t:sirsoft-marketing.plugin_read_only"
                             }
@@ -489,7 +489,7 @@
                                                                                         "name": "Span",
                                                                                         "if": "{{channel.is_system}}",
                                                                                         "props": {
-                                                                                            "className": "text-info-soft inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-blue-100 dark:bg-blue-900"
+                                                                                            "className": "text-xs text-blue-700 dark:text-blue-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-blue-100 dark:bg-blue-900"
                                                                                         },
                                                                                         "text": "$t:sirsoft-marketing.settings.channels.system_badge"
                                                                                     }
@@ -944,19 +944,16 @@
                             {
                                 "id": "cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/plugins"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary"
+                                    "href": "/admin/plugins",
+                                    "className": "button btn btn-secondary"
                                 },
                                 "children": [
                                     {

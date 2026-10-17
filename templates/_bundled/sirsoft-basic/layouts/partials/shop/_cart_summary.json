@@ -66,7 +66,7 @@
                     "props": {
                         "name": "spinner",
                         "spin": true,
-                        "className": "text-gray-400",
+                        "className": "text-gray-400 dark:text-gray-500",
                         "size": "lg"
                     }
                 }
@@ -760,17 +760,15 @@
         },
         {
             "type": "basic",
-            "name": "Button",
+            "name": "A",
             "actions": [
                 {
                     "type": "click",
-                    "handler": "navigate",
-                    "params": {
-                        "path": "{{_global.shopBase}}/products"
-                    }
+                    "handler": "navigate"
                 }
             ],
             "props": {
+                "href": "{{_global.shopBase}}/products",
                 "className": "block w-full text-center text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 mt-3 cursor-pointer"
             },
             "text": "$t:shop.cart.continue_shopping"

@@ -1,0 +1,26 @@
+feature: sirsoft-basic 화면 이동을 링크로 — 새 탭 열기 (#757)
+
+description: |
+  머리글 메뉴·모바일 메뉴·꼬리말·회원 메뉴·상품 카드·페이지 번호·탭과 레이아웃의 이동 단추가 `<button>` + navigate 라
+  렌더 시점에 주소가 없어 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 되지 않았다.
+  이동 자리를 `<a href>` 로 그리고 보통 클릭(왼쪽 단추·수정키 없음)만 지금처럼 SPA 로 옮긴다. 수정키·가운데 단추는
+  막지 않아 브라우저가 새 탭·새 창을 연다. 비활성 링크는 href 를 빼고 aria-disabled 로 알린다.
+  비회원 주문 조회 화면·저장 뒤 이동·모달 닫기 이동·검색 실행 단추는 링크로 바꾸지 않는다. 상태를 정리하고 이동하는 단추는
+  링크로 바꾸되 보통 클릭은 지금처럼 정리 후 이동하고, 새 탭은 href 로 연다.
+
+axes:
+  component: [a, header, mobile_nav, footer, user_info, product_card, pagination, tab_navigation, notification_center, image_gallery, layout]
+
+effects:
+  - plain_click_spa_navigate
+  - modified_click_opens_browser_default
+  - disabled_link_has_no_href
+  - merge_query_href
+  - nested_button_does_not_navigate
+  - layout_moves_are_links
+  - new_window_link_has_noopener
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/NavigationLinks.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/navigation-links.test.ts
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/user-navigation-links.spec.ts

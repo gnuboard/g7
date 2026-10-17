@@ -1,0 +1,20 @@
+feature: 플러그인 sirsoft-daum_postcode 화면 이동 링크 (#757 WP-L)
+
+description: |
+  화면 이동을 링크로 바꿔 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 되게 한다. 굽기 산출물(JSON) 전수에서
+  이동 자리를 파생해 링크 여부를 판정한다. 축 entry 는 이동 자리의 종류다. 바꾸지 않는 자리(W6·확인 창 흐름)는
+  시험 파일의 EXCLUDED 에 사유와 함께 둔다.
+
+axes:
+  entry:
+    - click_move   # 클릭으로 다른 화면에 가는 노드
+
+exclusions:
+  - { entry: click_move, reason: "제외 없음 — 모집단을 레이아웃 JSON 전수에서 파생하는 단일 축이다" }
+
+effects:
+  - navigation_is_link_with_href     # 화면 이동 자리는 <a href> — 가운데 클릭·Ctrl+클릭·우클릭 새 탭 열기가 된다
+  - exclusions_point_to_live_nodes   # 제외 목록이 실재하는 자리만 가리킨다(낡은 제외 없음)
+
+test_files:
+  - plugins/_bundled/sirsoft-daum_postcode/resources/js/__tests__/layouts/navigation-links.test.ts

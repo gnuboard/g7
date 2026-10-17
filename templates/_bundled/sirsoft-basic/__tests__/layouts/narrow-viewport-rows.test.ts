@@ -67,7 +67,7 @@ describe('좁은 화면 고정 줄', () => {
    * @effects document_no_horizontal_overflow
    */
   it('인기글 기간 단추 줄은 flex-wrap', () => {
-    const rows = findAll(loadLayout('board/popular.json'), (n) => (n.children ?? []).filter((c: Node) => c.name === 'Button' && JSON.stringify(c.actions ?? []).includes('/boards/popular?period=')).length >= 3);
+    const rows = findAll(loadLayout('board/popular.json'), (n) => (n.children ?? []).filter((c: Node) => c.name === 'A' && String(c.props?.href ?? '').includes('/boards/popular?period=')).length >= 3);
     expect(rows.length).toBe(1);
     expect(tokens(rows[0])).toContain('flex-wrap');
   });

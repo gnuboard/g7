@@ -80,6 +80,14 @@ export interface SortableMenuListProps {
         name: string | Record<string, string>;
     }[];
     /**
+     * 항목 편집 주소(행 표현식, 예: `/admin/menus?id={{row.id}}&mode=edit`) — 주면 항목 이름이 그 주소의 링크가 되어
+     * 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」로 그 항목 편집 화면을 연다(#757). 보통 클릭은 지금처럼 onSelect.
+     * 엔진은 원문을 넘기고(components.json skipBindingKeys) 항목마다 그 항목으로 푼다. 여러 개 선택 모드에서는 링크를 그리지 않는다.
+     */
+    itemHref?: string;
+    /** 참이면 현재 주소의 쿼리(검색 등)를 항목 주소에 합친다(같은 키는 항목 주소 쪽이 이긴다) */
+    itemHrefMergeQuery?: boolean;
+    /**
      * DOM id 속성 (레이아웃 편집기 코어 일괄 ID)
      */
     id?: string;

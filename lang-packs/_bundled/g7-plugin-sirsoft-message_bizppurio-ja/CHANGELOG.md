@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.2] - 2026-10-14
+
+### Added
+
+- SMS 본문 편집칸의 화면 낭독기용 이름(`template.sms.body_label`)의 일본어 번역을 추가했습니다.
+
 ## [1.0.1] - 2026-10-10
 
 ### Added

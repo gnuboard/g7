@@ -87,14 +87,14 @@
         <div class="card-description">$t:sirsoft-board.admin.settings.sections.report_permissions_description</div>
         <div class="row-stack">
           <div data-ref="field_report_view_roles">
-            <span class="block text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-board.admin.settings.fields.report_view_roles</span>
+            <label class="block text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-board.admin.settings.fields.report_view_roles</label>
             <span class="block text-tertiary mb-1.5">$t:sirsoft-board.admin.settings.fields.report_view_roles_description</span>
             <tag-input data-type="composite" name="report_permissions.view_roles" options="{{_computed.roleOptions ?? []}}" class="{{(_local.errors?.['report_permissions.view_roles']) ? 'w-full input-error' : 'w-full'}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['report_permissions.view_roles']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_permissions.view_roles']) ? _local.errors['report_permissions.view_roles'][0] : _local.errors?.['report_permissions.view_roles']) ?? ''}}</span>
           </div>
           <div data-ref="field_report_manage_roles" class="">
             <div>
-              <span class="block text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-board.admin.settings.fields.report_manage_roles</span>
+              <label class="block text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-board.admin.settings.fields.report_manage_roles</label>
               <span class="block text-tertiary mb-1.5">$t:sirsoft-board.admin.settings.fields.report_manage_roles_description</span>
               <tag-input data-type="composite" name="report_permissions.manage_roles" options="{{_computed.roleOptions ?? []}}" class="{{(_local.errors?.['report_permissions.manage_roles']) ? 'w-full input-error' : 'w-full'}}" disabled="{{_computed.isReadOnly}}"/>
               <span data-if="{{_local.errors?.['report_permissions.manage_roles']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_permissions.manage_roles']) ? _local.errors['report_permissions.manage_roles'][0] : _local.errors?.['report_permissions.manage_roles']) ?? ''}}</span>

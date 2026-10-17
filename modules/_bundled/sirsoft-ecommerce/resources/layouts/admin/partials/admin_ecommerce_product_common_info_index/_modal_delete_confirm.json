@@ -79,7 +79,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-info-soft"
+                                "className": "ecommerce-tone-info-soft text-xs"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.common_info.modal.delete.warning"
                         }

@@ -22,6 +22,11 @@ export interface Tab {
     scrollDelay?: number;
     /** 개별 탭 클릭 시 실행될 콜백 (우선순위: 개별 > 공통 > 기본) */
     onClick?: (tabId: string | number) => void;
+    /**
+     * 탭이 가리키는 주소 — 주면 `<a role="tab" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다.
+     * 보통 클릭은 지금처럼 탭 전환(onTabChange — 저장 안 한 변경 확인 흐름 유지)(#757).
+     */
+    href?: string;
 }
 /**
  * TabNavigationScroll Props
@@ -59,6 +64,11 @@ export interface TabNavigationScrollProps {
     id?: string;
     /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
     editorAttrs?: EditorAttrs;
+    /**
+     * 좁은 화면에서 탭 대신 그리는 선택 상자의 이름(「{이름} {현재 탭}」으로 읽힌다).
+     * 없으면 공용 문구 「섹션 이동」 — 종전에는 이름이 없어 현재 탭 글자(「기본정보」)만 읽혔다(#757)
+     */
+    'aria-label'?: string;
 }
 /**
  * 탭 네비게이션 컴포넌트 (자동 스크롤 기능 내장)

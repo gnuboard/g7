@@ -96,22 +96,23 @@
                             {
                                 "id": "add_board_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "새 게시판 만들기. 만들기를 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/boards/create",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
+                                    "href": "/admin/boards/create",
+                                    "mergeQuery": true,
                                     "disabled": "{{boards?.data?.abilities?.can_create !== true}}",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "button flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                                 },
                                 "children": [
                                     {
@@ -196,6 +197,8 @@
                                     }
                                 ],
                                 "props": {
+                                    "pageHref": "/admin/boards?page={page}",
+                                    "pageHrefMergeQuery": true,
                                     "data": "{{boards.data.data}}",
                                     "gridColumns": 1,
                                     "gap": 4,
@@ -315,6 +318,7 @@
                                                                     "props": {
                                                                         "checked": "{{row.is_active}}",
                                                                         "name": "is_active",
+                                                                        "ariaLabel": "$t:defer:common.item_enabled|name={{row.name}}",
                                                                         "size": "sm",
                                                                         "disabled": "{{row.abilities?.can_update !== true}}"
                                                                     }
@@ -374,12 +378,14 @@
                                                                         "position": "right",
                                                                         "items": [
                                                                             {
+                                                                                "href": "/admin/boards/{{row.slug}}/edit",
                                                                                 "id": "edit",
                                                                                 "label": "$t:sirsoft-board.admin.board.actions.edit",
                                                                                 "iconName": "pencil",
                                                                                 "disabled": "{{row.abilities?.can_update !== true}}"
                                                                             },
                                                                             {
+                                                                                "href": "/admin/board/{{row.slug}}",
                                                                                 "id": "manage_posts",
                                                                                 "label": "$t:sirsoft-board.admin.board.actions.manage_posts",
                                                                                 "iconName": "list"

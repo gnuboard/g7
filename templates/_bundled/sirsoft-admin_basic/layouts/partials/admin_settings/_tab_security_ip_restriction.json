@@ -471,7 +471,7 @@
                                                                         }
                                                                     ],
                                                                     "props": {
-                                                                        "ariaLabel": "$t:admin.settings.security.ip_restriction.col_enabled",
+                                                                        "ariaLabel": "$t:common.row_cell|row={{rule.pattern || $t('common.row_n', {n: idx + 1})}}|column={{$t('admin.settings.security.ip_restriction.col_enabled')}}",
                                                                         "checked": "{{rule.enabled !== false}}",
                                                                         "size": "sm",
                                                                         "disabled": "{{_computed.isReadOnly || !_computed.ipRestrictionEnabled}}"
@@ -646,6 +646,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "ariaLabel": "$t:common.row_cell|row={{rule.pattern || $t('common.row_n', {n: idx + 1})}}|column={{$t('admin.settings.security.ip_restriction.col_enabled')}}",
                                                         "label": "$t:admin.settings.security.ip_restriction.col_enabled",
                                                         "checked": "{{rule.enabled !== false}}",
                                                         "size": "sm",

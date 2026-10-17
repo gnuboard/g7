@@ -28,7 +28,7 @@
       <!-- 수정 권한(`sirsoft-ecommerce.identity.policies.update`)이 없으면 읽기 전용이다 — 추가·토글·편집은 잠기고 삭제는 숨는다(목록 응답 abilities). 응답을 받기 전에는 띄우지 않는다 -->
       <div data-ref="identity_policies_read_only_notice" data-if="{{ecommerceIdentityPolicies?.data?.abilities?.can_update === false}}" class="alert-warning mb-4">
         <icon name="lock" size="lg" class="text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
-        <span class="text-warning-soft">$t:sirsoft-ecommerce.admin.settings.identity.read_only_notice</span>
+        <span class="ecommerce-tone-warning-soft text-xs">$t:sirsoft-ecommerce.admin.settings.identity.read_only_notice</span>
       </div>
       <div class="card-description">$t:sirsoft-ecommerce.admin.settings.identity.purposes_section_description</div>
       <div data-ref="page_header" class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-6">
@@ -82,7 +82,7 @@
       </div>
       <div data-ref="filter_card" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex flex-col gap-2 md:flex-row md:items-center">
         <!-- 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 G2 실측). 값은 쿼리로만 다룬다. -->
-        <select name="filter.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
+        <select name="filter.scope" aria-label="$t:admin.identity.policies.col.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
           <options>
             <option value="">$t:admin.identity.policies.all_scopes</option>
             <option value="route">$t:admin.identity.policies.scope.route</option>
@@ -182,7 +182,7 @@
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300 text-right">{{policy.grace_minutes ?? 0}}</td>
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300 text-right tabular-nums">{{policy.priority ?? 100}}</td>
                 <td class="px-3 py-2">
-                  <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
+                  <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" ariaLabel="$t:common.row_cell|row={{policy.key ?? ''}}|column={{$t('admin.identity.policies.col.enabled')}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
                     <on type="change">
                       <!-- 넓은 화면 표 — 사용 여부. 폼에 담지 않고 바로 서버로 나간다. 성공 알림과 목록 다시 부르기를 `<parallel>` 로 함께 하는 이유는 둘이 서로를 기다릴 필요가 없어서다. -->
                       <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/identity-policies/{{policy.id}}" method="PUT">
@@ -204,7 +204,7 @@
                   </toggle>
                 </td>
                 <td class="px-3 py-2">
-                  <span class="{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft'}}">$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}</span>
+                  <span class="{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 ecommerce-tone-info-soft' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 ecommerce-tone-warning-soft'}}">$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}</span>
                 </td>
                 <td class="px-3 py-2 text-right whitespace-nowrap">
                   <button type="button" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600" disabled="{{policy.abilities?.can_update !== true}}">
@@ -266,7 +266,7 @@
                   <span class="font-mono break-all">{{policy.target ?? ''}}</span>
                 </div>
               </div>
-              <span class="{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft flex-shrink-0' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft flex-shrink-0'}}">$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}</span>
+              <span class="{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 ecommerce-tone-info-soft flex-shrink-0' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 ecommerce-tone-warning-soft flex-shrink-0'}}">$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}</span>
             </div>
             <div class="flex-between gap-3">
               <div class="text-tertiary">
@@ -278,7 +278,7 @@
                 <span>$t:admin.identity.policies.col.priority</span>
                 <span class="ml-1 font-medium text-gray-700 dark:text-gray-300 tabular-nums">{{policy.priority ?? 100}}</span>
               </div>
-              <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
+              <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" ariaLabel="$t:common.row_cell|row={{policy.key ?? ''}}|column={{$t('admin.identity.policies.col.enabled')}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
                 <on type="change">
                   <!-- 좁은 화면 카드 — 사용 여부. 위 표 판본과 같은 호출이다. -->
                   <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/identity-policies/{{policy.id}}" method="PUT">
@@ -349,7 +349,7 @@
         <div data-ref="policy_pagination" class="footer-buttons-between">
           <span class="text-tertiary">$t:admin.identity.policies.pagination_summary|total={{ecommerceIdentityPolicies?.data?.meta?.total ?? 0}}|page={{ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{ecommerceIdentityPolicies?.data?.meta?.last_page ?? '-'}}</span>
           <div class="flex-center gap-1">
-            <button type="button" disabled="{{(ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) <= 1}}" class="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+            <a href="/admin/ecommerce/settings?tab=identity_policies&amp;page={{Math.max(1, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) - 1)}}" :mergeQuery="true" disabled="{{(ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) <= 1}}" class="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed">
               <on type="click">
                 <!-- 이전 쪽. 첫 쪽에서는 버튼이 잠기고, 이동 후 정책 구획으로 스크롤을 되돌린다. -->
                 <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="ecommerceIdentityPolicies">
@@ -363,9 +363,9 @@
                 </navigate>
               </on>
               <span>$t:common.prev</span>
-            </button>
+            </a>
             <span class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200">$t:admin.identity.policies.page_indicator|page={{ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{ecommerceIdentityPolicies?.data?.meta?.last_page ?? '-'}}</span>
-            <button type="button" disabled="{{ecommerceIdentityPolicies?.data?.meta?.last_page ? ((ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) >= ecommerceIdentityPolicies?.data?.meta?.last_page) : (ecommerceIdentityPolicies?.data?.meta?.has_more_pages !== true)}}" class="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+            <a href="/admin/ecommerce/settings?tab=identity_policies&amp;page={{ecommerceIdentityPolicies?.data?.meta?.last_page ? Math.min(ecommerceIdentityPolicies?.data?.meta?.last_page, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) + 1) : ((ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) + 1)}}" :mergeQuery="true" disabled="{{ecommerceIdentityPolicies?.data?.meta?.last_page ? ((ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) >= ecommerceIdentityPolicies?.data?.meta?.last_page) : (ecommerceIdentityPolicies?.data?.meta?.has_more_pages !== true)}}" class="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed">
               <on type="click">
                 <!-- 다음 쪽. 마지막 쪽에서는 잠긴다. -->
                 <navigate path="/admin/ecommerce/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="ecommerceIdentityPolicies">
@@ -379,7 +379,7 @@
                 </navigate>
               </on>
               <span>$t:common.next</span>
-            </button>
+            </a>
           </div>
         </div>
       </div>

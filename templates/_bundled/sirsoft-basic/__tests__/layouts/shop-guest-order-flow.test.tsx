@@ -50,6 +50,8 @@ function findNode(node: any, predicate: (n: any) => boolean): any {
 describe('routes.json — 공유 라우트 + 비회원 조회 라우트 ( 그룹 C+D)', () => {
   const routes: any[] = (routesJson as any).routes;
 
+  // @scenario actor=guest
+  // @effects navigate_to_shared_route_shop_orders_n_complete_for_both_member_and_guest
   it('주문 완료 라우트는 회원/비회원 공유로 auth_required: false 여야 한다', () => {
     const completeRoute = routes.find((r) => r.layout === 'shop/order_complete');
     expect(completeRoute).toBeDefined();
@@ -57,6 +59,8 @@ describe('routes.json — 공유 라우트 + 비회원 조회 라우트 ( 그룹
     expect(completeRoute.auth_required).toBe(false);
   });
 
+  // @scenario screen=guest_order_form
+  // @effects guest_order_form_route_registered_without_auth
   it('비회원 주문 조회 폼 라우트(/shop/guest/orders)가 등록되어야 한다', () => {
     const lookupRoute = routes.find((r) => r.layout === 'shop/guest_order_form');
     expect(lookupRoute).toBeDefined();
@@ -66,6 +70,8 @@ describe('routes.json — 공유 라우트 + 비회원 조회 라우트 ( 그룹
 });
 
 describe('_user_base.json — 토큰 인프라 ( 그룹 C)', () => {
+  // @scenario actor=guest
+  // @effects user_base_globalHeaders_auto_injects_x_guest_order_token_for_guest_orders_path, guest_orders_path_only_pattern_isolates_token_from_user_orders_calls
   it('globalHeaders 에 X-Guest-Order-Token 은 guest/orders/* 후속 액션 패턴에만 등록되어야 한다 (통합 상세조회는 데이터소스 개별 headers 사용)', () => {
     const globalHeaders = (userBaseJson as any).globalHeaders;
 
@@ -84,12 +90,16 @@ describe('_user_base.json — 토큰 인프라 ( 그룹 C)', () => {
     expect(userOrdersHeader, 'user/orders/* 광역 패턴은 회원 전용 라우트에도 토큰을 노출하므로 globalHeaders 에 두지 않는다').toBeUndefined();
   });
 
+  // @scenario actor=guest, token_state=valid_within_30min
+  // @effects order_complete_orderData_datasource_has_explicit_x_guest_order_token_header
   it('order_complete.json orderData 데이터소스에 X-Guest-Order-Token 헤더가 명시되어야 한다 (회귀 차단)', () => {
     const dataSources: any[] = (orderCompleteJson as any).data_sources;
     const orderSource = dataSources.find((d) => d.id === 'orderData');
     expect(orderSource?.headers?.['X-Guest-Order-Token']).toBe('{{_global.guestOrderToken}}');
   });
 
+  // @scenario actor=guest, token_state=valid_within_30min
+  // @effects user_base_init_loads_guest_token_from_localStorage_to_global
   it('init_actions 에 initGuestOrderToken 커스텀 핸들러가 등록되어야 한다 (표준 loadFromLocalStorage 는 _local 만 갱신하므로 _global 토큰 주입 불가)', () => {
     const tokenInit = (userBaseJson as any).init_actions.find(
       (a: any) => a.handler === 'initGuestOrderToken'
@@ -103,10 +113,12 @@ describe('_user_base.json — 토큰 인프라 ( 그룹 C)', () => {
     expect(standardLoad).toBeUndefined();
   });
 
+  // @scenario actor=guest, entry_point=mobile_nav_lookup_link
+  // @effects header_and_mobile_nav_order_lookup_routes_via_login_redirect_param
   it('모바일 nav 비로그인 블록의 \'주문조회\' 버튼은 로그인 페이지(/login?redirect=/mypage/orders) 로 진입해야 한다 (회원/비회원 단일 진입점 — 로그인 폼이 redirect 파라미터로 분기, 비회원은 로그인 화면의 비회원 조회 링크 사용)', () => {
     const lookupButton = findNode(
       userBaseJson,
-      (n) => n.name === 'Button' && n.text === '$t:shop.guest_order_form.nav_link'
+      (n) => n.name === 'A' && n.text === '$t:shop.guest_order_form.nav_link'
     );
     expect(lookupButton, '모바일 nav 의 주문조회 버튼 누락').toBeDefined();
 
@@ -116,6 +128,8 @@ describe('_user_base.json — 토큰 인프라 ( 그룹 C)', () => {
     );
     expect(navAction, '/login 으로 navigate 하지 않음 — 회원이 로그아웃 상태에서 자기 주문을 못 찾는 케이스 회귀').toBeDefined();
     expect(navAction.params.path).toContain('redirect=/mypage/orders');
+    // 새 탭으로 열어도 같은 곳 — 링크 주소와 이동 경로가 같다
+    expect(lookupButton.props.href).toBe(navAction.params.path);
 
     // 회귀 차단: 이전처럼 직접 guest/orders 폼으로 보내면 로그아웃된 회원이 막다른 길에 빠짐
     const legacyDirect = findNode(
@@ -136,10 +150,14 @@ describe('_checkout_summary.json — 비회원 자동 verify 분기 ( 그룹 C)'
       n.target.endsWith('/guest/orders/verify')
   );
 
+  // @scenario actor=guest, token_state=fresh
+  // @effects store_success_when_guest_triggers_verify_automatically_with_orderer_phone_and_password
   it('결제 onSuccess 안에 비회원 자동 verify apiCall 이 존재해야 한다', () => {
     expect(verifyCall).toBeDefined();
   });
 
+  // @scenario actor=guest, token_state=fresh
+  // @effects store_success_when_guest_triggers_verify_automatically_with_orderer_phone_and_password
   it('verify body 는 store 응답 order_number 와 _local 의 orderer.phone + guestLookupPassword 를 사용해야 한다', () => {
     expect(verifyCall.params?.body).toMatchObject({
       order_number: '{{response.data.order.order_number}}',
@@ -148,6 +166,8 @@ describe('_checkout_summary.json — 비회원 자동 verify 분기 ( 그룹 C)'
     });
   });
 
+  // @scenario actor=guest, token_state=fresh
+  // @effects verify_success_saves_token_to_localStorage_g7_guest_order_token, verify_success_sets_global_guestOrderToken_for_immediate_use
   it('verify onSuccess 가 saveGuestOrderToken 핸들러로 sessionStorage 3개 키(token/orderNumber/expiresAt)와 _global.guestOrderToken 을 동시에 설정해야 한다', () => {
     const onSuccessActions = asArray(verifyCall?.onSuccess);
     const saveAction = onSuccessActions.find(
@@ -161,6 +181,8 @@ describe('_checkout_summary.json — 비회원 자동 verify 분기 ( 그룹 C)'
     });
   });
 
+  // @scenario actor=guest, token_state=fresh
+  // @effects store_success_when_guest_triggers_verify_automatically_with_orderer_phone_and_password
   it('verify 분기 컨테이너는 비로그인일 때만 실행되어야 한다 (!_global.currentUser?.uuid)', () => {
     // verifyCall 이 속한 conditions.then 의 부모 if 가 비회원 조건이어야 함
     const verifyConditionsBlock = findNode(
@@ -182,6 +204,8 @@ describe('order_complete.json — endpoint 표현식 분기 ( 그룹 C)', () => 
   const dataSources: any[] = (orderCompleteJson as any).data_sources;
   const orderSource = dataSources.find((d) => d.id === 'orderData');
 
+  // @scenario actor=guest, order_action=view_detail
+  // @effects order_complete_uses_unified_user_orders_endpoint_with_optional_sanctum
   it('단일 orderData 데이터소스가 user/orders/{N} 통합 엔드포인트를 사용해야 한다 (회원/비회원 백엔드 분기)', () => {
     expect(orderSource).toBeDefined();
     const guestDup = dataSources.filter((d) => d.id === 'orderData');
@@ -195,12 +219,16 @@ describe('order_complete.json — endpoint 표현식 분기 ( 그룹 C)', () => 
     expect(orderSource.auth_mode).toBe('optional');
   });
 
+  // @scenario screen=order_complete
+  // @effects order_complete_reads_order_data_directly
   it('컴퓨티드 alias 는 사용하지 않아야 한다 (기존 {{orderData?.data?.*}} 표현식 직접 매칭)', () => {
     // computed alias 는 _computed.* 경로로만 접근 가능해 기존 표현식과 불일치
     const computed = (orderCompleteJson as any).computed;
     expect(computed?.orderData).toBeUndefined();
   });
 
+  // @scenario actor=guest, token_state=expired
+  // @effects order_complete_error_handling_uses_backend_redirect_to_in_single_sequence
   it('401/404 errorHandling 은 단일 sequence + 토스트 + 백엔드 redirect_to navigate 만 포함해야 한다', () => {
     for (const status of ['401', '404']) {
       const handler = orderSource.errorHandling?.[status];
@@ -222,6 +250,8 @@ describe('order_complete.json — endpoint 표현식 분기 ( 그룹 C)', () => 
     }
   });
 
+  // @scenario actor=guest
+  // @effects order_complete_shows_30min_auto_authentication_notice_for_guest_only
   it('비회원 안내 블록이 비회원에게만 노출되어야 한다 (!_global.currentUser?.uuid, guest_notice_title)', () => {
     const noticeBlock = findNode(
       orderCompleteJson,
@@ -235,6 +265,8 @@ describe('order_complete.json — endpoint 표현식 분기 ( 그룹 C)', () => 
 });
 
 describe('guest_order_form.json — 비회원 조회 폼 ( 그룹 C)', () => {
+  // @scenario actor=guest
+  // @effects guest_order_form_accepts_order_number_phone_password_three_fields
   it('주문번호 + 휴대폰 + 비밀번호 3개 입력 필드가 등록되어야 한다 (verify API 계약 일치)', () => {
     for (const fieldName of ['order_number', 'orderer_phone', 'guest_lookup_password']) {
       const input = findNode(
@@ -245,6 +277,8 @@ describe('guest_order_form.json — 비회원 조회 폼 ( 그룹 C)', () => {
     }
   });
 
+  // @scenario actor=guest, token_state=fresh
+  // @effects guest_order_form_verify_success_saves_token_and_navigates_to_complete_route
   it('submit 액션은 guest/orders/verify 호출 후 saveGuestOrderToken 으로 sessionStorage 3개 키 저장 + 비회원 주문 상세로 navigate 해야 한다', () => {
     const verifyCall = findNode(
       guestFormJson,
@@ -272,12 +306,16 @@ describe('guest_order_form.json — 비회원 조회 폼 ( 그룹 C)', () => {
     expect(nav.params.path).toContain('/guest/orders/{{response.data.order.order_number}}');
   });
 
+  // @scenario actor=guest
+  // @effects guest_order_form_clears_session_token_on_entry_for_standard_form_visibility
   it('init_actions 에 clearGuestTokenOnEntry 가 등록되어 조회 폼 진입 시 매번 폼이 노출되도록 sessionStorage 토큰을 초기화해야 한다 (eBay/Best Buy/카페24/11번가 등 표준 패턴 정합)', () => {
     const initActions = (guestFormJson as any).init_actions ?? [];
     const clear = initActions.find((a: any) => a.handler === 'clearGuestTokenOnEntry');
     expect(clear, 'clearGuestTokenOnEntry 누락 — 토큰 보유자에게는 자동 진입되어 폼 노출 안 됨, 다른 주문 조회 불가').toBeDefined();
   });
 
+  // @scenario actor=guest
+  // @effects guest_order_form_failure_shows_inline_error_box_instead_of_toast, guest_order_form_verify_failure_shows_unified_not_found_message
   it('onError 는 _local.lookupError boolean 플래그만 set 해야 한다 (toast 가 아닌 페이지 내 인라인 에러 박스로 통일 메시지 노출 — UX 결정 + 보안 정책 실패 사유 비노출)', () => {
     const verifyCall = findNode(
       guestFormJson,
@@ -292,6 +330,8 @@ describe('guest_order_form.json — 비회원 조회 폼 ( 그룹 C)', () => {
     expect(setStateAction, 'onError 의 setState 가 lookupError 플래그를 켜지 않음 — 인라인 에러 박스 노출 불가').toBeDefined();
   });
 
+  // @scenario actor=guest
+  // @effects guest_order_form_failure_shows_inline_error_box_instead_of_toast, guest_order_form_verify_failure_shows_unified_not_found_message
   it('폼 상단에 인라인 에러 박스가 _local.lookupError 조건부로 렌더되어야 한다 (통일 not_found 메시지)', () => {
     const errorBlock = findNode(
       guestFormJson,
@@ -302,6 +342,8 @@ describe('guest_order_form.json — 비회원 조회 폼 ( 그룹 C)', () => {
     expect(errorBlock, '인라인 에러 박스 누락 — lookupError 플래그가 켜져도 사용자에게 실패 안내 노출 안 됨').toBeDefined();
   });
 
+  // @scenario actor=guest
+  // @effects guest_order_form_failure_shows_inline_error_box_instead_of_toast
   it('submit sequence 시작 시 lookupError 가 false 로 초기화되어야 한다 (재시도 시 이전 에러 박스 자동 사라짐)', () => {
     const submitSequence = findNode(
       guestFormJson,
@@ -315,6 +357,8 @@ describe('guest_order_form.json — 비회원 조회 폼 ( 그룹 C)', () => {
     expect(resetAction, 'submit 시작 시 lookupError 초기화 누락 — 이전 실패 박스가 그대로 노출됨').toBeDefined();
   });
 
+  // @scenario actor=logged_in_member
+  // @effects guest_order_form_member_entry_redirects_to_mypage_orders_with_toast
   it('회원 로그인 사용자가 실수로 진입한 경우 lifecycle.onMount 가 toast + /mypage/orders 로 navigate 해야 한다 (UX 결정 — 회원은 본 페이지에서 회원 주문 조회 불가)', () => {
     const memberGuardBlock = findNode(
       guestFormJson,
@@ -337,6 +381,8 @@ describe('guest_order_form.json — 비회원 조회 폼 ( 그룹 C)', () => {
     expect(toastIdx, 'toast 는 navigate 보다 앞에 와야 함 (페이지 이동 전에 안내 메시지 push)').toBeLessThan(navIdx);
   });
 
+  // @scenario actor=logged_in_member
+  // @effects guest_order_form_hidden_for_logged_in_member
   it('조회 폼 컨테이너는 비회원에게만 노출되어야 한다 (회귀 차단 — 회원도 폼이 깜빡 노출되면 회원 redirect 가 발화하기 전 입력 가능)', () => {
     const formContainer = findNode(
       guestFormJson,
@@ -350,6 +396,8 @@ describe('guest_order_form.json — 비회원 조회 폼 ( 그룹 C)', () => {
 });
 
 describe('_login_form.json — 로그인 성공 시 비회원 토큰 정리', () => {
+  // @scenario actor=logged_in_member
+  // @effects login_success_clears_guest_order_token_from_localStorage_and_global
   it('login onSuccess 가 clearGuestOrderToken 핸들러로 sessionStorage 3개 키 + _global.guestOrderToken 을 한 번에 비워야 한다 (회귀 차단 — 동일 브라우저 회원/비회원 컨텍스트 분리)', () => {
     const loginCall = findNode(
       loginFormJson,
@@ -365,6 +413,8 @@ describe('_login_form.json — 로그인 성공 시 비회원 토큰 정리', ()
 });
 
 describe('order_complete.json — 깜빡임 방지', () => {
+  // @scenario actor=guest
+  // @effects order_complete_blur_until_orderData_loaded_prevents_flash
   it('content 슬롯 최상위 Container 에 blur_until_loaded 가 orderData 응답을 대기해야 한다 (회귀 차단 — 가드 발화 전 빈 화면 한 프레임 노출)', () => {
     const contentRoot = (orderCompleteJson as any).slots?.content?.[0];
     expect(contentRoot).toBeDefined();
@@ -382,6 +432,8 @@ describe('order_complete.json — 깜빡임 방지', () => {
 });
 
 describe('auth/login.json — 비회원 조회 진입 링크 ( 그룹 D)', () => {
+  // @scenario actor=guest, entry_point=login_screen_lookup_link
+  // @effects login_screen_lookup_link_visible_outside_form
   it('항상 노출되는 비회원 조회 안내 링크가 있어야 한다 (checkout 조건과 별개)', () => {
     const link = findNode(
       loginJson,
@@ -393,6 +445,8 @@ describe('auth/login.json — 비회원 조회 진입 링크 ( 그룹 D)', () =>
 });
 
 describe('i18n — 신규 키 등록 + 사용자 친화 표현 ( 그룹 C+D)', () => {
+  // @scenario screen=guest_order_form
+  // @effects guest_order_texts_registered_and_synced_ko_en
   it('shop.json ko/en 의 guest_order_form 객체 키가 동기화되어야 한다', async () => {
     const ko: any = (await import('../../lang/partial/ko/shop.json')).default;
     const en: any = (await import('../../lang/partial/en/shop.json')).default;
@@ -411,6 +465,8 @@ describe('i18n — 신규 키 등록 + 사용자 친화 표현 ( 그룹 C+D)', (
     }
   });
 
+  // @scenario screen=order_complete
+  // @effects guest_order_texts_registered_and_synced_ko_en
   it('order_complete 의 비회원 안내 키가 ko/en 모두 등록되어야 한다', async () => {
     const ko: any = (await import('../../lang/partial/ko/shop.json')).default;
     const en: any = (await import('../../lang/partial/en/shop.json')).default;
@@ -421,6 +477,8 @@ describe('i18n — 신규 키 등록 + 사용자 친화 표현 ( 그룹 C+D)', (
     }
   });
 
+  // @scenario screen=guest_order_form
+  // @effects guest_order_texts_avoid_internal_token_term
   it('사용자에게 노출되는 값에 "토큰" 같은 내부 용어가 없어야 한다 (UX)', async () => {
     const ko: any = (await import('../../lang/partial/ko/shop.json')).default;
     const en: any = (await import('../../lang/partial/en/shop.json')).default;
@@ -448,6 +506,8 @@ describe('guest_order_show.json — 위조/만료 토큰 자동 정리 + 다른 
   const dataSources: any[] = (guestShowJson as any).data_sources;
   const orderSource = dataSources.find((d) => d.id === 'order');
 
+  // @scenario screen=guest_order_show
+  // @effects guest_order_show_401_404_clears_token_before_lookup_form
   it('errorHandling.401 이 clearGuestOrderToken → toast → navigate 순서로 동작해야 한다 (위조 토큰/관리자 비밀번호 재설정 시 sessionStorage 잔존으로 인한 무한 redirect 회귀 차단)', () => {
     const handler = orderSource.errorHandling?.['401'];
     expect(handler?.handler).toBe('sequence');
@@ -465,6 +525,8 @@ describe('guest_order_show.json — 위조/만료 토큰 자동 정리 + 다른 
     expect(navAction.params?.path).toContain('/guest/orders');
   });
 
+  // @scenario screen=guest_order_show
+  // @effects guest_order_show_401_404_clears_token_before_lookup_form
   it('errorHandling.404 도 동일하게 clearGuestOrderToken → toast → navigate 순서를 따라야 한다 (회귀 차단)', () => {
     const handler = orderSource.errorHandling?.['404'];
     expect(handler?.handler).toBe('sequence');
@@ -478,6 +540,8 @@ describe('guest_order_show.json — 위조/만료 토큰 자동 정리 + 다른 
     expect(actions[navIdx].params?.path).toContain('/guest/orders');
   });
 
+  // @scenario actor=guest, token_state=valid_within_30min, order_action=view_detail
+  // @effects guest_order_show_order_datasource_has_explicit_x_guest_order_token_header
   it('order 데이터소스가 _global.guestOrderToken 을 X-Guest-Order-Token 헤더로 읽어야 한다 (verify→상세 SPA 전이 토큰 누락 404 회귀 — 토큰 보존은 initGuestOrderToken 핸들러가 담당)', () => {
     // 배경: 조회 폼 verify onSuccess 의 saveGuestOrderToken 이 _global.guestOrderToken 을 동기 set 하고
     // sessionStorage 에도 기록한다. SPA 전이로 상세가 mount 되면 베이스 init_actions 의 initGuestOrderToken 이
@@ -490,6 +554,8 @@ describe('guest_order_show.json — 위조/만료 토큰 자동 정리 + 다른 
 });
 
 describe('비회원 배송지 변경 지원 () — 회원/비회원 공통 + 탭 없는 직접입력', () => {
+  // @scenario screen=guest_order_show
+  // @effects change_shipping_address_available_for_member_and_guest
   it('배송지 수정 버튼은 회원/비회원 공통으로 노출된다 (currentUser 가드 없이 배송 전 상태만 조건)', () => {
     const changeBtn = findNode(
       shippingPartialJson,
@@ -506,6 +572,8 @@ describe('비회원 배송지 변경 지원 () — 회원/비회원 공통 + 탭
     expect(String(changeBtn.if)).toContain('order_status');
   });
 
+  // @scenario screen=guest_order_show
+  // @effects change_shipping_address_available_for_member_and_guest
   it('배송지 변경 모달 열기 시 changeAddressMode 를 회원=saved / 비회원=manual 로 분기 설정한다', () => {
     const changeBtn = findNode(
       shippingPartialJson,
@@ -523,6 +591,8 @@ describe('비회원 배송지 변경 지원 () — 회원/비회원 공통 + 탭
     expect(mode).toContain("'manual'");
   });
 
+  // @scenario screen=guest_order_show
+  // @effects change_shipping_address_available_for_member_and_guest
   it('guest_order_show.json modals 에 _modal_change_address 가 등록되어야 한다 (비회원 배송지 변경 지원)', () => {
     const modals = (guestShowJson as any).modals ?? [];
     const hasChangeAddress = modals.some(
@@ -531,6 +601,8 @@ describe('비회원 배송지 변경 지원 () — 회원/비회원 공통 + 탭
     expect(hasChangeAddress, '비회원 상세에 배송지 변경 모달 미등록 — 모달이 열리지 않음').toBe(true);
   });
 
+  // @scenario screen=guest_order_show
+  // @effects change_shipping_address_available_for_member_and_guest
   it('guest_order_show.json initLocal 에 isSubmittingAddress(스피너 상태)가 있다', () => {
     const initLocal = (guestShowJson as any).initLocal ?? {};
     expect(initLocal.isSubmittingAddress, 'isSubmittingAddress 누락 — 비회원 모달 스피너 미작동').toBe(false);
@@ -538,11 +610,15 @@ describe('비회원 배송지 변경 지원 () — 회원/비회원 공통 + 탭
 });
 
 describe('주문 상세 주문자 정보 표시 ()', () => {
+  // @scenario screen=guest_order_show
+  // @effects guest_order_show_displays_orderer_info
   it('비회원 주문 상세가 _orderer partial 을 포함한다 (배송지 위에)', () => {
     const partials = JSON.stringify(guestShowJson);
     expect(partials.includes('partials/mypage/orders/_orderer.json'), '_orderer partial 미포함').toBe(true);
   });
 
+  // @scenario screen=guest_order_show
+  // @effects guest_order_show_displays_orderer_info
   it('_orderer partial 이 order.data.orderer_name/phone/email 을 바인딩한다', async () => {
     const ordererJson: any = (await import('../../layouts/partials/mypage/orders/_orderer.json')).default;
     const json = JSON.stringify(ordererJson);
@@ -551,6 +627,8 @@ describe('주문 상세 주문자 정보 표시 ()', () => {
     expect(json).toContain('order.data.orderer_email');
   });
 
+  // @scenario screen=guest_order_show
+  // @effects guest_order_show_displays_orderer_info
   it('_orderer partial 의 다국어 키가 ko/en 에 정의되어 있다', async () => {
     const ko: any = (await import('../../lang/partial/ko/mypage.json')).default;
     const en: any = (await import('../../lang/partial/en/mypage.json')).default;

@@ -169,12 +169,7 @@
                        그 권한이 없으면 이름만 보인다. 가드 없이 그리면 눌러도 「권한 없음」뿐이다.
                        표 셀은 `_computed` 를 받지 못한다(빈 객체) — 데이터소스 `current_user` 를 직접 읽는다(7.1.0 실측 E-D4). -->
                   <span data-if="{{!!row.user?.name &amp;&amp; !(current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.users.read')}}" class="text-hint block">{{row.user.name}}</span>
-                  <button data-ref="realtime_member_link_{{$idx}}" data-if="{{!!row.user?.uuid &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.users.read')}}" type="button" class="text-hint underline block text-left">
-                    <on type="click">
-                      <open-window path="/admin/users/{{row.user.uuid}}"/>
-                    </on>
-                    {{row.user.name}}
-                  </button>
+                  <a data-ref="realtime_member_link_{{$idx}}" data-if="{{!!row.user?.uuid &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.users.read')}}" href="/admin/users/{{row.user.uuid}}" target="_blank" class="text-hint underline block text-left">{{row.user.name}}</a>
                 </cell>
               </column>
             </data-grid>

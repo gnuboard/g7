@@ -76,11 +76,13 @@ describe('회원 상세 「알림함」 탭 (#524 WP-F)', () => {
     // @effects member_detail_tab_links_to_member_scoped_list
     it('「알림함 보기」가 uuid 로 회원을 한정해 전용 목록으로 보낸다', () => {
         const link = findById(section, 'notifications_inbox_link');
-        const button = flattenNodes(link).find((n: any) => n?.name === 'Button');
-        const navigate = actionsOf(button).find((a: any) => a.handler === 'navigate');
+        // 링크(#757) — 주소·회원 한정 쿼리는 A 의 href 한 곳, navigate 는 path 없이 그 href 로 간다
+        const anchor = flattenNodes(link).find((n: any) => n?.name === 'A');
+        const navigate = actionsOf(anchor).find((a: any) => a.handler === 'navigate');
 
-        expect(navigate.params.path).toBe('/admin/member-notifications');
-        expect(navigate.params.query.user_uuid).toMatch(/user\?\.data\?\.uuid/);
+        expect(String(anchor.props.href).split('?')[0]).toBe('/admin/member-notifications');
+        expect(anchor.props.href).toMatch(/user_uuid=\{\{user\?\.data\?\.uuid\}\}/);
+        expect(navigate.params?.path).toBeUndefined();
     });
 
     // @scenario surface=member_detail_tab

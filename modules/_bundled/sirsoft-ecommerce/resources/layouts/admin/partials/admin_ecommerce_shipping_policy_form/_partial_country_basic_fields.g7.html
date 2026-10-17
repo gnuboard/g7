@@ -15,7 +15,7 @@
               <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.shipping_method</span>
               <span class="text-required">*</span>
             </label>
-            <select class="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method'] ? 'input input-error w-full' : 'input w-full'}}" value="{{_computed.activeCountrySetting?.shipping_method ?? (ecommerce_settings?.data?.shipping?.types ?? []).find(t => t.is_active)?.code ?? 'parcel'}}" options="{{_computed.shippingMethodOptions ?? []}}" disabled="{{_computed.isReadOnly}}">
+            <select aria-label="$t:sirsoft-ecommerce.admin.shipping_policy.form.shipping_method" class="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method'] ? 'input input-error w-full' : 'input w-full'}}" value="{{_computed.activeCountrySetting?.shipping_method ?? (ecommerce_settings?.data?.shipping?.types ?? []).find(t => t.is_active)?.code ?? 'parcel'}}" options="{{_computed.shippingMethodOptions ?? []}}" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- 배송 방법 — 초깃값이 설정에서 활성인 첫 방법이라, 쇼핑몰이 쓰는 방법이 바뀌면 새 나라의 기본값도 따라 바뀐다. '직접 입력' 을 고르면 아래 이름 칸이 나타난다. -->
                 <action handler="sirsoft-ecommerce.updateCountryField" field="shipping_method" value="{{$event.target.value}}"/>
@@ -24,7 +24,7 @@
             <span data-if="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method']}}" class="form-error-xs mt-0.5">{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.shipping_method']?.[0]}}</span>
             <div data-if="{{_computed.activeCountrySetting?.shipping_method === 'custom'}}" class="">
               <label class="text-secondary block text-xs font-medium mb-1">$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name</label>
-              <multilingual-input data-type="composite" value="{{_computed.activeCountrySetting?.custom_shipping_name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name_placeholder" error="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.custom_shipping_name.' + ($locale || 'ko')]?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+              <multilingual-input data-type="composite" ariaLabel="$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name" value="{{_computed.activeCountrySetting?.custom_shipping_name ?? {}}}" layout="inline" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.custom_shipping_name_placeholder" error="{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.custom_shipping_name.' + ($locale || 'ko')]?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 직접 입력한 배송 방법 이름 — 언어별 묶음을 통째로 받아 그대로 저장한다(언어 하나씩 쪼개지 않는다). -->
                   <action handler="sirsoft-ecommerce.updateCountryField" field="custom_shipping_name" value="{{$event.target.value}}"/>

@@ -87,6 +87,7 @@
                                     "name": "Input",
                                     "if": "{{_local.form.seo_sync_title}}",
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.fields.meta_title",
                                         "value": "{{$localized(_local.form.name) || ''}}",
                                         "disabled": true,
                                         "maxLength": 70,
@@ -99,6 +100,7 @@
                                     "name": "MultilingualInput",
                                     "if": "{{!_local.form.seo_sync_title}}",
                                     "props": {
+                                        "ariaLabel": "$t:sirsoft-ecommerce.admin.product.fields.meta_title",
                                         "name": "meta_title",
                                         "layout": "tabs",
                                         "inputType": "text",
@@ -220,6 +222,7 @@
                                     "name": "Textarea",
                                     "if": "{{_local.form.seo_sync_description}}",
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.fields.meta_description",
                                         "value": "{{($localized(_local.form.description) || '').substring(0, 160)}}",
                                         "disabled": true,
                                         "rows": 3,
@@ -233,6 +236,7 @@
                                     "name": "MultilingualInput",
                                     "if": "{{!_local.form.seo_sync_description}}",
                                     "props": {
+                                        "ariaLabel": "$t:sirsoft-ecommerce.admin.product.fields.meta_description",
                                         "name": "meta_description",
                                         "layout": "tabs",
                                         "inputType": "textarea",

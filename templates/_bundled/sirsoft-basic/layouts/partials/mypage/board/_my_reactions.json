@@ -49,6 +49,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:mypage.board_activities.reactions.table.board",
                         "value": "{{_global.myReactionsBoard ?? ''}}",
                         "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     },
@@ -110,6 +111,7 @@
                     ],
                     "props": {
                         "data-testid": "my-reactions-type-filter",
+                        "aria-label": "$t:mypage.board_activities.reactions.table.type",
                         "value": "{{_global.myReactionsTypeId ?? ''}}",
                         "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     },
@@ -171,6 +173,7 @@
                     ],
                     "props": {
                         "data-testid": "my-reactions-target-filter",
+                        "aria-label": "$t:mypage.board_activities.reactions.table.target",
                         "value": "{{_global.myReactionsTargetType ?? ''}}",
                         "className": "min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
                         "options": [
@@ -223,6 +226,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:common.sort_order",
                         "value": "{{_global.myReactionsSort ?? 'latest'}}",
                         "className": "min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     },
@@ -269,6 +273,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:common.search_field",
                                 "value": "{{_global.myReactionsSearchField ?? 'title_content'}}",
                                 "className": "px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
                                 "options": [
@@ -464,6 +469,7 @@
                                     "props": {
                                         "data-testid": "my-reactions-select-all-m",
                                         "type": "checkbox",
+                                        "aria-label": "$t:common.select_all",
                                         "className": "rounded border-gray-300 dark:border-gray-600",
                                         "checked": "{{(myReactions?.data?.data ?? []).length > 0 && (myReactions?.data?.data ?? []).every(r => (_global.myReactionsSelectedIds ?? []).includes(r.id))}}"
                                     }
@@ -654,6 +660,7 @@
                                                     "props": {
                                                         "data-testid": "my-reactions-select-all",
                                                         "type": "checkbox",
+                                                        "aria-label": "$t:common.select_all",
                                                         "className": "rounded border-gray-300 dark:border-gray-600",
                                                         "checked": "{{(myReactions?.data?.data ?? []).length > 0 && (myReactions?.data?.data ?? []).every(r => (_global.myReactionsSelectedIds ?? []).includes(r.id))}}"
                                                     }
@@ -754,6 +761,7 @@
                                                     "props": {
                                                         "data-testid": "my-reaction-check-{{reaction.id}}",
                                                         "type": "checkbox",
+                                                        "aria-label": "$t:common.select_item|name={{reaction.title ? reaction.title : (reaction.target_type === 'comment' ? $t('mypage.board_activities.reactions.deleted_comment') : $t('mypage.board_activities.reactions.deleted_post'))}}",
                                                         "className": "rounded border-gray-300 dark:border-gray-600",
                                                         "checked": "{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}"
                                                     }
@@ -838,18 +846,16 @@
                                                     "children": [
                                                         {
                                                             "type": "basic",
-                                                            "name": "Button",
+                                                            "name": "A",
                                                             "actions": [
                                                                 {
                                                                     "type": "click",
-                                                                    "handler": "navigate",
-                                                                    "params": {
-                                                                        "path": "/board/{{reaction.board_slug}}/{{reaction.post_id}}"
-                                                                    }
+                                                                    "handler": "navigate"
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "className": "justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer truncate"
+                                                                "href": "/board/{{reaction.board_slug}}/{{reaction.post_id}}",
+                                                                "className": "inline-block justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer truncate"
                                                             },
                                                             "text": "{{reaction.excerpt ?? reaction.title}}"
                                                         },
@@ -979,6 +985,7 @@
                                                     "props": {
                                                         "data-testid": "my-reaction-check-{{reaction.id}}",
                                                         "type": "checkbox",
+                                                        "aria-label": "$t:common.select_item|name={{reaction.title ? reaction.title : (reaction.target_type === 'comment' ? $t('mypage.board_activities.reactions.deleted_comment') : $t('mypage.board_activities.reactions.deleted_post'))}}",
                                                         "className": "rounded border-gray-300 dark:border-gray-600",
                                                         "checked": "{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}"
                                                     }
@@ -1203,6 +1210,7 @@
                                                     "props": {
                                                         "data-testid": "my-reaction-check-{{reaction.id}}",
                                                         "type": "checkbox",
+                                                        "aria-label": "$t:common.select_item|name={{reaction.title ? reaction.title : (reaction.target_type === 'comment' ? $t('mypage.board_activities.reactions.deleted_comment') : $t('mypage.board_activities.reactions.deleted_post'))}}",
                                                         "className": "rounded border-gray-300 dark:border-gray-600",
                                                         "checked": "{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}"
                                                     }
@@ -1434,6 +1442,7 @@
                                     "props": {
                                         "data-testid": "my-reaction-check-m-{{reaction.id}}",
                                         "type": "checkbox",
+                                        "aria-label": "$t:common.select_item|name={{reaction.title ? reaction.title : (reaction.target_type === 'comment' ? $t('mypage.board_activities.reactions.deleted_comment') : $t('mypage.board_activities.reactions.deleted_post'))}}",
                                         "className": "mt-1 rounded border-gray-300 dark:border-gray-600",
                                         "checked": "{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}"
                                     }
@@ -1525,18 +1534,16 @@
                                         {
                                             "comment": "살아 있으면 눌러서 이동, 아니면 글자만",
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "if": "{{reaction.reaction_enabled && !reaction.target_deleted && !reaction.board_deleted}}",
                                             "actions": [
                                                 {
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/board/{{reaction.board_slug}}/{{reaction.post_id}}"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
+                                                "href": "/board/{{reaction.board_slug}}/{{reaction.post_id}}",
                                                 "className": "justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2"
                                             },
                                             "text": "{{reaction.excerpt ?? reaction.title}}"
@@ -1657,18 +1664,16 @@
                 },
                 {
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/boards"
-                            }
+                            "handler": "navigate"
                         }
                     ],
                     "props": {
-                        "className": "inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                        "href": "/boards",
+                        "className": "text-center inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                     },
                     "text": "$t:mypage.board_activities.go_boards"
                 }

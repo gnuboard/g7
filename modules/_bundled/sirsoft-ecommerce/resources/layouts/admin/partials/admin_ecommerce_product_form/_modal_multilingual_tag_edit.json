@@ -74,6 +74,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
+                                        "aria-label": "{{localeItem.label}}",
                                         "value": "{{_global.multilingualTagEdit?.values[localeItem.code] ?? ''}}",
                                         "placeholder": "$t:common.enter_value",
                                         "className": "dark:focus:ring-blue-400"

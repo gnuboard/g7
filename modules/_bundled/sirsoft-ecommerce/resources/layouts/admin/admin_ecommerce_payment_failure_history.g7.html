@@ -33,7 +33,7 @@
       </div>
       <div data-ref="filter_card" class="admin-card mb-6 filter-grid">
         <div data-ref="search_row" class="search-bar mb-4">
-          <select data-ref="search_field_select" name="searchField" class="search-bar-select" value="{{_local.searchField}}">
+          <select data-ref="search_field_select" name="searchField" aria-label="$t:common.search_field" class="search-bar-select" value="{{_local.searchField}}">
             <options>
               <option value="order_number">$t:sirsoft-ecommerce.admin.payment_failure_history.search.field.order_number</option>
               <option value="member_name">$t:sirsoft-ecommerce.admin.payment_failure_history.search.field.member_name</option>
@@ -146,7 +146,7 @@
           <div class="md:flex-row md:items-center">
             <div class="flex-center gap-2">
               <icon name="calendar" class="text-base icon-muted"/>
-              <input type="date" placeholder="$t:sirsoft-ecommerce.admin.payment_failure_history.filter.start_date" class="input md:w-36" value="{{_local.startDate}}">
+              <input type="date" aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.payment_failure_history.filter.failure_date')}}" placeholder="$t:sirsoft-ecommerce.admin.payment_failure_history.filter.start_date" class="input md:w-36" value="{{_local.startDate}}">
                 <on type="change">
                   <!-- 실패일 기간 시작일 -->
                   <set-state target="_local" startDate="{{$event.target.value}}"/>
@@ -156,7 +156,7 @@
             <span class="hidden md:block text-gray-500 dark:text-gray-400">~</span>
             <div class="flex-center gap-2">
               <icon name="calendar" class="text-base icon-muted"/>
-              <input type="date" placeholder="$t:sirsoft-ecommerce.admin.payment_failure_history.filter.end_date" class="input md:w-36" value="{{_local.endDate}}">
+              <input type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.payment_failure_history.filter.failure_date')}}" placeholder="$t:sirsoft-ecommerce.admin.payment_failure_history.filter.end_date" class="input md:w-36" value="{{_local.endDate}}">
                 <on type="change">
                   <!-- 실패일 기간 종료일 -->
                   <set-state target="_local" endDate="{{$event.target.value}}"/>
@@ -170,7 +170,7 @@
         <div data-ref="table_header" class="flex-between flex-wrap gap-4 mb-6">
           <span class="text-secondary">$t:sirsoft-ecommerce.admin.payment_failure_history.table.total_count|count=11</span>
           <div class="flex-center gap-3">
-            <select name="sortBy" class="w-44" value="{{_local.sortBy}}">
+            <select name="sortBy" aria-label="$t:common.sort_order" class="w-44" value="{{_local.sortBy}}">
               <options>
                 <option value="failure_date_desc">$t:sirsoft-ecommerce.admin.payment_failure_history.table.sort.failure_date_desc</option>
                 <option value="failure_date_asc">$t:sirsoft-ecommerce.admin.payment_failure_history.table.sort.failure_date_asc</option>
@@ -180,7 +180,7 @@
                 <option value="order_number_desc">$t:sirsoft-ecommerce.admin.payment_failure_history.table.sort.order_number_desc</option>
               </options>
             </select>
-            <select name="perPage" class="w-32" value="{{_local.perPage}}">
+            <select name="perPage" aria-label="$t:common.per_page" class="w-32" value="{{_local.perPage}}">
               <options>
                 <option :value="10">$t:sirsoft-ecommerce.admin.payment_failure_history.table.per_page|count=10</option>
                 <option :value="20">$t:sirsoft-ecommerce.admin.payment_failure_history.table.per_page|count=20</option>
@@ -215,17 +215,17 @@
                   <icon name="{{_local.expandedRows.includes(1) ? 'chevron-up' : 'chevron-down'}}" class="text-xl text-gray-400 dark:text-gray-500"/>
                 </div>
                 <div class="flex items-start gap-1.5">
-                  <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                  <icon name="circle-exclamation" class="text-base ecommerce-tone-error shrink-0 mt-0.5"/>
                   <div>
-                    <span class="text-sm text-error">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_one_time_auth_amount</span>
+                    <span class="text-sm ecommerce-tone-error">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_one_time_auth_amount</span>
                     <div class="text-xs text-secondary">(EXCEED_MAX_ONE_TIME_AUTH_AMOUNT)</div>
                   </div>
                 </div>
                 <div class="{{_local.expandedRows.includes(1) ? 'mt-4 pt-4' : 'hidden'}}">
-                  <div class="border-l-4 border-error bg-red-50 dark:bg-red-900/20 rounded-r-lg p-3 mb-4">
+                  <div class="border-l-4 ecommerce-tone-border-error bg-red-50 dark:bg-red-900/20 rounded-r-lg p-3 mb-4">
                     <div class="flex-center gap-2 mb-3">
-                      <icon name="circle-exclamation" class="text-base text-error"/>
-                      <span class="text-error font-semibold text-sm">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.title</span>
+                      <icon name="circle-exclamation" class="text-base ecommerce-tone-error"/>
+                      <span class="ecommerce-tone-error font-semibold text-sm">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.title</span>
                     </div>
                     <div class="space-y-2 text-sm">
                       <div class="flex justify-between">
@@ -234,7 +234,7 @@
                       </div>
                       <div class="flex justify-between">
                         <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.error_code</span>
-                        <span class="text-error">EXCEED_MAX_ONE_TIME_AUTH_AMOUNT</span>
+                        <span class="ecommerce-tone-error">EXCEED_MAX_ONE_TIME_AUTH_AMOUNT</span>
                       </div>
                     </div>
                   </div>
@@ -290,9 +290,9 @@
                   <icon name="chevron-down" class="text-xl text-gray-400 dark:text-gray-500"/>
                 </div>
                 <div class="flex items-start gap-1.5">
-                  <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                  <icon name="circle-exclamation" class="text-base ecommerce-tone-error shrink-0 mt-0.5"/>
                   <div>
-                    <span class="text-sm text-error">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_stopped_card</span>
+                    <span class="text-sm ecommerce-tone-error">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_stopped_card</span>
                     <div class="text-xs text-secondary">(INVALID_STOPPED_CARD)</div>
                   </div>
                 </div>
@@ -311,9 +311,9 @@
                   <icon name="chevron-down" class="text-xl text-gray-400 dark:text-gray-500"/>
                 </div>
                 <div class="flex items-start gap-1.5">
-                  <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                  <icon name="circle-exclamation" class="text-base ecommerce-tone-error shrink-0 mt-0.5"/>
                   <div>
-                    <span class="text-sm text-error">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.not_enough_balance</span>
+                    <span class="text-sm ecommerce-tone-error">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.not_enough_balance</span>
                     <div class="text-xs text-secondary">(NOT_ENOUGH_BALANCE)</div>
                   </div>
                 </div>
@@ -362,9 +362,9 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">89,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <icon name="circle-exclamation" class="text-base ecommerce-tone-error shrink-0 mt-0.5"/>
                     <div>
-                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_one_time_auth_amount</span>
+                      <span class="text-sm ecommerce-tone-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_one_time_auth_amount</span>
                       <div class="text-xs text-secondary">(EXCEED_MAX_ONE_TIME_AUTH_AMOUNT)</div>
                     </div>
                   </div>
@@ -384,10 +384,10 @@
               <tr class="{{_local.expandedRows.includes(1) ? '' : 'hidden'}}">
                 <td :colSpan="9" class="p-0">
                   <div class="bg-gray-50 dark:bg-gray-800 p-6">
-                    <div class="border-l-4 border-error bg-red-50 dark:bg-red-900/20 rounded-r-lg p-4 mb-6">
+                    <div class="border-l-4 ecommerce-tone-border-error bg-red-50 dark:bg-red-900/20 rounded-r-lg p-4 mb-6">
                       <div class="flex-center gap-2 mb-4">
-                        <icon name="circle-exclamation" class="text-xl text-error"/>
-                        <span class="text-error font-semibold">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.title</span>
+                        <icon name="circle-exclamation" class="text-xl ecommerce-tone-error"/>
+                        <span class="ecommerce-tone-error font-semibold">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.title</span>
                       </div>
                       <div class="row-stack">
                         <div class="grid-2col-responsive">
@@ -413,11 +413,11 @@
                         <div class="grid-2col-responsive">
                           <div class="flex justify-between">
                             <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.failure_reason</span>
-                            <span class="text-error">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_one_time_auth_amount</span>
+                            <span class="ecommerce-tone-error">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_one_time_auth_amount</span>
                           </div>
                           <div class="flex justify-between">
                             <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.error_code</span>
-                            <span class="text-error">EXCEED_MAX_ONE_TIME_AUTH_AMOUNT</span>
+                            <span class="ecommerce-tone-error">EXCEED_MAX_ONE_TIME_AUTH_AMOUNT</span>
                           </div>
                         </div>
                       </div>
@@ -495,9 +495,9 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">159,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <icon name="circle-exclamation" class="text-base ecommerce-tone-error shrink-0 mt-0.5"/>
                     <div>
-                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_stopped_card</span>
+                      <span class="text-sm ecommerce-tone-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_stopped_card</span>
                       <div class="text-xs text-secondary">(INVALID_STOPPED_CARD)</div>
                     </div>
                   </div>
@@ -530,9 +530,9 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">129,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <icon name="circle-exclamation" class="text-base ecommerce-tone-error shrink-0 mt-0.5"/>
                     <div>
-                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.not_enough_balance</span>
+                      <span class="text-sm ecommerce-tone-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.not_enough_balance</span>
                       <div class="text-xs text-secondary">(NOT_ENOUGH_BALANCE)</div>
                     </div>
                   </div>
@@ -565,9 +565,9 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">65,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <icon name="circle-exclamation" class="text-base ecommerce-tone-error shrink-0 mt-0.5"/>
                     <div>
-                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.user_cancel</span>
+                      <span class="text-sm ecommerce-tone-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.user_cancel</span>
                       <div class="text-xs text-secondary">(USER_CANCEL)</div>
                     </div>
                   </div>
@@ -600,9 +600,9 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">49,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <icon name="circle-exclamation" class="text-base ecommerce-tone-error shrink-0 mt-0.5"/>
                     <div>
-                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.incorrect_card_password</span>
+                      <span class="text-sm ecommerce-tone-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.incorrect_card_password</span>
                       <div class="text-xs text-secondary">(INCORRECT_CARD_PASSWORD)</div>
                     </div>
                   </div>
@@ -635,9 +635,9 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">179,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <icon name="circle-exclamation" class="text-base ecommerce-tone-error shrink-0 mt-0.5"/>
                     <div>
-                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.reject_card_company</span>
+                      <span class="text-sm ecommerce-tone-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.reject_card_company</span>
                       <div class="text-xs text-secondary">(REJECT_CARD_COMPANY)</div>
                     </div>
                   </div>
@@ -670,9 +670,9 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">35,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <icon name="circle-exclamation" class="text-base ecommerce-tone-error shrink-0 mt-0.5"/>
                     <div>
-                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.virtual_account_expired</span>
+                      <span class="text-sm ecommerce-tone-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.virtual_account_expired</span>
                       <div class="text-xs text-secondary">(VIRTUAL_ACCOUNT_EXPIRED)</div>
                     </div>
                   </div>
@@ -705,9 +705,9 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">98,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <icon name="circle-exclamation" class="text-base ecommerce-tone-error shrink-0 mt-0.5"/>
                     <div>
-                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_card_expiration</span>
+                      <span class="text-sm ecommerce-tone-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_card_expiration</span>
                       <div class="text-xs text-secondary">(INVALID_CARD_EXPIRATION)</div>
                     </div>
                   </div>
@@ -740,9 +740,9 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">82,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <icon name="circle-exclamation" class="text-base ecommerce-tone-error shrink-0 mt-0.5"/>
                     <div>
-                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_card_number</span>
+                      <span class="text-sm ecommerce-tone-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_card_number</span>
                       <div class="text-xs text-secondary">(INVALID_CARD_NUMBER)</div>
                     </div>
                   </div>
@@ -775,9 +775,9 @@
                 <td class="py-4 px-4 text-sm text-primary text-right">45,000원</td>
                 <td class="py-4 px-4">
                   <div class="flex-start gap-1.5">
-                    <icon name="circle-exclamation" class="text-base text-error shrink-0 mt-0.5"/>
+                    <icon name="circle-exclamation" class="text-base ecommerce-tone-error shrink-0 mt-0.5"/>
                     <div>
-                      <span class="text-sm text-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_auth_count</span>
+                      <span class="text-sm ecommerce-tone-error font-medium">$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_auth_count</span>
                       <div class="text-xs text-secondary">(EXCEED_MAX_AUTH_COUNT)</div>
                     </div>
                   </div>

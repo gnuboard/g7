@@ -76,7 +76,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-warning-soft"
+                                "className": "ecommerce-tone-warning-soft text-xs"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.identity.read_only_notice"
                         }
@@ -285,6 +285,7 @@
                             ],
                             "props": {
                                 "name": "filter.scope",
+                                "aria-label": "$t:admin.identity.policies.col.scope",
                                 "autoBinding": false,
                                 "value": "{{query.scope ?? ''}}",
                                 "className": "text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
@@ -687,6 +688,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "checked": "{{Boolean(policy.enabled)}}",
+                                                                        "ariaLabel": "$t:common.row_cell|row={{policy.key ?? ''}}|column={{$t('admin.identity.policies.col.enabled')}}",
                                                                         "size": "sm",
                                                                         "disabled": "{{policy.abilities?.can_update !== true}}"
                                                                     }
@@ -704,7 +706,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft'}}"
+                                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 ecommerce-tone-info-soft' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 ecommerce-tone-warning-soft'}}"
                                                                     },
                                                                     "text": "$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}"
                                                                 }
@@ -896,7 +898,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft flex-shrink-0' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft flex-shrink-0'}}"
+                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 ecommerce-tone-info-soft flex-shrink-0' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 ecommerce-tone-warning-soft flex-shrink-0'}}"
                                                     },
                                                     "text": "$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}"
                                                 }
@@ -1021,6 +1023,7 @@
                                                     ],
                                                     "props": {
                                                         "checked": "{{Boolean(policy.enabled)}}",
+                                                        "ariaLabel": "$t:common.row_cell|row={{policy.key ?? ''}}|column={{$t('admin.identity.policies.col.enabled')}}",
                                                         "size": "sm",
                                                         "disabled": "{{policy.abilities?.can_update !== true}}"
                                                     }
@@ -1160,7 +1163,7 @@
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "이전 쪽. 첫 쪽에서는 버튼이 잠기고, 이동 후 정책 구획으로 스크롤을 되돌린다.",
@@ -1186,9 +1189,10 @@
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
+                                                "href": "/admin/ecommerce/settings?tab=identity_policies&page={{Math.max(1, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) - 1)}}",
+                                                "mergeQuery": true,
                                                 "disabled": "{{(ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) <= 1}}",
-                                                "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                                             },
                                             "children": [
                                                 {
@@ -1208,7 +1212,7 @@
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "다음 쪽. 마지막 쪽에서는 잠긴다.",
@@ -1234,9 +1238,10 @@
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
+                                                "href": "/admin/ecommerce/settings?tab=identity_policies&page={{ecommerceIdentityPolicies?.data?.meta?.last_page ? Math.min(ecommerceIdentityPolicies?.data?.meta?.last_page, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) + 1) : ((ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) + 1)}}",
+                                                "mergeQuery": true,
                                                 "disabled": "{{ecommerceIdentityPolicies?.data?.meta?.last_page ? ((ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) >= ecommerceIdentityPolicies?.data?.meta?.last_page) : (ecommerceIdentityPolicies?.data?.meta?.has_more_pages !== true)}}",
-                                                "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                                             },
                                             "children": [
                                                 {

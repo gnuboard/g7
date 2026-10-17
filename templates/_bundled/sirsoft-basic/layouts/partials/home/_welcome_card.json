@@ -62,18 +62,16 @@
                 {
                     "id": "register_button",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "if": "{{!_global.currentUser?.uuid}}",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/register"
-                            }
+                            "handler": "navigate"
                         }
                     ],
                     "props": {
+                        "href": "/register",
                         "className": "px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer"
                     },
                     "children": [
@@ -95,18 +93,16 @@
                 {
                     "id": "dashboard_button",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "if": "{{_global.currentUser?.uuid}}",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/mypage"
-                            }
+                            "handler": "navigate"
                         }
                     ],
                     "props": {
+                        "href": "/mypage",
                         "className": "px-4 py-2 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-lg font-medium text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer"
                     },
                     "children": [
@@ -127,18 +123,16 @@
                 },
                 {
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/page/about"
-                            }
+                            "handler": "navigate"
                         }
                     ],
                     "props": {
-                        "className": "px-4 py-2 bg-white/20 text-white rounded-lg font-medium text-sm hover:bg-white/30 transition-colors cursor-pointer"
+                        "href": "/page/about",
+                        "className": "inline-flex items-center justify-center px-4 py-2 bg-white/20 text-white rounded-lg font-medium text-sm hover:bg-white/30 transition-colors cursor-pointer"
                     },
                     "text": "$t:home.learn_more"
                 }

@@ -12,7 +12,7 @@
       <div data-ref="order_summary_steps" class="grid grid-cols-6 gap-x-2 gap-y-6">
         <responsive on="portable" class="grid grid-cols-3 gap-x-2 gap-y-5"/>
         <!-- 상태 칸은 셀렉트와 같은 필터다 — 누르면 셀렉트가 읽는 값과 목록이 읽는 주소 쿼리를 함께 그 상태로 바꾸고 쪽수를 1로 되돌린다. 같은 칸을 다시 눌러도 전체 보기로 돌아가지 않으므로 해제는 셀렉트의 '전체'로 한다. -->
-        <div data-ref="order_summary_step_{{stepIdx}}" data-each="step, stepIdx in {{orders.data?.status_summary ?? []}}" class="relative flex flex-col items-center gap-2 min-w-0 cursor-pointer" role="button" data-summary-key="{{step.key ?? ''}}" data-summary-count="{{step.count ?? 0}}">
+        <a href="/mypage/orders?status={{step.key}}&page=1" :mergeQuery="true" data-ref="order_summary_step_{{stepIdx}}" data-each="step, stepIdx in {{orders.data?.status_summary ?? []}}" class="relative flex flex-col items-center gap-2 min-w-0 cursor-pointer" data-summary-key="{{step.key ?? ''}}" data-summary-count="{{step.count ?? 0}}">
           <on type="click">
             <set-state target="local" ordersStatus="{{step.key}}" :ordersPage="1"/>
             <navigate path="/mypage/orders" :mergeQuery="true" :replace="true">
@@ -71,13 +71,13 @@
             <responsive on="portable" class="absolute right-0 top-0 h-14 flex items-center translate-x-1/2 -mr-1 text-xs text-gray-300 dark:text-gray-600" data-step-chevron="mobile"/>
             <icon name="chevron-right"/>
         </div>
-        </div>
+        </a>
           </div>
         </div>
     <!-- 상태 필터 (셀렉트박스) -->
     <div class="flex justify-end mb-4">
       <responsive on="portable" class="flex justify-end mb-3"/>
-      <select value="{{_local.ordersStatus || ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select aria-label="$t:mypage.orders.status_filter_label" value="{{_local.ordersStatus || ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <responsive on="portable" value="{{_local.ordersStatus || ''}}" class="min-w-[100px] px-2.5 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"/>
         <on type="change">
           <!-- 주문 상태 필터. 셀렉트가 읽는 폼 값과 목록이 읽는 주소를 함께 맞춘다 -->
@@ -230,17 +230,17 @@
               <!-- 적립 예정 마일리지 (있을 때만) -->
               <p data-if="{{(order.total_earned_points_amount ?? 0) > 0 &amp;&amp; order.status !== 'cancelled' &amp;&amp; !order.is_partially_cancelled}}" class="text-xs text-blue-600 dark:text-blue-400">$t:mypage.orders.points_earning +{{order.total_earned_points_amount_formatted}}</p>
             </div>
-            <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer">
-              <responsive on="portable" type="button" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"/>
+            <a href="/mypage/orders/{{order.order_number}}" :mergeQuery="true" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer">
+              <responsive on="portable" class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"/>
               <on type="click">
                 <!-- 주문 상세로. 보던 목록 상태를 이고 가므로 상세에서 돌아오면 같은 자리가 열린다 -->
-                <navigate path="/mypage/orders/{{order.order_number}}" :mergeQuery="true">
+                <navigate :mergeQuery="true">
                   <query/>
                 </navigate>
               </on>
               <icon name="eye" size="sm"/>
               <span>$t:mypage.orders.view_detail</span>
-            </button>
+            </a>
           </div>
         </div>
       </div>
@@ -254,17 +254,17 @@
           <responsive on="portable" class="text-sm text-gray-500 dark:text-gray-400"/>
           $t:mypage.orders.empty
         </p>
-        <button type="button" class="inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer">
-          <responsive on="portable" type="button" class="inline-block mt-3 px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium cursor-pointer"/>
+        <a href="{{_global.shopBase}}/products" class="text-center inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer">
+          <responsive on="portable" class="text-center inline-block mt-3 px-3 py-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-xs font-medium cursor-pointer"/>
           <on type="click">
             <!-- audit:allow layout-list-context-navigate-merge-query 쇼핑하러 가기 — 주문 내역이 비었을 때 상품 목록으로 내보내는 이동이다. -->
-            <navigate path="{{_global.shopBase}}/products"/>
+            <navigate/>
           </on>
           $t:mypage.orders.go_shopping
-        </button>
+        </a>
       </div>
       <!-- 페이지네이션 -->
-      <pagination data-type="composite" data-if="{{((orders.data.pagination.last_page ?? 0) > 1) || (orders.data.pagination.has_more_pages === true) || ((orders.data.pagination.current_page ?? 1) > 1)}}" currentPage="{{orders.data.pagination.current_page}}" totalPages="{{orders.data.pagination.last_page ?? null}}" hasMorePages="{{orders.data.pagination.has_more_pages ?? false}}" class="mt-4">
+      <pagination pageHref="/mypage/orders?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-if="{{((orders.data.pagination.last_page ?? 0) > 1) || (orders.data.pagination.has_more_pages === true) || ((orders.data.pagination.current_page ?? 1) > 1)}}" currentPage="{{orders.data.pagination.current_page}}" totalPages="{{orders.data.pagination.last_page ?? null}}" hasMorePages="{{orders.data.pagination.has_more_pages ?? false}}" class="mt-4">
         <responsive on="portable" currentPage="{{orders.data.pagination.current_page}}" totalPages="{{orders.data.pagination.last_page ?? null}}" hasMorePages="{{orders.data.pagination.has_more_pages ?? false}}" class="mt-3"/>
         <on event="onPageChange">
           <set-state target="local" ordersPage="{{$args[0]}}"/>

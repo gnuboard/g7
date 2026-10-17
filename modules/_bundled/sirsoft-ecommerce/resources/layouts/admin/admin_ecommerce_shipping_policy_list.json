@@ -167,22 +167,22 @@
                             },
                             {
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "새 배송정책 등록. 등록을 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/ecommerce/shipping-policies/create",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "href": "/admin/ecommerce/shipping-policies/create",
+                                    "mergeQuery": true,
+                                    "className": "button btn btn-primary aria-disabled:opacity-50 aria-disabled:cursor-not-allowed",
                                     "disabled": "{{shipping_policies?.data?.abilities?.can_create !== true}}"
                                 },
                                 "children": [
@@ -263,6 +263,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "sortBy",
+                                                    "aria-label": "$t:common.sort_order",
                                                     "className": "w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                                     "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
                                                     "options": [
@@ -311,6 +312,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "perPage",
+                                                    "aria-label": "$t:common.per_page",
                                                     "className": "w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                                     "value": "{{query.per_page || '20'}}",
                                                     "options": [

@@ -54,7 +54,7 @@
         <div data-if="{{form_meta?.data?.board?.secret_mode === 'always'}}" class="bg-gray-100 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 opacity-75">
           <input type="hidden" name="is_secret" value="true"/>
           <div class="flex items-start gap-3">
-            <input type="checkbox" :checked="true" :disabled="true" class="mt-0.5 w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 opacity-50 cursor-not-allowed"/>
+            <input type="checkbox" aria-label="$t:board.form.secret_post" :checked="true" :disabled="true" class="mt-0.5 w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 opacity-50 cursor-not-allowed"/>
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
                 <icon name="lock" size="sm" class="text-amber-600 dark:text-amber-400"/>
@@ -73,7 +73,7 @@
           <span>$t:board.guest_author_name</span>
           <span class="text-red-500 ml-1">*</span>
         </label>
-        <input type="text" name="author_name" placeholder="$t:board.guest_author_name_placeholder" class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.author_name ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"/>
+        <input aria-label="$t:board.guest_author_name" type="text" name="author_name" placeholder="$t:board.guest_author_name_placeholder" class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.author_name ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"/>
         <p data-if="{{_local.errors?.author_name}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.author_name?.[0] ?? _local.errors?.author_name}}</p>
       </div>
       <div>
@@ -81,14 +81,14 @@
           <span>$t:board.guest_password</span>
           <span class="text-red-500 ml-1">*</span>
         </label>
-        <input type="password" name="password" placeholder="$t:board.guest_password_placeholder" class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.password ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"/>
+        <input aria-label="$t:board.guest_password" type="password" name="password" placeholder="$t:board.guest_password_placeholder" class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.password ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"/>
         <p data-if="{{_local.errors?.password}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.password?.[0] ?? _local.errors?.password}}</p>
       </div>
     </div>
     <!-- 카테고리 선택 (카테고리가 있는 게시판만) -->
     <div data-if="{{form_meta?.data?.board?.categories?.length > 0}}">
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:board.form.category</label>
-      <select name="category" value="{{_local.form?.category ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" options="{{[{value: '', label: $t('board.form.select_category')}, ...(form_meta?.data?.board?.categories ?? []).map(c => ({value: c, label: c}))]}}">
+      <select name="category" aria-label="$t:board.form.category" value="{{_local.form?.category ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" options="{{[{value: '', label: $t('board.form.select_category')}, ...(form_meta?.data?.board?.categories ?? []).map(c => ({value: c, label: c}))]}}">
         <on event="change">
           <!-- 분류 선택 — 값을 담으면서 «고친 것이 있다» 표시도 함께 세운다(그 표시를 이탈 경고가 본다). -->
           <set-state target="local" :hasChanges="true">
@@ -105,7 +105,7 @@
         <span>$t:board.form.title</span>
         <span class="text-red-500 ml-1">*</span>
       </label>
-      <input type="text" name="title" placeholder="$t:board.form.title_placeholder" class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.title ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"/>
+      <input aria-label="$t:board.form.title" type="text" name="title" placeholder="$t:board.form.title_placeholder" class="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 {{_local.errors?.title ? 'border-red-500 dark:border-red-500 focus:ring-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500'}}"/>
       <p data-if="{{_local.errors?.title}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.title?.[0] ?? _local.errors?.title}}</p>
     </div>
     <!-- 내용 에디터 래퍼 (에러 테두리용) — 비회원 비밀글은 비밀번호를 맞힌 뒤 다시 받은 폼 값(검증 토큰이 실려 옴)이 올 때까지 편집기를 띄우지 않는다. 편집기는 처음 세워질 때의 값만 들고 있어, 먼저 뜨면 빈 본문으로 세워지고 입력·저장 시 원문이 지워진다. -->
@@ -161,14 +161,14 @@
     <!-- 버튼 영역 -->
     <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
       <!-- 취소 버튼 (등록: 목록, 수정: 상세) -->
-      <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+      <a href="{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}" :mergeQuery="true" class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
         <on type="click">
-          <navigate path="{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}" :mergeQuery="true">
+          <navigate :mergeQuery="true">
             <query/>
           </navigate>
         </on>
         $t:common.cancel
-      </button>
+      </a>
       <button type="button" disabled="{{_local?.isSaving}}" class="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed">
         <on type="click">
           <!-- 저장. 아직 올라가지 않은 첨부를 먼저 올리라고 알린 뒤 글을 보낸다 — 둘을 잇는 것이 임시 키이고, 주소와 방식은 글 번호 유무로 갈린다 -->

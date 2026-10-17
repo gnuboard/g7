@@ -143,7 +143,7 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
           <div data-if="{{(claim?.data?.claim?.claim_type ?? '') === 'exchange'}}" class="flex justify-between items-center text-sm gap-3">
             <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.settlement.claim_shipping_fee_exchange</span>
             <!-- 교환 왕복 배송비 — 상세 응답의 현재 값이 채워져 있고, 고친 값은 아래 [금액 저장] 을 눌러야 서버에 가며 그때 총 청구액이 함께 다시 계산된다. -->
-            <input data-ref="cst_001_shipping_fee_input" name="claimShippingFee" type="number" :min="0" step="any" class="w-40 px-3 py-1.5 text-sm text-right bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.claimShippingFee ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_amounts !== true}}">
+            <input data-ref="cst_001_shipping_fee_input" name="claimShippingFee" aria-label="$t:sirsoft-ecommerce.admin.claim.detail.settlement.claim_shipping_fee_exchange" type="number" :min="0" step="any" class="w-40 px-3 py-1.5 text-sm text-right bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.claimShippingFee ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_amounts !== true}}">
               <on type="change">
                 <set-state target="_local" claimShippingFee="{{$event.target.value}}"/>
               </on>
@@ -152,7 +152,7 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
           <div data-if="{{(claim?.data?.claim?.claim_type ?? '') === 'return'}}" class="flex justify-between items-center text-sm gap-3">
             <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.settlement.claim_shipping_fee_return</span>
             <!-- 반품 회수 배송비 — 교환 칸과 같은 값을 공유하고 유형에 따라 한쪽만 선다. 비운 채 저장하면 이 금액은 보내지 않아 기존 값이 남으므로, 청구를 없애려면 0 을 적는다. -->
-            <input data-ref="cst_002_shipping_fee_input_return" name="claimShippingFee" type="number" :min="0" step="any" class="w-40 px-3 py-1.5 text-sm text-right bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.claimShippingFee ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_amounts !== true}}">
+            <input data-ref="cst_002_shipping_fee_input_return" name="claimShippingFee" aria-label="$t:sirsoft-ecommerce.admin.claim.detail.settlement.claim_shipping_fee_return" type="number" :min="0" step="any" class="w-40 px-3 py-1.5 text-sm text-right bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.claimShippingFee ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_amounts !== true}}">
               <on type="change">
                 <set-state target="_local" claimShippingFee="{{$event.target.value}}"/>
               </on>
@@ -173,7 +173,7 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
           <div class="flex justify-between items-center text-sm gap-3">
             <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.settlement.charge_method</span>
             <!-- 허용 어휘는 운영자 설정(`claim.allowed_charge_methods`)이 정하고 그 조회는 `settings.read` 게이트다 — 상세 봉투가 통로다. 화면이 세 값을 다시 적으면 상점이 막아 둔 방식이 선택 가능해지고 저장이 422 가 된다. -->
-            <select data-ref="cst_003_charge_method" name="chargeMethod" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.chargeMethod ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_amounts !== true}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.settlement.charge_method_placeholder'), disabled: true }].concat(claim?.data?.charge_methods ?? [])}}">
+            <select data-ref="cst_003_charge_method" name="chargeMethod" aria-label="$t:sirsoft-ecommerce.admin.claim.detail.settlement.charge_method" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.chargeMethod ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_amounts !== true}}" options="{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.settlement.charge_method_placeholder'), disabled: true }].concat(claim?.data?.charge_methods ?? [])}}">
               <on type="change">
                 <set-state target="_local" chargeMethod="{{$event.target.value}}"/>
               </on>
@@ -264,11 +264,7 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
               <variant when="live">text-gray-900 dark:text-gray-100</variant>
             </class-map>
             <div class="flex-center gap-2">
-              <a data-ref="cst_014_linked_refund_link_{{lrIdx}}" href="#" class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
-                <on type="click">
-                  <!-- 후속 환불신청서를 새 창으로 연다 -->
-                  <open-window path="{{linkedRefund.detail_url}}"/>
-                </on>
+              <a href="{{linkedRefund.detail_url}}" target="_blank" rel="noopener noreferrer" data-ref="cst_014_linked_refund_link_{{lrIdx}}" class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                 {{linkedRefund.claim_number}}
               </a>
               <badge data-type="composite" variant="{{linkedRefund.status_variant ?? 'default'}}">{{linkedRefund.status_label ?? ''}}</badge>
@@ -375,7 +371,7 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
               <div class="flex justify-between items-center gap-3">
                 <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.cash_amount</span>
                 <!-- 현금 환불액 — 저장하지 않아도 [환불하기] 는 지금 칸에 적힌 값을 확인창으로 넘겨 그대로 실행한다. 비워 두면 [금액 저장] 은 이 값을 건너뛰지만 실행은 0원으로 싣는다. -->
-                <input data-ref="cre_008_pg_amount" name="refundAmount" type="number" :min="0" step="any" class="w-40 px-3 py-1.5 text-sm text-right bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.refundAmount ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_amounts !== true}}">
+                <input data-ref="cre_008_pg_amount" name="refundAmount" aria-label="$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.cash_amount" type="number" :min="0" step="any" class="w-40 px-3 py-1.5 text-sm text-right bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.refundAmount ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_amounts !== true}}">
                   <on type="change">
                     <sequence>
                       <set-state target="_local" refundAmount="{{$event.target.value}}"/>
@@ -393,7 +389,7 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
               <div class="flex justify-between items-center gap-3">
                 <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_amount</span>
                 <!-- 마일리지 환불액 — 회원 주문에서만 쓰는 칸이다(비회원에게는 되돌릴 적립 계정이 없다). 적은 값은 현금 칸과 더해져 아래 합계와 상한 초과 안내에 바로 쓰인다. -->
-                <input data-ref="cre_009_points_amount" name="refundPointsAmount" type="number" :min="0" step="any" class="w-40 px-3 py-1.5 text-sm text-right bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.refundPointsAmount ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_amounts !== true}}">
+                <input data-ref="cre_009_points_amount" name="refundPointsAmount" aria-label="$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_amount" type="number" :min="0" step="any" class="w-40 px-3 py-1.5 text-sm text-right bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.refundPointsAmount ?? ''}}" disabled="{{claim?.data?.abilities?.can_update_amounts !== true}}">
                   <on type="change">
                     <sequence>
                       <set-state target="_local" refundPointsAmount="{{$event.target.value}}"/>
@@ -406,7 +402,7 @@ partial 안의 partial 은 같은 디렉터리 기준 상대 경로여야 한다
               <!-- 마일리지 잔여도 같은 자리에 병기한다. 마일리지는 결제행이 없는 주문 컬럼 원장이라 수단별 잔여 목록에 항목이 없을 수 있고, 그때는 이 줄이 아예 렌더되지 않는다 — 0원과 '항목 없음' 을 뭉뚱그리지 않는다. -->
               <div data-ref="cre_016_points_method_limit_{{ptIdx}}" data-each="ptCapacity, ptIdx in {{(claim?.data?.cancellable?.methods ?? []).filter(m => m.type === 'mileage')}}" class="text-xs text-right text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method_limit_hint|method={{ptCapacity.method_label ?? ''}}|amount={{ptCapacity.remaining_base_formatted ?? ''}}</div>
             </div>
-            <div>
+            <div role="radiogroup" aria-label="$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method">
               <div class="text-sm text-secondary mb-2">$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method</div>
               <!-- 어휘는 서버가 준 목록만 쓴다 (`RefundMethodEnum`) — 화면이 셋을 다시 적으면 수단이 늘어도 화면만 낡은 채로 남는다. 자동바인딩을 끄고 로컬 상태를 명시적으로 읽는 것은 형제 모달(완료 처리)과 같은 규율이다. -->
               <radio-group data-type="composite" data-ref="cre_010_refund_method" name="refundMethod" :autoBinding="false" :inline="true" disabled="{{claim?.data?.abilities?.can_update_amounts !== true}}" value="{{_local.refundMethod ?? ''}}" options="{{claim?.data?.refund_methods ?? []}}">

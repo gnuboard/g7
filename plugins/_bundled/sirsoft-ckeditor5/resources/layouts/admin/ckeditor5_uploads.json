@@ -181,20 +181,17 @@
                                     {
                                         "id": "open_settings_button",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "comment": "audit:allow layout-list-context-navigate-merge-query 플러그인 설정 화면으로 나가는 이동 — 목록 클러스터 밖이라 목록 상태를 승계하지 않는다",
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/plugins/sirsoft-ckeditor5/settings"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
+                                            "href": "/admin/plugins/sirsoft-ckeditor5/settings",
+                                            "className": "button btn btn-secondary aria-disabled:opacity-50 aria-disabled:cursor-not-allowed",
                                             "disabled": "{{ckeditor5Uploads?.data?.abilities?.can_open_settings !== true}}"
                                         },
                                         "children": [
@@ -359,6 +356,7 @@
                                         ],
                                         "props": {
                                             "name": "referenced",
+                                            "aria-label": "$t:sirsoft-ckeditor5.admin.uploads.col.referenced",
                                             "value": "{{_local.filter.referenced || 'all'}}",
                                             "options": [
                                                 {
@@ -584,6 +582,9 @@
                             }
                         ],
                         "props": {
+                            "pageHrefMergeQuery": true,
+                            "pageHref": "/admin/plugins/sirsoft-ckeditor5/uploads?page={page}",
+                            "rowLabelField": "original_name",
                             "data": "{{ckeditor5Uploads?.data?.data ?? []}}",
                             "pagination": true,
                             "serverSidePagination": true,

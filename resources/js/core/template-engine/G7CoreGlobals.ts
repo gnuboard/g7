@@ -69,6 +69,7 @@ import {
 } from '../support/assetUrl';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
 import { isLocaleSwitching, stashForLocaleSwitch, takeLocaleSwitchHandoff } from './localeSwitchHandoff';
+import { isPlainLeftClick, mergeQueryIntoHref, type LinkClickLike } from './navigationLinks';
 import {
   notifyAssetFailure,
   drainExternalAssetFailures,
@@ -177,10 +178,13 @@ export interface G7DevToolsInterface {
     startTime: number;
     endTime?: number;
     duration?: number;
-    status: 'started' | 'success' | 'error';
+    /** `skipped` — 미리보기 모드에서 억제된 액션 (ActionDispatcher.executeAction) */
+    status: 'started' | 'success' | 'error' | 'skipped';
     result?: any;
     error?: { name: string; message: string; stack?: string };
     children?: Array<any>;
+    /** 부가 정보 (예: `{ reason: 'preview_mode_suppressed' }`) */
+    metadata?: Record<string, any>;
   }): void;
 
   /** 네트워크 요청 시작 추적 */
@@ -1091,9 +1095,8 @@ function initTranslationAPI(G7Core: any, deps: G7CoreDependencies): void {
     }
 
     if (params) {
-      // 파라미터를 TranslationEngine 형식으로 변환 (|key=value|key2=value2)
-      const paramsStr = '|' + Object.entries(params).map(([k, v]) => `${k}=${v}`).join('|');
-      return state.translationEngine.translate(key, state.translationContext, paramsStr);
+      // 인자 객체를 그대로 넘긴다 — `|key=value` 로 이어 붙이면 값의 `|`·`&`·`=` 에서 잘린다(engine-v1.80.1)
+      return state.translationEngine.translate(key, state.translationContext, params);
     }
     return state.translationEngine.translate(key, state.translationContext);
   };
@@ -3131,6 +3134,25 @@ function initNavigationAPI(G7Core: any, deps: G7CoreDependencies): void {
 
       return unsubscribe;
     },
+    /**
+     * 「보통 클릭」인지 판정합니다 — 왼쪽 버튼·수정키 없음·링크면 target 없음/_self·download 없음.
+     *
+     * 링크(`<a href>`)를 그리는 합성 컴포넌트는 이것이 참일 때만 기본 동작을 막고 기존 콜백을 부른다.
+     * 거짓(Ctrl·Cmd·Shift·Alt·새 창·내려받기)이면 브라우저에 맡겨 새 탭·새 창으로 열리게 한다.
+     * 엔진의 클릭 처리(`createHandler`)와 같은 함수다.
+     *
+     * @since engine-v1.80.1
+     */
+    isPlainLeftClick: (event?: LinkClickLike | null): boolean => isPlainLeftClick(event),
+    /**
+     * 현재 주소의 쿼리를 링크 주소에 합칩니다(링크 자신의 쿼리가 이김). 같은 출처 주소가 아니면 그대로.
+     *
+     * A 컴포넌트 `mergeQuery`·페이지 번호 링크가 렌더할 때 href 를 만든다 — 보통 클릭(path 없는 navigate +
+     * mergeQuery)과 새 탭이 같은 목적지를 받는다.
+     *
+     * @since engine-v1.80.1
+     */
+    mergeQueryIntoHref: (href: string): string => mergeQueryIntoHref(href),
   };
 
   logger.log('전역 객체 window.G7Core.navigation에 노출됨');
@@ -3543,7 +3565,7 @@ export function initDevToolsInterface(): void {
       }
     },
 
-    trackIfCondition: (id, condition, result, componentName) => {
+    trackIfCondition: (id, condition, result, _componentName) => {
       try {
         if (getDevTools().isEnabled()) {
           getDevTools().trackIfCondition(id, condition, result);

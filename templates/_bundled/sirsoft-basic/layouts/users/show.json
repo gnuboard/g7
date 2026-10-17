@@ -406,18 +406,16 @@
                                                     },
                                                     {
                                                         "type": "basic",
-                                                        "name": "Button",
+                                                        "name": "A",
                                                         "actions": [
                                                             {
                                                                 "type": "click",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/users/{{route.userId}}/posts"
-                                                                }
+                                                                "handler": "navigate"
                                                             }
                                                         ],
                                                         "props": {
-                                                            "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                            "href": "/users/{{route.userId}}/posts",
+                                                            "className": "inline-flex items-center justify-center text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
@@ -438,7 +436,7 @@
                                                 "children": [
                                                     {
                                                         "type": "basic",
-                                                        "name": "Button",
+                                                        "name": "A",
                                                         "iteration": {
                                                             "source": "{{recentPosts.data?.data ?? []}}",
                                                             "item_var": "post"
@@ -446,13 +444,11 @@
                                                         "actions": [
                                                             {
                                                                 "type": "click",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/board/{{post.board_slug}}/{{post.id}}"
-                                                                }
+                                                                "handler": "navigate"
                                                             }
                                                         ],
                                                         "props": {
+                                                            "href": "/board/{{post.board_slug}}/{{post.id}}",
                                                             "className": "block w-full text-left px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
                                                         },
                                                         "children": [
@@ -586,18 +582,16 @@
                                                     },
                                                     {
                                                         "type": "basic",
-                                                        "name": "Button",
+                                                        "name": "A",
                                                         "actions": [
                                                             {
                                                                 "type": "click",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/users/{{route.userId}}/posts"
-                                                                }
+                                                                "handler": "navigate"
                                                             }
                                                         ],
                                                         "props": {
-                                                            "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                            "href": "/users/{{route.userId}}/posts",
+                                                            "className": "inline-flex items-center justify-center text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                                         },
                                                         "children": [
                                                             {

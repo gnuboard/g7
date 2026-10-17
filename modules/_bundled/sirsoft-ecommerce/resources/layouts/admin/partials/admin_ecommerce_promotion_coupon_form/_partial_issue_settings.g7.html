@@ -15,7 +15,7 @@
         <div>
           <div>
             <radio-group data-type="composite" value="{{_local.issue_quantity_type}}" :inline="true">
-              <responsive on="mobile" :inline="false"/>
+              <responsive on="0-767" :inline="false"/>
               <prop name="options">
                 <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited" value="unlimited"/>
                 <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_quantity_limited" value="limited"/>
@@ -41,7 +41,7 @@
         <div>
           <div>
             <radio-group data-type="composite" value="{{_local.issue_period_type}}" :inline="true">
-              <responsive on="mobile" :inline="false"/>
+              <responsive on="0-767" :inline="false"/>
               <prop name="options">
                 <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited" value="unlimited"/>
                 <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.issue_period_limited" value="limited"/>
@@ -73,7 +73,7 @@
         <div>
           <div>
             <radio-group data-type="composite" value="{{_local.reissue_type}}" :inline="true">
-              <responsive on="mobile" :inline="false"/>
+              <responsive on="0-767" :inline="false"/>
               <prop name="options">
                 <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.unlimited" value="unlimited"/>
                 <item label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.option.reissue_limited" value="limited"/>
@@ -89,7 +89,7 @@
             <!-- 제한 시: 횟수 입력 -->
             <div data-ref="reissue_limit_input" data-if="{{_local.reissue_type === 'limited'}}" class="flex-center gap-2">
               <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.per_user</span>
-              <input type="number" name="per_user_limit" class="input w-24" :min="1"/>
+              <input type="number" name="per_user_limit" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.per_user_limit_label" class="input w-24" :min="1"/>
               <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.unit_times</span>
             </div>
           </div>

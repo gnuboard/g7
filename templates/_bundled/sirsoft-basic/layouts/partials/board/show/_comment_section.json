@@ -47,14 +47,13 @@
                 {
                     "comment": "삭제된 댓글 포함 토글 버튼 (manager 권한 보유 시에만 표시)",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "if": "{{post?.data?.abilities?.can_manage}}",
                     "actions": [
                         {
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "/board/{{route.slug}}/{{route.id}}",
                                 "mergeQuery": true,
                                 "query": {
                                     "del_cmt": "{{query.del_cmt === '1' ? '' : '1'}}"
@@ -63,7 +62,8 @@
                         }
                     ],
                     "props": {
-                        "type": "button",
+                        "href": "/board/{{route.slug}}/{{route.id}}?del_cmt={{query.del_cmt === '1' ? '' : '1'}}",
+                        "mergeQuery": true,
                         "className": "{{query.del_cmt === '1' ? 'inline-flex items-center gap-1.5 px-3 py-2 border-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium' : 'inline-flex items-center gap-1.5 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700'}}"
                     },
                     "children": [

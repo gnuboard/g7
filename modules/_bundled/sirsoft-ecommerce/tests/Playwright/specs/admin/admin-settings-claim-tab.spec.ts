@@ -131,6 +131,9 @@ test.describe('설정 클레임 탭', () => {
     });
     page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
     const tabs = page.locator('#claim_reason_sub_tabs');
+    // 하위 탭은 링크다(#757 WP-L) — 가운데 클릭·새 탭으로 열어도 같은 하위 탭이 서는 주소를 든다. 보통 클릭은 아래처럼 같은 화면 안 교체다.
+    await expect(tabs.getByRole('tab', { name: /반품 사유|Return reasons|返品理由/ })).toHaveAttribute('href', '/admin/ecommerce/settings?tab=claim&sub_tab=return');
+    await expect(tabs.getByRole('tab', { name: /환불 사유|Refund reasons|返金理由/ })).toHaveAttribute('href', '/admin/ecommerce/settings?tab=claim&sub_tab=refund');
     await tabs.getByRole('tab', { name: /반품 사유|Return reasons|返品理由/ }).click();
     await expect(page).toHaveURL(/[?&]sub_tab=return(&|$)/, { timeout: 15_000 });
     await tabs.getByRole('tab', { name: /교환 사유|Exchange reasons|交換理由/ }).click();
@@ -309,17 +312,27 @@ test.describe('설정 클레임 탭', () => {
       timeout: 20_000,
     });
 
+    // 지우기 단추 이름은 화면 언어를 따른다(`common.tag_input.remove` — 「{label} 지우기」·「Remove {label}」·「{label}を削除」).
+    const REMOVE_NAME = /^Remove\s+|\s*지우기$|を削除$/;
+    const removeButtons = field.getByRole('button', { name: /^Remove\s|지우기$|を削除$/ });
+
     // ① 태그가 원문 키로 서면 안 된다. 기본값 `card`·`point` 는 라벨을 가진다.
-    const tagText = (await field.innerText()).replace(/\s+/g, ' ');
-    expect(tagText, '추가결제 수단 태그가 원문 키로 노출된다').not.toMatch(/\bpoint\b/);
-    expect(tagText, '추가결제 수단 태그가 원문 키로 노출된다').not.toMatch(/\bcard\b/);
+    // 칸이 선 순간 한 번 읽으면 두 틈을 잡는다 — 태그가 아직 없는 틈(원문도 없어 거짓 통과)과, 선택지(라벨 출처)보다
+    // 값이 먼저 그려진 틈(원문). 태그가 선 뒤 라벨로 자리 잡을 때까지 기다려 잰다. 계속 원문이면 시간 초과로 실패한다.
+    await expect(removeButtons.first(), '지울 태그가 있어야 이 축을 잴 수 있다').toBeVisible({ timeout: 15_000 });
+    await expect(field, '추가결제 수단 태그가 원문 키로 노출된다').not.toContainText(/\bpoint\b/, { timeout: 15_000 });
+    await expect(field, '추가결제 수단 태그가 원문 키로 노출된다').not.toContainText(/\bcard\b/, { timeout: 15_000 });
 
     // ② 태그를 하나 지운 뒤 선택지를 연다. 지운 값이 선택지에 남아 있어야 되돌릴 수 있다.
-    const removeButtons = field.locator('button[aria-label^="Remove"]');
     const before = await removeButtons.count();
-    expect(before, '지울 태그가 있어야 이 축을 잴 수 있다').toBeGreaterThan(0);
-
-    const removedLabel = (await removeButtons.last().getAttribute('aria-label'))!.replace(/^Remove\s*/, '');
+    // 지우기 단추 이름도 라벨로 자리 잡아야 한다 — 실측(M1 4차): 태그 글자가 라벨로 바뀐 직후에도 단추 이름은 잠깐
+    // 원문(「point 지우기」)이었다가 따라온다. 계속 원문이면 시간 초과로 실패한다.
+    const removeLabelOf = async (): Promise<string> =>
+      ((await removeButtons.last().getAttribute('aria-label')) ?? '').replace(REMOVE_NAME, '');
+    await expect
+      .poll(removeLabelOf, { message: '지우기 단추가 라벨이 아니라 원문 키를 이름으로 든다', timeout: 15_000 })
+      .not.toMatch(/^(card|point)$/);
+    const removedLabel = await removeLabelOf();
     await removeButtons.last().click();
     await expect(removeButtons, '태그가 지워져야 한다').toHaveCount(before - 1, { timeout: 10_000 });
 

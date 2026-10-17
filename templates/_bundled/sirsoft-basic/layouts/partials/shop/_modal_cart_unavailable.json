@@ -207,7 +207,7 @@
             "children": [
                 {
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "comment": "이 창의 유일한 출구 — 문제 항목을 정리하러 장바구니로 되돌린다",
@@ -228,7 +228,8 @@
                         }
                     ],
                     "props": {
-                        "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer"
+                        "href": "{{_global.shopBase}}/cart",
+                        "className": "inline-flex items-center justify-center px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer"
                     },
                     "text": "$t:shop.cart.go_to_cart"
                 }

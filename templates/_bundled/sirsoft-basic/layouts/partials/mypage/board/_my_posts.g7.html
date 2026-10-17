@@ -6,7 +6,7 @@
     <!-- 필터 영역 -->
     <div class="flex flex-col sm:flex-row gap-3 mb-4">
       <!-- 게시판 필터 -->
-      <select value="{{_global.myPostsBoard ?? ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select aria-label="$t:mypage.board_activities.reactions.table.board" value="{{_global.myPostsBoard ?? ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <on type="change">
           <set-state target="global" myPostsBoard="{{$event.target.value}}" :myPostsPage="1"/>
           <refetch-data-source dataSourceId="myPosts"/>
@@ -15,7 +15,7 @@
         <option data-each="board in {{boards?.data ?? []}}" value="{{board.slug}}">{{board.name}}</option>
       </select>
       <!-- 정렬 필터 -->
-      <select value="{{_global.myPostsSort ?? 'latest'}}" class="min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select aria-label="$t:common.sort_order" value="{{_global.myPostsSort ?? 'latest'}}" class="min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <on type="change">
           <set-state target="global" myPostsSort="{{$event.target.value}}" :myPostsPage="1"/>
           <refetch-data-source dataSourceId="myPosts"/>
@@ -27,7 +27,7 @@
       <!-- 검색 영역 -->
       <div class="flex-1 flex gap-2">
         <!-- 검색 대상 — 제목만/내용만을 백엔드가 갈라 준다. 담아만 두고 조회는 검색 버튼이 한다 -->
-        <select data-ref="my_posts_search_field_select" value="{{_global.myPostsSearchField ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <select data-ref="my_posts_search_field_select" aria-label="$t:common.search_field" value="{{_global.myPostsSearchField ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
           <options>
             <option value="title_content">$t:mypage.board_activities.search_fields.title_content</option>
             <option value="title">$t:mypage.board_activities.search_fields.title</option>
@@ -95,9 +95,9 @@
     <div class="space-y-3">
       <!-- 게시글 카드 반복 -->
       <div data-if="{{myPosts?.data?.data &amp;&amp; myPosts.data.data.length > 0}}" data-each="post in {{myPosts?.data?.data ?? []}}">
-        <button class="w-full text-left block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer">
+        <a href="/board/{{post.board_slug}}/{{post.id}}" class="w-full text-left block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer">
           <on type="click">
-            <navigate path="/board/{{post.board_slug}}/{{post.id}}"/>
+            <navigate/>
           </on>
           <!-- 상단: [게시판명] 제목 + 비밀글 아이콘 (한 줄) -->
           <div class="flex items-center justify-between gap-3">
@@ -113,7 +113,7 @@
             <span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 whitespace-nowrap" title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
           </div>
           <!-- 게시글 내용 요약 (2줄, HTML 태그 제거된 plain text 사용) -->
-          <p data-if="{{post.content_plain}}" class="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2 break-words">{{post.content_plain}}</p>
+          <div data-if="{{post.content_plain}}" class="mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2 break-words">{{post.content_plain}}</div>
           <!-- 하단: 조회수 + 댓글수 -->
           <div class="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
             <span class="flex items-center gap-1">
@@ -125,7 +125,7 @@
               <span>{{post.comment_count ?? 0}}$t:mypage.board_activities.meta.comments_unit</span>
             </span>
           </div>
-        </button>
+        </a>
       </div>
       <!-- 게시글 없음 -->
       <div data-if="{{!myPosts?.data?.data || myPosts.data.data.length === 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
@@ -133,12 +133,12 @@
         <!-- 검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다 -->
         <p data-if="{{!(!!_global.myPostsSearchApplied || !!_global.myPostsBoard)}}" class="text-gray-500 dark:text-gray-400">$t:mypage.board_activities.empty_posts</p>
         <p data-if="{{!!_global.myPostsSearchApplied || !!_global.myPostsBoard}}" class="text-gray-500 dark:text-gray-400">$t:board.no_search_results</p>
-        <button class="inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <a href="/boards" class="text-center inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
           <on type="click">
-            <navigate path="/boards"/>
+            <navigate/>
           </on>
           $t:mypage.board_activities.go_boards
-        </button>
+        </a>
       </div>
     </div>
     <!-- 페이지네이션 -->

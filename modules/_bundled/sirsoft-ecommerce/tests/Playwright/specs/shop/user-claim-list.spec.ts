@@ -47,7 +47,8 @@ import type { Page } from '@playwright/test';
 async function openList(page: Page, query = '', expectText?: string): Promise<void> {
   await page.goto(`/mypage/claims${query}`);
   await waitForApp(page);
-  await expect(page.getByRole('button', { name: '교환', exact: true })).toBeVisible({ timeout: 30_000 });
+  // 회원 화면의 유형 서브탭은 링크다(#757 WP-L, 비회원 화면은 단추) — 이 스펙은 회원 화면만 연다.
+  await expect(page.getByRole('link', { name: '교환', exact: true })).toBeVisible({ timeout: 30_000 });
 
   if (expectText) {
     await expect
@@ -94,7 +95,7 @@ const EDITABLE: Record<string, unknown> = {
 
 /** 유형 서브탭 버튼 */
 function tab(page: Page, label: string) {
-  return page.getByRole('button', { name: label, exact: true });
+  return page.getByRole('link', { name: label, exact: true });
 }
 
 /** 화면 전체 글자 (공백 정규화) */
@@ -234,7 +235,8 @@ test.describe('구매자 클레임 신청내역', () => {
     });
 
     await openList(page, '?type=exchange', 'EX20260902-0201');
-    await expect(page.getByRole('button', { name: '수정' })).toBeVisible({ timeout: 15_000 });
+    // 회원 화면의 [수정]은 수정 화면 링크다(#757 WP-L) — [철회]는 확인 창을 여는 단추라 그대로다.
+    await expect(page.getByRole('link', { name: '수정' })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole('button', { name: '철회' })).toBeVisible();
 
     await tab(page, '반품').click();
@@ -243,6 +245,11 @@ test.describe('구매자 클레임 신청내역', () => {
     }).toBe(true);
 
     // 화면이 상태 문자열로 재현하면 상태가 늘 때마다 갈린다 — 서버 판정만 본다.
+    // [수정]은 회원 화면에서 링크, 비회원 화면에서 단추다 — 어느 쪽으로도 서면 안 된다.
+    await expect(
+      page.getByRole('link', { name: '수정' }),
+      '서버가 닫은 신청서에 [수정]이 섰다',
+    ).toHaveCount(0);
     await expect(
       page.getByRole('button', { name: '수정' }),
       '서버가 닫은 신청서에 [수정]이 섰다',
@@ -287,7 +294,7 @@ test.describe('구매자 클레임 신청내역', () => {
     });
 
     await openList(page, '?type=return&page=1', 'RT20260902-0300');
-    await page.getByRole('button', { name: '상세보기' }).first().click();
+    await page.getByRole('link', { name: '상세보기' }).first().click();
 
     await expect.poll(() => new URL(page.url()).pathname, { timeout: 20_000 }).toContain(
       '/mypage/claims/RT20260902-0300',
@@ -437,6 +444,9 @@ test.describe('구매자 클레임 신청내역', () => {
       is_withdrawable: false,
       items: [],
       images: [],
+      // 결제 진입점은 「추가결제」 묶음(청구가 있는 교환·반품) 안에 있다 — 청구 총액이 없으면 묶음째 서지 않는다.
+      total_charge_amount: 4000,
+      total_charge_amount_formatted: '4,000원',
       outstanding_amount: 4000,
       outstanding_amount_formatted: '4,000원',
       available_payment_methods: ['card', 'point'],
@@ -486,7 +496,7 @@ test.describe('구매자 클레임 신청내역', () => {
     ]);
 
     await openList(page, '?type=exchange', EDITABLE.claim_number as string);
-    await page.getByRole('button', { name: '수정' }).first().click();
+    await page.getByRole('link', { name: '수정' }).first().click();
 
     // 수정 주소에는 유형도 주문번호도 없다 — 둘 다 신청서가 알려 준다.
     await expect

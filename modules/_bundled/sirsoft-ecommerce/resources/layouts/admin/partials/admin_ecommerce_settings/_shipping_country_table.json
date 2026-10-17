@@ -183,6 +183,7 @@
                                                     ],
                                                     "props": {
                                                         "checked": "{{country.is_active ?? false}}",
+                                                        "ariaLabel": "$t:common.row_cell|row={{country.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.countries.is_active')}}",
                                                         "size": "sm",
                                                         "disabled": "{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false) && country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}"
                                                     }
@@ -231,7 +232,7 @@
                                                     "name": "Span",
                                                     "if": "{{country.code === (_local.form?.shipping?.default_country ?? 'KR')}}",
                                                     "props": {
-                                                        "className": "text-info-soft inline-flex items-center px-2 py-0.5 font-medium bg-blue-100 dark:bg-blue-900/30 rounded-full"
+                                                        "className": "ecommerce-tone-info-soft inline-flex items-center px-2 py-0.5 font-medium bg-blue-100 dark:bg-blue-900/30 rounded-full text-xs"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.settings.shipping.countries.default_badge"
                                                 }

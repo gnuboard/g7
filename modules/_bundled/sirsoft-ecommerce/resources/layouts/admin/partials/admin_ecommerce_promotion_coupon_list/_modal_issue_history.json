@@ -122,6 +122,7 @@
                     ],
                     "props": {
                         "name": "issueHistoryPerPage",
+                        "aria-label": "$t:common.per_page",
                         "className": "w-20",
                         "value": "{{String(_global.issueHistoryPerPage || 10)}}",
                         "options": [
@@ -252,6 +253,7 @@
                                             "items": [
                                                 {
                                                     "id": "view_member",
+                                                    "href": "/admin/users/{{row.user_id}}",
                                                     "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member",
                                                     "iconName": "user"
                                                 },

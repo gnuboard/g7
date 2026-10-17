@@ -403,18 +403,18 @@
       <div data-ref="sticky_header" class="sticky-tab-nav-responsive">
         <tab-navigation data-type="composite" data-ref="tab_navigation" class="sticky-tab-nav-responsive" activeTabId="{{_global.activeSettingsTab || query.tab || 'general'}}" variant="default">
           <prop name="tabs">
-            <item id="general" label="$t:admin.settings.tabs.general"/>
-            <item id="mail" label="$t:admin.settings.tabs.mail"/>
-            <item id="upload" label="$t:admin.settings.tabs.upload"/>
-            <item id="seo" label="$t:admin.settings.tabs.seo"/>
-            <item id="security" label="$t:admin.settings.tabs.security"/>
-            <item id="drivers" label="$t:admin.settings.tabs.drivers"/>
-            <item id="advanced" label="$t:admin.settings.tabs.advanced"/>
-            <item id="notification_definitions" label="$t:admin.settings.tabs.notification_definitions"/>
-            <item id="language_packs" label="$t:admin.settings.tabs.language_packs"/>
-            <item id="identity" label="$t:admin.settings.tabs.identity"/>
-            <item id="privacy" label="$t:admin.settings.tabs.privacy"/>
-            <item id="info" label="$t:admin.settings.tabs.info"/>
+            <item id="general" href="/admin/settings?tab=general" label="$t:admin.settings.tabs.general"/>
+            <item id="mail" href="/admin/settings?tab=mail" label="$t:admin.settings.tabs.mail"/>
+            <item id="upload" href="/admin/settings?tab=upload" label="$t:admin.settings.tabs.upload"/>
+            <item id="seo" href="/admin/settings?tab=seo" label="$t:admin.settings.tabs.seo"/>
+            <item id="security" href="/admin/settings?tab=security" label="$t:admin.settings.tabs.security"/>
+            <item id="drivers" href="/admin/settings?tab=drivers" label="$t:admin.settings.tabs.drivers"/>
+            <item id="advanced" href="/admin/settings?tab=advanced" label="$t:admin.settings.tabs.advanced"/>
+            <item id="notification_definitions" href="/admin/settings?tab=notification_definitions" label="$t:admin.settings.tabs.notification_definitions"/>
+            <item id="language_packs" href="/admin/settings?tab=language_packs" label="$t:admin.settings.tabs.language_packs"/>
+            <item id="identity" href="/admin/settings?tab=identity" label="$t:admin.settings.tabs.identity"/>
+            <item id="privacy" href="/admin/settings?tab=privacy" label="$t:admin.settings.tabs.privacy"/>
+            <item id="info" href="/admin/settings?tab=info" label="$t:admin.settings.tabs.info"/>
           </prop>
           <on type="change" event="onTabChange">
             <!-- 저장하지 않은 변경이 있으면 바로 옮기지 않고 확인 창을 연다 — 저장은 지금 탭의 구획만 보내고,

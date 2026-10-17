@@ -4086,6 +4086,77 @@ class ExpressionEvaluatorTest extends TestCase
     }
 
     /**
+     * $t() 함수: 두 번째 인수(객체)를 번역 문구에 치환합니다 — 브라우저 엔진 engine-v1.80.1 과 같은 규칙.
+     *
+     * 종전에는 첫 인수만 읽어 봇 화면에 `{{n}}번째 행` 자리표시자가 그대로 남았다.
+     *
+     * @scenario entry_point=evaluate, expression_form=single_binding
+     *
+     * @effects t_function_call_translates_key
+     *
+     * @return void 없음
+     */
+    public function test_t_function_substitutes_object_params(): void
+    {
+        $this->evaluator->setTranslations([
+            'common' => [
+                'row_n' => '{{n}}번째 행',
+                'row_cell' => '{{row}} {{column}}',
+            ],
+            'board' => ['post_count' => '{{count}} posts', 'post_count_one' => '{{count}} post'],
+        ]);
+
+        $this->assertSame('3번째 행', $this->evaluator->evaluate("{{\$t('common.row_n', {n: 3})}}", []));
+        $this->assertSame('5번째 행', $this->evaluator->evaluate("{{\$t('common.row_n', {n: i + 1})}}", ['i' => 4]));
+        // 행 이름이 비면 번호 대체(레이아웃 R3 형식)
+        $this->assertSame(
+            '1번째 행',
+            $this->evaluator->evaluate("{{row.name || \$t('common.row_n', {n: i + 1})}}", ['row' => ['name' => ''], 'i' => 0])
+        );
+        // 객체가 아닌 두 번째 인수는 인자 없는 호출과 같다
+        $this->assertSame('{{n}}번째 행', $this->evaluator->evaluate("{{\$t('common.row_n', 'n=3')}}", []));
+
+        app()->setLocale('en');
+        try {
+            $this->assertSame('1 post', $this->evaluator->evaluate("{{\$t('board.post_count', {count: 1})}}", []));
+        } finally {
+            app()->setLocale('ko');
+        }
+    }
+
+    /**
+     * 번역 인자 값은 글자 그대로 들어간다 — 앞 인자 값에 든 뒤 인자 자리표시자를 다시 치환하지 않는다.
+     *
+     * 운영자가 입력한 상품명·역할명이 `{{column}}`·`:name` 같은 글자를 담아도 봇 화면 문구가 바뀌지 않는다
+     * (브라우저 엔진 engine-v1.80.1 replaceParams 와 같은 규칙).
+     *
+     * @scenario entry_point=evaluate, expression_form=translation_key
+     *
+     * @effects t_function_call_translates_key
+     *
+     * @return void 없음
+     */
+    public function test_translation_params_are_inserted_literally(): void
+    {
+        $this->evaluator->setTranslations([
+            'common' => ['row_cell' => '{{row}} {{column}}', 'select_item' => '{{name}} 선택'],
+        ]);
+
+        $this->assertSame(
+            '{{column}} 판매가',
+            $this->evaluator->evaluate("{{\$t('common.row_cell', {row: r, column: '판매가'})}}", ['r' => '{{column}}'])
+        );
+        $this->assertSame(
+            '{{column}} 판매가',
+            $this->evaluator->evaluate('$t:common.row_cell|row={{r}}|column=판매가', ['r' => '{{column}}'])
+        );
+        $this->assertSame(
+            'A|b=c&d 선택',
+            $this->evaluator->evaluate("{{\$t('common.select_item', {name: v})}}", ['v' => 'A|b=c&d'])
+        );
+    }
+
+    /**
      * $t() 함수: 큰따옴표 문자열 키를 지원합니다.
      *
      * @scenario entry_point=evaluate, expression_form=single_binding

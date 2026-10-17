@@ -24,14 +24,14 @@ SPA 뒤로가기로 이 화면에 되돌아오면 캐시된 응답이 쓰여 onS
         <sequence>
           <action handler="clearGuestOrderToken"/>
           <toast type="warning" message="{{error.message ?? '$t:shop.order_complete.guest_token_expired'}}"/>
-          <navigate path="{{error.errors?.redirect_to ?? ((_global.shopBase ?? '') + '/guest/orders')}}"/>
+          <navigate path="{{error.errors?.redirect_to ?? ((_global.shopBase ?? '') + '/guest/orders')}}" fallbackPath="{{(_global.shopBase ?? '') + '/guest/orders'}}"/>
         </sequence>
       </on-code>
       <on-code code="404">
         <sequence>
           <action handler="clearGuestOrderToken"/>
           <toast type="warning" message="{{error.message ?? '$t:shop.order_complete.guest_token_expired'}}"/>
-          <navigate path="{{error.errors?.redirect_to ?? ((_global.shopBase ?? '') + '/guest/orders')}}"/>
+          <navigate path="{{error.errors?.redirect_to ?? ((_global.shopBase ?? '') + '/guest/orders')}}" fallbackPath="{{(_global.shopBase ?? '') + '/guest/orders'}}"/>
         </sequence>
       </on-code>
     </error-handling>

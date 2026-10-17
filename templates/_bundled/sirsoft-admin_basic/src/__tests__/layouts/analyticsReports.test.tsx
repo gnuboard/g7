@@ -9,7 +9,7 @@
 import fs from 'fs';
 import path from 'path';
 import { describe, it, expect } from 'vitest';
-import { TEMPLATE_DIR, loadLayout, dataSource, nodesNamed, nodeById, actionsWithHandler, stringify, collectObjects, analyticsLayoutFiles } from './analyticsLayoutTestUtils';
+import { TEMPLATE_DIR, loadLayout, dataSource, nodesNamed, nodeById, actionsWithHandler, stringify, collectObjects, analyticsLayoutFiles, moveTargets } from './analyticsLayoutTestUtils';
 import { evaluateSafeExpression } from '@core/template-engine/SafeExpressionEvaluator';
 import { scanBindings } from '@core/template-engine/BindingShape';
 
@@ -128,8 +128,10 @@ describe('리포트 화면 — 탭·엔드포인트·기간 바', () => {
     const layout = loadLayout('admin_analytics_regions.json');
     const alert = nodeById(layout, 'geoip_off_alert');
     expect(alert?.if).toContain('geoip?.enabled === false');
-    const link = actionsWithHandler(alert, 'navigate')[0];
-    expect(link.params).toMatchObject({ path: '/admin/settings', query: { tab: 'advanced' } });
+    // 링크(#757) — 주소는 A 의 href 한 곳
+    const [link] = moveTargets(alert);
+    expect(link.node.name).toBe('A');
+    expect(link.path).toBe('/admin/settings?tab=advanced');
   });
 
   // @scenario screen=referrers, state=normal, viewport=390, locale=en
@@ -460,13 +462,15 @@ describe('공통 표 조각', () => {
 
     // 목록 컨텍스트 이동(쪽·정렬·검색·건수)만 이 계약의 대상이다 — 빈 상태의 「수집 진단 열기」는
     // 목록이 아니라 다른 화면으로 가는 안내라 기간을 병합하지 않는다(#682 S3 라운드 5).
-    const allNavs = actionsWithHandler(grid, 'navigate');
-    const navs = allNavs.filter((n) => n.params.path === '{{_local.periodPath}}');
+    // 링크로 바뀐 칸(#757)은 목적지가 A 의 href(쿼리 포함)라 경로 부분으로 가른다
+    const allTargets = moveTargets(grid);
+    const isList = (t: { path: string | undefined }) => String(t.path).split('?')[0] === '{{_local.periodPath}}';
+    const navs = allTargets.filter(isList).map((t) => t.navigate);
     expect(navs.length, '목록 컨텍스트 이동').toBeGreaterThanOrEqual(4);
     expect(navs.every((n) => n.params.mergeQuery === true)).toBe(true);
     // 목록 경로도 아니고 진단 안내도 아닌 이동이 섞이면 잡는다.
     expect(
-      allNavs.filter((n) => n.params.path !== '{{_local.periodPath}}').map((n) => n.params.path),
+      allTargets.filter((t) => !isList(t)).map((t) => t.path),
       '조각 안의 목록 밖 이동',
     ).toEqual(['/admin/analytics/diagnostics']);
     expect(navs.some((n) => n.params.query?.page === '{{$args[0]}}')).toBe(true);
@@ -868,7 +872,7 @@ describe('봇 화면', () => {
     expect(stringify(dataSource(layout, 'analytics_bots')?.params)).not.toContain('exclude');
     const recent = nodesNamed(layout, 'DataGrid').find((d) => d.id === 'recent_hits_grid');
     expect((recent?.props.columns ?? []).map((c: any) => c.field)).toEqual(['bot_name', 'url', 'cache_status', 'occurred_at']);
-    expect(actionsWithHandler(layout, 'navigate').some((n) => n.params.path === '/admin/settings' && n.params.query?.tab === 'seo')).toBe(true);
+    expect(moveTargets(layout).some((t) => t.path === '/admin/settings?tab=seo')).toBe(true);
   });
 });
 

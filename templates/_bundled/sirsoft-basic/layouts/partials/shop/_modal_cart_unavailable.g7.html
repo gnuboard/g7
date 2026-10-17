@@ -38,7 +38,7 @@
     </div>
     <!-- 모달 푸터 -->
     <div class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
-      <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer">
+      <a href="{{_global.shopBase}}/cart" class="inline-flex items-center justify-center px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer">
         <on type="click">
           <!-- 이 창의 유일한 출구 — 문제 항목을 정리하러 장바구니로 되돌린다 -->
           <sequence>
@@ -47,7 +47,7 @@
           </sequence>
         </on>
         $t:shop.cart.go_to_cart
-      </button>
+      </a>
     </div>
   </modal>
 </partial>

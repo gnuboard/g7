@@ -382,6 +382,7 @@
                                                     "props": {
                                                         "type": "number",
                                                         "data-testid": "claim-qty-{{claimIdx}}",
+                                                        "aria-label": "$t:common.row_cell|row={{claimItem.product_name ?? ''}}|column={{$t('claim.apply.quantity')}}",
                                                         "min": 1,
                                                         "max": "{{claimItem.available_quantity ?? 1}}",
                                                         "value": "{{claimItem.quantity ?? 1}}",

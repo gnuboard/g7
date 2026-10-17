@@ -63,7 +63,8 @@
       "tracking_only": "Save waybill only",
       "tracking_only_description": "Saves the {{direction}} waybill on the selected items only. Status does not change.",
       "quantity_split_hint": "Lowering the quantity splits the item — e.g. applying to 1 of 3 shirts splits it into 1 and 2.",
-      "tracking_mixed_address": "Items with different return addresses cannot share one waybill. Save them per return address."
+      "tracking_mixed_address": "Items with different return addresses cannot share one waybill. Save them per return address.",
+      "tracking_direction_label": "Tracking direction"
     },
     "completion": {
       "title": "Completion",

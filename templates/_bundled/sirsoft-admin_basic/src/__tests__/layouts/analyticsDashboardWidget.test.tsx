@@ -14,7 +14,7 @@ import { createLayoutTest } from '@core/template-engine/__tests__/utils/layoutTe
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
 import { evaluateSafeExpression } from '@core/template-engine/SafeExpressionEvaluator';
 import { scanBindings } from '@core/template-engine/BindingShape';
-import { loadLayout, dataSource, nodeById, actionsWithHandler, stringify } from './analyticsLayoutTestUtils';
+import { loadLayout, dataSource, nodeById, actionsWithHandler, stringify, moveTargets } from './analyticsLayoutTestUtils';
 
 const Simple = (tag: string): React.FC<any> => ({ id, className, children, text, href }) =>
   React.createElement(tag, { id, className, href }, children || text);
@@ -102,7 +102,8 @@ describe('대시보드 방문자 통계 카드', () => {
     for (const id of ['dashboard_analytics_today', 'dashboard_analytics_yesterday', 'dashboard_analytics_max', 'dashboard_analytics_total', 'dashboard_analytics_chart', 'dashboard_analytics_now']) {
       expect(nodeById(widget, id), id).toBeDefined();
     }
-    expect(actionsWithHandler(widget, 'navigate').map((n) => n.params.path)).toEqual(expect.arrayContaining(['/admin/analytics', '/admin/analytics/realtime']));
+    // 링크(#757) — 목적지는 A 의 href(path 없는 navigate 가 그 href 로 간다)
+    expect(moveTargets(widget).map((t) => t.path)).toEqual(expect.arrayContaining(['/admin/analytics', '/admin/analytics/realtime']));
   });
 
   // @scenario screen=dashboard_widget, state=load_failed, viewport=1440, locale=ko
@@ -171,8 +172,11 @@ describe('대시보드 알림 카드 — 복구 버튼과 이동 버튼 (C1)', (
       const nav = nodeById(dashboard, `${prefix}_navigate_button_{{$idx}}`);
       expect(nav?.if, prefix).toBe('{{!alert.recover_endpoint && !!alert.action_url}}');
       const navigate = actionsWithHandler(nav, 'navigate')[0];
+      // 링크(#757) — 주소 식은 A 의 href 한 곳, navigate 는 path 없이 그 href 로 간다
+      expect(nav?.name, prefix).toBe('A');
+      expect(navigate.params?.path, prefix).toBeUndefined();
       // 식을 엔진 평가기로 직접 돌린다 — 문자열 대조만 하면 평가기가 읽지 못하는 식(정규식 리터럴)도 통과한다.
-      const [pathExpr] = scanBindings(navigate.params.path).map((b) => b.expr);
+      const [pathExpr] = scanBindings(nav?.props?.href).map((b) => b.expr);
       const toPath = (url: string) => evaluateSafeExpression(pathExpr, { alert: { action_url: url } });
       expect(toPath('https://example.test/admin/analytics/settings?tab=retention'), prefix).toBe('/admin/analytics/settings?tab=retention');
       expect(toPath('https://example.test'), prefix).toBe('/');

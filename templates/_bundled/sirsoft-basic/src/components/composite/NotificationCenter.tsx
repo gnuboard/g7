@@ -6,6 +6,7 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Input } from '../basic/Input';
 import type { EditorAttrs } from '../../types';
+import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
@@ -31,6 +32,10 @@ export interface NotificationItem {
   read?: boolean;
   iconName?: IconName;
   data?: Record<string, unknown>;
+  /**
+   * 알림의 이동 주소(응답 `url`) — 있으면 알림 본문을 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가 된다(#757).
+   */
+  url?: string;
   onClick?: () => void;
 }
 
@@ -384,22 +389,16 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
               <>
                 {notifications.map((notification) => {
                   const isUnread = !notification.read;
-                  return (
-                    <Div
-                      key={notification.id}
-                      data-notification-id={notification.id}
-                      data-unread={isUnread ? 'true' : 'false'}
-                      onClick={() => {
-                        notification.onClick?.();
-                        onNotificationClick?.(notification);
-                        setShowNotifications(false);
-                      }}
-                      className={`group flex items-start gap-3 px-4 py-3 text-left border-b border-gray-100 dark:border-gray-700 transition-colors cursor-pointer ${
-                        isUnread
-                          ? 'bg-blue-50/70 dark:bg-blue-900/20 hover:bg-blue-50 dark:hover:bg-blue-900/30'
-                          : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 opacity-70'
-                      }`}
-                    >
+                  // 알림 클릭 — 종전 동작(항목 콜백 → 알림 클릭 콜백 → 닫기)
+                  const activate = () => {
+                    notification.onClick?.();
+                    onNotificationClick?.(notification);
+                    setShowNotifications(false);
+                  };
+                  // 이동 주소가 있으면 아이콘·본문을 링크로 감싼다. 삭제 단추는 링크 밖 형제로 둔다(상호작용 요소 중첩 금지).
+                  const link = resolveLinkHref(notification.url);
+                  const body = (
+                    <>
                       {notification.iconName && (
                         <Icon
                           name={notification.iconName}
@@ -429,6 +428,36 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                           {notification.time}
                         </Div>
                       </Div>
+                    </>
+                  );
+                  return (
+                    <Div
+                      key={notification.id}
+                      data-notification-id={notification.id}
+                      data-unread={isUnread ? 'true' : 'false'}
+                      onClick={activate}
+                      className={`group flex items-start gap-3 px-4 py-3 text-left border-b border-gray-100 dark:border-gray-700 transition-colors cursor-pointer ${
+                        isUnread
+                          ? 'bg-blue-50/70 dark:bg-blue-900/20 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                          : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 opacity-70'
+                      }`}
+                    >
+                      {link ? (
+                        <a
+                          href={link.href}
+                          {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                          className="flex items-start gap-3 flex-1 min-w-0"
+                          onClick={(event) => {
+                            // 줄(바깥 Div)의 클릭 처리가 다시 부르지 않게 여기서 멈춘다 — 수정키 클릭은 브라우저에 맡긴다
+                            event.stopPropagation();
+                            handleLinkClick(event, activate);
+                          }}
+                        >
+                          {body}
+                        </a>
+                      ) : (
+                        body
+                      )}
                       <Div className="flex flex-col items-center gap-2 flex-shrink-0">
                         {isUnread && (
                           <Span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full mt-1.5" />

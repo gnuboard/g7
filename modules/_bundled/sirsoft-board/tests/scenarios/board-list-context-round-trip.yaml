@@ -26,6 +26,7 @@ axes:
 effects:
   - navigation_preserves_list_query   # 형제 상세(prev/next) 이동이 목록 상태를 승계
   - list_return_preserves_query       # 목록 복귀가 상세 URL 의 목록 상태를 그대로 복원
+  - list_search_resets_page           # 목록의 검색·필터 조건 변경은 page 를 되돌리고 표시 개수·정렬은 유지
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Playwright/specs/user/board-list-context-round-trip.spec.ts

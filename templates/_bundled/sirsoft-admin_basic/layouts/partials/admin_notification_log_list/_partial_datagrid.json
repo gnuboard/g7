@@ -54,9 +54,12 @@
         }
     ],
     "props": {
+        "rowLabelField": "subject",
         "data": "{{notificationLogs?.data?.data}}",
         "pagination": true,
         "serverSidePagination": true,
+        "pageHref": "/admin/notification-logs?page={page}",
+        "pageHrefMergeQuery": true,
         "serverCurrentPage": "{{notificationLogs?.data?.pagination?.current_page ?? 1}}",
         "serverTotalPages": "{{notificationLogs?.data?.pagination?.last_page ?? null}}",
         "serverHasMorePages": "{{notificationLogs?.data?.pagination?.has_more_pages ?? false}}",
@@ -264,12 +267,6 @@
                                 "event": "onItemClick",
                                 "handler": "switch",
                                 "cases": {
-                                    "view_member": {
-                                        "handler": "openWindow",
-                                        "params": {
-                                            "path": "/admin/users/{{row.recipient.uuid}}"
-                                        }
-                                    },
                                     "search_by_recipient": {
                                         "handler": "navigate",
                                         "params": {
@@ -292,7 +289,9 @@
                                 {
                                     "id": "view_member",
                                     "label": "$t:admin.notification_log.action.view_member",
-                                    "iconName": "user"
+                                    "iconName": "user",
+                                    "href": "/admin/users/{{row.recipient.uuid}}",
+                                    "target": "_blank"
                                 },
                                 {
                                     "id": "search_by_recipient",
@@ -373,12 +372,6 @@
                                 "event": "onItemClick",
                                 "handler": "switch",
                                 "cases": {
-                                    "view_member": {
-                                        "handler": "openWindow",
-                                        "params": {
-                                            "path": "/admin/users/{{row.sender.uuid}}"
-                                        }
-                                    },
                                     "search_by_sender": {
                                         "handler": "navigate",
                                         "params": {
@@ -401,7 +394,9 @@
                                 {
                                     "id": "view_member",
                                     "label": "$t:admin.notification_log.action.view_member",
-                                    "iconName": "user"
+                                    "iconName": "user",
+                                    "href": "/admin/users/{{row.sender.uuid}}",
+                                    "target": "_blank"
                                 },
                                 {
                                     "id": "search_by_sender",

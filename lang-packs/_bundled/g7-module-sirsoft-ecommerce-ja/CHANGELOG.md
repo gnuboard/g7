@@ -4,6 +4,22 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.2.1] - 2026-10-14
+
+### Added
+
+#### 관리자 화면 입력칸 이름
+- 화면 낭독기가 읽는 관리자 입력칸 이름의 일본어 번역을 추가했습니다.
+  - 상품 목록 카테고리 단계 선택칸(`admin/product.filter.category_step` — 「カテゴリ{{n}}段階」), 옵션 일괄 생성의 옵션그룹명·옵션값 칸(`admin/product.options.option_group_name_n`·`option_group_values_n` — 「オプショングループ{{n}}の名前」「オプショングループ{{n}}の値」)
+  - 할인코드 목록 혜택금액 범위 칸(`admin/promotion_discount_code.filter.benefit_amount_min`·`benefit_amount_max` — 「特典金額の下限」「特典金額の上限」)
+  - 쿠폰 등록·수정의 회원당 발급 한도 칸(`admin/promotion_coupon.form.field.per_user_limit_label` — 「会員あたりの発行上限」)
+  - 클레임 상세 송장 방향(`admin/claim.detail.items.tracking_direction_label` — 「送り状の方向」), 교환 신청의 교환할 옵션(`admin/order.claim_request.exchange_option_label` — 「交換するオプション」)
+  - 주문 설정 자동 취소 칸(`admin/settings.order_settings.auto_cancel.days_label`·`pending_minutes_label` — 「入金待ち注文の自動キャンセル日数」「決済未完了注文の自動キャンセル時間（分）」)
+
+### Fixed
+
+- 상품 공통정보 관리에서 편집 중 다른 항목을 고를 때 뜨는 확인 창 문구가 「別の商品グループ」(상품정보고시 용어)였던 것을 「別の共通情報」로 바로잡았습니다(`admin/common_info.modal.editing.confirm_message`).
+
 ## [1.2.0] - 2026-10-10
 
 ### Added

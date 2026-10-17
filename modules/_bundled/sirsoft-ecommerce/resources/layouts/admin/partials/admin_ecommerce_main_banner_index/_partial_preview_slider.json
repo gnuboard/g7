@@ -43,6 +43,7 @@
                     ],
                     "props": {
                         "name": "previewLanguage",
+                        "aria-label": "$t:common.language",
                         "className": "w-28",
                         "value": "{{_local.previewLanguage}}",
                         "options": "{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}"

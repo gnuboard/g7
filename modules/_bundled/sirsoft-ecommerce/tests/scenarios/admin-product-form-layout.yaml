@@ -1,0 +1,49 @@
+# 시나리오 매니페스트 — 관리자 상품 폼 레이아웃 구조 회귀 (productFormLayouts.test.tsx)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: admin_product_form_layout
+
+description: >-
+  관리자 상품 등록·수정 화면을 이루는 레이아웃 조각(라벨·고시 템플릿·삭제 확인 창, 활동 로그, 구매 제한·수량,
+  서브탭·카드 머리·옵션 표, 공통정보 데이터소스, 마스터-디테일 화면 비율·스크롤, SEO 다국어 입력)의 구조 회귀를
+  JSON 단언으로 지킨다. 화면마다 따로 고친 결함(빈 칩·저장 미반영·sticky 탭 소실·삭제 뒤 이동 키 등)이 다시 생기지
+  않게 하는 묶음이다. 활동 로그 처리자의 「회원 보기」는 새 창 링크(href + target=_blank)다(#757 결정 2026-10-15).
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productFormLayouts.test.tsx
+
+coverage_strategy: pairwise
+
+axes:
+  section:
+    - label_modal          # 라벨 폼 창 — 이름·색상·미리보기만(기간 편집은 인라인으로 분리)
+    - notice_confirm_modal # 상품정보고시 템플릿 적용 확인 창
+    - delete_modal         # 상품 삭제 확인 창
+    - activity_log         # 활동 로그 구획·데이터소스·처리자 메뉴
+    - purchase_limits      # 기타 정보 — 구매 대상 제한·구매 수량
+    - layout_semantics     # 서브탭·카드 머리·옵션 표 시맨틱
+    - common_info          # 공통정보 데이터소스(활성 항목만)
+    - master_detail        # 마스터-디테일 화면 비율·스크롤 컨테이너
+    - seo                  # SEO 제목·설명 다국어 입력
+
+exclusions:
+  - { section: label_modal, reason: "제외 없음 — 구획마다 독립 단언" }
+
+effects:
+  - label_modal_has_name_color_preview_only   # 라벨 창은 이름·색상·미리보기만, 기간 편집 섹션 없음
+  - notice_template_confirm_applies_template   # 확인 창 취소는 pending 만 비우고, 확인은 닫기 → 적용 → pending 초기화 순
+  - product_form_modal_texts_use_lang_keys   # 창의 글자는 모두 다국어 키
+  - product_delete_navigates_to_list_by_path   # 삭제 성공 뒤 navigate 는 params.path 로 목록에(url 키 금지)
+  - activity_log_section_wired   # 정렬·쪽당·Pagination·refetch·데이터 경로·빈 상태가 맞게 이어져 있다
+  - activity_log_member_menu_opens_new_window_link   # 처리자가 회원이면 ActionMenu 「회원 보기」가 새 창 링크
+  - purchase_restriction_resets_allowed_roles   # 구매 대상 라디오 전환은 allowed_roles 를 빈 배열로
+  - purchase_quantity_inputs_autobind   # 최소·최대 구매 수량은 name 자동바인딩(값 setState 없음)
+  - product_form_layout_semantics_intact   # sticky 서브탭·카드 머리·옵션 표 정렬·다통화 환산값 위치
+  - product_form_requests_active_common_infos_only   # common_infos 데이터소스는 활성 항목만 요청
+  - master_detail_layouts_keep_grid_ratio   # 마스터-디테일 화면들의 목록·상세 비율
+  - master_detail_content_uses_page_scroll   # 마스터-디테일 콘텐츠는 페이지 스크롤 컨테이너를 쓴다
+  - seo_inputs_multilingual_autobind   # SEO 제목·설명은 MultilingualInput 자동바인딩·$localized 카운터·동기화 미러
+
+validation:
+  note: |
+    기존 구조 회귀 시험 49개에 매핑이 없던 부채를 #757(활동 로그 「회원 보기」 새 창 링크화)로 이 파일을 고치며 함께 정리했다.

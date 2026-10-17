@@ -8,7 +8,7 @@
  *    된다 — 그 회귀를 여기서 막는다.
  *  - `board_scraps` 는 `UserScrapInfoListener` 가 **관리자 응답에만** 넣는다. 프로필(/api/me)에서는
  *    조각 전체가 조건에서 걸러져야 한다(회원 본인 화면에 관리자 요약이 새면 안 된다).
- *  - 탭은 **요약만** 낸다(PO 결정 R1). 목록은 스크랩 관리 화면이 이미 검색·필터·일괄 삭제까지
+ *  - 탭은 **요약만** 낸다(결정 R1). 목록은 스크랩 관리 화면이 이미 검색·필터·일괄 삭제까지
  *    갖추고 있으므로, 같은 표를 회원 상세에 한 벌 더 두지 않고 uuid 를 실어 보낸다.
  */
 
@@ -88,10 +88,10 @@ describe('회원 상세 스크랩 탭 확장 (#524 WP-A)', () => {
 
         expect(link.props['data-testid']).toBe('user-scraps-link');
 
-        // 이동은 `navigate` 액션이 한다. `href="{{식}}"` 로 주면 렌더 시 prop 값이 undefined 가
-        // 되어 DOM 에 속성 자체가 실리지 않아 링크가 조용히 죽는다(2026-09-15 브라우저 실측).
-        // href 가 «없는 것» 까지 계약으로 고정한다.
-        expect(link.props.href).toBeUndefined();
+        // #757 — 새 탭으로 열 수 있게 href 를 단다(주소 없는 <a> 금지). 다만 2026-09-15 브라우저 실측에서 이 조각의
+        // `href="{{식}}"` 이 DOM 에 실리지 않은 적이 있어, 보통 클릭 이동은 href 에 기대지 않고 navigate 의 path 로 한다
+        // (href 가 빠져도 이동은 산다). href 가 실제로 실리는지는 2단계 브라우저 실측(M1)이 확인한다.
+        expect(String(link.props.href)).toContain('/admin/boards/scraps?user_uuid=');
 
         const nav = JSON.stringify(link).match(/"handler":"navigate"[^}]*"path":"([^"]+)"/);
         expect(nav?.[1]).toBe('/admin/boards/scraps');

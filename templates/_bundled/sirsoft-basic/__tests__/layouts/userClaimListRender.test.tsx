@@ -255,7 +255,7 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     }
 
     // 활성 탭은 굵게 그린다 — 그 클래스를 가진 버튼이 정확히 하나여야 한다.
-    const active버튼 = Array.from(container.querySelectorAll('button')).filter((el) =>
+    const active버튼 = Array.from(container.querySelectorAll('a, button')).filter((el) =>
       (el.className ?? '').includes('font-semibold')
     );
     expect(active버튼).toHaveLength(1);
@@ -283,7 +283,7 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     );
     active = utils;
 
-    const tabs = Array.from(container.querySelectorAll('button')).filter((el) =>
+    const tabs = Array.from(container.querySelectorAll('a, button')).filter((el) =>
       (el.textContent ?? '').includes('claim.list.tab_')
     );
 
@@ -308,7 +308,7 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     const { utils, container } = await renderList([exchangeClaim()], { type: 'exchange' });
     active = utils;
 
-    const tab = Array.from(container.querySelectorAll('button')).find((el) =>
+    const tab = Array.from(container.querySelectorAll('a, button')).find((el) =>
       (el.textContent ?? '').includes('claim.list.tab_exchange')
     );
 
@@ -324,7 +324,7 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     const { utils, container } = await renderList([exchangeClaim()], {});
     active = utils;
 
-    const active버튼 = Array.from(container.querySelectorAll('button')).filter((el) =>
+    const active버튼 = Array.from(container.querySelectorAll('a, button')).filter((el) =>
       (el.className ?? '').includes('font-semibold')
     );
     expect(active버튼[0].textContent).toBe('claim.list.tab_exchange');
@@ -361,7 +361,8 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     );
     active = utils;
 
-    const labels = Array.from(container.querySelectorAll('button')).map((el) => el.textContent);
+    // [수정] 은 수정 화면 주소를 가진 링크, [철회] 는 확인 창을 여는 단추다
+    const labels = Array.from(container.querySelectorAll('button, a')).map((el) => el.textContent);
 
     // 승인 전(교환) 한 건만 [수정]/[철회] 를 가진다 — 승인 뒤(반품)는 없다.
     expect(labels.filter((l) => l === '수정')).toHaveLength(1);

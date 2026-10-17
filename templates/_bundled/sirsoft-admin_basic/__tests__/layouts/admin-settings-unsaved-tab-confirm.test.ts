@@ -152,9 +152,14 @@ describe('코어 환경설정 — 미저장 변경이 있을 때 탭 전환 확�
     expect(flatten(search.actions).some((a) => a.handler === 'setState' && 'identityPolicySearch' in (a.params ?? {}))).toBe(true);
 
     // 필터, 검색, 초기화, 쪽 넘김은 모두 이 설정 화면 경로로 옮긴다(다른 경로면 다른 레이아웃으로 넘어간다)
+    // 쪽 넘김 이전·다음은 링크(#757) — 주소는 A 의 href, navigate 는 path 없이 그 href 로 간다
     const navigates = collect(identityTab, (n) => n.handler === 'navigate');
     expect(navigates.length).toBeGreaterThan(0);
-    for (const n of navigates) expect(n.params.path).toBe('/admin/settings');
+    const pageLinks = collect(identityTab, (n) => n.name === 'A' && (n.actions ?? []).some((a: any) => a.handler === 'navigate'));
+    expect(pageLinks.length).toBe(2);
+    for (const l of pageLinks) expect(String(l.props.href).split('?')[0]).toBe('/admin/settings');
+    for (const n of navigates) expect(n.params.path ?? '/admin/settings').toBe('/admin/settings');
+    expect(navigates.filter((n) => n.params.path === undefined).length).toBe(pageLinks.length);
     // 검색 버튼도 입력 중인 검색어를 쿼리로 싣는다
     expect(navigates.some((n) => String(n.params.query?.search ?? '').includes('_local.identityPolicySearch'))).toBe(true);
   });

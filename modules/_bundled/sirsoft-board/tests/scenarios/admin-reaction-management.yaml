@@ -83,7 +83,7 @@ effects:
   - admin_screen_go_to_post_disabled_without_board
   - admin_screen_modals_call_single_and_bulk_delete
   - admin_route_declares_reactions_view_permission
-  - admin_user_tab_navigates_with_user_uuid_not_href
+  - admin_user_tab_link_carries_user_uuid
   # deferred join 페이지네이션 기계 (4차 검증 신설)
   - admin_reaction_pages_have_no_duplicate_or_missing_rows
   - admin_reaction_total_matches_row_count

@@ -36,7 +36,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-warning-soft"
+                                "className": "ecommerce-tone-warning-soft text-xs"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.message"
                         }
@@ -118,10 +118,7 @@
                                             }
                                         },
                                         {
-                                            "handler": "closeModal",
-                                            "params": {
-                                                "id": "disable_international_shipping_modal"
-                                            }
+                                            "handler": "closeModal"
                                         }
                                     ]
                                 }

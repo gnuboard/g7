@@ -734,12 +734,13 @@ describe('mypage/orders/show.json — 클레임 신청 진입', () => {
   /** @effects order_detail_claim_entry_buttons_gated_by_claimable_types */
   it('클레임 신청 버튼 3종이 있고 각각 유형이 열린 상품에서만 활성이다', () => {
     const buttons = flatten(orderShow).filter(
-      (n) => n.name === 'Button' && String(n.props?.disabled ?? '').includes('claimable_types')
+      (n) => n.name === 'A' && String(n.props?.disabled ?? '').includes('claimable_types')
     );
     expect(buttons).toHaveLength(3);
 
+    // 신청 진입은 작성 화면 주소를 가진 링크다 — 주소는 href, click 은 경로 없는 navigate
     const types = buttons.map((b) =>
-      String(b.actions[0].params.path).replace(/^.*\/claims\/apply\//, '')
+      String(b.props.href).replace(/^.*\/claims\/apply\//, '').replace(/\?.*$/, '')
     );
     expect(types.sort()).toEqual(['exchange', 'refund', 'return']);
 
@@ -748,8 +749,10 @@ describe('mypage/orders/show.json — 클레임 신청 진입', () => {
       expect(String(button.props.disabled)).toContain('_local.selectedItemIds');
       // 목록 클러스터 안의 이동이므로 목록 상태를 물려준다.
       expect(button.actions[0].params.mergeQuery).toBe(true);
-      // 체크한 상품을 작성 화면으로 넘긴다.
+      expect(button.props.mergeQuery).toBe(true);
+      // 체크한 상품을 작성 화면으로 넘긴다(새 탭 주소에도 같은 값).
       expect(button.actions[0].params.query.options).toBe("{{(_local.selectedItemIds ?? []).join(',')}}");
+      expect(String(button.props.href)).toContain("options={{(_local.selectedItemIds ?? []).join(',')}}");
     }
   });
 

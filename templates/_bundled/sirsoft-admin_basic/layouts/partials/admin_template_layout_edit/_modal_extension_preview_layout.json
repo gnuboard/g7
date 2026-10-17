@@ -36,6 +36,7 @@
                 }
             ],
             "props": {
+                "aria-label": "$t:admin.templates.layout_edit.preview_layout_select_title",
                 "value": "{{_global.previewLayoutSelection ?? ''}}",
                 "options": "{{(layout_files?.data ?? []).map(f => ({ value: f.name, label: f.name }))}}",
                 "placeholder": "$t:admin.templates.layout_edit.preview_layout_select_placeholder"

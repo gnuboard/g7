@@ -207,6 +207,7 @@
                                             ],
                                             "props": {
                                                 "name": "bulkTrackingCarrier",
+                                                "aria-label": "$t:common.row_cell|row={{trackRow.claim_number ?? ''}}|column={{$t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder')}}",
                                                 "className": "w-32 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
                                                 "value": "{{trackRow.carrier_id ?? ''}}",
                                                 "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder'), disabled: true }].concat(_global.claimBulkConfirmData?.carriers ?? [])}}"
@@ -230,6 +231,7 @@
                                             "props": {
                                                 "type": "text",
                                                 "name": "bulkTrackingNumber",
+                                                "aria-label": "$t:common.row_cell|row={{trackRow.claim_number ?? ''}}|column={{$t('sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder')}}",
                                                 "maxLength": 50,
                                                 "className": "w-40 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder",

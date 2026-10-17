@@ -87,6 +87,9 @@
         }
     ],
     "props": {
+        "pageHref": "/admin/ecommerce/shipping-policies?page={page}",
+        "pageHrefMergeQuery": true,
+        "rowLabelField": "name_localized",
         "data": "{{shipping_policies?.data?.data || []}}",
         "idField": "id",
         "selectable": true,
@@ -105,6 +108,7 @@
         "rowActions": [
             {
                 "id": "edit",
+                "href": "/admin/ecommerce/shipping-policies/{{row.id}}/edit",
                 "label": "$t:sirsoft-ecommerce.admin.shipping_policy.action.edit",
                 "iconName": "fa-regular fa-pen-to-square",
                 "disabledField": "abilities.can_update"
@@ -159,6 +163,7 @@
                             }
                         ],
                         "props": {
+                            "ariaLabel": "$t:defer:common.row_cell|row={{$rowLabel}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.table.column.is_default_header')}}",
                             "checked": "{{row.is_default}}",
                             "size": "sm",
                             "disabled": "{{row.is_default || row.abilities?.can_update !== true}}"
@@ -267,6 +272,7 @@
                             }
                         ],
                         "props": {
+                            "ariaLabel": "$t:defer:common.row_cell|row={{$rowLabel}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.table.column.is_active')}}",
                             "checked": "{{row.is_active}}",
                             "size": "sm",
                             "disabled": "{{row.abilities?.can_update !== true}}"

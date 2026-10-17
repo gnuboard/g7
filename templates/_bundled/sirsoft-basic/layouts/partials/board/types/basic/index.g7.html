@@ -20,7 +20,7 @@
     <!-- 필터 바 (카테고리 필터 + 검색) -->
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
       <!-- 카테고리 필터 (카테고리가 있을 때만 표시) -->
-      <select data-if="{{posts?.data?.board?.categories &amp;&amp; posts?.data?.board?.categories.length > 0}}" value="{{query.category || 'all'}}" class="w-full sm:w-auto sm:min-w-48 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" options="{{[{value:'all', label:'$t:board.filter.category_all'},{value:'unclassified', label:'$t:board.filter.category_unclassified'}].concat((posts?.data?.board?.categories ?? []).map(function(c){return{value:c,label:c};}))}}">
+      <select data-if="{{posts?.data?.board?.categories &amp;&amp; posts?.data?.board?.categories.length > 0}}" aria-label="$t:board.form.category" value="{{query.category || 'all'}}" class="w-full sm:w-auto sm:min-w-48 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" options="{{[{value:'all', label:'$t:board.filter.category_all'},{value:'unclassified', label:'$t:board.filter.category_unclassified'}].concat((posts?.data?.board?.categories ?? []).map(function(c){return{value:c,label:c};}))}}">
         <on type="change">
           <navigate path="/board/{{route.slug}}" :mergeQuery="true">
             <query category="{{$event.target.value === 'all' ? '' : $event.target.value}}" :page="1"/>
@@ -28,18 +28,18 @@
         </on>
       </select>
       <!-- 삭제된 게시글 포함 토글 버튼 (manager 권한 보유 시에만 표시) -->
-      <button data-if="{{posts?.data?.abilities?.can_view_deleted}}" type="button" class="{{query.del === '1' ? 'inline-flex items-center gap-1.5 px-3 py-2 border-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium' : 'inline-flex items-center gap-1.5 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700'}}">
+      <a href="/board/{{route.slug}}?del={{query.del === '1' ? '' : '1'}}&page=1" :mergeQuery="true" data-if="{{posts?.data?.abilities?.can_view_deleted}}" class="{{query.del === '1' ? 'inline-flex items-center gap-1.5 px-3 py-2 border-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium' : 'inline-flex items-center gap-1.5 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700'}}">
         <on type="click">
-          <navigate path="/board/{{route.slug}}" :mergeQuery="true">
+          <navigate :mergeQuery="true">
             <query del="{{query.del === '1' ? '' : '1'}}" :page="1"/>
           </navigate>
         </on>
         <icon name="eye" size="sm"/>
         <span>$t:board.filter.include_deleted</span>
-      </button>
+      </a>
       <!-- 검색 줄 (오른쪽 정렬) — 검색 대상 셀렉트 + 검색 바. 셀렉트는 담아만 두고(_local.boardSearchField) 제출 시 URL 의 search_field 로 옮긴다. URL 에 값이 있으면 그것이 초기값이라 뒤로가기·링크 공유에서 고른 대상이 그대로 살아난다 -->
       <div class="w-full sm:w-auto sm:ml-auto flex gap-2">
-        <select data-ref="board_search_field_select" value="{{_local.boardSearchField ?? query.search_field ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <select data-ref="board_search_field_select" aria-label="$t:common.search_field" value="{{_local.boardSearchField ?? query.search_field ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
           <options>
             <option value="title_content">$t:board.search_fields.title_content</option>
             <option value="title">$t:board.search_fields.title</option>
@@ -75,12 +75,15 @@
         <!-- 테이블 바디 -->
         <div data-each="post in {{posts?.data?.data ?? []}}">
           <!-- 행 클릭 시 현재 목록 상태(category/search/page/del/filters)를 상세 URL 에 부착 (45-1 목록 복귀) -->
-          <button class="{{post?.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}} block w-full text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer border-b border-gray-100 dark:border-gray-700">
-            <on type="click">
-              <navigate path="/board/{{route?.slug}}/{{post?.id}}" :mergeQuery="true">
-                <query/>
-              </navigate>
-            </on>
+          <div class="relative {{post?.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}} block w-full text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer border-b border-gray-100 dark:border-gray-700">
+            <!-- 카드 전체가 링크다 — 안쪽 조작(작성자 메뉴·삭제 등)을 링크 밖에 두려고 빈 링크가 카드를 덮고, 그 조작은 링크 위(z-20)에 둔다 -->
+            <a href="/board/{{route?.slug}}/{{post?.id}}" :mergeQuery="true" aria-label="{{post?.title ?? ''}}" class="absolute inset-0 z-10 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400">
+              <on type="click">
+                <navigate :mergeQuery="true">
+                  <query/>
+                </navigate>
+              </on>
+            </a>
             <!-- 데스크톱: 테이블 행 -->
             <div class="hidden lg:grid {{posts?.data?.board?.settings?.show_view_count !== false ? 'grid-cols-[60px_minmax(300px,1fr)_160px_100px_70px]' : 'grid-cols-[60px_minmax(300px,1fr)_160px_100px]'}} gap-4 px-4 py-3 items-center">
               <!-- 순번 -->
@@ -119,7 +122,7 @@
               <!-- 작성자 -->
               <div class="flex items-center gap-2">
                 <avatar data-type="composite" author="{{post?.author}}" size="xs" class="{{(post?.status === 'blinded' || post?.deleted_at) ? 'opacity-40' : ''}}"/>
-                <user-info data-type="composite" author="{{post?.author}}" :showDropdown="true" :stopPropagation="true" class="text-sm {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"/>
+                <user-info data-type="composite" author="{{post?.author}}" :showDropdown="true" :stopPropagation="true" class="relative z-20 text-sm {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"/>
               </div>
               <!-- 작성일 -->
               <span class="text-sm text-center whitespace-nowrap {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}" title="{{post?.created_at ?? ''}}">{{post?.created_at_formatted ?? ''}}</span>
@@ -168,7 +171,7 @@
               <div class="flex items-center justify-between text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}">
                 <div class="flex items-center gap-2">
                   <avatar data-type="composite" author="{{post?.author}}" size="xs" class="{{(post?.status === 'blinded' || post?.deleted_at) ? 'opacity-40' : ''}}"/>
-                  <user-info data-type="composite" author="{{post?.author}}" :showDropdown="true" :stopPropagation="true" class="text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"/>
+                  <user-info data-type="composite" author="{{post?.author}}" :showDropdown="true" :stopPropagation="true" class="relative z-20 text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"/>
                 </div>
                 <div class="flex items-center gap-3">
                   <span title="{{post?.created_at ?? ''}}">{{post?.created_at_formatted ?? ''}}</span>
@@ -176,14 +179,14 @@
                 </div>
               </div>
             </div>
-          </button>
+          </div>
         </div>
       </div>
     </div>
     <!-- 빈 상태 안내 (빈 페이지 / 게시글 없음 / 검색 결과 없음) -->
     <include src="../../index/_empty_states.g7.html"/>
     <!-- 페이지네이션 -->
-    <pagination data-type="composite" currentPage="{{posts?.data?.pagination?.current_page ?? 1}}" totalPages="{{posts?.data?.pagination?.last_page ?? null}}" hasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" class="mt-6 justify-center">
+    <pagination pageHref="/board/{{route?.slug}}?page={page}" :pageHrefMergeQuery="true" data-type="composite" currentPage="{{posts?.data?.pagination?.current_page ?? 1}}" totalPages="{{posts?.data?.pagination?.last_page ?? null}}" hasMorePages="{{posts?.data?.pagination?.has_more_pages ?? false}}" class="mt-6 justify-center">
       <on event="onPageChange">
         <navigate path="/board/{{route?.slug}}" :mergeQuery="true">
           <query page="{{$args[0]}}" category="{{query.category}}" filters[0][field]="{{query['filters[0][field]']}}" filters[0][value]="{{query['filters[0][value]']}}" filters[0][operator]="{{query['filters[0][operator]']}}"/>

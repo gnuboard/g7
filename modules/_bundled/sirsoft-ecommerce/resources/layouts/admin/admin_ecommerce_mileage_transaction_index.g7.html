@@ -133,7 +133,7 @@
       <div data-ref="table_header" class="flex flex-wrap items-center justify-between gap-4 mb-4">
         <span class="text-primary font-bold">$t:sirsoft-ecommerce.admin.mileage_transactions.table.total_count|count={{transactions?.data?.pagination?.total ?? 0}}</span>
         <div data-ref="table_header_controls" class="flex items-center gap-3">
-          <select data-ref="sort_select" class="w-40 text-sm" value="{{query.sort || 'created_at_desc'}}">
+          <select data-ref="sort_select" aria-label="$t:sirsoft-ecommerce.admin.mileage_transactions.sort.label" class="w-40 text-sm" value="{{query.sort || 'created_at_desc'}}">
             <options>
               <option value="created_at_desc">$t:sirsoft-ecommerce.admin.mileage_transactions.sort.created_at_desc</option>
               <option value="amount_desc">$t:sirsoft-ecommerce.admin.mileage_transactions.sort.amount_desc</option>
@@ -146,7 +146,7 @@
               </navigate>
             </on>
           </select>
-          <select data-ref="per_page_select" class="w-32 text-sm" value="{{query.per_page || '20'}}">
+          <select data-ref="per_page_select" aria-label="$t:common.per_page" class="w-32 text-sm" value="{{query.per_page || '20'}}">
             <options>
               <option value="10">$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.10</option>
               <option value="20">$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.20</option>

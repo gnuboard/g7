@@ -5,17 +5,15 @@
         "description": "쇼핑몰 홍보 카드"
     },
     "type": "basic",
-    "name": "Button",
+    "name": "A",
     "actions": [
         {
             "type": "click",
-            "handler": "navigate",
-            "params": {
-                "path": "{{_global.shopBase}}/products"
-            }
+            "handler": "navigate"
         }
     ],
     "props": {
+        "href": "{{_global.shopBase}}/products",
         "className": "block w-full text-left bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-5 text-white hover:shadow-lg transition-shadow cursor-pointer"
     },
     "children": [
@@ -46,7 +44,7 @@
         },
         {
             "type": "basic",
-            "name": "P",
+            "name": "Div",
             "props": {
                 "className": "text-sm opacity-90"
             },

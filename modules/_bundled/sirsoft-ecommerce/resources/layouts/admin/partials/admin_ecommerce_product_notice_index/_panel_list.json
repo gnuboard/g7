@@ -239,10 +239,41 @@
                                     },
                                     "children": [
                                         {
+                                            "comment": "항목 이름은 링크 — 가운데 클릭·Ctrl+클릭으로 그 템플릿을 새 탭에 연다(#757 결정 2026-10-15). 카드 전체를\n                 링크로 감싸지 않는 것은 노출 스위치가 링크 안에 들어가기 때문이다. 보통 클릭은 카드와 같은 선택을 하고\n                 전파를 끊어 카드 클릭이 한 번 더 돌지 않게 한다(카드의 나머지 자리는 카드 클릭이 맡는다).",
                                             "type": "basic",
-                                            "name": "Span",
+                                            "name": "A",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "selectedTemplateId": "{{template.id}}",
+                                                                "selectedTemplate": "{{template}}",
+                                                                "panelMode": "view"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "replaceUrl",
+                                                            "params": {
+                                                                "mergeQuery": true,
+                                                                "query": {
+                                                                    "id": "{{template.id}}",
+                                                                    "mode": "view"
+                                                                }
+                                                            }
+                                                        }
+                                                    ],
+                                                    "stopPropagation": true
+                                                }
+                                            ],
                                             "props": {
-                                                "className": "text-primary text-sm font-medium"
+                                                "href": "/admin/ecommerce/product-notices?id={{template.id}}&mode=view",
+                                                "mergeQuery": true,
+                                                "className": "text-primary text-sm font-medium hover:underline"
                                             },
                                             "text": "{{$localized(template.name)}}"
                                         },
@@ -300,6 +331,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "ariaLabel": "$t:common.item_enabled|name={{$localized(template.name)}}",
                                                         "size": "sm",
                                                         "checked": "{{template.is_active}}",
                                                         "disabled": "{{!template.abilities?.can_update}}"

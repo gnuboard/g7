@@ -177,6 +177,7 @@
                                                     "props": {
                                                         "type": "checkbox",
                                                         "id": "order_item_check_{{item.id}}",
+                                                        "aria-label": "$t:common.select_item|name={{item.product_name ?? ''}}",
                                                         "checked": "{{(_local.selectedItemIds ?? []).includes(item.id)}}",
                                                         "disabled": "{{!(item.option_status !== 'cancelled' && (((claimable?.data?.options ?? []).find(o => o.option?.id === item.id)?.claimable_types) ?? []).length > 0)}}",
                                                         "className": "{{(item.option_status !== 'cancelled' && (((claimable?.data?.options ?? []).find(o => o.option?.id === item.id)?.claimable_types) ?? []).length > 0) ? 'w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500 cursor-pointer' : 'w-4 h-4 text-red-600 border-gray-300 dark:border-gray-600 rounded focus:ring-red-500 opacity-40 cursor-not-allowed'}}"
@@ -187,7 +188,63 @@
                                         {
                                             "comment": "상품 이미지",
                                             "type": "basic",
+                                            "name": "A",
+                                            "if": "{{!_local.isGuest}}",
+                                            "responsive": {
+                                                "portable": {
+                                                    "props": {
+                                                        "className": "inline-flex items-center justify-center w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 cursor-pointer"
+                                                    }
+                                                }
+                                            },
+                                            "actions": [
+                                                {
+                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 주문 항목 → 상품 상세 이동 — 주문 목록과 다른 클러스터(상품)로 나가는 이동이다.",
+                                                    "type": "click",
+                                                    "handler": "navigate"
+                                                }
+                                            ],
+                                            "props": {
+                                                "href": "{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}",
+                                                "className": "inline-flex items-center justify-center w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0 cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Img",
+                                                    "if": "{{item.thumbnail_url}}",
+                                                    "props": {
+                                                        "src": "{{item.thumbnail_url ?? ''}}",
+                                                        "alt": "{{$localized(item.product_name)}}",
+                                                        "className": "w-full h-full object-cover"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "if": "{{!item.thumbnail_url}}",
+                                                    "props": {
+                                                        "className": "w-full h-full flex items-center justify-center"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "image",
+                                                                "size": "lg",
+                                                                "className": "text-gray-400 dark:text-gray-500"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "비회원 갈래는 단추로 둔다 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않는다",
+                                            "type": "basic",
                                             "name": "Button",
+                                            "if": "{{_local.isGuest}}",
                                             "responsive": {
                                                 "portable": {
                                                     "props": {
@@ -250,7 +307,33 @@
                                             "children": [
                                                 {
                                                     "type": "basic",
+                                                    "name": "A",
+                                                    "if": "{{!_local.isGuest}}",
+                                                    "responsive": {
+                                                        "portable": {
+                                                            "props": {
+                                                                "className": "text-left text-sm font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1 cursor-pointer"
+                                                            }
+                                                        }
+                                                    },
+                                                    "actions": [
+                                                        {
+                                                            "comment": "audit:allow layout-list-context-navigate-merge-query 주문 항목 → 상품 상세 이동 — 주문 목록과 다른 클러스터(상품)로 나가는 이동이다.",
+                                                            "type": "click",
+                                                            "handler": "navigate"
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "href": "{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}",
+                                                        "className": "justify-start text-left text-base font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-1 cursor-pointer"
+                                                    },
+                                                    "text": "{{$localized(item.product_name)}}"
+                                                },
+                                                {
+                                                    "comment": "비회원 갈래는 단추로 둔다 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않는다",
+                                                    "type": "basic",
                                                     "name": "Button",
+                                                    "if": "{{_local.isGuest}}",
                                                     "responsive": {
                                                         "portable": {
                                                             "props": {

@@ -80,7 +80,8 @@
     "shipping_policy_options": {
       "all": "전체"
     },
-    "detail_filter_label": "상세 검색 필터"
+    "detail_filter_label": "상세 검색 필터",
+    "category_step": "카테고리 {{n}}단계"
   },
   "action": {
     "edit": "수정",
@@ -890,7 +891,9 @@
       "additional_max_5": "추가옵션 그룹은 최대 5개까지 추가할 수 있습니다.",
       "additional_value_max_20": "선택지는 그룹당 최대 20개까지 추가할 수 있습니다.",
       "additional_value_min_1": "그룹당 선택지는 최소 1개가 필요합니다."
-    }
+    },
+    "option_group_name_n": "{{n}}번째 옵션그룹명",
+    "option_group_values_n": "{{n}}번째 옵션그룹 옵션값"
   },
   "notice": {
     "tab_existing_template": "템플릿 선택",

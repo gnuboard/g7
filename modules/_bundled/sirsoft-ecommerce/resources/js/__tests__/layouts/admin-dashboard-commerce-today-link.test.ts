@@ -53,8 +53,9 @@ describe('대시보드 오늘 배지 링크 — 사이트 표준시의 오늘', 
     const layout = JSON.parse(fs.readFileSync(EXTENSION, 'utf-8'));
     const paths: string[] = collect(
       layout,
-      (n) => n.handler === 'navigate' && typeof n.params?.path === 'string' && n.params.path.includes('start_date='),
-    ).map((n) => n.params.path);
+      // 배지는 링크다(#757 WP-L) — 주소는 A 의 href 한 곳에 있고 클릭 navigate 는 path 없이 그 href 로 간다
+      (n) => n.name === 'A' && typeof n.props?.href === 'string' && n.props.href.includes('start_date='),
+    ).map((n) => n.props.href);
 
     expect(paths.length).toBeGreaterThanOrEqual(7);
     const _global = { settings: { general: { timezone: 'Pacific/Honolulu' } } };

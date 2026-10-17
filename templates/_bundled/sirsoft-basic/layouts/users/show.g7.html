@@ -97,17 +97,17 @@
           <div data-if="{{recentPosts.data?.data?.length > 0}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:user.profile.recent_posts</h3>
-              <button class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+              <a href="/users/{{route.userId}}/posts" class="inline-flex items-center justify-center text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                 <on type="click">
-                  <navigate path="/users/{{route.userId}}/posts"/>
+                  <navigate/>
                 </on>
                 <span>$t:user.profile.view_all</span>
-              </button>
+              </a>
             </div>
             <div class="divide-y divide-gray-200 dark:divide-gray-700">
-              <button data-each="post in {{recentPosts.data?.data ?? []}}" class="block w-full text-left px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
+              <a href="/board/{{post.board_slug}}/{{post.id}}" data-each="post in {{recentPosts.data?.data ?? []}}" class="block w-full text-left px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
                 <on type="click">
-                  <navigate path="/board/{{post.board_slug}}/{{post.id}}"/>
+                  <navigate/>
                 </on>
                 <div class="flex items-center justify-between gap-4">
                   <!-- 제목 영역 -->
@@ -130,19 +130,19 @@
                   </div>
                   <span class="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 hidden md:inline" title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
                 </div>
-              </button>
+              </a>
             </div>
           </div>
           <!-- 최근 게시글 없음 상태 -->
           <div data-if="{{!recentPosts.data?.data?.length}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
             <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:user.profile.recent_posts</h3>
-              <button class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+              <a href="/users/{{route.userId}}/posts" class="inline-flex items-center justify-center text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                 <on type="click">
-                  <navigate path="/users/{{route.userId}}/posts"/>
+                  <navigate/>
                 </on>
                 <span>$t:user.profile.view_all</span>
-              </button>
+              </a>
             </div>
             <div class="text-center py-12">
               <icon name="file-circle-xmark" size="2xl" class="text-gray-300 dark:text-gray-600 mb-4"/>

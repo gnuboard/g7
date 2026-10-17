@@ -1,0 +1,17 @@
+feature: activity_log_unbounded_pagination
+
+description: |
+  총 건수 집계 상한(환경설정 > 고급)보다 활동 로그가 많아 응답의 `last_page` 가 null 일 때, 활동 로그 화면의 페이저가
+  현재 쪽 하나만 남지 않고 1·2 쪽 번호와 다음 쪽 이동을 그리며 마지막 쪽 점프만 감추는지 실제 서버로 잰다(#519 후속).
+  쪽 번호는 링크(`pageHref`, #757)라 a·button 을 함께 본다. 총 건수 상한 일반 계약은 bounded-total-pagination.yaml.
+
+axes:
+  link: [activity_log_unbounded_pager_numbers, activity_log_unbounded_pager_no_last]
+  permitted: [na]
+
+effects:
+  - page_numbers_visible
+  - last_page_jump_hidden
+
+test_files:
+  - tests/Playwright/specs/admin/activity-log-unbounded-pagination.spec.ts

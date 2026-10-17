@@ -962,6 +962,7 @@
                                                                 }
                                                             ],
                                                             "props": {
+                                                                "aria-label": "$t:common.row_cell|row={{item.title ?? ''}}|column={{$t('shop.qna.reply_content')}}",
                                                                 "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none",
                                                                 "rows": 4,
                                                                 "placeholder": "$t:shop.qna.reply_inline_placeholder",
@@ -1211,6 +1212,7 @@
                                                                 }
                                                             ],
                                                             "props": {
+                                                                "aria-label": "$t:common.row_cell|row={{item.title ?? ''}}|column={{$t('shop.qna.reply_content')}}",
                                                                 "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none",
                                                                 "rows": 4,
                                                                 "placeholder": "$t:shop.qna.reply_inline_placeholder",

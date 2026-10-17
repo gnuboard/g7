@@ -36,7 +36,9 @@
       "1_month": "1ヶ月",
       "3_months": "3ヶ月",
       "all": "すべて"
-    }
+    },
+    "benefit_amount_min": "特典金額の下限",
+    "benefit_amount_max": "特典金額の上限"
   },
   "benefit_type": {
     "all": "すべて",

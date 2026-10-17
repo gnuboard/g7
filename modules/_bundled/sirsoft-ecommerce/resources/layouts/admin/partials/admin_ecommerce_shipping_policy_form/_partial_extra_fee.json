@@ -31,7 +31,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-info-soft inline-flex items-center px-2 py-0.5 font-medium bg-blue-100 dark:bg-blue-900/30 rounded-full"
+                        "className": "ecommerce-tone-info-soft inline-flex items-center px-2 py-0.5 font-medium bg-blue-100 dark:bg-blue-900/30 rounded-full text-xs"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_kr_only"
                 }
@@ -340,6 +340,7 @@
                                                                                 }
                                                                             ],
                                                                             "props": {
+                                                                                "aria-label": "$t:common.row_cell|row={{feeItem.zipcode || $t('common.row_n', {n: feeIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode')}}",
                                                                                 "type": "text",
                                                                                 "className": "input",
                                                                                 "value": "{{feeItem.zipcode ?? ''}}",
@@ -381,6 +382,7 @@
                                                                                 }
                                                                             ],
                                                                             "props": {
+                                                                                "aria-label": "$t:common.row_cell|row={{feeItem.zipcode || $t('common.row_n', {n: feeIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_region')}}",
                                                                                 "type": "text",
                                                                                 "className": "input",
                                                                                 "value": "{{feeItem.region ?? ''}}",
@@ -422,6 +424,7 @@
                                                                                 }
                                                                             ],
                                                                             "props": {
+                                                                                "aria-label": "$t:common.row_cell|row={{feeItem.zipcode || $t('common.row_n', {n: feeIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_amount')}}",
                                                                                 "type": "number",
                                                                                 "className": "input",
                                                                                 "value": "{{feeItem.fee ?? 0}}",
@@ -534,6 +537,7 @@
                                                                                 }
                                                                             ],
                                                                             "props": {
+                                                                                "aria-label": "$t:common.row_cell|row={{feeItem.zipcode || $t('common.row_n', {n: feeIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_zipcode')}}",
                                                                                 "type": "text",
                                                                                 "className": "input",
                                                                                 "value": "{{feeItem.zipcode ?? ''}}",
@@ -564,6 +568,7 @@
                                                                                 }
                                                                             ],
                                                                             "props": {
+                                                                                "aria-label": "$t:common.row_cell|row={{feeItem.zipcode || $t('common.row_n', {n: feeIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_region')}}",
                                                                                 "type": "text",
                                                                                 "className": "input",
                                                                                 "value": "{{feeItem.region ?? ''}}",
@@ -594,6 +599,7 @@
                                                                                 }
                                                                             ],
                                                                             "props": {
+                                                                                "aria-label": "$t:common.row_cell|row={{feeItem.zipcode || $t('common.row_n', {n: feeIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.extra_fee_amount')}}",
                                                                                 "type": "number",
                                                                                 "className": "input",
                                                                                 "value": "{{feeItem.fee ?? 0}}",

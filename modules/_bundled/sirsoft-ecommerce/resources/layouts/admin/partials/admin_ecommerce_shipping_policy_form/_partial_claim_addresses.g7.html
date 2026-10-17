@@ -10,7 +10,7 @@
     <div data-ref="claim_addresses_no_update_notice" data-if="{{!route.id &amp;&amp; _computed.lacksUpdate}}" class="text-sm text-amber-700 dark:text-amber-400 mb-3">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_addresses_requires_update</div>
     <div data-ref="claim_addresses_snapshot_notice" class="alert-info">
       <icon name="circle-info" class="text-base text-blue-600 dark:text-blue-400 flex-shrink-0"/>
-      <span class="text-info-soft">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_addresses_snapshot_notice</span>
+      <span class="ecommerce-tone-info-soft text-xs">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_addresses_snapshot_notice</span>
     </div>
     <div data-ref="claim_address_blocks" data-if="{{!!route.id || !_computed.lacksUpdate}}" class="grid-2col-responsive">
       <div data-ref="claim_address_block_exchange" class="row-stack">

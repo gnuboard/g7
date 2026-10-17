@@ -6,7 +6,7 @@
   <div data-ref="filter_section" class="admin-card">
     <div data-ref="search_row" class="mb-4">
       <div class="flex-center gap-2">
-        <select name="searchType" class="select-composite w-36" value="{{_local.filter.searchType || 'all'}}">
+        <select name="searchType" aria-label="$t:common.search_field" class="select-composite w-36" value="{{_local.filter.searchType || 'all'}}">
           <options>
             <option value="all">$t:admin.notification_log.filter.search_type_all</option>
             <option value="recipient">$t:admin.notification_log.filter.search_type_recipient</option>

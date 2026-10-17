@@ -225,16 +225,14 @@
             </navigate>
           </on>
         </icon-button>
-        <button data-ref="add_user_button" disabled="{{users?.data?.abilities?.can_create !== true}}" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <a data-ref="add_user_button" href="/admin/users/create" :mergeQuery="true" disabled="{{users?.data?.abilities?.can_create !== true}}" class="button flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed">
           <on type="click">
             <!-- 등록 폼은 회원 목록 클러스터 안이다 — 취소하고 돌아왔을 때 보고 있던 페이지·검색 조건이 그대로여야 한다 (#75). -->
-            <navigate path="/admin/users/create" :mergeQuery="true">
-              <query/>
-            </navigate>
+            <navigate :mergeQuery="true"><query/></navigate>
           </on>
           <icon name="plus" size="md"/>
           <span>$t:admin.users.add_user</span>
-        </button>
+        </a>
       </page-header>
       <include src="partials/admin_user_list/_partial_filter_section.g7.html"/>
       <div data-ref="bulk_actions_area" data-if="{{users?.data?.abilities?.can_update === true}}" class="bulk-actions-bar">
@@ -332,7 +330,7 @@
         <span data-ref="total_count" data-if="{{users?.data?.pagination?.total_is_exact !== false}}" class="text-label">$t:admin.users.total_count|count={{users?.data?.pagination?.total ?? 0}}</span>
         <span data-ref="total_count_at_least" data-if="{{users?.data?.pagination?.total_is_exact === false}}" class="text-label">$t:admin.users.total_at_least|count={{users?.data?.pagination?.total ?? 0}}</span>
         <div data-ref="list_options" class="flex-center gap-3">
-          <select data-ref="sort_select" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
+          <select data-ref="sort_select" aria-label="$t:common.sort_order" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
             <options>
               <option value="created_at_desc">$t:admin.users.sort.created_at_desc</option>
               <option value="created_at_asc">$t:admin.users.sort.created_at_asc</option>
@@ -361,7 +359,7 @@
               </navigate>
             </on>
           </select>
-          <select data-ref="per_page_select" value="{{query.per_page || '10'}}" class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-blue-500">
+          <select data-ref="per_page_select" aria-label="$t:common.per_page" value="{{query.per_page || '10'}}" class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-blue-500">
             <options>
               <option value="10">$t:admin.users.per_page|count=10</option>
               <option value="20">$t:admin.users.per_page|count=20</option>
@@ -378,7 +376,7 @@
           </select>
         </div>
       </div>
-      <data-grid data-type="composite" selectedCountText="" data-ref="users_data_grid" :data-blur-until-loaded="true" data="{{users?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'asc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{users?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{users?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{users?.data?.pagination?.has_more_pages ?? false}}" selectable="{{users?.data?.abilities?.can_update === true}}" selectionScope="page" nonSelectableIds="{{current_user?.data?.uuid ? [current_user.data.uuid] : []}}" selectedIds="{{_global.selectedIds_admin_users || []}}" idField="uuid" :showColumnSelector="false" visibleColumns="{{_global.visibleColumns_admin_users}}" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+      <data-grid pageHref="/admin/users?page={page}" :pageHrefMergeQuery="true" data-type="composite" selectedCountText="" data-ref="users_data_grid" rowLabelField="name" :data-blur-until-loaded="true" data="{{users?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'asc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="15" :serverSidePagination="true" serverCurrentPage="{{users?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{users?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{users?.data?.pagination?.has_more_pages ?? false}}" selectable="{{users?.data?.abilities?.can_update === true}}" selectionScope="page" nonSelectableIds="{{current_user?.data?.uuid ? [current_user.data.uuid] : []}}" selectedIds="{{_global.selectedIds_admin_users || []}}" idField="uuid" :showColumnSelector="false" visibleColumns="{{_global.visibleColumns_admin_users}}" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
         <column field="name" header="$t:admin.users.columns.name" :sortable="true" :required="true">
           <cell>
             <div>
@@ -431,8 +429,8 @@
         <column field="created_at" header="$t:admin.users.columns.created_at" :sortable="true"/>
         <column field="last_login_at" header="$t:admin.users.columns.last_login_at" :sortable="true"/>
         <prop name="rowActions">
-          <item id="view" label="$t:admin.users.actions.view" iconName="eye"/>
-          <item id="edit" label="$t:admin.users.actions.edit" iconName="pencil" disabledField="abilities.can_update"/>
+          <item id="view" label="$t:admin.users.actions.view" iconName="eye" href="/admin/users/{{row.uuid}}" :mergeQuery="true"/>
+          <item id="edit" label="$t:admin.users.actions.edit" iconName="pencil" href="/admin/users/{{row.uuid}}/edit" :mergeQuery="true" disabledField="abilities.can_update"/>
           <item id="delete" label="$t:admin.users.actions.delete" iconName="trash" variant="danger" disabledField="abilities.can_delete" disabledReason="$t:admin.users.actions.delete_disabled_reason"/>
         </prop>
         <on type="change" event="onSelectionChange">

@@ -44,6 +44,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.reason.reason_label",
                         "name": "reasonCode",
                         "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
                         "value": "{{_global.claimRequestEditReasonCode ?? ''}}",

@@ -218,6 +218,7 @@
                             ],
                             "props": {
                                 "name": "search_type",
+                                "aria-label": "$t:common.search_field",
                                 "className": "w-28",
                                 "value": "{{_local.searchType || ''}}",
                                 "options": [
@@ -1006,6 +1007,7 @@
                                     ],
                                     "props": {
                                         "name": "module_filter",
+                                        "aria-label": "$t:admin.schedules.filters.module",
                                         "className": "w-48",
                                         "value": "{{query.module || ''}}",
                                         "options": [
@@ -1174,6 +1176,7 @@
                             ],
                             "props": {
                                 "name": "bulk_status",
+                                "aria-label": "$t:admin.schedules.bulk.status_change",
                                 "className": "w-32",
                                 "placeholder": "$t:admin.schedules.bulk.status_change",
                                 "value": "",
@@ -1206,6 +1209,7 @@
                             ],
                             "props": {
                                 "name": "bulk_action",
+                                "aria-label": "$t:admin.schedules.bulk.action_run",
                                 "className": "w-32",
                                 "placeholder": "$t:admin.schedules.bulk.action_run",
                                 "value": "",
@@ -1322,6 +1326,7 @@
                             ],
                             "props": {
                                 "name": "sort_by",
+                                "aria-label": "$t:common.sort_order",
                                 "className": "w-40",
                                 "value": "{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'created_at_desc'}}",
                                 "options": [
@@ -1374,6 +1379,7 @@
                             ],
                             "props": {
                                 "name": "per_page",
+                                "aria-label": "$t:common.per_page",
                                 "className": "w-24",
                                 "value": "{{query.per_page ?? '20'}}",
                                 "options": [
@@ -1536,9 +1542,12 @@
             ],
             "props": {
                 "selectedCountText": "",
+                "rowLabelField": "name",
                 "data": "{{schedules?.data?.data}}",
                 "pagination": true,
                 "serverSidePagination": true,
+                "pageHref": "/admin/schedules?page={page}",
+                "pageHrefMergeQuery": true,
                 "serverCurrentPage": "{{schedules?.data?.pagination?.current_page ?? 1}}",
                 "serverTotalPages": "{{schedules?.data?.pagination?.last_page ?? null}}",
                 "serverHasMorePages": "{{schedules?.data?.pagination?.has_more_pages ?? false}}",

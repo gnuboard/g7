@@ -880,7 +880,8 @@
     "submit": "접수",
     "success": "고객을 대신해 접수했습니다.",
     "error": "접수하지 못했습니다.",
-    "reason_required": "사유를 선택해주세요."
+    "reason_required": "사유를 선택해주세요.",
+    "exchange_option_label": "교환할 옵션"
   },
   "manual_paid": {
     "title": "결제 처리 항목",

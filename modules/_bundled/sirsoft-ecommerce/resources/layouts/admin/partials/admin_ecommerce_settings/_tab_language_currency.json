@@ -124,6 +124,7 @@
                             "name": "Select",
                             "props": {
                                 "id": "exchange_rate_provider",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.label",
                                 "className": "{{_local.errors?.['language_currency.rate_provider'] ? 'w-full input-error' : 'w-full'}}",
                                 "name": "language_currency.rate_provider",
                                 "value": "{{_local.form?.language_currency?.rate_provider ?? ''}}",

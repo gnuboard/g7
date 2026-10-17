@@ -142,10 +142,11 @@
                     ]
                 },
                 {
+                    "comment": "체크박스와 동의 문장을 한 label 로 감싼다 — 문장을 눌러도 체크되고 낭독기가 문장을 이름으로 읽는다",
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Label",
                     "props": {
-                        "className": "flex items-center gap-2 mb-4"
+                        "className": "flex items-center gap-2 mb-4 cursor-pointer"
                     },
                     "children": [
                         {
@@ -171,7 +172,7 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Label",
+                            "name": "Span",
                             "props": {
                                 "className": "text-sm text-gray-700 dark:text-gray-300"
                             },

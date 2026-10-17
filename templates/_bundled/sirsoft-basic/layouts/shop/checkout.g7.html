@@ -176,14 +176,14 @@
       <!-- 뒤로가기 + 페이지 제목 -->
       <div class="mb-6">
         <responsive on="portable" class="mb-4"/>
-        <button class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 text-sm cursor-pointer">
+        <a href="{{_global.shopBase}}/cart" class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 text-sm cursor-pointer">
           <responsive on="portable" class="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-2 text-sm cursor-pointer"/>
           <on type="click">
-            <navigate path="{{_global.shopBase}}/cart"/>
+            <navigate/>
           </on>
           <icon name="chevron-left" class="text-base"/>
           <span>$t:shop.checkout.back</span>
-        </button>
+        </a>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
           <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white"/>
           $t:shop.checkout.title

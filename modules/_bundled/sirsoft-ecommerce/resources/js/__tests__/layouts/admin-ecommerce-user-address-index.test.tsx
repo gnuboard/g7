@@ -161,7 +161,11 @@ describe('관리자 회원 배송지 목록 — 필터', () => {
         const call = flattenActions(search).find((a: any) => a.handler === 'apiCall');
 
         expect(call.target).toBe('/api/admin/users/search');
-        expect(call.debounce).toBe(300);
+        // 타건마다 부르지 않도록 300ms 모은다 — 엔진은 조건·순서 안쪽 액션의 debounce 를 무시하므로 감싸는
+        // sequence 에 둔다(안쪽 apiCall 에 두었던 값은 적용되지 않았다 — 레이아웃 컴파일 경고 nested_action_debounce_ignored)
+        expect(search.handler).toBe('sequence');
+        expect(search.debounce).toBe(300);
+        expect(call.debounce).toBeUndefined();
 
         // 검색 대상 select 에는 회원 갈래가 없다 — 그 축은 위 필터가 가져갔다.
         const select = findById(filterSection, 'search_field_select');
@@ -222,9 +226,15 @@ describe('관리자 회원 배송지 목록 — 표', () => {
 
         expect(asArray(menu.props.items).map((i: any) => i.id)).toEqual(['view_member', 'search_member']);
 
+        // 「회원 보기」는 새 창 링크 항목이다 — 가운데 클릭으로도 새 탭에 열리고, 항목 동작은 부르지 않는다(#757 결정 2026-10-15)
+        const viewMember = asArray(menu.props.items).find((i: any) => i.id === 'view_member');
+
+        expect(viewMember.href).toMatch(/^\/admin\/users\/\{\{row\.member\?\.uuid\}\}$/);
+        expect(viewMember.target).toBe('_blank');
+
         const branches = flattenActions(actionsOf(menu).find((a: any) => a.event === 'onItemClick'));
 
-        expect(branches.some((a: any) => a.handler === 'openWindow')).toBe(true);
+        expect(branches.some((a: any) => a.handler === 'openWindow')).toBe(false);
 
         const navigate = branches.find((a: any) => a.handler === 'navigate');
 

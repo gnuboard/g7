@@ -11,7 +11,7 @@
   <div data-ref="coupon_datagrid_section" class="mt-6">
     <div data-ref="bulk_action_bar" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
       <span class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.promotion_coupon.table.selected_count|count={{(_local.selectedItems || []).length}}</span>
-      <select name="bulkIssueStatus" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkIssueStatus || ''}}" disabled="{{coupons?.data?.abilities?.can_update !== true}}">
+      <select name="bulkIssueStatus" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_status" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkIssueStatus || ''}}" disabled="{{coupons?.data?.abilities?.can_update !== true}}">
         <options>
           <option value="" disabled>$t:sirsoft-ecommerce.admin.promotion_coupon.bulk.select_status</option>
           <option value="issuing">$t:sirsoft-ecommerce.enums.coupon_issue_status.issuing</option>
@@ -37,7 +37,7 @@
     <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
       <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.table.total_count|count={{coupons?.data?.pagination?.total || 0}}</span>
       <div class="flex-center gap-3">
-        <select name="sortBy" class="w-40" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}">
+        <select name="sortBy" aria-label="$t:common.sort_order" class="w-40" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}">
           <options>
             <option value="created_at_desc">$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.created_at_desc</option>
             <option value="created_at_asc">$t:sirsoft-ecommerce.admin.promotion_coupon.table.sort.created_at_asc</option>
@@ -53,7 +53,7 @@
             </navigate>
           </on>
         </select>
-        <select name="perPage" class="w-20" value="{{query.per_page || '10'}}">
+        <select name="perPage" aria-label="$t:common.per_page" class="w-20" value="{{query.per_page || '10'}}">
           <options>
             <option value="10">10</option>
             <option value="20">20</option>
@@ -69,10 +69,10 @@
         </select>
       </div>
     </div>
-    <data-grid data-type="composite" data-ref="pc_data_table" data="{{coupons?.data?.data || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{coupons?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{coupons?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{coupons?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 10)}}" :alwaysShowPagination="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" visibleColumns="{{_local.visibleColumns}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.table.empty" actionsColumnHeader="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.actions">
+    <data-grid data-type="composite" pageHref="/admin/ecommerce/promotion-coupons?page={page}" :pageHrefMergeQuery="true" rowLabelField="localized_name" data-ref="pc_data_table" data="{{coupons?.data?.data || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{coupons?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{coupons?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{coupons?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 10)}}" :alwaysShowPagination="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" visibleColumns="{{_local.visibleColumns}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.table.empty" actionsColumnHeader="$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.actions">
       <blur-until-loaded sources="coupons"/>
       <prop name="rowActions">
-        <item id="edit" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
+        <item id="edit" href="/admin/ecommerce/promotion-coupons/{{row.id}}/edit" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
         <item id="issue_history" label="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.title" iconName="fa-solid fa-list"/>
         <item id="direct_issue" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.direct_issue" iconName="fa-solid fa-gift" disabledField="abilities.can_update"/>
         <item id="divider" :divider="true"/>
@@ -89,9 +89,9 @@
           <!-- 수정 화면은 쿠폰 수정 권한이 있어야 열린다 — 권한이 없으면 링크 대신 이름만 보인다(행 「수정」과 같은 키). -->
           <span data-ref="coupon_name_text" data-if="{{row.abilities?.can_update !== true}}" class="font-medium text-gray-900 dark:text-gray-100">{{row.localized_name}}</span>
           <!-- 쿠폰 이름을 눌러 수정 화면으로. 보던 목록 상태를 이고 가므로 수정을 마치고 돌아오면 같은 자리가 열린다 -->
-          <a data-ref="coupon_name_link" data-if="{{row.abilities?.can_update === true}}" href="#" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium">
+          <a data-ref="coupon_name_link" data-if="{{row.abilities?.can_update === true}}" href="/admin/ecommerce/promotion-coupons/{{row.id}}/edit" :mergeQuery="true" class="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium">
             <on type="click">
-              <navigate path="/admin/ecommerce/promotion-coupons/{{row.id}}/edit" :mergeQuery="true">
+              <navigate :mergeQuery="true">
                 <query/>
               </navigate>
             </on>
@@ -149,15 +149,12 @@
           <span data-if="{{!row.created_by}}" class="text-gray-500 dark:text-gray-400">-</span>
           <action-menu data-type="composite" data-if="{{!!row.created_by}}" position="right">
             <prop name="items">
-              <item id="view_member" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member" iconName="user" if="{{!!row.created_by}}"/>
+              <item id="view_member" href="/admin/users/{{row.created_by}}" target="_blank" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member" iconName="user" if="{{!!row.created_by}}"/>
               <item id="search_by_creator" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.search_by_creator" iconName="search"/>
             </prop>
             <on event="onItemClick">
               <!-- 만든 사람을 눌렀을 때의 갈래. "회원 보기" 는 새 창으로 열어 지금 목록을 잃지 않게 하고, "이 사람이 만든 것만" 은 화면 필터와 URL query 를 함께 갈아 끼운다(둘 중 하나만 하면 입력칸과 결과가 어긋난다). -->
               <switch>
-                <case when="view_member">
-                  <open-window path="/admin/users/{{row.created_by}}"/>
-                </case>
                 <case when="search_by_creator">
                   <set-state target="local" filter.createdBy="{{row.created_by}}" creatorSearchResults="{{[{ value: row.created_by, label: row.created_by_name, description: row.created_by_email }]}}"/>
                   <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="true" :replace="true" transition_overlay_target="pc_data_table__body">

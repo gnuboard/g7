@@ -206,7 +206,7 @@
       <div data-ref="table_header" class="flex flex-wrap items-center justify-between gap-4 mb-4">
         <span class="text-primary font-bold">$t:sirsoft-ecommerce.admin.carts.table.total_count|count={{carts?.data?.pagination?.total ?? 0}}</span>
         <div data-ref="table_header_controls" class="flex items-center gap-3">
-          <select data-ref="sort_select" class="w-40 text-sm" value="{{query.sort || 'created_at_desc'}}">
+          <select data-ref="sort_select" aria-label="$t:common.sort_order" class="w-40 text-sm" value="{{query.sort || 'created_at_desc'}}">
             <options>
               <option value="created_at_desc">$t:sirsoft-ecommerce.admin.carts.sort.created_at_desc</option>
               <option value="created_at_asc">$t:sirsoft-ecommerce.admin.carts.sort.created_at_asc</option>
@@ -221,7 +221,7 @@
               </sequence>
             </on>
           </select>
-          <select data-ref="per_page_select" class="w-32 text-sm" value="{{query.per_page || '20'}}">
+          <select data-ref="per_page_select" aria-label="$t:common.per_page" class="w-32 text-sm" value="{{query.per_page || '20'}}">
             <options>
               <option value="10">10</option>
               <option value="20">20</option>
@@ -240,7 +240,7 @@
           </select>
         </div>
       </div>
-      <data-grid data-type="composite" data-ref="carts_datagrid" :data-blur-until-loaded="true" data="{{carts?.data?.data}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{carts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{carts?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{carts?.data?.pagination?.has_more_pages ?? false}}" selectable="{{carts?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedItems_carts || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-ecommerce.admin.carts.table.empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
+      <data-grid data-type="composite" pageHref="/admin/ecommerce/carts?page={page}" :pageHrefMergeQuery="true" rowLabelField="product.name" data-ref="carts_datagrid" :data-blur-until-loaded="true" data="{{carts?.data?.data}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{carts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{carts?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{carts?.data?.pagination?.has_more_pages ?? false}}" selectable="{{carts?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedItems_carts || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-ecommerce.admin.carts.table.empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
         <column field="created_at" header="$t:sirsoft-ecommerce.admin.carts.columns.created_at">
           <cell>
             <span class="text-sm text-gray-900 dark:text-white">{{row.created_at}}</span>
@@ -250,13 +250,13 @@
           <cell>
             <div class="flex flex-col">
               <div class="flex items-center gap-2">
-                <span data-if="{{!!row.member?.uuid}}" class="font-medium text-gray-900 dark:text-white cursor-pointer hover:underline">
+                <a href="/admin/users/{{row.member?.uuid}}" data-if="{{!!row.member?.uuid}}" class="font-medium text-gray-900 dark:text-white cursor-pointer hover:underline">
                   <on type="click">
                     <!-- 회원 이름을 누르면 그 회원 상세로 간다 — 지우기 전에 "누구인가" 를 확인하는 자리다 -->
-                    <navigate path="/admin/users/{{row.member?.uuid}}"/>
+                    <navigate/>
                   </on>
                   {{row.member?.name}}
-                </span>
+                </a>
                 <span data-if="{{!row.member}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.carts.badges.guest</span>
                 <badge data-type="composite" data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-ecommerce.admin.carts.badges.withdrawn</badge>
               </div>
@@ -287,7 +287,7 @@
         </column>
         <prop name="rowActions">
           <item id="delete" label="$t:sirsoft-ecommerce.admin.carts.actions.delete" iconName="trash" disabled="{{carts?.data?.abilities?.can_manage !== true}}"/>
-          <item id="go_to_member" label="$t:sirsoft-ecommerce.admin.carts.actions.view_member" iconName="user"/>
+          <item id="go_to_member" href="/admin/users/{{row.member?.uuid}}" label="$t:sirsoft-ecommerce.admin.carts.actions.view_member" iconName="user"/>
         </prop>
         <on type="change" event="onSelectionChange">
           <!-- 선택 행 ID 를 전역에 둔다 — 일괄 삭제 버튼과 확인 모달이 같은 값을 읽는다 -->

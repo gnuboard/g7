@@ -94,6 +94,7 @@
                                                 "type": "number",
                                                 "min": "1",
                                                 "max": "{{qtyRow.quantity}}",
+                                                "aria-label": "$t:common.row_cell|row={{qtyRow.label ?? ''}}|column={{$t('sirsoft-ecommerce.admin.claim.detail.items.columns.quantity')}}",
                                                 "className": "w-20 px-2 py-1 text-sm text-right rounded",
                                                 "disabled": "{{qtyRow.splittable !== true}}",
                                                 "value": "{{_global.claimItemQuantityContext?.quantities?.[qtyRow.id] ?? qtyRow.quantity}}"

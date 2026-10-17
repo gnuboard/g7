@@ -75,6 +75,7 @@
                             ],
                             "props": {
                                 "name": "sortBy",
+                                "aria-label": "$t:common.sort_order",
                                 "className": "w-40",
                                 "value": "{{_local.sortBy || 'ordered_at_desc'}}",
                                 "options": [
@@ -147,6 +148,7 @@
                             ],
                             "props": {
                                 "name": "perPage",
+                                "aria-label": "$t:common.per_page",
                                 "className": "w-24",
                                 "value": "{{_local.perPage || '20'}}",
                                 "options": [
@@ -292,6 +294,9 @@
                         }
                     ],
                     "props": {
+                        "pageHref": "/admin/ecommerce/orders?page={page}",
+                        "pageHrefMergeQuery": true,
+                        "rowLabelField": "order_number",
                         "data": "{{orders?.data?.data || []}}",
                         "selectable": true,
                         "selectionScope": "page",
@@ -311,6 +316,7 @@
                         "rowActions": [
                             {
                                 "id": "view_detail",
+                                "href": "/admin/ecommerce/orders/{{row.order_number}}",
                                 "label": "$t:sirsoft-ecommerce.admin.order.action.view_detail",
                                 "iconName": "eye",
                                 "disabledField": "abilities.can_read"
@@ -361,19 +367,20 @@
                                     {
                                         "comment": "주문번호를 눌러 상세로. 보던 목록 상태를 이고 가므로 상세에서 돌아오면 같은 자리가 열린다",
                                         "type": "basic",
-                                        "name": "Span",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/ecommerce/orders/{{row.order_number}}",
                                                     "mergeQuery": true,
                                                     "query": {}
                                                 }
                                             }
                                         ],
                                         "props": {
+                                            "href": "/admin/ecommerce/orders/{{row.order_number}}",
+                                            "mergeQuery": true,
                                             "className": "font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
                                         },
                                         "text": "{{row.order_number}}"
@@ -639,12 +646,6 @@
                                                 "event": "onItemClick",
                                                 "handler": "switch",
                                                 "cases": {
-                                                    "view_member": {
-                                                        "handler": "openWindow",
-                                                        "params": {
-                                                            "path": "/admin/users/{{row.user?.uuid}}"
-                                                        }
-                                                    },
                                                     "search_by_orderer_member": {
                                                         "handler": "sequence",
                                                         "actions": [
@@ -714,6 +715,8 @@
                                             "items": [
                                                 {
                                                     "id": "view_member",
+                                                    "href": "/admin/users/{{row.user?.uuid}}",
+                                                    "target": "_blank",
                                                     "label": "$t:sirsoft-ecommerce.admin.order.action.view_member",
                                                     "iconName": "user",
                                                     "if": "{{!!row.user?.uuid}}"

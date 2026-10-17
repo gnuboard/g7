@@ -112,6 +112,8 @@
                             }
                         ],
                         "props": {
+                            "pageHrefMergeQuery": true,
+                            "pageHref": "/admin/plugins/sirsoft-gdpr/notice-log?page={page}",
                             "data": "{{gdprNoticeLog?.data?.data ?? []}}",
                             "pagination": true,
                             "serverSidePagination": true,

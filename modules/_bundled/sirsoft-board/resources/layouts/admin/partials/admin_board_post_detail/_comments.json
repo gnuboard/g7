@@ -144,6 +144,7 @@
                                                             ],
                                                             "props": {
                                                                 "value": "{{_local.reply_comment_content ?? ''}}",
+                                                                "aria-label": "$t:sirsoft-board.admin.posts.detail.replying_to|name={{comment.author.name}}",
                                                                 "placeholder": "$t:sirsoft-board.admin.posts.detail.reply_placeholder",
                                                                 "rows": 2,
                                                                 "disabled": "{{post?.data?.abilities?.can_write_comments !== true}}",

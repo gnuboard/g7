@@ -36,12 +36,16 @@ function findNodes(node: any, predicate: (n: any) => boolean, results: any[] = [
 }
 
 describe('shop/index 카테고리 필터 (U6②)', () => {
+  // @scenario selection=category
+  // @effects products_filtered_by_query_category
   it('products 데이터소스가 category_id 를 query.category 에 바인딩해야 함', () => {
     const products = indexLayout.data_sources.find((ds: any) => ds.id === 'products');
     expect(products).toBeDefined();
     expect(products.params.category_id).toBe("{{query.category ?? ''}}");
   });
 
+  // @scenario selection=category
+  // @effects category_link_targets_products_query_with_page_reset
   it('iteration 카테고리 버튼이 /products 로 이동하며 query.category = cat.id 를 설정해야 함', () => {
     // iteration 버튼은 cat?.id 를 query.category 로 전달
     const navActions = findNodes(
@@ -54,11 +58,18 @@ describe('shop/index 카테고리 필터 (U6②)', () => {
     expect(navActions.length).toBeGreaterThan(0);
 
     const action = navActions[0];
-    // slug 페이지(/category/{slug}) 이동이 아닌 /products 쿼리 필터여야 함
-    expect(action.params.path).toContain('/products');
     expect(action.params.query.page).toBe('1');
+    // slug 페이지(/category/{slug}) 이동이 아닌 /products 쿼리 필터여야 함 — 주소는 링크 href 에 있다
+    const links = findNodes(
+      indexLayout,
+      (n) => n.name === 'A' && JSON.stringify(n.actions ?? []).includes('"category":"{{cat?.id}}"'),
+    );
+    expect(links.length).toBeGreaterThan(0);
+    expect(links[0].props.href).toContain('/products?category={{cat?.id}}');
   });
 
+  // @scenario selection=category
+  // @effects no_category_slug_page_navigation
   it('카테고리 슬러그 페이지로 이동하는 dead binding 이 제거되어야 함', () => {
     const slugNavs = findNodes(
       indexLayout,
@@ -68,8 +79,14 @@ describe('shop/index 카테고리 필터 (U6②)', () => {
         n.params.path.includes('/category/{{cat?.slug}}'),
     );
     expect(slugNavs.length).toBe(0);
+    const slugLinks = findNodes(indexLayout, (n) => typeof n.props?.href === 'string' && n.props.href.includes('/category/{{cat?.slug}}'));
+    expect(slugLinks.length).toBe(0);
   });
 
+  // @scenario selection=category
+  // @effects selected_category_marked_active
+  // @scenario selection=all
+  // @effects selected_category_marked_active
   it('선택 카테고리 active className 이 query.category 와 cat.id 비교로 조건부 적용되어야 함', () => {
     // iteration 버튼 className 에 query.category == cat?.id 조건 표현식 존재
     const conditionalClassNodes = findNodes(

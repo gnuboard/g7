@@ -71,7 +71,7 @@
         <div data-ref="claim_request_period_days_field" class="flex-center gap-2 flex-wrap">
           <span class="text-body w-48 shrink-0">$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.request_period_days_label</span>
           <!-- 교환·반품 신청 가능 기간(일) — 서버가 배송완료 시각(없으면 구매확정 시각)부터 이 일수가 지난 신청을 거절한다. 0 이면 기간 제한이 통째로 꺼지므로, 칸을 비워 0 이 담기면 저장 때 최소값 검증에서 막힌다. -->
-          <input type="number" min="{{_local?.form?._meta?.limits?.claim_request_period_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.claim_request_period_days_max ?? 365}}" step="1" class="input w-20" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.claim?.request_period_days ?? 7}}">
+          <input type="number" min="{{_local?.form?._meta?.limits?.claim_request_period_days_min ?? 1}}" aria-label="$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.request_period_days_label" max="{{_local?.form?._meta?.limits?.claim_request_period_days_max ?? 365}}" step="1" class="input w-20" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.claim?.request_period_days ?? 7}}">
             <on type="change">
               <set-state target="local" form.claim.request_period_days="{{Number($event.target.value)}}" :hasChanges="true"/>
             </on>
@@ -121,7 +121,7 @@
         </div>
         <div data-ref="claim_advance_exchange_due_days_field" class="flex-center gap-2 flex-wrap">
           <span class="text-body w-48 shrink-0">$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.due_days_label</span>
-          <input type="number" min="{{_local?.form?._meta?.limits?.advance_exchange_collection_due_days_min ?? 1}}" max="{{_local?.form?._meta?.limits?.advance_exchange_collection_due_days_max ?? 90}}" step="1" class="input w-20" disabled="{{_computed.isReadOnly || _local.form?.claim?.advance_exchange_enabled !== true}}" value="{{_local.form?.claim?.advance_exchange_collection_due_days ?? 14}}">
+          <input type="number" min="{{_local?.form?._meta?.limits?.advance_exchange_collection_due_days_min ?? 1}}" aria-label="$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.due_days_label" max="{{_local?.form?._meta?.limits?.advance_exchange_collection_due_days_max ?? 90}}" step="1" class="input w-20" disabled="{{_computed.isReadOnly || _local.form?.claim?.advance_exchange_enabled !== true}}" value="{{_local.form?.claim?.advance_exchange_collection_due_days ?? 14}}">
             <on type="change">
               <!-- 선교환 회수 기한(일)을 숫자로 저장하고 페이지 [저장] 을 켠다 -->
               <set-state target="local" form.claim.advance_exchange_collection_due_days="{{Number($event.target.value)}}" :hasChanges="true"/>
@@ -189,7 +189,7 @@
         <div data-ref="claim_max_images_field" class="flex-center gap-2 flex-wrap">
           <span class="text-body w-48 shrink-0">$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.max_images_label</span>
           <!-- 신청서 한 건에 붙일 수 있는 이미지 장수. 교환·반품·환불 신청과 수정, 업로드 단계의 서버 거절선이 모두 이 값을 읽고 고객 신청 화면의 안내도 같은 값을 받으므로 둘이 어긋나지 않는다. -->
-          <input type="number" min="{{_local?.form?._meta?.limits?.claim_max_images_min ?? 1}}" max="{{_local?.form?._meta?.limits?.claim_max_images_max ?? 20}}" step="1" class="input w-20" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.claim?.max_images ?? 5}}">
+          <input type="number" min="{{_local?.form?._meta?.limits?.claim_max_images_min ?? 1}}" aria-label="$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.max_images_label" max="{{_local?.form?._meta?.limits?.claim_max_images_max ?? 20}}" step="1" class="input w-20" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.claim?.max_images ?? 5}}">
             <on type="change">
               <set-state target="local" form.claim.max_images="{{Number($event.target.value)}}" :hasChanges="true"/>
             </on>
@@ -201,7 +201,7 @@
         <div data-ref="claim_image_max_size_kb_field" class="flex-center gap-2 flex-wrap">
           <span class="text-body w-48 shrink-0">$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.image_max_size_kb_label</span>
           <!-- 첨부 이미지 한 장의 용량 상한(KB). 고객·관리자 업로드 검증이 모두 이 값으로 거절하고 고객 신청 화면도 같은 값을 안내하므로, 여기만 바꾸면 화면과 서버가 함께 움직인다. -->
-          <input type="number" min="{{_local?.form?._meta?.limits?.claim_image_max_size_kb_min ?? 128}}" max="{{_local?.form?._meta?.limits?.claim_image_max_size_kb_max ?? 20480}}" step="1" class="input w-28" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.claim?.image_max_size_kb ?? 2048}}">
+          <input type="number" min="{{_local?.form?._meta?.limits?.claim_image_max_size_kb_min ?? 128}}" aria-label="$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.image_max_size_kb_label" max="{{_local?.form?._meta?.limits?.claim_image_max_size_kb_max ?? 20480}}" step="1" class="input w-28" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.claim?.image_max_size_kb ?? 2048}}">
             <on type="change">
               <set-state target="local" form.claim.image_max_size_kb="{{Number($event.target.value)}}" :hasChanges="true"/>
             </on>
@@ -217,7 +217,7 @@
       <div class="card-description">$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.description</div>
       <div data-ref="claim_complete_defaults_notice" class="alert-info">
         <icon name="circle-info" class="text-base text-blue-600 dark:text-blue-400 flex-shrink-0"/>
-        <span class="text-info-soft">$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.notice</span>
+        <span class="ecommerce-tone-info-soft text-xs">$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.notice</span>
       </div>
       <div class="row-stack">
         <div data-ref="claim_complete_create_refund_request_field" class="flex-between">

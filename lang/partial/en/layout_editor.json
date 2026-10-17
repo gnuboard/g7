@@ -1268,6 +1268,7 @@
     "navigate": {
       "label": "Go to another page",
       "param_path": "Destination page",
+      "param_fallback_path": "Page to go to when the address is unsafe or empty",
       "param_query": "Query values",
       "param_merge_query": "Keep existing query",
       "param_scroll": "Scroll position",

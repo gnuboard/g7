@@ -47,6 +47,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:sirsoft-ecommerce.admin.shipping_policy.form.country_select_placeholder",
                                 "className": "input w-40 text-sm",
                                 "value": "{{_local._selectedCountryToAdd ?? ''}}",
                                 "options": "{{[{value: '', label: '$t:sirsoft-ecommerce.admin.shipping_policy.form.country_select_placeholder'}].concat(_computed.addableCountryOptions ?? [])}}",

@@ -43,7 +43,7 @@
           $t:shop.reset_all
         </button>
         <!-- 정렬 Select -->
-        <select name="sort" value="{{query.sort ?? 'latest'}}" class="h-9 w-32">
+        <select name="sort" aria-label="$t:common.sort_order" value="{{query.sort ?? 'latest'}}" class="h-9 w-32">
           <options>
             <option value="latest">$t:shop.sort.latest</option>
             <option value="sales">$t:shop.sort.sales</option>

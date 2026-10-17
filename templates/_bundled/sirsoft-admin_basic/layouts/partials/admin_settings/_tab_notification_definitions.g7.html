@@ -31,19 +31,15 @@
       </div>
     </div>
     <div data-ref="channel_sub_tabs" class="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
-      <button data-each="ch, chIdx in {{(availableChannels?.data?.channels ?? []).filter(c => c.hidden_tab !== true &amp;&amp; (c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false : (c.tab_channels ?? [c.id]).filter(tc => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === tc)?.is_active === true).length > 0))}}" type="button" class="{{(query.channel ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2">
+      <a data-each="ch, chIdx in {{(availableChannels?.data?.channels ?? []).filter(c => c.hidden_tab !== true &amp;&amp; (c.source === 'core' ? (_local.form?.notifications?.channels ?? []).find(nc => nc.id === c.id)?.is_active !== false : (c.tab_channels ?? [c.id]).filter(tc => (_local.form?.notifications?.channels ?? []).find(nc => nc.id === tc)?.is_active === true).length > 0))}}" href="/admin/settings?channel={{ch.id}}&amp;page=1" :mergeQuery="true" aria-current="{{(query.channel ?? 'mail') === ch.id ? 'page' : undefined}}" class="button {{(query.channel ?? 'mail') === ch.id ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2.5 text-sm font-medium whitespace-nowrap flex-center gap-2">
         <on type="click">
-          <!-- 채널 탭 전환 — 화면 상태와 URL 둘 다에 남긴다(화면 상태는 즉시 반영용, URL 은 새로고침용).
-               페이지를 1로 되돌리는 것은 채널마다 정의 수가 다르기 때문이다. -->
-          <sequence>
-            <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="notif_channel_content">
-              <query channel="{{ch.id}}" :page="1"/>
-            </navigate>
-          </sequence>
+          <!-- 채널 탭 전환 — 주소는 링크 href 한 곳(새 탭으로도 열린다, #757). 페이지를 1로 되돌리는 것은 채널마다
+               정의 수가 다르기 때문이다. -->
+          <navigate :replace="true" :mergeQuery="true" transition_overlay_target="notif_channel_content"><query/></navigate>
         </on>
         <icon name="{{ch.icon ?? 'fas fa-bell'}}" class="text-sm"/>
         <span>{{ch.tab_label_key ? $t(ch.tab_label_key) : (ch.name ?? ch.id)}}</span>
-      </button>
+      </a>
     </div>
     <div data-ref="notif_channel_content">
       <!-- 분류 칩 — 일반 알림과 본인인증 알림(인증번호·검증 링크 메일)을 가른다. 값은 URL(query.category)에
@@ -94,7 +90,7 @@
         <span class="text-label-subtle">$t:admin.settings.notification_definitions.total_count|count={{notificationDefinitions?.data?.pagination?.total ?? 0}}</span>
         <div class="flex-center gap-2">
           <span class="text-label-subtle">$t:admin.settings.notification_definitions.per_page_label</span>
-          <select name="notifPerPage" class="w-20 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{String(query.per_page || 20)}}">
+          <select name="notifPerPage" aria-label="$t:common.per_page" class="w-20 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{String(query.per_page || 20)}}">
             <options>
               <option value="10">10</option>
               <option value="20">20</option>
@@ -235,7 +231,7 @@
         <p class="text-label-subtle">{{(query.category ?? '') === 'identity' ? '$t:admin.settings.notification_definitions.identity_empty' : '$t:admin.settings.notification_definitions.empty_message'}}</p>
       </div>
       <div data-ref="notif_pagination" class="flex justify-center mt-4">
-        <pagination data-type="composite" currentPage="{{notificationDefinitions?.data?.pagination?.current_page ?? 1}}" totalPages="{{notificationDefinitions?.data?.pagination?.last_page ?? null}}" hasMorePages="{{notificationDefinitions?.data?.pagination?.has_more_pages ?? false}}">
+        <pagination pageHref="/admin/settings?page={page}" :pageHrefMergeQuery="true" data-type="composite" currentPage="{{notificationDefinitions?.data?.pagination?.current_page ?? 1}}" totalPages="{{notificationDefinitions?.data?.pagination?.last_page ?? null}}" hasMorePages="{{notificationDefinitions?.data?.pagination?.has_more_pages ?? false}}">
           <on type="action" event="onPageChange">
             <!-- 페이지 이동 — 채널 탭과 항목수를 유지한다. -->
             <navigate path="/admin/settings" :replace="true" :mergeQuery="true">

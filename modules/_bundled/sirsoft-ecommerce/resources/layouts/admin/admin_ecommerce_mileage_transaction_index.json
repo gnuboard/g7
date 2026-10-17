@@ -326,6 +326,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:sirsoft-ecommerce.admin.mileage_transactions.sort.label",
                                             "className": "w-40 text-sm",
                                             "value": "{{query.sort || 'created_at_desc'}}",
                                             "options": [
@@ -366,6 +367,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:common.per_page",
                                             "className": "w-32 text-sm",
                                             "value": "{{query.per_page || '20'}}",
                                             "options": [

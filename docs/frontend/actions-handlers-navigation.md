@@ -41,7 +41,7 @@
 
 | 필드 | 타입 | 기본값 | 설명 |
 |------|------|--------|------|
-| `path` | string | - | 이동할 경로. 목적지는 이 필드(없으면 액션 노드의 `target`)로만 정해진다 — `url` / `href` / `to` 같은 다른 이름으로 적으면 읽히지 않아 목적지가 `undefined` 가 되고, 예외도 404 도 없이 버튼만 동작하지 않는다 |
+| `path` | string | - | 이동할 경로. 목적지는 이 필드(없으면 액션 노드의 `target`)로 정해진다 — `url` / `href` / `to` 같은 다른 이름으로 적으면 읽히지 않아 목적지가 `undefined` 가 되고, 예외도 404 도 없이 버튼만 동작하지 않는다. 둘 다 **적지 않았고**(키 자체가 없음) 액션이 실제 주소 `<a href>` 에 붙어 있으면 **그 링크의 href** 로 이동한다(같은 출처 주소만, engine-v1.80.1+). `path="{{…}}"` 식이 빈 값으로 풀린 경우는 종전대로 이동하지 않는다 — [화면 이동을 링크로 쓰는 법](#화면-이동을-링크로-쓰는-법-engine-v1801) |
 | `query` | object | - | 쿼리 파라미터 객체 |
 | `mergeQuery` | boolean | false | 기존 쿼리 파라미터와 병합 |
 | `replace` | boolean | false | URL만 변경 (페이지 리로드 없음) |
@@ -49,7 +49,8 @@
 | `refetch_data_sources` | string \| string[] | - | `replace: true` 호출에서 다시 받을 데이터 소스 id(쉼표 구분 문자열 또는 배열). 생략하면 auto_fetch 소스 전부 (engine-v1.79.0+) |
 | `scroll` | string \| number \| object | `"top"` | 이동 후 스크롤 위치 (engine-v1.37.0+). `"top"` / `"preserve"` / 숫자 / `{x,y}` / `"#selector"` |
 | `scrollBehavior` | string | `"instant"` | 스크롤 애니메이션 (engine-v1.37.0+). `"instant"` (즉시) / `"smooth"` (부드럽게). 기본값 `"instant"`는 템플릿 CSS의 `scroll-behavior: smooth` 전역 설정을 무시하고 페이지 전환 시 즉시 이동 |
-| `fallback` | `false \| string \| object` | `"openWindow"` | 대상 경로가 현재 템플릿의 `routes.json`에 없을 때 실행할 fallback 핸들러 (engine-v1.40.0+). 기본값은 `openWindow`(새 창). `false` 시 비활성화(기존 동작), 문자열은 핸들러명만 지정, 객체는 `{handler, params}` 상세 지정. 관리자 ↔ 사용자 템플릿 교차 경로에 사용 |
+| `fallback` | `false \| string \| object` | `openWindow`(`target: "_self"`) | 대상 경로가 현재 템플릿의 `routes.json`에 없을 때 실행할 fallback 핸들러 (engine-v1.40.0+). 기본값은 `openWindow` 를 **같은 탭**(`_self`)으로 — 그 주소로 페이지 전체를 불러온다. `false` 시 비활성화(기존 동작), 문자열은 핸들러명만 지정(`"openWindow"` 면 새 창), 객체는 `{handler, params}` 상세 지정. 관리자 ↔ 사용자 템플릿 교차 경로에 사용. 아래 `fallbackPath` 와 다른 인자다 |
+| `fallbackPath` | string | - | 이동 주소(`path`)가 **비었거나 거부될 때**(실행 스킴·다른 사이트·`//host`) 대신 갈 경로 (engine-v1.80.1+). 같은 판정을 거치며 그것도 거부되면 이동하지 않는다. 쿼리·서버 값으로 이동하는 자리(로그인 복귀·본인 확인 복귀·알림 이동)에 쓴다 — [fallbackPath 옵션](#fallbackpath-옵션-engine-v1801) |
 
 ### transition_overlay_target 옵션 (engine-v1.36.0+)
 
@@ -180,9 +181,35 @@
 
 탭을 빠르게 오가면 `replace: true` 이동이 겹친다. 엔진은 데이터 소스마다 **가장 최근에 다시 받기 시작한 이동의 응답만** 화면에 적용하고, 늦게 끝난 옛 이동의 같은 소스 응답은 버린다. 덮개와 대기 표시(`blur_until_loaded`)는 현재 화면 소스를 아직 받고 있는 이동이 모두 끝난 뒤 걷는다. 종전에는 먼저 시작한 이동이 끝나면서 뒤 이동의 덮개를 걷어, 뒤 이동의 설정 응답(blocking·`initLocal`)이 도착하기 전에 칸이 열렸고 그 사이 입력이 응답에 말없이 덮였다.
 
+### fallbackPath 옵션 (engine-v1.80.1)
+
+같은 탭 이동은 거부된 주소 — `javascript:` 같은 실행 스킴, 다른 사이트 주소, `//host`·`/\host` — 로 **이동하지 않는다**(지금 화면에 머문다).
+`?redirect=`·서버 응답의 복귀 주소·알림 이동 주소처럼 바깥에서 오는 값으로 이동하는 자리는 그 값이 거부되거나 비면 화면에 머물게 되므로,
+`fallbackPath` 로 안전한 착지점을 적는다.
+
+| path | fallbackPath | 결과 |
+| --- | --- | --- |
+| 받아들여짐(사이트 안 경로·같은 사이트 전체 주소) | 무엇이든 | path 로 이동 (fallbackPath 를 읽지 않음) |
+| 비었거나 거부됨 | 받아들여짐 | fallbackPath 로 이동 |
+| 비었거나 거부됨 | 비었거나 거부됨 | 이동하지 않음 |
+| 거부됨 | 없음 | 이동하지 않음 (종전 그대로) |
+
+`query`·`mergeQuery` 는 고른 경로에 똑같이 붙는다. 표현식으로 주소를 직접 거르지 않는다(`?? '/'` 는 빈 값만 대체하고, 문자 검사 람다는 우회 변형을 화면마다 다시 짜야 한다). 검색 로봇용 화면도 같은 판정으로 링크를 만든다.
+쿼리·서버 값이 이동 주소의 앞자리를 정하는데 `fallbackPath` 가 없으면 레이아웃 정적 검사가 오류로 잡는다(`/admin/users/{{$args[1].uuid}}` 처럼 고정 경로로 시작하면 대상 아님).
+
+```html
+<navigate path="{{query.redirect}}" fallbackPath="/"/>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{ "handler": "navigate", "params": { "path": "{{query.redirect}}", "fallbackPath": "/" } }
+```
+
 ### fallback 옵션 (engine-v1.40.0+)
 
-대상 경로가 현재 템플릿의 `routes.json`에 등록되어 있지 않을 때(예: 관리자 화면에서 사용자 페이지 URL로 navigate 시도), 404 라우트가 아닌 다른 핸들러로 분기시킨다. **기본값은 `openWindow`** — 미지정 시 자동으로 새 창에서 열림.
+대상 경로가 현재 템플릿의 `routes.json`에 등록되어 있지 않을 때(예: 관리자 화면에서 사용자 페이지 URL로 navigate 시도), 404 라우트가 아닌 다른 핸들러로 분기시킨다. **기본값은 `openWindow` + `target: "_self"`** — 미지정 시 같은 탭에서 그 주소로 페이지 전체를 불러온다(SPA 이동이 아니다). 새 탭으로 열려면 ④ 형태로 `target: "_blank"` 를 준다. 문자열로 `"openWindow"` 만 주면(③) `target` 이 없어 새 창으로 열린다.
 
 **주 용도**: 알림센터에서 알림 클릭 시 관리자 ↔ 사용자 템플릿 교차 경로 처리.
 
@@ -196,7 +223,7 @@
 
 **파라미터 형태**:
 
-순서대로 **①** 미지정(기본값 `openWindow`) · **②** 비활성화(기존 동작 — 미등록 경로 그대로 SPA navigate) ·
+순서대로 **①** 미지정(기본값 `openWindow`, 같은 탭) · **②** 비활성화(기존 동작 — 미등록 경로 그대로 SPA navigate) ·
 **③** 핸들러명만 지정(string) · **④** 상세 지정(object — `params` 는 `finalPath` 위에 merge) 이다.
 
 ```html
@@ -224,13 +251,13 @@
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
 ```jsonc
-// 1. 미지정 (기본값: openWindow)
+// 1. 미지정 (기본값: openWindow, target "_self" — 같은 탭 전체 이동)
 { "handler": "navigate", "params": { "path": "/shop/products" } }
 
 // 2. 비활성화 (기존 동작 — 미등록 경로 그대로 SPA navigate)
 { "handler": "navigate", "params": { "path": "/admin/x", "fallback": false } }
 
-// 3. 핸들러명만 지정 (string)
+// 3. 핸들러명만 지정 (string) — openWindow 의 target 이 없어 새 창
 { "handler": "navigate", "params": { "path": "/shop/products", "fallback": "openWindow" } }
 
 // 4. 상세 지정 (object) — params는 finalPath 위에 merge
@@ -245,12 +272,12 @@
 
 **알림센터 클릭 패턴 (parallel + fallback)**:
 
-알림센터에서 알림 클릭 시 mark-as-read API 호출과 navigate를 **`parallel`로 묶어** 동시 실행하면, openWindow fallback이 즉시 새 창을 열고 mark-as-read는 백그라운드에서 진행된다. `sequence`로 묶으면 mark-as-read 완료(1~2초)를 기다린 후에야 새 창이 열려 사용자 체감이 나빠진다.
+알림센터에서 알림 클릭 시 mark-as-read API 호출과 navigate를 **`parallel`로 묶어** 동시 실행하면, openWindow fallback이 즉시 그 주소로 이동하고(기본 같은 탭) mark-as-read는 백그라운드에서 진행된다. `sequence`로 묶으면 mark-as-read 완료(1~2초)를 기다린 후에야 이동해 사용자 체감이 나빠진다.
 
 ```html
 <on event="onNotificationClick">
   <parallel>
-    <navigate path="{{$args[0].url ?? '/admin/notification-logs'}}"/>
+    <navigate path="{{$args[0].url}}" fallbackPath="/admin/notification-logs"/>
     <api-call target="/api/admin/notifications/{{$args[0].id}}/read" method="PATCH"/>
   </parallel>
 </on>
@@ -266,7 +293,7 @@
     "actions": [
       {
         "handler": "navigate",
-        "params": { "path": "{{$args[0].url ?? '/admin/notification-logs'}}" }
+        "params": { "path": "{{$args[0].url}}", "fallbackPath": "/admin/notification-logs" }
       },
       {
         "handler": "apiCall",
@@ -277,6 +304,34 @@
   }
 }
 ```
+
+### 화면 이동을 링크로 쓰는 법 (engine-v1.80.1)
+
+화면을 옮기는 요소는 `<a href>` 로 그린다. 그래야 가운데 클릭·Ctrl/Cmd+클릭·우클릭 「새 탭에서 열기」가 된다(관리자는 여러 화면을 탭으로 띄워 두고 일한다). 단추(`<button>`)·`<div>` 에 `navigate` 만 붙이면 주소가 렌더 시점에 없어 새 탭으로 열 수 없다.
+
+- **주소는 href 한 곳**: `<navigate>` 의 `path` 를 생략하면(속성 자체를 적지 않음) 클릭한 링크의 href 로 이동한다. 링크 진입점의 `sequence`·`onSuccess` 안쪽 `navigate` 도 같다. 같은 출처 주소만 따른다 — 외부 주소 링크는 `navigate` 를 달지 말고 `target="_blank" rel="noopener"` 로 둔다.
+- **보통 클릭은 SPA 이동, 나머지는 브라우저**: 보통 왼쪽 클릭이면 엔진이 기본 동작을 막고 `navigate` 를 실행한다(전환 효과·데이터 재조회 그대로). Ctrl·Cmd·Shift·Alt+클릭·`target`·`download` 는 막지도 실행하지도 않는다 — 링크를 감싼 클릭 가능한 부모(카드 아코디언 등)의 click 액션도 그 클릭에서는 비켜 새 탭이 열린다. 이 판정은 액션 키 `preventDefault` 로 바꿀 수 있다 — [actions.md 「기본 동작 제어」](actions.md#기본-동작-제어--액션-키-preventdefault-engine-v1801).
+- **목록 문맥 유지**: 목록 안 링크는 A 에 `:mergeQuery="true"`(렌더할 때 현재 쿼리를 href 에 합침 — 새 탭도 같은 주소)와 `<navigate :mergeQuery="true"><query/></navigate>` 를 함께 준다. href 의 쿼리 키가 현재 쿼리를 이기고, `<query>` 값이 마지막에 덮는다. A 에 `:mergeQuery` 가 없으면 보통 클릭만 목록 상태를 승계하고 새 탭은 잃는다(정적 검사가 이 조합을 오류로 잡는다).
+- **링크로 바꾸지 않는 이동**: 저장 뒤 자동 이동(`apiCall` 성공 갈래), 확인 창(`confirm`)이 뜨는 이동, 비회원 주문 조회 화면의 이동(주문번호·비밀번호 확인 문맥을 주소에 싣지 않는다), 같은 화면의 필터 초기화·검색 실행·쪽 번호 아닌 `replace` 이동.
+
+```html
+<a href="/admin/users/create" :mergeQuery="true" disabled="{{!_global.can_create}}" class="btn btn-primary aria-disabled:opacity-50">
+  <on type="click"><navigate :mergeQuery="true"><query/></navigate></on>
+  회원 등록
+</a>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "name": "A",
+  "props": { "href": "/admin/users/create", "mergeQuery": true, "disabled": "{{!_global.can_create}}", "className": "btn btn-primary aria-disabled:opacity-50" },
+  "actions": [{ "type": "click", "handler": "navigate", "params": { "mergeQuery": true, "query": {} } }]
+}
+```
+
+합성 컴포넌트가 직접 `<a>` 를 그릴 때(사이드바·행 메뉴·페이지 번호·탭)는 `G7Core.navigation.isPlainLeftClick(event)` 가 참일 때만 `preventDefault()` 후 기존 콜백을 부르고, 목록 문맥이 필요한 주소는 `G7Core.navigation.mergeQueryIntoHref(href)` 로 렌더한다.
 
 ### mergeQuery 옵션
 

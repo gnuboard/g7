@@ -334,7 +334,7 @@ describe('U15 회원 공개 프로필', () => {
    */
   it('작성글: 경로 이름 단추 min-w-0 truncate, 제목 H1 min-w-0 wrap-anywhere', () => {
     const layout = loadLayout('users/posts.json');
-    expectTokens(findOne(layout, (n) => n.name === 'Button' && textHas('userProfile.data?.name')(n), '작성글 경로 이름'), ['min-w-0', 'truncate'], '작성글 경로 이름');
+    expectTokens(findOne(layout, (n) => ['A', 'Button'].includes(n.name) && textHas('userProfile.data?.name')(n), '작성글 경로 이름'), ['min-w-0', 'truncate'], '작성글 경로 이름');
     expectTokens(findOne(layout, (n) => n.name === 'H1' && textHas('userProfile.data?.name')(n), '작성글 제목'), ['min-w-0', 'wrap-anywhere'], '작성글 제목');
   });
 });
@@ -496,7 +496,7 @@ describe('실측 발견 — 하위 카테고리 칩 (2026-10-13 Chrome MCP)', ()
     const layout = loadLayout('shop/category.json');
     const name = findOne(layout, (n) => n.text === '{{sub?.name_localized}}', '하위 카테고리 칩 이름');
     expectTokens(name, ['min-w-0', 'truncate'], '하위 카테고리 칩 이름');
-    const chip = findOne(layout, (n) => n.name === 'Button' && (n.children ?? []).includes(name), '하위 카테고리 칩');
+    const chip = findOne(layout, (n) => ['A', 'Button'].includes(n.name) && (n.children ?? []).includes(name), '하위 카테고리 칩');
     expectTokens(chip, ['max-w-full'], '하위 카테고리 칩');
     const wrap = findOne(layout, (n) => (n.children ?? []).includes(chip), '하위 카테고리 칩 래퍼');
     expectTokens(wrap, ['max-w-full'], '하위 카테고리 칩 래퍼');
@@ -582,7 +582,7 @@ describe('실측 발견 — 인기글·내 글·내 댓글 목록 (2026-10-13 Ch
     const layout = loadLayout(file);
     const row = findOne(layout, classHas('flex-1', 'min-w-0', 'flex', 'items-center', 'gap-2'), '배지·제목 줄');
     expect(tokens(row)).not.toContain('flex-wrap');
-    expectTokens(findOne(layout, (n) => n.name === 'P' && typeof n.text === 'string' && n.text.includes(preview), '미리보기'), ['break-words'], `${file} 미리보기`);
+    expectTokens(findOne(layout, (n) => ['P', 'Div'].includes(n.name) && typeof n.text === 'string' && n.text.includes(preview), '미리보기'), ['break-words'], `${file} 미리보기`);
   });
 });
 

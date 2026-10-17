@@ -54,9 +54,12 @@
         }
     ],
     "props": {
+        "rowLabelField": "localized_description",
         "data": "{{activityLogs?.data?.data}}",
         "pagination": true,
         "serverSidePagination": true,
+        "pageHref": "/admin/activity-logs?page={page}",
+        "pageHrefMergeQuery": true,
         "serverCurrentPage": "{{activityLogs?.data?.pagination?.current_page ?? 1}}",
         "serverTotalPages": "{{activityLogs?.data?.pagination?.last_page ?? null}}",
         "serverHasMorePages": "{{activityLogs?.data?.pagination?.has_more_pages ?? false}}",
@@ -428,12 +431,6 @@
                                 "event": "onItemClick",
                                 "handler": "switch",
                                 "cases": {
-                                    "view_member": {
-                                        "handler": "openWindow",
-                                        "params": {
-                                            "path": "/admin/users/{{row.user.uuid}}"
-                                        }
-                                    },
                                     "search_by_actor": {
                                         "handler": "sequence",
                                         "actions": [
@@ -470,6 +467,8 @@
                                     "id": "view_member",
                                     "label": "$t:admin.activity_log.action.view_member",
                                     "iconName": "user",
+                                    "href": "/admin/users/{{row.user.uuid}}",
+                                    "target": "_blank",
                                     "if": "{{!!row.user?.uuid}}"
                                 },
                                 {

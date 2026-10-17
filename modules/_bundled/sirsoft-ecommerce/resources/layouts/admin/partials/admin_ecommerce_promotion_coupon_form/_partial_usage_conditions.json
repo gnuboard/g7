@@ -231,6 +231,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.search_field",
                                                         "value": "{{_local.productSearchField}}",
                                                         "className": "input w-32",
                                                         "options": [
@@ -454,6 +455,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "rowLabelField": "name_localized",
                                                 "data": "{{_local.productSearchResults ?? []}}",
                                                 "selectable": true,
                                                 "selectionScope": "free",
@@ -529,6 +531,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "rowLabelField": "name_localized",
                                         "data": "{{_local.form?.products ?? []}}",
                                         "selectable": true,
                                         "selectionScope": "free",
@@ -802,6 +805,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "rowLabelField": "path",
                                         "data": "{{_local.form?.categories ?? []}}",
                                         "selectable": true,
                                         "selectionScope": "free",

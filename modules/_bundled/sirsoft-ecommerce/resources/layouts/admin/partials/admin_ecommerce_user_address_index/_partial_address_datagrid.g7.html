@@ -29,7 +29,7 @@
     <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
       <span class="text-label">$t:sirsoft-ecommerce.admin.user_addresses.table.total_count|count={{addresses?.data?.pagination?.total || 0}}</span>
       <div class="flex-center gap-3">
-        <select name="sort" class="w-40" value="{{query.sort || 'created_at_desc'}}">
+        <select name="sort" aria-label="$t:common.sort_order" class="w-40" value="{{query.sort || 'created_at_desc'}}">
           <options>
             <option value="created_at_desc">$t:sirsoft-ecommerce.admin.user_addresses.sort.created_at_desc</option>
             <option value="created_at_asc">$t:sirsoft-ecommerce.admin.user_addresses.sort.created_at_asc</option>
@@ -44,7 +44,7 @@
             </sequence>
           </on>
         </select>
-        <select name="perPage" class="w-20" value="{{query.per_page || '20'}}">
+        <select name="perPage" aria-label="$t:common.per_page" class="w-20" value="{{query.per_page || '20'}}">
           <options>
             <option value="10">10</option>
             <option value="20">20</option>
@@ -64,9 +64,9 @@
       </div>
     </div>
     <!-- 행 메뉴의 회원 항목은 회원 없는 배송지(member null)에서 비활성이다 — 회원 없는 배송지의 「회원 정보」 는 `/admin/users/undefined` 로, 「이 회원으로 검색」 은 `user_uuids[]=[undefined]` → 422 → 본문 전체 오류로 이어졌다. 행마다 다른 조건은 `disabledField`(행 데이터 경로, 값이 falsy 면 비활성)로 적고, 삭제는 관리 권한으로 막는다. -->
-    <data-grid data-type="composite" data-ref="pc_data_table" :data-blur-until-loaded="true" data="{{addresses?.data?.data || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{addresses?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{addresses?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{addresses?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" selectable="{{_computed.canManage === true}}" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" idField="id" visibleColumns="{{_local.visibleColumns}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.user_addresses.table.empty" actionsColumnHeader="$t:common.actions">
+    <data-grid data-type="composite" pageHref="/admin/ecommerce/user-addresses?page={page}" :pageHrefMergeQuery="true" rowLabelField="recipient_name" data-ref="pc_data_table" :data-blur-until-loaded="true" data="{{addresses?.data?.data || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{addresses?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{addresses?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{addresses?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" selectable="{{_computed.canManage === true}}" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" idField="id" visibleColumns="{{_local.visibleColumns}}" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.user_addresses.table.empty" actionsColumnHeader="$t:common.actions">
       <prop name="rowActions">
-        <item id="view_member" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.view_member" iconName="fa-regular fa-user" disabledField="member.uuid"/>
+        <item id="view_member" href="/admin/users/{{row.member?.uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.view_member" iconName="fa-regular fa-user" disabledField="member.uuid"/>
         <item id="search_member" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.search_member" iconName="fa-solid fa-magnifying-glass" disabledField="member.uuid"/>
         <item id="divider" :divider="true"/>
         <item id="delete" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.delete" iconName="fa-regular fa-trash-can" variant="danger" disabled="{{_computed.canManage !== true}}"/>
@@ -81,15 +81,12 @@
         <cell>
           <action-menu data-type="composite" data-if="{{!!row.member?.uuid}}" position="right">
             <prop name="items">
-              <item id="view_member" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.view_member" iconName="user"/>
+              <item id="view_member" href="/admin/users/{{row.member?.uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.view_member" iconName="user"/>
               <item id="search_member" label="$t:sirsoft-ecommerce.admin.user_addresses.actions.search_member" iconName="magnifying-glass"/>
             </prop>
             <on event="onItemClick">
               <!-- 배송지 행의 작업 메뉴 — 고른 항목(회원 보기 등)에 따라 분기한다 -->
               <switch>
-                <case when="view_member">
-                  <open-window path="/admin/users/{{row.member?.uuid}}"/>
-                </case>
                 <case when="search_member">
                   <!-- 손에 든 회원 한정도 이 한 명으로 맞춘다 — URL 만 갈면 필터 칸이 이전 선택을 든 채로 남는다 -->
                   <sequence>
@@ -150,9 +147,6 @@
       <on event="onRowAction">
         <!-- 목록 행 작업 버튼 — 작업 종류에 따라 분기한다(작업 메뉴와 같은 동작) -->
         <switch>
-          <case when="view_member">
-            <open-window path="/admin/users/{{$args[1]?.member?.uuid}}"/>
-          </case>
           <case when="search_member">
             <sequence>
               <set-state target="_local" filter.memberUuids="{{[$args[1]?.member?.uuid]}}" filter.memberOptions="{{[{ value: $args[1]?.member?.uuid, label: $args[1]?.member?.name, description: $args[1]?.member?.email }]}}" :selectedItems="[]"/>

@@ -166,23 +166,23 @@
                                 "children": [
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
-                                                "comment": "쿼리를 떨어뜨린 처음 상태로 되돌린다",
+                                                "comment": "지금 검색 조건 그대로 목록을 다시 불러온다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/ecommerce/orders",
                                                     "mergeQuery": true,
                                                     "query": {}
                                                 }
                                             }
                                         ],
                                         "props": {
+                                            "href": "/admin/ecommerce/orders",
+                                            "mergeQuery": true,
                                             "aria-label": "$t:common.refresh",
                                             "title": "$t:common.refresh",
-                                            "type": "button",
                                             "className": "btn btn-icon"
                                         },
                                         "children": [
@@ -363,6 +363,7 @@
                                         ],
                                         "props": {
                                             "name": "searchField",
+                                            "aria-label": "$t:common.search_field",
                                             "className": "w-32",
                                             "value": "{{_local.searchField}}",
                                             "options": [
@@ -526,6 +527,7 @@
                                         ],
                                         "props": {
                                             "name": "dateType",
+                                            "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.date",
                                             "className": "w-32",
                                             "value": "{{_local.dateType}}",
                                             "options": [
@@ -1903,6 +1905,7 @@
                                                 "type": "basic",
                                                 "name": "Select",
                                                 "props": {
+                                                    "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.category_level|level=1",
                                                     "name": "category1",
                                                     "className": "w-36",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.category_level|level=1",
@@ -1913,6 +1916,7 @@
                                                 "type": "basic",
                                                 "name": "Select",
                                                 "props": {
+                                                    "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.category_level|level=2",
                                                     "name": "category2",
                                                     "className": "w-36",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.category_level|level=2",
@@ -1923,6 +1927,7 @@
                                                 "type": "basic",
                                                 "name": "Select",
                                                 "props": {
+                                                    "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.category_level|level=3",
                                                     "name": "category3",
                                                     "className": "w-36",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.category_level|level=3",
@@ -1933,6 +1938,7 @@
                                                 "type": "basic",
                                                 "name": "Select",
                                                 "props": {
+                                                    "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.category_level|level=4",
                                                     "name": "category4",
                                                     "className": "w-36",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.order.filter.category_level|level=4",
@@ -2028,6 +2034,7 @@
                                                 "name": "Select",
                                                 "props": {
                                                     "name": "currency",
+                                                    "aria-label": "$t:sirsoft-ecommerce.admin.order.filter.currency",
                                                     "className": "w-20",
                                                     "value": "krw",
                                                     "options": [
@@ -2378,6 +2385,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:sirsoft-ecommerce.admin.order.batch.status_change",
                                             "name": "batchAction",
                                             "className": "w-40",
                                             "placeholder": "$t:sirsoft-ecommerce.admin.order.batch.status_change",
@@ -2433,6 +2441,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:sirsoft-ecommerce.admin.order.batch.carrier",
                                             "name": "carrier_id",
                                             "className": "w-32",
                                             "placeholder": "$t:sirsoft-ecommerce.admin.order.batch.carrier",
@@ -2524,6 +2533,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "sortBy",
+                                                    "aria-label": "$t:common.sort_order",
                                                     "className": "w-36",
                                                     "value": "{{_local.sortBy}}",
                                                     "options": [
@@ -2562,6 +2572,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "perPage",
+                                                    "aria-label": "$t:common.per_page",
                                                     "className": "w-24",
                                                     "value": "{{_local.perPage}}",
                                                     "options": [
@@ -2650,9 +2661,9 @@
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
-                                                                        "name": "Div",
+                                                                        "name": "Label",
                                                                         "props": {
-                                                                            "className": "flex-center gap-2"
+                                                                            "className": "flex-center gap-2 cursor-pointer"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -2891,6 +2902,7 @@
                                                                         "name": "Input",
                                                                         "props": {
                                                                             "type": "checkbox",
+                                                                            "aria-label": "$t:common.select_all",
                                                                             "className": "w-4 h-4"
                                                                         }
                                                                     }
@@ -3003,6 +3015,7 @@
                                                                         "name": "Input",
                                                                         "props": {
                                                                             "type": "checkbox",
+                                                                            "aria-label": "$t:common.select_item|name=ord251010567890",
                                                                             "className": "w-4 h-4"
                                                                         }
                                                                     }

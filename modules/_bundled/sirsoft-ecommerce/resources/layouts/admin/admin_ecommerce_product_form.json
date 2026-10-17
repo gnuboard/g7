@@ -673,7 +673,7 @@
                                                         "type": "basic",
                                                         "name": "H3",
                                                         "props": {
-                                                            "className": "text-error-strong"
+                                                            "className": "ecommerce-tone-error-strong text-sm font-medium"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.common.validation_error"
                                                     },
@@ -693,7 +693,7 @@
                                                                 "type": "basic",
                                                                 "name": "Li",
                                                                 "props": {
-                                                                    "className": "text-error-soft"
+                                                                    "className": "ecommerce-tone-error-soft text-sm"
                                                                 },
                                                                 "text": "{{message}}"
                                                             }
@@ -839,7 +839,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-sm font-medium text-info-soft"
+                                                            "className": "text-sm font-medium ecommerce-tone-info-soft"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.product.copy_mode.title"
                                                     }
@@ -1015,21 +1015,21 @@
                                         "comment": "목록으로. 보던 목록 상태를 이고 간다",
                                         "id": "footer_list_button",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/ecommerce/products",
                                                     "mergeQuery": true,
                                                     "query": {}
                                                 }
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "btn btn-outline"
+                                            "href": "/admin/ecommerce/products",
+                                            "mergeQuery": true,
+                                            "className": "button btn btn-outline"
                                         },
                                         "text": "$t:sirsoft-ecommerce.common.list"
                                     },

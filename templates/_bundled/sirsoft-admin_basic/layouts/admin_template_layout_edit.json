@@ -1059,7 +1059,7 @@
                         },
                         "children": [
                             {
-                                "comment": "좌측 파일 트리. 기기 폭에 따라 **인라인 · 서랍 · 시트**로 스스로 갈아입으므로 화면 분기를\n           레이아웃에 두지 않는다(종전에는 데스크톱 목록과 모바일 `rich-select` 두 벌이었고, 모바일 쪽에는\n           검색이 없어 144개를 스크롤해야 했다).\n           `nodes` 는 레이아웃 파일과 확장 주입 조각을 **한 배열**로 합쳐 넘긴다 — 트리 변환·폴더 묶기는\n           컴포넌트가 하므로 백엔드 응답 스키마는 그대로 둔다.",
+                                "comment": "좌측 파일 트리. 기기 폭에 따라 **인라인 · 서랍 · 시트**로 스스로 갈아입으므로 화면 분기를\n           레이아웃에 두지 않는다(종전에는 데스크톱 목록과 모바일 `rich-select` 두 벌이었고, 모바일 쪽에는\n           검색이 없어 144개를 스크롤해야 했다).\n           `nodes` 는 레이아웃 파일과 확장 주입 조각을 **한 배열**로 합쳐 넘긴다 — 트리 변환·폴더 묶기는\n           컴포넌트가 하므로 백엔드 응답 스키마는 그대로 둔다.\n           라우트가 있는 레이아웃은 `href`(이 화면 `?route=…`)를 실어 이름이 링크가 된다 — 가운데 클릭·Ctrl+클릭은 새 탭에서\n           그 레이아웃 편집으로 열리고(진입 init 이 query.route 로 고른다), 보통 클릭은 아래 onSelect 그대로다(#757).\n           라우트 없는 부분 레이아웃·확장 조각은 주소로 가리킬 수 없어 링크가 아니다.",
                                 "id": "file_tree_picker",
                                 "type": "composite",
                                 "name": "FileTreePicker",
@@ -1271,9 +1271,10 @@
                                 ],
                                 "props": {
                                     "mode": "auto",
+                                    "hrefMergeQuery": true,
                                     "storageKey": "g7le.codeEditor.{{route.identifier}}",
                                     "className": "shrink-0 min-h-0",
-                                    "nodes": "{{[...(layout_files?.data ?? []).map(f => ({ key: 'layout:' + f.name, kind: 'layout', path: f.name, meta: { size: f.size_formatted, updatedAt: f.updated_at }, badges: f.has_update ? [{ text: '$t:admin.templates.layout_edit.updated_badge', tone: 'red' }] : [] })), ...(layout_extensions?.data ?? []).flatMap(g => (g.extensions ?? []).map(e => ({ key: 'ext:' + e.id, kind: 'extension', path: e.target_name, label: e.fragment_key && e.fragment_key !== e.target_name ? (e.target_name + ' · ' + e.fragment_key) : e.target_name, group: g.source_label, groupKind: g.source_type, meta: { size: e.size_formatted, disabled: e.is_active === false }, badges: [...(e.is_override ? [{ text: '$t:admin.templates.layout_edit.extension_override_badge', tone: 'indigo' }] : []), ...(e.is_modified ? [{ text: '$t:admin.templates.layout_edit.extension_modified_badge', tone: 'amber' }] : []), ...(e.is_active === false ? [{ text: '$t:admin.templates.layout_edit.extension_inactive_badge', tone: 'gray' }] : [])] })))]}}",
+                                    "nodes": "{{[...(layout_files?.data ?? []).map(f => ({ key: 'layout:' + f.name, kind: 'layout', path: f.name, meta: { size: f.size_formatted, updatedAt: f.updated_at }, href: f.route_path ? ('/admin/templates/' + route.identifier + '/edit?route=' + encodeURIComponent(f.route_path)) : undefined, badges: f.has_update ? [{ text: '$t:admin.templates.layout_edit.updated_badge', tone: 'red' }] : [] })), ...(layout_extensions?.data ?? []).flatMap(g => (g.extensions ?? []).map(e => ({ key: 'ext:' + e.id, kind: 'extension', path: e.target_name, label: e.fragment_key && e.fragment_key !== e.target_name ? (e.target_name + ' · ' + e.fragment_key) : e.target_name, group: g.source_label, groupKind: g.source_type, meta: { size: e.size_formatted, disabled: e.is_active === false }, badges: [...(e.is_override ? [{ text: '$t:admin.templates.layout_edit.extension_override_badge', tone: 'indigo' }] : []), ...(e.is_modified ? [{ text: '$t:admin.templates.layout_edit.extension_modified_badge', tone: 'amber' }] : []), ...(e.is_active === false ? [{ text: '$t:admin.templates.layout_edit.extension_inactive_badge', tone: 'gray' }] : [])] })))]}}",
                                     "selectedKey": "{{_global.selectedNodeKind === 'extension' ? ('ext:' + _global.selectedExtensionId) : ('layout:' + (_global.selectedLayoutName || layout_files?.data?.[0]?.name))}}",
                                     "dirtyKeys": "{{_global.dirtyFileKeys ?? []}}",
                                     "searchKeyword": "{{_global.fileSearchQuery ?? ''}}",

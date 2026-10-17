@@ -1,20 +1,28 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy 정규식이 실제로 쓰이는 지점(액션/데이터소스 params)의 갈리는 값 1`] = `
+exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy 정규식이 실제로 쓰이는 지점(액션/데이터소스 params · 링크 목적지)의 갈리는 값 1`] = `
 [
   {
     "canonical": null,
     "greedy": "_global.shopBase}}/category/{{cat?.slug",
     "sites": [
-      "templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_filter.json :: children.1.children.0.children.1.children.0.actions.0.params.path",
+      "templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_filter.json :: children.1.children.0.children.1.children.0.props.href",
     ],
     "value": "{{_global.shopBase}}/category/{{cat?.slug}}",
   },
   {
     "canonical": null,
+    "greedy": "_global.shopBase}}/category/{{crumb.slug",
+    "sites": [
+      "templates/_bundled/sirsoft-basic/layouts/shop/category.json :: slots.content.0.children.0.children.1.children.1.children.1.children.0.children.1.props.href",
+    ],
+    "value": "{{_global.shopBase}}/category/{{crumb.slug}}",
+  },
+  {
+    "canonical": null,
     "greedy": "_global.shopBase}}/category/{{sub?.slug",
     "sites": [
-      "templates/_bundled/sirsoft-basic/layouts/shop/category.json :: slots.content.0.children.3.children.0.children.0.actions.0.params.path",
+      "templates/_bundled/sirsoft-basic/layouts/shop/category.json :: slots.content.0.children.3.children.0.children.0.props.href",
     ],
     "value": "{{_global.shopBase}}/category/{{sub?.slug}}",
   },
@@ -22,7 +30,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
     "canonical": null,
     "greedy": "_global.shopBase}}/category/{{sub2?.slug",
     "sites": [
-      "templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_filter.json :: children.1.children.1.children.1.children.0.actions.0.params.path",
+      "templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_filter.json :: children.1.children.1.children.1.children.0.props.href",
     ],
     "value": "{{_global.shopBase}}/category/{{sub2?.slug}}",
   },
@@ -30,7 +38,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
     "canonical": null,
     "greedy": "_global.shopBase}}/category/{{sub3?.slug",
     "sites": [
-      "templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_filter.json :: children.1.children.2.children.1.children.0.actions.0.params.path",
+      "templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_filter.json :: children.1.children.2.children.1.children.0.props.href",
     ],
     "value": "{{_global.shopBase}}/category/{{sub3?.slug}}",
   },
@@ -38,7 +46,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
     "canonical": null,
     "greedy": "_global.shopBase}}/category/{{sub4?.slug",
     "sites": [
-      "templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_filter.json :: children.1.children.3.children.1.children.0.actions.0.params.path",
+      "templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_filter.json :: children.1.children.3.children.1.children.0.props.href",
     ],
     "value": "{{_global.shopBase}}/category/{{sub4?.slug}}",
   },
@@ -68,25 +76,81 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
   },
   {
     "canonical": null,
+    "greedy": "_global.shopBase}}/products?category={{query.d1}}&d1={{query.d1",
+    "sites": [
+      "templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_breadcrumb.json :: children.1.children.1.props.href",
+      "templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_breadcrumb.json :: children.4.children.2.children.1.props.href",
+    ],
+    "value": "{{_global.shopBase}}/products?category={{query.d1}}&d1={{query.d1}}",
+  },
+  {
+    "canonical": null,
+    "greedy": "_global.shopBase}}/products?category={{query.d2}}&d1={{query.d1}}&d2={{query.d2",
+    "sites": [
+      "templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_breadcrumb.json :: children.2.children.1.props.href",
+      "templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_breadcrumb.json :: children.4.children.3.children.1.props.href",
+    ],
+    "value": "{{_global.shopBase}}/products?category={{query.d2}}&d1={{query.d1}}&d2={{query.d2}}",
+  },
+  {
+    "canonical": null,
+    "greedy": "_global.shopBase}}/products?category={{query.d3}}&d1={{query.d1}}&d2={{query.d2}}&d3={{query.d3",
+    "sites": [
+      "templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_breadcrumb.json :: children.3.children.1.props.href",
+      "templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_category_breadcrumb.json :: children.4.children.4.children.1.props.href",
+    ],
+    "value": "{{_global.shopBase}}/products?category={{query.d3}}&d1={{query.d1}}&d2={{query.d2}}&d3={{query.d3}}",
+  },
+  {
+    "canonical": null,
     "greedy": "_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id",
     "sites": [
-      "templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_items.json :: children.1.children.0.children.0.children.0.children.1.actions.0.params.path",
-      "templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_items.json :: children.1.children.0.children.0.children.0.children.2.children.0.actions.0.params.path",
+      "templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_items.json :: children.1.children.0.children.0.children.0.children.1.props.href",
+      "templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_items.json :: children.1.children.0.children.0.children.0.children.2.actions.0.params.path",
+      "templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_items.json :: children.1.children.0.children.0.children.0.children.3.children.0.props.href",
+      "templates/_bundled/sirsoft-basic/layouts/partials/mypage/orders/_items.json :: children.1.children.0.children.0.children.0.children.3.children.1.actions.0.params.path",
     ],
     "value": "{{_global.shopBase}}/products/{{item.product_snapshot?.product_code ?? item.product_id}}",
   },
   {
     "canonical": null,
+    "greedy": "_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id",
+    "sites": [
+      "templates/_bundled/sirsoft-basic/layouts/partials/shop/_cart_item.json :: children.1.props.href",
+      "templates/_bundled/sirsoft-basic/layouts/partials/shop/_cart_item.json :: children.2.children.0.props.href",
+      "templates/_bundled/sirsoft-basic/layouts/partials/shop/_checkout_items.json :: children.1.children.0.children.0.children.0.props.href",
+      "templates/_bundled/sirsoft-basic/layouts/partials/shop/_checkout_items.json :: children.1.children.0.children.0.children.1.children.0.props.href",
+    ],
+    "value": "{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}",
+  },
+  {
+    "canonical": null,
     "greedy": "_global.shopBase}}/reorder/{{order.data.id ?? ''",
     "sites": [
-      "templates/_bundled/sirsoft-basic/layouts/mypage/orders/show.json :: slots.content.0.children.0.children.1.children.10.children.1.actions.0.params.path",
+      "templates/_bundled/sirsoft-basic/layouts/mypage/orders/show.json :: slots.content.0.children.0.children.1.children.10.children.1.props.href",
     ],
     "value": "{{_global.shopBase}}/reorder/{{order.data.id ?? ''}}",
+  },
+  {
+    "canonical": null,
+    "greedy": "route.path}}?page={{(products?.data?.pagination?.current_page ?? 1) - 1",
+    "sites": [
+      "templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_product_grid.json :: children.2.children.0.props.href",
+    ],
+    "value": "{{route.path}}?page={{(products?.data?.pagination?.current_page ?? 1) - 1}}",
+  },
+  {
+    "canonical": null,
+    "greedy": "route.path}}?page={{(products?.data?.pagination?.current_page ?? 1) + 1",
+    "sites": [
+      "templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_product_grid.json :: children.2.children.2.props.href",
+    ],
+    "value": "{{route.path}}?page={{(products?.data?.pagination?.current_page ?? 1) + 1}}",
   },
 ]
 `;
 
-exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `841`;
+exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `848`;
 
 exports[`BindingShape 라우팅 diff 하네스 > 판정이 갈리는 식의 분류별 건수 요약 1`] = `
 {
@@ -482,6 +546,7 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
     "canonical": true,
     "expr": "$args[0].url",
     "files": [
+      "templates/_bundled/sirsoft-admin_basic/layouts/_admin_base.json",
       "templates/_bundled/sirsoft-basic/layouts/_user_base.json",
     ],
     "old": {

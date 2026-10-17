@@ -220,7 +220,8 @@ export function findRowTitle(anchor: HTMLElement): HTMLElement | null {
       .map((n) => n.textContent ?? '')
       .join('')
       .trim();
-    if (ownText !== '') return node;
+    // 숫자만인 글자(항목 수 배지 「9」 등)는 제목이 아니다 — 상품정보고시 스위치가 「9」「10」으로 읽혔다(#757)
+    if (ownText !== '' && !/^[\d\s.,:/+\-]+$/.test(ownText)) return node;
   }
 
   return null;

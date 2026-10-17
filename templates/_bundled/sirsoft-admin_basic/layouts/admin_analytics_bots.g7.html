@@ -89,6 +89,7 @@
     <field name="showUnit" :value="false"/>
     <field name="showExclude" :value="false"/>
   </init-local>
+  <computed name="tabQuery">{{['preset', 'from', 'to', 'per_page'].filter(k =&gt; query[k]).map(k =&gt; '&amp;' + k + '=' + encodeURIComponent(query[k])).join('')}}</computed>
   <computed name="csvUrl">{{'/api/admin/analytics/' + ((query.tab || 'bots') === 'pages' ? 'reports/bot_pages' : 'bots') + '?format=csv' + (query.from ? '&amp;from=' + query.from + '&amp;to=' + (query.to || query.from) : '&amp;preset=' + (query.preset || '7d')) + (query.q ? '&amp;q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&amp;sort=' + query.sort : '')}}</computed>
   <computed name="csvFilename">{{'analytics-' + ((query.tab || 'bots') === 'pages' ? 'bot_pages' : 'bot_name') + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}</computed>
   <computed name="periodFrom">{{query.from || ((query.tab || 'bots') === 'pages' ? analytics_report?.data?.from : analytics_bots?.data?.from) || _local.periodComputed?.from || ''}}</computed>
@@ -118,15 +119,13 @@
           <h1 class="page-title">$t:admin.analytics.bots.title</h1>
           <p class="text-label-subtle mt-1">$t:admin.analytics.bots.description</p>
         </div>
-        <button data-ref="seo_cache_link" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.settings.read'))}}" type="button" class="btn btn-secondary btn-sm">
+        <a data-ref="seo_cache_link" href="/admin/settings?tab=seo" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.settings.read'))}}" class="button btn btn-secondary btn-sm">
           <on type="click">
             <!-- 검색엔진 캐시 설정으로 — 환경설정 SEO 탭을 연다. 환경설정 읽기 권한이 있어야 버튼이 보인다(없으면 가도 권한 안내뿐이다). -->
-            <navigate path="/admin/settings">
-              <query tab="seo"/>
-            </navigate>
+            <navigate/>
           </on>
           $t:admin.analytics.bots.seo_cache_link
-        </button>
+        </a>
       </div>
       <include src="partials/admin_analytics/_partial_status_alerts.g7.html"/>
       <include src="partials/admin_analytics/_partial_period_bar.g7.html"/>
@@ -137,8 +136,8 @@
       </div>
       <tab-navigation data-type="composite" data-ref="bot_tabs" class="mb-4" activeTabId="{{query.tab || 'bots'}}" variant="underline">
         <prop name="tabs">
-          <item id="bots" label="$t:admin.analytics.bots.tabs.bots"/>
-          <item id="pages" label="$t:admin.analytics.bots.tabs.pages"/>
+          <item id="bots" href="/admin/analytics/bots?tab=bots{{_computed.tabQuery}}" label="$t:admin.analytics.bots.tabs.bots"/>
+          <item id="pages" href="/admin/analytics/bots?tab=pages{{_computed.tabQuery}}" label="$t:admin.analytics.bots.tabs.pages"/>
         </prop>
         <on type="change" event="onTabChange">
           <!-- 탭을 옮기면 기간 바의 새로고침 대상부터 그 탭의 소스로 바꾼 뒤 이동한다 — 봇 탭은 `analytics_bots`,
@@ -156,7 +155,7 @@
         <div data-ref="bot_names_card" class="admin-card">
           <h2 class="section-heading mb-3">$t:admin.analytics.bots.names_title</h2>
           <div class="overflow-x-auto">
-            <data-grid data-type="composite" data-ref="bot_names_grid" data-if="{{analytics_bots?.loading || (analytics_bots?.data?.data ?? []).length &gt; 0}}" data="{{analytics_bots?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_bots?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="label" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+            <data-grid pageHref="/admin/analytics/bots?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="bot_names_grid" data-if="{{analytics_bots?.loading || (analytics_bots?.data?.data ?? []).length &gt; 0}}" data="{{analytics_bots?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_bots?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="label" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
               <on type="action" event="onPageChange">
                 <!-- 봇 이름 표의 쪽 이동 — 질의 `page` 만 바꿔 주소를 갈아 끼우고 전환 표시는 표 몸통에만 띄운다. 총 쪽 수를 모르는
                      목록이라 다음 쪽이 있는지는 응답의 `has_more` 가 가른다. -->

@@ -71,7 +71,7 @@
           <div class="flex flex-col items-end gap-1 flex-shrink-0">
             <span class="text-xs text-gray-500 dark:text-gray-400">$t:claim.apply.quantity</span>
             <!-- 수량을 바꾸면 잔여 수량 안으로 잘라 넣고, 잘린 값을 칸에도 되돌려 써서 화면이 말하는 수량과 전송 수량이 같게 한다. 요약 금액은 입력을 잠시 모았다가 서버 미리보기로 다시 계산한다. -->
-            <input type="number" data-testid="claim-qty-{{claimIdx}}" :min="1" max="{{claimItem.available_quantity ?? 1}}" value="{{claimItem.quantity ?? 1}}" disabled="{{_local.claimEditMode === true || claimItem.selected !== true}}" class="w-20 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50">
+            <input type="number" data-testid="claim-qty-{{claimIdx}}" aria-label="$t:common.row_cell|row={{claimItem.product_name ?? ''}}|column={{$t('claim.apply.quantity')}}" :min="1" max="{{claimItem.available_quantity ?? 1}}" value="{{claimItem.quantity ?? 1}}" disabled="{{_local.claimEditMode === true || claimItem.selected !== true}}" class="w-20 px-2 py-1 text-sm text-right border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50">
               <on type="change">
                 <action handler="sirsoft-ecommerce.updateClaimQuantity" index="{{claimIdx}}" value="{{$event.target.value}}" claimApiBase="{{_local.claimApiBase ?? ''}}" isGuest="{{_local.isGuest === true}}"/>
               </on>

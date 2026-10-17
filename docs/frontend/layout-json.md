@@ -710,6 +710,14 @@ Laravel의 `FormRequest::validated()` 메서드는 `rules()`에 정의된 필드
 - 편집 모드 서빙(`?with_source_meta=1`, 편집 권한 필요)에서는 편집기가 `comment` 를 편집 가능한 속성으로 노출하므로 **보존**된다. 공개/편집 응답은 별도 캐시 키로 분리되어 있어 조건부 제거가 안전하다.
 - 따라서 `comment` 는 편집기·저장본에서는 유지되고, 일반 사용자에게 서빙되는 응답에서만 사라진다. 레이아웃 로직이 `comment` 값에 의존해서는 안 된다.
 - 화면 조각의 설명(`<partial description="…">` → 조각 루트 `meta: {is_partial: true, description}`)도 개발자용 설명이므로 같은 응답에서 제거된다. 레이아웃 최상단 `meta.description` 은 화면 설명(SEO)이라 보존된다 — 조각 표식(`is_partial: true`)이 있는 `meta` 만 대상이다.
+- **요청 본문 자리는 제거하지 않는다** — `body`·`query`·`headers` 아래와 데이터소스의 `params` 아래는 서버로 보낼 데이터라 `comment` 키도 값으로 남는다(예: 검수 의견을 보내는 `apiCall` 의 `params.body.comment`).
+- 반대로 액션 `params`·`props`·`initLocal` **바로 아래**의 `comment` 는 설명으로 보고 지운다. 설명은 노드·액션에 붙이고, 서버로 보낼 데이터 키 `comment` 는 `body`·`query` 에 둔다.
+
+| 자리 | `comment` 키 | 서빙 응답 |
+| --- | --- | --- |
+| 노드·액션·데이터소스·모달·명명 액션 정의 | 설명 | 제거 |
+| 액션 `params` 바로 아래 · `props` 아래 · `initLocal` 아래 | 설명(예약 — 데이터로 쓰지 않는다) | 제거 |
+| `body`·`query`·`headers` 아래 · 데이터소스 `params` 아래 | 요청 데이터 | **보존** |
 
 #### 제거는 소비자마다 서야 한다
 

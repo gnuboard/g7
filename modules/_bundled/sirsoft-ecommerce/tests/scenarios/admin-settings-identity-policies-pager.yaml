@@ -1,0 +1,22 @@
+feature: 관리자 쇼핑몰 설정 — 본인인증 정책 탭의 이전·다음 쪽 링크
+
+description: |
+  본인인증 정책 목록의 이전·다음 쪽은 실제 주소를 가진 링크다(#757 WP-L — 가운데 클릭·새 탭으로 그 쪽을 연다).
+  첫 쪽의 「이전」과 끝 쪽의 「다음」은 갈 곳이 없어 잠긴 링크다. 잠긴 링크는 href 가 없고 `aria-disabled="true"` 다.
+
+  결정 사항:
+    - 잠금 꾸밈은 `aria-disabled:` 변형으로 단다. `<a>` 에는 `:disabled` 가 없어 단추 시절의 `disabled:` 변형은
+      아무것도 하지 않는다 — 한쪽만 바꿔 둔 채 남으면 끝 쪽의 「다음」이 눌리는 것처럼 보인다(2026-10-15 실측).
+    - 보통 클릭은 종전처럼 같은 화면 안에서 쪽을 바꾼다(전환 효과·목록 재조회 유지).
+
+axes:
+  page_position:
+    - first   # 1/2 쪽 — 「이전」 잠김
+    - last    # 2/2 쪽 — 「다음」 잠김
+
+effects:
+  - identity_policy_pager_links_carry_the_page_address   # 갈 수 있는 쪽 링크가 tab·page 를 실은 주소를 든다
+  - identity_policy_pager_locked_link_looks_locked        # 잠긴 링크는 href 없이 aria-disabled 이고 실제로 흐리게(opacity 0.5) 그려진다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-settings-identity-policies-pager.spec.ts

@@ -601,6 +601,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:common.sort_order",
                                             "className": "w-40 text-sm",
                                             "value": "{{query.sort || 'created_at_desc'}}",
                                             "options": [
@@ -649,6 +650,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:common.per_page",
                                             "className": "w-32 text-sm",
                                             "value": "{{query.per_page || '20'}}",
                                             "options": [
@@ -750,6 +752,9 @@
                             }
                         ],
                         "props": {
+                            "pageHref": "/admin/ecommerce/wishlists?page={page}",
+                            "pageHrefMergeQuery": true,
+                            "rowLabelField": "product.name",
                             "data": "{{wishlists?.data?.data}}",
                             "pagination": true,
                             "alwaysShowPagination": true,
@@ -776,6 +781,7 @@
                                 },
                                 {
                                     "id": "go_to_member",
+                                    "href": "/admin/users/{{row.member?.uuid}}",
                                     "label": "$t:sirsoft-ecommerce.admin.wishlists.actions.view_member",
                                     "iconName": "user"
                                 }
@@ -815,19 +821,17 @@
                                                     "children": [
                                                         {
                                                             "type": "basic",
-                                                            "name": "Span",
+                                                            "name": "A",
                                                             "if": "{{!!row.member?.uuid}}",
                                                             "actions": [
                                                                 {
                                                                     "comment": "회원 이름을 누르면 그 회원 상세로 간다 — 지우기 전에 \"누구인가\" 를 확인하는 자리다",
                                                                     "type": "click",
-                                                                    "handler": "navigate",
-                                                                    "params": {
-                                                                        "path": "/admin/users/{{row.member?.uuid}}"
-                                                                    }
+                                                                    "handler": "navigate"
                                                                 }
                                                             ],
                                                             "props": {
+                                                                "href": "/admin/users/{{row.member?.uuid}}",
                                                                 "className": "font-medium text-gray-900 dark:text-white cursor-pointer hover:underline"
                                                             },
                                                             "text": "{{row.member?.name}}"

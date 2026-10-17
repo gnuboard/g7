@@ -1,5 +1,5 @@
 {
-    "comment": "관리자 로그인 화면. `_admin_base` 를 **상속하지 않는다** — 사이드바·헤더가 없어야 하고, 베이스가\n  거는 인증 데이터소스도 여기서는 부를 수 없기 때문이다. 그 대가로 베이스가 주던 전역 호스트가\n  없으므로 `toast` 를 이 파일이 직접 심는다(빠뜨리면 토스트 액션이 성공으로 기록되면서 화면에는\n  아무것도 안 뜬다). 테마 토글도 같은 이유로 헤더 컴포넌트 대신 여기에 3버튼으로 둔다.\n  로그인 뒤 갈 곳은 `query.redirect` 로 받는다 — 세션이 끊겨 튕겨 온 사람을 원래 화면으로 돌려보낸다. 사이트 안 경로가 아니면\n  관리자 첫 화면(`/admin`)으로 보낸다(2026-10-07 결정·7.1.0 관측 R-16). 로그인이 끝나는 네 갈래의 `navigate` 가 같은 식을 쓴다 —\n  `computed` 로 한 벌만 두면 액션 결과 처리 문맥에서 값을 못 읽는 시험 도구가 있어 식을 각 자리에 두고, 네 식이 같은지는 시험이 잠근다. 사이트 안 경로는 `/` 로\n  시작하고 `//`·역슬래시(문자 코드 92)·공백/제어문자가 없는 값이다. 엔진 이동 sink 의 same-origin 판정(navPolicy)이 최종\n  방어선이고, 이 식은 그보다 **좁게** 걸러 거부된 값이 엔진 기본값 `/`(사용자 첫 화면)로 떨어지지 않게 하는 대체 경로\n  지정일 뿐이다 — 이 식을 넓히면 그 값은 엔진에서 `/` 로 떨어진다.\n  단계는 셋이다 — 자격증명 / 2단계 인증 / 비밀번호 변경(#736, engine-v1.77.0). 비밀번호가 만료됐거나 관리자가 정해 준\n  비밀번호면 서버가 토큰 대신 변경 단계를 돌려준다(2단계 인증 확인 뒤에도 온다). 세 단계의 블록 `if` 와 제출 액션의 `if` 는\n  상호배타이고, 성공 분기는 `response.password_change_required` 를 먼저 본다 — 「2단계 인증이 아니면 성공」으로 판정하면\n  토큰 없는 변경 단계 응답을 성공으로 오판해 이동한다. 변경 단계 식별자가 만료·무효(422 `errors.challenge_id`)면 처음부터 다시\n  로그인해야 한다(2단계 인증 코드도 이미 소비됐다). 단계 상태는 화면을 떠나면 의미가 없으므로 init 에서 비운다.",
+    "comment": "관리자 로그인 화면. `_admin_base` 를 **상속하지 않는다** — 사이드바·헤더가 없어야 하고, 베이스가\n  거는 인증 데이터소스도 여기서는 부를 수 없기 때문이다. 그 대가로 베이스가 주던 전역 호스트가\n  없으므로 `toast` 를 이 파일이 직접 심는다(빠뜨리면 토스트 액션이 성공으로 기록되면서 화면에는\n  아무것도 안 뜬다). 테마 토글도 같은 이유로 헤더 컴포넌트 대신 여기에 3버튼으로 둔다.\n  로그인 뒤 갈 곳은 `query.redirect` 로 받는다 — 세션이 끊겨 튕겨 온 사람을 원래 화면으로 돌려보낸다. 사이트 안 경로가 아니면\n  관리자 첫 화면(`/admin`)으로 보낸다(2026-10-07 결정·7.1.0 관측 R-16). 로그인이 끝나는 네 갈래의 `navigate` 가 같은\n  `path=\"{{query.redirect}}\" fallbackPath=\"/admin\"` 을 쓴다 — 사이트 안 경로인지(빈 값·`//host`·역슬래시·실행 스킴·다른 사이트·\n  상대 경로·제어문자 거부)는 엔진 이동 판정(navPolicy) 한 곳이 가르고, 거부되면 엔진이 `fallbackPath` 로 보낸다(#757 추가 11).\n  레이아웃 식으로 주소를 직접 거르던 람다는 걷었다 — 우회 판정을 레이아웃마다 다시 짜지 않는다. 네 자리가 같은지는 시험이 잠근다.\n  단계는 셋이다 — 자격증명 / 2단계 인증 / 비밀번호 변경(#736, engine-v1.77.0). 비밀번호가 만료됐거나 관리자가 정해 준\n  비밀번호면 서버가 토큰 대신 변경 단계를 돌려준다(2단계 인증 확인 뒤에도 온다). 세 단계의 블록 `if` 와 제출 액션의 `if` 는\n  상호배타이고, 성공 분기는 `response.password_change_required` 를 먼저 본다 — 「2단계 인증이 아니면 성공」으로 판정하면\n  토큰 없는 변경 단계 응답을 성공으로 오판해 이동한다. 변경 단계 식별자가 만료·무효(422 `errors.challenge_id`)면 처음부터 다시\n  로그인해야 한다(2단계 인증 코드도 이미 소비됐다). 단계 상태는 화면을 떠나면 의미가 없으므로 init 에서 비운다.",
     "version": "1.0.0",
     "layout_name": "admin_login",
     "meta": {
@@ -219,7 +219,8 @@
                                                     "handler": "navigate",
                                                     "if": "{{!response.two_factor_required && !response.password_change_required}}",
                                                     "params": {
-                                                        "path": "{{((s) => s.charAt(0) !== '/' || s.charAt(1) === '/' || s.split('').some((c) => c.charCodeAt(0) <= 32 || c.charCodeAt(0) === 92 || c.charCodeAt(0) === 127) ? '/admin' : s)(typeof query?.redirect === 'string' ? query.redirect.trim() : '')}}"
+                                                        "path": "{{query.redirect}}",
+                                                        "fallbackPath": "/admin"
                                                     }
                                                 }
                                             ],
@@ -285,7 +286,8 @@
                                                     "handler": "navigate",
                                                     "if": "{{!response.password_change_required}}",
                                                     "params": {
-                                                        "path": "{{((s) => s.charAt(0) !== '/' || s.charAt(1) === '/' || s.split('').some((c) => c.charCodeAt(0) <= 32 || c.charCodeAt(0) === 92 || c.charCodeAt(0) === 127) ? '/admin' : s)(typeof query?.redirect === 'string' ? query.redirect.trim() : '')}}"
+                                                        "path": "{{query.redirect}}",
+                                                        "fallbackPath": "/admin"
                                                     }
                                                 }
                                             ],
@@ -339,7 +341,8 @@
                                                 {
                                                     "handler": "navigate",
                                                     "params": {
-                                                        "path": "{{((s) => s.charAt(0) !== '/' || s.charAt(1) === '/' || s.split('').some((c) => c.charCodeAt(0) <= 32 || c.charCodeAt(0) === 92 || c.charCodeAt(0) === 127) ? '/admin' : s)(typeof query?.redirect === 'string' ? query.redirect.trim() : '')}}"
+                                                        "path": "{{query.redirect}}",
+                                                        "fallbackPath": "/admin"
                                                     }
                                                 }
                                             ],
@@ -518,19 +521,16 @@
                                         {
                                             "id": "login_forgot_link",
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/forgot-password"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
-                                                "className": "text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200 cursor-pointer"
+                                                "href": "/admin/forgot-password",
+                                                "className": "button text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200 cursor-pointer"
                                             },
                                             "text": "$t:auth.login.forgot"
                                         }
@@ -1211,7 +1211,8 @@
                                                                         {
                                                                             "handler": "navigate",
                                                                             "params": {
-                                                                                "path": "{{((s) => s.charAt(0) !== '/' || s.charAt(1) === '/' || s.split('').some((c) => c.charCodeAt(0) <= 32 || c.charCodeAt(0) === 92 || c.charCodeAt(0) === 127) ? '/admin' : s)(typeof query?.redirect === 'string' ? query.redirect.trim() : '')}}"
+                                                                                "path": "{{query.redirect}}",
+                                                                                "fallbackPath": "/admin"
                                                                             }
                                                                         }
                                                                     ],
@@ -1300,6 +1301,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:common.language",
                                         "className": "block w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm",
                                         "value": "{{$locale}}",
                                         "options": "{{$locales ?? []}}"

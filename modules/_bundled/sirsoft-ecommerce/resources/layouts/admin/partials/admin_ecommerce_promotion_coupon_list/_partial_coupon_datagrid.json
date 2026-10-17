@@ -43,6 +43,7 @@
                     ],
                     "props": {
                         "name": "bulkIssueStatus",
+                        "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_status",
                         "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                         "value": "{{_local.bulkIssueStatus || ''}}",
                         "disabled": "{{coupons?.data?.abilities?.can_update !== true}}",
@@ -149,6 +150,7 @@
                             ],
                             "props": {
                                 "name": "sortBy",
+                                "aria-label": "$t:common.sort_order",
                                 "className": "w-40",
                                 "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
                                 "options": [
@@ -201,6 +203,7 @@
                             ],
                             "props": {
                                 "name": "perPage",
+                                "aria-label": "$t:common.per_page",
                                 "className": "w-20",
                                 "value": "{{query.per_page || '10'}}",
                                 "options": [
@@ -349,6 +352,9 @@
                 }
             ],
             "props": {
+                "pageHref": "/admin/ecommerce/promotion-coupons?page={page}",
+                "pageHrefMergeQuery": true,
+                "rowLabelField": "localized_name",
                 "data": "{{coupons?.data?.data || []}}",
                 "pagination": true,
                 "serverSidePagination": true,
@@ -367,6 +373,7 @@
                 "rowActions": [
                     {
                         "id": "edit",
+                        "href": "/admin/ecommerce/promotion-coupons/{{row.id}}/edit",
                         "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit",
                         "iconName": "fa-regular fa-pen-to-square",
                         "disabledField": "abilities.can_update"
@@ -443,14 +450,14 @@
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/ecommerce/promotion-coupons/{{row.id}}/edit",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "href": "#",
+                                    "href": "/admin/ecommerce/promotion-coupons/{{row.id}}/edit",
+                                    "mergeQuery": true,
                                     "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"
                                 },
                                 "text": "{{row.localized_name}}"
@@ -621,12 +628,6 @@
                                         "event": "onItemClick",
                                         "handler": "switch",
                                         "cases": {
-                                            "view_member": {
-                                                "handler": "openWindow",
-                                                "params": {
-                                                    "path": "/admin/users/{{row.created_by}}"
-                                                }
-                                            },
                                             "search_by_creator": {
                                                 "handler": "sequence",
                                                 "actions": [
@@ -661,6 +662,8 @@
                                     "items": [
                                         {
                                             "id": "view_member",
+                                            "href": "/admin/users/{{row.created_by}}",
+                                            "target": "_blank",
                                             "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member",
                                             "iconName": "user",
                                             "if": "{{!!row.created_by}}"

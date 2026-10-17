@@ -88,9 +88,9 @@
             "children": [
                 {
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Label",
                     "props": {
-                        "className": "flex-start gap-2"
+                        "className": "flex-start gap-2 cursor-pointer"
                     },
                     "children": [
                         {
@@ -109,6 +109,7 @@
                             ],
                             "props": {
                                 "checked": "{{_global.deleteTemplateData || false}}",
+                                "aria-label": "$t:admin.templates.modals.delete_data_option",
                                 "className": "mt-0.5"
                             }
                         },

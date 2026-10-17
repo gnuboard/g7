@@ -56,7 +56,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-error-soft"
+                        "className": "ecommerce-tone-error-soft text-sm"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.reset_modal.warning_message"
                 }

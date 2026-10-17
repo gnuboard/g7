@@ -63,8 +63,11 @@ test.describe.skip('답글 폼 사전 차단 + 삭제 게시글 답변/첨부 (#
     await page.goto(`/board/${BOARD_SLUG}/${DELETED_PARENT_ID}`);
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
-    await expect(page.getByRole('button', { name: /답변|Reply/ })).toHaveCount(0, {
-      timeout: 10_000,
-    });
+    // 답변은 글쓰기 주소를 가진 링크(#757)다. 단추로 되돌아가도 거짓 통과하지 않도록 두 역할을 함께 단언한다.
+    for (const role of ['link', 'button'] as const) {
+      await expect(page.getByRole(role, { name: /답변|Reply/ })).toHaveCount(0, {
+        timeout: 10_000,
+      });
+    }
   });
 });

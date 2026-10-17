@@ -41,7 +41,7 @@
       </div>
       <div data-ref="filter_card" class="admin-card mb-6 filter-grid">
         <div data-ref="search_row" class="search-bar mb-4">
-          <select data-ref="search_field_select" name="searchField" class="search-bar-select" value="{{_local.searchField}}">
+          <select data-ref="search_field_select" name="searchField" aria-label="$t:common.search_field" class="search-bar-select" value="{{_local.searchField}}">
             <options>
               <option value="payment_number">$t:sirsoft-ecommerce.admin.personal_payment.search.field.payment_number</option>
               <option value="member_name">$t:sirsoft-ecommerce.admin.personal_payment.search.field.member_name</option>
@@ -161,7 +161,7 @@
             </select>
             <div class="flex-center gap-2">
               <icon name="calendar" class="text-base icon-muted"/>
-              <input type="date" class="input md:w-36" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.start_date" value="{{_local.startDate}}">
+              <input type="date" aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.personal_payment.filter.date_search')}}" class="input md:w-36" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.start_date" value="{{_local.startDate}}">
                 <on type="change">
                   <!-- 기간 시작일 -->
                   <set-state target="_local" startDate="{{$event.target.value}}"/>
@@ -171,7 +171,7 @@
             <span class="hidden md:block text-gray-500 dark:text-gray-400">~</span>
             <div class="flex-center gap-2">
               <icon name="calendar" class="text-base icon-muted"/>
-              <input type="date" class="input md:w-36" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.end_date" value="{{_local.endDate}}">
+              <input type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.personal_payment.filter.date_search')}}" class="input md:w-36" placeholder="$t:sirsoft-ecommerce.admin.personal_payment.filter.end_date" value="{{_local.endDate}}">
                 <on type="change">
                   <!-- 기간 종료일 -->
                   <set-state target="_local" endDate="{{$event.target.value}}"/>
@@ -203,7 +203,7 @@
         <div data-ref="table_header" class="flex-between flex-wrap gap-4 mb-6">
           <span class="text-secondary">$t:sirsoft-ecommerce.admin.personal_payment.table.total_count|count=9</span>
           <div class="flex-center gap-3">
-            <select name="sortBy" class="w-44" value="{{_local.sortBy}}">
+            <select name="sortBy" aria-label="$t:common.sort_order" class="w-44" value="{{_local.sortBy}}">
               <options>
                 <option value="created_at_desc">$t:sirsoft-ecommerce.admin.personal_payment.table.sort.created_at_desc</option>
                 <option value="created_at_asc">$t:sirsoft-ecommerce.admin.personal_payment.table.sort.created_at_asc</option>
@@ -211,7 +211,7 @@
                 <option value="amount_asc">$t:sirsoft-ecommerce.admin.personal_payment.table.sort.amount_asc</option>
               </options>
             </select>
-            <select name="perPage" class="w-32" value="{{_local.perPage}}">
+            <select name="perPage" aria-label="$t:common.per_page" class="w-32" value="{{_local.perPage}}">
               <options>
                 <option :value="10">$t:sirsoft-ecommerce.admin.personal_payment.table.per_page|count=10</option>
                 <option :value="20">$t:sirsoft-ecommerce.admin.personal_payment.table.per_page|count=20</option>

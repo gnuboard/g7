@@ -168,7 +168,9 @@ describe('admin_page_list.json', () => {
         const createBtn = findById(adminPageList, 'add_page_button');
         expect(createBtn).not.toBeNull();
         const navAction = asArray(createBtn?.actions).find((a: any) => a.handler === 'navigate');
-        expect(navAction.params.path).toBe('/admin/pages/create');
+        // 목적지는 링크 href 한 곳(#757 D12) — path 없는 navigate 는 클릭한 링크의 href 로 간다
+        expect(createBtn.name).toBe('A');
+        expect(navAction.params.path ?? createBtn.props.href).toBe('/admin/pages/create');
     });
 
     // @scenario case=list_data_grid
@@ -927,20 +929,22 @@ describe('admin_page_form.json', () => {
 
     // @scenario case=form_styles
     // @effects admin_page_form_error_box_and_action_buttons_use_semantic_classes
-    it('[M1-a] 검증에러 제목 클래스가 공백으로 분리됨 (font-medium + text-danger-soft, 병합 클래스 금지)', () => {
+    it('[M1-a] 검증에러 제목 클래스가 공백으로 분리됨 (font-medium + page-tone-danger, 병합 클래스 금지)', () => {
         // 회귀 배경: "font-mediumtext-danger-soft" 처럼 공백 없이 붙으면 두 클래스 모두 무효
         // → 빌드 CSS 에 해당 클래스 부재 → 빨간색/굵기 미적용.
+        // 위험 글자색은 이 확장 CSS 의 page-tone-danger(라이트·다크 짝, 관리자 템플릿 text-danger-soft 와 같은 색)다(#757).
         const errorBox = findById(adminPageForm, 'error_message_box');
         expect(errorBox).not.toBeNull();
         const boxStr = JSON.stringify(errorBox);
         // 병합된 무효 클래스가 없어야 함
         expect(boxStr).not.toContain('font-mediumtext-danger-soft');
+        expect(boxStr).not.toContain('font-mediumpage-tone-danger');
         // 제목 H3 은 두 클래스를 공백으로 분리해서 보유
         const heading = findComponentsByName(errorBox, 'H3')[0];
         expect(heading).toBeDefined();
         const cls = heading.props.className ?? '';
         expect(cls).toContain('font-medium');
-        expect(cls).toContain('text-danger-soft');
+        expect(cls).toContain('page-tone-danger');
     });
 
     // @scenario case=form_styles
@@ -988,7 +992,8 @@ describe('admin_page_form.json', () => {
         expect(action.handler).toBe('navigate');
         expect(action.handler).not.toBe('navigateBack');
         // route.id 분기로 수정=상세 / 등록=목록
-        const path = action.params?.path ?? '';
+        expect(cancelBtn.name).toBe('A');
+        const path = action.params?.path ?? cancelBtn.props.href ?? '';
         expect(path).toContain('/admin/pages');
         expect(path).toContain('route');
     });
@@ -1070,8 +1075,10 @@ describe('admin_page_detail.json', () => {
         const editBtn = findById(adminPageDetail, 'header_edit_button');
         expect(editBtn).not.toBeNull();
         const navAction = asArray(editBtn?.actions).find((a: any) => a.handler === 'navigate');
-        expect(navAction.params.path).toContain('/admin/pages/');
-        expect(navAction.params.path).toContain('/edit');
+        expect(editBtn.name).toBe('A');
+        const dest = navAction.params.path ?? editBtn.props.href;
+        expect(dest).toContain('/admin/pages/');
+        expect(dest).toContain('/edit');
     });
 
     // @scenario case=detail_actions
@@ -1080,7 +1087,8 @@ describe('admin_page_detail.json', () => {
         const backBtn = findById(adminPageDetail, 'header_back_button');
         expect(backBtn).not.toBeNull();
         const navAction = asArray(backBtn?.actions).find((a: any) => a.handler === 'navigate');
-        expect(navAction.params.path).toBe('/admin/pages');
+        expect(backBtn.name).toBe('A');
+        expect(navAction.params.path ?? backBtn.props.href).toBe('/admin/pages');
     });
 
     // @scenario case=detail_actions

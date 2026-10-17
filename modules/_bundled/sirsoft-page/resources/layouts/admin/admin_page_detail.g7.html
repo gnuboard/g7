@@ -29,26 +29,26 @@
   <slot name="content">
     <div data-ref="page_detail_content" :data-blur-until-loaded="true" class="admin-page-content-responsive-fluid">
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-page.admin.page.detail.page_title" description="$t:sirsoft-page.admin.page.detail.page_description" backLink="/admin/pages" backLinkText="$t:sirsoft-page.admin.page.detail.back_to_list">
-        <button data-ref="header_back_button" class="btn btn-secondary">
+        <a href="/admin/pages" :mergeQuery="true" data-ref="header_back_button" class="button btn btn-secondary">
           <on type="click">
             <!-- 목록으로 돌아간다. 보던 검색어·필터·페이지를 그대로 이고 가므로(mergeQuery) 상세를 열었다 닫아도 목록이 처음으로 되감기지 않는다 -->
-            <navigate path="/admin/pages" :mergeQuery="true">
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
           <icon name="arrow-left" class="text-sm"/>
           <span class="hidden sm:inline">$t:sirsoft-page.admin.page.detail.back_to_list</span>
-        </button>
-        <button data-ref="header_edit_button" disabled="{{page?.data?.abilities?.can_update !== true}}" class="btn btn-primary">
+        </a>
+        <a href="/admin/pages/{{route?.id}}/edit" :mergeQuery="true" data-ref="header_edit_button" disabled="{{page?.data?.abilities?.can_update !== true}}" class="btn btn-primary">
           <on type="click">
             <!-- 수정 화면으로. 같은 목록 클러스터 안의 이동이라 목록 상태를 그대로 넘긴다 — 수정을 마치고 돌아올 때 보던 자리로 복귀시키기 위해서다 -->
-            <navigate path="/admin/pages/{{route?.id}}/edit" :mergeQuery="true">
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
           <icon name="pencil" class="text-sm"/>
           <span class="hidden sm:inline">$t:sirsoft-page.admin.page.detail.edit</span>
-        </button>
+        </a>
         <button data-ref="header_delete_button" disabled="{{page?.data?.abilities?.can_delete !== true}}" class="btn btn-danger">
           <on type="click">
             <open-modal target="deletePageModal"/>
@@ -219,7 +219,7 @@
         <div data-ref="versions_header" class="pb-4">
           <span class="card-title">$t:sirsoft-page.admin.page.detail.tabs.versions</span>
         </div>
-        <div class="mb-4 px-4 py-2.5 flex-center gap-2 rounded-md text-info-soft bg-blue-50 dark:bg-blue-900/20">
+        <div class="mb-4 px-4 py-2.5 flex-center gap-2 rounded-md text-xs page-tone-info bg-blue-50 dark:bg-blue-900/20">
           <icon name="circle-info" class="text-blue-500 dark:text-blue-400"/>
           <span>$t:sirsoft-page.admin.page.detail.versions.restore_guide</span>
         </div>

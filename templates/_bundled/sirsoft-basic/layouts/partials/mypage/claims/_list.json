@@ -24,8 +24,104 @@
             },
             "children": [
                 {
+                    "comment": "회원 갈래는 유형 주소(?type=)를 가진 링크다(새 탭으로 그 유형을 열 수 있다). 보통 클릭은 아래 순서 그대로 주소만 바꾸고 목록을 다시 부른다",
+                    "type": "basic",
+                    "name": "A",
+                    "if": "{{!_local.isGuest}}",
+                    "iteration": {
+                        "source": "{{[{ id: 'exchange', label: $t('claim.list.tab_exchange') }, { id: 'return', label: $t('claim.list.tab_return') }, { id: 'refund', label: $t('claim.list.tab_refund') }, { id: 'cancel', label: $t('claim.list.tab_cancel') }]}}",
+                        "item_var": "tab"
+                    },
+                    "actions": [
+                        {
+                            "comment": "audit:allow layout-list-context-navigate-merge-query 유형 서브탭 전환 — 유형마다 서버가 다른 테이블을 읽으므로 앞 유형의 페이지 번호를 물려받으면 빈 화면이 열린다. 목록 정체성이 바뀌는 이동이라 승계하지 않는다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "if": "{{_local.claimsLoading !== true && claims?.data != null}}",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "claimsType": "{{tab.id}}",
+                                        "claimsPage": 1,
+                                        "claimsLoading": true
+                                    }
+                                },
+                                {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 유형 서브탭 전환 — 유형마다 서버가 다른 테이블을 읽으므로 앞 유형의 페이지 번호를 물려받으면 빈 화면이 열린다. 목록 정체성이 바뀌는 이동이라 승계하지 않는다.",
+                                    "handler": "replaceUrl",
+                                    "params": {
+                                        "path": "{{_local.claimListPath ?? ''}}",
+                                        "scroll": "preserve",
+                                        "query": {
+                                            "type": "{{tab.id}}",
+                                            "page": "1"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "refetchDataSource",
+                                    "params": {
+                                        "dataSourceId": "claims",
+                                        "sync": true
+                                    },
+                                    "onError": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "claimsLoading": false
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "claimsLoading": false
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "href": "{{(_local.claimListPath ?? '') + '?type=' + tab.id + '&page=1'}}",
+                        "aria-disabled": "{{_local.claimsLoading === true || claims?.data == null}}",
+                        "className": "{{(_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id ? 'inline-block px-4 py-2.5 text-sm font-semibold whitespace-nowrap border-b-2 border-gray-900 dark:border-white text-gray-900 dark:text-white cursor-pointer' : 'inline-block px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer'}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_local.claimsLoading === true && (_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "text-sm animate-spin mr-1",
+                                "aria-hidden": true
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{tab.label}}"
+                        },
+                        {
+                            "comment": "서브탭 건수 뱃지 (F12). 서버는 매 요청 네 유형을 세어 `counts` 로 실어 보내는데 구매자 화면은 그 값을 그리지 않아, 어느 탭에 무엇이 있는지 눌러 보기 전에는 알 수 없었다(관리자 화면에는 있는 표기다). 0건인 탭에는 세우지 않는다 — 0 을 나란히 그리면 '아직 세지 않음' 과 구분되지 않는다.",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{(claims?.data?.counts?.[tab.id] ?? 0) > 0}}",
+                            "props": {
+                                "className": "{{(_local.claimsType ?? query.type ?? claims?.data?.claim_type ?? 'exchange') === tab.id ? 'ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] px-1.5 py-0.5 rounded-full text-xs font-semibold bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'ml-1.5 inline-flex items-center justify-center min-w-[1.25rem] px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}}"
+                            },
+                            "text": "{{claims?.data?.counts?.[tab.id] ?? 0}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "비회원 갈래는 단추로 둔다 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않는다",
                     "type": "basic",
                     "name": "Button",
+                    "if": "{{_local.isGuest}}",
                     "iteration": {
                         "source": "{{[{ id: 'exchange', label: $t('claim.list.tab_exchange') }, { id: 'return', label: $t('claim.list.tab_return') }, { id: 'refund', label: $t('claim.list.tab_refund') }, { id: 'cancel', label: $t('claim.list.tab_cancel') }]}}",
                         "item_var": "tab"
@@ -327,8 +423,30 @@
                                                         {
                                                             "comment": "[수정] — 승인 전에만. edit 라우트는 클레임 번호만 받고 유형은 서버가 번호로 해석한다.",
                                                             "type": "basic",
+                                                            "name": "A",
+                                                            "if": "{{claim.is_editable === true && !_local.isGuest}}",
+                                                            "actions": [
+                                                                {
+                                                                    "type": "click",
+                                                                    "handler": "navigate",
+                                                                    "params": {
+                                                                        "mergeQuery": true,
+                                                                        "query": {}
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "href": "{{(_local.claimDetailPathBase ?? '') + '/' + claim.claim_number + '/edit'}}",
+                                                                "mergeQuery": true,
+                                                                "className": "inline-flex items-center justify-center px-2.5 py-1 text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                                            },
+                                                            "text": "$t:claim.list.edit"
+                                                        },
+                                                        {
+                                                            "comment": "비회원 갈래는 단추로 둔다 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않아, 새 탭으로 열면 조회 폼으로 되돌아간다",
+                                                            "type": "basic",
                                                             "name": "Button",
-                                                            "if": "{{claim.is_editable === true}}",
+                                                            "if": "{{claim.is_editable === true && _local.isGuest}}",
                                                             "actions": [
                                                                 {
                                                                     "type": "click",
@@ -1039,7 +1157,44 @@
                                         {
                                             "comment": "[상세보기] — 지금 이 푸터가 서는 곳은 회원 신청내역 목록뿐이지만, 주소는 리터럴로 들지 않고 셸이 준 상세 주소 앞부분에 신청번호를 잇는다. 다른 셸이 푸터를 켜도 자기 상세 화면으로 가게 하기 위해서다.",
                                             "type": "basic",
+                                            "name": "A",
+                                            "if": "{{!_local.isGuest}}",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "mergeQuery": true,
+                                                        "query": {}
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "href": "{{(_local.claimDetailPathBase ?? '') + '/' + claim.claim_number}}",
+                                                "mergeQuery": true,
+                                                "className": "inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:claim.list.detail"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "chevron-right",
+                                                        "className": "text-xs"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "비회원 갈래는 단추로 둔다 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않는다",
+                                            "type": "basic",
                                             "name": "Button",
+                                            "if": "{{_local.isGuest}}",
                                             "actions": [
                                                 {
                                                     "type": "click",
@@ -1106,7 +1261,26 @@
                 },
                 {
                     "type": "basic",
+                    "name": "A",
+                    "if": "{{!_local.isGuest}}",
+                    "actions": [
+                        {
+                            "comment": "audit:allow layout-list-context-navigate-merge-query 이 목록 밖으로 나가는 이동 — 클레임 목록의 서브탭·페이지를 물려주면 목적지가 알지 못하는 파라미터가 실린다. 목적지는 셸이 정한다(회원=주문 내역, 비회원=상품 목록 — 비회원에게는 주문 내역 화면이 없다).",
+                            "type": "click",
+                            "handler": "navigate"
+                        }
+                    ],
+                    "props": {
+                        "href": "{{_local.claimEmptyCtaPath ?? ''}}",
+                        "className": "inline-flex items-center justify-center mt-4 px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer"
+                    },
+                    "text": "$t:claim.list.go_orders"
+                },
+                {
+                    "comment": "비회원 갈래는 단추로 둔다 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않는다",
+                    "type": "basic",
                     "name": "Button",
+                    "if": "{{_local.isGuest}}",
                     "actions": [
                         {
                             "comment": "audit:allow layout-list-context-navigate-merge-query 이 목록 밖으로 나가는 이동 — 클레임 목록의 서브탭·페이지를 물려주면 목적지가 알지 못하는 파라미터가 실린다. 목적지는 셸이 정한다(회원=주문 내역, 비회원=상품 목록 — 비회원에게는 주문 내역 화면이 없다).",
@@ -1211,6 +1385,8 @@
                 }
             ],
             "props": {
+                "pageHref": "{{_local.isGuest ? '' : (_local.claimListPath ?? '') + '?page={page}'}}",
+                "pageHrefMergeQuery": true,
                 "currentPage": "{{claims.data?.pagination?.current_page}}",
                 "totalPages": "{{claims.data?.pagination?.last_page ?? null}}",
                 "hasMorePages": "{{claims.data?.pagination?.has_more_pages ?? false}}",

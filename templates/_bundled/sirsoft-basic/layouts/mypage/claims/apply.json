@@ -176,21 +176,21 @@
                                 "children": [
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "comment": "돌아갈 곳은 들어온 곳이다 — 작성은 주문 상세, 수정은 그 신청서의 상세. 수정에서 주문 상세로 보내면 방금 고친 내용을 확인할 자리가 아니다.",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "{{route.claim_number ? ('/mypage/claims/' + route.claim_number) : ('/mypage/orders/' + (route.order_number ?? ''))}}",
                                                     "mergeQuery": true,
                                                     "query": {}
                                                 }
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
+                                            "href": "{{route.claim_number ? ('/mypage/claims/' + route.claim_number) : ('/mypage/orders/' + (route.order_number ?? ''))}}",
+                                            "mergeQuery": true,
                                             "className": "flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
                                         },
                                         "children": [

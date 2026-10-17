@@ -63,15 +63,13 @@
     <div data-ref="analytics_visitor_detail_content" class="admin-page-content-responsive-fluid">
       <div data-ref="page_header" class="flex-between flex-wrap gap-3 mb-4">
         <div class="flex-center gap-3">
-          <button data-ref="back_button" type="button" class="btn-icon" aria-label="$t:admin.analytics.visitor_detail.back">
+          <a data-ref="back_button" href="/admin/analytics/visitors" :mergeQuery="true" class="button btn-icon" aria-label="$t:admin.analytics.visitor_detail.back">
             <on type="click">
               <!-- 목록으로 — 질의를 병합해 돌아가므로 목록에서 들고 온 기간·검색어·유형·쪽이 그대로 살아난다. -->
-              <navigate path="/admin/analytics/visitors" :mergeQuery="true">
-                <query/>
-              </navigate>
+              <navigate :mergeQuery="true"><query/></navigate>
             </on>
             <icon name="arrow-left" class="text-xl"/>
-          </button>
+          </a>
           <div>
             <h1 class="page-title">$t:admin.analytics.visitor_detail.title</h1>
             <p class="text-label-subtle mt-1 font-mono break-all">{{route?.key ?? ''}}</p>

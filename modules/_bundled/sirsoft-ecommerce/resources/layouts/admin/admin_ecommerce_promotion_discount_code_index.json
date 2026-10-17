@@ -161,6 +161,7 @@
                                         ],
                                         "props": {
                                             "name": "searchField",
+                                            "aria-label": "$t:common.search_field",
                                             "className": "w-32",
                                             "value": "{{_local.searchField}}",
                                             "options": [
@@ -687,6 +688,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "text",
+                                                                    "aria-label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.benefit_amount_min",
                                                                     "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.min",
                                                                     "className": "input w-28",
                                                                     "value": "{{_local.benefitMin}}"
@@ -723,6 +725,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "text",
+                                                                    "aria-label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.benefit_amount_max",
                                                                     "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.max",
                                                                     "className": "input w-28",
                                                                     "value": "{{_local.benefitMax}}"
@@ -803,6 +806,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "text",
+                                                                            "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_discount_code.filter.created_at')}}",
                                                                             "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.start_date",
                                                                             "className": "input w-32 pl-10",
                                                                             "value": "{{_local.startDate}}"
@@ -849,6 +853,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "text",
+                                                                            "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_discount_code.filter.created_at')}}",
                                                                             "placeholder": "$t:sirsoft-ecommerce.admin.promotion_discount_code.filter.end_date",
                                                                             "className": "input w-32 pl-10",
                                                                             "value": "{{_local.endDate}}"
@@ -1038,6 +1043,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "bulkStatus",
+                                                    "aria-label": "$t:sirsoft-ecommerce.admin.promotion_discount_code.batch.status_change",
                                                     "className": "w-32",
                                                     "value": "{{_local.bulkStatus}}",
                                                     "options": [
@@ -1124,6 +1130,7 @@
                                         ],
                                         "props": {
                                             "name": "sortBy",
+                                            "aria-label": "$t:common.sort_order",
                                             "className": "w-40",
                                             "value": "{{_local.sortBy}}",
                                             "options": [
@@ -1162,6 +1169,7 @@
                                         ],
                                         "props": {
                                             "name": "perPage",
+                                            "aria-label": "$t:common.per_page",
                                             "className": "w-20",
                                             "value": "{{_local.perPage}}",
                                             "options": [
@@ -1222,6 +1230,7 @@
                                                                         "name": "Input",
                                                                         "props": {
                                                                             "type": "checkbox",
+                                                                            "aria-label": "$t:common.select_item|name=신규회원 10% 할인코",
                                                                             "className": "checkbox"
                                                                         }
                                                                     },
@@ -1466,6 +1475,7 @@
                                                                         "name": "Input",
                                                                         "props": {
                                                                             "type": "checkbox",
+                                                                            "aria-label": "$t:common.select_item|name=첫구매 5천원 할인",
                                                                             "className": "checkbox"
                                                                         }
                                                                     },
@@ -1741,6 +1751,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "checkbox",
+                                                                            "aria-label": "$t:common.select_all",
                                                                             "className": "checkbox",
                                                                             "checked": "{{_local.selectAll}}"
                                                                         }
@@ -1862,6 +1873,7 @@
                                                                         "name": "Input",
                                                                         "props": {
                                                                             "type": "checkbox",
+                                                                            "aria-label": "$t:common.select_item|name=신규회원 10% 할인코",
                                                                             "className": "checkbox"
                                                                         }
                                                                     }
@@ -1918,10 +1930,9 @@
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
-                                                                        "name": "A",
+                                                                        "name": "Span",
                                                                         "props": {
-                                                                            "href": "#",
-                                                                            "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                                                                            "className": "font-medium text-gray-900 dark:text-gray-100"
                                                                         },
                                                                         "text": "신규회원 10% 할인코"
                                                                     }
@@ -2064,6 +2075,7 @@
                                                                         "name": "Input",
                                                                         "props": {
                                                                             "type": "checkbox",
+                                                                            "aria-label": "$t:common.select_item|name=첫구매 5천원 할인",
                                                                             "className": "checkbox"
                                                                         }
                                                                     }
@@ -2120,10 +2132,9 @@
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
-                                                                        "name": "A",
+                                                                        "name": "Span",
                                                                         "props": {
-                                                                            "href": "#",
-                                                                            "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                                                                            "className": "font-medium text-gray-900 dark:text-gray-100"
                                                                         },
                                                                         "text": "첫구매 5천원 할인"
                                                                     }

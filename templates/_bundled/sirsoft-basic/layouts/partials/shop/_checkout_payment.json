@@ -374,6 +374,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.depositor_name",
                                 "type": "text",
                                 "name": "depositor_name",
                                 "value": "{{_local.depositorName ?? _local.orderer?.name ?? ''}}",
@@ -445,6 +446,7 @@
                                     ],
                                     "props": {
                                         "name": "refund_bank_code",
+                                        "aria-label": "$t:shop.checkout.bank",
                                         "value": "{{_local.refundBankCode ?? ''}}",
                                         "options": "{{[{ value: '', label: $t('shop.checkout.refund_bank_select') }, ...((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))]}}",
                                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
@@ -739,6 +741,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.depositor_name",
                                 "type": "text",
                                 "name": "depositor_name",
                                 "value": "{{_local.depositorName ?? _computed.ordererDefaults?.name ?? ''}}",
@@ -819,6 +822,7 @@
                                     ],
                                     "props": {
                                         "name": "refund_bank_code",
+                                        "aria-label": "$t:shop.checkout.bank",
                                         "value": "{{_local.refundBankCode ?? ''}}",
                                         "options": "{{[{ value: '', label: $t('shop.checkout.refund_bank_select') }, ...((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))]}}",
                                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"

@@ -422,6 +422,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "ariaLabel": "$t:sirsoft-ecommerce.admin.common_info.form.status_default",
                                                 "checked": "{{_local.form.is_default}}",
                                                 "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}"
                                             }
@@ -459,6 +460,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "ariaLabel": "$t:sirsoft-ecommerce.admin.common_info.form.status_active",
                                                 "checked": "{{_local.form.is_active}}",
                                                 "disabled": "{{_global.panelMode === 'edit' && _global.selectedItem?.abilities?.can_update !== true}}"
                                             }

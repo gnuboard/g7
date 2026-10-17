@@ -82,6 +82,7 @@
                                             ],
                                             "props": {
                                                 "name": "batchOrderStatus",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.change_status",
                                                 "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                                                 "value": "{{_local.batchOrderStatus || ''}}",
                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}",
@@ -160,6 +161,7 @@
                                             ],
                                             "props": {
                                                 "name": "batchCarrierId",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.carrier",
                                                 "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                                                 "value": "{{_local.batchCarrierId || ''}}",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.order_info.carrier",
@@ -363,6 +365,7 @@
                                 }
                             ],
                             "props": {
+                                "rowLabelField": "product_name",
                                 "data": "{{order.data?.options ?? []}}",
                                 "idField": "id",
                                 "selectable": true,
@@ -1364,12 +1367,6 @@
                                                             "event": "onItemClick",
                                                             "handler": "switch",
                                                             "cases": {
-                                                                "view_member": {
-                                                                    "handler": "openWindow",
-                                                                    "params": {
-                                                                        "path": "/admin/users/{{order.data?.user_id}}"
-                                                                    }
-                                                                },
                                                                 "search_by_orderer": {
                                                                     "comment": "주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (#75).",
                                                                     "handler": "navigate",
@@ -1394,6 +1391,8 @@
                                                         "items": [
                                                             {
                                                                 "id": "view_member",
+                                                                "href": "/admin/users/{{order.data?.user_id}}",
+                                                                "target": "_blank",
                                                                 "label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_action.view_member",
                                                                 "iconName": "user"
                                                             },
@@ -1691,7 +1690,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-error-strong block mb-1"
+                                                        "className": "ecommerce-tone-error-strong block mb-1 text-sm font-medium"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.validation_error_title"
                                                 },
@@ -1703,7 +1702,7 @@
                                                         "item_var": "errorMsg"
                                                     },
                                                     "props": {
-                                                        "className": "text-error-soft"
+                                                        "className": "ecommerce-tone-error-soft text-sm"
                                                     },
                                                     "text": "{{errorMsg}}"
                                                 }
@@ -1757,6 +1756,7 @@
                                                     ],
                                                     "props": {
                                                         "name": "recipient_country_code",
+                                                        "aria-label": "$t:sirsoft-ecommerce.common.shipping_country_label",
                                                         "value": "{{_local.form.recipient_country_code ?? order?.data?.shipping_address?.recipient_country_code ?? 'KR'}}",
                                                         "options": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code) }))}}",
                                                         "className": "w-full",
@@ -1811,6 +1811,7 @@
                                                         "className": "input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_name ? 'border border-red-500 dark:border-red-500' : ''}}",
                                                         "value": "{{_local.form.recipient_name}}",
                                                         "name": "recipient_name",
+                                                        "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.name",
                                                         "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                                     }
                                                 },
@@ -1869,6 +1870,7 @@
                                                                 "className": "input flex-1 disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_phone ? 'border border-red-500 dark:border-red-500' : ''}}",
                                                                 "value": "{{_local.form.recipient_phone}}",
                                                                 "name": "recipient_phone",
+                                                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.phone",
                                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                                             }
                                                         }
@@ -1931,6 +1933,7 @@
                                                         "className": "input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_tel ? 'border border-red-500 dark:border-red-500' : ''}}",
                                                         "value": "{{_local.form.recipient_tel}}",
                                                         "name": "recipient_tel",
+                                                        "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.tel",
                                                         "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                                     }
                                                 },
@@ -1999,6 +2002,7 @@
                                                                 "className": "{{_local.errors?.recipient_zipcode ? 'input-readonly input-error flex-1' : 'input-readonly flex-1'}}",
                                                                 "value": "{{_local.form.recipient_zipcode}}",
                                                                 "name": "recipient_zipcode",
+                                                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.zipcode",
                                                                 "readOnly": true,
                                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                                             }
@@ -2062,6 +2066,7 @@
                                                 "className": "input-readonly w-full",
                                                 "value": "{{_local.form.recipient_address ?? ''}}",
                                                 "name": "recipient_address",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address",
                                                 "readOnly": true,
                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                             }
@@ -2107,6 +2112,7 @@
                                                 "className": "input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_detail_address ? 'border border-red-500 dark:border-red-500' : ''}}",
                                                 "value": "{{_local.form.recipient_detail_address}}",
                                                 "name": "recipient_detail_address",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address_detail",
                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                             }
                                         },
@@ -2163,6 +2169,7 @@
                                                 "className": "input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.address_line_1 ? 'border border-red-500 dark:border-red-500' : ''}}",
                                                 "value": "{{_local.form.address_line_1 ?? ''}}",
                                                 "name": "address_line_1",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.intl_address1_placeholder",
                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                             }
@@ -2273,6 +2280,7 @@
                                                 "className": "input w-full textarea-sm disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.delivery_memo ? 'border border-red-500 dark:border-red-500' : ''}}",
                                                 "value": "{{_local.form.delivery_memo}}",
                                                 "name": "delivery_memo",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.delivery_message",
                                                 "disabled": "{{order?.data?.abilities?.can_update !== true}}"
                                             }
                                         },

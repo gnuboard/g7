@@ -376,22 +376,27 @@
                                     "tabs": [
                                         {
                                             "id": "collection",
+                                            "href": "/admin/analytics/settings?tab=collection",
                                             "label": "$t:admin.analytics.settings.tabs.collection"
                                         },
                                         {
                                             "id": "privacy",
+                                            "href": "/admin/analytics/settings?tab=privacy",
                                             "label": "$t:admin.analytics.settings.tabs.privacy"
                                         },
                                         {
                                             "id": "bots",
+                                            "href": "/admin/analytics/settings?tab=bots",
                                             "label": "$t:admin.analytics.settings.tabs.bots"
                                         },
                                         {
                                             "id": "retention",
+                                            "href": "/admin/analytics/settings?tab=retention",
                                             "label": "$t:admin.analytics.settings.tabs.retention"
                                         },
                                         {
                                             "id": "reports",
+                                            "href": "/admin/analytics/settings?tab=reports",
                                             "label": "$t:admin.analytics.settings.tabs.reports"
                                         }
                                     ]
@@ -1071,20 +1076,17 @@
                                                     {
                                                         "id": "consent_source_choose_link",
                                                         "type": "basic",
-                                                        "name": "Button",
+                                                        "name": "A",
                                                         "if": "{{_computed.canReadDefinitions}}",
                                                         "actions": [
                                                             {
                                                                 "type": "click",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/admin/settings?tab=privacy"
-                                                                }
+                                                                "handler": "navigate"
                                                             }
                                                         ],
                                                         "props": {
-                                                            "type": "button",
-                                                            "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                                            "href": "/admin/settings?tab=privacy",
+                                                            "className": "button text-sm text-blue-600 dark:text-blue-400 hover:underline"
                                                         },
                                                         "text": "$t:admin.analytics.settings.privacy.consent_source_choose"
                                                     }

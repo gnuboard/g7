@@ -63,7 +63,7 @@
                       <success>
                         <!-- 코어 IdentityGuardInterceptor 의 deferred resolver 가 살아있다면(launcher 미등록 폴백으로 풀페이지 진입) verify 결과 통보 -->
                         <resolve-identity-challenge result="verified" token="{{response.data.verification_token ?? ''}}"/>
-                        <navigate path="{{_local.return_url ?? '/admin'}}" :mergeQuery="true">
+                        <navigate path="{{_local.return_url}}" fallbackPath="/admin" :mergeQuery="true">
                           <query verification_token="{{response.data.verification_token ?? ''}}" challenge_id="{{_local.challenge_id}}"/>
                         </navigate>
                       </success>

@@ -306,6 +306,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:mypage.order_detail.review_modal.content_label",
                                 "value": "{{_local.reviewContent ?? ''}}",
                                 "placeholder": "$t:mypage.order_detail.review_modal.content_placeholder",
                                 "rows": 5,

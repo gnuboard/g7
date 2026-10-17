@@ -5,7 +5,7 @@
   <div data-testid="cart-item" class="flex gap-4 p-4">
     <!-- 체크박스 -->
     <div class="flex items-center">
-      <checkbox name="cart_item_{{item.id}}" checked="{{_local.selectedItems?.includes(item.id) ?? true}}" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 accent-gray-900 focus:ring-gray-500">
+      <checkbox name="cart_item_{{item.id}}" aria-label="$t:common.select_item|name={{item.product.name ?? ''}}" checked="{{_local.selectedItems?.includes(item.id) ?? true}}" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 accent-gray-900 focus:ring-gray-500">
         <on type="change">
           <!-- 선택을 바꾸면 합계가 달라지므로 전용 핸들러가 선택 목록을 갱신하고 금액을 다시 받는다 -->
           <action handler="toggleCartItemSelection" itemId="{{item.id}}" selectedItems="{{_local.selectedItems}}"/>
@@ -13,7 +13,7 @@
       </checkbox>
     </div>
     <!-- 상품 이미지 (새 창으로 열기) -->
-    <a href="{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}" target="_blank" class="flex-shrink-0">
+    <a href="{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}" target="_blank" rel="noopener" class="flex-shrink-0">
       <div class="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
         <img data-if="{{item.product.thumbnail_url}}" src="{{item.product.thumbnail_url}}" alt="{{item.product.name}}" class="w-full h-full object-cover"/>
         <div data-if="{{!item.product.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
@@ -24,7 +24,7 @@
     <!-- 상품 정보 -->
     <div class="flex-1 min-w-0">
       <!-- 상품명 (새 창으로 열기) -->
-      <a href="{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}" target="_blank" class="block w-full text-left no-underline">
+      <a href="{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}" target="_blank" rel="noopener" class="block w-full text-left no-underline">
         <h3 class="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 truncate">{{item.product.name}}</h3>
       </a>
       <!-- 상품 옵션 값 (옵션이 있을 때만 표시) -->

@@ -240,7 +240,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-error font-medium"
+                                                            "className": "ecommerce-tone-error font-medium"
                                                         },
                                                         "text": "2025-10-27 16:50:10"
                                                     }
@@ -359,9 +359,8 @@
                                     },
                                     {
                                         "type": "basic",
-                                        "name": "A",
+                                        "name": "Span",
                                         "props": {
-                                            "href": "#",
                                             "className": "flex-center text-sm text-blue-600 dark:text-blue-400 hover:underline gap-1"
                                         },
                                         "children": [
@@ -402,7 +401,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-warning-soft"
+                                            "className": "ecommerce-tone-warning-soft text-xs"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.status_message.pending"
                                     }
@@ -501,9 +500,8 @@
                                                         "children": [
                                                             {
                                                                 "type": "basic",
-                                                                "name": "A",
+                                                                "name": "Span",
                                                                 "props": {
-                                                                    "href": "#",
                                                                     "className": "text-blue-600 dark:text-blue-400 hover:underline"
                                                                 },
                                                                 "text": "user005"
@@ -651,9 +649,8 @@
                                                         "children": [
                                                             {
                                                                 "type": "basic",
-                                                                "name": "A",
+                                                                "name": "Span",
                                                                 "props": {
-                                                                    "href": "#",
                                                                     "className": "text-blue-600 dark:text-blue-400 hover:underline"
                                                                 },
                                                                 "text": "ORD20251028-5678"
@@ -775,6 +772,7 @@
                                                     "type": "text",
                                                     "className": "input-readonly flex-1",
                                                     "value": "https://pay.example.com/pp-jk1789mno123pqr456",
+                                                    "aria-label": "$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.title",
                                                     "readOnly": true
                                                 }
                                             },
@@ -994,6 +992,7 @@
                                                         "props": {
                                                             "className": "w-40",
                                                             "value": "{{_local.logSortBy}}",
+                                                            "aria-label": "$t:sirsoft-ecommerce.admin.personal_payment_detail.log.sort",
                                                             "options": [
                                                                 {
                                                                     "value": "latest",
@@ -1029,6 +1028,7 @@
                                                         "props": {
                                                             "className": "w-20",
                                                             "value": "{{_local.logPerPage}}",
+                                                            "aria-label": "$t:sirsoft-ecommerce.admin.personal_payment_detail.log.per_page",
                                                             "options": [
                                                                 {
                                                                     "value": 10,

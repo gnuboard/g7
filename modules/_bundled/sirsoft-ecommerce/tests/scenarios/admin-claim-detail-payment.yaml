@@ -201,9 +201,11 @@ notes: |
   안내를 두지 않으면 카드가 통째로 사라져 운영자가 "아직 안 불러왔다" 와 "결제 건이 없다" 를
   구분할 수 없다.
 
-  **브라우저 실측의 선행 조건**은 S9a 와 같다 — `playwright:seed-ecommerce` 의 클레임 축이
-  아직 stub 이라(계획서 이월 4) spec 은 목록 API 로 신청서를 발견해 진행하고, 한 건도 없으면
-  그 사실을 드러내며 건너뛴다.
+  **브라우저 실측의 선행 조건**은 S9a 와 같다 — 유형만 맞으면 되는 시험은 목록 API 로 운영
+  신청서를 발견해 진행하고, 한 건도 없으면 그 사실을 드러내며 건너뛴다. 계좌가 빈 승인
+  환불신청서가 있어야 끝까지 재는 확인 창 계좌 칸 시험(`refund_modal_account_rows_follow_selected_method`)은
+  워커 단위 fixture `claimDetailSeed`(`playwright:seed-claim-detail --tag`)가 그 신청서를
+  세운다(#757).
 
 validation:
   audit_rule: frontend-change-requires-e2e

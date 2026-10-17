@@ -8,6 +8,12 @@ import { Checkbox } from '../basic/Checkbox';
 import type { EditorAttrs } from '../../types';
 import { HighlightText } from '../shared/HighlightText';
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
 /**
  * 카테고리 노드 인터페이스 (CategoryResource API 응답 기반)
  */
@@ -205,6 +211,8 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
               }}
               className="flex-shrink-0"
               data-testid={`checkbox-${node.id}`}
+              // 이름 — 종전에는 「체크박스」만 읽혔다(쿠폰·상품 분류 선택, #757)
+              aria-label={tOr('common.select_item', `Select ${displayName}`, { name: displayName })}
             />
           )}
 

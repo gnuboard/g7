@@ -101,7 +101,8 @@ describe('비즈뿌리오 확장 abilities (#12·N6)', () => {
    */
   it('[설정하기] 노드 권한', () => {
     for (const tree of [tabCore, tabBoard, tabEcommerce]) {
-      const buttons = collect(tree, (n) => n.name === 'Button' && JSON.stringify(n).includes('/admin/plugins/sirsoft-message_bizppurio/settings'));
+      // 바로가기는 링크(#757 — 새 탭으로 열 수 있게 A 로 바꿈). 권한 게이트는 노드에 그대로 걸린다
+      const buttons = collect(tree, (n) => (n.name === 'Button' || n.name === 'A') && JSON.stringify(n).includes('/admin/plugins/sirsoft-message_bizppurio/settings'));
       expect(buttons.length).toBeGreaterThan(0);
       buttons.forEach((b) => expect(b.permissions).toEqual(['core.plugins.update']));
     }

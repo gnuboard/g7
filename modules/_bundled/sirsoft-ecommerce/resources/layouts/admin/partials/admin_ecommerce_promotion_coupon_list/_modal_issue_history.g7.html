@@ -25,7 +25,7 @@
           </button>
         </badge>
       </div>
-      <select name="issueHistoryPerPage" class="w-20" value="{{String(_global.issueHistoryPerPage || 10)}}">
+      <select name="issueHistoryPerPage" aria-label="$t:common.per_page" class="w-20" value="{{String(_global.issueHistoryPerPage || 10)}}">
         <options>
           <option value="10">10</option>
           <option value="20">20</option>
@@ -54,7 +54,7 @@
             </div>
             <action-menu data-type="composite" triggerLabel="" triggerIconName="ellipsis-vertical" position="right" class="opacity-0 group-hover:opacity-100">
               <prop name="items">
-                <item id="view_member" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member" iconName="user"/>
+                <item id="view_member" href="/admin/users/{{row.user_id}}" label="$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member" iconName="user"/>
                 <item id="filter_by_user" label="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.action.filter_by_user" iconName="filter"/>
               </prop>
               <on event="onItemClick">

@@ -18,12 +18,14 @@ describe('ChipCheckbox', () => {
      * @scenario component=chip_checkbox
      * @effects chip_checkbox_renders_label_icon_and_hidden_input, chip_checkbox_contract_with_decorative_icon
      */
-    it('체크박스 input이 hidden으로 렌더링되어야 함', () => {
+    it('체크박스 input이 화면에서만 숨겨져(sr-only) 키보드·낭독기에는 남아야 함', () => {
       const { container } = render(<ChipCheckbox value="test" label="테스트" />);
 
       const checkbox = container.querySelector('input[type="checkbox"]');
       expect(checkbox).toBeInTheDocument();
-      expect(checkbox).toHaveClass('hidden');
+      // display:none(hidden)이면 Tab 으로 닿지 않고 낭독기에도 없다(#757)
+      expect(checkbox).toHaveClass('sr-only');
+      expect(checkbox).not.toHaveClass('hidden');
     });
 
     /**

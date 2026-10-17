@@ -285,6 +285,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "{{group.name_localized ?? group.name}}",
                                                 "className": "{{$parent._local.optionErrors?.product_option_id ? 'w-full border-red-500 focus:ring-red-500 focus:border-red-500' : 'w-full'}}",
                                                 "value": "{{$parent._local.selectedOptions?.[group.name_localized] ?? ''}}",
                                                 "placeholder": "$t:shop.select",
@@ -380,6 +381,7 @@
                                             ],
                                             "props": {
                                                 "data-testid": "modal-add-option-{{addGroup.id}}",
+                                                "aria-label": "{{addGroup.name}}",
                                                 "className": "w-full",
                                                 "value": "{{$parent._local.additionalSelections?.[addGroup.id] ?? ''}}",
                                                 "placeholder": "$t:shop.additional_option_placeholder",
@@ -418,6 +420,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.row_cell|row={{addGroup.name ?? ''}}|column={{$t('shop.additional_option_custom_text_label')}}",
                                                         "type": "text",
                                                         "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500",
                                                         "value": "{{$parent._local.additionalCustomTexts?.[addGroup.id] ?? ''}}",

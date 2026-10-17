@@ -36,7 +36,9 @@
       "1_month": "1 Month",
       "3_months": "3 Months",
       "all": "All"
-    }
+    },
+    "benefit_amount_min": "Minimum benefit amount",
+    "benefit_amount_max": "Maximum benefit amount"
   },
   "benefit_type": {
     "all": "All",

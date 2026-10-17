@@ -1,5 +1,5 @@
 // e2e:allow커스텀 드롭다운 루트 props spread 타입 안전 캐스팅(admin 동기). 단위 회귀는 Select.test.tsx.
-import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { Div } from './Div';
 import { Button } from './Button';
@@ -95,6 +95,8 @@ export const Select: React.FC<SelectProps> = ({
   searchable = false,
   searchPlaceholder,
   editorAttrs,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
   ...props
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -104,6 +106,12 @@ export const Select: React.FC<SelectProps> = ({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // 목록형 단추 이름 — 「{이름} {현재 값}」. 종전에는 aria-label·aria-labelledby 가 단추가 아니라 바깥 상자에
+  // 붙어 읽히지 않았고 고른 값만 단추 이름이 됐다(#757). 숨은 이름 span + 값 span 을 단추에 잇는다(관리자 템플릿과 같은 계약).
+  const domId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
+  const nameId = `${domId}-name`;
+  const valueId = `${domId}-value`;
 
   // options를 SelectOption[] 형식으로 정규화
   const normalizedOptions = useMemo((): SelectOption[] | null => {
@@ -136,6 +144,22 @@ export const Select: React.FC<SelectProps> = ({
     const selected = normalizedOptions.find(opt => String(opt.value) === String(value));
     return selected?.label || '';
   }, [normalizedOptions, value]);
+
+  // 고른 값이 없으면 값 자리를 잇지 않는다 — 이름만 읽힌다. 빈 값 자리표시 선택지(`{ value: '', label: '사이즈 선택' }`)도
+  // 고른 값이 아니다 — disabled 이거나 글자가 이름으로 시작하면 잇지 않는다(이으면 「사이즈 사이즈 선택」처럼 겹친다).
+  // 「전체 카테고리」처럼 뜻 있는 빈 값은 그대로 잇는다(관리자 템플릿 Select 와 같은 판정).
+  const selectedOption = normalizedOptions?.find((opt) => String(opt.value) === String(value));
+  const isPlaceholderOption =
+    !!selectedOption &&
+    String(selectedOption.value) === '' &&
+    (!!selectedOption.disabled ||
+      (!!ariaLabel && selectedOption.label.trim().startsWith(String(ariaLabel).trim())));
+  const valuePart = selectedLabel && !isPlaceholderOption ? ` ${valueId}` : '';
+  const buttonLabelledBy = ariaLabel
+    ? `${nameId}${valuePart}`
+    : ariaLabelledBy
+      ? `${ariaLabelledBy}${valuePart}`
+      : undefined;
 
   // searchable 모드에서 검색어로 필터링된 옵션
   const visibleOptions = useMemo((): SelectOption[] | null => {
@@ -265,6 +289,8 @@ export const Select: React.FC<SelectProps> = ({
         value={value}
         onChange={onChange as React.ChangeEventHandler<HTMLSelectElement>}
         disabled={disabled}
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
         {...editorAttrs}
         {...props}
       >
@@ -288,6 +314,11 @@ export const Select: React.FC<SelectProps> = ({
 
   return (
     <Div ref={containerRef} className="relative" {...rootDomProps}>
+      {ariaLabel && (
+        <Span id={nameId} className="sr-only">
+          {ariaLabel}
+        </Span>
+      )}
       <Button
         ref={buttonRef}
         type="button"
@@ -296,8 +327,9 @@ export const Select: React.FC<SelectProps> = ({
         className={`${baseButtonClass} flex items-center justify-between gap-2 text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        aria-labelledby={buttonLabelledBy}
       >
-        <Span className="truncate">{selectedLabel || '\u00A0'}</Span>
+        <Span id={valueId} className="truncate">{selectedLabel || '\u00A0'}</Span>
         <Svg
           className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"

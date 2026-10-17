@@ -207,7 +207,7 @@
                             }
                         ],
                         "props": {
-                            "tabs": "{{[{id: '', label: '$t:admin.notification_log.tab_all'}].concat((notificationChannels?.data?.channels ?? []).map(ch => ({id: ch.id, label: (ch.name ?? ch.id) + (ch.source && ch.source !== 'core' ? ' (' + (ch.source_label ?? ch.source) + ')' : ''), iconName: ch.icon})))}}",
+                            "tabs": "{{[{id: '', label: '$t:admin.notification_log.tab_all', href: '/admin/notification-logs'}].concat((notificationChannels?.data?.channels ?? []).map(ch => ({id: ch.id, label: (ch.name ?? ch.id) + (ch.source && ch.source !== 'core' ? ' (' + (ch.source_label ?? ch.source) + ')' : ''), iconName: ch.icon, href: '/admin/notification-logs?channel=' + encodeURIComponent(ch.id) + '&page=1'})))}}",
                             "activeTabId": "{{query.channel ?? ''}}",
                             "variant": "default",
                             "className": "sticky-tab-nav mb-6"
@@ -291,6 +291,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "sortBy",
+                                                    "aria-label": "$t:common.sort_order",
                                                     "className": "w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                                     "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'sent_at_desc'}}",
                                                     "options": [
@@ -335,6 +336,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "perPage",
+                                                    "aria-label": "$t:common.per_page",
                                                     "className": "w-20 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                                     "value": "{{query.per_page || '20'}}",
                                                     "options": [

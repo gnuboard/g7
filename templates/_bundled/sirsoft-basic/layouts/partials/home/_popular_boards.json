@@ -47,17 +47,15 @@
             "children": [
                 {
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/board/{{board.slug}}"
-                            }
+                            "handler": "navigate"
                         }
                     ],
                     "props": {
+                        "href": "/board/{{board.slug}}",
                         "className": "w-full text-left flex items-center justify-between py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors cursor-pointer"
                     },
                     "children": [

@@ -3,6 +3,7 @@ import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
+import { handleLinkClick, mergeQueryIntoHref } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -44,6 +45,13 @@ export interface PaginationProps {
    * `totalPages` 가 null 일 때만 쓰인다 — 아래 `canGoNext` 주석 참조.
    */
   hasMorePages?: boolean;
+  /**
+   * 페이지 주소 틀 — `{page}` 자리에 번호를 넣는다(예: `/board/free?page={page}`). 주면 번호·이전·다음·처음·끝이
+   * `<a href>` 가 되어 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다. 보통 클릭은 지금처럼 onPageChange(#757).
+   */
+  pageHref?: string;
+  /** 페이지 주소에 현재 주소의 쿼리(검색·정렬 조건)를 합친다 — 새 탭도 같은 목록 조건으로 열린다 */
+  pageHrefMergeQuery?: boolean;
   className?: string;
   style?: React.CSSProperties;
   prevText?: string;
@@ -80,6 +88,8 @@ export const Pagination: React.FC<PaginationProps> = ({
   currentPage,
   totalPages,
   onPageChange,
+  pageHref,
+  pageHrefMergeQuery = false,
   maxVisiblePages = 5,
   showFirstLast = true,
   showFirst,
@@ -196,6 +206,78 @@ export const Pagination: React.FC<PaginationProps> = ({
     }
   };
 
+  /** 페이지 번호의 주소 — pageHref 가 없으면 undefined(단추로 그린다) */
+  const hrefFor = (page: number): string | undefined => {
+    if (!pageHref) return undefined;
+    const raw = pageHref.split('{page}').join(String(page));
+    return pageHrefMergeQuery ? mergeQueryIntoHref(raw) : raw;
+  };
+
+  /** Button 과 같은 기본 꾸밈 — 링크로 그려도 겉모습이 같게 한다 */
+  const linkClass = (className: string): string => {
+    const base = 'inline-flex items-center justify-center';
+    // `<a>` 에는 :disabled 가 없으므로 비활성 꾸밈은 aria-disabled 변형으로
+    const cls = className.replace(/\bdisabled:/g, 'aria-disabled:');
+    const merge = (window as any).G7Core?.style?.mergeClasses;
+    return typeof merge === 'function' ? merge(base, cls) : `${base} ${cls}`;
+  };
+
+  /**
+   * 페이지 조작 하나 — pageHref 가 있으면 링크(갈 수 없으면 href 없는 aria-disabled 링크), 없으면 종전 단추.
+   */
+  const renderControl = (opts: {
+    key?: React.Key;
+    page: number;
+    disabled?: boolean;
+    className: string;
+    ariaLabel: string;
+    ariaCurrent?: 'page';
+    onActivate: () => void;
+    children: React.ReactNode;
+  }): React.ReactNode => {
+    if (!pageHref) {
+      return (
+        <Button
+          key={opts.key}
+          onClick={opts.onActivate}
+          disabled={opts.disabled}
+          className={opts.className}
+          aria-label={opts.ariaLabel}
+          aria-current={opts.ariaCurrent}
+        >
+          {opts.children}
+        </Button>
+      );
+    }
+    if (opts.disabled) {
+      return (
+        <a
+          key={opts.key}
+          role="link"
+          aria-disabled="true"
+          tabIndex={-1}
+          className={linkClass(opts.className)}
+          aria-label={opts.ariaLabel}
+          onClick={(event) => event.preventDefault()}
+        >
+          {opts.children}
+        </a>
+      );
+    }
+    return (
+      <a
+        key={opts.key}
+        href={hrefFor(opts.page)}
+        className={linkClass(opts.className)}
+        aria-label={opts.ariaLabel}
+        aria-current={opts.ariaCurrent}
+        onClick={(event) => handleLinkClick(event, opts.onActivate)}
+      >
+        {opts.children}
+      </a>
+    );
+  };
+
   return (
     <Div
       // flex-wrap·max-w-full: 좁은 화면(390px)에서 버튼이 칸보다 많으면 줄을 바꿔 문서가 가로로 밀리지 않게 한다 (7.1.0 실측 O-K3T-4)
@@ -207,26 +289,26 @@ export const Pagination: React.FC<PaginationProps> = ({
     >
       {/* First Button */}
       {displayFirst && (
-        <Button
-          onClick={() => handlePageClick(1)}
-          disabled={currentPage === 1}
-          // 좁은 화면에서는 숨긴다 — 번호 목록이 첫 쪽을 늘 품고 있어 갈 수 있는 쪽이 줄지 않는다
-          className="hidden sm:inline-block px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
-          aria-label={t('common.first_page')}
-        >
-          &#171;
-        </Button>
+        // 좁은 화면에서는 숨긴다 — 번호 목록이 첫 쪽을 늘 품고 있어 갈 수 있는 쪽이 줄지 않는다
+        renderControl({
+          page: 1,
+          onActivate: () => handlePageClick(1),
+          disabled: currentPage === 1,
+          className: 'hidden sm:inline-block px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800',
+          ariaLabel: t('common.first_page'),
+          children: <>&#171;</>,
+        })
       )}
 
       {/* Previous Button */}
-      <Button
-        onClick={handlePrevious}
-        disabled={currentPage === 1}
-        className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
-        aria-label={t('common.prev_page')}
-      >
-        {prevText || <>&#8249;</>}
-      </Button>
+      {renderControl({
+        page: currentPage - 1,
+        onActivate: handlePrevious,
+        disabled: currentPage === 1,
+        className: 'px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800',
+        ariaLabel: t('common.prev_page'),
+        children: prevText || <>&#8249;</>,
+      })}
 
       {/* Page Numbers — 마지막 페이지를 모르면 아는 범위까지만 표시 */}
       <Div className="flex flex-wrap items-center gap-1">
@@ -245,45 +327,43 @@ export const Pagination: React.FC<PaginationProps> = ({
           const pageNum = page as number;
           const isActive = pageNum === currentPage;
 
-          return (
-            <Button
-              key={pageNum}
-              onClick={() => handlePageClick(pageNum)}
-              className={`px-3 py-1 text-sm border rounded ${
-                isActive
-                  ? 'bg-blue-500 dark:bg-blue-600 text-white border-blue-500 dark:border-blue-600'
-                  : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800'
-              }`}
-              aria-label={t('common.page_n', { n: pageNum })}
-              aria-current={isActive ? 'page' : undefined}
-            >
-              {pageNum}
-            </Button>
-          );
+          return renderControl({
+            key: pageNum,
+            page: pageNum,
+            onActivate: () => handlePageClick(pageNum),
+            className: `px-3 py-1 text-sm border rounded ${
+              isActive
+                ? 'bg-blue-500 dark:bg-blue-600 text-white border-blue-500 dark:border-blue-600'
+                : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800'
+            }`,
+            ariaLabel: t('common.page_n', { n: pageNum }),
+            ariaCurrent: isActive ? 'page' : undefined,
+            children: pageNum,
+          });
         })}
       </Div>
 
       {/* Next Button */}
-      <Button
-        onClick={handleNext}
-        disabled={!canGoNext}
-        className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
-        aria-label={t('common.next_page')}
-      >
-        {nextText || <>&#8250;</>}
-      </Button>
+      {renderControl({
+        page: currentPage + 1,
+        onActivate: handleNext,
+        disabled: !canGoNext,
+        className: 'px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800',
+        ariaLabel: t('common.next_page'),
+        children: nextText || <>&#8250;</>,
+      })}
 
       {/* Last Button */}
       {displayLast && (
-        <Button
-          onClick={() => handlePageClick(resolvedTotalPages)}
-          disabled={currentPage === resolvedTotalPages}
-          // 좁은 화면에서는 숨긴다 — 번호 목록이 마지막 쪽을 늘 품고 있다
-          className="hidden sm:inline-block px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
-          aria-label={t('common.last_page')}
-        >
-          &#187;
-        </Button>
+        // 좁은 화면에서는 숨긴다 — 번호 목록이 마지막 쪽을 늘 품고 있다
+        renderControl({
+          page: resolvedTotalPages,
+          onActivate: () => handlePageClick(resolvedTotalPages),
+          disabled: currentPage === resolvedTotalPages,
+          className: 'hidden sm:inline-block px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800',
+          ariaLabel: t('common.last_page'),
+          children: <>&#187;</>,
+        })
       )}
     </Div>
   );

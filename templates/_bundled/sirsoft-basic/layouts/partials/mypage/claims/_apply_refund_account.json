@@ -136,6 +136,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:shop.checkout.bank",
                         "value": "{{_local.claimRefundBankCode ?? ''}}",
                         "options": "{{[{ value: '', label: $t('claim.apply.refund_account_bank_select') }, ...(((_local.claimableSnapshot ?? claimable?.data)?.refund_account?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))]}}",
                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"

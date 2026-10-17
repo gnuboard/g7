@@ -94,7 +94,7 @@
       <div data-ref="filter_section" class="admin-card mb-6">
         <div data-ref="search_row" class="mb-4">
           <div class="flex-center gap-2">
-            <select name="searchType" class="w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" value="{{_local.filter.searchType || 'email'}}">
+            <select name="searchType" aria-label="$t:common.search_field" class="w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" value="{{_local.filter.searchType || 'email'}}">
               <options>
                 <option value="email">$t:sirsoft-gdpr.admin.consent_log.search_type.email</option>
                 <option value="session_id">$t:sirsoft-gdpr.admin.consent_log.search_type.session_id</option>
@@ -343,7 +343,7 @@
           </div>
         </div>
       </div>
-      <data-grid data-type="composite" data-ref="gdpr_consent_log_datagrid" data="{{gdprConsentLog?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{gdprConsentLog?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{gdprConsentLog?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{gdprConsentLog?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" :expandable="true" emptyMessage="$t:sirsoft-gdpr.admin.consent_log.empty">
+      <data-grid :pageHrefMergeQuery="true" pageHref="/admin/plugins/sirsoft-gdpr/consent-log?page={page}" data-type="composite" data-ref="gdpr_consent_log_datagrid" data="{{gdprConsentLog?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{gdprConsentLog?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{gdprConsentLog?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{gdprConsentLog?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" :expandable="true" emptyMessage="$t:sirsoft-gdpr.admin.consent_log.empty">
         <blur-until-loaded sources="gdprConsentLog"/>
         <expand>
           <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-3">
@@ -378,12 +378,12 @@
         <column field="subject" header="$t:sirsoft-gdpr.admin.consent_log.col.subject" :sortable="false" width="260px">
           <cell>
             <!-- 회원 row 의 이름·이메일 클릭 시 회원 상세 페이지로 이동 (검토 #26). DPO 가 이상 패턴 발견 시 즉시 회원 상세 조회 가능. 게스트 row 는 user_id 가 없어 분기가 다름. -->
-            <button data-if="{{!!row.user_id}}" type="button" title="$t:sirsoft-gdpr.admin.consent_log.view_member_tooltip" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 hover:underline cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
+            <a href="/admin/users/{{row.user.uuid}}" data-if="{{!!row.user_id}}" title="$t:sirsoft-gdpr.admin.consent_log.view_member_tooltip" class="button inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 hover:underline cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
               <on type="click">
-                <navigate path="/admin/users/{{row.user.uuid}}"/>
+                <navigate/>
               </on>
               <span>{{(row.user?.name ?? '') + ' (' + (row.user?.email ?? '') + ')'}}</span>
-            </button>
+            </a>
             <span data-if="{{!row.user_id}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 font-mono">{{$t('sirsoft-gdpr.admin.consent_log.guest_label') + ' ' + (row.session_id ? row.session_id.substring(0, 8) + '…' : '-')}}</span>
           </cell>
         </column>

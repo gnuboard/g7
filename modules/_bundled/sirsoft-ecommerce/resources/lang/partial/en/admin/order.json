@@ -892,7 +892,8 @@
     "submit": "File",
     "success": "Filed on behalf of the customer.",
     "error": "Could not file the request.",
-    "reason_required": "Select a reason."
+    "reason_required": "Select a reason.",
+    "exchange_option_label": "Exchange option"
   },
   "manual_paid": {
     "title": "Payment processing items",

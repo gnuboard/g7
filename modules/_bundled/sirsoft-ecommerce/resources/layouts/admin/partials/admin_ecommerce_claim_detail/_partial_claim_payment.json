@@ -838,6 +838,7 @@
                                             ],
                                             "props": {
                                                 "name": "claimShippingFee",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.claim_shipping_fee_exchange",
                                                 "type": "number",
                                                 "min": 0,
                                                 "step": "any",
@@ -881,6 +882,7 @@
                                             ],
                                             "props": {
                                                 "name": "claimShippingFee",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.claim_shipping_fee_return",
                                                 "type": "number",
                                                 "min": 0,
                                                 "step": "any",
@@ -992,6 +994,7 @@
                                             ],
                                             "props": {
                                                 "name": "chargeMethod",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.charge_method",
                                                 "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                                                 "value": "{{_local.chargeMethod ?? ''}}",
                                                 "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true}}",
@@ -1479,18 +1482,10 @@
                                                     "id": "cst_014_linked_refund_link_{{lrIdx}}",
                                                     "type": "basic",
                                                     "name": "A",
-                                                    "actions": [
-                                                        {
-                                                            "comment": "후속 환불신청서를 새 창으로 연다",
-                                                            "type": "click",
-                                                            "handler": "openWindow",
-                                                            "params": {
-                                                                "path": "{{linkedRefund.detail_url}}"
-                                                            }
-                                                        }
-                                                    ],
                                                     "props": {
-                                                        "href": "#",
+                                                        "href": "{{linkedRefund.detail_url}}",
+                                                        "target": "_blank",
+                                                        "rel": "noopener noreferrer",
                                                         "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                                     },
                                                     "text": "{{linkedRefund.claim_number}}"
@@ -2095,6 +2090,7 @@
                                                             ],
                                                             "props": {
                                                                 "name": "refundAmount",
+                                                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.cash_amount",
                                                                 "type": "number",
                                                                 "min": 0,
                                                                 "step": "any",
@@ -2182,6 +2178,7 @@
                                                             ],
                                                             "props": {
                                                                 "name": "refundPointsAmount",
+                                                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_amount",
                                                                 "type": "number",
                                                                 "min": 0,
                                                                 "step": "any",
@@ -2220,6 +2217,10 @@
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "props": {
+                                                "role": "radiogroup",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method"
+                                            },
                                             "children": [
                                                 {
                                                     "type": "basic",

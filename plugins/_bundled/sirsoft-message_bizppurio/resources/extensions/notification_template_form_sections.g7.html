@@ -433,13 +433,13 @@
           </div>
           <p class="text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-message_bizppurio.template.form.item_list_hint</p>
           <div data-each="itm, itmIdx in {{_global.bz_tpl_modal?.content?.templateItem?.list ?? []}}" class="flex items-center gap-1.5">
-            <input class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" :maxLength="6" placeholder="$t:sirsoft-message_bizppurio.template.form.item_title" value="{{itm.title ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
+            <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: itmIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.item_title')}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" :maxLength="6" placeholder="$t:sirsoft-message_bizppurio.template.form.item_title" value="{{itm.title ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
               <on type="change">
                 <!-- 아이템 행 제목 — 해당 인덱스만 바꾼 새 배열로 content.templateItem.list 를 교체한다. -->
                 <set-state target="global" bz_tpl_modal.content.templateItem="{{Object.assign({}, _global.bz_tpl_modal?.content?.templateItem ?? {}, {list: (_global.bz_tpl_modal?.content?.templateItem?.list ?? []).map((r, i) => i === itmIdx ? Object.assign({}, r, {title: $event.target.value}) : r)})}}"/>
               </on>
             </input>
-            <input class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" :maxLength="23" placeholder="$t:sirsoft-message_bizppurio.template.form.item_description" value="{{itm.description ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
+            <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: itmIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.item_description')}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" :maxLength="23" placeholder="$t:sirsoft-message_bizppurio.template.form.item_description" value="{{itm.description ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
               <on type="change">
                 <!-- 아이템 행 설명 — 해당 인덱스만 바꾼 새 배열로 content.templateItem.list 를 교체한다. -->
                 <set-state target="global" bz_tpl_modal.content.templateItem="{{Object.assign({}, _global.bz_tpl_modal?.content?.templateItem ?? {}, {list: (_global.bz_tpl_modal?.content?.templateItem?.list ?? []).map((r, i) => i === itmIdx ? Object.assign({}, r, {description: $event.target.value}) : r)})}}"/>
@@ -531,7 +531,7 @@
                   <set-state target="global" bz_tpl_modal.content.buttons="{{(_global.bz_tpl_modal?.content?.buttons ?? []).map((b, i) => i === buttonsIdx ? Object.assign({}, b, {linkType: $event.target.value}) : b)}}"/>
                 </on>
               </select>
-              <input class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.button_name" value="{{buttonsItem.name ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
+              <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.button_name')}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.button_name" value="{{buttonsItem.name ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
                 <on type="change">
                   <!-- 버튼 이름 — 해당 인덱스 버튼만 바꾼 새 배열로 content.buttons 를 교체한다. -->
                   <set-state target="global" bz_tpl_modal.content.buttons="{{(_global.bz_tpl_modal?.content?.buttons ?? []).map((b, i) => i === buttonsIdx ? Object.assign({}, b, {name: $event.target.value}) : b)}}"/>
@@ -546,37 +546,37 @@
               </button>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-              <input data-if="{{buttonsItem.linkType === 'WL'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_mo" value="{{buttonsItem.linkMo ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
+              <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_mo')}}" data-if="{{buttonsItem.linkType === 'WL'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_mo" value="{{buttonsItem.linkMo ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
                 <on type="change">
                   <!-- 버튼 모바일 웹 링크(linkMo) — 해당 인덱스 버튼만 바꾼 새 배열로 교체한다. -->
                   <set-state target="global" bz_tpl_modal.content.buttons="{{(_global.bz_tpl_modal?.content?.buttons ?? []).map((b, i) => i === buttonsIdx ? Object.assign({}, b, {linkMo: $event.target.value}) : b)}}"/>
                 </on>
               </input>
-              <input data-if="{{buttonsItem.linkType === 'WL'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_pc" value="{{buttonsItem.linkPc ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
+              <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_pc')}}" data-if="{{buttonsItem.linkType === 'WL'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_pc" value="{{buttonsItem.linkPc ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
                 <on type="change">
                   <!-- 버튼 PC 웹 링크(linkPc) — 해당 인덱스 버튼만 바꾼 새 배열로 교체한다. -->
                   <set-state target="global" bz_tpl_modal.content.buttons="{{(_global.bz_tpl_modal?.content?.buttons ?? []).map((b, i) => i === buttonsIdx ? Object.assign({}, b, {linkPc: $event.target.value}) : b)}}"/>
                 </on>
               </input>
-              <input data-if="{{buttonsItem.linkType === 'AL'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_and" value="{{buttonsItem.linkAnd ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
+              <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_and')}}" data-if="{{buttonsItem.linkType === 'AL'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_and" value="{{buttonsItem.linkAnd ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
                 <on type="change">
                   <!-- 버튼 안드로이드 앱 링크(linkAnd) — 해당 인덱스 버튼만 바꾼 새 배열로 교체한다. -->
                   <set-state target="global" bz_tpl_modal.content.buttons="{{(_global.bz_tpl_modal?.content?.buttons ?? []).map((b, i) => i === buttonsIdx ? Object.assign({}, b, {linkAnd: $event.target.value}) : b)}}"/>
                 </on>
               </input>
-              <input data-if="{{buttonsItem.linkType === 'AL'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_ios" value="{{buttonsItem.linkIos ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
+              <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_ios')}}" data-if="{{buttonsItem.linkType === 'AL'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_ios" value="{{buttonsItem.linkIos ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
                 <on type="change">
                   <!-- 버튼 iOS 앱 링크(linkIos) — 해당 인덱스 버튼만 바꾼 새 배열로 교체한다. -->
                   <set-state target="global" bz_tpl_modal.content.buttons="{{(_global.bz_tpl_modal?.content?.buttons ?? []).map((b, i) => i === buttonsIdx ? Object.assign({}, b, {linkIos: $event.target.value}) : b)}}"/>
                 </on>
               </input>
-              <input data-if="{{buttonsItem.linkType === 'TN'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.tel_number" value="{{buttonsItem.telNumber ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
+              <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.tel_number')}}" data-if="{{buttonsItem.linkType === 'TN'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.tel_number" value="{{buttonsItem.telNumber ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
                 <on type="change">
                   <!-- 버튼 전화번호(telNumber, 전화걸기 유형) — 해당 인덱스 버튼만 바꾼 새 배열로 교체한다. -->
                   <set-state target="global" bz_tpl_modal.content.buttons="{{(_global.bz_tpl_modal?.content?.buttons ?? []).map((b, i) => i === buttonsIdx ? Object.assign({}, b, {telNumber: $event.target.value}) : b)}}"/>
                 </on>
               </input>
-              <input data-if="{{buttonsItem.linkType === 'P1' || buttonsItem.linkType === 'P2' || buttonsItem.linkType === 'P3'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.plugin_id" value="{{buttonsItem.pluginId ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
+              <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.plugin_id')}}" data-if="{{buttonsItem.linkType === 'P1' || buttonsItem.linkType === 'P2' || buttonsItem.linkType === 'P3'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.plugin_id" value="{{buttonsItem.pluginId ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
                 <on type="change">
                   <!-- 버튼 플러그인 ID(pluginId, 카카오 플러그인 유형) — 해당 인덱스 버튼만 바꾼 새 배열로 교체한다. -->
                   <set-state target="global" bz_tpl_modal.content.buttons="{{(_global.bz_tpl_modal?.content?.buttons ?? []).map((b, i) => i === buttonsIdx ? Object.assign({}, b, {pluginId: $event.target.value}) : b)}}"/>
@@ -604,7 +604,7 @@
                   <set-state target="global" bz_tpl_modal.content.quickReplies="{{(_global.bz_tpl_modal?.content?.quickReplies ?? []).map((b, i) => i === quickRepliesIdx ? Object.assign({}, b, {linkType: $event.target.value}) : b)}}"/>
                 </on>
               </select>
-              <input class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.button_name" value="{{quickRepliesItem.name ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
+              <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.button_name')}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.button_name" value="{{quickRepliesItem.name ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
                 <on type="change">
                   <!-- 바로연결 이름 — 해당 인덱스 항목만 바꾼 새 배열로 content.quickReplies 를 교체한다. -->
                   <set-state target="global" bz_tpl_modal.content.quickReplies="{{(_global.bz_tpl_modal?.content?.quickReplies ?? []).map((b, i) => i === quickRepliesIdx ? Object.assign({}, b, {name: $event.target.value}) : b)}}"/>
@@ -619,37 +619,37 @@
               </button>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-              <input data-if="{{quickRepliesItem.linkType === 'WL'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_mo" value="{{quickRepliesItem.linkMo ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
+              <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_mo')}}" data-if="{{quickRepliesItem.linkType === 'WL'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_mo" value="{{quickRepliesItem.linkMo ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
                 <on type="change">
                   <!-- 바로연결 모바일 웹 링크(linkMo) — 해당 인덱스 항목만 바꾼 새 배열로 교체한다. -->
                   <set-state target="global" bz_tpl_modal.content.quickReplies="{{(_global.bz_tpl_modal?.content?.quickReplies ?? []).map((b, i) => i === quickRepliesIdx ? Object.assign({}, b, {linkMo: $event.target.value}) : b)}}"/>
                 </on>
               </input>
-              <input data-if="{{quickRepliesItem.linkType === 'WL'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_pc" value="{{quickRepliesItem.linkPc ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
+              <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_pc')}}" data-if="{{quickRepliesItem.linkType === 'WL'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_pc" value="{{quickRepliesItem.linkPc ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
                 <on type="change">
                   <!-- 바로연결 PC 웹 링크(linkPc) — 해당 인덱스 항목만 바꾼 새 배열로 교체한다. -->
                   <set-state target="global" bz_tpl_modal.content.quickReplies="{{(_global.bz_tpl_modal?.content?.quickReplies ?? []).map((b, i) => i === quickRepliesIdx ? Object.assign({}, b, {linkPc: $event.target.value}) : b)}}"/>
                 </on>
               </input>
-              <input data-if="{{quickRepliesItem.linkType === 'AL'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_and" value="{{quickRepliesItem.linkAnd ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
+              <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_and')}}" data-if="{{quickRepliesItem.linkType === 'AL'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_and" value="{{quickRepliesItem.linkAnd ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
                 <on type="change">
                   <!-- 바로연결 안드로이드 앱 링크(linkAnd) — 해당 인덱스 항목만 바꾼 새 배열로 교체한다. -->
                   <set-state target="global" bz_tpl_modal.content.quickReplies="{{(_global.bz_tpl_modal?.content?.quickReplies ?? []).map((b, i) => i === quickRepliesIdx ? Object.assign({}, b, {linkAnd: $event.target.value}) : b)}}"/>
                 </on>
               </input>
-              <input data-if="{{quickRepliesItem.linkType === 'AL'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_ios" value="{{quickRepliesItem.linkIos ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
+              <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_ios')}}" data-if="{{quickRepliesItem.linkType === 'AL'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.link_ios" value="{{quickRepliesItem.linkIos ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
                 <on type="change">
                   <!-- 바로연결 iOS 앱 링크(linkIos) — 해당 인덱스 항목만 바꾼 새 배열로 교체한다. -->
                   <set-state target="global" bz_tpl_modal.content.quickReplies="{{(_global.bz_tpl_modal?.content?.quickReplies ?? []).map((b, i) => i === quickRepliesIdx ? Object.assign({}, b, {linkIos: $event.target.value}) : b)}}"/>
                 </on>
               </input>
-              <input data-if="{{quickRepliesItem.linkType === 'TN'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.tel_number" value="{{quickRepliesItem.telNumber ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
+              <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.tel_number')}}" data-if="{{quickRepliesItem.linkType === 'TN'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.tel_number" value="{{quickRepliesItem.telNumber ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
                 <on type="change">
                   <!-- 바로연결 전화번호(telNumber) — 해당 인덱스 항목만 바꾼 새 배열로 교체한다. -->
                   <set-state target="global" bz_tpl_modal.content.quickReplies="{{(_global.bz_tpl_modal?.content?.quickReplies ?? []).map((b, i) => i === quickRepliesIdx ? Object.assign({}, b, {telNumber: $event.target.value}) : b)}}"/>
                 </on>
               </input>
-              <input data-if="{{quickRepliesItem.linkType === 'P1' || quickRepliesItem.linkType === 'P2' || quickRepliesItem.linkType === 'P3'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.plugin_id" value="{{quickRepliesItem.pluginId ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
+              <input aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.plugin_id')}}" data-if="{{quickRepliesItem.linkType === 'P1' || quickRepliesItem.linkType === 'P2' || quickRepliesItem.linkType === 'P3'}}" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs" placeholder="$t:sirsoft-message_bizppurio.template.form.plugin_id" value="{{quickRepliesItem.pluginId ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
                 <on type="change">
                   <!-- 바로연결 플러그인 ID(pluginId) — 해당 인덱스 항목만 바꾼 새 배열로 교체한다. -->
                   <set-state target="global" bz_tpl_modal.content.quickReplies="{{(_global.bz_tpl_modal?.content?.quickReplies ?? []).map((b, i) => i === quickRepliesIdx ? Object.assign({}, b, {pluginId: $event.target.value}) : b)}}"/>
@@ -713,7 +713,7 @@
           {{_global.appConfig?.localeNames?.[loc] ?? loc}}
         </button>
       </div>
-      <textarea name="bz_sms_body" :rows="4" :maxLength="2000" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100" value="{{_global.bz_sms_modal?.body?.[_global.bz_sms_modal?.editLang ?? $locale] ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
+      <textarea name="bz_sms_body" aria-label="{{($locales ?? []).length &gt; 1 ? $t('common.field_in_language', {label: $t('sirsoft-message_bizppurio.template.sms.body_label'), language: _global.appConfig?.localeNames?.[_global.bz_sms_modal?.editLang ?? $locale] ?? (_global.bz_sms_modal?.editLang ?? $locale)}) : $t('sirsoft-message_bizppurio.template.sms.body_label')}}" :rows="4" :maxLength="2000" class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100" value="{{_global.bz_sms_modal?.body?.[_global.bz_sms_modal?.editLang ?? $locale] ?? ''}}" disabled="{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}">
         <on type="change">
           <!-- 편집 중 언어의 SMS 본문만 갱신한다 — 다른 언어 값은 그대로 두고 맵을 새로 만든다. -->
           <set-state target="global" bz_sms_modal.body="{{Object.assign({}, _global.bz_sms_modal?.body, {[_global.bz_sms_modal?.editLang ?? $locale]: $event.target.value})}}"/>

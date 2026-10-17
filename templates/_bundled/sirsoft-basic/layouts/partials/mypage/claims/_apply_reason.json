@@ -100,6 +100,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:claim.apply.reason_label",
                                 "className": "{{_local.claimValidationErrors?.reason_code ? 'w-full px-3 py-2 text-sm border-2 border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white' : 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white'}}",
                                 "value": "{{_local.claimReason ?? ''}}"
                             },
@@ -194,6 +195,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:claim.apply.reason_detail_label",
                                 "className": "w-full px-3 py-2 min-h-20 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
                                 "placeholder": "$t:claim.apply.reason_detail_placeholder",
                                 "maxLength": 1000,

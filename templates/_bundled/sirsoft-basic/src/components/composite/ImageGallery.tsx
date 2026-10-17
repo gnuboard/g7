@@ -127,6 +127,8 @@ const downloadFile = (url: string, filename: string): void => {
   link.href = url;
   link.download = filename;
   link.target = '_blank';
+  // 다른 출처 이미지는 download 가 무시되고 새 탭으로 열린다 — 새 탭이 window.opener 로 원래 탭을 바꾸지 못하게 한다(#757)
+  link.rel = 'noopener noreferrer';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

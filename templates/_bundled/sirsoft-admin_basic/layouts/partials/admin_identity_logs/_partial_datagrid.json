@@ -28,6 +28,8 @@
         "data": "{{identityLogs?.data?.data}}",
         "pagination": true,
         "serverSidePagination": true,
+        "pageHref": "/admin/identity/logs?page={page}",
+        "pageHrefMergeQuery": true,
         "serverCurrentPage": "{{identityLogs?.data?.pagination?.current_page ?? 1}}",
         "serverTotalPages": "{{identityLogs?.data?.pagination?.last_page ?? null}}",
         "serverHasMorePages": "{{identityLogs?.data?.pagination?.has_more_pages ?? false}}",

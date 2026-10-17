@@ -22,17 +22,42 @@
 import type { Page } from '@playwright/test';
 import { test, expect, authenticatePage, issueToken } from '../../fixtures/auth';
 
-/** 점검 대상 화면 — 계획서가 지목한 4개 목록 */
-const LIST_SCREENS = [
+/** 화면 주소와 그 화면을 여는 데 필요한 권한 */
+interface ScreenTarget { path: string; permissions: string[] }
+
+/** 점검 대상 화면 — 계획서가 지목한 4개 목록. 게시판 목록은 사이트에 있는 게시판을 찾아 쓴다(`board`) */
+const LIST_SCREENS: Array<{ name: string; board?: true } & Partial<ScreenTarget>> = [
   { name: '활동 로그', path: '/admin/activity-logs', permissions: ['core.activities.read'] },
   { name: '알림 발송 이력', path: '/admin/notification-logs', permissions: ['core.notification-logs.read'] },
   { name: '관리자 주문 목록', path: '/admin/ecommerce/orders', permissions: ['sirsoft-ecommerce.orders.read'] },
-  {
-    name: '게시판 게시글 목록',
-    path: '/admin/board/notice',
-    permissions: ['sirsoft-board.notice.admin.posts.read', 'sirsoft-board.notice.admin.manage'],
-  },
-] as const;
+  { name: '게시판 게시글 목록', board: true },
+];
+
+/**
+ * 화면의 주소·권한을 정합니다. 게시판 목록은 특정 게시판(`notice`)이 있다고 가정하지 않고 공개 API 로 있는 게시판을 찾는다 —
+ * 게시판별 권한은 그 게시판이 있어야 발급되므로, 없는 게시판으로 토큰을 받으면 시험이 판정 전에 오류로 끝난다.
+ * 공지가 있을 가능성이 큰 `notice` 를 먼저 고르고, 없으면 첫 게시판을 쓴다. 게시판이 하나도 없으면 null.
+ *
+ * @param page 대상 페이지
+ * @param screen 점검 대상 화면
+ * @returns 주소·권한, 게시판이 없으면 null
+ */
+async function resolveScreen(page: Page, screen: (typeof LIST_SCREENS)[number]): Promise<ScreenTarget | null> {
+  if (!screen.board) return { path: screen.path!, permissions: screen.permissions! };
+
+  const res = await page.request.get('/api/modules/sirsoft-board/boards/board-menu', { headers: { Accept: 'application/json' } });
+  if (!res.ok()) return null;
+  const body = await res.json();
+  const boards: Array<{ slug?: string }> = body?.data?.data ?? body?.data ?? [];
+  const slugs = (Array.isArray(boards) ? boards : []).map((b) => b?.slug).filter((v): v is string => typeof v === 'string' && v !== '');
+  const slug = slugs.includes('notice') ? 'notice' : slugs[0];
+  if (!slug) return null;
+
+  return {
+    path: `/admin/board/${slug}`,
+    permissions: [`sirsoft-board.${slug}.admin.posts.read`, `sirsoft-board.${slug}.admin.manage`],
+  };
+}
 
 /**
  * 관리자 화면 진입 공통 대기 (기존 admin spec 과 동일 패턴).
@@ -107,7 +132,7 @@ function nextPageControl(page: Page) {
         '[aria-label="다음 페이지"]',
         '[aria-label="Next page"]',
         '[data-testid="pagination-next"]',
-        'button:has-text("다음")',
+        ':is(a, button):has-text("다음")',
       ].join(', '),
     )
     .first();
@@ -164,8 +189,10 @@ test.describe('목록 페이지네이션 (지연 조인)', () => {
     test(`${screen.name} — 목록이 렌더되고 페이지 에러가 없다`, async ({ page }) => {
       const errors = collectPageErrors(page);
 
-      await authenticatePage(page, issueToken(...screen.permissions));
-      await gotoAdmin(page, screen.path);
+      const target = await resolveScreen(page, screen);
+      test.skip(!target, `${screen.name} — 사이트에 게시판이 없어 판정할 수 없다`);
+      await authenticatePage(page, issueToken(...target!.permissions));
+      await gotoAdmin(page, target!.path);
 
       if (/\/admin\/login/.test(page.url())) {
         test.skip(true, `${screen.name} 접근 불가 — 확장 미설치 또는 권한 미부여`);
@@ -190,8 +217,10 @@ test.describe('목록 페이지네이션 (지연 조인)', () => {
       // @scenario case=deep_offset_list_browser
       // @effects notices_appear_only_on_first_page
       test(`${screen.name} — 공지가 1페이지에만 노출된다`, async ({ page }) => {
-        await authenticatePage(page, issueToken(...screen.permissions));
-        await gotoAdmin(page, screen.path);
+        const target = await resolveScreen(page, screen);
+        test.skip(!target, `${screen.name} — 사이트에 게시판이 없어 판정할 수 없다`);
+        await authenticatePage(page, issueToken(...target!.permissions));
+        await gotoAdmin(page, target!.path);
 
         if (/\/admin\/login/.test(page.url())) {
           test.skip(true, `${screen.name} 접근 불가 — 확장 미설치 또는 권한 미부여`);
@@ -242,8 +271,10 @@ test.describe('목록 페이지네이션 (지연 조인)', () => {
     // @scenario case=deep_offset_list_browser
     // @effects simple_mode_reports_last_page_without_next
     test(`${screen.name} — 마지막 페이지에서 "다음" 이 비활성이다`, async ({ page }) => {
-      await authenticatePage(page, issueToken(...screen.permissions));
-      await gotoAdmin(page, screen.path);
+      const target = await resolveScreen(page, screen);
+      test.skip(!target, `${screen.name} — 사이트에 게시판이 없어 판정할 수 없다`);
+      await authenticatePage(page, issueToken(...target!.permissions));
+      await gotoAdmin(page, target!.path);
 
       if (/\/admin\/login/.test(page.url())) {
         test.skip(true, `${screen.name} 접근 불가 — 확장 미설치 또는 권한 미부여`);

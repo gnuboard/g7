@@ -8,12 +8,12 @@
       <div class="flex flex-wrap items-center gap-2">
         <div class="flex items-center gap-2 min-w-0 flex-1 basis-32">
           <span class="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded text-xs min-w-0 truncate max-w-32">{{post.board_name}}</span>
-          <button class="justify-start font-medium text-gray-900 dark:text-white min-w-12 truncate flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer">
+          <a href="/board/{{post.board_slug}}/{{post.id}}" class="inline-block text-center justify-start font-medium text-gray-900 dark:text-white min-w-12 truncate flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer">
             <on type="click">
-              <navigate path="/board/{{post.board_slug}}/{{post.id}}"/>
+              <navigate/>
             </on>
             {{post.title}}
-          </button>
+          </a>
         </div>
         <div class="flex items-center gap-2 shrink-0">
           <span data-if="{{post.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0">N</span>

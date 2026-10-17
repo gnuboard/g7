@@ -464,7 +464,7 @@
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Span",
+                                            "name": "Label",
                                             "props": {
                                                 "className": "block text-sm font-semibold text-gray-800 dark:text-gray-200"
                                             },
@@ -513,7 +513,7 @@
                                             "children": [
                                                 {
                                                     "type": "basic",
-                                                    "name": "Span",
+                                                    "name": "Label",
                                                     "props": {
                                                         "className": "block text-sm font-semibold text-gray-800 dark:text-gray-200"
                                                     },

@@ -37,16 +37,16 @@
           </on>
           <icon name="refresh" class="text-xl"/>
         </button>
-        <button data-ref="back_button" class="flex-center gap-2 btn btn-secondary">
+        <a href="/admin/board/{{route.slug}}" :mergeQuery="true" data-ref="back_button" class="button flex-center gap-2 btn btn-secondary">
           <on type="click">
             <!-- 글 목록으로. 보던 검색·필터·페이지를 이고 간다 — 글 하나를 처리하고 목록으로 돌아가는 왕복이 이 화면의 기본 동선이다 -->
-            <navigate path="/admin/board/{{route.slug}}" :mergeQuery="true">
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
           <icon name="arrow-left" class="text-base"/>
           <span>$t:common.back</span>
-        </button>
+        </a>
       </page-header>
       <div data-ref="post_card">
         <div class="admin-card">
@@ -119,7 +119,7 @@
       <meta description="Universal Report Modal (Post/Comment)" editor_label="$t:sirsoft-board.admin.posts.modals.report_editor_label"/>
       <div class="py-2">
         <div class="alert-warning">
-          <p class="text-warning-soft">$t:sirsoft-board.admin.posts.detail.report_modal.warning_notice</p>
+          <p class="text-xs board-tone-warning">$t:sirsoft-board.admin.posts.detail.report_modal.warning_notice</p>
         </div>
         <div data-if="{{_global.modal_data?.type === 'comment'}}" class="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <p class="text-body">

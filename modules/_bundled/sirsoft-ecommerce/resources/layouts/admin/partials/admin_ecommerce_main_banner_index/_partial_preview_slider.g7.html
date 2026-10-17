@@ -6,7 +6,7 @@
   <div data-ref="preview_slider_section" class="admin-card mb-6">
     <div data-ref="preview_header" class="flex-between mb-4">
       <h3 class="card-title">$t:sirsoft-ecommerce.admin.main_banner.preview.title</h3>
-      <select name="previewLanguage" class="w-28" value="{{_local.previewLanguage}}" options="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}">
+      <select name="previewLanguage" aria-label="$t:common.language" class="w-28" value="{{_local.previewLanguage}}" options="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}">
         <on type="change">
           <!-- 미리보기 언어 선택. 값만 지역 상태에 남고 아래 캐러셀은 아직 이 값을 읽지 않는다(시안). -->
           <set-state target="_local" previewLanguage="{{$event.target.value}}"/>

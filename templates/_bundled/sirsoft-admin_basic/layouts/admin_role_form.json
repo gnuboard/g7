@@ -935,21 +935,21 @@
                                 "comment": "취소하고 역할 목록으로. 보던 목록 상태를 이고 간다",
                                 "id": "footer_cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/roles",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                    "href": "/admin/roles",
+                                    "mergeQuery": true,
+                                    "className": "button px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                 },
                                 "text": "$t:common.cancel"
                             },
@@ -1010,21 +1010,21 @@
                             {
                                 "comment": "저장. 폼 밖에 있는 버튼이라 form 속성으로 위쪽 역할 폼에 연결한다 — 그 폼에 같은 id 가 있어야 눌리므로 둘은 짝이다",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/roles",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg"
+                                    "href": "/admin/roles",
+                                    "mergeQuery": true,
+                                    "className": "button flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg"
                                 },
                                 "text": "$t:common.cancel"
                             },

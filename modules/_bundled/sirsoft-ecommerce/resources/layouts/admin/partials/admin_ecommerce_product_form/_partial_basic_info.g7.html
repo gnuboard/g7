@@ -233,7 +233,7 @@
           </button>
         </div>
         <div data-ref="brand_selector" data-if="{{!_local.form.brand_id}}">
-          <select name="brand_id" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.brand" options="{{(brands?.data?.data ?? brands?.data ?? []).map(b => ({ value: b.id, label: $localized(b.name) }))}}" disabled="{{_computed.isReadOnly}}">
+          <select name="brand_id" aria-label="$t:sirsoft-ecommerce.admin.product.fields.brand" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.brand" options="{{(brands?.data?.data ?? brands?.data ?? []).map(b => ({ value: b.id, label: $localized(b.name) }))}}" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <!-- 브랜드 고르기 — 선택값은 문자열로 오므로 수로 바꾸고, 빈 값이면 null 로 떨어뜨린다 -->
               <set-state target="local" form.brand_id="{{parseInt($event.target.value) || null}}"/>
@@ -252,7 +252,7 @@
           <span class="text-sm text-red-500 dark:text-red-400">*</span>
         </div>
         <div class="flex gap-2">
-          <input type="text" name="product_code" class="{{_local.errors?.product_code ? 'input input-error flex-1' : 'input flex-1'}}" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.product_code" disabled="{{!!route.itemCode || _computed.isReadOnly}}"/>
+          <input type="text" name="product_code" aria-label="$t:sirsoft-ecommerce.admin.product.fields.product_code" class="{{_local.errors?.product_code ? 'input input-error flex-1' : 'input flex-1'}}" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.product_code" disabled="{{!!route.itemCode || _computed.isReadOnly}}"/>
           <button data-ref="generate_product_code_button" data-if="{{!route.itemCode}}" type="button" class="btn btn-outline whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <action handler="sirsoft-ecommerce.generateProductCode"/>
@@ -268,7 +268,7 @@
             <span class="text-primary text-sm font-semibold">$t:sirsoft-ecommerce.admin.product.fields.name</span>
             <span class="text-sm text-red-500 dark:text-red-400">*</span>
           </div>
-          <multilingual-input data-type="composite" name="name" layout="tabs" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.name" :maxLength="200" :required="true" error="{{_local.errors?.name?.[0] ?? _local.errors?.['name.ko']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}"/>
+          <multilingual-input data-type="composite" name="name" ariaLabel="$t:sirsoft-ecommerce.admin.product.fields.name" layout="tabs" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.name" :maxLength="200" :required="true" error="{{_local.errors?.name?.[0] ?? _local.errors?.['name.ko']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}"/>
         </div>
       </div>
     </div>

@@ -95,7 +95,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "font-medium text-info-soft"
+                                                "className": "font-medium ecommerce-tone-info-soft text-xs"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.edit_currency.title"
                                         }
@@ -118,6 +118,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "editingCurrency.code",
+                                        "aria-label": "$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.currency_code')}}",
                                         "value": "{{_local.editingCurrency?.code ?? ''}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.code_placeholder",
                                         "className": "{{_local.editingCurrency?.hasError ? 'input uppercase border-red-500 dark:border-red-500 focus:border-red-500 focus:ring-red-500' : 'input uppercase'}}",
@@ -130,6 +131,7 @@
                                     "name": "MultilingualInput",
                                     "props": {
                                         "name": "editingCurrency.name",
+                                        "ariaLabel": "$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.currency_name')}}",
                                         "value": "{{_local.editingCurrency?.name ?? {} }}",
                                         "layout": "inline",
                                         "inputType": "text",
@@ -202,7 +204,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{currency.code === (_local.form?.language_currency?.default_currency) ? 'btn-icon text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'btn-icon text-error'}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "{{currency.code === (_local.form?.language_currency?.default_currency) ? 'btn-icon text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'btn-icon ecommerce-tone-error'}} disabled:opacity-50 disabled:cursor-not-allowed",
                                         "disabled": "{{_computed.isReadOnly || currency.code === (_local.form?.language_currency?.default_currency)}}",
                                         "aria-label": "$t:common.delete"
                                     },
@@ -348,6 +350,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "{{'language_currency.currencies.' + currency._idx + '.symbol'}}",
+                                        "aria-label": "$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.currency_symbol')}}",
                                         "value": "{{currency.symbol ?? ''}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.symbol_placeholder",
                                         "className": "input w-full",
@@ -394,6 +397,7 @@
                                             "props": {
                                                 "type": "text",
                                                 "name": "{{'language_currency.currencies.' + currency._idx + '.exchange_rate'}}",
+                                                "aria-label": "$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.exchange_rate')}}",
                                                 "value": "{{currency.exchange_rate}}",
                                                 "className": "{{_local.errors?.['language_currency.currencies.' + currency._idx + '.exchange_rate'] ? 'input flex-1 text-center input-error' : 'input flex-1 text-center'}} disabled:opacity-50 disabled:cursor-not-allowed",
                                                 "disabled": "{{_computed.isReadOnly || _computed.managedRateCodes.includes(currency.code)}}"
@@ -487,6 +491,7 @@
                                             "props": {
                                                 "type": "text",
                                                 "name": "{{'language_currency.currencies.' + currency._idx + '.base_unit'}}",
+                                                "aria-label": "$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.base_unit')}}",
                                                 "value": "{{currency.base_unit ?? 1}}",
                                                 "className": "{{_local.errors?.['language_currency.currencies.' + currency._idx + '.base_unit'] ? 'input flex-1 text-center input-error' : 'input flex-1 text-center'}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
@@ -533,6 +538,7 @@
                                     "name": "Select",
                                     "props": {
                                         "name": "{{'language_currency.currencies.' + currency._idx + '.rounding_unit'}}",
+                                        "aria-label": "$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_unit')}}",
                                         "value": "{{currency.rounding_unit}}",
                                         "options": "{{((currency.decimal_places ?? 2) === 0 ? [{ value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.100') }] : [{ value: '0.01', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_01') }, { value: '0.1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_1') }, { value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }]) ?? []}}",
                                         "className": "input w-full",
@@ -561,6 +567,7 @@
                                     "name": "Select",
                                     "props": {
                                         "name": "{{'language_currency.currencies.' + currency._idx + '.rounding_method'}}",
+                                        "aria-label": "$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_method')}}",
                                         "value": "{{currency.rounding_method}}",
                                         "className": "w-full",
                                         "disabled": "{{_computed.isReadOnly}}",
@@ -603,6 +610,7 @@
                                     "props": {
                                         "type": "number",
                                         "name": "{{'language_currency.currencies.' + currency._idx + '.decimal_places'}}",
+                                        "aria-label": "$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.decimal_places')}}",
                                         "value": "{{currency.decimal_places ?? 0}}",
                                         "min": 0,
                                         "max": 8,
@@ -633,6 +641,7 @@
                                     "name": "TagInput",
                                     "props": {
                                         "name": "{{'language_currency.currencies.' + currency._idx + '.locales'}}",
+                                        "aria-label": "$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.locales')}}",
                                         "value": "{{currency.locales ?? []}}",
                                         "options": "{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.locales_placeholder",
@@ -700,7 +709,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "font-medium text-info-soft"
+                                        "className": "font-medium ecommerce-tone-info-soft text-xs"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.title"
                                 }

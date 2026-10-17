@@ -1097,18 +1097,15 @@
                                     {
                                         "id": "cancel_button",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/ecommerce/personal-payment"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
+                                            "href": "/admin/ecommerce/personal-payment",
                                             "className": "btn btn-secondary"
                                         },
                                         "children": [

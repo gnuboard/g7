@@ -82,13 +82,13 @@
           <p class="text-label-subtle mt-1">$t:sirsoft-ckeditor5.admin.uploads.description</p>
         </div>
         <div class="flex-center gap-2">
-          <button data-ref="open_settings_button" type="button" class="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{ckeditor5Uploads?.data?.abilities?.can_open_settings !== true}}">
+          <a href="/admin/plugins/sirsoft-ckeditor5/settings" data-ref="open_settings_button" class="button btn btn-secondary aria-disabled:opacity-50 aria-disabled:cursor-not-allowed" disabled="{{ckeditor5Uploads?.data?.abilities?.can_open_settings !== true}}">
             <on type="click">
               <!-- audit:allow layout-list-context-navigate-merge-query 플러그인 설정 화면으로 나가는 이동 — 목록 클러스터 밖이라 목록 상태를 승계하지 않는다 -->
-              <navigate path="/admin/plugins/sirsoft-ckeditor5/settings"/>
+              <navigate/>
             </on>
             <span>$t:sirsoft-ckeditor5.admin.uploads.open_settings</span>
-          </button>
+          </a>
           <button data-ref="refresh_button" type="button" class="btn-icon" title="$t:sirsoft-ckeditor5.admin.uploads.refresh">
             <on type="click">
               <refetch-data-source dataSourceId="ckeditor5Uploads"/>
@@ -117,7 +117,7 @@
               </on>
             </input>
           </div>
-          <select name="referenced" value="{{_local.filter.referenced || 'all'}}">
+          <select name="referenced" aria-label="$t:sirsoft-ckeditor5.admin.uploads.col.referenced" value="{{_local.filter.referenced || 'all'}}">
             <options>
               <option value="all">$t:sirsoft-ckeditor5.admin.uploads.filter.referenced_all</option>
               <option value="referenced">$t:sirsoft-ckeditor5.admin.uploads.filter.referenced_only</option>
@@ -168,7 +168,7 @@
           <span>$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.button</span>
         </button>
       </div>
-      <data-grid data-type="composite" data-ref="ckeditor5_uploads_datagrid" data="{{ckeditor5Uploads?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{ckeditor5Uploads?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{ckeditor5Uploads?.data?.pagination?.last_page ?? null}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" :sortable="true" sortField="{{query.sort_by || 'created_at'}}" sortDirection="{{query.sort_order || 'desc'}}" idField="id" selectable="{{ckeditor5Uploads?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_ckeditor5_uploads || []}}" emptyMessage="$t:sirsoft-ckeditor5.admin.uploads.empty" actionsColumnHeader="$t:common.actions">
+      <data-grid :pageHrefMergeQuery="true" pageHref="/admin/plugins/sirsoft-ckeditor5/uploads?page={page}" data-type="composite" data-ref="ckeditor5_uploads_datagrid" rowLabelField="original_name" data="{{ckeditor5Uploads?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{ckeditor5Uploads?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{ckeditor5Uploads?.data?.pagination?.last_page ?? null}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" :sortable="true" sortField="{{query.sort_by || 'created_at'}}" sortDirection="{{query.sort_order || 'desc'}}" idField="id" selectable="{{ckeditor5Uploads?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_ckeditor5_uploads || []}}" emptyMessage="$t:sirsoft-ckeditor5.admin.uploads.empty" actionsColumnHeader="$t:common.actions">
         <blur-until-loaded sources="ckeditor5Uploads"/>
         <prop name="rowActions">
           <item id="delete" label="$t:sirsoft-ckeditor5.admin.uploads.delete.button" iconName="trash" variant="danger" disabled="{{ckeditor5Uploads?.data?.abilities?.can_delete !== true}}"/>

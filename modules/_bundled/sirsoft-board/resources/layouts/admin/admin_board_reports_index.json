@@ -188,6 +188,7 @@
                                                             }
                                                         ],
                                                         "props": {
+                                                            "aria-label": "$t:common.search_field",
                                                             "value": "{{_local.searchField || 'all'}}",
                                                             "className": "w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
                                                             "options": [
@@ -380,6 +381,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:common.search_field",
                                             "value": "{{_local.searchField || 'all'}}",
                                             "className": "select-composite w-32 shrink-0",
                                             "options": [
@@ -1995,6 +1997,9 @@
                             }
                         ],
                         "props": {
+                            "pageHrefMergeQuery": true,
+                            "pageHref": "/admin/boards/reports?page={page}",
+                            "rowLabelField": "board.title",
                             "data": "{{reports?.data?.data}}",
                             "sortable": true,
                             "sortField": "{{query.sort_by}}",
@@ -2021,17 +2026,20 @@
                             "selectedCountText": "",
                             "rowActions": [
                                 {
+                                    "href": "/admin/boards/reports/{{row.id}}",
                                     "id": "view",
                                     "label": "$t:sirsoft-board.admin.reports.actions.view",
                                     "iconName": "eye",
                                     "disabledField": "abilities.can_view"
                                 },
                                 {
+                                    "href": "/admin/board/{{row.board?.slug}}",
                                     "id": "go_to_board",
                                     "label": "$t:sirsoft-board.admin.reports.actions.go_to_board",
                                     "iconName": "folder"
                                 },
                                 {
+                                    "href": "/admin/board/{{row.board?.slug}}/post/{{row.post_id}}",
                                     "id": "go_to_post",
                                     "label": "$t:sirsoft-board.admin.reports.actions.go_to_post",
                                     "iconName": "file-lines"
@@ -2357,7 +2365,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-danger-soft"
+                                        "className": "text-xs board-tone-danger"
                                     },
                                     "text": "$t:sirsoft-board.admin.reports.modals.deleted_warning|count={{_global.statusCountsData?.deleted_count}}"
                                 }
@@ -2383,7 +2391,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-warning-soft"
+                                        "className": "text-xs board-tone-warning"
                                     },
                                     "text": "$t:sirsoft-board.admin.reports.modals.same_status_warning|count={{_global.statusCountsData?.same_status_count}}|status={{_global.statusCountsData?.target_status_label ?? ''}}"
                                 }

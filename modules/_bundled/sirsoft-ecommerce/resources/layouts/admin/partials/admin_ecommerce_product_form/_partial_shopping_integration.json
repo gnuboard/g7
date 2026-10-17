@@ -107,7 +107,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center w-8 h-8 bg-green-500 rounded-lg justify-center"
+                                                "className": "flex-center w-8 h-8 bg-green-500 dark:bg-green-500 rounded-lg justify-center"
                                             },
                                             "children": [
                                                 {
@@ -170,6 +170,7 @@
                                             ],
                                             "props": {
                                                 "name": "naver_enabled",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.product.shopping_integration.naver.title",
                                                 "value": "{{_local.form.shopping_integrations?.naver?.enabled ?? 'disabled'}}",
                                                 "className": "w-28",
                                                 "options": [
@@ -186,20 +187,17 @@
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "audit:allow layout-list-context-navigate-merge-query 상품 폼에서 채널 연동 설정 화면으로 나가는 이동이다 — 상품 목록의 페이지·필터를 물려주지 않는다.",
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/ecommerce/integrations/naver"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
-                                                "className": "btn btn-ghost btn-sm"
+                                                "href": "/admin/ecommerce/integrations/naver",
+                                                "className": "button btn btn-ghost btn-sm"
                                             },
                                             "children": [
                                                 {
@@ -477,7 +475,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center w-8 h-8 bg-blue-600 rounded-lg justify-center"
+                                                "className": "flex-center w-8 h-8 bg-blue-600 dark:bg-blue-600 rounded-lg justify-center"
                                             },
                                             "children": [
                                                 {
@@ -540,6 +538,7 @@
                                             ],
                                             "props": {
                                                 "name": "facebook_enabled",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.product.shopping_integration.facebook.title",
                                                 "value": "{{_local.form.shopping_integrations?.facebook?.enabled ?? 'disabled'}}",
                                                 "className": "w-28",
                                                 "options": [
@@ -556,20 +555,17 @@
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "audit:allow layout-list-context-navigate-merge-query 상품 폼에서 채널 연동 설정 화면으로 나가는 이동이다 — 상품 목록의 페이지·필터를 물려주지 않는다.",
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/ecommerce/integrations/facebook"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
-                                                "className": "btn btn-ghost btn-sm"
+                                                "href": "/admin/ecommerce/integrations/facebook",
+                                                "className": "button btn btn-ghost btn-sm"
                                             },
                                             "children": [
                                                 {
@@ -910,6 +906,7 @@
                                             ],
                                             "props": {
                                                 "name": "google_enabled",
+                                                "aria-label": "$t:sirsoft-ecommerce.admin.product.shopping_integration.google.title",
                                                 "value": "{{_local.form.shopping_integrations?.google?.enabled ?? 'disabled'}}",
                                                 "className": "w-28",
                                                 "options": [
@@ -926,20 +923,17 @@
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "audit:allow layout-list-context-navigate-merge-query 상품 폼에서 채널 연동 설정 화면으로 나가는 이동이다 — 상품 목록의 페이지·필터를 물려주지 않는다.",
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/ecommerce/integrations/google"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
-                                                "className": "btn btn-ghost btn-sm"
+                                                "href": "/admin/ecommerce/integrations/google",
+                                                "className": "button btn btn-ghost btn-sm"
                                             },
                                             "children": [
                                                 {
@@ -1203,7 +1197,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-info-soft"
+                                "className": "ecommerce-tone-info-soft text-xs"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.note"
                         }

@@ -21,6 +21,25 @@ import type { DynamicFieldListItemProps, DynamicFieldColumn } from './types';
 // G7Core 전역 객체 접근 (에러 처리용)
 const getG7Core = () => (window as any).G7Core;
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = getG7Core()?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
+/**
+ * 동적 행 칸 이름 — 「N번째 행 {열 이름}」. 종전에는 셀 칸에 열 이름을 넘기지 않아 이름 없이 읽혔다(#757).
+ *
+ * @param index 0부터 세는 행 순번
+ * @param columnLabel 열 머리 글자
+ * @returns 이름
+ */
+const cellLabel = (index: number, columnLabel?: string): string | undefined => {
+  if (!columnLabel) return undefined;
+  const row = tOr('common.row_n', `Row ${index + 1}`, { n: index + 1 });
+  return tOr('common.row_cell', `${row} ${columnLabel}`, { row, column: columnLabel });
+};
+
 /**
  * 다국어 입력 컴포넌트 (간소화 버전)
  *
@@ -34,7 +53,8 @@ const MultilingualCellInput: React.FC<{
   readOnly?: boolean;
   disabled?: boolean;
   hasError?: boolean;
-}> = ({ value, onChange, placeholder, readOnly, disabled, hasError }) => {
+  ariaLabel?: string;
+}> = ({ value, onChange, placeholder, readOnly, disabled, hasError, ariaLabel }) => {
   // Context를 통해 로케일 접근 (Stale Closure 방지)
   const { activeLocale, getActiveLocale } = useCurrentMultilingualLocale();
 
@@ -68,6 +88,7 @@ const MultilingualCellInput: React.FC<{
       placeholder={placeholder}
       readOnly={readOnly}
       disabled={disabled}
+      aria-label={ariaLabel}
       className={`w-full px-3 py-2 text-sm border ${errorBorderClass} rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2`}
     />
   );
@@ -107,6 +128,7 @@ const CellRenderer: React.FC<{
     getReadOnlyFromCondition(item, column.readOnlyCondition) ||
     column.disabled;
   const hasError = !!error;
+  const ariaLabel = cellLabel(index, column.label);
 
   // 에러 시 적용할 border 클래스
   const errorBorderClass = hasError
@@ -142,6 +164,7 @@ const CellRenderer: React.FC<{
           placeholder={column.placeholder}
           readOnly={isDisabled}
           disabled={isDisabled}
+          aria-label={ariaLabel}
           className={`w-full px-3 py-2 text-sm border ${errorBorderClass} rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 ${column.className || ''}`}
         />
       );
@@ -158,6 +181,7 @@ const CellRenderer: React.FC<{
           step={column.step}
           readOnly={isDisabled}
           disabled={isDisabled}
+          aria-label={ariaLabel}
           className={`w-full px-3 py-2 text-sm border ${errorBorderClass} rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 ${column.className || ''}`}
         />
       );
@@ -168,6 +192,7 @@ const CellRenderer: React.FC<{
           value={(value as string | number) ?? ''}
           onChange={(e) => handleChange(e.target.value)}
           disabled={isDisabled}
+          aria-label={ariaLabel}
           className={`w-full px-3 py-2 text-sm border ${errorBorderClass} rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 ${column.className || ''}`}
         >
           <option value="">선택하세요</option>
@@ -187,6 +212,7 @@ const CellRenderer: React.FC<{
           placeholder={column.placeholder}
           readOnly={isDisabled}
           disabled={isDisabled}
+          aria-label={ariaLabel}
           className={`w-full px-3 py-2 text-sm border ${errorBorderClass} rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 resize-none ${column.className || ''}`}
           rows={2}
         />
@@ -201,6 +227,7 @@ const CellRenderer: React.FC<{
           readOnly={isDisabled}
           disabled={isDisabled}
           hasError={hasError}
+          ariaLabel={ariaLabel}
         />
       );
 

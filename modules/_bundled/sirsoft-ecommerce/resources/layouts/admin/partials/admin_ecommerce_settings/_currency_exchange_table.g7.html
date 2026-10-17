@@ -24,7 +24,7 @@
               <span class="{{'fi fi-' + (_defines?.currencyToFlag?.[currency.code] ?? 'xx') + ' fis rounded'}}"/>
               <span class="font-medium text-sm">{{currency.code}}</span>
             </div>
-            <input data-if="{{_local.editingCurrencyIdx === currency._idx}}" type="text" name="editingCurrency.code" value="{{_local.editingCurrency?.code ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.code_placeholder" class="{{_local.editingCurrency?.hasError ? 'input input-error w-20 uppercase' : 'input w-20 uppercase'}}" maxLength="3" disabled="{{_computed.isReadOnly}}">
+            <input data-if="{{_local.editingCurrencyIdx === currency._idx}}" type="text" name="editingCurrency.code" aria-label="$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.currency_code')}}" value="{{_local.editingCurrency?.code ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.code_placeholder" class="{{_local.editingCurrency?.hasError ? 'input input-error w-20 uppercase' : 'input w-20 uppercase'}}" maxLength="3" disabled="{{_computed.isReadOnly}}">
               <on type="input">
                 <!-- 코드를 다시 치면 오류 표시를 지운다 — 중복 판정은 저장할 때 다시 한다. -->
                 <set-state target="local" :editingCurrency.hasError="false"/>
@@ -33,33 +33,33 @@
           </td>
           <td>
             <span data-if="{{_local.editingCurrencyIdx !== currency._idx}}" class="text-sm text-primary">{{(typeof currency.name === 'object' ? $localized(currency.name, 'sirsoft-ecommerce::settings.currencies.' + (currency.code ?? '') + '.name') : currency.name) + (currency.code === (_local.form?.language_currency?.default_currency) ? ' (' + $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.default_label') + ')' : '')}}</span>
-            <multilingual-input data-type="composite" data-if="{{_local.editingCurrencyIdx === currency._idx}}" name="editingCurrency.name" value="{{_local.editingCurrency?.name ?? {} }}" layout="tabs" inputType="text" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.name_placeholder" availableLocales="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ code: l, name: _global.appConfig?.localeNames?.[l] ?? l, nativeName: _global.appConfig?.localeNames?.[l] ?? l }))}}" defaultLocale="ko" disabled="{{_computed.isReadOnly}}"/>
+            <multilingual-input data-type="composite" data-if="{{_local.editingCurrencyIdx === currency._idx}}" name="editingCurrency.name" ariaLabel="$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.currency_name')}}" value="{{_local.editingCurrency?.name ?? {} }}" layout="tabs" inputType="text" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.new_currency.name_placeholder" availableLocales="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ code: l, name: _global.appConfig?.localeNames?.[l] ?? l, nativeName: _global.appConfig?.localeNames?.[l] ?? l }))}}" defaultLocale="ko" disabled="{{_computed.isReadOnly}}"/>
           </td>
           <td>
-            <input type="text" name="{{'language_currency.currencies.' + currency._idx + '.symbol'}}" value="{{currency.symbol ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.symbol_placeholder" class="input w-16 text-center" maxLength="8" disabled="{{_computed.isReadOnly}}"/>
+            <input type="text" name="{{'language_currency.currencies.' + currency._idx + '.symbol'}}" aria-label="$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.currency_symbol')}}" value="{{currency.symbol ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.symbol_placeholder" class="input w-16 text-center" maxLength="8" disabled="{{_computed.isReadOnly}}"/>
           </td>
           <td>
             <span data-if="{{currency.code === (_local.form?.language_currency?.default_currency)}}" class="text-label-subtle">-</span>
             <div data-if="{{currency.code !== (_local.form?.language_currency?.default_currency)}}" class="flex-center gap-2">
               <span class="text-label-subtle whitespace-nowrap">{{(_local.form?.language_currency?.default_currency) + ' ' + (((_local.form?.language_currency?.currencies ?? []).find(c => c.code === (_local.form?.language_currency?.default_currency))?.base_unit ?? 1).toLocaleString()) + ' ='}}</span>
-              <input type="text" name="{{'language_currency.currencies.' + currency._idx + '.exchange_rate'}}" value="{{currency.exchange_rate}}" class="{{_local.errors?.['language_currency.currencies.' + currency._idx + '.exchange_rate'] ? 'input w-20 text-center input-error' : 'input w-20 text-center'}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || _computed.managedRateCodes.includes(currency.code)}}"/>
+              <input type="text" name="{{'language_currency.currencies.' + currency._idx + '.exchange_rate'}}" aria-label="$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.exchange_rate')}}" value="{{currency.exchange_rate}}" class="{{_local.errors?.['language_currency.currencies.' + currency._idx + '.exchange_rate'] ? 'input w-20 text-center input-error' : 'input w-20 text-center'}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || _computed.managedRateCodes.includes(currency.code)}}"/>
               <span class="text-label-subtle">{{currency.code}}</span>
             </div>
               <span data-if="{{_computed.managedRateCodes.includes(currency.code)}}" class="text-label-subtle inline-flex items-center gap-1 whitespace-nowrap shrink-0 mt-1"><icon name="lock"/><span>$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.managed_badge</span></span>
               <span data-if="{{(_computed.activeRateProvider?.unsupported_codes ?? []).includes(currency.code)}}" class="text-label-subtle inline-flex items-center gap-1 whitespace-nowrap shrink-0 mt-1">$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.manual_badge</span>
             <div class="flex-center gap-2 mt-2">
               <span class="text-label-subtle whitespace-nowrap">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.base_unit</span>
-              <input type="text" name="{{'language_currency.currencies.' + currency._idx + '.base_unit'}}" value="{{currency.base_unit ?? 1}}" class="{{_local.errors?.['language_currency.currencies.' + currency._idx + '.base_unit'] ? 'input w-20 text-center input-error' : 'input w-20 text-center'}}" disabled="{{_computed.isReadOnly}}"/>
+              <input type="text" name="{{'language_currency.currencies.' + currency._idx + '.base_unit'}}" aria-label="$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.base_unit')}}" value="{{currency.base_unit ?? 1}}" class="{{_local.errors?.['language_currency.currencies.' + currency._idx + '.base_unit'] ? 'input w-20 text-center input-error' : 'input w-20 text-center'}}" disabled="{{_computed.isReadOnly}}"/>
               <span class="text-label-subtle">{{currency.code}}</span>
             </div>
             <span data-if="{{_local.errors?.['language_currency.currencies.' + currency._idx + '.exchange_rate']}}" class="form-error">{{_local.errors?.['language_currency.currencies.' + currency._idx + '.exchange_rate']?.[0] ?? ''}}</span>
             <span data-if="{{_local.errors?.['language_currency.currencies.' + currency._idx + '.base_unit']}}" class="form-error">{{_local.errors?.['language_currency.currencies.' + currency._idx + '.base_unit']?.[0] ?? ''}}</span>
           </td>
           <td>
-            <select name="{{'language_currency.currencies.' + currency._idx + '.rounding_unit'}}" value="{{currency.rounding_unit}}" options="{{((currency.decimal_places ?? 2) === 0 ? [{ value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.100') }] : [{ value: '0.01', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_01') }, { value: '0.1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_1') }, { value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }]) ?? []}}" class="w-24" disabled="{{_computed.isReadOnly}}"/>
+            <select name="{{'language_currency.currencies.' + currency._idx + '.rounding_unit'}}" aria-label="$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_unit')}}" value="{{currency.rounding_unit}}" options="{{((currency.decimal_places ?? 2) === 0 ? [{ value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.100') }] : [{ value: '0.01', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_01') }, { value: '0.1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_1') }, { value: '1', label: $t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.1') }]) ?? []}}" class="w-24" disabled="{{_computed.isReadOnly}}"/>
           </td>
           <td>
-            <select name="{{'language_currency.currencies.' + currency._idx + '.rounding_method'}}" value="{{currency.rounding_method}}" class="w-24" disabled="{{_computed.isReadOnly}}">
+            <select name="{{'language_currency.currencies.' + currency._idx + '.rounding_method'}}" aria-label="$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_method')}}" value="{{currency.rounding_method}}" class="w-24" disabled="{{_computed.isReadOnly}}">
               <options>
                 <option value="floor">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_methods.floor</option>
                 <option value="round">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_methods.round</option>
@@ -68,11 +68,11 @@
             </select>
           </td>
           <td>
-            <input type="number" name="{{'language_currency.currencies.' + currency._idx + '.decimal_places'}}" value="{{currency.decimal_places ?? 0}}" :min="0" :max="8" class="input w-20 text-center" disabled="{{_computed.isReadOnly}}"/>
+            <input type="number" name="{{'language_currency.currencies.' + currency._idx + '.decimal_places'}}" aria-label="$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.decimal_places')}}" value="{{currency.decimal_places ?? 0}}" :min="0" :max="8" class="input w-20 text-center" disabled="{{_computed.isReadOnly}}"/>
           </td>
           <!-- 통화별 사용 언어 (가입 시 통화 추정 매핑, A4) -->
           <td>
-            <tag-input data-type="composite" name="{{'language_currency.currencies.' + currency._idx + '.locales'}}" value="{{currency.locales ?? []}}" options="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.locales_placeholder" class="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales')) ? 'min-w-40 input-error' : 'min-w-40'}}" disabled="{{_computed.isReadOnly}}"/>
+            <tag-input data-type="composite" name="{{'language_currency.currencies.' + currency._idx + '.locales'}}" aria-label="$t:common.row_cell|row={{currency.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.locales')}}" value="{{currency.locales ?? []}}" options="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" placeholder="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.locales_placeholder" class="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales')) ? 'min-w-40 input-error' : 'min-w-40'}}" disabled="{{_computed.isReadOnly}}"/>
             <!-- 통화별 사용 언어 검증 에러 (지원 언어 외 선택 시) -->
             <span data-if="{{Object.keys(_local.errors ?? {}).some(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales'))}}" class="form-error">{{_local.errors?.[Object.keys(_local.errors ?? {}).find(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales'))]?.[0] ?? ''}}</span>
           </td>
@@ -91,7 +91,7 @@
                 </on>
                 <icon name="pencil" size="sm"/>
               </button>
-              <button type="button" class="{{currency.code === (_local.form?.language_currency?.default_currency) ? 'btn-icon text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'btn-icon text-error'}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || currency.code === (_local.form?.language_currency?.default_currency)}}" aria-label="$t:common.delete">
+              <button type="button" class="{{currency.code === (_local.form?.language_currency?.default_currency) ? 'btn-icon text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'btn-icon ecommerce-tone-error'}} disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || currency.code === (_local.form?.language_currency?.default_currency)}}" aria-label="$t:common.delete">
                 <on type="click">
                   <!-- 통화 삭제. 기본 통화는 지울 수 없다(판정이 버튼 클래스 식에 있다). -->
                   <set-state target="local" form.language_currency.currencies="{{(Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).filter((c, i) => i !== currency._idx)}}" :hasChanges="true"/>
@@ -139,12 +139,12 @@
           <td>
             <div class="flex-center gap-2">
               <span class="text-label-subtle whitespace-nowrap">{{(_local.form?.language_currency?.default_currency) + ' ' + (((_local.form?.language_currency?.currencies ?? []).find(c => c.code === (_local.form?.language_currency?.default_currency))?.base_unit ?? 1).toLocaleString()) + ' ='}}</span>
-              <input type="text" name="newCurrency.exchange_rate" value="{{_local.form?.newCurrency?.exchange_rate ?? 1}}" class="input w-20 text-center" placeholder="1.00" disabled="{{_computed.isReadOnly}}"/>
+              <input type="text" name="newCurrency.exchange_rate" aria-label="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.exchange_rate" value="{{_local.form?.newCurrency?.exchange_rate ?? 1}}" class="input w-20 text-center" placeholder="1.00" disabled="{{_computed.isReadOnly}}"/>
               <span class="text-label-subtle">{{_local.form?.newCurrency?.code || '???'}}</span>
             </div>
           </td>
           <td>
-            <select name="newCurrency.rounding_unit" value="{{_local.form?.newCurrency?.rounding_unit ?? '0.01'}}" class="w-24" disabled="{{_computed.isReadOnly}}">
+            <select name="newCurrency.rounding_unit" aria-label="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_unit" value="{{_local.form?.newCurrency?.rounding_unit ?? '0.01'}}" class="w-24" disabled="{{_computed.isReadOnly}}">
               <options>
                 <option value="0.01">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_01</option>
                 <option value="0.1">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_units.0_1</option>
@@ -153,7 +153,7 @@
             </select>
           </td>
           <td>
-            <select name="newCurrency.rounding_method" value="{{_local.form?.newCurrency?.rounding_method ?? 'round'}}" class="w-24" disabled="{{_computed.isReadOnly}}">
+            <select name="newCurrency.rounding_method" aria-label="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_method" value="{{_local.form?.newCurrency?.rounding_method ?? 'round'}}" class="w-24" disabled="{{_computed.isReadOnly}}">
               <options>
                 <option value="floor">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_methods.floor</option>
                 <option value="round">$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.rounding_methods.round</option>
@@ -162,7 +162,7 @@
             </select>
           </td>
           <td>
-            <input type="number" name="newCurrency.decimal_places" value="{{_local.form?.newCurrency?.decimal_places ?? 2}}" min="{{_local?.form?._meta?.limits?.decimal_places_min ?? 0}}" max="{{_local?.form?._meta?.limits?.decimal_places_max ?? 8}}" class="input w-20 text-center" disabled="{{_computed.isReadOnly}}"/>
+            <input type="number" name="newCurrency.decimal_places" aria-label="$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.decimal_places" value="{{_local.form?.newCurrency?.decimal_places ?? 2}}" min="{{_local?.form?._meta?.limits?.decimal_places_min ?? 0}}" max="{{_local?.form?._meta?.limits?.decimal_places_max ?? 8}}" class="input w-20 text-center" disabled="{{_computed.isReadOnly}}"/>
           </td>
           <td>
             <div class="flex-center gap-1">

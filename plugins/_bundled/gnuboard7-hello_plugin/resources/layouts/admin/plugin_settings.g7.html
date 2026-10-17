@@ -12,26 +12,26 @@
       <page-header data-type="composite" data-ref="page_header" title="$t:gnuboard7-hello_plugin.settings.title" description="$t:gnuboard7-hello_plugin.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
         <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <span class="text-warning-soft">$t:gnuboard7-hello_plugin.plugin_read_only</span>
+        <span class="text-xs text-yellow-700 dark:text-yellow-300">$t:gnuboard7-hello_plugin.plugin_read_only</span>
       </div>
       <div data-ref="settings_form" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <div data-ref="settings_fields" class="p-6 space-y-6">
           <div data-ref="field_log_enabled" class="flex-start gap-3">
-            <input type="checkbox" name="log_enabled" class="mt-1 h-4 w-4 rounded text-blue-600" disabled="{{_computed.isPluginReadOnly}}"/>
+            <input type="checkbox" id="hello_plugin_log_enabled" name="log_enabled" class="mt-1 h-4 w-4 rounded text-blue-600" disabled="{{_computed.isPluginReadOnly}}"/>
             <div>
-              <label class="form-label">$t:gnuboard7-hello_plugin.settings.fields.log_enabled.label</label>
+              <label class="form-label cursor-pointer" htmlFor="hello_plugin_log_enabled">$t:gnuboard7-hello_plugin.settings.fields.log_enabled.label</label>
               <p class="form-hint">$t:gnuboard7-hello_plugin.settings.fields.log_enabled.hint</p>
             </div>
           </div>
         </div>
       </div>
       <div data-ref="footer_buttons" class="sticky-footer-buttons">
-        <button data-ref="cancel_button" type="button" class="btn btn-secondary">
+        <a href="/admin/plugins" data-ref="cancel_button" class="button btn btn-secondary">
           <on type="click">
-            <navigate path="/admin/plugins"/>
+            <navigate/>
           </on>
           <span>$t:common.cancel</span>
-        </button>
+        </a>
         <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!-- 설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다 -->

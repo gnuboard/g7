@@ -9,15 +9,13 @@
       {{Object.entries((analytics_realtime?.data?.visitors ?? []).reduce((acc, v) => (v.page ? { ...acc, [v.page]: (acc[v.page] || 0) + 1 } : acc), {})).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([page, n]) => page + ' (' + n + ')').join(' · ')}}
     </span>
     <div class="flex-1"/>
-    <button data-ref="realtime_link" type="button" class="text-sm font-medium text-emerald-700 dark:text-emerald-300 hover:underline">
+    <a data-ref="realtime_link" href="/admin/analytics/realtime" :mergeQuery="true" class="button text-sm font-medium text-emerald-700 dark:text-emerald-300 hover:underline">
       <on type="click">
         <!-- 실시간 화면으로 — 이 한 줄은 상위 3개만 보이므로 접속자 목록과 페이지 전체는 그 화면에서 본다. 질의는 다른 통계 화면
              이동과 같은 규칙으로 병합해 넘긴다. -->
-        <navigate path="/admin/analytics/realtime" :mergeQuery="true">
-          <query/>
-        </navigate>
+        <navigate :mergeQuery="true"><query/></navigate>
       </on>
       $t:admin.analytics.overview.realtime_link
-    </button>
+    </a>
   </div>
 </partial>

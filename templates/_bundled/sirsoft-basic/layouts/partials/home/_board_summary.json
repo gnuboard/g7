@@ -20,18 +20,16 @@
             "children": [
                 {
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/board/{{item.slug}}"
-                            }
+                            "handler": "navigate"
                         }
                     ],
                     "props": {
-                        "className": "justify-start min-w-0 wrap-anywhere text-left font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer"
+                        "href": "/board/{{item.slug}}",
+                        "className": "inline-block justify-start min-w-0 wrap-anywhere text-left font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer"
                     },
                     "text": "{{item.name}}"
                 },
@@ -108,17 +106,15 @@
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/board/{{item.slug}}/{{post.id}}"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
+                                                "href": "/board/{{item.slug}}/{{post.id}}",
                                                 "className": "justify-start min-w-0 wrap-anywhere text-sm text-gray-900 dark:text-white text-left line-clamp-1 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer"
                                             },
                                             "text": "{{post.title}}"
@@ -200,18 +196,16 @@
         {
             "comment": "=== 더보기 버튼 ===",
             "type": "basic",
-            "name": "Button",
+            "name": "A",
             "actions": [
                 {
                     "type": "click",
-                    "handler": "navigate",
-                    "params": {
-                        "path": "/board/{{item.slug}}"
-                    }
+                    "handler": "navigate"
                 }
             ],
             "props": {
-                "className": "w-full px-4 py-3 text-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer border-t border-gray-100 dark:border-gray-700"
+                "href": "/board/{{item.slug}}",
+                "className": "inline-block w-full px-4 py-3 text-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer border-t border-gray-100 dark:border-gray-700"
             },
             "children": [
                 {

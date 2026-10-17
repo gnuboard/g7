@@ -521,6 +521,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "checkbox",
+                                                                        "aria-label": "$t:common.select_all",
                                                                         "checked": "{{(extra_fee_templates?.data?.data ?? []).length > 0 && ($parent._local.selectedTemplateIds ?? []).length === (extra_fee_templates?.data?.data ?? []).length}}",
                                                                         "className": "w-4 h-4 rounded",
                                                                         "disabled": "{{$parent._computed?.isReadOnly !== false}}"
@@ -920,6 +921,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "checkbox",
+                                                                        "aria-label": "$t:common.select_item|name={{template.zipcode || $t('common.row_n', {n: templateIdx + 1})}}",
                                                                         "checked": "{{($parent._local.selectedTemplateIds ?? []).includes(template.id)}}",
                                                                         "className": "w-4 h-4 rounded",
                                                                         "disabled": "{{$parent._computed?.isReadOnly !== false}}"
@@ -958,6 +960,7 @@
                                                                         }
                                                                     ],
                                                                     "props": {
+                                                                        "aria-label": "$t:common.row_cell|row={{template.zipcode || $t('common.row_n', {n: templateIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.zipcode')}}",
                                                                         "type": "text",
                                                                         "value": "{{$parent._local.templateForm.zipcode ?? ''}}",
                                                                         "className": "{{$parent._local.templateFormErrors?.zipcode ? 'input input-error' : 'input'}}",
@@ -1009,6 +1012,7 @@
                                                                         }
                                                                     ],
                                                                     "props": {
+                                                                        "aria-label": "$t:common.row_cell|row={{template.zipcode || $t('common.row_n', {n: templateIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.region')}}",
                                                                         "type": "text",
                                                                         "value": "{{$parent._local.templateForm.region ?? ''}}",
                                                                         "className": "{{$parent._local.templateFormErrors?.region ? 'input input-error' : 'input'}}",
@@ -1057,6 +1061,7 @@
                                                                         }
                                                                     ],
                                                                     "props": {
+                                                                        "aria-label": "$t:common.row_cell|row={{template.zipcode || $t('common.row_n', {n: templateIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.fee')}}",
                                                                         "type": "number",
                                                                         "value": "{{$parent._local.templateForm.fee ?? 0}}",
                                                                         "className": "{{$parent._local.templateFormErrors?.fee ? 'input input-error' : 'input'}}",
@@ -1116,6 +1121,7 @@
                                                                         }
                                                                     ],
                                                                     "props": {
+                                                                        "ariaLabel": "$t:common.row_cell|row={{template.zipcode || $t('common.row_n', {n: templateIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.modal_extra_fee.status')}}",
                                                                         "value": "{{$parent._local.templateForm.is_active ?? true}}",
                                                                         "name": "is_active",
                                                                         "disabled": "{{$parent._computed?.isReadOnly !== false || extra_fee_templates?.data?.abilities?.can_update !== true}}"

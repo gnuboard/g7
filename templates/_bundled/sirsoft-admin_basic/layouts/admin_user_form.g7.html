@@ -331,7 +331,7 @@
           <div class="row-stack">
             <div data-ref="field_country">
               <label class="form-label">$t:admin.users.form.fields.country</label>
-              <searchable-dropdown data-type="composite" options="{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}" value="{{_local.form?.country ?? ''}}" triggerLabel="$t:admin.users.form.fields.country_select" searchPlaceholder="$t:admin.users.form.fields.country_search" noResultsText="$t:common.no_results" class="w-full">
+              <searchable-dropdown data-type="composite" aria-label="$t:admin.users.form.fields.country" options="{{_defines?.countryList?.map(c => ({ value: c.code, label: c.name })) ?? []}}" value="{{_local.form?.country ?? ''}}" triggerLabel="$t:admin.users.form.fields.country_select" searchPlaceholder="$t:admin.users.form.fields.country_search" noResultsText="$t:common.no_results" class="w-full">
                 <on type="change" event="onChange">
                   <!-- 국가 선택. 2026-03-31 에 노출을 막았다가 #705 에서 되살렸다 — 회원 목록의 국가 필터가
                        이 값을 찾으므로 선택지는 목록 화면의 `countryList` 와 같아야 한다. -->
@@ -516,15 +516,13 @@
             <!-- 회원 알림함을 볼 권한(core.member-notifications.read)이 있을 때만 세운다 — 회원 읽기만 가진 관리자가 누르면 알림함 화면이 권한 오류로 뜬다.
                회원 리소스의 abilities 는 회원 엔드포인트 권한만 싣는 규약이라, 보는 사람 권한 목록(current_user)으로 판정한다. -->
             <div data-ref="notifications_inbox_link" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.member-notifications.read'))}}">
-              <button type="button" class="btn btn-secondary">
+              <a href="/admin/member-notifications?user_uuid={{user?.data?.uuid}}" class="button btn btn-secondary">
                 <on type="click">
                   <!-- 이 회원의 알림 발송 이력으로 이동한다 — 회원 UUID 로 목록을 거른다 -->
-                  <navigate path="/admin/member-notifications">
-                    <query user_uuid="{{user?.data?.uuid}}"/>
-                  </navigate>
+                  <navigate/>
                 </on>
                 <span>$t:admin.users.detail.notifications.view_inbox</span>
-              </button>
+              </a>
             </div>
           </div>
         </div>

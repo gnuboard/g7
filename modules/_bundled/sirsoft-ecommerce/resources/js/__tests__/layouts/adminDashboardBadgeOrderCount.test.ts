@@ -60,7 +60,9 @@ describe('대시보드 상태 배지 링크 — 서버가 센 목록 조건과 �
       const click = (badge.actions ?? []).find((a: any) => a.type === 'click' && a.handler === 'navigate');
       expect(click, `${id} navigate 누락`).toBeDefined();
 
-      const query = String(click.params.path).split('?')[1] ?? '';
+      // 주소는 링크 href 에 있다(#757 WP-L — path 없는 navigate 는 그 href 로 간다)
+      expect(badge.name).toBe('A');
+      const query = String(click.params?.path ?? badge.props?.href).split('?')[1] ?? '';
       const actual: Record<string, string[]> = {};
       for (const pair of query.split('&')) {
         const [key, value] = pair.split('=');

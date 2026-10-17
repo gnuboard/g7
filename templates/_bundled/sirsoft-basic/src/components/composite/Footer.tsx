@@ -20,7 +20,7 @@ import React from 'react';
 // 기본 컴포넌트 import
 import { Div } from '../basic/Div';
 import { A } from '../basic/A';
-import { Button } from '../basic/Button';
+import { LinkButton } from '../../support/LinkButton';
 import { H3 } from '../basic/H3';
 import { H4 } from '../basic/H4';
 import { P } from '../basic/P';
@@ -214,12 +214,13 @@ const Footer: React.FC<FooterProps> = ({
               <Ul className="mt-4 space-y-2">
                 {group.links.map((link, linkIndex) => (
                   <Li key={linkIndex}>
-                    <Button
-                      onClick={() => navigate(link.href)}
+                    <LinkButton
+                      href={link.href}
+                      onNavigate={() => navigate(link.href)}
                       className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
                     >
                       {link.label}
-                    </Button>
+                    </LinkButton>
                   </Li>
                 ))}
               </Ul>

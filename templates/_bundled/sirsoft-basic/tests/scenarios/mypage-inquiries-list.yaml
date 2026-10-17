@@ -1,0 +1,45 @@
+feature: sirsoft-basic 마이페이지 상품 문의내역 목록
+
+description: |
+  마이페이지 «문의» 탭은 여러 상품에 남긴 내 문의를 한자리에 모은다. 화면은 마이페이지 공통 틀(_user_base 상속, 탭 이동줄,
+  탭 내용 스켈레톤 전환)을 쓰고, 문의는 이커머스 모듈의 사용자 문의 API 에서 query.page 에 맞춰 불러온다. 문의 기능이 꺼져
+  있으면(응답의 inquiry_available 이 false) 빈 목록 대신 404 화면을 보여 준다.
+
+  문의 하나는 카드 한 장이다. 카드는 상품 썸네일(있을 때만)·상품명·답변 상태 표시·문의 내용·작성일을 보이고, 답변이 있으면
+  펼침 토글 없이 답변 내용과 답변일을 함께 보인다. 내가 쓴 글이므로 비밀글도 가리지 않는다. 작성 뒤 고친 문의에는 수정 시각
+  표시가 붙는다. 수정·삭제 단추는 카드 머리에 늘 있고, 각각 문의 작성 모달과 삭제 확인 모달을 그 문의의 맥락으로 연다.
+  위쪽 답변 상태 필터(전체/답변 완료/답변 대기)는 탭 단추이며 바꾸면 목록을 다시 불러온다. 검색 입력은 없다.
+  문의가 없으면 안내 문구와 쇼핑하러 가는 링크를 보인다. 페이지 번호를 바꾸면 목록을 다시 불러온다.
+  화면 문구는 템플릿의 mypage.inquiries 다국어 키를 쓴다.
+
+axes:
+  area: [page_shell, list_card, empty_state, pagination, status_filter, item_actions]
+
+effects:
+  - inquiries_page_uses_mypage_shell              # _user_base 상속·currentTab·탭 이동줄·목록 partial·스켈레톤 전환
+  - inquiries_fetched_from_module_user_endpoint   # 이커머스 모듈 사용자 문의 API(옛 /api/shop/ 경로 아님)
+  - inquiries_page_follows_query_page             # 데이터소스 page ← query.page, 페이지 상태 초기값
+  - inquiries_unavailable_shows_404               # inquiry_available 이 false 면 404 화면
+  - inquiries_list_blurred_until_loaded           # 목록 partial 은 문의 응답 전까지 흐림
+  - inquiry_card_binds_item_fields                # 카드가 문의 응답 필드를 item 반복 변수로 바인딩
+  - own_secret_inquiry_shown_unmasked             # 내 비밀글은 가리지 않는다
+  - answer_status_badge_shown                     # 답변 완료/대기 상태 표시
+  - reply_shown_when_answered_without_toggle      # 답변이 있으면 토글 없이 답변 내용 표시
+  - dates_formatted_with_date_pipe                # 질문일·답변일은 date 파이프로 표시
+  - product_thumbnail_shown_when_present          # 상품 썸네일은 있을 때만
+  - edited_label_when_updated_after_created       # 작성 뒤 고친 문의에 수정 시각 표시
+  - layout_keys_use_template_mypage_namespace     # 화면 문구는 템플릿 mypage.inquiries 키(모듈 네임스페이스 아님)
+  - empty_state_offers_shopping_link              # 빈 상태 안내와 쇼핑 이동 링크
+  - pagination_refetches_inquiries                # 페이지 변경이 상태 갱신 후 목록을 다시 불러옴
+  - answer_status_filter_tabs_refetch             # 답변 상태 필터 탭이 상태에 묶이고 바꾸면 다시 불러옴
+  - search_input_removed                          # 검색 입력·검색 상태·검색 placeholder 가 없다
+  - delete_opens_confirm_modal_with_context       # 삭제는 확인 모달을 그 문의 맥락(출처·id·답변 여부)으로 연다
+  - edit_opens_write_modal_with_context           # 수정은 작성 모달을 그 문의 맥락(작성 시각·게시판 설정)으로 연다
+  - inquiry_rendered_as_card_with_header_actions  # 문의는 카드로 그리고 수정·삭제 단추는 펼침과 무관하게 카드 머리에 둔다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/mypage-inquiries.test.tsx
+
+notes: |
+  e2e_browser=partial — 레이아웃 JSON 의 데이터소스·바인딩·조건·액션 구조를 정적으로 잠근다. 이 시험은 모달을 여는 액션과
+  넘기는 맥락까지만 재며, 모달 안의 수정·삭제 동작은 재지 않는다.

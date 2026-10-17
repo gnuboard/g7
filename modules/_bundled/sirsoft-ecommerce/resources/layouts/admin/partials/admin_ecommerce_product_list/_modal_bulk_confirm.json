@@ -31,7 +31,7 @@
                             "type": "basic",
                             "name": "H4",
                             "props": {
-                                "className": "font-semibold text-info-soft mb-2"
+                                "className": "font-semibold ecommerce-tone-info-soft mb-2 text-xs"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.bulk_changes_section"
                         },
@@ -39,7 +39,7 @@
                             "type": "basic",
                             "name": "Ul",
                             "props": {
-                                "className": "space-y-1 text-info-soft"
+                                "className": "space-y-1 ecommerce-tone-info-soft text-xs"
                             },
                             "children": [
                                 {

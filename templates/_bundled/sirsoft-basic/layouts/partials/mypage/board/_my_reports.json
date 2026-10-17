@@ -42,6 +42,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:mypage.board_activities.reactions.table.board",
                         "value": "{{_global.myReportsBoard ?? ''}}",
                         "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     },
@@ -96,6 +97,7 @@
                     ],
                     "props": {
                         "data-testid": "my-reports-status-filter",
+                        "aria-label": "$t:mypage.board_activities.reports.filter.status_label",
                         "value": "{{_global.myReportsStatus ?? ''}}",
                         "className": "min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
                         "options": [
@@ -150,6 +152,7 @@
                     ],
                     "props": {
                         "data-testid": "my-reports-target-filter",
+                        "aria-label": "$t:mypage.board_activities.reactions.table.target",
                         "value": "{{_global.myReportsTargetType ?? ''}}",
                         "className": "min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
                         "options": [
@@ -195,6 +198,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:common.sort_order",
                         "value": "{{_global.myReportsSort ?? 'latest'}}",
                         "className": "min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     },
@@ -242,6 +246,7 @@
                             ],
                             "props": {
                                 "data-testid": "my-reports-search-field",
+                                "aria-label": "$t:common.search_field",
                                 "value": "{{_global.myReportsSearchField ?? 'title_content'}}",
                                 "className": "px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
                                 "options": [
@@ -464,18 +469,16 @@
                                         {
                                             "comment": "신고한 글·댓글. 글은 제목, 댓글은 본문 요약(댓글 스냅샷에는 제목이 없다). 살아 있으면 눌러서 원글로 간다",
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "if": "{{!report.target_deleted && !!report.board_slug && !!report.post_id}}",
                                             "actions": [
                                                 {
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/board/{{report.board_slug}}/{{report.post_id}}"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
+                                                "href": "/board/{{report.board_slug}}/{{report.post_id}}",
                                                 "className": "justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2"
                                             },
                                             "text": "{{raw:report.title ?? report.excerpt ?? ''}}"

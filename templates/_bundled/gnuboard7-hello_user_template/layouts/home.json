@@ -36,7 +36,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "rounded-lg border border-gray-200 bg-blue-50 px-6 py-6 mb-6"
+                    "className": "rounded-lg border border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-950 px-6 py-6 mb-6"
                 },
                 "children": [
                     {
@@ -80,7 +80,7 @@
                         "name": "Div",
                         "if": "{{(memos?.data?.data ?? []).length === 0}}",
                         "props": {
-                            "className": "rounded border border-gray-200 bg-gray-50 px-4 py-6 text-center text-gray-500"
+                            "className": "rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-6 text-center text-gray-500 dark:text-gray-400"
                         },
                         "children": [
                             {
@@ -107,7 +107,7 @@
                                     "item_var": "memo"
                                 },
                                 "props": {
-                                    "className": "rounded border border-gray-200 bg-white px-4 py-3 hover:border-blue-400"
+                                    "className": "rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 hover:border-blue-400 dark:hover:border-blue-500"
                                 },
                                 "children": [
                                     {
@@ -143,18 +143,16 @@
                 "children": [
                     {
                         "type": "basic",
-                        "name": "Button",
+                        "name": "A",
                         "actions": [
                             {
                                 "type": "click",
-                                "handler": "navigate",
-                                "params": {
-                                    "path": "/"
-                                }
+                                "handler": "navigate"
                             }
                         ],
                         "props": {
-                            "className": "px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 cursor-pointer",
+                            "href": "/",
+                            "className": "inline-flex items-center justify-center px-4 py-2 rounded bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 cursor-pointer",
                             "data-testid": "home-button"
                         },
                         "text": "$t:user.home.back_to_home"

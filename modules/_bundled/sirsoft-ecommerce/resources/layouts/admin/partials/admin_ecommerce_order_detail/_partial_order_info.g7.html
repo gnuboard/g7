@@ -18,7 +18,7 @@
         <div data-ref="bulk_action_bar" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
           <span class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.order.detail.order_info.selected_count|count={{(_local.selectedProducts || []).length}}</span>
           <div class="flex-center flex-wrap gap-2">
-            <select name="batchOrderStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.batchOrderStatus || ''}}" disabled="{{order?.data?.abilities?.can_update !== true}}">
+            <select name="batchOrderStatus" aria-label="$t:sirsoft-ecommerce.admin.order.detail.order_info.change_status" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.batchOrderStatus || ''}}" disabled="{{order?.data?.abilities?.can_update !== true}}">
               <options>
                 <option value="" disabled>$t:sirsoft-ecommerce.admin.order.detail.order_info.change_status</option>
                 <option value="pending_payment">$t:sirsoft-ecommerce.admin.order.filter.order_status_options.payment_pending</option>
@@ -38,7 +38,7 @@
           </div>
           <div data-if="{{_local.batchOrderStatus === 'shipping_ready' || _local.batchOrderStatus === 'shipping' || _local.batchOrderStatus === 'delivered'}}" class="flex-center gap-2">
             <span class="text-label whitespace-nowrap">$t:sirsoft-ecommerce.admin.order.bulk.shipping_label</span>
-            <select name="batchCarrierId" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.batchCarrierId || ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.detail.order_info.carrier" disabled="{{order?.data?.abilities?.can_update !== true}}" options="{{active_carriers?.data ?? []}}">
+            <select name="batchCarrierId" aria-label="$t:sirsoft-ecommerce.admin.order.detail.order_info.carrier" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.batchCarrierId || ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.detail.order_info.carrier" disabled="{{order?.data?.abilities?.can_update !== true}}" options="{{active_carriers?.data ?? []}}">
               <on type="change">
                 <!-- 택배사. 선택지는 활성 택배사 목록에서 오고, 확인 창이 이 id 를 이름으로 되짚어 보여 준다. -->
                 <set-state target="local" batchCarrierId="{{$event.target.value}}"/>
@@ -90,7 +90,7 @@
             $t:sirsoft-ecommerce.admin.order.detail.order_info.batch_change
           </button>
         </div>
-        <data-grid data-type="composite" data-ref="order_product_datagrid" data="{{order.data?.options ?? []}}" idField="id" :selectable="true" selectionScope="free" selectedIds="{{_local.selectedProducts || []}}" :pagination="false" :showColumnSelector="false" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.order.detail.order_info.no_products" footerClassName="bg-gray-50 dark:bg-gray-800/50 font-medium">
+        <data-grid data-type="composite" data-ref="order_product_datagrid" rowLabelField="product_name" data="{{order.data?.options ?? []}}" idField="id" :selectable="true" selectionScope="free" selectedIds="{{_local.selectedProducts || []}}" :pagination="false" :showColumnSelector="false" selectedCountText="" emptyMessage="$t:sirsoft-ecommerce.admin.order.detail.order_info.no_products" footerClassName="bg-gray-50 dark:bg-gray-800/50 font-medium">
           <column field="product_info" header="$t:sirsoft-ecommerce.admin.order.detail.order_info.columns.product_info" width="auto" :sortable="false" :required="true">
             <cell>
               <div class="flex items-start gap-3">
@@ -292,15 +292,12 @@
               <span class="text-label-subtle block mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_info.name</span>
               <action-menu data-type="composite" data-if="{{!!order.data?.user_id}}" position="left">
                 <prop name="items">
-                  <item id="view_member" label="$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_action.view_member" iconName="user"/>
+                  <item id="view_member" href="/admin/users/{{order.data?.user_id}}" target="_blank" label="$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_action.view_member" iconName="user"/>
                   <item id="search_by_orderer" label="$t:sirsoft-ecommerce.admin.order.detail.order_info.orderer_action.search_by_member" iconName="magnifying-glass"/>
                 </prop>
                 <on event="onItemClick">
                   <!-- 주문자 이름 메뉴 — 회원 상세는 **새 창**으로(보던 주문을 잃지 않게), 그 회원 주문만 보기는 같은 창에서 주문 목록으로 넘어간다. -->
                   <switch>
-                    <case when="view_member">
-                      <open-window path="/admin/users/{{order.data?.user_id}}"/>
-                    </case>
                     <case when="search_by_orderer">
                       <!-- 주문자명으로 검색 — 회원 지정 필터(orderer_uuid)를 함께 비우지 않으면 이름 검색과 회원 필터가 겹쳐 결과가 비어 보인다 (#75). -->
                       <navigate path="/admin/ecommerce/orders" :mergeQuery="true" :replace="true" transition_overlay_target="order_product_datagrid__body">
@@ -369,8 +366,8 @@
           <div class="flex-start gap-2">
             <icon name="circle-exclamation" class="text-red-500 dark:text-red-400 mt-0.5 flex-shrink-0"/>
             <div class="min-w-0 flex-1">
-              <span class="text-error-strong block mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.validation_error_title</span>
-              <div data-each="errorMsg in {{Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])}}" class="text-error-soft">{{errorMsg}}</div>
+              <span class="ecommerce-tone-error-strong block mb-1 text-sm font-medium">$t:sirsoft-ecommerce.admin.order.detail.order_info.validation_error_title</span>
+              <div data-each="errorMsg in {{Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])}}" class="ecommerce-tone-error-soft text-sm">{{errorMsg}}</div>
             </div>
           </div>
         </div>
@@ -379,7 +376,7 @@
             <!-- 배송국가 (D9 — 항상 표시 KR 포함. 해외배송 활성 시 변경 가능, 아니면 표시 전용 — D7) -->
             <div>
               <span class="text-label-subtle mb-1 block">$t:sirsoft-ecommerce.common.shipping_country_label</span>
-              <select data-if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" name="recipient_country_code" value="{{_local.form.recipient_country_code ?? order?.data?.shipping_address?.recipient_country_code ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code) }))}}" class="w-full" disabled="{{order?.data?.abilities?.can_update !== true}}">
+              <select data-if="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}" name="recipient_country_code" aria-label="$t:sirsoft-ecommerce.common.shipping_country_label" value="{{_local.form.recipient_country_code ?? order?.data?.shipping_address?.recipient_country_code ?? 'KR'}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code) }))}}" class="w-full" disabled="{{order?.data?.abilities?.can_update !== true}}">
                 <on type="change">
                   <!-- 수령 국가 — 해외배송을 켠 쇼핑몰에서만 고를 수 있고, 끈 상태에서는 이 선택칸 자리에 나라 이름만 글자로 보인다. -->
                   <set-state target="local" form.recipient_country_code="{{$event.target.value}}"/>
@@ -392,7 +389,7 @@
                 <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.name</span>
                 <span class="text-red-500 dark:text-red-400">*</span>
               </div>
-              <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_name ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.recipient_name}}" name="recipient_name" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+              <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_name ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.recipient_name}}" name="recipient_name" aria-label="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.name" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
               <span data-if="{{_local.errors?.recipient_name}}" class="form-error-xs mt-1 block">{{_local.errors?.recipient_name?.[0] ?? ''}}</span>
             </div>
             <div>
@@ -401,7 +398,7 @@
                 <span class="text-red-500 dark:text-red-400">*</span>
               </div>
               <div class="flex-center gap-2">
-                <input type="text" class="input flex-1 disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_phone ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.recipient_phone}}" name="recipient_phone" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+                <input type="text" class="input flex-1 disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_phone ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.recipient_phone}}" name="recipient_phone" aria-label="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.phone" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
               </div>
               <span data-if="{{_local.errors?.recipient_phone}}" class="form-error-xs mt-1 block">{{_local.errors?.recipient_phone?.[0] ?? ''}}</span>
             </div>
@@ -412,7 +409,7 @@
                 <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.tel</span>
                 <span class="text-red-500 dark:text-red-400">*</span>
               </div>
-              <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_tel ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.recipient_tel}}" name="recipient_tel" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+              <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_tel ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.recipient_tel}}" name="recipient_tel" aria-label="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.tel" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
               <span data-if="{{_local.errors?.recipient_tel}}" class="form-error-xs mt-1 block">{{_local.errors?.recipient_tel?.[0] ?? ''}}</span>
               <span class="text-hint mt-1 block">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.phone_or_tel_hint</span>
             </div>
@@ -423,7 +420,7 @@
                 <span class="text-red-500 dark:text-red-400">*</span>
               </div>
               <div class="flex-center gap-2">
-                <input type="text" class="{{_local.errors?.recipient_zipcode ? 'input-readonly input-error flex-1' : 'input-readonly flex-1'}}" value="{{_local.form.recipient_zipcode}}" name="recipient_zipcode" :readOnly="true" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+                <input type="text" class="{{_local.errors?.recipient_zipcode ? 'input-readonly input-error flex-1' : 'input-readonly flex-1'}}" value="{{_local.form.recipient_zipcode}}" name="recipient_zipcode" aria-label="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.zipcode" :readOnly="true" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
                 <!-- 콜백은 callbacks 에 둔다 — props 는 평가되어 전달되고 주입 컴포넌트는 extensionPointCallbacks 를 읽는다 -->
                 <extension-point name="address_search_slot" data-ref="order_detail_address_search_slot" disabled="{{order?.data?.abilities?.can_update !== true}}">
                   <prop name="readOnlyFields">
@@ -440,7 +437,7 @@
           <!-- 국내(KR) 주소 — 해외 주문이면 숨김 (D7) -->
           <div data-if="{{(_local.form.recipient_country_code ?? 'KR') === 'KR'}}">
             <span class="text-label-subtle block mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address</span>
-            <input type="text" class="input-readonly w-full" value="{{_local.form.recipient_address ?? ''}}" name="recipient_address" :readOnly="true" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+            <input type="text" class="input-readonly w-full" value="{{_local.form.recipient_address ?? ''}}" name="recipient_address" aria-label="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address" :readOnly="true" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
           </div>
           <!-- 국내(KR) 상세주소 — 해외 주문이면 숨김 (D7) -->
           <div data-if="{{(_local.form.recipient_country_code ?? 'KR') === 'KR'}}">
@@ -448,7 +445,7 @@
               <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address_detail</span>
               <span class="text-red-500 dark:text-red-400">*</span>
             </div>
-            <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_detail_address ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.recipient_detail_address}}" name="recipient_detail_address" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+            <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.recipient_detail_address ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.recipient_detail_address}}" name="recipient_detail_address" aria-label="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address_detail" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
             <span data-if="{{_local.errors?.recipient_detail_address}}" class="form-error-xs mt-1 block">{{_local.errors?.recipient_detail_address?.[0] ?? ''}}</span>
           </div>
           <!-- 해외 주소 (D7 — KR 외 국가 주문 시. 체크아웃/주소록과 동일 필드: address_line_1/2, intl_city/state/postal_code) -->
@@ -457,7 +454,7 @@
               <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address</span>
               <span class="text-red-500 dark:text-red-400">*</span>
             </div>
-            <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.address_line_1 ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.address_line_1 ?? ''}}" name="address_line_1" placeholder="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.intl_address1_placeholder" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+            <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.address_line_1 ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.address_line_1 ?? ''}}" name="address_line_1" aria-label="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.address" placeholder="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.intl_address1_placeholder" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
             <span data-if="{{_local.errors?.address_line_1}}" class="form-error-xs mt-1 block">{{_local.errors?.address_line_1?.[0] ?? ''}}</span>
             <input type="text" class="input w-full disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.form.address_line_2 ?? ''}}" name="address_line_2" placeholder="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.intl_address2_placeholder" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
             <div class="grid grid-cols-2 gap-2">
@@ -471,7 +468,7 @@
             <span class="text-label-subtle block mb-1">$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.delivery_message</span>
             <!-- 주문시점 배송 메모 라벨 (프리셋 선택 시 표시, read-only) -->
             <span data-if="{{order?.data?.shipping_address?.delivery_memo_label}}" class="block mb-1 text-sm text-gray-900 dark:text-white">{{order?.data?.shipping_address?.delivery_memo_label ?? ''}}</span>
-            <textarea class="input w-full textarea-sm disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.delivery_memo ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.delivery_memo}}" name="delivery_memo" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
+            <textarea class="input w-full textarea-sm disabled:opacity-50 disabled:cursor-not-allowed {{_local.errors?.delivery_memo ? 'border border-red-500 dark:border-red-500' : ''}}" value="{{_local.form.delivery_memo}}" name="delivery_memo" aria-label="$t:sirsoft-ecommerce.admin.order.detail.order_info.receiver_info.delivery_message" disabled="{{order?.data?.abilities?.can_update !== true}}"/>
             <span data-if="{{_local.errors?.delivery_memo}}" class="form-error-xs mt-1 block">{{_local.errors?.delivery_memo?.[0] ?? ''}}</span>
           </div>
         </div>

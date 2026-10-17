@@ -312,7 +312,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-warning-soft"
+                                                            "className": "text-xs gdpr-tone-warning"
                                                         },
                                                         "text": "$t:sirsoft-gdpr.plugin_read_only"
                                                     }
@@ -725,7 +725,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ml-3 {{_local.form?.banner_enabled ? 'bg-green-100 dark:bg-green-900 text-success-soft' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}}"
+                                                    "className": "inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ml-3 {{_local.form?.banner_enabled ? 'bg-green-100 dark:bg-green-900 text-xs gdpr-tone-success' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}}"
                                                 },
                                                 "text": "{{_local.form?.banner_enabled ? '$t:sirsoft-gdpr.settings.status.enabled' : '$t:sirsoft-gdpr.settings.status.disabled'}}"
                                             }
@@ -999,7 +999,7 @@
                                                                                                 ],
                                                                                                 "props": {
                                                                                                     "type": "button",
-                                                                                                    "className": "text-info-soft px-2 py-0.5 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors",
+                                                                                                    "className": "text-xs gdpr-tone-info px-2 py-0.5 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors",
                                                                                                     "title": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{gdprPolicyVersionCurrent?.data?.data?.version ?? '?'}}"
                                                                                                 },
                                                                                                 "children": [
@@ -1367,7 +1367,7 @@
                                                                                                                         ],
                                                                                                                         "props": {
                                                                                                                             "type": "button",
-                                                                                                                            "className": "text-info-soft px-2 py-1 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors",
+                                                                                                                            "className": "text-xs gdpr-tone-info px-2 py-1 font-medium bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors",
                                                                                                                             "title": "$t:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{row?.version ?? '?'}}"
                                                                                                                         },
                                                                                                                         "children": [
@@ -1642,7 +1642,7 @@
                                                                                 "name": "Span",
                                                                                 "if": "{{category?.required === true}}",
                                                                                 "props": {
-                                                                                    "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 dark:bg-red-800 text-danger-soft"
+                                                                                    "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 dark:bg-red-800 text-xs gdpr-tone-danger"
                                                                                 },
                                                                                 "text": "$t:sirsoft-gdpr.settings.fields.cookie_categories.category_required_badge"
                                                                             },
@@ -1871,7 +1871,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ml-3 {{_local.form?.banner_enabled ? 'bg-green-100 dark:bg-green-900 text-success-soft' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}}"
+                                                    "className": "inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium flex-shrink-0 ml-3 {{_local.form?.banner_enabled ? 'bg-green-100 dark:bg-green-900 text-xs gdpr-tone-success' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}}"
                                                 },
                                                 "text": "{{_local.form?.banner_enabled ? '$t:sirsoft-gdpr.settings.status.enabled' : '$t:sirsoft-gdpr.settings.status.disabled'}}"
                                             }
@@ -3306,6 +3306,7 @@
                                                         "name": "MultilingualInput",
                                                         "props": {
                                                             "name": "annual_notice.introduction",
+                                                            "ariaLabel": "$t:sirsoft-gdpr.annual_notice.introduction",
                                                             "inputType": "textarea",
                                                             "maxLength": 2000,
                                                             "disabled": "{{_computed.isPluginReadOnly || (!_local.form?.annual_notice?.enabled || _local.form?.annual_notice?.enabled === '0')}}"
@@ -3405,19 +3406,16 @@
                                                     },
                                                     {
                                                         "type": "basic",
-                                                        "name": "Button",
+                                                        "name": "A",
                                                         "actions": [
                                                             {
                                                                 "type": "click",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/admin/plugins/sirsoft-gdpr/notice-log"
-                                                                }
+                                                                "handler": "navigate"
                                                             }
                                                         ],
                                                         "props": {
-                                                            "type": "button",
-                                                            "className": "btn btn-secondary"
+                                                            "href": "/admin/plugins/sirsoft-gdpr/notice-log",
+                                                            "className": "button btn btn-secondary"
                                                         },
                                                         "children": [
                                                             {
@@ -3962,19 +3960,16 @@
                             {
                                 "id": "footer_cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/plugins"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary text-sm"
+                                    "href": "/admin/plugins",
+                                    "className": "button btn btn-secondary text-sm"
                                 },
                                 "children": [
                                     {

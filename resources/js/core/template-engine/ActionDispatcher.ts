@@ -37,7 +37,15 @@ import type { GlobalHeaderRule } from './LayoutLoader';
 import { IdentityGuardInterceptor } from '../identity/IdentityGuardInterceptor';
 import { isAbortError, isDocumentUnloading, isNetworkFailure, loadScriptWithRetry, loadStylesheetWithRetry } from './networkResilience';
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
-import { resolveSafeNavPath, isDangerousScheme, isSameOriginRequestUrl } from '../support/navPolicy';
+import { resolveSameTabNavPath, isDangerousScheme, isSameOriginRequestUrl, toSameOriginNavPath, resolveNavigatePathWithFallback } from '../support/navPolicy';
+import {
+  applyQueryValues,
+  getEventAnchor,
+  isLinkClickForBrowser,
+  mergeQueryIntoHref,
+  toSameOriginPath,
+  type LinkClickLike,
+} from './navigationLinks';
 import {
   toExpressionEvent,
   toExpressionArgs,
@@ -264,6 +272,24 @@ export interface ActionDefinition {
    * 진입점 액션에서만 의미가 있다 — 이벤트 객체를 쥐고 있는 것이 그 자리뿐이다.
    */
   stopPropagation?: boolean;
+  /**
+   * setState 의 리렌더 여부 (engine-v1.42.0)
+   *
+   * `false` 면 상태만 바꾸고 다시 그리지 않는다. executeAction 이 `__render` 메타데이터로 바꿔
+   * handleSetState 에 넘긴다.
+   */
+  render?: boolean;
+  /**
+   * 기본 동작 차단 방식 (engine-v1.80.1) — 진입점 액션에서만 의미가 있다.
+   *
+   * - 생략(자동): 실제 주소 `<a href>` 를 보통 클릭이 아니게(Ctrl·Cmd·Shift·Alt·가운데 버튼·`target`·`download`)
+   *   누르면 막지도 실행하지도 않는다 — 브라우저가 새 탭·새 창으로 연다. 그 밖은 막고 실행한다.
+   * - `true`: 언제나 막고 실행한다(종전 동작).
+   * - `false`: 막지 않고 실행한다.
+   *
+   * `change` 이벤트는 어느 경우에도 막지 않는다.
+   */
+  preventDefault?: boolean;
   /** 키보드 이벤트에서 특정 키 필터링 (예: "Enter", "Escape") */
   key?: string;
   /**
@@ -519,6 +545,21 @@ export interface ActionContext {
    * 쓴다(engine-v1.80.0 — `<on listen>` 리스너의 `_eventResult.success`).
    */
   failures?: Error[];
+  /**
+   * 진입점 이벤트의 currentTarget 이 `<a href>` 일 때 그 href 속성 값.
+   *
+   * path 를 생략한 navigate 가 이 주소로 이동한다. currentTarget 은 디스패치 중에만 채워지므로
+   * createHandler 의 동기 구간에서 읽어 둔다(그 뒤 `await` 를 지나면 null 이다).
+   *
+   * @since engine-v1.80.1
+   */
+  linkHref?: string | null;
+  /**
+   * DevTools 상태 변경 추적에 붙이는 액션 식별자 (선택)
+   *
+   * setState 가 `startStateChange` 의 연관 키로 넘긴다. 엔진 안에서 채우는 곳은 없고 호출자가 줄 때만 실린다.
+   */
+  actionId?: string;
 }
 
 /**
@@ -2194,12 +2235,29 @@ export class ActionDispatcher {
       // 보안: 표현식용 이벤트 스냅샷 — 본 실행·onError 가 같은 값을 공유한다
       const eventData = toExpressionEvent(event);
 
+      // 링크 클릭 판정은 동기 구간에서 — currentTarget 은 `await` 뒤에 null 이 된다 (engine-v1.80.1)
+      const anchor = getEventAnchor(event as unknown as LinkClickLike);
+      const linkHref = anchor ? anchor.getAttribute('href') : null;
+
+      // 실제 주소 링크를 보통 클릭이 아니게(Ctrl·Cmd·Shift·Alt·target·download) 누르면 브라우저에 맡긴다 —
+      // 막지도 실행하지도 않아 새 탭·새 창으로 열린다. `preventDefault` 키를 적으면 자동 판정을 끈다.
+      if (
+        event.type === 'click' &&
+        action.preventDefault === undefined &&
+        isLinkClickForBrowser(event as unknown as LinkClickLike & { target?: EventTarget | null })
+      ) {
+        // 링크 자신의 처리기뿐 아니라 링크를 감싼 클릭 가능한 부모(카드 등)도 여기서 비킨다 — 부모가 막으면 새 탭이 취소된다
+        logger.log('Modified link click left to the browser (new tab/window)');
+        return;
+      }
+
       try {
         // 기본 이벤트 동작 방지 (폼 제출 시 페이지 리로드 방지)
         // 단, change 이벤트에서는 preventDefault()를 호출하면 안됨
         // 체크박스/라디오/input의 change 이벤트에서 preventDefault() 호출 시
         // 네이티브 상태 변경이 취소되어 React 상태와 불일치 발생
-        if (event.type !== 'change') {
+        // `preventDefault: false` 면 막지 않는다 (engine-v1.80.1)
+        if (event.type !== 'change' && action.preventDefault !== false) {
           event.preventDefault();
         }
 
@@ -2250,6 +2308,8 @@ export class ActionDispatcher {
           isolatedContext: componentContext?.isolatedContext,
           // 이 실행의 실패 목록 — 안쪽 동작의 실패를 결과에 올린다(아래 executeAction 뒤)
           failures: [],
+          // 클릭한 링크의 href — path 없는 navigate 의 목적지 (engine-v1.80.1)
+          linkHref,
         };
 
         // 확인 메시지 표시
@@ -2578,17 +2638,46 @@ export class ActionDispatcher {
           result = this.handleResolveIdentityChallenge(resolvedParams);
           break;
 
-        case 'navigate':
+        case 'navigate': {
           // navigate 액션의 경우 params.path를 우선적으로 사용 (동적 바인딩 지원)
-          const navigatePath = resolvedParams.path || resolvedTarget;
+          let navigatePath = resolvedParams.path || resolvedTarget;
+          // path·target 이 둘 다 비면 클릭한 `<a href>` 의 주소로 이동한다 — 주소는 href 한 곳.
+          // 같은 출처 주소만 쓴다: 저장 검사는 `<a href>` 에 외부 주소를 허용하므로 이동 대상으로 따라가면 안 된다.
+          // (engine-v1.80.1)
+          // path 키 자체가 없을 때만 — path 식이 빈 값으로 풀린 경우는 종전대로 건너뛴다(작성자가 주소를 적은 것)
+          let fromLink = false;
+          const pathOmitted = action.params?.path === undefined && action.target === undefined;
+          if (pathOmitted && (typeof navigatePath !== 'string' || navigatePath.trim() === '') && context.linkHref != null) {
+            const linkPath = toSameOriginPath(context.linkHref);
+            if (linkPath === null) {
+              logger.warn('navigate skipped — link href is not a same-origin address', { href: context.linkHref });
+              break;
+            }
+            navigatePath = linkPath;
+            fromLink = true;
+          }
+          // 대체 경로(`fallbackPath`): 주소가 비었거나 거부되면(실행 스킴·다른 출처·`//host`) 레이아웃이 적은 안전한 경로로,
+          // 그것도 거부면 이동하지 않는다. 기존 `params.fallback`(미등록 라우트 핸들러)과는 다른 인자다 (engine-v1.80.1, 결정)
+          if (resolvedParams.fallbackPath !== undefined) {
+            const chosenPath = resolveNavigatePathWithFallback(navigatePath, resolvedParams.fallbackPath);
+            if (chosenPath === null) {
+              logger.warn('navigate skipped — path and fallbackPath are both empty or rejected', {
+                path: navigatePath,
+                fallbackPath: resolvedParams.fallbackPath,
+              });
+              break;
+            }
+            navigatePath = chosenPath;
+          }
           // 빈 경로는 건너뛴다 — 그대로 넘기면 경로 처리에서 TypeError 가 나고, 그 TypeError 가
           // 「네트워크 실패」 로 분류돼 엉뚱한 토스트가 뜬다(engine-v1.78.2, O-F1).
           if (typeof navigatePath !== 'string' || navigatePath.trim() === '') {
             logger.warn('navigate skipped — empty path', { params: action.params, target: action.target });
             break;
           }
-          result = await this.handleNavigate(navigatePath, resolvedParams, context);
+          result = await this.handleNavigate(navigatePath, resolvedParams, context, fromLink);
           break;
+        }
 
         case 'navigateBack':
           result = await this.handleNavigateBack();
@@ -3066,13 +3155,23 @@ export class ActionDispatcher {
    * @param target 이동할 경로 (기본 경로)
    * @param params 파라미터 (mergeQuery, query, replace 등)
    * @param context 액션 컨텍스트
+   * @param fromLink 목적지를 클릭한 링크의 href 에서 얻었는지 — 그 href 의 쿼리를 병합 바탕에 넣는다 (engine-v1.80.1)
    */
   private async handleNavigate(
     target: string,
     params: Record<string, any>,
-    context: ActionContext
+    context: ActionContext,
+    fromLink: boolean = false
   ): Promise<void> {
+    // 같은 출처 전체 주소(`https://이 사이트/board/free/14` — 알림 이동 주소 등)는 경로로 바꿔 SPA 이동한다.
+    // 종전에는 라우트 매칭이 전체 주소를 몰라 미매칭 폴백 → 같은 탭 sink 가 스킴을 거부해 첫 화면 `/` 로 갔다.
+    // 다른 출처·실행 스킴은 바꾸지 않아 종전 판정(폴백 sink 의 거부)을 그대로 받는다 (engine-v1.80.1)
+    target = toSameOriginNavPath(target) ?? target;
     let finalPath = target;
+    // 링크 href 의 #해시는 쿼리 병합·교체 뒤에 다시 붙인다 (engine-v1.80.1)
+    const hashAt = fromLink ? target.indexOf('#') : -1;
+    const linkHash = hashAt >= 0 ? target.slice(hashAt) : '';
+    const linkTarget = hashAt >= 0 ? target.slice(0, hashAt) : target;
 
     // query 파라미터 처리
     // mergeQuery: true 는 query 키 없이도 병합을 수행한다 (@since engine-v1.54.2).
@@ -3081,8 +3180,12 @@ export class ActionDispatcher {
     // 정반대로 동작하던 함정이라 게이트를 넓힌다.
     if (params.query || params.mergeQuery === true) {
       if (params.mergeQuery === true) {
-        // mergeQuery가 true이면 기존 쿼리스트링과 병합
-        finalPath = this.buildMergedQueryPath(target, params.query ?? {});
+        // mergeQuery가 true이면 기존 쿼리스트링과 병합.
+        // 링크 href 에서 온 주소면 href 자신의 쿼리가 현재 쿼리를 이긴다 — 링크를 `:mergeQuery` 로 그린 href
+        // (`mergeQueryIntoHref`)와 같은 목적지가 되게 한다 (engine-v1.80.1)
+        finalPath = fromLink
+          ? this.buildMergedQueryPath(mergeQueryIntoHref(linkTarget), params.query ?? {}, true) + linkHash
+          : this.buildMergedQueryPath(target, params.query ?? {});
       } else {
         // mergeQuery가 false이거나 없으면 새 쿼리스트링으로 대체
         const queryString = new URLSearchParams();
@@ -3104,7 +3207,8 @@ export class ActionDispatcher {
         }
         const qs = queryString.toString();
         if (qs) {
-          finalPath = `${target}?${qs}`;
+          // 링크 href 에서 온 주소는 href 의 쿼리를 새 쿼리로 바꾸고 해시를 지킨다(종전 경로 명시 navigate 는 그대로)
+          finalPath = fromLink ? `${linkTarget.split('?')[0]}?${qs}${linkHash}` : `${target}?${qs}`;
         }
       }
     }
@@ -3560,9 +3664,11 @@ export class ActionDispatcher {
     if (windowTarget === '_self') {
       // 같은 탭 이동은 same-origin 경로만 — navigate 미매칭 폴백도 이 자리로 온다.
       // 보안: `?redirect=javascript:…`·`//evil` 이 레이아웃을 거쳐 그대로 흘러드는 sink 다.
-      const safePath = resolveSafeNavPath(finalPath, '/');
-      if (safePath !== finalPath) {
-        logger.warn('[handleOpenWindow] same-origin 경로가 아니라 기본 경로로 이동합니다.', finalPath);
+      // 거부된 주소(실행 스킴·다른 출처)는 이동하지 않는다 — 빈 주소만 기본 경로 `/` (engine-v1.80.1, 결정)
+      const safePath = resolveSameTabNavPath(finalPath, '/');
+      if (safePath === null) {
+        logger.warn('[handleOpenWindow] same-origin 경로가 아니라 이동하지 않습니다.', finalPath);
+        return;
       }
       window.location.assign(safePath);
     } else {
@@ -3573,7 +3679,8 @@ export class ActionDispatcher {
         return;
       }
       if (isSameOriginRequestUrl(finalPath)) {
-        window.open(finalPath, '_blank');
+        // 같은 출처 새 창도 이 창(opener)과 끊는다 — 템플릿의 새 탭 링크(`rel="noopener"`)와 같은 기준 (engine-v1.80.1)
+        window.open(finalPath, '_blank', 'noopener');
 
         return;
       }
@@ -3609,7 +3716,7 @@ export class ActionDispatcher {
    * 이동 대상은 same-origin 경로로 제한한다(engine-v1.73.0). 레이아웃은 이 주소를 `query` 에서
    * 채우기도 하므로(`identity_challenge` 의 `redirect_url`) 검증 없이 넘기면 `javascript:` 실행·
    * 오프사이트 이동 sink 가 된다. 본인인증 제공자의 외부 origin 이동은 명시
-   * 허용목록이 생기기 전까지 기본 경로(`/`)로 떨어진다.
+   * 허용목록이 생기기 전까지 이동하지 않는다(engine-v1.80.1 — 종전: 기본 경로 `/`).
    *
    * @param target 이동할 주소 (same-origin 절대 경로)
    * @param params `replace: true` 면 뒤로가기 이력을 남기지 않는다
@@ -3622,9 +3729,12 @@ export class ActionDispatcher {
       return;
     }
 
-    const safeTarget = resolveSafeNavPath(target, '/');
-    if (safeTarget !== target.trim()) {
-      logger.warn('[handleRedirect] same-origin 경로가 아니라 기본 경로로 이동합니다.', target);
+    // 거부된 주소(실행 스킴·다른 출처)는 이동하지 않는다 (engine-v1.80.1, 결정 — 종전: 기본 경로 `/`)
+    const safeTarget = resolveSameTabNavPath(target, '/');
+    if (safeTarget === null) {
+      logger.warn('[handleRedirect] same-origin 경로가 아니라 이동하지 않습니다.', target);
+
+      return;
     }
 
     logger.log('handleRedirect:', { target: safeTarget, replace: params.replace === true });
@@ -3712,40 +3822,24 @@ export class ActionDispatcher {
    *
    * @param basePath 기본 경로 (쿼리스트링 없이)
    * @param newParams 병합할 새 파라미터
+   * @param useBaseQuery basePath 자신의 쿼리를 바탕으로 쓸지 — 링크 href 에서 온 주소(이미 현재 쿼리를 합친 주소)일 때만 true.
+   *   false(기본)면 종전대로 basePath 의 쿼리를 버리고 현재 URL 쿼리를 바탕으로 쓴다.
    */
   private buildMergedQueryPath(
     basePath: string,
-    newParams: Record<string, any>
+    newParams: Record<string, any>,
+    useBaseQuery: boolean = false
   ): string {
-    // 현재 URL의 쿼리 파라미터 가져오기
-    const currentParams = new URLSearchParams(window.location.search);
+    const [pathWithoutQuery, baseQuery = ''] = basePath.split('?');
 
-    // 새 파라미터 병합 (기존 값 덮어쓰기)
-    for (const [key, value] of Object.entries(newParams)) {
-      if (value === null || value === undefined || value === '') {
-        // 빈 값이면 파라미터 제거
-        currentParams.delete(key);
-      } else if (Array.isArray(value)) {
-        // 배열인 경우 기존 값 제거 후 각 요소를 개별 파라미터로 추가
-        // 키에 []가 없으면 추가하여 Laravel이 배열로 인식하도록 함
-        const arrayKey = key.endsWith('[]') ? key : `${key}[]`;
-        currentParams.delete(key);
-        currentParams.delete(arrayKey);
-        for (const item of value) {
-          if (item !== undefined && item !== null && item !== '') {
-            currentParams.append(arrayKey, String(item));
-          }
-        }
-      } else {
-        currentParams.set(key, String(value));
-      }
-    }
+    // 바탕 쿼리 — 종전: 현재 URL 의 쿼리 / 링크 href: 그 href 의 쿼리(현재 쿼리를 이미 합친 값)
+    const currentParams = new URLSearchParams(useBaseQuery ? baseQuery.split('#')[0] : window.location.search);
+
+    // 새 파라미터 병합 (기존 값 덮어쓰기, 빈 값은 제거, 배열은 `키[]`) — 규칙 SSoT 는 navigationLinks
+    applyQueryValues(currentParams, newParams);
 
     // 쿼리스트링 생성
     const queryString = currentParams.toString();
-
-    // basePath에서 기존 쿼리스트링 제거
-    const pathWithoutQuery = basePath.split('?')[0];
 
     return queryString ? `${pathWithoutQuery}?${queryString}` : pathWithoutQuery;
   }
@@ -7165,7 +7259,7 @@ export class ActionDispatcher {
    */
   private async handleSaveToLocalStorage(
     params: Record<string, any>,
-    context: ActionContext
+    _context: ActionContext
   ): Promise<boolean> {
     const { key, value } = params;
 
@@ -7208,7 +7302,8 @@ export class ActionDispatcher {
     params: Record<string, any>,
     context: ActionContext
   ): Promise<any> {
-    const { key, target, stateKey, defaultValue } = params;
+    // `target` 은 문서 예시에 남은 키다 — 쓰기 대상은 언제나 `_local` 이다(writeLocalState).
+    const { key, target: _target, stateKey, defaultValue } = params;
 
     if (!key) {
       logger.error('loadFromLocalStorage: key parameter is required');
@@ -8077,7 +8172,7 @@ export class ActionDispatcher {
     // DevTools 추적 - pending 상태
     const devTools = getDevTools();
     if (devTools?.isEnabled()) {
-      devTools.trackAction({
+      devTools.trackAction!({
         handler: typeof action.handler === 'string' ? action.handler : String(action.handler),
         type: action.type,
         status: 'pending',
@@ -8098,7 +8193,7 @@ export class ActionDispatcher {
 
       // DevTools 추적 - leading 실행
       if (devTools?.isEnabled()) {
-        devTools.trackAction({
+        devTools.trackAction!({
           handler: typeof action.handler === 'string' ? action.handler : String(action.handler),
           type: action.type,
           status: 'success',
@@ -8121,7 +8216,7 @@ export class ActionDispatcher {
 
         // DevTools 추적 - trailing 실행
         if (devTools?.isEnabled()) {
-          devTools.trackAction({
+          devTools.trackAction!({
             handler: typeof action.handler === 'string' ? action.handler : String(action.handler),
             type: action.type,
             status: 'success',

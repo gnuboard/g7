@@ -54,6 +54,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.target_type",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('targetType')}}"
                             }
@@ -259,6 +260,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_status",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('issueStatus')}}"
                             }
@@ -425,6 +427,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.created_at",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('createdAt')}}"
                             }
@@ -714,6 +717,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.benefit_amount",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('benefitAmount')}}"
                             }
@@ -858,6 +862,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_method",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('issueMethod')}}"
                             }
@@ -1063,6 +1068,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_condition",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('issueCondition')}}"
                             }
@@ -1307,6 +1313,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.min_order_amount",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('minOrderAmount')}}"
                             }
@@ -1386,6 +1393,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.valid_period",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('validPeriod')}}"
                             }
@@ -1495,6 +1503,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_period",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('issuePeriod')}}"
                             }
@@ -1611,6 +1620,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('creator')}}"
                             }
@@ -1675,6 +1685,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator",
                                         "options": "{{_local.creatorSearchResults ?? []}}",
                                         "value": "{{_local.filter.createdBy || ''}}",
                                         "triggerLabel": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.creator_select",
@@ -1775,6 +1786,7 @@
                             ],
                             "props": {
                                 "name": "searchField",
+                                "aria-label": "$t:common.search_field",
                                 "className": "w-32",
                                 "value": "{{_local.filter.searchField || 'all'}}",
                                 "options": [

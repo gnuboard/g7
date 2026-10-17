@@ -133,6 +133,7 @@
                                         ],
                                         "props": {
                                             "name": "searchField",
+                                            "aria-label": "$t:common.search_field",
                                             "className": "search-bar-select",
                                             "value": "{{_local.searchField}}",
                                             "options": [
@@ -590,6 +591,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "date",
+                                                            "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.payment_failure_history.filter.failure_date')}}",
                                                             "placeholder": "$t:sirsoft-ecommerce.admin.payment_failure_history.filter.start_date",
                                                             "className": "input md:w-36",
                                                             "value": "{{_local.startDate}}"
@@ -636,6 +638,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "date",
+                                                            "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.payment_failure_history.filter.failure_date')}}",
                                                             "placeholder": "$t:sirsoft-ecommerce.admin.payment_failure_history.filter.end_date",
                                                             "className": "input md:w-36",
                                                             "value": "{{_local.endDate}}"
@@ -685,6 +688,7 @@
                                                 "name": "Select",
                                                 "props": {
                                                     "name": "sortBy",
+                                                    "aria-label": "$t:common.sort_order",
                                                     "className": "w-44",
                                                     "value": "{{_local.sortBy}}",
                                                     "options": [
@@ -731,6 +735,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "perPage",
+                                                    "aria-label": "$t:common.per_page",
                                                     "className": "w-32",
                                                     "value": "{{_local.perPage}}",
                                                     "options": [
@@ -874,7 +879,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "circle-exclamation",
-                                                                            "className": "text-base text-error shrink-0 mt-0.5"
+                                                                            "className": "text-base ecommerce-tone-error shrink-0 mt-0.5"
                                                                         }
                                                                     },
                                                                     {
@@ -885,7 +890,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-sm text-error"
+                                                                                    "className": "text-sm ecommerce-tone-error"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_one_time_auth_amount"
                                                                             },
@@ -912,7 +917,7 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "border-l-4 border-error bg-red-50 dark:bg-red-900/20 rounded-r-lg p-3 mb-4"
+                                                                            "className": "border-l-4 ecommerce-tone-border-error bg-red-50 dark:bg-red-900/20 rounded-r-lg p-3 mb-4"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -927,14 +932,14 @@
                                                                                         "name": "Icon",
                                                                                         "props": {
                                                                                             "name": "circle-exclamation",
-                                                                                            "className": "text-base text-error"
+                                                                                            "className": "text-base ecommerce-tone-error"
                                                                                         }
                                                                                     },
                                                                                     {
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "props": {
-                                                                                            "className": "text-error font-semibold text-sm"
+                                                                                            "className": "ecommerce-tone-error font-semibold text-sm"
                                                                                         },
                                                                                         "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.title"
                                                                                     }
@@ -991,7 +996,7 @@
                                                                                                 "type": "basic",
                                                                                                 "name": "Span",
                                                                                                 "props": {
-                                                                                                    "className": "text-error"
+                                                                                                    "className": "ecommerce-tone-error"
                                                                                                 },
                                                                                                 "text": "EXCEED_MAX_ONE_TIME_AUTH_AMOUNT"
                                                                                             }
@@ -1310,7 +1315,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "circle-exclamation",
-                                                                            "className": "text-base text-error shrink-0 mt-0.5"
+                                                                            "className": "text-base ecommerce-tone-error shrink-0 mt-0.5"
                                                                         }
                                                                     },
                                                                     {
@@ -1321,7 +1326,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-sm text-error"
+                                                                                    "className": "text-sm ecommerce-tone-error"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_stopped_card"
                                                                             },
@@ -1433,7 +1438,7 @@
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "circle-exclamation",
-                                                                            "className": "text-base text-error shrink-0 mt-0.5"
+                                                                            "className": "text-base ecommerce-tone-error shrink-0 mt-0.5"
                                                                         }
                                                                     },
                                                                     {
@@ -1444,7 +1449,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-sm text-error"
+                                                                                    "className": "text-sm ecommerce-tone-error"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.not_enough_balance"
                                                                             },
@@ -1706,7 +1711,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "circle-exclamation",
-                                                                                    "className": "text-base text-error shrink-0 mt-0.5"
+                                                                                    "className": "text-base ecommerce-tone-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
                                                                             {
@@ -1717,7 +1722,7 @@
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "props": {
-                                                                                            "className": "text-sm text-error font-medium"
+                                                                                            "className": "text-sm ecommerce-tone-error font-medium"
                                                                                         },
                                                                                         "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_one_time_auth_amount"
                                                                                     },
@@ -1810,7 +1815,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Div",
                                                                                 "props": {
-                                                                                    "className": "border-l-4 border-error bg-red-50 dark:bg-red-900/20 rounded-r-lg p-4 mb-6"
+                                                                                    "className": "border-l-4 ecommerce-tone-border-error bg-red-50 dark:bg-red-900/20 rounded-r-lg p-4 mb-6"
                                                                                 },
                                                                                 "children": [
                                                                                     {
@@ -1825,14 +1830,14 @@
                                                                                                 "name": "Icon",
                                                                                                 "props": {
                                                                                                     "name": "circle-exclamation",
-                                                                                                    "className": "text-xl text-error"
+                                                                                                    "className": "text-xl ecommerce-tone-error"
                                                                                                 }
                                                                                             },
                                                                                             {
                                                                                                 "type": "basic",
                                                                                                 "name": "Span",
                                                                                                 "props": {
-                                                                                                    "className": "text-error font-semibold"
+                                                                                                    "className": "ecommerce-tone-error font-semibold"
                                                                                                 },
                                                                                                 "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.title"
                                                                                             }
@@ -1989,7 +1994,7 @@
                                                                                                                 "type": "basic",
                                                                                                                 "name": "Span",
                                                                                                                 "props": {
-                                                                                                                    "className": "text-error"
+                                                                                                                    "className": "ecommerce-tone-error"
                                                                                                                 },
                                                                                                                 "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_one_time_auth_amount"
                                                                                                             }
@@ -2014,7 +2019,7 @@
                                                                                                                 "type": "basic",
                                                                                                                 "name": "Span",
                                                                                                                 "props": {
-                                                                                                                    "className": "text-error"
+                                                                                                                    "className": "ecommerce-tone-error"
                                                                                                                 },
                                                                                                                 "text": "EXCEED_MAX_ONE_TIME_AUTH_AMOUNT"
                                                                                                             }
@@ -2423,7 +2428,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "circle-exclamation",
-                                                                                    "className": "text-base text-error shrink-0 mt-0.5"
+                                                                                    "className": "text-base ecommerce-tone-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
                                                                             {
@@ -2434,7 +2439,7 @@
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "props": {
-                                                                                            "className": "text-sm text-error font-medium"
+                                                                                            "className": "text-sm ecommerce-tone-error font-medium"
                                                                                         },
                                                                                         "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_stopped_card"
                                                                                     },
@@ -2610,7 +2615,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "circle-exclamation",
-                                                                                    "className": "text-base text-error shrink-0 mt-0.5"
+                                                                                    "className": "text-base ecommerce-tone-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
                                                                             {
@@ -2621,7 +2626,7 @@
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "props": {
-                                                                                            "className": "text-sm text-error font-medium"
+                                                                                            "className": "text-sm ecommerce-tone-error font-medium"
                                                                                         },
                                                                                         "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.not_enough_balance"
                                                                                     },
@@ -2797,7 +2802,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "circle-exclamation",
-                                                                                    "className": "text-base text-error shrink-0 mt-0.5"
+                                                                                    "className": "text-base ecommerce-tone-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
                                                                             {
@@ -2808,7 +2813,7 @@
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "props": {
-                                                                                            "className": "text-sm text-error font-medium"
+                                                                                            "className": "text-sm ecommerce-tone-error font-medium"
                                                                                         },
                                                                                         "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.user_cancel"
                                                                                     },
@@ -2984,7 +2989,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "circle-exclamation",
-                                                                                    "className": "text-base text-error shrink-0 mt-0.5"
+                                                                                    "className": "text-base ecommerce-tone-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
                                                                             {
@@ -2995,7 +3000,7 @@
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "props": {
-                                                                                            "className": "text-sm text-error font-medium"
+                                                                                            "className": "text-sm ecommerce-tone-error font-medium"
                                                                                         },
                                                                                         "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.incorrect_card_password"
                                                                                     },
@@ -3171,7 +3176,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "circle-exclamation",
-                                                                                    "className": "text-base text-error shrink-0 mt-0.5"
+                                                                                    "className": "text-base ecommerce-tone-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
                                                                             {
@@ -3182,7 +3187,7 @@
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "props": {
-                                                                                            "className": "text-sm text-error font-medium"
+                                                                                            "className": "text-sm ecommerce-tone-error font-medium"
                                                                                         },
                                                                                         "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.reject_card_company"
                                                                                     },
@@ -3358,7 +3363,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "circle-exclamation",
-                                                                                    "className": "text-base text-error shrink-0 mt-0.5"
+                                                                                    "className": "text-base ecommerce-tone-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
                                                                             {
@@ -3369,7 +3374,7 @@
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "props": {
-                                                                                            "className": "text-sm text-error font-medium"
+                                                                                            "className": "text-sm ecommerce-tone-error font-medium"
                                                                                         },
                                                                                         "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.virtual_account_expired"
                                                                                     },
@@ -3545,7 +3550,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "circle-exclamation",
-                                                                                    "className": "text-base text-error shrink-0 mt-0.5"
+                                                                                    "className": "text-base ecommerce-tone-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
                                                                             {
@@ -3556,7 +3561,7 @@
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "props": {
-                                                                                            "className": "text-sm text-error font-medium"
+                                                                                            "className": "text-sm ecommerce-tone-error font-medium"
                                                                                         },
                                                                                         "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_card_expiration"
                                                                                     },
@@ -3732,7 +3737,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "circle-exclamation",
-                                                                                    "className": "text-base text-error shrink-0 mt-0.5"
+                                                                                    "className": "text-base ecommerce-tone-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
                                                                             {
@@ -3743,7 +3748,7 @@
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "props": {
-                                                                                            "className": "text-sm text-error font-medium"
+                                                                                            "className": "text-sm ecommerce-tone-error font-medium"
                                                                                         },
                                                                                         "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.invalid_card_number"
                                                                                     },
@@ -3919,7 +3924,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "circle-exclamation",
-                                                                                    "className": "text-base text-error shrink-0 mt-0.5"
+                                                                                    "className": "text-base ecommerce-tone-error shrink-0 mt-0.5"
                                                                                 }
                                                                             },
                                                                             {
@@ -3930,7 +3935,7 @@
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "props": {
-                                                                                            "className": "text-sm text-error font-medium"
+                                                                                            "className": "text-sm ecommerce-tone-error font-medium"
                                                                                         },
                                                                                         "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_auth_count"
                                                                                     },

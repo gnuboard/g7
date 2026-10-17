@@ -61,7 +61,7 @@
       <!-- 리뷰 내용 — _local에 저장 (취소 모달 패턴과 동일) -->
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:mypage.order_detail.review_modal.content_label</label>
-        <textarea value="{{_local.reviewContent ?? ''}}" placeholder="$t:mypage.order_detail.review_modal.content_placeholder" :rows="5" :maxLength="2000" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none">
+        <textarea aria-label="$t:mypage.order_detail.review_modal.content_label" value="{{_local.reviewContent ?? ''}}" placeholder="$t:mypage.order_detail.review_modal.content_placeholder" :rows="5" :maxLength="2000" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none">
           <on type="input">
             <!-- 본문. 글자수 상한은 컴포넌트가 막고 아래 카운터가 남은 수를 보여 준다 -->
             <set-state target="_local" reviewContent="{{$event.target.value}}"/>

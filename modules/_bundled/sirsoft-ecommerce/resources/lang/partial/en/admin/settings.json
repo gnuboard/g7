@@ -246,7 +246,9 @@
       "days_suffix": "days after the order date.",
       "pending_minutes_prefix": "Orders that reached the payment window but did not complete are cancelled after",
       "pending_minutes_suffix": "minutes.",
-      "pending_minutes_hint": "Set 0 to leave this group alone. Maximum 20160 minutes (14 days)."
+      "pending_minutes_hint": "Set 0 to leave this group alone. Maximum 20160 minutes (14 days).",
+      "days_label": "Days before unpaid orders are auto-cancelled",
+      "pending_minutes_label": "Minutes before unfinished payments are auto-cancelled"
     },
     "cart_expiry": {
       "title": "Cart Expiry",

@@ -1,0 +1,54 @@
+# 시나리오 매니페스트 — 이커머스 입력칸은 화면 낭독기에서 이름을 갖는다 (#757)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: control_accessible_names
+
+description: >-
+  관리자 화면 입력칸 일부가 이름 없이 「편집 가능 텍스트」·「체크박스」·「스위치」로만 읽혔다 — 제목이 표식 없는
+  span·표 열 머리라 관리자 템플릿의 곁 라벨 잇기가 닿지 않았다(#747 측정 270칸 중 이커머스 상품 수정 옵션 표·
+  상품 목록 행 숫자칸·배송정책 행 스위치·주문 상세 수취인 정보·쿠폰 회원당 한도·클레임 정산·입금관리·할인코드).
+  전수 조사로 모달·필터 편집 모드·행 추가 뒤 칸과, 고른 값 글자(「최신순」)만 이름으로 읽히던 목록형 선택칸까지
+  같은 결함군을 찾았다. 사용자 화면에 주입되는 조각은 사용자 템플릿에 곁 라벨 잇기가 없어 레이아웃이 직접
+  이름을 단다.
+
+  잠금 시험은 관리자 템플릿의 곁 라벨 잇기 규칙을 레이아웃 JSON 트리에 옮긴 판정으로 이커머스 레이아웃·확장
+  조각 전체에서 모집단을 파생한다 — 새 화면의 칸에도 규칙이 그대로 걸린다. 표(DataGrid) 셀 안 칸은 이름이
+  행을 가리켜야 한다(「{행 이름} {열 이름}」·「{행 이름} 선택」).
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminControlNames.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-control-names.spec.ts
+
+coverage_strategy: pairwise
+
+axes:
+  surface:
+    - admin_layout   # 관리자 레이아웃·관리자 확장 조각의 칸 전체(모집단 파생)
+    - admin_modal   # 모달 안 칸(상품 복사·추가 배송비 템플릿 등) — 같은 모집단에 포함, 브라우저는 spec 의 상품 복사 창
+    - admin_row   # 표·반복 행 칸 — DataGrid 셀(상품 목록·배송정책 목록·후기)은 정적 단언, 레이아웃 반복(상품 옵션 표)의 행 이름은 spec 이 덮는다
+    - user_layout   # 이커머스 사용자 레이아웃(resources/layouts/user) — 곁 라벨 불인정
+    - user_extension   # 사용자 화면에 주입되는 확장 조각(resources/extensions) — 곁 라벨 불인정
+
+exclusions:
+  - { surface: admin_modal, reason: "정적 판정은 admin_layout 모집단이 모달 파셜까지 덮는다 — 별도 단언 없이 spec 의 상품 복사 창으로 브라우저 축만 더한다" }
+  - { surface: user_layout, reason: "현재 이커머스 사용자 레이아웃에 입력칸이 없다 — user_extension 과 같은 단언(사용자 쪽 전체)이 새 칸이 생기면 바로 잡는다" }
+
+effects:
+  - controls_have_accessible_name   # 글자·숫자칸·체크박스·라디오·스위치·다국어칸·기본 선택칸이 자기 이름·감싼 Label·label[for]·(관리자) 곁 라벨 중 하나로 이름을 갖는다
+  - listbox_reads_name_and_value   # 목록형 선택칸(Select options·SearchableDropdown)은 aria-label·aria-labelledby·곁 라벨로 「이름 + 현재 값」으로 읽힌다
+  - row_controls_read_row_and_column   # DataGrid 셀 안 칸의 이름이 행을 가리킨다($rowLabel·common.row_cell·select_item·select_row_n)
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: Playwright   # admin-control-names.spec.ts — getByRole(…, { name }) 로 접근성 트리 이름을 단언
+  note: |
+    수정 전 red(2026-10-14, 잠금 시험 첫 실행): 관리자 비목록형 175 · 목록형 119 ·
+    사용자 조각 5 · DataGrid 셀 행 미지정 10. 주문·클레임·입금·환경설정 화면 몫은 이미 고치기 시작한 뒤라 정적 스캐너
+    착수 전 기준(180)보다 작다. 상품·쿠폰·할인·배송정책 화면 몫은 스캐너 착수 전 기준(142)과 칸 단위로 일치.
+    판정 보강(같은 날, 각각 추가 직후 red → 고친 뒤 green):
+      - 목록형은 aria-label·aria-labelledby 만 자기 이름으로 인정(placeholder·title 불인정) — red 1.
+      - DataGrid 셀·펼침 안 행 이름이 $t:defer: 아님 — red 29. 셀·펼침은 DataGrid props 라 행 문맥 없이 먼저 번역된다.
+      - 행 선택·$rowLabel DataGrid 의 rowLabelField 필수 — red 14. 첫 열이 일시면 원문 일시가 행 이름이 됐다(브라우저 실측).
+      - 스위치 앞 형제 글자가 식 하나뿐(항목 수 배지)이면 제목으로 치지 않음 — red 1(상품정보고시 목록 · 실측 「9」「10」 20개).
+      - 레이아웃 반복(data-each·sortable) 안 칸의 이름 출처에 행 값이 없음 — red 44(상품 옵션 표 마일리지·추가옵션 그룹·선택지 행 등, 수정 후 브라우저 실측).
+      - 작성자 메뉴(ActionMenu) 트리거 안 아바타 첫 글자 aria-hidden — 상품 화면 2곳은 단언 추가 전에 고침(브라우저 실측 「관관리자」가 수정 전 증거), 주문·클레임 화면 4곳은 먼저 고쳐 추가 시점 green.

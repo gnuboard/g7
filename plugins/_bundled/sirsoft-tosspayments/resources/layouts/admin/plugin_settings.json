@@ -1451,18 +1451,16 @@
                             {
                                 "id": "cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/plugins"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
-                                    "className": "btn btn-secondary"
+                                    "href": "/admin/plugins",
+                                    "className": "button btn btn-secondary"
                                 },
                                 "children": [
                                     {

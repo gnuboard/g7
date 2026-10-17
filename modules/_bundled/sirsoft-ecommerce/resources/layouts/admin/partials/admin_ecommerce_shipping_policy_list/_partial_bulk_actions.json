@@ -42,6 +42,7 @@
                     ],
                     "props": {
                         "name": "bulkToggleValue",
+                        "aria-label": "$t:sirsoft-ecommerce.admin.shipping_policy.table.column.is_active",
                         "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50",
                         "value": "{{_local.bulkToggleValue || ''}}",
                         "disabled": "{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || shipping_policies?.data?.abilities?.can_update !== true}}",
@@ -113,7 +114,7 @@
             ],
             "props": {
                 "type": "button",
-                "className": "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                 "disabled": "{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || !_local.bulkToggleValue || shipping_policies?.data?.abilities?.can_update !== true}}"
             },
             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.action.bulk_apply"

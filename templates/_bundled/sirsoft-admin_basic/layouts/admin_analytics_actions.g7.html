@@ -86,6 +86,7 @@
     <field name="periodSource" value="analytics_report"/>
     <field name="showUnit" :value="false"/>
   </init-local>
+  <computed name="tabQuery">{{['preset', 'from', 'to', 'unit', 'exclude', 'per_page', 'dimension'].filter(k =&gt; query[k]).map(k =&gt; '&amp;' + k + '=' + encodeURIComponent(query[k])).join('')}}</computed>
   <computed name="reportEmptyHint">{{(query.tab || 'search') === 'events' ? $t('admin.analytics.actions.events_empty') : null}}</computed>
   <computed name="reportName">{{({search: 'site_search', downloads: 'download', outlinks: 'outlink', goals: 'goal', search_tabs: 'search_tab', events: 'event_name', dimensions: (query.dimension ? 'ext:' + query.dimension : '')})[query.tab || 'search'] || 'site_search'}}</computed>
   <computed name="csvUrl">{{_computed.reportName ? '/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&amp;from=' + query.from + '&amp;to=' + (query.to || query.from) : '&amp;preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&amp;exclude[]=' + e).join('') + (query.q ? '&amp;q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&amp;sort=' + query.sort : '') : ''}}</computed>
@@ -119,13 +120,13 @@
       <include src="partials/admin_analytics/_partial_period_bar.g7.html"/>
       <tab-navigation data-type="composite" data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'search'}}" variant="underline">
         <prop name="tabs">
-          <item id="search" label="$t:admin.analytics.actions.tabs.search"/>
-          <item id="downloads" label="$t:admin.analytics.actions.tabs.downloads"/>
-          <item id="outlinks" label="$t:admin.analytics.actions.tabs.outlinks"/>
-          <item id="search_tabs" label="$t:admin.analytics.actions.tabs.search_tabs"/>
-          <item id="events" label="$t:admin.analytics.actions.tabs.events"/>
-          <item id="goals" label="$t:admin.analytics.actions.tabs.goals"/>
-          <item id="dimensions" label="$t:admin.analytics.actions.tabs.dimensions"/>
+          <item id="search" href="/admin/analytics/actions?tab=search{{_computed.tabQuery}}" label="$t:admin.analytics.actions.tabs.search"/>
+          <item id="downloads" href="/admin/analytics/actions?tab=downloads{{_computed.tabQuery}}" label="$t:admin.analytics.actions.tabs.downloads"/>
+          <item id="outlinks" href="/admin/analytics/actions?tab=outlinks{{_computed.tabQuery}}" label="$t:admin.analytics.actions.tabs.outlinks"/>
+          <item id="search_tabs" href="/admin/analytics/actions?tab=search_tabs{{_computed.tabQuery}}" label="$t:admin.analytics.actions.tabs.search_tabs"/>
+          <item id="events" href="/admin/analytics/actions?tab=events{{_computed.tabQuery}}" label="$t:admin.analytics.actions.tabs.events"/>
+          <item id="goals" href="/admin/analytics/actions?tab=goals{{_computed.tabQuery}}" label="$t:admin.analytics.actions.tabs.goals"/>
+          <item id="dimensions" href="/admin/analytics/actions?tab=dimensions{{_computed.tabQuery}}" label="$t:admin.analytics.actions.tabs.dimensions"/>
         </prop>
         <on type="change" event="onTabChange">
           <!-- audit:allow layout-list-context-navigate-merge-query 서브탭 전환 — 리포트마다 행이 달라 쪽·검색·정렬을 물려받지 않도록 병합하지 않는다. 기간(preset·from·to·unit·exclude)과 쪽 크기만 query 로 명시해 잇는다. -->

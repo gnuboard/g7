@@ -14,10 +14,18 @@ description: |
 
 axes:
   # 목록 클러스터 안에서 발생하는 이동 leg
-  leg: [back]   # 주문 상세 → 목록
+  leg:
+    - back        # 주문 상세 → 목록
+    - entry       # 목록 행·링크 → 상세 (진입)
+    - in_place    # 목적지가 현재 화면인 이동(같은 목록에서 선택·검색)
 
 effects:
-  - list_return_preserves_query   # 복귀 이동이 URL 목록 상태를 그대로 복원
+  - list_return_preserves_query           # 복귀 이동이 URL 목록 상태를 그대로 복원
+  - entry_carries_list_query              # 진입 이동이 URL 목록 상태를 상세로 나른다
+  - cluster_navigations_merge_query       # 클러스터 안 목록행 navigate 가 전부 mergeQuery: true
+  - in_place_navigation_preserves_query   # path 없는 navigate·replaceUrl 이 걸어 둔 검색어·정렬을 남긴다
+  - orderer_search_clears_member_filter   # 주문자명 검색이 회원 지정 필터(orderer_uuid)를 비운다
+  - navigation_preserves_list_query       # 레이아웃 시험 머리말의 통합 표기(위 4개를 묶는 상위 효과)
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/order-admin-list-context-round-trip.spec.ts

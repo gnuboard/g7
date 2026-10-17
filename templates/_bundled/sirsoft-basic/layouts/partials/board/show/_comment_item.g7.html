@@ -216,7 +216,7 @@
       </div>
       <!-- 댓글 수정 폼 -->
       <div data-if="{{_global?.commentEdit?.editingCommentId === comment?.id}}" class="mb-2">
-        <textarea name="editing_comment_content" value="{{_global?.commentEdit?.editingCommentContent ?? comment?.content}}" :rows="3" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none">
+        <textarea name="editing_comment_content" aria-label="$t:board.modals.edit_comment_title" value="{{_global?.commentEdit?.editingCommentContent ?? comment?.content}}" :rows="3" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none">
           <on type="input">
             <!-- 수정 중인 댓글 본문 — 어느 댓글을 고치는 중인지와 한 묶음이라, 본문만 바꿔 담더라도 대상 번호를 함께 다시 실어야 한다. -->
             <set-state target="global">

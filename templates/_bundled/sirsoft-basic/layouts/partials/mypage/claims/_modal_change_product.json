@@ -203,6 +203,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "{{claimOptionGroup.name_localized ?? claimOptionGroup.name}}",
                                                 "className": "w-full",
                                                 "value": "{{_local.changeProductSelections?.[claimOptionGroup.name_localized] ?? ''}}",
                                                 "placeholder": "$t:shop.select",
@@ -272,6 +273,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "{{claimAddGroup.name}}",
                                                 "className": "w-full",
                                                 "value": "{{_local.changeProductAdditionalSelections?.[claimAddGroup.id] ?? ''}}",
                                                 "placeholder": "$t:shop.additional_option_placeholder",
@@ -302,6 +304,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "text",
+                                                        "aria-label": "$t:common.row_cell|row={{claimAddGroup.name ?? ''}}|column={{$t('shop.additional_option_custom_text_label')}}",
                                                         "maxLength": 255,
                                                         "value": "{{_local.changeProductAdditionalTexts?.[claimAddGroup.id] ?? ''}}",
                                                         "placeholder": "$t:shop.additional_option_custom_text_placeholder",

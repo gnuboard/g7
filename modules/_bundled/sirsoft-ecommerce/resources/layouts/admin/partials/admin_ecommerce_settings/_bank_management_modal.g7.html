@@ -50,7 +50,7 @@
               <!-- 은행 코드 -->
               <td class="align-top">
                 <!-- min-w-[80px] 필수 — 표가 table-layout:auto 이고 td 의 min-width 가 0 이라, 좁은 뷰포트에서 은행명 열이 은행코드 열을 56px 로 압착하면 input 이 24px(= 좌우 padding 12+12)로 줄어 텍스트 영역이 0px 이 된다(입력한 값이 보이지 않음). width 지정은 auto 레이아웃이 무시하므로 하한(min-width)을 고정해야 한다. 숫자 스케일 min-w-16 등은 safelist 에 없어 CSS 가 생성되지 않으므로 쓰면 무효다. -->
-                <input type="text" value="{{bank.code ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.code_placeholder" class="{{$parent._local.bankModalErrors?.['banks.' + bank._idx + '.code'] ? 'input input-error min-w-[80px]' : 'input min-w-[80px]'}}" disabled="{{$parent._computed.isReadOnly}}">
+                <input type="text" value="{{bank.code ?? ''}}" aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: bank._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_management.code')}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.code_placeholder" class="{{$parent._local.bankModalErrors?.['banks.' + bank._idx + '.code'] ? 'input input-error min-w-[80px]' : 'input min-w-[80px]'}}" disabled="{{$parent._computed.isReadOnly}}">
                   <on type="change">
                     <set-state target="$parent._local" form.order_settings.banks="{{($parent._local.form?.order_settings?.banks ?? []).map((b, i) => i === bank._idx ? {...b, code: $event.target.value} : b)}}"/>
                   </on>
@@ -60,7 +60,7 @@
               <!-- 은행명 (다국어) -->
               <td class="align-top">
                 <div class="{{Object.keys($parent._local.bankModalErrors ?? {}).some(k => k.startsWith('banks.' + bank._idx + '.name')) ? 'rounded border border-red-500 p-px' : ''}}">
-                  <multilingual-input data-type="composite" value="{{typeof bank.name === 'object' ? bank.name : {ko: bank.name ?? '', en: ''}}}" layout="tabs" name="{{'bank_name_' + bank._idx}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.name_placeholder" disabled="{{$parent._computed.isReadOnly}}">
+                  <multilingual-input data-type="composite" value="{{typeof bank.name === 'object' ? bank.name : {ko: bank.name ?? '', en: ''}}}" ariaLabel="$t:common.row_cell|row={{bank.code || $t('common.row_n', {n: bank._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_management.name')}}" layout="tabs" name="{{'bank_name_' + bank._idx}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.name_placeholder" disabled="{{$parent._computed.isReadOnly}}">
                     <on event="onChange">
                       <!-- 은행명은 언어별로 들어간다. 배열을 통째로 다시 만들면서 이 줄만 바꾸는 이유는 반복 항목을 제자리에서 고칠 수 없기 때문이다. -->
                       <set-state target="$parent._local" form.order_settings.banks="{{($parent._local.form?.order_settings?.banks ?? []).map((b, i) => i === bank._idx ? {...b, name: $args[0]?.target?.value ?? b.name} : b)}}"/>

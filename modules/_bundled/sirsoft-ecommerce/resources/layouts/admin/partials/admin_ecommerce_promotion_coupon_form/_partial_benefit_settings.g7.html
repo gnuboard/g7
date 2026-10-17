@@ -27,14 +27,14 @@
       <form-field data-type="composite" data-ref="field_discount_max_amount" data-if="{{_local.form?.discount_type === 'rate'}}" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.max_discount" error="{{_local.errors?.discount_max_amount?.[0] ?? ''}}">
         <div class="flex-center gap-2">
           <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.max_prefix</span>
-          <input type="number" name="discount_max_amount" class="input w-32" :min="0"/>
+          <input type="number" name="discount_max_amount" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.max_discount" class="input w-32" :min="0"/>
           <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.currency_won_discount</span>
         </div>
       </form-field>
       <!-- 최소주문금액 -->
       <form-field data-type="composite" data-ref="field_min_order_amount" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.min_order_amount" error="{{_local.errors?.min_order_amount?.[0] ?? ''}}">
         <div class="flex-center gap-2">
-          <input type="number" name="min_order_amount" class="input w-40" :min="0"/>
+          <input type="number" name="min_order_amount" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.min_order_amount" class="input w-40" :min="0"/>
           <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.min_order_suffix</span>
         </div>
       </form-field>
@@ -59,7 +59,7 @@
           <!-- 발급일로부터 선택 시: 일수 입력 -->
           <div data-ref="valid_period_days" data-if="{{_local.form?.valid_type === 'days_from_issue'}}" class="flex-center gap-2">
             <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.from_issue_date</span>
-            <input type="number" name="valid_days" class="input w-24" :min="1"/>
+            <input type="number" name="valid_days" aria-label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.validity_period" class="input w-24" :min="1"/>
             <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.unit_days</span>
           </div>
         </div>

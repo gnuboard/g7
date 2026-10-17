@@ -225,6 +225,7 @@
                                                             "props": {
                                                                 "type": "text",
                                                                 "value": "{{bank.code ?? ''}}",
+                                                                "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: bank._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_management.code')}}",
                                                                 "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.code_placeholder",
                                                                 "className": "{{$parent._local.bankModalErrors?.['banks.' + bank._idx + '.code'] ? 'input input-error min-w-[80px]' : 'input min-w-[80px]'}}",
                                                                 "disabled": "{{$parent._computed.isReadOnly}}"
@@ -272,6 +273,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "value": "{{typeof bank.name === 'object' ? bank.name : {ko: bank.name ?? '', en: ''}}}",
+                                                                        "ariaLabel": "$t:common.row_cell|row={{bank.code || $t('common.row_n', {n: bank._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_management.name')}}",
                                                                         "layout": "tabs",
                                                                         "name": "{{'bank_name_' + bank._idx}}",
                                                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.name_placeholder",

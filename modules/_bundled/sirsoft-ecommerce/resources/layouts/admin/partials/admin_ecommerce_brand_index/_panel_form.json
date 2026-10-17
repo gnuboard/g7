@@ -150,7 +150,7 @@
                                     "type": "basic",
                                     "name": "H3",
                                     "props": {
-                                        "className": "text-error-strong"
+                                        "className": "ecommerce-tone-error-strong text-sm font-medium"
                                     },
                                     "text": "$t:common.validation_error"
                                 },
@@ -159,7 +159,7 @@
                                     "name": "P",
                                     "if": "{{typeof _local.errors === 'string'}}",
                                     "props": {
-                                        "className": "text-error-soft mt-2"
+                                        "className": "ecommerce-tone-error-soft mt-2 text-sm"
                                     },
                                     "text": "{{_local.errors}}"
                                 },
@@ -179,7 +179,7 @@
                                             "type": "basic",
                                             "name": "Li",
                                             "props": {
-                                                "className": "text-error-soft"
+                                                "className": "ecommerce-tone-error-soft text-sm"
                                             },
                                             "text": "{{message}}"
                                         }

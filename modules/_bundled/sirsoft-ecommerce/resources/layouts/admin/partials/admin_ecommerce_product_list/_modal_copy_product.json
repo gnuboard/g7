@@ -113,9 +113,9 @@
                         {
                             "id": "copy_option_images",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Label",
                             "props": {
-                                "className": "flex-center gap-3"
+                                "className": "flex-center gap-3 cursor-pointer"
                             },
                             "children": [
                                 {
@@ -139,7 +139,7 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Label",
+                                    "name": "Span",
                                     "props": {
                                         "className": "text-label cursor-pointer"
                                     },
@@ -150,9 +150,9 @@
                         {
                             "id": "copy_option_options",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Label",
                             "props": {
-                                "className": "flex-center gap-3"
+                                "className": "flex-center gap-3 cursor-pointer"
                             },
                             "children": [
                                 {
@@ -176,7 +176,7 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Label",
+                                    "name": "Span",
                                     "props": {
                                         "className": "text-label cursor-pointer"
                                     },
@@ -187,9 +187,9 @@
                         {
                             "id": "copy_option_categories",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Label",
                             "props": {
-                                "className": "flex-center gap-3"
+                                "className": "flex-center gap-3 cursor-pointer"
                             },
                             "children": [
                                 {
@@ -213,7 +213,7 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Label",
+                                    "name": "Span",
                                     "props": {
                                         "className": "text-label cursor-pointer"
                                     },
@@ -224,9 +224,9 @@
                         {
                             "id": "copy_option_sales_info",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Label",
                             "props": {
-                                "className": "flex-center gap-3"
+                                "className": "flex-center gap-3 cursor-pointer"
                             },
                             "children": [
                                 {
@@ -250,7 +250,7 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Label",
+                                    "name": "Span",
                                     "props": {
                                         "className": "text-label cursor-pointer"
                                     },
@@ -261,9 +261,9 @@
                         {
                             "id": "copy_option_description",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Label",
                             "props": {
-                                "className": "flex-center gap-3"
+                                "className": "flex-center gap-3 cursor-pointer"
                             },
                             "children": [
                                 {
@@ -287,7 +287,7 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Label",
+                                    "name": "Span",
                                     "props": {
                                         "className": "text-label cursor-pointer"
                                     },
@@ -298,9 +298,9 @@
                         {
                             "id": "copy_option_notice",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Label",
                             "props": {
-                                "className": "flex-center gap-3"
+                                "className": "flex-center gap-3 cursor-pointer"
                             },
                             "children": [
                                 {
@@ -324,7 +324,7 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Label",
+                                    "name": "Span",
                                     "props": {
                                         "className": "text-label cursor-pointer"
                                     },
@@ -335,9 +335,9 @@
                         {
                             "id": "copy_option_common_info",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Label",
                             "props": {
-                                "className": "flex-center gap-3"
+                                "className": "flex-center gap-3 cursor-pointer"
                             },
                             "children": [
                                 {
@@ -361,7 +361,7 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Label",
+                                    "name": "Span",
                                     "props": {
                                         "className": "text-label cursor-pointer"
                                     },
@@ -372,9 +372,9 @@
                         {
                             "id": "copy_option_other_info",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Label",
                             "props": {
-                                "className": "flex-center gap-3"
+                                "className": "flex-center gap-3 cursor-pointer"
                             },
                             "children": [
                                 {
@@ -398,7 +398,7 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Label",
+                                    "name": "Span",
                                     "props": {
                                         "className": "text-label cursor-pointer"
                                     },
@@ -409,9 +409,9 @@
                         {
                             "id": "copy_option_shipping",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Label",
                             "props": {
-                                "className": "flex-center gap-3"
+                                "className": "flex-center gap-3 cursor-pointer"
                             },
                             "children": [
                                 {
@@ -435,7 +435,7 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Label",
+                                    "name": "Span",
                                     "props": {
                                         "className": "text-label cursor-pointer"
                                     },
@@ -446,9 +446,9 @@
                         {
                             "id": "copy_option_seo",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Label",
                             "props": {
-                                "className": "flex-center gap-3"
+                                "className": "flex-center gap-3 cursor-pointer"
                             },
                             "children": [
                                 {
@@ -472,7 +472,7 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Label",
+                                    "name": "Span",
                                     "props": {
                                         "className": "text-label cursor-pointer"
                                     },
@@ -483,9 +483,9 @@
                         {
                             "id": "copy_option_identification",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Label",
                             "props": {
-                                "className": "flex-center gap-3"
+                                "className": "flex-center gap-3 cursor-pointer"
                             },
                             "children": [
                                 {
@@ -509,7 +509,7 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Label",
+                                    "name": "Span",
                                     "props": {
                                         "className": "text-label cursor-pointer"
                                     },
@@ -546,7 +546,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-info-soft"
+                                        "className": "ecommerce-tone-info-soft text-xs"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.modal.copy.note"
                                 }

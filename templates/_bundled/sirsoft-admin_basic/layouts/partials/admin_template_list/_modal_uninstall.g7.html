@@ -10,8 +10,8 @@
       <p class="mt-2 text-label-subtle">$t:admin.templates.modals.uninstall_warning</p>
     </div>
     <div data-ref="delete_data_option" data-if="{{!(_global.templateUninstallBackups?.length)}}" class="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-      <div class="flex-start gap-2">
-        <checkbox checked="{{_global.deleteTemplateData || false}}" class="mt-0.5">
+      <label class="flex-start gap-2 cursor-pointer">
+        <checkbox checked="{{_global.deleteTemplateData || false}}" aria-label="$t:admin.templates.modals.delete_data_option" class="mt-0.5">
           <on type="change">
             <!-- 데이터까지 지우기 토글. 모듈 삭제 창과 달리 **함께 지워지는 것을 미리 물어보지 않는다** —
                  템플릿이 쌓는 것은 편집한 레이아웃 정도라 목록으로 보여 줄 것이 없다. -->
@@ -22,7 +22,7 @@
           <span class="text-body">$t:admin.templates.modals.delete_data_option</span>
           <p class="form-hint">$t:admin.templates.modals.delete_data_warning</p>
         </div>
-      </div>
+      </label>
     </div>
     <div data-ref="extension_directory_section" data-if="{{!(_global.templateUninstallBackups?.length)}}" class="mt-4 border-t border-gray-200 dark:border-gray-600 pt-4">
       <span class="text-primary text-sm font-semibold">$t:admin.templates.modals.extension_directory_title</span>

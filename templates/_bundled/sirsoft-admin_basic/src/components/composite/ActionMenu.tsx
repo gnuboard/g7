@@ -6,6 +6,7 @@ import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
+import { handleLinkClick, mergeQueryIntoHref, resolveLinkHref } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다(컴포넌트 기본값은 영어 — data-binding-i18n.md)
 const tOr = (key: string, fallback: string): string => {
@@ -28,6 +29,21 @@ export interface ActionMenuItem {
   disabledReason?: string;
   /** 조건부 표시 (false면 아이템 숨김, 엔진이 표현식 평가 후 boolean 전달) */
   if?: boolean;
+  /**
+   * 화면을 옮기는 항목의 주소 — 주면 `<a role="menuitem" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다.
+   * 보통 클릭은 지금처럼 onClick·onItemClick(#757). 삭제처럼 옮기지 않는 항목은 비워 둔다.
+   */
+  href?: string;
+  /**
+   * 참이면 현재 주소의 쿼리를 href 에 합쳐 그린다(같은 키는 href 쪽이 이긴다) — 보통 클릭이 목록 조건을 넘기는 항목은
+   * 새 탭에도 같은 조건이 가도록 켠다(#757, A 의 mergeQuery 와 같은 규칙).
+   */
+  mergeQuery?: boolean;
+  /**
+   * 링크 항목을 여는 창 — `_blank` 면 새 창(`rel="noopener noreferrer"`)으로 연다(#757). 보통 클릭도 브라우저가 새 창으로
+   * 열고 항목 동작(onClick·onItemClick)은 부르지 않는다 — 종전 `openWindow` 항목을 링크로 바꿀 때 쓴다. 바깥 주소는 늘 새 창.
+   */
+  target?: string;
 }
 
 export interface ActionMenuProps {
@@ -117,6 +133,8 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   /** 키보드로 연 메뉴인지 — 그때만 첫 항목으로 초점을 옮긴다(마우스 동작은 종전과 같다). */
   const openedByKeyboardRef = useRef(false);
+  /** 메뉴를 띄운 때의 트리거 위치 — 스크롤로 트리거가 실제로 움직였는지 가르는 기준 */
+  const anchorRectRef = useRef<{ top: number; left: number } | null>(null);
 
   // 행 값으로 풀어야 하는 disabledField 가 그대로 남아 있으면(행 해석기 밖에서 쓰인 경우) 잠근다 —
   // 무시하고 열어 두면 권한 게이트가 조용히 사라진다(DataGrid 는 해석한 뒤 이 키를 지워서 넘긴다).
@@ -156,6 +174,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
     if (!triggerRef.current) return;
 
     const rect = triggerRef.current.getBoundingClientRect();
+    anchorRectRef.current = { top: rect.top, left: rect.left };
     const menuWidth = 224; // w-56 = 14rem = 224px
 
     let left = position === 'right' ? rect.right - menuWidth : rect.left;
@@ -196,20 +215,32 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
     }
   }, [isOpen]);
 
-  // 스크롤/리사이즈 시 메뉴 닫기
+  // 스크롤/리사이즈 시 메뉴 닫기 — 메뉴는 fixed 라 트리거가 움직이면 엉뚱한 자리에 떠 있게 된다.
+  // 스크롤은 **트리거가 실제로 움직였을 때만** 닫는다. 브라우저는 스크롤 위치를 곧바로 바꾸고 scroll 이벤트는 다음
+  // 프레임에 늦게 보낸다 — 표 오른쪽 열처럼 가로 스크롤 안쪽의 단추를 누르면 단추를 보이게 한 스크롤의 이벤트가 메뉴를
+  // 연 뒤에 도착해 첫 클릭에 곧바로 닫혔다(실측 2026-10-15: mousedown 66ms · click 67ms · scroll 72ms). 그 이벤트가 올 때
+  // 트리거 위치는 메뉴를 띄운 때와 같으므로 위치로 가른다. 메뉴 자체의 스크롤도 트리거를 움직이지 않아 닫지 않는다.
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleScrollOrResize = () => {
+    const handleScroll = () => {
+      const anchor = anchorRectRef.current;
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (anchor && rect && Math.abs(rect.top - anchor.top) < 1 && Math.abs(rect.left - anchor.left) < 1) {
+        return;
+      }
+      setIsOpen(false);
+    };
+    const handleResize = () => {
       setIsOpen(false);
     };
 
-    window.addEventListener('scroll', handleScrollOrResize, true);
-    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleResize);
 
     return () => {
-      window.removeEventListener('scroll', handleScrollOrResize, true);
-      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
     };
   }, [isOpen]);
 
@@ -302,6 +333,10 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
         return;
       case 'Enter':
       case ' ':
+        // 링크 항목에서 Ctrl·Meta·Shift+Enter 는 브라우저가 새 탭·새 창으로 연다 — 막지 않는다(#757)
+        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey || event.shiftKey) && focusable[index]?.tagName === 'A') {
+          return;
+        }
         event.preventDefault();
         if (index < 0) return;
         focusable[index].click();
@@ -368,6 +403,36 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
               : item.variant === 'danger'
                 ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus:bg-red-50 dark:focus:bg-red-900/20 cursor-pointer'
                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:bg-gray-50 dark:focus:bg-gray-700 cursor-pointer';
+
+            const link = item.disabled ? null : resolveLinkHref(item.mergeQuery && typeof item.href === 'string' ? mergeQueryIntoHref(item.href) : item.href);
+            if (link) {
+              return (
+                <a
+                  key={item.id}
+                  href={link.href}
+                  {...(link.external || item.target === '_blank'
+                    ? { target: '_blank', rel: 'noopener noreferrer' }
+                    : item.target ? { target: item.target } : {})}
+                  role="menuitem"
+                  tabIndex={-1}
+                  onClick={(event) => {
+                    // 보통 클릭만 지금처럼 항목 동작을 돌린다 — Ctrl·Shift·가운데 클릭은 브라우저가 새 탭·새 창으로 연다
+                    if (!handleLinkClick(event, () => handleItemClick(item))) setIsOpen(false);
+                  }}
+                  className={`w-full text-left flex items-center gap-3 px-4 py-3 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${stateClasses}`}
+                >
+                  {item.iconName && (
+                    <Icon name={item.iconName} className="w-4 h-4" />
+                  )}
+                  <span className="flex flex-col">
+                    <span className="text-sm font-medium">{item.label}</span>
+                    {item.disabled && item.disabledReason && (
+                      <span className="text-xs font-normal text-gray-500 dark:text-gray-400">{item.disabledReason}</span>
+                    )}
+                  </span>
+                </a>
+              );
+            }
 
             return (
               <button

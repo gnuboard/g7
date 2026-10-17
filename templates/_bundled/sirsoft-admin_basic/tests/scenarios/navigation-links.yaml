@@ -1,0 +1,39 @@
+feature: sirsoft-admin_basic 화면 이동 링크 (#757 링크 단계)
+
+description: |
+  관리자 화면의 메뉴·목록 행 메뉴·탭·페이지 번호·바로가기 단추가 클릭으로만 이동해 가운데 클릭·Ctrl+클릭·우클릭
+  「새 탭에서 열기」가 되지 않았다(G7 은 SPA 라 렌더 시점에 주소가 없음). 이동 자리를 `<a href>` 로 그리고 보통 클릭만
+  지금처럼 SPA 로 옮긴다. 판정은 엔진 `G7Core.navigation.isPlainLeftClick`(W9), 목록 문맥 유지는 `mergeQueryIntoHref`(W8).
+  레이아웃 잠금 시험은 click 이동 navigate 노드가 `<a href>` 인지, rowActions·탭·페이지 번호가 주소를 갖는지 잠근다.
+
+axes:
+  component: [a, admin_sidebar, user_profile, notification_center, dropdown_menu_item, data_grid, action_menu, pagination, tab_navigation, card_grid, extension_card_grid, page_header, layout_lock, code_workspace, button_styles, breadcrumb, sortable_menu_list, file_tree, dropdown_button]
+
+effects:
+  - plain_click_spa_navigate
+  - modified_click_opens_browser_default
+  - disabled_link_has_no_href
+  - merge_query_in_href
+  - link_roles_preserved
+  - layout_moves_are_links
+  - link_open_marks_notification_read
+  - card_link_does_not_nest_interactive
+  - breadcrumb_renders_trail
+  - breadcrumb_action_item_is_button
+  - panel_select_item_is_link
+  - new_tab_link_has_noopener
+  - action_menu_survives_pending_scroll
+  - disabled_link_styled_like_disabled_button
+  - code_workspace_leave_guard_confirms_plain_link_click
+  - code_workspace_leave_guard_passes_modified_link_click
+  - code_workspace_leave_guard_passes_target_blank_link
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/NavigationLinks.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/NavigationLinks.menus.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/navigation-links.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-base-notification-new-tab-read.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CodeWorkspace.leaveGuard.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/styles/buttonAriaDisabled.test.ts
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Breadcrumb.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-navigation-links.spec.ts

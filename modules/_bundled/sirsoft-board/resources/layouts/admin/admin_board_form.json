@@ -152,7 +152,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-warning-soft"
+                                    "className": "text-xs board-tone-warning"
                                 },
                                 "text": "{{route?.slug ? '$t:sirsoft-board.admin.form.read_only_message' : '$t:sirsoft-board.admin.form.create_read_only_message'}}"
                             }
@@ -344,22 +344,22 @@
                             {
                                 "id": "footer_list_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "취소. 게시판 목록으로 돌아가며 보던 목록 상태를 이고 간다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/boards",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                                    "href": "/admin/boards",
+                                    "mergeQuery": true,
+                                    "className": "button flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
                                 },
                                 "children": [
                                     {
@@ -379,22 +379,22 @@
                                     {
                                         "id": "footer_cancel_button",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "comment": "취소(화면 아래 버튼). 위쪽 취소와 같은 자리로 돌아간다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/boards",
                                                     "mergeQuery": true,
                                                     "query": {}
                                                 }
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "btn btn-secondary"
+                                            "href": "/admin/boards",
+                                            "mergeQuery": true,
+                                            "className": "button btn btn-secondary"
                                         },
                                         "children": [
                                             {

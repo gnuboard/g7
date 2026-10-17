@@ -47,7 +47,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "text-warning-soft"
+                                        "className": "ecommerce-tone-warning-soft text-xs"
                                     },
                                     "children": [
                                         {

@@ -164,7 +164,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-warning-soft text-left"
+                                                "className": "ecommerce-tone-warning-soft text-left text-xs"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.modal.delete.permanent_warning"
                                         }

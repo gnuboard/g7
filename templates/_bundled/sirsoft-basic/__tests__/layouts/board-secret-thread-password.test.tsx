@@ -47,6 +47,7 @@ function setupTestRegistry(): ComponentRegistry {
     P: { component: Passthrough('p'), metadata: { name: 'P', type: 'basic' } },
     Span: { component: Passthrough('span'), metadata: { name: 'Span', type: 'basic' } },
     Button: { component: Passthrough('button'), metadata: { name: 'Button', type: 'basic' } },
+    A: { component: Passthrough('a'), metadata: { name: 'A', type: 'basic' } },
     Form: { component: Passthrough('form'), metadata: { name: 'Form', type: 'basic' } },
     Input: { component: TestInput, metadata: { name: 'Input', type: 'basic' } },
     Icon: { component: TestIcon, metadata: { name: 'Icon', type: 'basic' } },
@@ -79,10 +80,10 @@ const lockBlocks = collectNodes(
 /** 원글 비밀번호 폼 블록 */
 const threadBlock = lockBlocks.find((n) => n.if.includes('thread_password_available'));
 
-/** 답변 버튼 — 글쓰기 화면으로 parent_id 를 들고 이동하는 버튼 */
+/** 답변 버튼 — 글쓰기 화면으로 parent_id 를 들고 이동하는 링크(`A`, 새 탭으로도 열린다) */
 const replyButton = collectNodes(
   basicShow,
-  (n) => n.name === 'Button' && typeof n.if === 'string' && n.if.includes('use_reply') && JSON.stringify(n).includes('"parent_id"'),
+  (n) => n.name === 'A' && typeof n.if === 'string' && n.if.includes('use_reply') && JSON.stringify(n).includes('"parent_id"'),
 )[0];
 
 const TRANSLATIONS = {
@@ -154,10 +155,10 @@ function threadFormCount(): number {
 }
 
 /**
- * 렌더 결과에서 주어진 문구를 가진 버튼 수를 센다.
+ * 렌더 결과에서 주어진 문구를 가진 버튼·링크 수를 센다.
  */
 function buttonCount(label: string): number {
-  return Array.from(document.querySelectorAll('button')).filter((b) => (b.textContent ?? '').includes(label)).length;
+  return Array.from(document.querySelectorAll('button, a')).filter((b) => (b.textContent ?? '').includes(label)).length;
 }
 
 describe('답변 화면 — 원글 비밀번호 폼 (show.json)', () => {

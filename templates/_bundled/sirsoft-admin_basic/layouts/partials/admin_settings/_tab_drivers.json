@@ -2415,6 +2415,7 @@
                                                                         }
                                                                     ],
                                                                     "props": {
+                                                                        "aria-label": "$t:common.row_cell|row={{conn}}|column={{$t('admin.settings.drivers.queue.worker.queues.label')}}",
                                                                         "value": "{{_local.form?.drivers?.queue_names?.[conn] ?? (conn.endsWith('-long') ? ['long'] : ['default'])}}",
                                                                         "creatable": true,
                                                                         "placeholder": "$t:admin.settings.drivers.queue.worker.queues.placeholder",

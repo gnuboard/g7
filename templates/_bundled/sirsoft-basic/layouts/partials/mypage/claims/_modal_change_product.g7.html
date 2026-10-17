@@ -34,7 +34,7 @@
           <div class="mb-3">
             <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">{{claimOptionGroup.name_localized ?? claimOptionGroup.name}}</label>
             <!-- 옵션 그룹은 차례로 고른다 — 앞 그룹을 골라야 다음 그룹이 풀리고, 고를 때마다 지금까지의 선택 조합으로 실제 옵션을 다시 찾아 아래 요약(가격·재고)에 세운다. -->
-            <select class="w-full" value="{{_local.changeProductSelections?.[claimOptionGroup.name_localized] ?? ''}}" placeholder="$t:shop.select" disabled="{{claimOptionGroupIdx > 0 &amp;&amp; !_local.changeProductSelections?.[_local.changeProductProduct?.option_groups[claimOptionGroupIdx - 1]?.name_localized]}}" options="{{[{ value: '', label: $t('shop.select') }, ...(claimOptionGroup.values_localized ?? claimOptionGroup.values ?? []).map(v => ({ value: v, label: v }))]}}">
+            <select aria-label="{{claimOptionGroup.name_localized ?? claimOptionGroup.name}}" class="w-full" value="{{_local.changeProductSelections?.[claimOptionGroup.name_localized] ?? ''}}" placeholder="$t:shop.select" disabled="{{claimOptionGroupIdx > 0 &amp;&amp; !_local.changeProductSelections?.[_local.changeProductProduct?.option_groups[claimOptionGroupIdx - 1]?.name_localized]}}" options="{{[{ value: '', label: $t('shop.select') }, ...(claimOptionGroup.values_localized ?? claimOptionGroup.values ?? []).map(v => ({ value: v, label: v }))]}}">
               <on type="change">
                 <set-state target="_local" changeProductSelections="{{Object.assign({}, _local.changeProductSelections ?? {}, { [claimOptionGroup.name_localized]: $event.target.value })}}"/>
                 <!-- 갱신된 선택으로 매칭 옵션을 찾는다 (stale state 방지 — 템플릿 공용 핸들러 재사용) -->
@@ -52,14 +52,14 @@
           <div class="mb-2">
             <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">{{claimAddGroup.name}}</label>
             <!-- 추가옵션 — 빈 값을 고르면 그 그룹을 선택에서 빼고, 값을 바꿀 때마다 그 그룹의 직접입력 글을 비워 앞 값에 쓴 글이 새 값에 따라붙지 않게 한다. -->
-            <select class="w-full" value="{{_local.changeProductAdditionalSelections?.[claimAddGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(claimAddGroup.values ?? []).map(v => ({ value: v.id, label: v.name }))]}}">
+            <select aria-label="{{claimAddGroup.name}}" class="w-full" value="{{_local.changeProductAdditionalSelections?.[claimAddGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_placeholder" options="{{[{ value: '', label: $t('shop.additional_option_placeholder') }, ...(claimAddGroup.values ?? []).map(v => ({ value: v.id, label: v.name }))]}}">
               <on type="change">
                 <set-state target="_local" changeProductAdditionalSelections="{{$event.target.value === '' ? Object.fromEntries(Object.entries(_local.changeProductAdditionalSelections ?? {}).filter(([k]) => Number(k) !== Number(claimAddGroup.id))) : Object.assign({}, _local.changeProductAdditionalSelections ?? {}, { [claimAddGroup.id]: Number($event.target.value) })}}" changeProductAdditionalTexts="{{Object.fromEntries(Object.entries(_local.changeProductAdditionalTexts ?? {}).filter(([k]) => Number(k) !== Number(claimAddGroup.id)))}}"/>
               </on>
             </select>
             <div data-if="{{(claimAddGroup.values ?? []).find(v => v.id === Number(_local.changeProductAdditionalSelections?.[claimAddGroup.id]))?.allow_custom_text === true}}" class="mt-2">
               <!-- 직접입력 글 — 공백만 남기면 그 그룹의 글을 아예 지워 빈 글이 신청서에 실리지 않게 한다. 적용하면 글은 추가옵션 이름 옆 괄호로 붙어 신청서 줄에 보인다. -->
-              <input type="text" :maxLength="255" value="{{_local.changeProductAdditionalTexts?.[claimAddGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_custom_text_placeholder" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+              <input type="text" aria-label="$t:common.row_cell|row={{claimAddGroup.name ?? ''}}|column={{$t('shop.additional_option_custom_text_label')}}" :maxLength="255" value="{{_local.changeProductAdditionalTexts?.[claimAddGroup.id] ?? ''}}" placeholder="$t:shop.additional_option_custom_text_placeholder" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                 <on type="input">
                   <set-state target="_local" changeProductAdditionalTexts="{{$event.target.value.trim() === '' ? Object.fromEntries(Object.entries(_local.changeProductAdditionalTexts ?? {}).filter(([k]) => Number(k) !== Number(claimAddGroup.id))) : Object.assign({}, _local.changeProductAdditionalTexts ?? {}, { [claimAddGroup.id]: $event.target.value })}}"/>
                 </on>

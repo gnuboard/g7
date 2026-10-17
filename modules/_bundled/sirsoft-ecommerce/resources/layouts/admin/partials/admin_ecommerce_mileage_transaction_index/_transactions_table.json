@@ -131,6 +131,9 @@
                 }
             ],
             "props": {
+                "pageHref": "/admin/ecommerce/mileage-transactions?page={page}",
+                "pageHrefMergeQuery": true,
+                "rowLabelField": "number",
                 "data": "{{transactions?.data?.data || []}}",
                 "selectable": true,
                 "selectionScope": "page",
@@ -208,12 +211,6 @@
                                         "event": "onItemClick",
                                         "handler": "switch",
                                         "cases": {
-                                            "view_member": {
-                                                "handler": "openWindow",
-                                                "params": {
-                                                    "path": "/admin/users/{{row.user_uuid}}"
-                                                }
-                                            },
                                             "search_member": {
                                                 "handler": "navigate",
                                                 "params": {
@@ -236,6 +233,8 @@
                                     "items": [
                                         {
                                             "id": "view_member",
+                                            "href": "/admin/users/{{row.user_uuid}}",
+                                            "target": "_blank",
                                             "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.cell.view_member",
                                             "iconName": "user"
                                         },
@@ -430,18 +429,12 @@
                         "cellChildren": [
                             {
                                 "type": "basic",
-                                "name": "Span",
+                                "name": "A",
                                 "if": "{{row.order_number}}",
-                                "actions": [
-                                    {
-                                        "type": "click",
-                                        "handler": "openWindow",
-                                        "params": {
-                                            "path": "/admin/ecommerce/orders/{{row.order_number}}"
-                                        }
-                                    }
-                                ],
                                 "props": {
+                                    "href": "/admin/ecommerce/orders/{{row.order_number}}",
+                                    "target": "_blank",
+                                    "rel": "noopener noreferrer",
                                     "className": "font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
                                 },
                                 "text": "{{row.order_number}}"
@@ -467,26 +460,13 @@
                                 "type": "composite",
                                 "name": "ActionMenu",
                                 "if": "{{!!row.granted_by_uuid}}",
-                                "actions": [
-                                    {
-                                        "comment": "처리한 관리자 이름 메뉴. 회원 쪽과 달리 '이 관리자로 거르기' 가 없다 — 조건 목록에 처리자 항목이 없기 때문이다.",
-                                        "event": "onItemClick",
-                                        "handler": "switch",
-                                        "cases": {
-                                            "view_admin": {
-                                                "handler": "openWindow",
-                                                "params": {
-                                                    "path": "/admin/users/{{row.granted_by_uuid}}"
-                                                }
-                                            }
-                                        }
-                                    }
-                                ],
                                 "props": {
                                     "position": "right",
                                     "items": [
                                         {
                                             "id": "view_admin",
+                                            "href": "/admin/users/{{row.granted_by_uuid}}",
+                                            "target": "_blank",
                                             "label": "$t:sirsoft-ecommerce.admin.mileage_transactions.cell.view_admin",
                                             "iconName": "user-shield"
                                         }
@@ -594,18 +574,12 @@
                                             },
                                             {
                                                 "type": "basic",
-                                                "name": "Span",
+                                                "name": "A",
                                                 "if": "{{linked.order_number}}",
-                                                "actions": [
-                                                    {
-                                                        "type": "click",
-                                                        "handler": "openWindow",
-                                                        "params": {
-                                                            "path": "/admin/ecommerce/orders/{{linked.order_number}}"
-                                                        }
-                                                    }
-                                                ],
                                                 "props": {
+                                                    "href": "/admin/ecommerce/orders/{{linked.order_number}}",
+                                                    "target": "_blank",
+                                                    "rel": "noopener noreferrer",
                                                     "className": "inline-flex items-center gap-1 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline"
                                                 },
                                                 "text": "{{linked.order_number}}"

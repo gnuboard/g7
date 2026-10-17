@@ -4,8 +4,10 @@ import { CSS } from '@dnd-kit/utilities';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Button } from '../basic/Button';
+import { A } from '../basic/A';
 import { Icon } from '../basic/Icon';
 import { Toggle } from './Toggle';
+import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
 
 // G7Core 전역 객체의 스타일 헬퍼 접근
 const G7Core = () => (window as any).G7Core;
@@ -41,6 +43,11 @@ export interface MenuItemData {
    * 주지 않으면 roleNames 길이를 쓴다.
    */
   roleCount?: number;
+  /**
+   * 항목 편집 주소 — 있으면 이름이 행 전체를 덮는 링크(`after:` 덮개)가 되어 가운데 클릭·Ctrl+클릭으로 새 탭에서 연다(#757).
+   * 보통 클릭은 지금처럼 onClick(선택). 끌기 손잡이·펼침 단추·스위치는 덮개 위층이라 링크 안에 들어가지 않는다.
+   */
+  href?: string;
 }
 
 export interface SortableMenuItemProps {
@@ -132,11 +139,16 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
   const combinedClassName = G7Core()?.style?.mergeClasses?.(internalClasses, className)
     ?? `${internalClasses} ${className}`.trim();
 
+  // 편집 주소가 있으면 이름이 행을 덮는 링크다 — 선택 모드(행 클릭 = 체크 토글)에서는 그리지 않는다
+  const link = !selectable ? resolveLinkHref(item.href) : null;
+  // 덮는 링크 위층 — 링크가 있을 때만 쌓임 순서를 올린다
+  const above = link ? 'relative z-10 ' : '';
+
   return (
     <Div
       ref={setNodeRef}
       style={style}
-      className={combinedClassName}
+      className={link ? `relative ${combinedClassName}` : combinedClassName}
       onClick={onClick}
     >
       {/* 드래그 핸들 - enableDrag가 true일 때만 표시 */}
@@ -144,7 +156,7 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
         <Div
           {...attributes}
           {...listeners}
-          className={`flex-shrink-0 cursor-grab active:cursor-grabbing p-1 ${dragHandleClassName}`}
+          className={`${above}flex-shrink-0 cursor-grab active:cursor-grabbing p-1 ${dragHandleClassName}`}
           style={{ paddingLeft: `${paddingLeft}px` }}
         >
           <Icon name="grip-vertical" className="w-4 h-4" />
@@ -163,7 +175,7 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
             e.stopPropagation();
             onExpandToggle?.();
           }}
-          className={`flex-shrink-0 p-1 ${dragHandleClassName}`}
+          className={`${above}flex-shrink-0 p-1 ${dragHandleClassName}`}
           aria-label={isExpanded ? tOr('common.collapse', 'Collapse') : tOr('common.expand', 'Expand')}
           aria-expanded={!!isExpanded}
         >
@@ -199,9 +211,27 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
       {/* 메뉴명 및 URL */}
       <Div className={`flex-1 min-w-0 ${contentClassName}`}>
         <Div className="flex items-center gap-1">
-          <Span className="text-sm font-medium text-gray-900 dark:text-white truncate">
-            {item.name}
-          </Span>
+          {link ? (
+            <A
+              href={link.href}
+              {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+              // 링크 끌기(브라우저 기본)가 행 끌어 옮기기와 섞이지 않게 막는다 — 옮기기는 손잡이로만
+              draggable={false}
+              onDragStart={(event) => event.preventDefault()}
+              onClick={(event) => {
+                // 행(Div)의 선택 클릭이 다시 돌지 않게 멈춘다 — 보통 클릭만 선택, 수정키 클릭은 브라우저가 새 탭으로 연다
+                event.stopPropagation();
+                handleLinkClick(event, () => onClick?.());
+              }}
+              className="text-sm font-medium text-gray-900 dark:text-white truncate after:absolute after:inset-0 after:rounded focus:outline-none focus-visible:after:ring-2 focus-visible:after:ring-blue-500"
+            >
+              {item.name}
+            </A>
+          ) : (
+            <Span className="text-sm font-medium text-gray-900 dark:text-white truncate">
+              {item.name}
+            </Span>
+          )}
           {item.isModuleMenu && (
             <Icon name="cube" className="w-2 h-2 text-gray-300 dark:text-gray-500 ml-2" title={item.moduleName} />
           )}
@@ -242,12 +272,14 @@ export const SortableMenuItem: React.FC<SortableMenuItemProps> = ({
 
       {/* 토글 스위치 — 선택 모드에서는 숨긴다(행 클릭이 선택 토글이라 상태 전환과 섞이지 않게) */}
       {!selectable && (
-        <Div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+        <Div className={`${above}flex-shrink-0`} onClick={(e) => e.stopPropagation()}>
+          {/* 이름 — 앞 형제가 없어 「스위치, 켬」만 읽혔다(메뉴·브랜드·카테고리, #757) */}
           <Toggle
             checked={item.isActive}
             onChange={() => onToggle?.(new MouseEvent('click') as unknown as React.MouseEvent)}
             size="sm"
             disabled={toggleDisabled}
+            ariaLabel={tOr('common.item_enabled', `${item.name} enabled`, { name: item.name })}
           />
         </Div>
       )}

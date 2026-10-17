@@ -86,6 +86,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.date",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('date')}}"
                             }
@@ -413,6 +414,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.claim_status",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('claimStatus')}}"
                             }
@@ -1327,6 +1329,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.fault_type",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('faultType')}}"
                             }
@@ -1497,6 +1500,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.charge_method",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('chargeMethod')}}"
                             }
@@ -1666,6 +1670,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.reason",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('reasonCode')}}"
                             }
@@ -1737,6 +1742,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.requester_type",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('requesterType')}}"
                             }
@@ -1821,6 +1827,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.amount",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('amount')}}"
                             }
@@ -1959,6 +1966,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.charge_payment_method",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('chargePaymentMethod')}}"
                             }
@@ -2064,6 +2072,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.claim_flags",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('claimFlags')}}"
                             }
@@ -2372,6 +2381,7 @@
                             ],
                             "props": {
                                 "name": "searchField",
+                                "aria-label": "$t:common.search_field",
                                 "className": "w-80 shrink-0",
                                 "value": "{{_local.filter.searchField || 'claim_number'}}",
                                 "options": [

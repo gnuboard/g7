@@ -45,7 +45,7 @@
           <div class="flex flex-wrap gap-x-8 gap-y-2 text-sm mb-2">
             <div class="flex-center gap-2">
               <span class="text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_detail.product_info.paid_at</span>
-              <span class="text-error font-medium">2025-10-27 16:50:10</span>
+              <span class="ecommerce-tone-error font-medium">2025-10-27 16:50:10</span>
             </div>
             <div class="flex-center gap-2">
               <span class="text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_detail.product_info.payment_method</span>
@@ -66,14 +66,14 @@
               <span class="text-heading">TID20251027165234567</span>
             </div>
           </div>
-          <a href="#" class="flex-center text-sm text-blue-600 dark:text-blue-400 hover:underline gap-1">
+          <span class="flex-center text-sm text-blue-600 dark:text-blue-400 hover:underline gap-1">
             <icon name="file-text" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.personal_payment_detail.product_info.view_receipt</span>
-          </a>
+          </span>
         </div>
         <div data-ref="status_alert" class="alert-warning">
           <icon name="clock" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
-          <span class="text-warning-soft">$t:sirsoft-ecommerce.admin.personal_payment_detail.status_message.pending</span>
+          <span class="ecommerce-tone-warning-soft text-xs">$t:sirsoft-ecommerce.admin.personal_payment_detail.status_message.pending</span>
         </div>
       </div>
       <div data-ref="info_cards_grid" class="grid-2col-responsive mb-6">
@@ -90,7 +90,7 @@
             <div>
               <div class="text-label-subtle text-xs mb-1">$t:sirsoft-ecommerce.admin.personal_payment_detail.member_info.member_id</div>
               <div class="flex-center gap-1">
-                <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">user005</a>
+                <span class="text-blue-600 dark:text-blue-400 hover:underline">user005</span>
                 <icon name="external-link" class="text-xs text-blue-600 dark:text-blue-400"/>
               </div>
             </div>
@@ -117,7 +117,7 @@
             <div>
               <div class="text-label-subtle text-xs mb-1">$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_detail.order_number</div>
               <div class="flex-center gap-1">
-                <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">ORD20251028-5678</a>
+                <span class="text-blue-600 dark:text-blue-400 hover:underline">ORD20251028-5678</span>
                 <icon name="external-link" class="text-xs text-blue-600 dark:text-blue-400"/>
               </div>
             </div>
@@ -139,7 +139,7 @@
             <h3 class="card-title">$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.title</h3>
           </div>
           <div class="flex-center gap-2">
-            <input type="text" class="input-readonly flex-1" value="https://pay.example.com/pp-jk1789mno123pqr456" :readOnly="true"/>
+            <input type="text" class="input-readonly flex-1" value="https://pay.example.com/pp-jk1789mno123pqr456" aria-label="$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.title" :readOnly="true"/>
             <button type="button" class="btn btn-icon" title="$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.copy">
               <icon name="copy" class="text-xl"/>
             </button>
@@ -175,7 +175,7 @@
           <div data-ref="log_controls" class="flex-center flex-wrap justify-end gap-3 mb-4">
             <div class="flex-center gap-2">
               <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_detail.log.sort:</span>
-              <select class="w-40" value="{{_local.logSortBy}}">
+              <select class="w-40" value="{{_local.logSortBy}}" aria-label="$t:sirsoft-ecommerce.admin.personal_payment_detail.log.sort">
                 <options>
                   <option value="latest">$t:sirsoft-ecommerce.admin.personal_payment_detail.log.sort_options.latest</option>
                   <option value="oldest">$t:sirsoft-ecommerce.admin.personal_payment_detail.log.sort_options.oldest</option>
@@ -184,7 +184,7 @@
             </div>
             <div class="flex-center gap-2">
               <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_detail.log.per_page:</span>
-              <select class="w-20" value="{{_local.logPerPage}}">
+              <select class="w-20" value="{{_local.logPerPage}}" aria-label="$t:sirsoft-ecommerce.admin.personal_payment_detail.log.per_page">
                 <options>
                   <option :value="10">10개</option>
                   <option :value="20">20개</option>

@@ -137,6 +137,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "ariaLabel": "$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.is_active')}}",
                                     "value": "{{$method.is_active}}",
                                     "disabled": "{{_computed.isReadOnly || $method.customer_selectable === false || (!$method.pg_locked && $method.needs_pg && !$method.pg_provider && !_local.form?.order_settings?.default_pg_provider)}}"
                                 }
@@ -236,6 +237,7 @@
                                         ],
                                         "props": {
                                             "data-testid": "{{'pg-select-' + $method.id}}",
+                                            "aria-label": "$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_provider')}}",
                                             "value": "{{$method.pg_provider ?? ''}}",
                                             "className": "w-full",
                                             "options": "{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).filter(p => (p.supported_methods ?? []).includes($method.id)).map(p => ({value: p.id, label: $localized(p.name)})))}}",
@@ -296,6 +298,7 @@
                                         ],
                                         "props": {
                                             "value": "{{$method.stock_deduction_timing ?? 'payment_complete'}}",
+                                            "aria-label": "$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.stock_deduction_timing')}}",
                                             "className": "w-full",
                                             "disabled": "{{_computed.isReadOnly}}",
                                             "options": [
@@ -348,6 +351,7 @@
                                         ],
                                         "props": {
                                             "value": "{{$method.mileage_deduction_timing ?? 'payment_complete'}}",
+                                            "aria-label": "$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing')}}",
                                             "className": "w-full",
                                             "disabled": "{{_computed.isReadOnly || !(_local.form?.mileage?.enabled)}}",
                                             "options": [
@@ -406,6 +410,7 @@
                                         "props": {
                                             "type": "number",
                                             "value": "{{$method.min_order_amount ?? 0}}",
+                                            "aria-label": "$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.min_order_amount')}}",
                                             "min": 0,
                                             "className": "input",
                                             "disabled": "{{_computed.isReadOnly}}"

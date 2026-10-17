@@ -1,0 +1,17 @@
+feature: Hello 사용자 템플릿 홈 레이아웃 (#757 건드린 시험 파일 매핑)
+
+description: |
+  예제 사용자 템플릿 홈 — 환영 카드·메모 목록(빈 상태 포함)·홈 링크·기반 레이아웃 상속을 렌더로 고정한다.
+
+axes:
+  case:
+    - render               # 환영 카드·메모 목록·빈 상태·홈 링크·_user_base 상속
+
+exclusions:
+  - { case: render, reason: "제외 없음 — 검증 구역 단일 축" }
+
+effects:
+  - home_layout_renders_contract                 # 환영 카드·메모 목록·빈 상태·홈 링크·_user_base 상속
+
+test_files:
+  - templates/_bundled/gnuboard7-hello_user_template/__tests__/layouts/home.test.tsx

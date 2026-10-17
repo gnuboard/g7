@@ -61,7 +61,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-warning-soft"
+                                        "className": "text-xs board-tone-warning"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.bulk_apply.checked_fields_notice"
                                 }
@@ -266,6 +266,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:sirsoft-board.admin.settings.bulk_apply.target_boards",
                                         "value": "{{_local._bulkApplyBoardIds ?? []}}",
                                         "options": "{{$computed.boardOptions ?? []}}",
                                         "placeholder": "$t:sirsoft-board.admin.settings.bulk_apply.select_boards_placeholder",

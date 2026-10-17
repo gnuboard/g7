@@ -1,0 +1,24 @@
+feature: 게시판 생성·수정 폼 레이아웃 계약 (#757 건드린 시험 파일 매핑)
+
+description: |
+  게시판 생성·수정 화면의 탭별(기본·게시글·권한) 필드 배치·조건 노출·서버 검증 오류 표시와 취소 이동(목록 링크),
+  쓰지 않는 모달·상태 정리를 굽기 산출물(JSON)로 고정한다. 축 case 는 검증하는 탭·구역이다.
+
+axes:
+  case:
+    - tab_basic            # 기본 탭 필드·토글 배치와 카테고리 검증 표시
+    - cancel_and_cleanup   # 취소는 목록 링크(href) · 미구현 모달·상태 제거
+    - tab_post             # 게시글 탭 답변·댓글·첨부 조건 노출과 안내 문구
+    - tab_permissions      # 권한 탭 관리자·단계 선택이 회원 uuid 를 쓴다
+
+exclusions:
+  - { case: tab_basic, reason: "제외 없음 — 검증 구역 단일 축" }
+
+effects:
+  - board_form_basic_tab_contract                # 기본 탭 필드·토글 배치와 카테고리 검증 표시
+  - board_form_cancel_link_and_dead_ui_removed   # 취소는 목록 링크(href) · 미구현 모달·상태 제거
+  - board_form_post_tab_contract                 # 게시글 탭 답변·댓글·첨부 조건 노출과 안내 문구
+  - board_form_permissions_use_uuid              # 권한 탭 관리자·단계 선택이 회원 uuid 를 쓴다
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-board-form.test.tsx

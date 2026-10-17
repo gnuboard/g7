@@ -432,7 +432,7 @@
         </input>
         <span class="filter-label w-32">$t:admin.users.filter.country</span>
         <div class="flex-center gap-2 flex-1">
-          <searchable-dropdown data-type="composite" options="{{_computed.countryOptions ?? []}}" value="{{_local.filter.country || ''}}" triggerLabel="$t:admin.users.filter.country_select" searchPlaceholder="$t:admin.users.filter.country_search" noResultsText="$t:common.no_results" class="w-64">
+          <searchable-dropdown data-type="composite" aria-label="$t:admin.users.filter.country" options="{{_computed.countryOptions ?? []}}" value="{{_local.filter.country || ''}}" triggerLabel="$t:admin.users.filter.country_select" searchPlaceholder="$t:admin.users.filter.country_search" noResultsText="$t:common.no_results" class="w-64">
             <on type="change" event="onChange">
               <!-- 국가 선택. 선택지는 회원 등록·수정 폼과 같은 국가 목록(본체 `countryList`)이다 — 목록이 갈리면 폼에서 넣은 나라를 필터로 못 찾는다. -->
               <set-state target="_local" filter.country="{{$args[0]}}"/>
@@ -530,7 +530,7 @@
       <responsive on="portable" class="row-stack mb-4"/>
       <div data-ref="search_row_line1" class="flex-center flex-wrap gap-2 flex-1">
         <responsive on="portable" class="flex gap-2 w-full"/>
-        <select data-ref="search_field_select" name="searchField" class="w-32" value="{{_local.filter.searchField || 'all'}}">
+        <select data-ref="search_field_select" name="searchField" aria-label="$t:common.search_field" class="w-32" value="{{_local.filter.searchField || 'all'}}">
           <responsive on="portable" class="w-24"/>
           <options>
             <option value="all">$t:admin.users.search_fields.all</option>

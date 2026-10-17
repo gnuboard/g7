@@ -185,16 +185,16 @@
           <h1 class="page-title">$t:sirsoft-ecommerce.admin.promotion_coupon.title</h1>
           <p class="text-label-subtle mt-1">$t:sirsoft-ecommerce.admin.promotion_coupon.description</p>
         </div>
-        <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{coupons?.data?.abilities?.can_create !== true}}">
+        <a href="/admin/ecommerce/promotion-coupon-create" :mergeQuery="true" class="button btn btn-primary aria-disabled:opacity-50 aria-disabled:cursor-not-allowed" disabled="{{coupons?.data?.abilities?.can_create !== true}}">
           <on type="click">
             <!-- 쿠폰 등록 폼 진입 — 폼에서 취소하고 돌아왔을 때 보던 목록으로 복귀하려면 진입 시점에 목록 상태를 넘겨야 한다 (#75). -->
-            <navigate path="/admin/ecommerce/promotion-coupon-create" :mergeQuery="true">
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
           <icon name="plus" class="text-base mr-2"/>
           <span>$t:sirsoft-ecommerce.admin.promotion_coupon.actions.create</span>
-        </button>
+        </a>
       </div>
       <include src="partials/admin_ecommerce_promotion_coupon_list/_partial_filter_section.g7.html"/>
       <include src="partials/admin_ecommerce_promotion_coupon_list/_partial_coupon_datagrid.g7.html"/>

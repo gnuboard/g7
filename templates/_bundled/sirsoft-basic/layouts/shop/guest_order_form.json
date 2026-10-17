@@ -318,6 +318,7 @@
                                                             }
                                                         ],
                                                         "props": {
+                                                            "aria-label": "$t:shop.guest_order_form.order_number",
                                                             "type": "text",
                                                             "name": "order_number",
                                                             "value": "{{_local.form?.order_number ?? ''}}",
@@ -379,6 +380,7 @@
                                                             }
                                                         ],
                                                         "props": {
+                                                            "aria-label": "$t:shop.guest_order_form.orderer_phone",
                                                             "type": "tel",
                                                             "name": "orderer_phone",
                                                             "value": "{{_local.form?.orderer_phone ?? ''}}",
@@ -440,6 +442,7 @@
                                                             }
                                                         ],
                                                         "props": {
+                                                            "aria-label": "$t:shop.guest_order_form.password",
                                                             "name": "guest_lookup_password",
                                                             "value": "{{_local.form?.guest_lookup_password ?? ''}}",
                                                             "placeholder": "$t:shop.guest_order_form.password_placeholder",

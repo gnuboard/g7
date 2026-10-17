@@ -70,37 +70,31 @@
                                 "children": [
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/forgot-password"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"
+                                            "href": "/forgot-password",
+                                            "className": "inline-flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"
                                         },
                                         "text": "$t:auth.forgot_password_link"
                                     },
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/register"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                            "href": "/register",
+                                            "className": "inline-flex items-center justify-center text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                         },
                                         "text": "$t:auth.register_link"
                                     }
@@ -160,19 +154,16 @@
                                     },
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "{{query.redirect}}"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                                            "href": "{{query.redirect}}",
+                                            "className": "inline-flex items-center justify-center w-full py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed cursor-pointer",
                                             "disabled": "{{_global.isLoggingIn}}"
                                         },
                                         "text": "$t:auth.guest_checkout.continue"

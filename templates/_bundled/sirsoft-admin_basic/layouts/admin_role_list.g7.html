@@ -45,16 +45,14 @@
           </on>
           <icon data-ref="refresh_icon" name="refresh" size="md"/>
         </button>
-        <button data-ref="add_role_button" disabled="{{roles?.data?.abilities?.can_create !== true}}" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <a data-ref="add_role_button" href="/admin/roles/create" :mergeQuery="true" disabled="{{roles?.data?.abilities?.can_create !== true}}" class="button flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed">
           <on type="click">
             <!-- 새 역할 만들기. 만들기를 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다 -->
-            <navigate path="/admin/roles/create" :mergeQuery="true">
-              <query/>
-            </navigate>
+            <navigate :mergeQuery="true"><query/></navigate>
           </on>
           <icon name="plus" size="md"/>
           <span>$t:admin.roles.add_role</span>
-        </button>
+        </a>
       </page-header>
       <!-- 보호 역할 안내 — 행 메뉴의 삭제·수정과 사용 여부 스위치가 왜 잠겨 있는지 알려 준다.
            잠금 자체는 서버가 행마다 실어 준 `abilities` 가 정한다(코어·확장 역할 삭제 불가,
@@ -92,7 +90,7 @@
           </on>
         </search-bar>
       </div>
-      <data-grid data-type="composite" data-ref="roles_data_grid" :data-blur-until-loaded="true" data="{{roles?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{roles?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{roles?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{roles?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+      <data-grid pageHref="/admin/roles?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="roles_data_grid" :data-blur-until-loaded="true" data="{{roles?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{roles?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{roles?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{roles?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
         <column field="name" header="$t:admin.roles.columns.name" :sortable="false">
           <cell>
             <div class="flex-center gap-2">
@@ -135,7 +133,7 @@
         </column>
         <column field="is_active" header="$t:admin.roles.columns.status" :sortable="false">
           <cell>
-            <toggle data-type="composite" checked="{{row.is_active}}" disabled="{{row.abilities?.can_toggle_status !== true}}" size="sm">
+            <toggle data-type="composite" checked="{{row.is_active}}" ariaLabel="$t:defer:common.row_cell|row={{row.name}}|column={{$t('admin.roles.columns.status')}}" disabled="{{row.abilities?.can_toggle_status !== true}}" size="sm">
               <on type="change">
                 <!-- 사용 여부 토글. 성공 문구는 **누른 뒤의 상태**(`$event.target.checked`)로 고르고,
                      목록을 다시 받아 서버가 실제로 저장한 값으로 스위치를 되맞춘다.
@@ -158,8 +156,8 @@
         </column>
         <column field="created_at" header="$t:admin.roles.columns.created_at" :sortable="false"/>
         <prop name="rowActions">
-          <item id="edit" label="$t:common.edit" iconName="pencil" disabledField="abilities.can_update"/>
-          <item id="clone" label="$t:admin.roles.actions.clone" iconName="copy" disabledField="abilities.can_create"/>
+          <item id="edit" label="$t:common.edit" iconName="pencil" href="/admin/roles/{{row.id}}/edit" :mergeQuery="true" disabledField="abilities.can_update"/>
+          <item id="clone" label="$t:admin.roles.actions.clone" iconName="copy" href="/admin/roles/create?clone_from={{row.id}}" :mergeQuery="true" disabledField="abilities.can_create"/>
           <item id="delete" label="$t:common.delete" iconName="trash" variant="danger" disabledField="abilities.can_delete"/>
         </prop>
         <on type="change" event="onPageChange">

@@ -42,6 +42,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:mypage.board_activities.reactions.table.board",
                         "value": "{{_global.myCommentsBoard ?? ''}}",
                         "className": "min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     },
@@ -95,6 +96,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:common.sort_order",
                         "value": "{{_global.myCommentsSort ?? 'latest'}}",
                         "className": "min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                     },
@@ -141,6 +143,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:common.search_field",
                                 "value": "{{_global.myCommentsSearchField ?? 'content'}}",
                                 "className": "px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
                                 "options": [
@@ -376,17 +379,15 @@
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/board/{{comment.board_slug}}/{{comment.post_id_val}}"
-                                    }
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
+                                "href": "/board/{{comment.board_slug}}/{{comment.post_id_val}}",
                                 "className": "w-full text-left block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition-colors cursor-pointer"
                             },
                             "children": [
@@ -440,7 +441,7 @@
                                 {
                                     "comment": "댓글 내용 요약 (2줄)",
                                     "type": "basic",
-                                    "name": "P",
+                                    "name": "Div",
                                     "if": "{{comment.content}}",
                                     "props": {
                                         "className": "mt-2 text-sm text-gray-600 dark:text-gray-300 line-clamp-2 break-words"
@@ -490,18 +491,16 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/boards"
-                                    }
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
-                                "className": "inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                                "href": "/boards",
+                                "className": "text-center inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                             },
                             "text": "$t:mypage.board_activities.go_boards"
                         }

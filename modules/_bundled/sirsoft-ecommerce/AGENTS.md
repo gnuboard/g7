@@ -295,6 +295,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:sirsoft-ecommerce` 재실행 + `docs/api/**` 갱신
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃에 입력칸을 새로 그리면 화면 낭독기가 읽을 이름을 단다 — 제목이 표식 없는 span·표 열 머리면 그 제목 키로 `aria-label`, 체크박스·라디오 옆 글자는 칸과 한 `<label>` 로 감싸고, 목록형 선택칸(`options`·SearchableDropdown)은 placeholder 가 아니라 `aria-label`(정렬 `common.sort_order`·쪽당 개수 `common.per_page`·검색 대상 `common.search_field`)을 단다. 표·반복 행 칸은 「{행 이름} {열 이름}」(`common.row_cell`)으로, DataGrid 셀·펼침 안에서는 `$t:defer:` 로 쓰고(행 문맥 없이 먼저 번역되면 행 이름이 빈다), 행 선택을 켠 DataGrid 는 `rowLabelField` 를 화면에 보이는 식별자로 정한다. 잠금: `resources/js/__tests__/layouts/adminControlNames.test.ts`(#757)
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 금액 계산 경로를 건드렸다면 여섯 소비 지점(상품 상세·장바구니·체크아웃·주문 생성·결제 검증·부분 취소)에 같은 결과가 도달하는지 확인
@@ -369,10 +370,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 694개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 268개 | `vitest.config.ts` |
-| Playwright | 72개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 363개 | `tests/scenarios` |
+| PHPUnit | 695개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 271개 | `vitest.config.ts` |
+| Playwright | 77개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 374개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

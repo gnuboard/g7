@@ -45,6 +45,7 @@ Filter 리스너 하나.
 | `src/Listeners/` | 훅 리스너 | Repository 경유 (Model·DB 파사드 직접 접근 금지) |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update gnuboard7-hello_plugin --force` (빌드 불필요) |
+| `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update gnuboard7-hello_plugin --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update gnuboard7-hello_plugin --force` |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
@@ -149,15 +150,18 @@ Filter 구독에는 `'type' => 'filter'` 선언이 반드시 필요합니다. �
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 2개 | `plugins/_bundled/gnuboard7-hello_plugin/tests` |
-| Vitest | 0개 | — |
+| Vitest | 2개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 0개 | — |
+| 시나리오 매니페스트 | 2개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
 ```bash
 # PHPUnit (변경 범위만) (Bash)
 php vendor/bin/phpunit plugins/_bundled/gnuboard7-hello_plugin/tests --filter='<대상클래스>'
+
+# Vitest (저장소 루트에서) (PowerShell)
+powershell -Command "npm run test:run -- plugins/_bundled/gnuboard7-hello_plugin/<대상>"
 
 ```
 

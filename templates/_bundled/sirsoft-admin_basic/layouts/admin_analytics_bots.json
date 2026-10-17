@@ -152,6 +152,7 @@
         "showExclude": false
     },
     "computed": {
+        "tabQuery": "{{['preset', 'from', 'to', 'per_page'].filter(k => query[k]).map(k => '&' + k + '=' + encodeURIComponent(query[k])).join('')}}",
         "csvUrl": "{{'/api/admin/analytics/' + ((query.tab || 'bots') === 'pages' ? 'reports/bot_pages' : 'bots') + '?format=csv' + (query.from ? '&from=' + query.from + '&to=' + (query.to || query.from) : '&preset=' + (query.preset || '7d')) + (query.q ? '&q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&sort=' + query.sort : '')}}",
         "csvFilename": "{{'analytics-' + ((query.tab || 'bots') === 'pages' ? 'bot_pages' : 'bot_name') + '-' + (_computed.periodFrom || '') + '_' + (_computed.periodTo || '') + '.csv'}}",
         "periodFrom": "{{query.from || ((query.tab || 'bots') === 'pages' ? analytics_report?.data?.from : analytics_bots?.data?.from) || _local.periodComputed?.from || ''}}",
@@ -230,24 +231,18 @@
                             {
                                 "id": "seo_cache_link",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read'))}}",
                                 "actions": [
                                     {
                                         "comment": "검색엔진 캐시 설정으로 — 환경설정 SEO 탭을 연다. 환경설정 읽기 권한이 있어야 버튼이 보인다(없으면 가도 권한 안내뿐이다).",
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/settings",
-                                            "query": {
-                                                "tab": "seo"
-                                            }
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary btn-sm"
+                                    "href": "/admin/settings?tab=seo",
+                                    "className": "button btn btn-secondary btn-sm"
                                 },
                                 "text": "$t:admin.analytics.bots.seo_cache_link"
                             }
@@ -337,10 +332,12 @@
                             "tabs": [
                                 {
                                     "id": "bots",
+                                    "href": "/admin/analytics/bots?tab=bots{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.bots.tabs.bots"
                                 },
                                 {
                                     "id": "pages",
+                                    "href": "/admin/analytics/bots?tab=pages{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.bots.tabs.pages"
                                 }
                             ]
@@ -401,6 +398,8 @@
                                                     }
                                                 ],
                                                 "props": {
+                                                    "pageHref": "/admin/analytics/bots?page={page}",
+                                                    "pageHrefMergeQuery": true,
                                                     "data": "{{analytics_bots?.data?.data ?? []}}",
                                                     "pagination": true,
                                                     "serverSidePagination": true,

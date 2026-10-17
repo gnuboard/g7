@@ -66,6 +66,7 @@
                             ],
                             "props": {
                                 "name": "searchField",
+                                "aria-label": "$t:common.search_field",
                                 "className": "w-32",
                                 "value": "{{_local.filter.searchField || 'all'}}",
                                 "options": [
@@ -269,7 +270,6 @@
                                                             "keyword": "{{$args[0]}}"
                                                         }
                                                     },
-                                                    "debounce": 300,
                                                     "onSuccess": {
                                                         "handler": "setState",
                                                         "params": {
@@ -287,7 +287,8 @@
                                                         }
                                                     }
                                                 }
-                                            ]
+                                            ],
+                                            "debounce": 300
                                         },
                                         {
                                             "comment": "고른 회원은 uuid 로 담는다(동명이인이 있고, 이름을 바꿔도 같은 사람을 가리켜야 한다).\n                   이름표는 지금 화면에 있는 후보(검색 결과 + 이미 고른 칩)에서 골라 따로 남긴다",
@@ -302,6 +303,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.user_addresses.filter.member",
                                         "multiple": true,
                                         "options": "{{(_local.memberSearchResultsKeyword ?? null) === (_local.memberSearchKeyword ?? '').trim() ? (_local.memberSearchResults ?? []) : []}}",
                                         "value": "{{_local.filter.memberUuids ?? []}}",

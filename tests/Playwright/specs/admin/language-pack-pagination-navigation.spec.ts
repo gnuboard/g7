@@ -42,10 +42,11 @@ test('#677 후속 - 보호된 언어팩까지 펼치면 쪽 단추가 모두 그
   await expect(nav).toBeVisible({ timeout: 30_000 });
 
   // 마지막 쪽 번호까지 단추가 있어야 한다 — 1번 하나만 남던 것이 이 결함이었다.
-  await expect(nav.getByRole('button', { name: `페이지 ${pagination.last_page}`, exact: true })).toBeVisible();
+  // 쪽 번호는 링크(<a href>, pageHref — #757)
+  await expect(nav.getByRole('link', { name: `페이지 ${pagination.last_page}`, exact: true })).toBeVisible();
 
   // 눌러서 실제로 그 쪽으로 넘어가는지 — 주소와 아래 표시 줄 둘 다로 확인한다.
-  await nav.getByRole('button', { name: '페이지 2', exact: true }).click();
+  await nav.getByRole('link', { name: '페이지 2', exact: true }).click();
   await expect(page).toHaveURL(/[?&]page=2\b/, { timeout: 30_000 });
 
   const from = (pagination.per_page ?? 10) + 1;

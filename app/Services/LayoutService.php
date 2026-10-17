@@ -33,6 +33,13 @@ class LayoutService
     private const NON_COMPONENT_KEYS = ['actions', 'params', 'data_sources', 'errorHandling', 'lifecycle', 'init_actions', 'computed', 'meta'];
 
     /**
+     * 요청 본문 자리 키 — 개발자 주석 제거가 이 키 아래로는 내려가지 않는다(서버로 보낼 데이터라 `comment` 도 값이다).
+     *
+     * @var array<int, string>
+     */
+    private const REQUEST_PAYLOAD_KEYS = ['body', 'query', 'headers'];
+
+    /**
      * LayoutRepository, LayoutVersionRepository, TemplateRepository, LayoutResolverService 및 LayoutExtensionService 주입
      *
      * @param  LayoutRepositoryInterface  $layoutRepository  레이아웃 저장소
@@ -1733,10 +1740,27 @@ class LayoutService
      * 미리보기 서빙). 그 경로도 같은 계약을 지어야 하므로 public 이다 — 각자 재귀 제거를
      * 새로 짜면 한쪽만 키를 늘렸을 때 조용히 갈린다.
      *
+     * 요청 본문 자리(`body`·`query`·`headers` 아래, 데이터소스의 `params` 아래)는 서버로 보낼 데이터라
+     * `comment` 키도 값이다 — 그 아래는 손대지 않는다(종전에는 지워 비즈뿌리오 「검수 의견」 본문이 빈 채로 갔다).
+     * 액션 `params`·`props`·`initLocal` 바로 아래의 `comment` 는 번들에서 설명 자리로 쓰여 왔으므로 계속 지운다
+     * (남기면 처리기 인자·컴포넌트 prop·`_local.comment` 가 된다).
+     *
      * @param  array  $node  정리 대상 레이아웃(또는 하위) 배열
      * @return array comment 필드가 제거된 배열
      */
     public function stripDeveloperComments(array $node): array
+    {
+        return $this->stripDeveloperCommentsIn($node, false);
+    }
+
+    /**
+     * stripDeveloperComments 의 재귀 본체.
+     *
+     * @param  array  $node  정리 대상 배열
+     * @param  bool  $isDataSource  `data_sources` 목록의 원소(데이터소스 정의)인지 — 그 `params` 는 요청 데이터다
+     * @return array comment 필드가 제거된 배열
+     */
+    private function stripDeveloperCommentsIn(array $node, bool $isDataSource): array
     {
         unset($node['comment'], $node['_comment']);
 
@@ -1747,9 +1771,24 @@ class LayoutService
         }
 
         foreach ($node as $key => $value) {
-            if (is_array($value)) {
-                $node[$key] = $this->stripDeveloperComments($value);
+            if (! is_array($value)) {
+                continue;
             }
+            if (is_string($key) && in_array($key, self::REQUEST_PAYLOAD_KEYS, true)) {
+                continue;
+            }
+            if ($isDataSource && $key === 'params') {
+                continue;
+            }
+            if ($key === 'data_sources' && array_is_list($value)) {
+                $node[$key] = array_map(
+                    fn ($source) => is_array($source) ? $this->stripDeveloperCommentsIn($source, true) : $source,
+                    $value
+                );
+
+                continue;
+            }
+            $node[$key] = $this->stripDeveloperCommentsIn($value, false);
         }
 
         return $node;

@@ -649,6 +649,7 @@
                                                 "props": {
                                                     "type": "text",
                                                     "readOnly": true,
+                                                    "aria-label": "$t:sirsoft-pay_nicepayments.settings.section_vbank_notify",
                                                     "value": "{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify'}}",
                                                     "className": "input-readonly flex-1 font-mono",
                                                     "disabled": "{{_computed.isPluginReadOnly}}"
@@ -1086,18 +1087,16 @@
                             {
                                 "id": "cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/plugins"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
-                                    "className": "btn btn-secondary"
+                                    "href": "/admin/plugins",
+                                    "className": "button btn btn-secondary"
                                 },
                                 "children": [
                                     {

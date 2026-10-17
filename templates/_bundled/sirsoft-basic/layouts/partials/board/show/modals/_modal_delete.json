@@ -84,6 +84,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:board.guest_password",
                                 "type": "password",
                                 "placeholder": "$t:board.guest_password_placeholder",
                                 "value": "{{_global.deleteModal.password ?? ''}}",

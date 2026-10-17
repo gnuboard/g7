@@ -146,6 +146,10 @@ export interface TagInputProps {
   id?: string;
   /** 레이아웃 편집기 주입 속성 (data-editor-* 등 — 편집 모드 선택용) */
   editorAttrs?: EditorAttrs;
+  /** 입력칸 접근 가능한 이름 — 있으면 곁 라벨을 잇지 않는다(#757) */
+  'aria-label'?: string;
+  /** 입력칸 이름이 될 요소 id — 있으면 곁 라벨을 잇지 않는다 */
+  'aria-labelledby'?: string;
 }
 
 // Tailwind 스타일 클래스 상수
@@ -275,6 +279,8 @@ export const TagInput: React.FC<TagInputProps> = ({
   onInputChange: onInputChangeProp,
   id,
   editorAttrs,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
 }) => {
   // disabled prop을 boolean으로 정규화 (문자열 "true"/"false" 처리)
   const disabled = disabledProp === true || disabledProp === 'true';
@@ -552,6 +558,8 @@ export const TagInput: React.FC<TagInputProps> = ({
   // 곁 라벨을 입력칸 이름으로 잇는다 — 라벨과 형제로 놓여 이름 없는 combobox 로 읽혔다(7.1.0 J D-J7)
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    // 레이아웃이 이름을 줬으면 그것이 이름이다 — 종전에는 aria-label 을 받지 않아 레이아웃이 줘도 버려졌다(#757)
+    if (ariaLabel || ariaLabelledBy) return;
     // react-select 입력칸은 여러 겹 안쪽이라 라벨 탐색은 이 부품의 루트에서 시작한다
     linkAdjacentLabel(rootRef.current?.querySelector<HTMLInputElement>('input:not([type="hidden"])') ?? null, false, rootRef.current);
   });
@@ -671,6 +679,8 @@ export const TagInput: React.FC<TagInputProps> = ({
     menuPortalTarget: typeof document !== 'undefined' ? document.body : null,
     menuPosition: 'fixed' as const,
     classNamePrefix: 'tag-input',
+    'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledBy,
     ariaLiveMessages,
     screenReaderStatus,
     unstyled: true,

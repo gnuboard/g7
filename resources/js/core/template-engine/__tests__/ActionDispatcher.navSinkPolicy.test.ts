@@ -31,14 +31,14 @@ vi.mock('../../api/ApiClient', () => ({
 
 describe('ActionDispatcher - 이동 sink 정책 (engine-v1.73.0)', () => {
   let dispatcher: ActionDispatcher;
-  let mockNavigate: ReturnType<typeof vi.fn>;
+  let mockNavigate: ReturnType<typeof vi.fn<(path: string, options?: unknown) => void>>;
   let mockMatch: ReturnType<typeof vi.fn>;
   let mockWindowOpen: ReturnType<typeof vi.fn>;
   let mockLocationAssign: ReturnType<typeof vi.fn>;
   let originalWindowOpen: typeof window.open;
 
   beforeEach(() => {
-    mockNavigate = vi.fn();
+    mockNavigate = vi.fn<(path: string, options?: unknown) => void>();
     dispatcher = new ActionDispatcher({ navigate: mockNavigate });
     Logger.getInstance().setDebug(false);
 
@@ -75,7 +75,7 @@ describe('ActionDispatcher - 이동 sink 정책 (engine-v1.73.0)', () => {
   /**
    * @effects nav_sink_rejects_script_scheme
    */
-  it('미매칭 폴백으로 흘러든 javascript: 경로는 location.assign 에 닿지 않고 / 로 간다', async () => {
+  it('미매칭 폴백으로 흘러든 javascript: 경로는 location.assign 에 닿지 않고 아무 데도 가지 않는다', async () => {
     mockMatch.mockReturnValue(null);
 
     await dispatcher.dispatchAction({
@@ -84,9 +84,9 @@ describe('ActionDispatcher - 이동 sink 정책 (engine-v1.73.0)', () => {
       params: { path: 'javascript:localStorage.setItem("g7_marker","TOKEN_READABLE")' },
     });
 
+    // 거부된 주소는 이동하지 않는다(결정 2026-10-15 — 종전에는 첫 화면 `/` 로 문서 전체 이동)
     expect(mockNavigate).not.toHaveBeenCalled();
-    expect(mockLocationAssign).toHaveBeenCalledTimes(1);
-    expect(mockLocationAssign).toHaveBeenCalledWith('/');
+    expect(mockLocationAssign).not.toHaveBeenCalled();
   });
 
   /**
@@ -98,7 +98,8 @@ describe('ActionDispatcher - 이동 sink 정책 (engine-v1.73.0)', () => {
     for (const path of ['https://example.com/', '//example.com/', '/\\example.com/']) {
       mockLocationAssign.mockClear();
       await dispatcher.dispatchAction({ type: 'click', handler: 'navigate', params: { path } });
-      expect(mockLocationAssign).toHaveBeenCalledWith('/');
+      // 거부된 주소는 이동하지 않는다(종전: 첫 화면 `/`)
+      expect(mockLocationAssign).not.toHaveBeenCalled();
     }
   });
 
@@ -117,6 +118,45 @@ describe('ActionDispatcher - 이동 sink 정책 (engine-v1.73.0)', () => {
     expect(mockLocationAssign).toHaveBeenCalledWith('/admin/orders?status=paid');
   });
 
+  describe('[case:network-same-origin-full-url-navigates-home] 같은 사이트 전체 주소 이동', () => {
+    /**
+     * 알림 이동 주소(click_url)는 같은 사이트의 전체 주소다 — 경로로 바꿔 SPA 이동한다.
+     * 종전: 라우트 매칭이 전체 주소를 몰라 미매칭 폴백 → 같은 탭 sink 가 스킴을 거부 → 첫 화면 `/` 로 문서 전체 이동.
+     *
+     * @scenario target_kind=same_origin_full_url, sink=same_tab
+     *
+     * @effects same_origin_full_url_becomes_path
+     */
+    it('navigate 의 같은 출처 전체 주소는 그 경로로 SPA 이동한다(쿼리·해시 유지)', async () => {
+      mockMatch.mockImplementation((p: string) => (p.startsWith('/board/') ? { path: p } : null));
+
+      await dispatcher.dispatchAction({
+        type: 'click',
+        handler: 'navigate',
+        params: { path: 'http://localhost/board/free/14?page=2#c3' },
+      });
+
+      expect(mockLocationAssign).not.toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenCalledTimes(1);
+      expect(mockNavigate.mock.calls[0][0]).toBe('/board/free/14?page=2#c3');
+    });
+
+    /**
+     * @scenario target_kind=same_origin_full_url, sink=same_tab
+     *
+     * @effects same_origin_full_url_becomes_path
+     */
+    it('같은 출처 전체 주소가 라우트 밖이면 미매칭 폴백도 첫 화면이 아니라 그 경로로 간다', async () => {
+      mockMatch.mockReturnValue(null);
+
+      await dispatcher.dispatchAction({ type: 'click', handler: 'navigate', params: { path: 'http://localhost/admin/users' } });
+      await dispatcher.dispatchAction({ type: 'click', handler: 'openWindow', params: { path: 'http://localhost/admin/users?x=1', target: '_self' } });
+
+      expect(mockLocationAssign.mock.calls).toEqual([['/admin/users'], ['/admin/users?x=1']]);
+    });
+
+  });
+
   /**
    * @effects nav_sink_rejects_script_scheme, nav_sink_rejects_offsite_target
    */
@@ -132,7 +172,20 @@ describe('ActionDispatcher - 이동 sink 정책 (engine-v1.73.0)', () => {
       params: { path: '//evil.example/', target: '_self' },
     });
 
-    expect(mockLocationAssign.mock.calls).toEqual([['/'], ['/']]);
+    expect(mockLocationAssign).not.toHaveBeenCalled();
+  });
+
+  /**
+   * 거부는 「주소가 있는데 안전하지 않을 때」만이다 — 주소가 비면 종전대로 기본 경로로 간다.
+   *
+   * @scenario target_kind=same_origin, sink=same_tab
+   *
+   * @effects same_origin_redirect_preserved
+   */
+  it('openWindow _self 의 빈 주소는 종전대로 첫 화면으로 간다(거부가 아니다)', async () => {
+    await dispatcher.dispatchAction({ type: 'click', handler: 'openWindow', params: { path: '', target: '_self' } });
+
+    expect(mockLocationAssign.mock.calls).toEqual([['/']]);
   });
 
   /**

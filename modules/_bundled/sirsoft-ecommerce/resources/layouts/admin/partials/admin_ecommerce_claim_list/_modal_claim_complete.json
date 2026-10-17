@@ -274,6 +274,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "$t:common.row_cell|row={{claimRow.claim_number ?? ''}}|column={{$t('sirsoft-ecommerce.admin.claim.complete.col_restore_stock')}}",
                                                 "autoBinding": false,
                                                 "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed",
                                                 "checked": "{{(_global.claimCompleteRestore ?? {})[claimRow.id] !== false}}",
@@ -356,31 +357,40 @@
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Checkbox",
-                                    "actions": [
-                                        {
-                                            "comment": "회수되지 않은 상품을 미회수로 표시할지 켜고 끈다 — 켠 상품만 사유 입력칸이 열린다",
-                                            "type": "change",
-                                            "handler": "sirsoft-ecommerce.toggleClaimCompleteUnreturned",
-                                            "params": {
-                                                "itemId": "{{unretItem.id}}",
-                                                "checked": "{{$event.target.checked}}"
-                                            }
-                                        }
-                                    ],
+                                    "name": "Label",
                                     "props": {
-                                        "autoBinding": false,
-                                        "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600",
-                                        "checked": "{{Object.keys(_global.claimCompleteUnreturned ?? {}).includes(String(unretItem.id))}}"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "text-sm text-gray-900 dark:text-gray-100"
+                                        "className": "flex-center gap-3 cursor-pointer"
                                     },
-                                    "text": "{{unretItem.label}}"
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Checkbox",
+                                            "actions": [
+                                                {
+                                                    "comment": "회수되지 않은 상품을 미회수로 표시할지 켜고 끈다 — 켠 상품만 사유 입력칸이 열린다",
+                                                    "type": "change",
+                                                    "handler": "sirsoft-ecommerce.toggleClaimCompleteUnreturned",
+                                                    "params": {
+                                                        "itemId": "{{unretItem.id}}",
+                                                        "checked": "{{$event.target.checked}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "autoBinding": false,
+                                                "className": "w-4 h-4 rounded border-gray-300 dark:border-gray-600",
+                                                "checked": "{{Object.keys(_global.claimCompleteUnreturned ?? {}).includes(String(unretItem.id))}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "{{unretItem.label}}"
+                                        }
+                                    ]
                                 },
                                 {
                                     "type": "basic",
@@ -398,6 +408,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:common.row_cell|row={{unretItem.label ?? ''}}|column={{$t('sirsoft-ecommerce.admin.claim.complete.unreturned_reason_placeholder')}}",
                                         "type": "text",
                                         "maxLength": 2000,
                                         "className": "flex-1 min-w-[200px] px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",

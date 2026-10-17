@@ -137,6 +137,7 @@
         "showUnit": false
     },
     "computed": {
+        "tabQuery": "{{['preset', 'from', 'to', 'unit', 'exclude', 'per_page', 'dimension'].filter(k => query[k]).map(k => '&' + k + '=' + encodeURIComponent(query[k])).join('')}}",
         "reportEmptyHint": "{{(query.tab || 'search') === 'events' ? $t('admin.analytics.actions.events_empty') : null}}",
         "reportName": "{{({search: 'site_search', downloads: 'download', outlinks: 'outlink', goals: 'goal', search_tabs: 'search_tab', events: 'event_name', dimensions: (query.dimension ? 'ext:' + query.dimension : '')})[query.tab || 'search'] || 'site_search'}}",
         "csvUrl": "{{_computed.reportName ? '/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&from=' + query.from + '&to=' + (query.to || query.from) : '&preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&exclude[]=' + e).join('') + (query.q ? '&q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&sort=' + query.sort : '') : ''}}",
@@ -246,30 +247,37 @@
                             "tabs": [
                                 {
                                     "id": "search",
+                                    "href": "/admin/analytics/actions?tab=search{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.actions.tabs.search"
                                 },
                                 {
                                     "id": "downloads",
+                                    "href": "/admin/analytics/actions?tab=downloads{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.actions.tabs.downloads"
                                 },
                                 {
                                     "id": "outlinks",
+                                    "href": "/admin/analytics/actions?tab=outlinks{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.actions.tabs.outlinks"
                                 },
                                 {
                                     "id": "search_tabs",
+                                    "href": "/admin/analytics/actions?tab=search_tabs{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.actions.tabs.search_tabs"
                                 },
                                 {
                                     "id": "events",
+                                    "href": "/admin/analytics/actions?tab=events{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.actions.tabs.events"
                                 },
                                 {
                                     "id": "goals",
+                                    "href": "/admin/analytics/actions?tab=goals{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.actions.tabs.goals"
                                 },
                                 {
                                     "id": "dimensions",
+                                    "href": "/admin/analytics/actions?tab=dimensions{{_computed.tabQuery}}",
                                     "label": "$t:admin.analytics.actions.tabs.dimensions"
                                 }
                             ]

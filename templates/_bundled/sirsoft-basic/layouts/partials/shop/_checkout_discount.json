@@ -247,6 +247,7 @@
                     ],
                     "props": {
                         "name": "order_coupon_issue_id",
+                        "aria-label": "$t:shop.checkout.order_coupon_select",
                         "value": "{{_local.checkout?.order_coupon_issue_id ?? ''}}",
                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                     },
@@ -399,6 +400,7 @@
                     ],
                     "props": {
                         "name": "shipping_coupon_issue_id",
+                        "aria-label": "$t:shop.checkout.shipping_coupon_select",
                         "value": "{{_local.checkout?.shipping_coupon_issue_id ?? ''}}",
                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                     },

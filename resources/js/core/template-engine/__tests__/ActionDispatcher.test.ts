@@ -7658,18 +7658,19 @@ describe('ActionDispatcher', () => {
     });
 
     /**
-     * @effects redirect_offsite_target_falls_back_to_root
+     * @effects redirect_offsite_target_is_not_followed
      */
-    it('외부 origin·protocol-relative 주소는 따라가지 않고 기본 경로(/)로 간다 (KVE-2026-2348)', async () => {
+    it('외부 origin·protocol-relative 주소는 따라가지 않고 아무 데도 가지 않는다 (KVE-2026-2348, 결정 2026-10-15)', async () => {
+      // 종전에는 기본 경로 `/` 로 문서 전체 이동했다 — 거부된 주소는 이동하지 않는다
       for (const url of ['https://idp.example/verify', '//evil.example/', '/\\evil.example/']) {
         assignSpy.mockClear();
         await run({ url });
-        expect(assignSpy).toHaveBeenCalledWith('/');
+        expect(assignSpy).not.toHaveBeenCalled();
       }
 
       replaceSpy.mockClear();
       await run({ url: 'https://evil.example/', replace: true });
-      expect(replaceSpy).toHaveBeenCalledWith('/');
+      expect(replaceSpy).not.toHaveBeenCalled();
     });
 
     /**
@@ -7679,10 +7680,9 @@ describe('ActionDispatcher', () => {
       await run({ url: 'javascript:localStorage.setItem("m","1")' });
       await run({ url: ' JaVaScRiPt:alert(1)', replace: true });
 
-      for (const call of [...assignSpy.mock.calls, ...replaceSpy.mock.calls]) {
-        expect(String(call[0]).toLowerCase()).not.toContain('javascript:');
-        expect(call[0]).toBe('/');
-      }
+      // 거부된 주소는 어느 sink 도 부르지 않는다(종전: 기본 경로 `/` 로 이동)
+      expect(assignSpy).not.toHaveBeenCalled();
+      expect(replaceSpy).not.toHaveBeenCalled();
     });
 
     /**

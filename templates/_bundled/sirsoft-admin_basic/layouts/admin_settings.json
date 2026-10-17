@@ -912,50 +912,62 @@
                                     "tabs": [
                                         {
                                             "id": "general",
+                                            "href": "/admin/settings?tab=general",
                                             "label": "$t:admin.settings.tabs.general"
                                         },
                                         {
                                             "id": "mail",
+                                            "href": "/admin/settings?tab=mail",
                                             "label": "$t:admin.settings.tabs.mail"
                                         },
                                         {
                                             "id": "upload",
+                                            "href": "/admin/settings?tab=upload",
                                             "label": "$t:admin.settings.tabs.upload"
                                         },
                                         {
                                             "id": "seo",
+                                            "href": "/admin/settings?tab=seo",
                                             "label": "$t:admin.settings.tabs.seo"
                                         },
                                         {
                                             "id": "security",
+                                            "href": "/admin/settings?tab=security",
                                             "label": "$t:admin.settings.tabs.security"
                                         },
                                         {
                                             "id": "drivers",
+                                            "href": "/admin/settings?tab=drivers",
                                             "label": "$t:admin.settings.tabs.drivers"
                                         },
                                         {
                                             "id": "advanced",
+                                            "href": "/admin/settings?tab=advanced",
                                             "label": "$t:admin.settings.tabs.advanced"
                                         },
                                         {
                                             "id": "notification_definitions",
+                                            "href": "/admin/settings?tab=notification_definitions",
                                             "label": "$t:admin.settings.tabs.notification_definitions"
                                         },
                                         {
                                             "id": "language_packs",
+                                            "href": "/admin/settings?tab=language_packs",
                                             "label": "$t:admin.settings.tabs.language_packs"
                                         },
                                         {
                                             "id": "identity",
+                                            "href": "/admin/settings?tab=identity",
                                             "label": "$t:admin.settings.tabs.identity"
                                         },
                                         {
                                             "id": "privacy",
+                                            "href": "/admin/settings?tab=privacy",
                                             "label": "$t:admin.settings.tabs.privacy"
                                         },
                                         {
                                             "id": "info",
+                                            "href": "/admin/settings?tab=info",
                                             "label": "$t:admin.settings.tabs.info"
                                         }
                                     ]

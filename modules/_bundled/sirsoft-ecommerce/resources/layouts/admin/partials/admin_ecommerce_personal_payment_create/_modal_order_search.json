@@ -32,7 +32,8 @@
                             "type": "basic",
                             "name": "Select",
                             "props": {
-                                "className": "select w-32 flex-shrink-0"
+                                "className": "select w-32 flex-shrink-0",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.search_field"
                             },
                             "children": [
                                 {
@@ -89,7 +90,8 @@
                             "type": "basic",
                             "name": "Select",
                             "props": {
-                                "className": "select w-full"
+                                "className": "select w-full",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.personal_payment_create.modal.order_search.order_date"
                             },
                             "children": [
                                 {

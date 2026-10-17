@@ -66,16 +66,16 @@
         <!-- 뒤로가기 헤더 -->
         <div class="flex items-center gap-2 mb-6">
           <responsive on="portable" class="flex items-center gap-2 mb-4"/>
-          <button class="flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
+          <a href="/mypage/orders" :mergeQuery="true" class="flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
             <on type="click">
               <!-- 주문 목록으로. 보던 목록 상태를 이고 간다 -->
-              <navigate path="/mypage/orders" :mergeQuery="true">
+              <navigate :mergeQuery="true">
                 <query/>
               </navigate>
             </on>
             <icon name="chevron-left" size="md"/>
             <span class="text-base font-medium">$t:mypage.order_detail.back</span>
-          </button>
+          </a>
         </div>
         <!-- 주문 상세 카드 컨테이너 -->
         <div class="max-w-3xl mx-auto space-y-4">
@@ -86,32 +86,32 @@
           <div data-if="{{(claimable?.data?.options ?? []).some(o => (o.claimable_types ?? []).length > 0)}}" class="flex flex-row items-center justify-center gap-3 bg-white dark:bg-gray-800 rounded-lg p-4">
             <responsive on="portable" class="flex flex-col gap-2 bg-white dark:bg-gray-800 rounded-lg p-4"/>
             <!-- [취소·환불 신청] — 체크한 상품을 미리 고른 채 신청서를 연다. 즉시 취소될지 환불 심사를 거칠지는 그 화면이 상품별로 가르고, 주소에 함께 실은 주문 ID 로 신청서가 주문 조회를 기다리지 않고 신청 가능 상품을 곧바로 부른다. -->
-            <button type="button" class="px-5 py-2.5 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('refund')) || claimable?.data?.abilities?.can_request !== true || ((_local.selectedItemIds ?? []).some(id => (claimable?.data?.options ?? []).find(o => o.option?.id === id)?.refund_branch === 'auto') &amp;&amp; claimable?.data?.abilities?.can_cancel !== true)}}">
+            <a href="/mypage/orders/{{route.order_number}}/claims/apply/refund?options={{(_local.selectedItemIds ?? []).join(',')}}&order_id={{order.data.id ?? ''}}" :mergeQuery="true" class="inline-flex items-center justify-center px-5 py-2.5 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed cursor-pointer" disabled="{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('refund')) || claimable?.data?.abilities?.can_request !== true || ((_local.selectedItemIds ?? []).some(id => (claimable?.data?.options ?? []).find(o => o.option?.id === id)?.refund_branch === 'auto') &amp;&amp; claimable?.data?.abilities?.can_cancel !== true)}}">
               <on type="click">
-                <navigate path="/mypage/orders/{{route.order_number}}/claims/apply/refund" :mergeQuery="true">
+                <navigate :mergeQuery="true">
                   <query options="{{(_local.selectedItemIds ?? []).join(',')}}" order_id="{{order.data.id ?? ''}}"/>
                 </navigate>
               </on>
               $t:claim.apply.entry_refund
-            </button>
+            </a>
             <!-- [반품 신청] — 체크한 상품을 미리 고른 채 반품 신청서를 연다. 회수 배송비는 그 화면의 서버 미리보기가 계산하고 청구 방식도 거기서 고르며, 주소에 실은 주문 ID 덕에 뒤로가기로 되돌아와도 신청서가 빈 채로 남지 않는다. -->
-            <button type="button" class="px-5 py-2.5 bg-orange-600 dark:bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('return')) || claimable?.data?.abilities?.can_request !== true}}">
+            <a href="/mypage/orders/{{route.order_number}}/claims/apply/return?options={{(_local.selectedItemIds ?? []).join(',')}}&order_id={{order.data.id ?? ''}}" :mergeQuery="true" class="inline-flex items-center justify-center px-5 py-2.5 bg-orange-600 dark:bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed cursor-pointer" disabled="{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('return')) || claimable?.data?.abilities?.can_request !== true}}">
               <on type="click">
-                <navigate path="/mypage/orders/{{route.order_number}}/claims/apply/return" :mergeQuery="true">
+                <navigate :mergeQuery="true">
                   <query options="{{(_local.selectedItemIds ?? []).join(',')}}" order_id="{{order.data.id ?? ''}}"/>
                 </navigate>
               </on>
               $t:claim.apply.entry_return
-            </button>
+            </a>
             <!-- [교환 신청] — 체크한 상품을 미리 고른 채 교환 신청서를 연다. 교환받을 옵션은 그 화면에서 상품 줄마다 따로 고르고, 주문 ID 를 주소로 넘겨 신청서의 첫 조회를 주문 응답과 떼어 놓는다. -->
-            <button type="button" class="px-5 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('exchange')) || claimable?.data?.abilities?.can_request !== true}}">
+            <a href="/mypage/orders/{{route.order_number}}/claims/apply/exchange?options={{(_local.selectedItemIds ?? []).join(',')}}&order_id={{order.data.id ?? ''}}" :mergeQuery="true" class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed cursor-pointer" disabled="{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('exchange')) || claimable?.data?.abilities?.can_request !== true}}">
               <on type="click">
-                <navigate path="/mypage/orders/{{route.order_number}}/claims/apply/exchange" :mergeQuery="true">
+                <navigate :mergeQuery="true">
                   <query options="{{(_local.selectedItemIds ?? []).join(',')}}" order_id="{{order.data.id ?? ''}}"/>
                 </navigate>
               </on>
               $t:claim.apply.entry_exchange
-            </button>
+            </a>
           </div>
           <!-- 권한 때문에 잠긴 버튼의 안내 — 신청 권한이 없거나(전체), 바로 취소되는 상품(결제완료 이전)을 골랐는데 주문 취소 권한이 없을 때. 판정 키는 신청 가능 상품 응답의 abilities 이고 서버가 같은 기준으로 403 을 낸다. -->
           <p data-if="{{(claimable?.data?.options ?? []).some(o => (o.claimable_types ?? []).length > 0) &amp;&amp; claimable?.data?.abilities?.can_request === false}}" class="text-sm text-amber-600 dark:text-amber-400 text-center">$t:claim.apply.no_request_permission</p>
@@ -129,23 +129,23 @@
           <!-- 액션 버튼 영역 -->
           <div class="flex flex-row gap-4">
             <responsive on="portable" class="flex flex-col gap-3"/>
-            <button class="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer">
+            <a href="{{_global.shopBase}}/products" class="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer">
               <on type="click">
                 <!-- audit:allow layout-list-context-navigate-merge-query 쇼핑 계속하기 — 주문 목록이 아니라 상품 목록으로 나가는 이동이다. -->
-                <navigate path="{{_global.shopBase}}/products"/>
+                <navigate/>
               </on>
               <icon name="shopping-bag" size="md"/>
               <span>$t:mypage.order_detail.continue_shopping</span>
-            </button>
+            </a>
             <!-- 재주문 버튼 - 취소된 주문만 표시 -->
-            <button data-if="{{order.data.order_status === 'cancelled'}}" class="flex-1 flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+            <a href="{{_global.shopBase}}/reorder/{{order.data.id ?? ''}}" data-if="{{order.data.order_status === 'cancelled'}}" class="flex-1 flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer">
               <on type="click">
                 <!-- audit:allow layout-list-context-navigate-merge-query 재주문 — 주문서 작성 흐름으로 넘어가는 이동이므로 주문 목록 상태를 물려주지 않는다. -->
-                <navigate path="{{_global.shopBase}}/reorder/{{order.data.id ?? ''}}"/>
+                <navigate/>
               </on>
               <icon name="refresh-cw" size="md"/>
               <span>$t:mypage.order_detail.reorder</span>
-            </button>
+            </a>
           </div>
         </div>
       </container>

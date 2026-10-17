@@ -1247,6 +1247,8 @@
                                             "data": "{{analytics_archive_runs?.data?.data ?? []}}",
                                             "pagination": true,
                                             "serverSidePagination": true,
+                                            "pageHref": "/admin/analytics/diagnostics?runs_page={page}",
+                                            "pageHrefMergeQuery": true,
                                             "serverCurrentPage": "{{analytics_archive_runs?.data?.pagination?.current_page ?? 1}}",
                                             "serverTotalPages": "{{analytics_archive_runs?.data?.pagination?.last_page ?? null}}",
                                             "pageSize": 10,
@@ -1482,6 +1484,7 @@
                                                     }
                                                 ],
                                                 "props": {
+                                                    "aria-label": "$t:admin.analytics.diagnostics.failure_columns.reason",
                                                     "name": "analytics_failure_reason",
                                                     "className": "w-40",
                                                     "value": "{{query.reason || ''}}",
@@ -1593,6 +1596,8 @@
                                             "data": "{{analytics_collect_failures?.data?.data ?? []}}",
                                             "pagination": true,
                                             "serverSidePagination": true,
+                                            "pageHref": "/admin/analytics/diagnostics?failures_page={page}",
+                                            "pageHrefMergeQuery": true,
                                             "serverCurrentPage": "{{analytics_collect_failures?.data?.pagination?.current_page ?? 1}}",
                                             "serverTotalPages": "{{analytics_collect_failures?.data?.pagination?.last_page ?? null}}",
                                             "pageSize": 10,

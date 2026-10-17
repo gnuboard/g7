@@ -43,6 +43,41 @@ const logger = ((window as any).G7Core?.createLogger?.('Comp:DataGrid')) ?? {
 const t = (key: string, params?: Record<string, string | number>) =>
   (window as any).G7Core?.t?.(key, params) ?? key;
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
+/**
+ * 행 이름으로 쓸 수 있는 글자로 바꿉니다 — 다국어 객체({ko, en})는 현재 언어 값, 그다음 아무 언어 값.
+ *
+ * @param value 필드 값
+ * @returns 이름 글자(없으면 빈 문자열)
+ */
+const toRowLabelText = (value: unknown): string => {
+  if (typeof value === 'string' || typeof value === 'number') return String(value).trim();
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const locale = (window as any).G7Core?.locale?.current?.();
+    const record = value as Record<string, unknown>;
+    const localized = locale ? record[locale] : undefined;
+    if (typeof localized === 'string' && localized.trim() !== '') return localized.trim();
+    const first = Object.values(record).find((v) => typeof v === 'string' && v.trim() !== '');
+    return typeof first === 'string' ? first.trim() : '';
+  }
+  return '';
+};
+
+/**
+ * 점 경로로 행 필드 값을 읽습니다.
+ *
+ * @param row 행 데이터
+ * @param path 점 경로(`product.name`)
+ * @returns 값
+ */
+const readRowPath = (row: any, path: string): unknown =>
+  path.split('.').reduce<any>((acc, key) => (acc == null ? undefined : acc[key]), row);
+
 /**
  * 반복 렌더 서브트리용 컴포넌트 맵 **폴백**.
  *
@@ -217,6 +252,11 @@ export interface DataGridProps {
   onSelectionChange?: (ids: (string | number)[]) => void;
   idField?: string;
   /**
+   * 행 이름으로 쓸 필드(점 경로, 다국어 객체면 현재 언어 값). 셀 렌더 문맥 `$rowLabel` 과 행 선택 체크박스 이름에 쓰인다.
+   * 없으면 첫 표시 열의 글자 값, 그것도 없으면 「N번째 행」(#757).
+   */
+  rowLabelField?: string;
+  /**
    * 선택의 유효 범위.
    *
    * - `'page'`: 선택은 지금 그려진 행에서만 유효하다. 검색·필터·페이지 이동으로
@@ -265,6 +305,12 @@ export interface DataGridProps {
   // 서버 사이드 페이지네이션 (API에서 페이지네이션 처리 시)
   serverSidePagination?: boolean;
   serverCurrentPage?: number;
+  /**
+   * 페이지 번호 주소 틀 — `{page}` 자리에 번호(예: `/admin/users?page={page}`). 주면 내장 페이지 번호가 링크가 된다(#757).
+   */
+  pageHref?: string;
+  /** 페이지 주소에 현재 주소의 쿼리를 합친다 */
+  pageHrefMergeQuery?: boolean;
   /**
    * 서버가 알려준 마지막 페이지 번호
    *
@@ -569,6 +615,32 @@ const resolveRowClassName = (rowClassName: string | undefined, row: any): string
 };
 
 /**
+ * 행 메뉴 항목의 주소(`href`)를 그 행 문맥으로 평가합니다.
+ *
+ * `components.json` 의 `skipBindingKeys` 에 `href` 를 두어 엔진이 행 문맥 없이 먼저 풀지 않게 하고(그러면 `{{row.uuid}}` 가
+ * 빈 값이 된다), 행마다 여기서 푼다(#757 링크 단계 — 행 메뉴 「보기」「수정」을 새 탭으로 열기).
+ *
+ * @param href 항목 주소 틀 (예: `/admin/users/{{row.uuid}}/edit`)
+ * @param row 행 데이터
+ * @returns 평가한 주소 (식이 없으면 그대로, 풀 수 없으면 undefined)
+ */
+const resolveRowHref = (href: unknown, row: any): string | undefined => {
+  if (typeof href !== 'string' || href.trim() === '') return undefined;
+  if (!href.includes('{{')) return href;
+
+  const engine = (window as any).G7Core?.getDataBindingEngine?.();
+  if (!engine?.resolveBindings) return undefined;
+
+  try {
+    const resolved = engine.resolveBindings(href, { row, item: row, $item: row }, { skipCache: true });
+    return typeof resolved === 'string' && resolved !== '' ? resolved : undefined;
+  } catch (error) {
+    logger.warn('행 메뉴 주소 해석 실패:', error);
+    return undefined;
+  }
+};
+
+/**
  * cellChildren 배열을 React 요소로 렌더링합니다.
  *
  * G7Core.renderItemChildren을 사용하여 템플릿 엔진의 모든 표현식 처리 기능을 활용합니다.
@@ -579,14 +651,17 @@ const renderCellChildren = (
   row: any,
   value: any,
   keyPrefix: string = '',
-  componentContext?: { state?: any; setState?: (updates: any) => void }
+  componentContext?: { state?: any; setState?: (updates: any) => void },
+  rowContext?: { $rowLabel: string; $rowNumber: number; $column: unknown }
 ): React.ReactNode => {
   const G7Core = (window as any).G7Core;
   if (G7Core?.renderItemChildren) {
+    // $rowLabel·$rowNumber·$column — 셀 안 칸이 「{행 이름} {열 이름}」으로 이름을 달 수 있게 한다(#757)
     const context = {
       row,
       value,
       $value: value,
+      ...rowContext,
     };
 
     return G7Core.renderItemChildren(
@@ -719,6 +794,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
   selectedIds = [],
   onSelectionChange,
   idField = 'id',
+  rowLabelField,
   selectionScope = 'free',
   nonSelectableIds,
   // 컬럼 표시/숨김
@@ -736,6 +812,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
   // 서버 사이드 페이지네이션
   serverSidePagination = false,
   serverCurrentPage,
+  pageHref,
+  pageHrefMergeQuery,
   serverTotalPages,
   serverHasMorePages,
   onPageChange,
@@ -1166,18 +1244,51 @@ export const DataGrid: React.FC<DataGridProps> = ({
   );
 
   /**
+   * 행 이름을 정합니다 — `rowLabelField` 값 → 첫 표시 열 값이 글자면 그 값 → 「N번째 행」.
+   *
+   * @param row 행 데이터
+   * @param rowNumber 1부터 세는 행 번호
+   * @returns 이름과 번호 대체 여부
+   */
+  const getRowLabel = (row: any, rowNumber: number): { label: string; numbered: boolean } => {
+    const fromField = rowLabelField ? toRowLabelText(readRowPath(row, rowLabelField)) : '';
+    if (fromField) return { label: fromField, numbered: false };
+    if (!rowLabelField) {
+      const first = displayColumns[0];
+      const value = first ? row?.[first.field] : undefined;
+      // 숫자·날짜 모양(「2026-10-07T02:50:00+00:00」·「12345」)은 사람이 행을 가리키는 이름이 아니다 — 번호 대체로 내린다(#757 실측)
+      if (typeof value === 'string' && value.trim() !== '' && !/^[\d\s:.,/+\-TZ]+$/.test(value.trim())) {
+        return { label: value.trim(), numbered: false };
+      }
+    }
+    return { label: tOr('common.row_n', `Row ${rowNumber}`, { n: rowNumber }), numbered: true };
+  };
+
+  /**
+   * 셀 렌더 문맥에 더할 행 정보.
+   *
+   * @param row 행 데이터
+   * @param rowNumber 1부터 세는 행 번호
+   * @param column 열 정의
+   * @returns `$rowLabel`·`$rowNumber`·`$column`
+   */
+  const getRowContext = (row: any, rowNumber: number, column: DataGridColumn) => ({
+    $rowLabel: getRowLabel(row, rowNumber).label,
+    $rowNumber: rowNumber,
+    $column: column.header,
+  });
+
+  /**
    * 행 선택 체크박스의 접근 가능한 이름을 만듭니다.
    *
-   * 첫 표시 열의 값이 글자면 「{값} 선택」, 아니면 「행 선택」. 이름이 없어 화면 읽기 프로그램에
-   * 「체크박스」 만 읽히던 것을 고친다(7.1.0 영역 J D-J5, O-CF5).
+   * 행 이름이 있으면 「{이름} 선택」, 없으면 「N번째 행 선택」. 이름이 없어 화면 읽기 프로그램에
+   * 「체크박스」 만 읽히던 것을 고친다(7.1.0 영역 J D-J5, O-CF5). 첫 열이 참/거짓인 표에서 모든 행이
+   * 「행 선택」 하나로 뭉치던 것도 번호로 나눈다(#757).
    */
-  const getRowSelectLabel = (row: any): string => {
-    const first = displayColumns[0];
-    const value = first ? row?.[first.field] : undefined;
-    if ((typeof value === 'string' || typeof value === 'number') && String(value).trim() !== '') {
-      return t('common.select_item', { name: String(value) });
-    }
-    return t('common.select_row');
+  const getRowSelectLabel = (row: any, rowNumber: number): string => {
+    const { label, numbered } = getRowLabel(row, rowNumber);
+    if (!numbered) return t('common.select_item', { name: label });
+    return tOr('common.select_row_n', t('common.select_row'), { n: rowNumber });
   };
 
   /**
@@ -1204,6 +1315,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
           // 해석을 마쳤으므로 지운다 — ActionMenu 는 남아 있는 disabledField 를 「해석 안 됨」으로 보고 잠근다
           disabledField: undefined,
           disabled: isDisabled,
+          // 주소가 있는 항목(보기·수정)은 행 메뉴에서 링크로 그려진다 — 행마다 평가(가운데 클릭·Ctrl+클릭 새 탭)
+          href: resolveRowHref((action as ActionMenuItem).href, row),
           onClick: () => handleRowAction(action.id, row),
         };
       });
@@ -1291,7 +1404,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
   }, [paginatedData, selectedIds, idField, isRowSelectable]);
 
   // 기본 카드 렌더러
-  const defaultCardRenderer = (row: any, cols: DataGridColumn[]) => {
+  const defaultCardRenderer = (row: any, cols: DataGridColumn[], rowNumber: number) => {
     const rowId = row[idField];
     const expanded = isRowExpanded(rowId);
     // 표 보기의 tr 과 같은 행 클래스(rowClassName)를 카드에도 붙인다 — 좁은 화면 카드 보기에서 공지·답글 카드의
@@ -1321,7 +1434,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
               checked={selectedIds.includes(row[idField])}
               disabled={!isRowSelectable(row)}
               onChange={() => handleSelectRow(row[idField])}
-              aria-label={getRowSelectLabel(row)}
+              aria-label={getRowSelectLabel(row, rowNumber)}
               className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded mr-3 mt-1 disabled:opacity-40 disabled:cursor-not-allowed"
             />
           )}
@@ -1334,7 +1447,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                   </Span>
                   <Div className="text-sm text-gray-900 dark:text-gray-200 mt-0.5 break-words">
                     {col.cellChildren && col.cellChildren.length > 0
-                      ? renderCellChildren(col.cellChildren, row, row[col.field], `card-${row[idField]}-${col.field}`, __componentContext)
+                      ? renderCellChildren(col.cellChildren, row, row[col.field], `card-${row[idField]}-${col.field}`, __componentContext, getRowContext(row, rowNumber, col))
                       : col.render
                         ? col.render(row[col.field], row)
                         : safeRenderValue(row[col.field])}
@@ -1442,7 +1555,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
               <Div key={row[idField] || index}>
                 {cardRenderer
                   ? cardRenderer(row, displayColumns)
-                  : defaultCardRenderer(row, displayColumns)}
+                  : defaultCardRenderer(row, displayColumns, index + 1)}
               </Div>
             ))
           ) : (
@@ -1486,6 +1599,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
               totalPages={effectiveTotalPages}
               hasMorePages={serverSidePagination ? serverHasMorePages : undefined}
               onPageChange={handlePageChange}
+              pageHref={pageHref}
+              pageHrefMergeQuery={pageHrefMergeQuery}
               showFirstLast={showFirstLast}
               maxVisiblePages={5}
               prevText={resolvedPrevText}
@@ -1659,7 +1774,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                             checked={selectedIds.includes(row[idField])}
                             disabled={!isRowSelectable(row)}
                             onChange={() => handleSelectRow(row[idField])}
-                            aria-label={getRowSelectLabel(row)}
+                            aria-label={getRowSelectLabel(row, rowIndex + 1)}
                             className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded disabled:opacity-40 disabled:cursor-not-allowed"
                           />
                         </Td>
@@ -1673,7 +1788,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                           style={{ width: column.width, minWidth: column.width }}
                         >
                           {column.cellChildren && column.cellChildren.length > 0
-                            ? renderCellChildren(column.cellChildren, row, row[column.field], `${row[idField]}-${column.field}`, __componentContext)
+                            ? renderCellChildren(column.cellChildren, row, row[column.field], `${row[idField]}-${column.field}`, __componentContext, getRowContext(row, rowIndex + 1, column))
                             : column.render
                               ? column.render(row[column.field], row)
                               : safeRenderValue(row[column.field])}
@@ -1813,6 +1928,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
             totalPages={effectiveTotalPages}
             hasMorePages={serverSidePagination ? serverHasMorePages : undefined}
             onPageChange={handlePageChange}
+            pageHref={pageHref}
+            pageHrefMergeQuery={pageHrefMergeQuery}
             showFirstLast={showFirstLast}
             maxVisiblePages={5}
             prevText={resolvedPrevText}

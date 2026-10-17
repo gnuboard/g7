@@ -158,18 +158,15 @@
                         {
                             "comment": "비밀번호 변경 버튼",
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/mypage/change-password"
-                                    }
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
-                                "type": "button",
+                                "href": "/mypage/change-password",
                                 "className": "inline-flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             },
                             "children": [
@@ -191,18 +188,15 @@
                         {
                             "comment": "수정하기 버튼 - 편집 페이지로 이동",
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/mypage/profile/edit"
-                                    }
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
-                                "type": "button",
+                                "href": "/mypage/profile/edit",
                                 "className": "inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                             },
                             "children": [
@@ -1060,6 +1054,7 @@
                                     "name": "Checkbox",
                                     "props": {
                                         "name": "notify_post_complete",
+                                        "aria-label": "$t:mypage.notification_settings.post_complete",
                                         "checked": "{{!!user.data?.notify_post_complete}}",
                                         "disabled": true,
                                         "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
@@ -1101,6 +1096,7 @@
                                     "name": "Checkbox",
                                     "props": {
                                         "name": "notify_post_reply",
+                                        "aria-label": "$t:mypage.notification_settings.post_reply",
                                         "checked": "{{!!user.data?.notify_post_reply}}",
                                         "disabled": true,
                                         "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
@@ -1142,6 +1138,7 @@
                                     "name": "Checkbox",
                                     "props": {
                                         "name": "notify_comment",
+                                        "aria-label": "$t:mypage.notification_settings.comment",
                                         "checked": "{{!!user.data?.notify_comment}}",
                                         "disabled": true,
                                         "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
@@ -1183,6 +1180,7 @@
                                     "name": "Checkbox",
                                     "props": {
                                         "name": "notify_reply_comment",
+                                        "aria-label": "$t:mypage.notification_settings.reply_comment",
                                         "checked": "{{!!user.data?.notify_reply_comment}}",
                                         "disabled": true,
                                         "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"

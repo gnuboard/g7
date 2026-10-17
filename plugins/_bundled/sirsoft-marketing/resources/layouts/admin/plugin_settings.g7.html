@@ -19,7 +19,7 @@
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-marketing.settings.title" description="$t:sirsoft-marketing.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
         <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <span class="text-warning-soft">$t:sirsoft-marketing.plugin_read_only</span>
+        <span class="text-xs text-yellow-700 dark:text-yellow-300">$t:sirsoft-marketing.plugin_read_only</span>
       </div>
       <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
         <div class="flex gap-3">
@@ -97,7 +97,7 @@
                     <div class="flex-center gap-2 flex-wrap">
                       <!-- 채널 라벨 — 현재 로케일 우선. ko 고정이면 다른 언어로 운영하는 관리자에게도 한국어가 나간다. 시스템 채널은 저장 맵에 없는 로케일(언어팩으로 늘어난 언어)을 플러그인 번역으로 보강한다 — 운영자가 만든 채널은 키가 번역 키와 우연히 겹칠 수 있어 저장 맵만 쓴다 -->
                       <span class="text-heading">{{channel.is_system ? $localized(channel.label, 'sirsoft-marketing.' + channel.key) : (channel.label?.[$locale] ?? channel.label?.ko ?? channel.label?.en ?? channel.key)}}</span>
-                      <span data-if="{{channel.is_system}}" class="text-info-soft inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-blue-100 dark:bg-blue-900">$t:sirsoft-marketing.settings.channels.system_badge</span>
+                      <span data-if="{{channel.is_system}}" class="text-xs text-blue-700 dark:text-blue-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-blue-100 dark:bg-blue-900">$t:sirsoft-marketing.settings.channels.system_badge</span>
                     </div>
                     <span class="text-hint font-mono mt-0.5">{{channel.key}}</span>
                     <span data-if="{{!!channel.page_slug}}" class="block sm:hidden text-xs text-blue-400 dark:text-blue-500 font-mono mt-0.5">{{channel.page_slug}}</span>
@@ -188,12 +188,12 @@
         </div>
       </div>
       <div data-ref="footer_buttons" class="sticky-footer-buttons">
-        <button data-ref="cancel_button" type="button" class="btn btn-secondary">
+        <a href="/admin/plugins" data-ref="cancel_button" class="button btn btn-secondary">
           <on type="click">
-            <navigate path="/admin/plugins"/>
+            <navigate/>
           </on>
           <span>$t:common.cancel</span>
-        </button>
+        </a>
         <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!-- 저장은 두 번에 나눠 나간다 — 채널 목록은 전용 엔드포인트가 받고 동의 항목은 플러그인 설정이 받는다. 채널 저장이 성공한 뒤에야 설정을 보내므로, 채널 쪽이 실패하면 동의 설정은 손대지 않은 채로 남는다 -->

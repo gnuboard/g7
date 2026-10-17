@@ -63,15 +63,15 @@
         <item>form_meta</item>
       </blur-until-loaded>
       <page-header data-type="composite" data-ref="page_header" title="{{form_meta?.data?.board?.name}} {{route?.id ? '$t:sirsoft-board.admin.posts.form.edit_title' : (query?.parent_id ? '$t:sirsoft-board.admin.posts.reply.title' : '$t:sirsoft-board.admin.posts.form.create_title')}}" description="{{form_meta?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board">
-        <button data-ref="header_cancel_button" class="btn btn-secondary">
+        <a href="{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}" :mergeQuery="true" data-ref="header_cancel_button" class="button btn btn-secondary">
           <on type="click">
             <!-- 취소. 수정 중이면 그 글로, 새 글이면 게시판 글 목록으로 돌아가며 보던 목록 상태를 이고 간다 -->
-            <navigate path="{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}" :mergeQuery="true">
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
           <span>$t:sirsoft-board.common.cancel</span>
-        </button>
+        </a>
         <button data-ref="header_save_button" disabled="{{_computed.isReadOnly || _local.isSaving || (!!route?.id &amp;&amp; !_local.hasChanges)}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 저장. 등록과 수정은 글 번호 유무로 갈리며, 성공하면 목록으로 나가므로 폼을 되받지 않는다 -->
@@ -98,7 +98,7 @@
       </page-header>
       <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
         <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <span class="text-warning-soft">$t:sirsoft-board.admin.posts.form.read_only_message</span>
+        <span class="text-xs board-tone-warning">$t:sirsoft-board.admin.posts.form.read_only_message</span>
       </div>
       <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger items-start mb-6">
         <div class="flex items-start gap-3">
@@ -126,15 +126,15 @@
         </div>
         <div data-if="{{!_local.hasChanges}}" class=""/>
         <div class="flex-center gap-3">
-          <button data-ref="footer_cancel_button" type="button" class="btn btn-secondary">
+          <a href="{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}" :mergeQuery="true" data-ref="footer_cancel_button" class="button btn btn-secondary">
             <on type="click">
               <!-- 취소(화면 아래 버튼). 위쪽 취소와 같은 자리로 돌아간다 -->
-              <navigate path="{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}" :mergeQuery="true">
+              <navigate :mergeQuery="true">
                 <query/>
               </navigate>
             </on>
             <span>$t:sirsoft-board.common.cancel</span>
-          </button>
+          </a>
           <button data-ref="footer_save_button" type="button" disabled="{{_computed.isReadOnly || _local.isSaving || (!!route?.id &amp;&amp; !_local.hasChanges)}}" class="btn btn-primary flex-center gap-1.5">
             <on type="click">
               <!-- 저장(화면 아래 버튼). 위쪽 저장과 같은 처리이며 긴 폼에서 위로 올라가지 않아도 되게 둘 다 둔다 -->

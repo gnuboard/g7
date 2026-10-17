@@ -18,14 +18,14 @@
         <div data-ref="naver_header" class="flex-between p-4 bg-gray-50 dark:bg-gray-800">
           <responsive on="portable" class="row-stack p-4 bg-gray-50 dark:bg-gray-800"/>
           <div class="flex-center gap-3">
-            <div class="flex-center w-8 h-8 bg-green-500 rounded-lg justify-center">
+            <div class="flex-center w-8 h-8 bg-green-500 dark:bg-green-500 rounded-lg justify-center">
               <span class="text-white font-bold text-sm">N</span>
             </div>
             <span class="text-primary font-medium">$t:sirsoft-ecommerce.admin.product.shopping_integration.naver.title</span>
           </div>
           <div class="flex-center gap-4">
             <responsive on="portable" class="flex-between w-full"/>
-            <select name="naver_enabled" value="{{_local.form.shopping_integrations?.naver?.enabled ?? 'disabled'}}" class="w-28">
+            <select name="naver_enabled" aria-label="$t:sirsoft-ecommerce.admin.product.shopping_integration.naver.title" value="{{_local.form.shopping_integrations?.naver?.enabled ?? 'disabled'}}" class="w-28">
               <options>
                 <option value="disabled">$t:sirsoft-ecommerce.admin.product.shopping_integration.status.disabled</option>
                 <option value="enabled">$t:sirsoft-ecommerce.admin.product.shopping_integration.status.enabled</option>
@@ -39,14 +39,14 @@
                 <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
               </on>
             </select>
-            <button type="button" class="btn btn-ghost btn-sm">
+            <a href="/admin/ecommerce/integrations/naver" class="button btn btn-ghost btn-sm">
               <on type="click">
                 <!-- audit:allow layout-list-context-navigate-merge-query 상품 폼에서 채널 연동 설정 화면으로 나가는 이동이다 — 상품 목록의 페이지·필터를 물려주지 않는다. -->
-                <navigate path="/admin/ecommerce/integrations/naver"/>
+                <navigate/>
               </on>
               <icon name="cog" class="text-base mr-1"/>
               <span>$t:sirsoft-ecommerce.admin.product.shopping_integration.manage</span>
-            </button>
+            </a>
           </div>
         </div>
         <div data-ref="naver_body" data-if="{{_local.form.shopping_integrations?.naver?.enabled === 'enabled'}}" class="p-4 border-t border-gray-200 dark:border-gray-700">
@@ -123,14 +123,14 @@
         <div data-ref="facebook_header" class="flex-between p-4 bg-gray-50 dark:bg-gray-800">
           <responsive on="portable" class="row-stack p-4 bg-gray-50 dark:bg-gray-800"/>
           <div class="flex-center gap-3">
-            <div class="flex-center w-8 h-8 bg-blue-600 rounded-lg justify-center">
+            <div class="flex-center w-8 h-8 bg-blue-600 dark:bg-blue-600 rounded-lg justify-center">
               <span class="text-white font-bold text-sm">f</span>
             </div>
             <span class="text-primary font-medium">$t:sirsoft-ecommerce.admin.product.shopping_integration.facebook.title</span>
           </div>
           <div class="flex-center gap-4">
             <responsive on="portable" class="flex-between w-full"/>
-            <select name="facebook_enabled" value="{{_local.form.shopping_integrations?.facebook?.enabled ?? 'disabled'}}" class="w-28">
+            <select name="facebook_enabled" aria-label="$t:sirsoft-ecommerce.admin.product.shopping_integration.facebook.title" value="{{_local.form.shopping_integrations?.facebook?.enabled ?? 'disabled'}}" class="w-28">
               <options>
                 <option value="disabled">$t:sirsoft-ecommerce.admin.product.shopping_integration.status.disabled</option>
                 <option value="enabled">$t:sirsoft-ecommerce.admin.product.shopping_integration.status.enabled</option>
@@ -144,14 +144,14 @@
                 <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
               </on>
             </select>
-            <button type="button" class="btn btn-ghost btn-sm">
+            <a href="/admin/ecommerce/integrations/facebook" class="button btn btn-ghost btn-sm">
               <on type="click">
                 <!-- audit:allow layout-list-context-navigate-merge-query 상품 폼에서 채널 연동 설정 화면으로 나가는 이동이다 — 상품 목록의 페이지·필터를 물려주지 않는다. -->
-                <navigate path="/admin/ecommerce/integrations/facebook"/>
+                <navigate/>
               </on>
               <icon name="cog" class="text-base mr-1"/>
               <span>$t:sirsoft-ecommerce.admin.product.shopping_integration.manage</span>
-            </button>
+            </a>
           </div>
         </div>
         <div data-ref="facebook_body" data-if="{{_local.form.shopping_integrations?.facebook?.enabled === 'enabled'}}" class="p-4 border-t border-gray-200 dark:border-gray-700">
@@ -235,7 +235,7 @@
           </div>
           <div class="flex-center gap-4">
             <responsive on="portable" class="flex-between w-full"/>
-            <select name="google_enabled" value="{{_local.form.shopping_integrations?.google?.enabled ?? 'disabled'}}" class="w-28">
+            <select name="google_enabled" aria-label="$t:sirsoft-ecommerce.admin.product.shopping_integration.google.title" value="{{_local.form.shopping_integrations?.google?.enabled ?? 'disabled'}}" class="w-28">
               <options>
                 <option value="disabled">$t:sirsoft-ecommerce.admin.product.shopping_integration.status.disabled</option>
                 <option value="enabled">$t:sirsoft-ecommerce.admin.product.shopping_integration.status.enabled</option>
@@ -249,14 +249,14 @@
                 <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
               </on>
             </select>
-            <button type="button" class="btn btn-ghost btn-sm">
+            <a href="/admin/ecommerce/integrations/google" class="button btn btn-ghost btn-sm">
               <on type="click">
                 <!-- audit:allow layout-list-context-navigate-merge-query 상품 폼에서 채널 연동 설정 화면으로 나가는 이동이다 — 상품 목록의 페이지·필터를 물려주지 않는다. -->
-                <navigate path="/admin/ecommerce/integrations/google"/>
+                <navigate/>
               </on>
               <icon name="cog" class="text-base mr-1"/>
               <span>$t:sirsoft-ecommerce.admin.product.shopping_integration.manage</span>
-            </button>
+            </a>
           </div>
         </div>
         <div data-ref="google_body" data-if="{{_local.form.shopping_integrations?.google?.enabled === 'enabled'}}" class="p-4 border-t border-gray-200 dark:border-gray-700">
@@ -331,7 +331,7 @@
       </div>
       <div data-ref="shopping_integration_note" class="flex-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
         <icon name="info-circle" class="text-base text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0"/>
-        <p class="text-info-soft">$t:sirsoft-ecommerce.admin.product.shopping_integration.note</p>
+        <p class="ecommerce-tone-info-soft text-xs">$t:sirsoft-ecommerce.admin.product.shopping_integration.note</p>
       </div>
     </div>
   </div>

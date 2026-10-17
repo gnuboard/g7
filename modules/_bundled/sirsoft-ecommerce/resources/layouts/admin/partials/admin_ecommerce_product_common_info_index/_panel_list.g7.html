@@ -75,10 +75,31 @@
           </on>
           <div class="flex-between">
             <div class="flex-center gap-2 flex-1 min-w-0">
-              <span class="text-primary text-sm font-medium truncate">{{$localized(item.name)}}</span>
+              <!-- 항목 이름은 링크 — 가운데 클릭·Ctrl+클릭으로 그 항목을 새 탭에 연다(#757 결정 2026-10-15). 카드 전체를
+                   링크로 감싸지 않는 것은 노출 스위치가 링크 안에 들어가기 때문이다. 보통 클릭은 카드와 같은 선택을 하고
+                   전파를 끊어 카드 클릭이 한 번 더 돌지 않게 한다(카드의 나머지 자리는 카드 클릭이 맡는다). -->
+              <a href="/admin/ecommerce/common-info?id={{item.id}}&amp;mode=view" :mergeQuery="true" class="text-primary text-sm font-medium truncate hover:underline">
+                <on type="click">
+                  <sequence :stopPropagation="true">
+                    <switch on="{{_global.panelMode === 'edit' || _global.panelMode === 'create' || _global.panelMode === 'copy'}}">
+                      <case when="true">
+                        <set-state target="global" pendingItemId="{{item.id}}" pendingItem="{{item}}"/>
+                        <open-modal target="editing_confirm_modal"/>
+                      </case>
+                      <case when="false">
+                        <set-state target="global" selectedId="{{item.id}}" selectedItem="{{item}}" panelMode="view"/>
+                        <replace-url :mergeQuery="true">
+                          <query id="{{item.id}}" mode="view"/>
+                        </replace-url>
+                      </case>
+                    </switch>
+                  </sequence>
+                </on>
+                {{$localized(item.name)}}
+              </a>
               <span data-if="{{item.is_default}}" class="text-secondary px-1.5 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 flex-shrink-0">$t:sirsoft-ecommerce.admin.common_info.list.default</span>
             </div>
-            <toggle data-type="composite" size="sm" checked="{{item.is_active}}" disabled="{{!item.abilities?.can_update}}">
+            <toggle data-type="composite" ariaLabel="$t:common.item_enabled|name={{$localized(item.name)}}" size="sm" checked="{{item.is_active}}" disabled="{{!item.abilities?.can_update}}">
               <on type="change">
                 <!-- 행의 노출 스위치. `stopPropagation` 이 없으면 이 클릭이 행 선택으로 번져, 스위치를 눌렀을 뿐인데 오른쪽 패널이 바뀐다. -->
                 <api-call :stopPropagation="true" :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/product-common-infos/{{item.id}}/toggle-active" method="PATCH">

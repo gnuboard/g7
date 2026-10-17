@@ -13,14 +13,13 @@
     "children": [
         {
             "type": "basic",
-            "name": "Button",
+            "name": "A",
             "actions": [
                 {
                     "comment": "같은 검색어 안에서 보는 대상만 바꾸는 이동이라 mergeQuery 로 q 를 승계한다. 탭마다 결과 집합이 달라지므로 게시판필터·페이지·커서는 빈 값으로 지운다",
                     "type": "click",
                     "handler": "navigate",
                     "params": {
-                        "path": "/search",
                         "mergeQuery": true,
                         "query": {
                             "type": "",
@@ -32,7 +31,9 @@
                 }
             ],
             "props": {
-                "className": "{{(query?.type ?? 'all') === 'all' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}"
+                "href": "/search?type=&board_slug=&page=&cursor=",
+                "mergeQuery": true,
+                "className": "inline-flex items-center justify-center {{(query?.type ?? 'all') === 'all' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}"
             },
             "children": [
                 {
@@ -61,14 +62,13 @@
         },
         {
             "type": "basic",
-            "name": "Button",
+            "name": "A",
             "actions": [
                 {
                     "comment": "같은 검색어 안에서 보는 대상만 바꾸는 이동이라 mergeQuery 로 q 를 승계한다. 탭마다 결과 집합이 달라지므로 게시판필터·페이지·커서는 빈 값으로 지운다",
                     "type": "click",
                     "handler": "navigate",
                     "params": {
-                        "path": "/search",
                         "mergeQuery": true,
                         "query": {
                             "type": "posts",
@@ -80,7 +80,9 @@
                 }
             ],
             "props": {
-                "className": "{{query?.type === 'posts' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}"
+                "href": "/search?type=posts&board_slug=&page=&cursor=",
+                "mergeQuery": true,
+                "className": "inline-flex items-center justify-center {{query?.type === 'posts' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}"
             },
             "children": [
                 {
@@ -109,14 +111,13 @@
         },
         {
             "type": "basic",
-            "name": "Button",
+            "name": "A",
             "actions": [
                 {
                     "comment": "같은 검색어 안에서 보는 대상만 바꾸는 이동이라 mergeQuery 로 q 를 승계한다. 탭마다 결과 집합이 달라지므로 게시판필터·페이지·커서는 빈 값으로 지운다",
                     "type": "click",
                     "handler": "navigate",
                     "params": {
-                        "path": "/search",
                         "mergeQuery": true,
                         "query": {
                             "type": "products",
@@ -128,7 +129,9 @@
                 }
             ],
             "props": {
-                "className": "{{query?.type === 'products' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}"
+                "href": "/search?type=products&board_slug=&page=&cursor=",
+                "mergeQuery": true,
+                "className": "inline-flex items-center justify-center {{query?.type === 'products' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}"
             },
             "children": [
                 {
@@ -157,14 +160,13 @@
         },
         {
             "type": "basic",
-            "name": "Button",
+            "name": "A",
             "actions": [
                 {
                     "comment": "같은 검색어 안에서 보는 대상만 바꾸는 이동이라 mergeQuery 로 q 를 승계한다. 탭마다 결과 집합이 달라지므로 게시판필터·페이지·커서는 빈 값으로 지운다",
                     "type": "click",
                     "handler": "navigate",
                     "params": {
-                        "path": "/search",
                         "mergeQuery": true,
                         "query": {
                             "type": "pages",
@@ -176,7 +178,9 @@
                 }
             ],
             "props": {
-                "className": "{{query?.type === 'pages' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}"
+                "href": "/search?type=pages&board_slug=&page=&cursor=",
+                "mergeQuery": true,
+                "className": "inline-flex items-center justify-center {{query?.type === 'pages' ? 'px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full font-medium' : 'px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full'}}"
             },
             "children": [
                 {
